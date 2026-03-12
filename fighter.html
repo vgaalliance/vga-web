@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Fighter Profile · UBAe</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --p: #7B2FFF;
+  --pl: #A855F7;
+  --pc: #C084FC;
+  --pg: rgba(123,47,255,0.18);
+  --pb: rgba(123,47,255,0.35);
+  --gold: #F5C842;
+  --bg: #06060A;
+  --surf: #0B0B12;
+  --border: #181824;
+  --text: #DDD8F0;
+  --muted: #4A4A68;
+  --dim: #131320;
+  --glow-sm: 0 0 8px rgba(123,47,255,0.7), 0 0 20px rgba(123,47,255,0.3);
+  --glow-md: 0 0 12px rgba(123,47,255,0.9), 0 0 30px rgba(123,47,255,0.4), 0 0 60px rgba(123,47,255,0.15);
+  --glow-gold: 0 0 10px rgba(245,200,66,0.6), 0 0 25px rgba(245,200,66,0.2);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: #000; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'Barlow Condensed', sans-serif;
+  min-height: 100vh; max-width: 430px; margin: 0 auto;
+  overflow-x: hidden; position: relative;
+  animation: flicker 10s infinite, crt-wave 7s ease-in-out infinite;
+}
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.13) 2px, rgba(0,0,0,0.13) 4px);
+  pointer-events: none; z-index: 9999;
+}
+body::after {
+  content: ''; position: fixed; inset: 0;
+  background: radial-gradient(ellipse 80% 90% at 50% 50%, transparent 45%, rgba(0,0,0,0.75) 100%);
+  pointer-events: none; z-index: 9998;
+}
+@keyframes flicker { 0%,89%,100%{opacity:1} 90%{opacity:0.98} 91%{opacity:1} 92%{opacity:0.96} 93%{opacity:1} }
+@keyframes crt-wave { 0%,100%{transform:perspective(1200px) rotateX(0.15deg)} 50%{transform:perspective(1200px) rotateX(0deg)} }
+@keyframes phosphor-glitch {
+  0%,85%,100%{text-shadow:var(--glow-md);filter:blur(0)}
+  87%{text-shadow:-2px 0 rgba(255,30,100,0.65),2px 0 rgba(0,220,255,0.65),0 0 20px rgba(123,47,255,0.9);filter:blur(0.3px)}
+  89%{text-shadow:1px 0 rgba(255,30,100,0.4),-1px 0 rgba(0,220,255,0.4),0 0 30px rgba(168,85,247,1)}
+  91%{text-shadow:var(--glow-md);filter:blur(0)}
+}
+@keyframes chroma { 0%,80%,100%{text-shadow:none} 82%{text-shadow:-1px 0 rgba(255,30,100,0.5),1px 0 rgba(0,200,255,0.5)} 84%{text-shadow:none} }
+@keyframes holo { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+@keyframes badge-pulse { 0%,100%{box-shadow:0 0 8px rgba(123,47,255,0.6)} 50%{box-shadow:0 0 16px rgba(123,47,255,0.9),0 0 30px rgba(123,47,255,0.4)} }
+@keyframes dot-blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+/* ─── HEADER ─── */
+.header {
+  padding: 7px 16px 0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.back-btn {
+  font-family: 'Space Mono', monospace; font-size: 7px;
+  color: var(--muted); letter-spacing: 1px; text-transform: uppercase;
+  text-decoration: none; display: flex; align-items: center; gap: 4px;
+  -webkit-tap-highlight-color: transparent;
+}
+.back-btn:active { color: var(--pl); }
+.back-arrow { color: var(--p); font-size: 8px; }
+.header-tag {
+  font-family: 'Space Mono', monospace; font-size: 7px;
+  color: var(--pl); letter-spacing: 3px; text-transform: uppercase;
+  text-shadow: var(--glow-sm);
+}
+
+/* ─── FIGHTER HERO ─── */
+.fighter-hero {
+  margin: 8px 16px 0;
+  position: relative; overflow: hidden;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--surf), var(--surf)) padding-box,
+    linear-gradient(135deg, #7B2FFF, #A855F7, #C084FC, #5B21B6, #4F46E5) border-box;
+  border-left-width: 3px;
+  padding: 8px 10px 8px 12px;
+}
+.fighter-hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(115deg, transparent 20%, rgba(168,85,247,0.08) 38%, rgba(196,132,252,0.14) 48%, rgba(123,47,255,0.08) 58%, transparent 72%);
+  background-size: 200% 100%;
+  animation: holo 3.5s ease-in-out infinite; pointer-events: none;
+}
+.fighter-hero::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(50deg, transparent 35%, rgba(255,255,255,0.025) 50%, transparent 65%);
+  background-size: 300% 100%;
+  animation: holo 5s ease-in-out infinite reverse; pointer-events: none;
+}
+.hero-inner { position: relative; z-index: 1; }
+.hero-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 4px; }
+.fighter-name {
+  font-family: 'Bebas Neue', sans-serif; font-size: 34px; line-height: 1;
+  color: var(--text); letter-spacing: 1px;
+  animation: phosphor-glitch 12s infinite;
+}
+.fighter-badges { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.rank-badge {
+  font-family: 'Bebas Neue', sans-serif; font-size: 11px;
+  background: var(--p); color: #fff; padding: 2px 7px;
+  letter-spacing: 2px; text-shadow: none;
+  box-shadow: var(--glow-sm);
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+.rank-badge.champ { background: linear-gradient(135deg, #B8860B, #F5C842); box-shadow: var(--glow-gold); color: #000; animation: none; }
+.weight-tag {
+  font-family: 'Space Mono', monospace; font-size: 6px;
+  color: var(--muted); letter-spacing: 2px; text-transform: uppercase;
+}
+.hero-record { display: flex; align-items: baseline; gap: 6px; }
+.record-big {
+  font-family: 'Bebas Neue', sans-serif; font-size: 26px; line-height: 1;
+  color: var(--pl); text-shadow: var(--glow-sm);
+}
+.record-label { font-family: 'Space Mono', monospace; font-size: 6px; color: var(--muted); letter-spacing: 1px; }
+.hero-meta { display: flex; gap: 12px; margin-top: 4px; }
+.hero-meta-item { display: flex; flex-direction: column; }
+.meta-val { font-family: 'Bebas Neue', sans-serif; font-size: 16px; color: var(--text); line-height: 1; }
+.meta-key { font-family: 'Space Mono', monospace; font-size: 5px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+
+/* ─── SECTION HEAD ─── */
+.section-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px 3px;
+}
+.section-title {
+  font-family: 'Space Mono', monospace; font-size: 8px;
+  letter-spacing: 3px; color: var(--muted); white-space: nowrap;
+  text-transform: uppercase; animation: chroma 15s 3s infinite;
+}
+.section-title::before { content: '// '; color: var(--p); opacity: 0.5; }
+.section-line { flex: 1; height: 1px; background: linear-gradient(90deg, var(--border), transparent); }
+
+/* ─── TWO-COL LAYOUT ─── */
+.two-col {
+  display: flex; gap: 6px;
+  padding: 0 16px; margin-bottom: 2px;
+}
+
+/* ─── STAT BLOCK (left) ─── */
+.stat-panel {
+  flex: 1; display: flex; flex-direction: column; gap: 2px;
+}
+.stat-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 3px 8px; background: var(--surf);
+  border: 1px solid var(--border); border-left: 2px solid var(--dim);
+}
+.stat-row.highlight { border-left-color: var(--p); background: rgba(123,47,255,0.05); }
+.stat-key { font-family: 'Space Mono', monospace; font-size: 5.5px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+.stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 15px; color: var(--text); line-height: 1; }
+.stat-val.green { color: #4ade80; }
+.stat-val.red   { color: #f87171; }
+.stat-val.gold  { color: var(--gold); text-shadow: var(--glow-gold); }
+.stat-val.purple{ color: var(--pl); text-shadow: var(--glow-sm); }
+
+/* ─── RANKING PANEL (right) ─── */
+.rank-panel {
+  width: 110px; flex-shrink: 0;
+  background: var(--surf); border: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+  position: relative;
+}
+.rank-panel::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(123,47,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(123,47,255,0.04) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+.rank-panel-head {
+  font-family: 'Space Mono', monospace; font-size: 5.5px;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--p); padding: 3px 6px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0; position: relative; text-shadow: var(--glow-sm);
+}
+.rank-entry {
+  display: flex; align-items: center; gap: 4px;
+  padding: 2px 6px; border-bottom: 1px solid var(--border);
+  position: relative; flex-shrink: 0;
+}
+.rank-entry:last-child { border-bottom: none; }
+.rank-entry.is-fighter {
+  background: rgba(123,47,255,0.1);
+  border-left: 2px solid var(--p); padding-left: 4px;
+}
+.rank-num { font-family: 'Bebas Neue', sans-serif; font-size: 12px; color: var(--muted); min-width: 14px; line-height: 1; }
+.rank-num.top { color: var(--gold); text-shadow: var(--glow-gold); }
+.rank-name { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 600; line-height: 1.1; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank-rec { font-family: 'Space Mono', monospace; font-size: 5px; color: var(--muted); }
+.rank-cutoff { height: 1px; background: var(--p); opacity: 0.3; margin: 0; flex-shrink: 0; }
+
+/* ─── RECENT MATCHES ─── */
+.match-feed { margin: 0 16px; }
+.mf-row {
+  display: flex; align-items: center;
+  padding: 4px 0; border-bottom: 1px solid var(--border);
+  gap: 8px;
+}
+.mf-row:last-child { border-bottom: none; }
+.mf-result {
+  font-family: 'Bebas Neue', sans-serif; font-size: 13px; width: 14px; text-align: center; flex-shrink: 0;
+}
+.mf-result.w { color: #4ade80; }
+.mf-result.l { color: #f87171; }
+.mf-opp { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 600; flex: 1; }
+.mf-kd  { font-family: 'Space Mono', monospace; font-size: 6px; color: var(--muted); }
+.mf-date { font-family: 'Space Mono', monospace; font-size: 5.5px; color: var(--muted); text-align: right; min-width: 28px; }
+.mf-empty { font-family: 'Space Mono', monospace; font-size: 6px; color: var(--muted); padding: 10px 0; text-align: center; letter-spacing: 1px; }
+
+/* ─── CONTRACT ─── */
+.contract-bar {
+  margin: 0 16px;
+  background: var(--surf); border: 1px solid var(--border);
+  display: flex; align-items: center; padding: 5px 10px; gap: 10px;
+}
+.contract-tier {
+  font-family: 'Bebas Neue', sans-serif; font-size: 18px;
+  color: var(--pl); text-shadow: var(--glow-sm); line-height: 1;
+}
+.contract-tier.gold-tier { color: var(--gold); text-shadow: var(--glow-gold); }
+.contract-details { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.contract-line { font-family: 'Space Mono', monospace; font-size: 5.5px; color: var(--muted); letter-spacing: 1px; }
+.contract-line span { color: var(--text); }
+.contract-progress { margin-top: 3px; }
+.progress-bar-bg { height: 3px; background: var(--dim); border: 1px solid var(--border); }
+.progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--p), var(--pl)); transition: width 0.4s ease; }
+.progress-label { font-family: 'Space Mono', monospace; font-size: 5px; color: var(--muted); margin-top: 1px; }
+
+/* ─── LOADING / ERROR ─── */
+.fighter-loading {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 60px 16px; gap: 8px;
+}
+.fighter-loading .ld-text { font-family: 'Space Mono', monospace; font-size: 7px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+.dot { display: inline-block; animation: dot-blink 1s ease-in-out infinite; }
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* ─── FOOTER ─── */
+.footer { padding: 14px 16px; border-top: 1px solid var(--border); margin-top: 12px; }
+.footer-text { font-family: 'Space Mono', monospace; font-size: 6px; color: var(--muted); letter-spacing: 1px; text-align: center; }
+.footer-text a { color: var(--muted); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <a href="javascript:history.back()" class="back-btn"><span class="back-arrow">&#9664;</span> Roster</a>
+  <div class="header-tag">UBAe · S1 2026</div>
+</div>
+
+<!-- MAIN CONTENT — rendered by JS -->
+<div id="main">
+  <div class="fighter-loading">
+    <div class="ld-text">Loading<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div>
+  </div>
+</div>
+
+<div class="footer">
+  <div class="footer-text"><a href="https://ubaesports.com">ubaesports.com</a> &nbsp;&middot;&nbsp; UBAe Season 1</div>
+</div>
+
+<script>
+const SUPABASE_URL  = 'https://xwsbyxkjfqqrgbzxmmrn.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3c2J5eGtqZnFxcmdienhtbXJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNjAyNDcsImV4cCI6MjA4NzkzNjI0N30.6amkt0zGMLT3_N3fKY6sMMTdaBr5eS7Ig-hAPvPCB4g';
+
+const CONTRACT_VC = {
+  Bronze:   { win: 75000,  loss: 50000 },
+  Silver:   { win: 110000, loss: 75000 },
+  Gold:     { win: 150000, loss: 100000 },
+  Platinum: { win: 225000, loss: 150000 },
+  default:  { win: 35000,  loss: 25000 },
+};
+
+function db(path) {
+  return fetch(SUPABASE_URL + '/rest/v1/' + path, {
+    headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON }
+  }).then(r => r.json());
+}
+
+function getName() {
+  const p = new URLSearchParams(window.location.search);
+  const raw = p.get('name') || p.get('slug') || p.get('fighter') || '';
+  // Convert slug back: hyphens → spaces, then decode
+  return decodeURIComponent(raw).replace(/-/g,' ');
+}
+
+function fmt(n) { return n >= 1000 ? (n/1000).toFixed(0)+'K' : n; }
+
+function rankLabel(rank) {
+  if (!rank) return '–';
+  if (rank === 1) return '#1';
+  return '#' + rank;
+}
+
+function tierColor(tier) {
+  if (!tier) return '';
+  if (tier === 'Gold' || tier === 'Platinum') return 'gold-tier';
+  return '';
+}
+
+async function load() {
+  const main = document.getElementById('main');
+  const name = getName();
+  if (!name) { main.innerHTML = '<div class="fighter-loading"><div class="ld-text">No fighter specified</div></div>'; return; }
+
+  try {
+    // Fetch fighter by display_name (case-insensitive)
+    const fighters = await db(`fighters?display_name=ilike.${encodeURIComponent(name)}&limit=1`);
+    if (!fighters.length) {
+      main.innerHTML = `<div class="fighter-loading"><div class="ld-text">Fighter not found</div></div>`;
+      return;
+    }
+    const f = fighters[0];
+    document.title = f.display_name + ' · UBAe';
+
+    // Parallel fetches
+    const [allFighters, recentFights, contract, wallet] = await Promise.all([
+      // all fighters for ranking sidebar (same weight class)
+      db(`fighters?weight_class=eq.${encodeURIComponent(f.weight_class)}&order=rank.asc.nullslast,wins.desc&limit=16`),
+      // recent fights
+      db(`fights?or=(fighter1_id.eq.${f.id},fighter2_id.eq.${f.id})&order=created_at.desc&limit=6`),
+      // active contract
+      db(`contracts?player_id=eq.${f.player_id}&status=eq.active&limit=1`),
+      // wallet balance
+      f.player_id ? db(`players?id=eq.${f.player_id}&select=vc_balance&limit=1`) : Promise.resolve([]),
+    ]);
+
+    // Build fighter name lookup for recent fights
+    const fightFighterIds = [...new Set(recentFights.flatMap(ft => [ft.fighter1_id, ft.fighter2_id]).filter(id => id && id !== f.id))];
+    let oppMap = {};
+    if (fightFighterIds.length) {
+      const opps = await db(`fighters?id=in.(${fightFighterIds.join(',')})&select=id,display_name`);
+      opps.forEach(o => oppMap[o.id] = o.display_name);
+    }
+
+    const con = contract[0] || null;
+    const vc  = wallet[0]?.vc_balance ?? null;
+    const winRate = f.wins + f.losses > 0 ? Math.round(f.wins / (f.wins + f.losses) * 100) : 0;
+    const totalKD = (f.total_knockdowns_given ?? '–');
+    const status = f.status || 'RANKED';
+    const isChamp = status === 'CHAMP';
+
+    // Ranking sidebar — find this fighter's position in list
+    const myIndex = allFighters.findIndex(x => x.id === f.id);
+
+    // HERO
+    const hero = `
+      <div class="fighter-hero">
+        <div class="hero-inner">
+          <div class="hero-top">
+            <div class="fighter-name">${f.display_name}</div>
+            <div class="fighter-badges">
+              <div class="rank-badge ${isChamp ? 'champ' : ''}">${isChamp ? 'CHAMPION' : rankLabel(f.rank)}</div>
+              <div class="weight-tag">${f.weight_class || '–'}</div>
+            </div>
+          </div>
+          <div class="hero-record">
+            <div class="record-big">${f.wins ?? 0}–${f.losses ?? 0}</div>
+            <div class="record-label">W–L</div>
+          </div>
+          <div class="hero-meta">
+            <div class="hero-meta-item"><div class="meta-val">${winRate}%</div><div class="meta-key">Win Rate</div></div>
+            <div class="hero-meta-item"><div class="meta-val">${totalKD}</div><div class="meta-key">KDs Given</div></div>
+            ${vc !== null ? `<div class="hero-meta-item"><div class="meta-val">${fmt(vc)}</div><div class="meta-key">VC Bal</div></div>` : ''}
+          </div>
+        </div>
+      </div>`;
+
+    // SECTION — Stats + Rankings
+    const statRows = [
+      { key: 'Status',    val: status,              cls: isChamp ? 'gold' : 'purple', highlight: true },
+      { key: 'Wins',      val: f.wins ?? 0,         cls: 'green' },
+      { key: 'Losses',    val: f.losses ?? 0,       cls: 'red' },
+      { key: 'Win Rate',  val: winRate + '%',       cls: '' },
+      { key: 'KD Given',  val: totalKD,             cls: '' },
+      { key: 'Rank',      val: rankLabel(f.rank),   cls: f.rank <= 3 ? 'gold' : 'purple', highlight: true },
+      { key: 'Weight',    val: f.weight_class || '–', cls: '' },
+      { key: 'Contract',  val: con ? con.tier : 'None', cls: con ? 'purple' : '' },
+    ].map(r => `
+      <div class="stat-row ${r.highlight ? 'highlight' : ''}">
+        <div class="stat-key">${r.key}</div>
+        <div class="stat-val ${r.cls}">${r.val}</div>
+      </div>`).join('');
+
+    const rankEntries = allFighters.map((fr, i) => {
+      const isMine = fr.id === f.id;
+      const isTop  = (fr.rank <= 3) || (!fr.rank && i < 3);
+      return `<div class="rank-entry ${isMine ? 'is-fighter' : ''}">
+        <div class="rank-num ${isTop ? 'top' : ''}">${fr.rank ?? (i+1)}</div>
+        <div class="rank-name">${fr.display_name}</div>
+        <div class="rank-rec">${fr.wins??0}-${fr.losses??0}</div>
+      </div>`;
+    }).join('');
+
+    const twoCol = `
+      <div class="two-col">
+        <div class="stat-panel">${statRows}</div>
+        <div class="rank-panel">
+          <div class="rank-panel-head">// Rankings</div>
+          ${rankEntries || '<div style="padding:8px;font-family:Space Mono,monospace;font-size:6px;color:var(--muted)">–</div>'}
+        </div>
+      </div>`;
+
+    // Contract bar
+    let contractBar = '';
+    if (con) {
+      const pct = con.fights_guaranteed > 0
+        ? Math.min(100, Math.round(con.fights_completed / con.fights_guaranteed * 100))
+        : 0;
+      const remaining = Math.max(0, (con.fights_guaranteed ?? 0) - (con.fights_completed ?? 0));
+      const vc_win  = con.vc_win  ?? CONTRACT_VC[con.tier]?.win  ?? CONTRACT_VC.default.win;
+      const vc_loss = con.vc_loss ?? CONTRACT_VC[con.tier]?.loss ?? CONTRACT_VC.default.loss;
+      contractBar = `
+        <div class="section-head"><div class="section-title">Contract</div><div class="section-line"></div></div>
+        <div class="contract-bar">
+          <div class="contract-tier ${tierColor(con.tier)}">${con.tier}</div>
+          <div class="contract-details">
+            <div class="contract-line">Win <span>${fmt(vc_win)} VC</span> &nbsp;·&nbsp; Loss <span>${fmt(vc_loss)} VC</span></div>
+            <div class="contract-line">Fights <span>${con.fights_completed ?? 0} / ${con.fights_guaranteed ?? '?'}</span> &nbsp;·&nbsp; Remaining <span>${remaining}</span></div>
+            <div class="contract-progress">
+              <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+              <div class="progress-label">${pct}% complete</div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    // Recent fights
+    let matchFeed = '';
+    if (recentFights.length) {
+      const rows = recentFights.map(ft => {
+        const won = ft.winner_id === f.id;
+        const lost = ft.winner_id && ft.winner_id !== f.id;
+        const result = !ft.winner_id ? '–' : won ? 'W' : 'L';
+        const cls    = !ft.winner_id ? '' : won ? 'w' : 'l';
+        const oppId  = ft.fighter1_id === f.id ? ft.fighter2_id : ft.fighter1_id;
+        const opp    = oppMap[oppId] || '???';
+        const myKD   = ft.fighter1_id === f.id ? (ft.fighter1_kd ?? '–') : (ft.fighter2_kd ?? '–');
+        const oppKD  = ft.fighter1_id === f.id ? (ft.fighter2_kd ?? '–') : (ft.fighter1_kd ?? '–');
+        const d      = ft.event_date ? new Date(ft.event_date) : null;
+        const dateStr = d ? d.toLocaleString('en',{month:'short'}).toUpperCase()+' '+d.getDate() : '–';
+        const method = ft.method ? ' · ' + ft.method : '';
+        return `<div class="mf-row">
+          <div class="mf-result ${cls}">${result}</div>
+          <div class="mf-opp">vs ${opp}</div>
+          <div class="mf-kd">${myKD}–${oppKD} KD${method}</div>
+          <div class="mf-date">${dateStr}</div>
+        </div>`;
+      }).join('');
+      matchFeed = `
+        <div class="section-head"><div class="section-title">Recent Fights</div><div class="section-line"></div></div>
+        <div class="match-feed">${rows}</div>`;
+    } else {
+      matchFeed = `
+        <div class="section-head"><div class="section-title">Recent Fights</div><div class="section-line"></div></div>
+        <div class="match-feed"><div class="mf-empty">No fights logged yet</div></div>`;
+    }
+
+    main.innerHTML = `
+      ${hero}
+      <div class="section-head"><div class="section-title">Overview</div><div class="section-line"></div></div>
+      ${twoCol}
+      ${contractBar}
+      ${matchFeed}
+    `;
+
+  } catch(e) {
+    main.innerHTML = `<div class="fighter-loading"><div class="ld-text">Failed to load fighter</div></div>`;
+  }
+}
+
+load();
+</script>
+</body>
+</html>

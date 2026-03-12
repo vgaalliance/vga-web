@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>UBAe Season 1</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --p: #7B2FFF;
+  --pl: #A855F7;
+  --pc: #C084FC;
+  --pg: rgba(123,47,255,0.18);
+  --pb: rgba(123,47,255,0.35);
+  --gold: #F5C842;
+  --bg: #06060A;
+  --surf: #0B0B12;
+  --border: #181824;
+  --text: #DDD8F0;
+  --muted: #4A4A68;
+  --dim: #131320;
+  --glow-sm: 0 0 8px rgba(123,47,255,0.7), 0 0 20px rgba(123,47,255,0.3);
+  --glow-md: 0 0 12px rgba(123,47,255,0.9), 0 0 30px rgba(123,47,255,0.4), 0 0 60px rgba(123,47,255,0.15);
+  --glow-gold: 0 0 10px rgba(245,200,66,0.6), 0 0 25px rgba(245,200,66,0.2);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ═══════════════════════════════════
+   CRT SCREEN WRAPPER
+═══════════════════════════════════ */
+html { background: #000; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Barlow Condensed', sans-serif;
+  min-height: 100vh;
+  max-width: 430px;
+  margin: 0 auto;
+  overflow-x: hidden;
+  position: relative;
+  /* very subtle screen curvature hint */
+  animation: flicker 10s infinite, crt-wave 7s ease-in-out infinite;
+}
+
+/* Scanlines */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.13) 2px,
+    rgba(0,0,0,0.13) 4px
+  );
+  pointer-events: none; z-index: 9999;
+}
+
+/* Vignette — VR lens darkness at edges */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse 80% 90% at 50% 50%, transparent 45%, rgba(0,0,0,0.75) 100%);
+  pointer-events: none; z-index: 9998;
+}
+
+/* Rolling CRT refresh beam */
+@keyframes scanroll { from { top: -10%; } to { top: 110%; } }
+
+@keyframes flicker {
+  0%,89%,100% { opacity: 1; }
+  90% { opacity: 0.98; }
+  91% { opacity: 1; }
+  92% { opacity: 0.96; }
+  93% { opacity: 1; }
+}
+
+@keyframes crt-wave {
+  0%,100% { transform: perspective(1200px) rotateX(0.15deg); }
+  50%      { transform: perspective(1200px) rotateX(0deg); }
+}
+
+/* Phosphor number glow — glitches occasionally */
+@keyframes phosphor-glitch {
+  0%,85%,100% { text-shadow: var(--glow-md); filter: blur(0); }
+  87% { text-shadow: -2px 0 rgba(255,30,100,0.65), 2px 0 rgba(0,220,255,0.65), 0 0 20px rgba(123,47,255,0.9); filter: blur(0.3px); }
+  89% { text-shadow: 1px 0 rgba(255,30,100,0.4), -1px 0 rgba(0,220,255,0.4), 0 0 30px rgba(168,85,247,1); }
+  91% { text-shadow: var(--glow-md); filter: blur(0); }
+}
+
+/* Chromatic aberration on section labels */
+@keyframes chroma {
+  0%,80%,100% { text-shadow: none; }
+  82% { text-shadow: -1px 0 rgba(255,30,100,0.5), 1px 0 rgba(0,200,255,0.5); }
+  84% { text-shadow: none; }
+}
+
+/* ═══════════════════════════════════
+   HEADER
+═══════════════════════════════════ */
+.header {
+  padding: 7px 16px 0;
+  display: flex; align-items: center; justify-content: space-between;
+  position: relative;
+}
+.logo-placeholder {
+  width: 100px; height: 28px;
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+}
+.logo-placeholder::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, var(--pg) 0%, transparent 60%);
+}
+.logo-placeholder span {
+  font-family: 'Space Mono', monospace; font-size: 7px;
+  color: var(--muted); letter-spacing: 1px; position: relative; z-index: 1;
+}
+.header-tag {
+  font-family: 'Space Mono', monospace; font-size: 7px;
+  color: var(--pl); letter-spacing: 3px; text-transform: uppercase;
+  text-shadow: var(--glow-sm);
+}
+
+/* ═══════════════════════════════════
+   KS COUNTDOWN — TOP HERO
+═══════════════════════════════════ */
+.cd-ks-main {
+  margin: 6px 16px 0;
+  position: relative; overflow: hidden;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--surf), var(--surf)) padding-box,
+    linear-gradient(135deg, #7B2FFF, #A855F7, #C084FC, #5B21B6, #4F46E5) border-box;
+  border-left-width: 3px;
+  padding: 6px 10px 6px 12px;
+  display: block;
+}
+.cd-ks-main::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(115deg, transparent 20%, rgba(168,85,247,0.08) 38%, rgba(196,132,252,0.14) 48%, rgba(123,47,255,0.08) 58%, transparent 72%);
+  background-size: 200% 100%;
+  animation: holo 3.5s ease-in-out infinite; pointer-events: none;
+}
+.cd-ks-main::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(50deg, transparent 35%, rgba(255,255,255,0.025) 50%, transparent 65%);
+  background-size: 300% 100%;
+  animation: holo 5s ease-in-out infinite reverse; pointer-events: none;
+}
+@keyframes holo { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.cd-ks-inner { position: relative; z-index: 1; }
+
+.cd-ks-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2px; }
+.cd-ks-titles {}
+.ks-label {
+  font-family: 'Space Mono', monospace; font-size: 10px;
+  letter-spacing: 2px; text-transform: uppercase;
+  background: linear-gradient(90deg, #A855F7, #C084FC);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.ks-date { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--text); letter-spacing: 1px; margin-top: 1px; }
+
+/* small corner link buttons */
+.cd-ks-links { display: flex; flex-direction: column; gap: 2px; align-items: flex-end; }
+.cd-ks-link {
+  font-family: 'Space Mono', monospace; font-size: 6px;
+  letter-spacing: 1px; text-transform: uppercase; text-decoration: none;
+  padding: 2px 6px; white-space: nowrap;
+  border: 1px solid rgba(168,85,247,0.35); color: var(--pc);
+  background: rgba(123,47,255,0.09); display: block; transition: all 0.15s;
+}
+.cd-ks-link::before { content: '> '; opacity: 0.4; }
+.cd-ks-link.disc { border-color: rgba(114,137,218,0.35); color: #8599E8; background: rgba(114,137,218,0.08); }
+.cd-ks-link.vrc  { border-color: rgba(0,180,220,0.3); color: #00C4E0; background: rgba(0,180,220,0.07); }
+.cd-ks-link:active { background: rgba(168,85,247,0.22); }
+
+.cd-big-digits { display: flex; gap: 4px; align-items: center; }
+.cd-unit { text-align: center; }
+.cd-num {
+  font-family: 'Bebas Neue', sans-serif; font-size: 38px; line-height: 1; display: block; min-width: 40px;
+  background: linear-gradient(135deg, #fff 0%, #C084FC 60%, #A855F7 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  animation: phosphor-glitch 11s infinite;
+}
+.cd-unit-label { font-family: 'Space Mono', monospace; font-size: 7px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 0; }
+.cd-sep {
+  font-family: 'Bebas Neue', sans-serif; font-size: 28px; margin-bottom: 10px;
+  color: var(--p); opacity: 0.6; flex-shrink: 0;
+  text-shadow: var(--glow-sm);
+  animation: blink-sep 1s step-end infinite;
+}
+
+/* ═══════════════════════════════════
+   SIDE ROW — season sq + news
+═══════════════════════════════════ */
+.lower-row {
+  margin: 2px 16px 0;
+  display: flex; gap: 4px; min-height: 80px;
+}
+
+.cd-season-sq {
+  width: 120px; flex-shrink: 0;
+  background: var(--surf);
+  border: 1px solid var(--pb); border-left: 3px solid var(--p);
+  padding: 6px 8px; display: flex; flex-direction: column; justify-content: space-between;
+  position: relative; overflow: hidden;
+}
+.cd-season-sq::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, var(--pg) 0%, transparent 70%); pointer-events: none; }
+.sq-label { font-family: 'Space Mono', monospace; font-size: 6px; letter-spacing: 1.5px; color: var(--p); text-transform: uppercase; text-shadow: var(--glow-sm); position: relative; }
+.sq-sublabel { font-family: 'Space Mono', monospace; font-size: 6px; color: var(--muted); margin-top: 0; position: relative; }
+.sq-digits-h { display: flex; align-items: flex-end; gap: 1px; margin-top: 4px; position: relative; }
+.sq-cell { text-align: center; flex: 1; }
+.sq-num { font-family: 'Bebas Neue', sans-serif; font-size: 20px; line-height: 1; color: var(--text); display: block; animation: phosphor-glitch 13s 1s infinite; }
+.sq-unit { font-family: 'Space Mono', monospace; font-size: 5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.sq-sep { font-family: 'Bebas Neue', sans-serif; font-size: 13px; color: var(--p); margin-bottom: 4px; flex-shrink: 0; opacity: 0.5; }
+
+/* Broadcast dashboard */
+.broadcast-box {
+  flex: 1; background: var(--surf);
+  border: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+  position: relative;
+}
+.broadcast-box::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(123,47,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(123,47,255,0.04) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+.bc-header {
+  font-family: 'Space Mono', monospace; font-size: 6px;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--p); padding: 3px 7px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0; position: relative;
+  text-shadow: var(--glow-sm);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.bc-status-badge {
+  display: flex; align-items: center; gap: 3px;
+  font-family: 'Space Mono', monospace; font-size: 5.5px;
+  color: var(--muted); letter-spacing: 1px;
+}
+.bc-status-badge.is-live { color: #ff3333; }
+.bc-status-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--muted);
+}
+.bc-status-badge.is-live .bc-status-dot {
+  background: #ff3333;
+  box-shadow: 0 0 6px #ff3333;
+  animation: live-blink 1s ease-in-out infinite;
+}
+@keyframes live-blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+.bc-match {
+  display: flex; flex-direction: column;
+  padding: 3px 7px; border-bottom: 1px solid var(--border);
+  flex-shrink: 0; position: relative; gap: 1px;
+}
+.bc-match:last-child { border-bottom: none; }
+.bc-match.is-live { background: rgba(255,51,51,0.04); }
+.bc-teams-row { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.bc-team { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 600; line-height: 1.1; flex: 1; }
+.bc-team.winner { color: var(--text); }
+.bc-team.loser  { color: var(--muted); }
+.bc-team.t2 { text-align: right; }
+.bc-team.dim { color: var(--muted); }
+.bc-vs   { font-family: 'Space Mono', monospace; font-size: 5px; color: var(--muted); flex-shrink: 0; }
+.bc-meta { font-family: 'Space Mono', monospace; font-size: 5px; color: var(--muted); letter-spacing: 1px; }
+.bc-empty { flex: 1; display: flex; align-items: center; justify-content: center;
+  font-family: 'Space Mono', monospace; font-size: 6px; color: var(--muted);
+  letter-spacing: 1px; text-transform: uppercase; text-align: center; padding: 8px; }
+
+/* ═══════════════════════════════════
+   SECTION HEADS
+═══════════════════════════════════ */
+.section-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px 3px;
+}
+.section-title {
+  font-family: 'Space Mono', monospace; font-size: 8px;
+  letter-spacing: 3px; color: var(--muted); white-space: nowrap;
+  text-transform: uppercase; animation: chroma 15s 3s infinite;
+}
+.section-title::before { content: '// '; color: var(--p); opacity: 0.5; }
+.section-line { flex: 1; height: 1px; background: linear-gradient(90deg, var(--border), transparent); }
+
+/* ═══════════════════════════════════
+   RANKINGS
+═══════════════════════════════════ */
+.s-tabs {
+  display: flex; margin: 0 16px;
+  border-bottom: 1px solid var(--border);
+}
+.s-tab {
+  font-family: 'Space Mono', monospace; font-size: 7px;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 4px 10px; cursor: pointer; color: var(--muted);
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: all 0.15s; user-select: none;
+}
+.s-tab.active { color: var(--pl); border-bottom-color: var(--p); text-shadow: var(--glow-sm); }
+.s-panel { display: none; }
+.s-panel.active { display: block; }
+
+.s-row {
+  display: flex; align-items: center;
+  padding: 3px 16px; border-bottom: 1px solid var(--border); gap: 8px;
+}
+.s-row:last-child { border-bottom: none; }
+.s-row.cut { border-top: 1px solid rgba(123,47,255,0.2); }
+.s-num { font-family: 'Space Mono', monospace; font-size: 8px; color: var(--muted); min-width: 16px; text-align: right; flex-shrink: 0; }
+.s-num.hi { color: var(--pl); text-shadow: var(--glow-sm); }
+.s-name { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 600; flex: 1; color: var(--text); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.s-wl { font-family: 'Space Mono', monospace; font-size: 8px; color: var(--muted); min-width: 28px; text-align: right; flex-shrink: 0; }
+.s-wl span { color: var(--pl); }
+.s-loading { padding: 12px 16px; text-align: center; font-family: 'Space Mono', monospace; font-size: 7px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+
+/* ═══════════════════════════════════
+   SCHEDULE SLIDER
+═══════════════════════════════════ */
+.split-banner {
+  margin: 0 16px 6px;
+  background: var(--dim); padding: 3px 10px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-left: 2px solid var(--p);
+}
+.split-name { font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 3px; color: var(--pl); text-shadow: var(--glow-sm); }
+.split-dates { font-family: 'Space Mono', monospace; font-size: 6px; color: var(--muted); }
+
+/* week label bar */
+.week-label-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px; margin-bottom: 3px;
+}
+.week-label-cur {
+  font-family: 'Bebas Neue', sans-serif; font-size: 13px; letter-spacing: 2px;
+  color: var(--text); line-height: 1;
+}
+.week-label-cur span { color: var(--p); text-shadow: var(--glow-sm); }
+.week-label-dates { font-family: 'Space Mono', monospace; font-size: 6px; color: var(--muted); text-align: right; }
+
+/* dot indicators */
+.week-dots {
+  display: flex; align-items: center; gap: 3px;
+  padding: 0 16px; margin-bottom: 4px;
+}
+.week-dot {
+  width: 14px; height: 3px; background: var(--border);
+  cursor: pointer; transition: all 0.2s; position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+.week-dot.active { background: var(--p); box-shadow: 0 0 6px rgba(123,47,255,0.6); }
+.week-dot.special { border-top: 1px solid var(--gold); }
+.week-dot.playoffs { border-top: 1px solid var(--p); }
+.week-dot-label {
+  position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+  font-family: 'Space Mono', monospace; font-size: 5px; color: var(--muted);
+  white-space: nowrap; opacity: 0; transition: opacity 0.15s;
+}
+.week-dot.active .week-dot-label { opacity: 1; color: var(--pl); }
+
+/* range slider — custom */
+.week-slider-wrap {
+  padding: 0 16px; margin-bottom: 8px;
+  position: relative;
+}
+.slider-drag-hint {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 5px;
+}
+.slider-hint-text {
+  font-family: 'Space Mono', monospace; font-size: 6px;
+  color: var(--muted); letter-spacing: 1px; text-transform: uppercase;
+}
+.slider-arrows { display: flex; gap: 3px; align-items: center; }
+.slider-arrow {
+  font-size: 7px; color: var(--p); opacity: 0.5;
+  animation: arrow-pulse 1.4s ease-in-out infinite;
+}
+.slider-arrow:nth-child(2) { animation-delay: 0.15s; opacity: 0.7; }
+.slider-arrow:nth-child(3) { animation-delay: 0.3s; opacity: 1; }
+@keyframes arrow-pulse { 0%,100%{opacity:0.2} 50%{opacity:1} }
+
+/* custom track */
+.slider-track-wrap {
+  position: relative; height: 6px; cursor: pointer;
+  touch-action: none; user-select: none;
+}
+.slider-track-bg {
+  position: absolute; inset: 0;
+  background: #0d0d1a;
+  border: 1px solid rgba(123,47,255,0.25);
+  box-shadow: inset 0 0 8px rgba(0,0,0,0.8);
+}
+.slider-track-fill {
+  position: absolute; top: 0; bottom: 0; left: 0; width: 0%;
+  background: linear-gradient(90deg, rgba(123,47,255,0.15), rgba(123,47,255,0.4));
+  transition: width 0.05s;
+}
+
+/* holographic thumb */
+.slider-thumb {
+  position: absolute; top: 50%; transform: translate(-50%, -50%);
+  width: 28px; height: 12px;
+  cursor: grab;
+  z-index: 10;
+}
+.slider-thumb:active { cursor: grabbing; }
+.slider-thumb-inner {
+  width: 100%; height: 100%;
+  position: relative; overflow: hidden;
+  background: linear-gradient(180deg, #2a1a4e 0%, #1a0d33 100%);
+  border: 1px solid rgba(168,85,247,0.5);
+  box-shadow: 0 0 8px rgba(123,47,255,0.5), 0 0 16px rgba(123,47,255,0.2);
+}
+.slider-thumb-inner::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(115deg, transparent 20%, rgba(168,85,247,0.12) 38%, rgba(196,132,252,0.2) 50%, rgba(123,47,255,0.1) 62%, transparent 75%);
+  background-size: 200% 100%;
+  animation: holo 3.5s ease-in-out infinite;
+}
+.slider-thumb-inner::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(50deg, transparent 35%, rgba(255,255,255,0.04) 50%, transparent 65%);
+  background-size: 300% 100%;
+  animation: holo 5s ease-in-out infinite reverse;
+}
+
+/* matches panel */
+.week-panel { border-top: 1px solid var(--border); }
+.match-row {
+  display: flex; align-items: center;
+  padding: 3px 16px; border-bottom: 1px solid var(--border);
+  gap: 10px; position: relative;
+}
+.match-row:last-child { border-bottom: none; }
+.match-row.next-up {
+  background: linear-gradient(90deg, rgba(123,47,255,0.07) 0%, transparent 100%);
+  border-left: 2px solid var(--p); padding-left: 14px;
+}
+.match-date { min-width: 38px; text-align: center; flex-shrink: 0; }
+.match-day { font-family: 'Space Mono', monospace; font-size: 6px; color: var(--muted); text-transform: uppercase; }
+.match-date-num { font-family: 'Bebas Neue', sans-serif; font-size: 18px; line-height: 1.1; }
+.match-date-mon { font-family: 'Space Mono', monospace; font-size: 6px; color: var(--muted); text-transform: uppercase; }
+.match-divider { width: 1px; height: 30px; background: var(--dim); flex-shrink: 0; }
+.match-teams { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.match-team { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 600; line-height: 1.2; }
+.match-vs { font-family: 'Space Mono', monospace; font-size: 5.5px; color: var(--p); letter-spacing: 1px; text-shadow: var(--glow-sm); }
+.match-time { font-family: 'Space Mono', monospace; font-size: 7px; color: var(--muted); text-align: right; min-width: 28px; line-height: 1.4; flex-shrink: 0; }
+.next-badge {
+  position: absolute; top: 0; right: 12px;
+  background: var(--p); font-family: 'Space Mono', monospace; font-size: 5.5px;
+  letter-spacing: 1px; color: #fff; padding: 2px 5px; text-transform: uppercase;
+  box-shadow: 0 0 8px rgba(123,47,255,0.6);
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+@keyframes badge-pulse { 0%,100%{box-shadow:0 0 8px rgba(123,47,255,0.6)} 50%{box-shadow:0 0 16px rgba(123,47,255,0.9), 0 0 30px rgba(123,47,255,0.4)} }
+.special-row {
+  display: flex; align-items: center;
+  padding: 4px 14px; border-bottom: 1px solid var(--border);
+  gap: 10px; background: rgba(245,200,66,0.04);
+  border-left: 2px solid var(--gold);
+}
+.special-row.finals { background: rgba(123,47,255,0.06); border-left-color: var(--p); }
+.special-name { font-family: 'Bebas Neue', sans-serif; font-size: 13px; color: var(--gold); letter-spacing: 1px; flex: 1; text-shadow: var(--glow-gold); }
+.special-row.finals .special-name { color: var(--pl); text-shadow: var(--glow-sm); }
+
+.match-blur-wrap { position: relative; overflow: hidden; max-width: 100%; }
+.match-blur-inner { filter: blur(3px); user-select: none; pointer-events: none; transition: filter 0.3s; }
+.match-blur-wrap.revealed .match-blur-inner { filter: none; pointer-events: auto; }
+.match-blur-overlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  cursor: pointer; z-index: 2;
+  -webkit-tap-highlight-color: transparent;
+}
+.match-blur-overlay span {
+  font-family: 'Space Mono', monospace; font-size: 6px;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--muted);
+}
+.match-blur-overlay .blur-eye { font-size: 11px; opacity: 0.35; }
+.match-blur-wrap.revealed .match-blur-overlay { display: none; }
+  display: inline-block; width: 5px; height: 5px;
+  background: var(--p); border-radius: 50%; margin-right: 6px;
+  animation: pulse-dot 1.4s ease-in-out infinite; vertical-align: middle;
+  box-shadow: 0 0 6px var(--p), 0 0 12px rgba(123,47,255,0.5);
+}
+@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.7)} }
+
+/* ═══════════════════════════════════
+   FOOTER
+═══════════════════════════════════ */
+.footer { padding: 8px 16px 16px; text-align: center; }
+.footer-text { font-family: 'Space Mono', monospace; font-size: 7px; color: var(--muted); letter-spacing: 2px; }
+.footer-text a { color: var(--pl); text-decoration: none; text-shadow: var(--glow-sm); }
+
+/* loading dots */
+.dot { display: inline-block; width: 4px; height: 4px; background: var(--p); border-radius: 50%; animation: blink 1s ease-in-out infinite; margin: 0 2px; vertical-align: middle; box-shadow: var(--glow-sm); }
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,100%{opacity:.15}50%{opacity:1}}
+</style>
+</head>
+<body>
+
+
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo-placeholder"><span>YOUR LOGO</span></div>
+  <div class="header-tag">UBAe &middot; S1 2026</div>
+</div>
+
+<!-- KS HERO -->
+<div class="cd-ks-main">
+  <div class="cd-ks-inner">
+    <div class="cd-ks-top">
+      <div class="cd-ks-titles">
+        <div class="ks-label">Kickstarter</div>
+        <div class="ks-date">MAR 17 &middot; 6PM EST</div>
+      </div>
+      <div class="cd-ks-links">
+        <a href="https://www.kickstarter.com/projects/vganetwork/ubae-competitive-vr-esports-reimagined" target="_blank" class="cd-ks-link">Back Us</a>
+        <a href="https://discord.gg/MStfPPfc" target="_blank" class="cd-ks-link disc">Discord</a>
+        <a href="https://vrchat.com/home/launch?worldId=wrld_016480e4-b8a7-4d14-a9ce-95cfc0bb79a6" target="_blank" class="cd-ks-link vrc">VR Hub</a>
+      </div>
+    </div>
+    <div class="cd-big-digits">
+      <div class="cd-unit"><span class="cd-num" id="k-d">00</span><div class="cd-unit-label">days</div></div>
+      <div class="cd-sep">:</div>
+      <div class="cd-unit"><span class="cd-num" id="k-h">00</span><div class="cd-unit-label">hrs</div></div>
+      <div class="cd-sep">:</div>
+      <div class="cd-unit"><span class="cd-num" id="k-m">00</span><div class="cd-unit-label">min</div></div>
+      <div class="cd-sep">:</div>
+      <div class="cd-unit"><span class="cd-num" id="k-s">00</span><div class="cd-unit-label">sec</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SEASON SQ + NEWS ROW -->
+<div class="lower-row">
+  <div class="cd-season-sq">
+    <div>
+      <div class="sq-label">Season 1 Begins</div>
+      <div class="sq-sublabel">MAR 19 &middot; 5PM EST</div>
+    </div>
+    <div class="sq-digits-h">
+      <div class="sq-cell"><span class="sq-num" id="s-d">00</span><div class="sq-unit">d</div></div>
+      <div class="sq-sep">:</div>
+      <div class="sq-cell"><span class="sq-num" id="s-h">00</span><div class="sq-unit">h</div></div>
+      <div class="sq-sep">:</div>
+      <div class="sq-cell"><span class="sq-num" id="s-m">00</span><div class="sq-unit">m</div></div>
+      <div class="sq-sep">:</div>
+      <div class="sq-cell"><span class="sq-num" id="s-s">00</span><div class="sq-unit">s</div></div>
+    </div>
+  </div>
+  <div class="broadcast-box" id="bc-box">
+    <div class="bc-empty">Loading<span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+  </div>
+</div>
+
+<!-- RANKINGS -->
+<div class="section-head">
+  <div class="section-title">Rankings</div>
+  <div class="section-line"></div>
+</div>
+<div class="s-tabs">
+  <div class="s-tab active" onclick="switchTab('teams')">Teams 1&ndash;8</div>
+  <div class="s-tab" onclick="switchTab('fighters')">Fighters 1&ndash;16</div>
+</div>
+<div id="s-teams" class="s-panel active">
+  <div class="s-loading">Loading<span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+</div>
+<div id="s-fighters" class="s-panel">
+  <div class="s-loading">Loading<span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+</div>
+
+<!-- SCHEDULE SLIDER -->
+<div class="section-head">
+  <div class="section-title">Schedule</div>
+  <div class="section-line"></div>
+</div>
+<div class="split-banner">
+  <div class="split-name">Split 1</div>
+  <div class="split-dates">MAR 19 &mdash; MAY 1</div>
+</div>
+
+<div class="week-label-bar">
+  <div class="week-label-cur" id="wk-label">Week <span>1</span></div>
+  <div class="week-label-dates" id="wk-dates">Mar 19&ndash;20</div>
+</div>
+
+<div class="week-dots" id="wk-dots">
+  <div class="week-dot active" onclick="goWeek(0)"><div class="week-dot-label">W1</div></div>
+  <div class="week-dot" onclick="goWeek(1)"><div class="week-dot-label">W2</div></div>
+  <div class="week-dot" onclick="goWeek(2)"><div class="week-dot-label">W3</div></div>
+  <div class="week-dot" onclick="goWeek(3)"><div class="week-dot-label">W4</div></div>
+  <div class="week-dot special" onclick="goWeek(4)"><div class="week-dot-label">W5</div></div>
+  <div class="week-dot" onclick="goWeek(5)"><div class="week-dot-label">W6</div></div>
+  <div class="week-dot" onclick="goWeek(6)"><div class="week-dot-label">W7</div></div>
+  <div class="week-dot playoffs" onclick="goWeek(7)"><div class="week-dot-label">PO</div></div>
+</div>
+
+<div class="week-slider-wrap">
+  <div class="slider-drag-hint">
+    <span class="slider-hint-text">&#x2015; drag to switch week &#x2015;</span>
+    <div class="slider-arrows"><span class="slider-arrow">&#9654;</span><span class="slider-arrow">&#9654;</span><span class="slider-arrow">&#9654;</span></div>
+  </div>
+  <div class="slider-track-wrap" id="wk-track">
+    <div class="slider-track-bg"></div>
+    <div class="slider-track-fill" id="wk-fill"></div>
+    <div class="slider-thumb" id="wk-thumb">
+      <div class="slider-thumb-inner"></div>
+    </div>
+  </div>
+</div>
+
+<div class="week-panel" id="wk-panel"></div>
+
+<div class="footer">
+  <div class="footer-text"><a href="https://ubaesports.com">ubaesports.com</a> &nbsp;&middot;&nbsp; All times EST</div>
+</div>
+
+<script>
+  const SUPABASE_URL  = 'https://xwsbyxkjfqqrgbzxmmrn.supabase.co';
+  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3c2J5eGtqZnFxcmdienhtbXJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNjAyNDcsImV4cCI6MjA4NzkzNjI0N30.6amkt0zGMLT3_N3fKY6sMMTdaBr5eS7Ig-hAPvPCB4g';
+  const FIGHTER_PAGE = window.location.origin + window.location.pathname.replace(/[^/]*$/, '') + 'fighter.html';
+
+  // COUNTDOWNS
+  function pad(n){return String(n).padStart(2,'0');}
+  function countdown(target,ids){
+    const diff=target-new Date();
+    if(diff<=0){ids.forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='00';});return;}
+    const v=[Math.floor(diff/86400000),Math.floor((diff%86400000)/3600000),Math.floor((diff%3600000)/60000),Math.floor((diff%60000)/1000)];
+    ids.forEach((id,i)=>{const el=document.getElementById(id);if(el)el.textContent=pad(v[i]);});
+  }
+  const season=new Date('2026-03-19T22:00:00Z');
+  const ks=new Date('2026-03-17T23:00:00Z');
+  function tick(){
+    countdown(season,['s-d','s-h','s-m','s-s']);
+    countdown(ks,['k-d','k-h','k-m','k-s']);
+  }
+  tick(); setInterval(tick,1000);
+
+  // SCHEDULE SLIDER
+  const WEEKS = [
+    {
+      label: 'Week 1', dates: 'Mar 19\u201320',
+      html: `
+        <div class="match-row next-up"><div class="next-badge">NEXT</div><div class="match-date"><div class="match-day">Thu</div><div class="match-date-num">19</div><div class="match-date-mon">Mar</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">Team MUDS</div><div class="match-vs">VS</div><div class="match-team">The 5 Great Kage</div></div><div class="match-time">5PM<br>EST</div></div>
+        <div class="match-row next-up"><div class="match-date"><div class="match-day">Thu</div><div class="match-date-num">19</div><div class="match-date-mon">Mar</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">Sheath Elite</div><div class="match-vs">VS</div><div class="match-team">Team Rag Tags</div></div><div class="match-time">5PM<br>EST</div></div>
+        <div class="match-row"><div class="match-date"><div class="match-day">Fri</div><div class="match-date-num">20</div><div class="match-date-mon">Mar</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">Champions United</div><div class="match-vs">VS</div><div class="match-team">Ring Reapers</div></div><div class="match-time">5PM<br>EST</div></div>
+        <div class="match-blur-wrap" onclick="this.classList.add('revealed')"><div class="match-blur-overlay"><span class="blur-eye">&#x1F576;</span><span>Click to reveal</span></div><div class="match-blur-inner"><div class="match-row"><div class="match-date"><div class="match-day">Fri</div><div class="match-date-num">20</div><div class="match-date-mon">Mar</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">UKFC UNCS</div><div class="match-vs">VS</div><div class="match-team">jUnC</div></div><div class="match-time">5PM<br>EST</div></div></div></div>`
+    },
+    {
+      label: 'Week 2', dates: 'Mar 26\u201327',
+      html: `
+        <div class="match-row"><div class="match-date"><div class="match-day">Thu</div><div class="match-date-num">26</div><div class="match-date-mon">Mar</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">UKFC UNCS</div><div class="match-vs">VS</div><div class="match-team">Team Rag Tags</div></div><div class="match-time">5PM<br>EST</div></div>
+        <div class="match-row"><div class="match-date"><div class="match-day">Thu</div><div class="match-date-num">26</div><div class="match-date-mon">Mar</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">jUnC</div><div class="match-vs">VS</div><div class="match-team">Sheath Elite</div></div><div class="match-time">5PM<br>EST</div></div>
+        <div class="match-row"><div class="match-date"><div class="match-day">Fri</div><div class="match-date-num">27</div><div class="match-date-mon">Mar</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">Champions United</div><div class="match-vs">VS</div><div class="match-team">Team MUDS</div></div><div class="match-time">5PM<br>EST</div></div>
+        <div class="match-blur-wrap" onclick="this.classList.add('revealed')"><div class="match-blur-overlay"><span class="blur-eye">&#x1F576;</span><span>Click to reveal</span></div><div class="match-blur-inner"><div class="match-row"><div class="match-date"><div class="match-day">Fri</div><div class="match-date-num">27</div><div class="match-date-mon">Mar</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">Ring Reapers</div><div class="match-vs">VS</div><div class="match-team">The 5 Great Kage</div></div><div class="match-time">5PM<br>EST</div></div></div></div>`
+    },
+    {
+      label: 'Week 3', dates: 'Apr 2\u20133',
+      html: `
+        <div class="match-row"><div class="match-date"><div class="match-day">Thu</div><div class="match-date-num">2</div><div class="match-date-mon">Apr</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">UKFC UNCS</div><div class="match-vs">VS</div><div class="match-team">Champions United</div></div><div class="match-time">5PM<br>EST</div></div>
+        <div class="match-row"><div class="match-date"><div class="match-day">Thu</div><div class="match-date-num">2</div><div class="match-date-mon">Apr</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">jUnC</div><div class="match-vs">VS</div><div class="match-team">Team MUDS</div></div><div class="match-time">5PM<br>EST</div></div>
+        <div class="match-row"><div class="match-date"><div class="match-day">Fri</div><div class="match-date-num">3</div><div class="match-date-mon">Apr</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">Team Rag Tags</div><div class="match-vs">VS</div><div class="match-team">Ring Reapers</div></div><div class="match-time">5PM<br>EST</div></div>
+        <div class="match-blur-wrap" onclick="this.classList.add('revealed')"><div class="match-blur-overlay"><span class="blur-eye">&#x1F576;</span><span>Click to reveal</span></div><div class="match-blur-inner"><div class="match-row"><div class="match-date"><div class="match-day">Fri</div><div class="match-date-num">3</div><div class="match-date-mon">Apr</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">Sheath Elite</div><div class="match-vs">VS</div><div class="match-team">The 5 Great Kage</div></div><div class="match-time">5PM<br>EST</div></div></div></div>`
+    },
+    {
+      label: 'Week 4', dates: 'Apr 9\u201310',
+      html: `
+        <div class="match-row"><div class="match-date"><div class="match-day">Thu</div><div class="match-date-num">9</div><div class="match-date-mon">Apr</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">Champions United</div><div class="match-vs">VS</div><div class="match-team">Sheath Elite</div></div><div class="match-time">5PM<br>EST</div></div>
+        <div class="match-row"><div class="match-date"><div class="match-day">Thu</div><div class="match-date-num">9</div><div class="match-date-mon">Apr</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">Team MUDS</div><div class="match-vs">VS</div><div class="match-team">Team Rag Tags</div></div><div class="match-time">5PM<br>EST</div></div>
+        <div class="match-row"><div class="match-date"><div class="match-day">Fri</div><div class="match-date-num">10</div><div class="match-date-mon">Apr</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">The 5 Great Kage</div><div class="match-vs">VS</div><div class="match-team">jUnC</div></div><div class="match-time">5PM<br>EST</div></div>
+        <div class="match-blur-wrap" onclick="this.classList.add('revealed')"><div class="match-blur-overlay"><span class="blur-eye">&#x1F576;</span><span>Click to reveal</span></div><div class="match-blur-inner"><div class="match-row"><div class="match-date"><div class="match-day">Fri</div><div class="match-date-num">10</div><div class="match-date-mon">Apr</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">Ring Reapers</div><div class="match-vs">VS</div><div class="match-team">UKFC UNCS</div></div><div class="match-time">5PM<br>EST</div></div></div></div>`
+    },
+    {
+      label: 'Week 5 \u00b7 Media Day', dates: 'Apr 15\u201317',
+      html: `
+        <div class="special-row"><div class="match-date"><div class="match-day">Wed</div><div class="match-date-num">15</div><div class="match-date-mon">Apr</div></div><div class="match-divider"></div><div class="special-name">Mid-Split Media Day</div></div>
+        <div class="match-row"><div class="match-date"><div class="match-day">Thu</div><div class="match-date-num">16</div><div class="match-date-mon">Apr</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">UKFC UNCS</div><div class="match-vs">VS</div><div class="match-team">Sheath Elite</div></div><div class="match-time">5PM<br>EST</div></div>
+        <div class="match-row"><div class="match-date"><div class="match-day">Thu</div><div class="match-date-num">16</div><div class="match-date-mon">Apr</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">jUnC</div><div class="match-vs">VS</div><div class="match-team">Team Rag Tags</div></div><div class="match-time">5PM<br>EST</div></div>
+        <div class="match-row"><div class="match-date"><div class="match-day">Fri</div><div class="match-date-num">17</div><div class="match-date-mon">Apr</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">Champions United</div><div class="match-vs">VS</div><div class="match-team">The 5 Great Kage</div></div><div class="match-time">5PM<br>EST</div></div>
+        <div class="match-blur-wrap" onclick="this.classList.add('revealed')"><div class="match-blur-overlay"><span class="blur-eye">&#x1F576;</span><span>Click to reveal</span></div><div class="match-blur-inner"><div class="match-row"><div class="match-date"><div class="match-day">Fri</div><div class="match-date-num">17</div><div class="match-date-mon">Apr</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">Ring Reapers</div><div class="match-vs">VS</div><div class="match-team">Team MUDS</div></div><div class="match-time">5PM<br>EST</div></div></div></div>`
+    },
+    {
+      label: 'Week 6', dates: 'Apr 23\u201324',
+      html: `
+        <div class="match-row"><div class="match-date"><div class="match-day">Thu</div><div class="match-date-num">23</div><div class="match-date-mon">Apr</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">UKFC UNCS</div><div class="match-vs">VS</div><div class="match-team">Team MUDS</div></div><div class="match-time">5PM<br>EST</div></div>
+        <div class="match-row"><div class="match-date"><div class="match-day">Thu</div><div class="match-date-num">23</div><div class="match-date-mon">Apr</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">jUnC</div><div class="match-vs">VS</div><div class="match-team">Champions United</div></div><div class="match-time">5PM<br>EST</div></div>
+        <div class="match-row"><div class="match-date"><div class="match-day">Fri</div><div class="match-date-num">24</div><div class="match-date-mon">Apr</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">Team Rag Tags</div><div class="match-vs">VS</div><div class="match-team">The 5 Great Kage</div></div><div class="match-time">5PM<br>EST</div></div>
+        <div class="match-blur-wrap" onclick="this.classList.add('revealed')"><div class="match-blur-overlay"><span class="blur-eye">&#x1F576;</span><span>Click to reveal</span></div><div class="match-blur-inner"><div class="match-row"><div class="match-date"><div class="match-day">Fri</div><div class="match-date-num">24</div><div class="match-date-mon">Apr</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">Sheath Elite</div><div class="match-vs">VS</div><div class="match-team">Ring Reapers</div></div><div class="match-time">5PM<br>EST</div></div></div></div>`
+    },
+    {
+      label: 'Week 7', dates: 'Apr 30 \u2013 May 1',
+      html: `
+        <div class="match-row"><div class="match-date"><div class="match-day">Thu</div><div class="match-date-num">30</div><div class="match-date-mon">Apr</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">UKFC UNCS</div><div class="match-vs">VS</div><div class="match-team">The 5 Great Kage</div></div><div class="match-time">5PM<br>EST</div></div>
+        <div class="match-row"><div class="match-date"><div class="match-day">Thu</div><div class="match-date-num">30</div><div class="match-date-mon">Apr</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">jUnC</div><div class="match-vs">VS</div><div class="match-team">Ring Reapers</div></div><div class="match-time">5PM<br>EST</div></div>
+        <div class="match-row"><div class="match-date"><div class="match-day">Fri</div><div class="match-date-num">1</div><div class="match-date-mon">May</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">Team Rag Tags</div><div class="match-vs">VS</div><div class="match-team">Champions United</div></div><div class="match-time">5PM<br>EST</div></div>
+        <div class="match-blur-wrap" onclick="this.classList.add('revealed')"><div class="match-blur-overlay"><span class="blur-eye">&#x1F576;</span><span>Click to reveal</span></div><div class="match-blur-inner"><div class="match-row"><div class="match-date"><div class="match-day">Fri</div><div class="match-date-num">1</div><div class="match-date-mon">May</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">Sheath Elite</div><div class="match-vs">VS</div><div class="match-team">Team MUDS</div></div><div class="match-time">5PM<br>EST</div></div></div></div>`
+    },
+    {
+      label: 'Playoffs', dates: 'May 7\u201315',
+      html: `
+        <div class="special-row"><div class="match-date"><div class="match-day">Thu</div><div class="match-date-num">7</div><div class="match-date-mon">May</div></div><div class="match-divider"></div><div class="special-name">Playoff Media Days</div></div>
+        <div class="special-row"><div class="match-date"><div class="match-day">Fri</div><div class="match-date-num">8</div><div class="match-date-mon">May</div></div><div class="match-divider"></div><div class="special-name">Playoff Media Days</div></div>
+        <div class="match-row"><div class="match-date"><div class="match-day">Thu</div><div class="match-date-num">14</div><div class="match-date-mon">May</div></div><div class="match-divider"></div><div class="match-teams"><div class="match-team">SF &mdash; Seed 1 vs Seed 4</div><div class="match-vs">+</div><div class="match-team">SF &mdash; Seed 2 vs Seed 3</div></div><div class="match-time">TBD</div></div>
+        <div class="special-row finals"><div class="match-date"><div class="match-day">Fri</div><div class="match-date-num">15</div><div class="match-date-mon">May</div></div><div class="match-divider"></div><div class="special-name">Grand Final</div></div>`
+    }
+  ];
+
+  function goWeek(i) {
+    const panel  = document.getElementById('wk-panel');
+    const label  = document.getElementById('wk-label');
+    const dates  = document.getElementById('wk-dates');
+    const dots   = document.querySelectorAll('.week-dot');
+    const thumb  = document.getElementById('wk-thumb');
+    const fill   = document.getElementById('wk-fill');
+    const w = WEEKS[i];
+    const pct = (i / 7 * 100);
+    if (thumb) thumb.style.left = pct + '%';
+    if (fill)  fill.style.width  = pct + '%';
+    label.innerHTML = i === 7
+      ? 'Playoffs'
+      : 'Week <span>' + (i+1) + '</span>';
+    dates.textContent = w.dates;
+    dots.forEach((d,idx) => d.classList.toggle('active', idx === i));
+    panel.innerHTML = w.html;
+  }
+
+  // CUSTOM SLIDER
+  let currentWeek = 0;
+  let dragging = false;
+
+  function setSliderPct(pct) {
+    pct = Math.max(0, Math.min(1, pct));
+    const step = Math.round(pct * 7);
+    document.getElementById('wk-thumb').style.left = (pct * 100) + '%';
+    document.getElementById('wk-fill').style.width  = (pct * 100) + '%';
+    if (step !== currentWeek) { currentWeek = step; goWeek(step); }
+  }
+
+  function pctFromEvent(e, track) {
+    const rect = track.getBoundingClientRect();
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    return x / rect.width;
+  }
+
+  const track = document.getElementById('wk-track');
+  track.addEventListener('mousedown',  e => { dragging = true; setSliderPct(pctFromEvent(e, track)); });
+  track.addEventListener('touchstart', e => { dragging = true; setSliderPct(pctFromEvent(e, track)); }, {passive:true});
+  document.addEventListener('mousemove',  e => { if (dragging) setSliderPct(pctFromEvent(e, track)); });
+  document.addEventListener('touchmove',  e => { if (dragging) setSliderPct(pctFromEvent(e, track)); }, {passive:true});
+  document.addEventListener('mouseup',  () => dragging = false);
+  document.addEventListener('touchend', () => dragging = false);
+
+  goWeek(0);
+
+  // RANKING TABS
+  function switchTab(tab){
+    document.querySelectorAll('.s-tab').forEach((t,i)=>t.classList.toggle('active',i===(tab==='teams'?0:1)));
+    document.getElementById('s-teams').classList.toggle('active',tab==='teams');
+    document.getElementById('s-fighters').classList.toggle('active',tab==='fighters');
+  }
+
+  function toSlug(name){ return encodeURIComponent(name.toLowerCase().replace(/\s+/g,'-')); }
+  function makeRows(items,nameKey,wKey,lKey,cut,linkable){
+    if(!items.length) return `<div class="s-loading" style="color:#3a3a55">No data yet</div>`;
+    return items.map((r,i)=>{
+      const hi=i<cut?'hi':'';
+      const cutClass=i===cut?'cut':'';
+      const nameHtml = linkable
+        ? `<a href="${FIGHTER_PAGE}?name=${toSlug(r[nameKey])}" style="color:inherit;text-decoration:none;-webkit-tap-highlight-color:transparent;">${r[nameKey]}</a>`
+        : r[nameKey];
+      return `<div class="s-row ${cutClass}">
+        <div class="s-num ${hi}">${i+1}</div>
+        <div class="s-name">${nameHtml}</div>
+        <div class="s-wl"><span>${r[wKey]??0}</span>-${r[lKey]??0}</div>
+      </div>`;
+    }).join('');
+  }
+
+  const H={headers:{'apikey':SUPABASE_ANON,'Authorization':`Bearer ${SUPABASE_ANON}`}};
+
+  async function loadTeams(){
+    const el=document.getElementById('s-teams');
+    try{
+      const r=await fetch(`${SUPABASE_URL}/rest/v1/ubae_teams?select=team_name,wins,losses&order=wins.desc,losses.asc&limit=8`,H);
+      if(!r.ok)throw new Error();
+      el.innerHTML=makeRows(await r.json(),'team_name','wins','losses',4);
+    }catch(e){el.innerHTML=`<div class="s-loading" style="color:#3a3a55">Could not load</div>`;}
+  }
+
+  async function loadFighters(){
+    const el=document.getElementById('s-fighters');
+    try{
+      const r=await fetch(`${SUPABASE_URL}/rest/v1/fighters?select=display_name,wins,losses&order=wins.desc,losses.asc&limit=16`,H);
+      if(!r.ok){ const err=await r.text(); throw new Error(r.status+': '+err); }
+      const data=await r.json();
+      if(!data.length){ el.innerHTML=`<div class="s-loading" style="color:#3a3a55">No fighters found</div>`; return; }
+      el.innerHTML=makeRows(data,'display_name','wins','losses',8,true);
+    }catch(e){
+      el.innerHTML=`<div class="s-loading" style="color:#3a3a55;font-size:6px;padding:6px">${e.message||'Load failed'}</div>`;
+    }
+  }
+
+  // NEWS — Wix Blog public API
+  async function loadBroadcast() {
+    const el = document.getElementById('bc-box');
+    try {
+      const r = await fetch(
+        SUPABASE_URL + '/rest/v1/ubae_matches?select=id,match_date,winner_id,team1_id,team2_id&order=match_date.asc',
+        { headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON } }
+      );
+      const matches = await r.json();
+
+      const rt = await fetch(
+        SUPABASE_URL + '/rest/v1/ubae_teams?select=id,team_name',
+        { headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON } }
+      );
+      const teams = await rt.json();
+      const teamMap = {};
+      teams.forEach(t => teamMap[t.id] = t.team_name);
+
+      const now = Date.now();
+      const liveWindow = 3 * 60 * 60 * 1000;
+
+      // Find live matches
+      const live = matches.filter(m =>
+        !m.winner_id && m.match_date &&
+        (now - new Date(m.match_date)) > 0 &&
+        (now - new Date(m.match_date)) < liveWindow
+      );
+
+      // Find the next upcoming unplayed match to determine current week
+      const nextMatch = matches.find(m => !m.winner_id && m.match_date && new Date(m.match_date) > now);
+      // Find most recent completed match
+      const lastPlayed = [...matches].reverse().find(m => m.winner_id);
+
+      // Show only today's matches (same calendar day)
+      function sameDay(a,b){return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();}
+      const today = new Date();
+
+      let displayMatches = [];
+      if (live.length) {
+        displayMatches = live;
+      } else {
+        const todayMatches = matches.filter(m => m.match_date && sameDay(new Date(m.match_date), today));
+        if (todayMatches.length) {
+          displayMatches = todayMatches;
+        } else if (nextMatch) {
+          const nextDate = new Date(nextMatch.match_date);
+          displayMatches = matches.filter(m => m.match_date && sameDay(new Date(m.match_date), nextDate));
+        } else if (lastPlayed) {
+          const lastDate = new Date(lastPlayed.match_date);
+          displayMatches = matches.filter(m => m.match_date && m.winner_id && sameDay(new Date(m.match_date), lastDate));
+        }
+      }
+
+      const isLive = live.length > 0;
+
+      const header = `<div class="bc-header">
+        <span>// Broadcast</span>
+        <span class="bc-status-badge ${isLive ? 'is-live' : ''}">
+          <span class="bc-status-dot"></span>${isLive ? 'LIVE' : 'NOT LIVE'}
+        </span>
+      </div>`;
+
+      const rows = displayMatches.map((m, i) => {
+        const t1 = teamMap[m.team1_id] || '???';
+        const t2 = teamMap[m.team2_id] || '???';
+        const w  = m.winner_id;
+        const t1win = w === m.team1_id;
+        const t2win = w === m.team2_id;
+        const d = new Date(m.match_date);
+        const label = d.toLocaleString('en',{month:'short'}).toUpperCase() + ' ' + d.getDate();
+        const isMatchLive = live.some(l => l.id === m.id);
+
+        const isDim = i > 0;
+        return `<div class="bc-match${isMatchLive ? ' is-live' : ''}">
+          <div class="bc-teams-row">
+            <span class="bc-team ${isDim ? 'dim' : t1win ? 'winner' : w ? 'loser' : ''}">${t1}</span>
+            <span class="bc-vs">VS</span>
+            <span class="bc-team t2 ${isDim ? 'dim' : t2win ? 'winner' : w ? 'loser' : ''}">${t2}</span>
+          </div>
+          <div class="bc-meta">${isMatchLive ? '● in progress' : w ? label + ' &middot; result' : label + ' &middot; upcoming'}</div>
+        </div>`;
+      }).join('');
+
+      el.innerHTML = header + (rows || `<div class="bc-empty">Season starts Mar 19</div>`);
+    } catch(e) {
+      el.innerHTML = `<div class="bc-header">// Broadcast</div><div class="bc-empty">No data</div>`;
+    }
+  }
+
+  loadTeams(); loadFighters(); loadBroadcast();
+</script>
+</body>
+</html>
