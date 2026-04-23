@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,700;0,900;1,700;1,900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#040010;font-family:'Barlow Condensed',sans-serif;}
+
+.fight-banner {
+  position: relative;
+  width: 100%;
+  height: 60px;
+  display: flex;
+  align-items: stretch;
+  background: #0d0530;
+  border-top: 2px solid rgba(168,85,247,0.7);
+  border-left: 3px solid rgba(168,85,247,0.7);
+  overflow: hidden;
+}
+.fight-banner::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; width: 40%; height: 1px;
+  background: linear-gradient(90deg, rgba(216,180,254,0.45), transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+.fight-banner.dual-banner {
+  border-left-color: rgba(200,160,30,0.75);
+  border-top-color: rgba(200,160,30,0.6);
+}
+
+.b-label {
+  flex-shrink: 0;
+  width: 162px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0 14px;
+  gap: 4px;
+  border-right: 1px solid rgba(168,85,247,0.18);
+  z-index: 2;
+}
+.b-tag {
+  font-size: 14px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(230,180,40,0.9);
+  white-space: nowrap;
+  line-height: 1;
+}
+.b-tag.dim { color: rgba(230,180,40,0.35); }
+.b-multi-label {
+  font-size: 14px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(200,160,30,0.55);
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.b-scroll-viewport {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  height: 100%;
+}
+.b-slides {
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+.b-slide {
+  height: 60px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 20px;
+  gap: 3px;
+}
+.b-matchup-names {
+  font-size: 26px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
+  white-space: nowrap;
+  overflow: visible;
+  line-height: 1;
+  display: block;
+}
+.b-matchup-names .vs {
+  color: rgba(168,85,247,0.45);
+  font-size: 20px;
+  margin: 0 8px;
+}
+.b-matchup-type {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  color: rgba(168,85,247,0.38);
+  text-transform: uppercase;
+}
+.b-empty-text {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  color: rgba(255,255,255,0.18);
+  text-transform: uppercase;
+}
+
+.b-indicator {
+  position: absolute;
+  bottom: 7px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 3;
+}
+.b-ind-track {
+  width: 28px; height: 3px;
+  background: rgba(168,85,247,0.15);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.b-ind-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: rgba(168,85,247,0.7);
+  transition: width 0.4s ease;
+}
+.b-ind-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  color: rgba(168,85,247,0.5);
+}
+
+.b-timer {
+  flex-shrink: 0;
+  width: 168px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid rgba(168,85,247,0.18);
+  z-index: 2;
+}
+.b-timer-event {
+  flex: 0 0 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  background: rgba(168,85,247,0.1);
+  border-bottom: 1px solid rgba(168,85,247,0.15);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(216,180,254,0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.b-timer-countdown {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 0 6px;
+}
+.t-seg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 28px;
+  flex-shrink: 0;
+}
+.t-val {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+  color: #e8f0ff;
+  line-height: 1;
+  width: 28px;
+  text-align: center;
+  display: block;
+  letter-spacing: 0.02em;
+}
+.t-lbl {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 5.5px;
+  letter-spacing: 0.15em;
+  color: rgba(168,85,247,0.4);
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+.t-sep {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 14px;
+  color: rgba(168,85,247,0.3);
+  padding-bottom: 8px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.t-pending {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: rgba(255,255,255,0.2);
+  text-transform: uppercase;
+}
+</style>
+</head>
+<body>
+
+<div id="banner-root"></div>
+
+<script>
+var SB  = 'https://xwsbyxkjfqqrgbzxmmrn.supabase.co';
+var KEY = 'sb_publishable_pF_S3ukVg49qcFiw6pQekg_Zcmz_bH8';
+var H   = { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY };
+var pad = function(n){ return String(Math.floor(n)).padStart(2,'0'); };
+
+// ── get fighter slug ──
+// Priority: 1) URL param ?fighter=slug  2) postMessage from parent Wix page  3) hardcoded fallback
+var FIGHTER_SLUG = null; // ← set slug here for local testing e.g. 'tynado'
+
+function getSlug(){
+  var p = new URLSearchParams(window.location.search);
+  return p.get('fighter') || FIGHTER_SLUG || null;
+}
+
+// Listen for slug from parent Wix page via postMessage
+window.addEventListener('message', function(e){
+  if(e.data && e.data.fighterSlug){
+    FIGHTER_SLUG = e.data.fighterSlug;
+    load();
+  }
+});
+
+// ── timer ──
+function startTimer(target, dEl, hEl, mEl){
+  function tick(){
+    var diff = target - Date.now();
+    if(diff <= 0){ dEl.textContent='00'; hEl.textContent='00'; mEl.textContent='00'; return; }
+    var totalMin = diff / 60000;
+    dEl.textContent = pad(Math.floor(totalMin / 1440));
+    hEl.textContent = pad(Math.floor((totalMin % 1440) / 60));
+    mEl.textContent = pad(Math.floor(totalMin % 60));
+  }
+  tick();
+  setInterval(tick, 30000);
+}
+
+// ── fit text ──
+function fitText(el, maxPx, minPx){
+  el.style.fontSize = maxPx + 'px';
+  var avail = el.parentElement.clientWidth - 40;
+  var size = maxPx;
+  while(el.scrollWidth > avail && size > minPx){
+    size -= 0.5;
+    el.style.fontSize = size + 'px';
+  }
+  var vs = el.querySelector('.vs');
+  if(vs) vs.style.fontSize = (size * 0.77) + 'px';
+}
+
+// ── timer block HTML ──
+function timerHTML(id, eventLabel){
+  return '<div class="b-timer">'
+    + '<div class="b-timer-event" id="ev-' + id + '">' + eventLabel + '</div>'
+    + '<div class="b-timer-countdown">'
+    + '<div class="t-seg"><div class="t-val" id="d-' + id + '">--</div><div class="t-lbl">days</div></div>'
+    + '<div class="t-sep">:</div>'
+    + '<div class="t-seg"><div class="t-val" id="h-' + id + '">--</div><div class="t-lbl">hrs</div></div>'
+    + '<div class="t-sep">:</div>'
+    + '<div class="t-seg"><div class="t-val" id="m-' + id + '">--</div><div class="t-lbl">min</div></div>'
+    + '</div></div>';
+}
+
+// ── render ──
+function renderEmpty(){
+  document.getElementById('banner-root').innerHTML =
+    '<div class="fight-banner">'
+    + '<div class="b-label"><div class="b-tag dim">Upcoming Fight</div></div>'
+    + '<div class="b-scroll-viewport"><div class="b-slides"><div class="b-slide">'
+    + '<div class="b-empty-text">No upcoming fight scheduled</div>'
+    + '</div></div></div>'
+    + '<div class="b-timer">'
+    + '<div class="b-timer-event" style="color:rgba(216,180,254,0.18);">—</div>'
+    + '<div class="b-timer-countdown"><div class="t-pending">—</div></div>'
+    + '</div></div>';
+}
+
+function renderSingle(fight){
+  var id = 'a';
+  document.getElementById('banner-root').innerHTML =
+    '<div class="fight-banner">'
+    + '<div class="b-label"><div class="b-tag">Upcoming Fight</div></div>'
+    + '<div class="b-scroll-viewport"><div class="b-slides"><div class="b-slide">'
+    + '<div class="b-matchup-names" id="mn-' + id + '">'
+    + fight.left + ' <span class="vs">vs</span> ' + fight.right
+    + '</div>'
+    + '<div class="b-matchup-type">' + fight.type + '</div>'
+    + '</div></div></div>'
+    + timerHTML(id, fight.eventLabel)
+    + '</div>';
+  setTimeout(function(){ fitText(document.getElementById('mn-' + id), 26, 13); }, 50);
+  startTimer(new Date(fight.date), document.getElementById('d-'+id), document.getElementById('h-'+id), document.getElementById('m-'+id));
+}
+
+function renderDual(fights){
+  var slidesHTML = fights.map(function(f, i){
+    return '<div class="b-slide">'
+      + '<div class="b-matchup-names" id="mn-' + i + '">'
+      + f.left + ' <span class="vs">vs</span> ' + f.right
+      + '</div>'
+      + '<div class="b-matchup-type">' + f.type + '</div>'
+      + '</div>';
+  }).join('');
+
+  document.getElementById('banner-root').innerHTML =
+    '<div class="fight-banner dual-banner">'
+    + '<div class="b-label">'
+    + '<div class="b-tag">Upcoming Fights</div>'
+    + '<div class="b-multi-label">2 Fights</div>'
+    + '</div>'
+    + '<div class="b-scroll-viewport" style="position:relative;">'
+    + '<div class="b-slides" id="dual-slides">' + slidesHTML + '</div>'
+    + '<div class="b-indicator" id="dual-ind">'
+    + '<div class="b-ind-track"><div class="b-ind-fill" id="ind-fill" style="width:50%"></div></div>'
+    + '<div class="b-ind-label" id="ind-label">1 / 2</div>'
+    + '</div></div>'
+    + timerHTML('dual', fights[0].eventLabel)
+    + '</div>';
+
+  setTimeout(function(){
+    fights.forEach(function(f, i){ fitText(document.getElementById('mn-' + i), 26, 13); });
+  }, 50);
+
+  var cur = 0;
+  var slidesEl = document.getElementById('dual-slides');
+  var evEl     = document.getElementById('ev-dual');
+  var indFill  = document.getElementById('ind-fill');
+  var indLabel = document.getElementById('ind-label');
+  var dEl = document.getElementById('d-dual');
+  var hEl = document.getElementById('h-dual');
+  var mEl = document.getElementById('m-dual');
+
+  function updateTimer(idx){
+    var diff = new Date(fights[idx].date) - Date.now();
+    if(diff <= 0){ dEl.textContent='00'; hEl.textContent='00'; mEl.textContent='00'; return; }
+    var totalMin = diff / 60000;
+    dEl.textContent = pad(Math.floor(totalMin / 1440));
+    hEl.textContent = pad(Math.floor((totalMin % 1440) / 60));
+    mEl.textContent = pad(Math.floor(totalMin % 60));
+  }
+
+  function goSlide(idx){
+    slidesEl.style.transform = 'translateY(-' + (idx * 60) + 'px)';
+    evEl.textContent = fights[idx].eventLabel;
+    indFill.style.width = (((idx + 1) / fights.length) * 100) + '%';
+    indLabel.textContent = (idx + 1) + ' / ' + fights.length;
+    updateTimer(idx);
+    cur = idx;
+  }
+
+  goSlide(0);
+  setInterval(function(){ goSlide((cur + 1) % fights.length); }, 4000);
+  setInterval(function(){ updateTimer(cur); }, 30000);
+}
+
+// ── main query ──
+async function load(){
+  var slug = getSlug();
+  if(!slug){ renderEmpty(); return; }
+
+  console.log('[Banner] slug:', slug);
+  try {
+    // 1. get fighter
+    var fr = await fetch(SB + '/rest/v1/fighters?slug=eq.' + encodeURIComponent(slug) + '&select=id,display_name,player_id', { headers: H });
+    var fighters = await fr.json();
+    if(!Array.isArray(fighters) || !fighters.length){ renderEmpty(); return; }
+    var fighter = fighters[0];
+
+    var results = [];
+    var nowISO = new Date().toISOString(); // e.g. 2026-04-22T10:00:00.000Z
+
+    // 2. UBAe — roster lookup by fighter.id
+    var rr = await fetch(SB + '/rest/v1/ubae_roster?player_id=eq.' + fighter.id + '&select=team_id', { headers: H });
+    var roster = await rr.json();
+
+    if(Array.isArray(roster) && roster.length){
+      var teamId = roster[0].team_id;
+
+      // get team name
+      var tr = await fetch(SB + '/rest/v1/ubae_teams?id=eq.' + teamId + '&select=team_name', { headers: H });
+      var teams = await tr.json();
+      var teamName = (Array.isArray(teams) && teams.length) ? teams[0].team_name : 'My Team';
+
+      // fetch matches as team1 and team2 separately
+      var u1 = SB + '/rest/v1/ubae_matches?team1_id=eq.' + teamId + '&winner_id=is.null&match_date=gte.' + nowISO + '&order=match_date.asc&limit=1&select=match_date,week,team1_id,team2_id';
+      var u2 = SB + '/rest/v1/ubae_matches?team2_id=eq.' + teamId + '&winner_id=is.null&match_date=gte.' + nowISO + '&order=match_date.asc&limit=1&select=match_date,week,team1_id,team2_id';
+        var [mr1, mr2] = await Promise.all([
+        fetch(u1, { headers: H }),
+        fetch(u2, { headers: H })
+      ]);
+      var [r1, r2] = await Promise.all([mr1.json(), mr2.json()]);
+      var allMatches = [...(Array.isArray(r1)?r1:[]), ...(Array.isArray(r2)?r2:[])];
+        allMatches.sort(function(a,b){ return new Date(a.match_date) - new Date(b.match_date); });
+
+      if(allMatches.length){
+        var m = allMatches[0];
+        var oppId = m.team1_id === teamId ? m.team2_id : m.team1_id;
+        var ot = await fetch(SB + '/rest/v1/ubae_teams?id=eq.' + oppId + '&select=team_name', { headers: H });
+        var oppTeams = await ot.json();
+        var oppName = (Array.isArray(oppTeams) && oppTeams.length) ? oppTeams[0].team_name : 'Opponent';
+        var matchDate = new Date(m.match_date.replace(' ','T') + (m.match_date.includes('+') ? '' : 'Z'));
+        results.push({
+          left: teamName,
+          right: oppName,
+          type: 'UBAe · Week ' + m.week,
+          eventLabel: 'UBAe Wk' + m.week,
+          date: matchDate.toISOString()
+        });
+      }
+    }
+
+    // 3. UBA card matchups — fetch as fighter1 and fighter2 separately
+    var [cr1, cr2] = await Promise.all([
+      fetch(SB + '/rest/v1/uba_card_matchups?fighter1_id=eq.' + fighter.id + '&winner_id=is.null&select=fighter1_id,fighter2_id,weight_class,event_id', { headers: H }),
+      fetch(SB + '/rest/v1/uba_card_matchups?fighter2_id=eq.' + fighter.id + '&winner_id=is.null&select=fighter1_id,fighter2_id,weight_class,event_id', { headers: H })
+    ]);
+    var [cb1, cb2] = await Promise.all([cr1.json(), cr2.json()]);
+    var cardBouts = [...(Array.isArray(cb1)?cb1:[]), ...(Array.isArray(cb2)?cb2:[])];
+
+    if(cardBouts.length){
+      var bout = cardBouts[0];
+      var er = await fetch(SB + '/rest/v1/uba_events?id=eq.' + bout.event_id + '&status=eq.scheduled&select=event_name,event_date', { headers: H });
+      var events = await er.json();
+      if(Array.isArray(events) && events.length){
+        var ev = events[0];
+        var oppFId = bout.fighter1_id === fighter.id ? bout.fighter2_id : bout.fighter1_id;
+        var of2 = await fetch(SB + '/rest/v1/fighters?id=eq.' + oppFId + '&select=display_name', { headers: H });
+        var oppFs = await of2.json();
+        var oppFName = (Array.isArray(oppFs) && oppFs.length) ? oppFs[0].display_name : 'Opponent';
+        var evDate = new Date(ev.event_date);
+        results.push({
+          left: fighter.display_name,
+          right: oppFName,
+          type: bout.weight_class + ' · ' + ev.event_name,
+          eventLabel: ev.event_name,
+          date: evDate.toISOString()
+        });
+      }
+    }
+
+    // 4. render correct state
+    if(results.length === 0) renderEmpty();
+    else if(results.length === 1) renderSingle(results[0]);
+    else renderDual(results);
+
+  } catch(err) {
+    console.error('Banner load error:', err);
+    renderEmpty();
+  }
+}
+
+load();
+</script>
