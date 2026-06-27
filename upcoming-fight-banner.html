@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,700;0,900;1,700;1,900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: transparent; font-family: 'Barlow Condensed', sans-serif; }
+
+.fight-banner {
+  position: relative;
+  width: 100%;
+  height: 60px;
+  display: flex;
+  align-items: stretch;
+  background: #0d0530;
+  border-top: 2px solid rgba(168,85,247,0.7);
+  border-left: 3px solid rgba(168,85,247,0.7);
+  overflow: hidden;
+}
+.b-label {
+  flex-shrink: 0;
+  width: 162px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 14px;
+  border-right: 1px solid rgba(168,85,247,0.18);
+  z-index: 2;
+}
+.b-tag {
+  font-size: 14px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(230,180,40,0.9);
+  white-space: nowrap;
+  line-height: 1;
+}
+.b-tag.dim { color: rgba(230,180,40,0.35); }
+.b-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 20px;
+  gap: 3px;
+}
+.b-matchup {
+  font-size: 26px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
+  white-space: nowrap;
+  line-height: 1;
+}
+.b-matchup .vs {
+  color: rgba(168,85,247,0.45);
+  font-size: 20px;
+  margin: 0 8px;
+}
+.b-event {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  color: rgba(168,85,247,0.38);
+  text-transform: uppercase;
+}
+.b-empty {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  color: rgba(255,255,255,0.18);
+  text-transform: uppercase;
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const SB  = 'https://emzlivoykbhhjcugupit.supabase.co';
+const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtemxpdm95a2JoaGpjdWd1cGl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTk5MzAsImV4cCI6MjA5Nzk5NTkzMH0.o3EWnaEHr2PN8kLuzZrf6hAtOmTFKHEH6IzViXqv1L4';
+const H   = { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY };
+
+async function sb(table, params) {
+  const r = await fetch(`${SB}/rest/v1/${table}?${params}`, { headers: H });
+  return r.json();
+}
+
+function empty() {
+  document.getElementById('root').innerHTML =
+    '<div class="fight-banner">' +
+    '<div class="b-label"><div class="b-tag dim">Upcoming Fight</div></div>' +
+    '<div class="b-content"><div class="b-empty">No upcoming fight scheduled</div></div>' +
+    '</div>';
+}
+
+async function load() {
+  const slug = new URLSearchParams(window.location.search).get('fighter');
+  if (!slug) { empty(); return; }
+
+  try {
+    const fighters = await sb('fighters', `slug=eq.${encodeURIComponent(slug)}&select=id,stage_name`);
+    if (!fighters.length) { empty(); return; }
+    const f = fighters[0];
+
+    const matches = await sb('matches',
+      `or=(fighter_a.eq.${f.id},fighter_b.eq.${f.id})&status=eq.scheduled&order=created_at.asc&limit=1&select=fighter_a,fighter_b,events(name,event_date)`
+    );
+
+    if (!matches.length) { empty(); return; }
+
+    const m = matches[0];
+    const oppId = m.fighter_a === f.id ? m.fighter_b : m.fighter_a;
+    const opps = await sb('fighters', `id=eq.${oppId}&select=stage_name`);
+    const oppName = opps.length ? opps[0].stage_name : 'TBD';
+    const evName = m.events?.name || '';
+
+    document.getElementById('root').innerHTML =
+      '<div class="fight-banner">' +
+      '<div class="b-label"><div class="b-tag">Upcoming Fight</div></div>' +
+      '<div class="b-content">' +
+      '<div class="b-matchup">' + f.stage_name + ' <span class="vs">vs</span> ' + oppName + '</div>' +
+      '<div class="b-event">' + evName + '</div>' +
+      '</div></div>';
+
+  } catch(e) {
+    empty();
+  }
+}
+
+load();
+</script>
+</body>
+</html>
