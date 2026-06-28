@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>UBA — Division Rankings</title>
+<style>
+  :root {
+    --void: #07050f;
+    --neon-violet: #8b5cf6;
+    --neon-cyan: #3ee8d8;
+    --gold: #e8c468;
+    --text-hi: #f3f1fa;
+    --text-lo: #9d93b8;
+    --font-display: 'Oswald', 'Arial Narrow', sans-serif;
+    --font-body: 'Inter', 'Helvetica Neue', sans-serif;
+    --font-mono: 'JetBrains Mono', 'Consolas', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 1920px;
+    height: 1080px;
+    background: transparent;
+    overflow: hidden;
+    font-family: var(--font-body);
+  }
+
+  .stage {
+    position: relative;
+    width: 1920px;
+    height: 1080px;
+    background: transparent;
+  }
+
+  /* ---------- 4 columns, hidden until we have data ---------- */
+  .rankings-grid {
+    position: absolute;
+    top: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 1400px;
+    bottom: 50px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    /* Start invisible — JS fades the whole grid in after data loads,
+       so the columns never appear blank/half-drawn on screen */
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+  .rankings-grid.ready { opacity: 1; }
+
+  .division-col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .division-header {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--text-hi);
+    text-transform: uppercase;
+    text-align: center;
+    padding-bottom: 10px;
+    border-bottom: 2px solid rgba(139,92,246,0.35);
+    margin-bottom: 4px;
+    text-shadow: 0 0 14px rgba(139,92,246,0.3);
+    opacity: 0;
+    animation: fadeIn 0.4s ease forwards;
+  }
+
+  .rank-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 42px;
+    padding: 0 12px;
+    background: linear-gradient(90deg, rgba(22,16,43,0.85), rgba(22,16,43,0.58));
+    border: 1px solid rgba(139,92,246,0.22);
+    border-radius: 5px;
+    opacity: 0;
+    transform: translateY(-16px);
+    animation: dropIn 0.45s cubic-bezier(.16,.6,.25,1) forwards;
+    min-width: 0;
+  }
+  .rank-row::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--neon-violet);
+    border-radius: 5px 0 0 5px;
+  }
+  .rank-row.champion {
+    border-color: rgba(232,196,104,0.5);
+    box-shadow: 0 0 16px rgba(232,196,104,0.10);
+    height: 48px;
+  }
+  .rank-row.champion::before { background: var(--gold); }
+
+  .rank-num {
+    width: 26px;
+    height: 26px;
+    border-radius: 4px;
+    background: rgba(58,58,64,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-hi);
+    flex-shrink: 0;
+  }
+  .champion .rank-num { background: rgba(232,196,104,0.2); color: var(--gold); }
+
+  .fighter-block { min-width: 0; flex: 1; }
+  .fighter-name {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    color: var(--text-hi);
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .champion .fighter-name { font-size: 15px; }
+  .fighter-record {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-lo);
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+
+  .status-tag {
+    font-family: var(--font-mono);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .champion-tag {
+    font-family: var(--font-mono);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--gold);
+    text-transform: uppercase;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .empty-col {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: rgba(157,147,184,0.35);
+    letter-spacing: 2px;
+    padding: 14px 0;
+    text-align: center;
+    opacity: 0;
+    animation: fadeIn 0.4s ease forwards 0.5s;
+  }
+
+  @keyframes dropIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    to { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="rankings-grid" id="rankingsGrid"></div>
+  </div>
+
+<script>
+  const SB  = 'https://emzlivoykbhhjcugupit.supabase.co';
+  const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtemxpdm95a2JoaGpjdWd1cGl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTk5MzAsImV4cCI6MjA5Nzk5NTkzMH0.o3EWnaEHr2PN8kLuzZrf6hAtOmTFKHEH6IzViXqv1L4';
+  const H   = { apikey: KEY, Authorization: 'Bearer ' + KEY };
+
+  // The 4 divisions, in display order left-to-right
+  const DIVISIONS = [
+    { key: 'lightweight',       label: 'LIGHTWEIGHT' },
+    { key: 'middleweight',      label: 'MIDDLEWEIGHT' },
+    { key: 'light_heavyweight', label: 'LIGHT HEAVYWEIGHT' },
+    { key: 'heavyweight',       label: 'HEAVYWEIGHT' },
+  ];
+
+  function titleCase(s) {
+    return s ? s.replace(/\w\S*/g, t => t.charAt(0).toUpperCase() + t.substr(1).toLowerCase()) : '';
+  }
+  function fmt(r) { return r ? `${r.wins}-${r.losses}-${r.draws}` : '—'; }
+
+  function fighterRow(rank, name, record, isChamp, delay) {
+    return `
+      <div class="rank-row${isChamp ? ' champion' : ''}" style="animation-delay:${delay}s">
+        <div class="rank-num">${isChamp ? 'C' : rank}</div>
+        <div class="fighter-block">
+          <div class="fighter-name">${titleCase(name)}</div>
+          <div class="fighter-record">${record}</div>
+        </div>
+        ${isChamp ? '<div class="champion-tag">CHAMP</div>' : ''}
+      </div>`;
+  }
+
+  function divisionColumn(div, ranksByWC, recBySlug, colDelay) {
+    const rows = ranksByWC[div.key] || [];
+
+    // Champion = rank 1 scope weight_class; numbered list = ranks 2+
+    // (rank 1 in scope weight_class IS the champion, so we show rank 1
+    // as "C" and 2–N as numbered 1–N-1 visually, which matches the
+    // original design where the belt holder sits above the #1 contender)
+    const champ  = rows.find(r => r.rank === 1);
+    const ranked = rows.filter(r => r.rank > 1).sort((a, b) => a.rank - b.rank);
+
+    let html = `<div class="division-header" style="animation-delay:${colDelay}s">${div.label}</div>`;
+
+    if (!champ && !ranked.length) {
+      html += `<div class="empty-col">No rankings set yet</div>`;
+    } else {
+      let rowIdx = 0;
+      if (champ) {
+        html += fighterRow('C', champ.fighter_name, fmt(recBySlug[champ.fighter_slug]), true, colDelay + 0.08 + rowIdx * 0.045);
+        rowIdx++;
+      }
+      ranked.forEach(r => {
+        html += fighterRow(r.rank - 1, r.fighter_name, fmt(recBySlug[r.fighter_slug]), false, colDelay + 0.08 + rowIdx * 0.045);
+        rowIdx++;
+      });
+    }
+
+    return `<div class="division-col">${html}</div>`;
+  }
+
+  async function boot() {
+    const [ranks, cards] = await Promise.all([
+      fetch(`${SB}/rest/v1/rankings_public?level=eq.pro&scope=eq.weight_class&select=weight_class,rank,fighter_name,fighter_slug&order=weight_class.asc,rank.asc`, { headers: H }).then(r => r.json()),
+      fetch(`${SB}/rest/v1/fighter_cards?select=slug,wins,losses,draws`, { headers: H }).then(r => r.json())
+    ]);
+
+    const recBySlug = {};
+    (Array.isArray(cards) ? cards : []).forEach(c => { recBySlug[c.slug] = c; });
+
+    // Group rankings by weight class
+    const ranksByWC = {};
+    (Array.isArray(ranks) ? ranks : []).forEach(r => {
+      if (!ranksByWC[r.weight_class]) ranksByWC[r.weight_class] = [];
+      ranksByWC[r.weight_class].push(r);
+    });
+
+    const grid = document.getElementById('rankingsGrid');
+
+    // Build all 4 columns; stagger each column slightly so they don't all
+    // animate in at the same instant — feels smoother on stream
+    grid.innerHTML = DIVISIONS.map((div, i) =>
+      divisionColumn(div, ranksByWC, recBySlug, i * 0.07)
+    ).join('');
+
+    // Reveal the whole grid only after it's fully built — this is what
+    // prevents the "blank columns flash" on load. The grid was opacity:0
+    // from CSS; adding .ready triggers the short fade-in transition.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        grid.classList.add('ready');
+      });
+    });
+  }
+
+  boot();
+</script>
+</body>
+</html>
