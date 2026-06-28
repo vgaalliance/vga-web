@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UBA Rankings</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Share+Tech+Mono&family=VT323&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { scrollbar-width: none; }
+  html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+  body { background: transparent; color: #fff; font-family: 'Barlow Condensed', sans-serif; }
+
+  .wrap { width: 100%; max-width: 720px; }
+
+  .tabs { display: flex; border-bottom: 1px solid #2e2e40; margin-bottom: 18px; }
+  .tab { padding: 10px 20px; font-size: 15px; font-weight: 700; letter-spacing: 0.06em; color: #6a6a7a;
+         cursor: pointer; border: none; background: none; text-transform: uppercase; position: relative; transition: color 0.15s; }
+  .tab:hover { color: #bbb; }
+  .tab.active { color: #fff; }
+  .tab.active::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px;
+         background: linear-gradient(90deg, #7c3aed, #a78bfa, #7c3aed); }
+
+  .section-title { font-family: 'Share Tech Mono', monospace; font-size: 11px; letter-spacing: 0.2em;
+         color: #9090b8; text-transform: uppercase; margin: 18px 0 8px; padding-left: 2px; }
+  .section-title:first-child { margin-top: 0; }
+
+  .rank-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+  .rank-row { display: flex; align-items: center; gap: 14px; background: #16162a; border: 1px solid #2a2a42;
+         border-left: 2px solid #3a3a5a; padding: 10px 16px; text-decoration: none; transition: background 0.15s, border-color 0.15s; }
+  .rank-row:hover { background: #1e1e36; border-left-color: #7c3aed; }
+  .rank-row.champ { border-left-color: #fdb927; background: #1c1605; }
+  .rank-row.champ:hover { background: #241c08; }
+
+  .rank-num { font-family: 'VT323', monospace; font-size: 22px; color: #5a5a7a; width: 34px; flex-shrink: 0; text-align: center; }
+  .rank-row.champ .rank-num { color: #fdb927; }
+
+  .rank-name { flex: 1; font-size: 18px; font-weight: 800; color: #d8d2f0; letter-spacing: 0.01em;
+         white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rank-row:hover .rank-name { color: #fff; }
+  .rank-row.champ .rank-name { color: #f0d870; }
+
+  .rank-wc { font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 0.08em; color: #6a6a8a;
+         text-transform: uppercase; flex-shrink: 0; }
+  .rank-rec { font-family: 'Share Tech Mono', monospace; font-size: 13px; color: #8a8aa8; flex-shrink: 0; width: 70px; text-align: right; }
+  .rank-rec b { color: #c8c8e0; font-weight: 400; }
+
+  .empty { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: #555; padding: 16px 0; letter-spacing: 0.06em; }
+  .status-msg { color: #444; font-family: 'Share Tech Mono', monospace; font-size: 12px; padding: 48px 0; text-align: center; letter-spacing: 0.06em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab active" data-tab="p4p">Pound-for-Pound</button>
+    <button class="tab" data-tab="division">By Division</button>
+    <button class="tab" data-tab="amateur">Amateur</button>
+  </div>
+  <div id="content"><div class="status-msg">Loading…</div></div>
+</div>
+
+<script>
+const SB  = 'https://emzlivoykbhhjcugupit.supabase.co';
+const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtemxpdm95a2JoaGpjdWd1cGl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTk5MzAsImV4cCI6MjA5Nzk5NTkzMH0.o3EWnaEHr2PN8kLuzZrf6hAtOmTFKHEH6IzViXqv1L4';
+const H   = { apikey: KEY, Authorization: 'Bearer ' + KEY };
+const FIGHTER_URL = 'https://www.ubaesports.com/fighter?f=';
+const WC = { lightweight:'Lightweight', middleweight:'Middleweight', light_heavyweight:'Light-Heavyweight', heavyweight:'Heavyweight' };
+const WC_ORDER = ['heavyweight','light_heavyweight','middleweight','lightweight'];
+function wcLabel(w) { return WC[w] || (w ? w.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase()) : ''); }
+function titleCase(s){ return s ? s.replace(/\w\S*/g, t => t.charAt(0).toUpperCase()+t.substr(1).toLowerCase()) : ''; }
+
+let ranks = [], recBySlug = {}, activeTab = 'p4p';
+
+async function sb(table, params) {
+  const r = await fetch(`${SB}/rest/v1/${table}?${params}`, { headers: H });
+  return r.json();
+}
+
+function rowHTML(r) {
+  const rec = recBySlug[r.fighter_slug];
+  const recHTML = rec
+    ? `<div class="rank-rec"><b>${rec.wins}</b>-<b>${rec.losses}</b>${rec.draws ? '-' + rec.draws : ''}</div>`
+    : `<div class="rank-rec">—</div>`;
+  const wc = r.weight_class ? `<div class="rank-wc">${wcLabel(r.weight_class)}</div>` : '';
+  const champ = r.rank === 1 ? ' champ' : '';
+  return `<a class="rank-row${champ}" href="${FIGHTER_URL}${r.fighter_slug}" target="_parent">
+    <div class="rank-num">${r.rank}</div>
+    <div class="rank-name">${titleCase(r.fighter_name)}</div>
+    ${wc}
+    ${recHTML}
+  </a>`;
+}
+
+function listHTML(rows) {
+  if (!rows.length) return '<div class="empty">No rankings set yet.</div>';
+  return `<div class="rank-list">${rows.sort((a,b)=>a.rank-b.rank).map(rowHTML).join('')}</div>`;
+}
+
+function render() {
+  const el = document.getElementById('content');
+
+  if (activeTab === 'p4p') {
+    const rows = ranks.filter(r => r.level === 'pro' && r.scope === 'overall');
+    el.innerHTML = `<div class="section-title">Pro · Pound-for-Pound</div>${listHTML(rows)}`;
+
+  } else if (activeTab === 'amateur') {
+    const rows = ranks.filter(r => r.level === 'amateur' && r.scope === 'overall');
+    el.innerHTML = `<div class="section-title">Amateur · Top 16</div>${listHTML(rows)}`;
+
+  } else { // division
+    const divRows = ranks.filter(r => r.level === 'pro' && r.scope === 'weight_class');
+    const classes = [...new Set(divRows.map(r => r.weight_class))]
+      .sort((a, b) => WC_ORDER.indexOf(a) - WC_ORDER.indexOf(b));
+    if (!classes.length) { el.innerHTML = '<div class="empty">No division rankings set yet.</div>'; return; }
+    el.innerHTML = classes.map(wc =>
+      `<div class="section-title">${wcLabel(wc)}</div>${listHTML(divRows.filter(r => r.weight_class === wc))}`
+    ).join('');
+  }
+}
+
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  t.classList.add('active'); activeTab = t.dataset.tab; render();
+}));
+
+(async () => {
+  try {
+    const [rk, cards] = await Promise.all([
+      sb('rankings_public', 'select=scope,weight_class,rank,fighter_name,fighter_slug,level'),
+      sb('fighter_cards', 'select=slug,wins,losses,draws')
+    ]);
+    ranks = Array.isArray(rk) ? rk : [];
+    (Array.isArray(cards) ? cards : []).forEach(c => { recBySlug[c.slug] = c; });
+    render();
+  } catch (e) {
+    document.getElementById('content').innerHTML = '<div class="status-msg">Failed to load.</div>';
+    console.error(e);
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #040010; width: 144px; height: 344px; overflow: hidden; }
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Share+Tech+Mono&display=swap');
+  .vga-widget {
+    background: #040010;
+    width: 144px;
+    height: 344px;
+    overflow: hidden;
+    font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+  }
+  .vga-section-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 7px;
+    letter-spacing: 0.08em;
+    color: #7b5fff;
+    text-transform: uppercase;
+    padding: 5px 8px 3px;
+    opacity: 0.8;
+    flex-shrink: 0;
+  }
+  .placeholder-box {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px;
+    min-height: 90px;
+  }
+  .ph-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: #6a5aa8;
+    text-transform: uppercase;
+  }
+  .ph-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 7px;
+    letter-spacing: 0.08em;
+    color: #4a3a7a;
+    text-transform: uppercase;
+  }
+  .section-header {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 7px;
+    color: #c8a020;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 5px 8px 3px;
+    opacity: 0.75;
+    border-top: 1px solid rgba(180, 140, 30, 0.2);
+    flex-shrink: 0;
+  }
+  .champ-row {
+    display: flex;
+    align-items: center;
+    padding: 3px 8px;
+    gap: 4px;
+    background: rgba(180, 140, 30, 0.1);
+    border-bottom: 1px solid rgba(180, 140, 30, 0.15);
+    flex-shrink: 0;
+  }
+  .champ-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 8px;
+    color: #c8a020;
+    min-width: 30px;
+  }
+  .champ-name {
+    font-size: 11px;
+    font-weight: 700;
+    color: #f0d060;
+    text-transform: uppercase;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .champ-empty {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 8px;
+    color: #5a4a3a;
+    padding: 6px 8px;
+    letter-spacing: 0.06em;
+  }
+  .rankings-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 5px 8px 6px;
+    padding: 4px 8px;
+    background: rgba(120, 80, 255, 0.15);
+    border: 1px solid rgba(120, 80, 255, 0.35);
+    border-radius: 3px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: #c5b0ff;
+    text-transform: uppercase;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+  .arrow { font-size: 13px; color: #7b5fff; }
+  .loading { font-family: 'Share Tech Mono', monospace; font-size: 8px; color: #7b5fff; padding: 8px; opacity: 0.6; }
+</style>
+</head>
+<body>
+<div class="vga-widget">
+  <div class="vga-section-label">UBAe S1 Standings</div>
+  <div class="placeholder-box">
+    <div class="ph-title">Season Not Started</div>
+    <div class="ph-sub">Teams · Coming Soon</div>
+  </div>
+  <div class="section-header">UBA Champions</div>
+  <div id="champs-list"><div class="loading">loading...</div></div>
+  <a class="rankings-btn" href="https://www.ubaesports.com/rankings" target="_blank"><span>Rankings</span><span class="arrow">›</span></a>
+</div>
+
+<script>
+const SB  = 'https://emzlivoykbhhjcugupit.supabase.co';
+const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtemxpdm95a2JoaGpjdWd1cGl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTk5MzAsImV4cCI6MjA5Nzk5NTkzMH0.o3EWnaEHr2PN8kLuzZrf6hAtOmTFKHEH6IzViXqv1L4';
+const H   = { apikey: KEY, Authorization: 'Bearer ' + KEY };
+
+// weight class → short label, in display order
+const DIVISIONS = [
+  { wc: 'heavyweight',       label: 'HWC' },
+  { wc: 'light_heavyweight', label: 'LHW' },
+  { wc: 'middleweight',      label: 'MWC' },
+  { wc: 'lightweight',       label: 'LWC' },
+];
+function titleCase(s){ return s ? s.replace(/\w\S*/g, t => t.charAt(0).toUpperCase()+t.substr(1).toLowerCase()) : ''; }
+
+async function load() {
+  try {
+    // champions = the #1 ranked pro in each list (P4P + each division)
+    const r = await fetch(`${SB}/rest/v1/rankings_public?rank=eq.1&level=eq.pro&select=scope,weight_class,fighter_name`, { headers: H });
+    const champs = await r.json();
+    const cl = document.getElementById('champs-list');
+    const arr = Array.isArray(champs) ? champs : [];
+
+    const rows = [];
+    // P4P first
+    const p4p = arr.find(c => c.scope === 'overall');
+    if (p4p) rows.push({ label: 'P4P', name: p4p.fighter_name });
+    // then divisions in order
+    DIVISIONS.forEach(d => {
+      const champ = arr.find(c => c.scope === 'weight_class' && c.weight_class === d.wc);
+      if (champ) rows.push({ label: d.label, name: champ.fighter_name });
+    });
+
+    if (!rows.length) {
+      cl.innerHTML = '<div class="champ-empty">No champions yet</div>';
+      return;
+    }
+    cl.innerHTML = rows.map(r =>
+      `<div class="champ-row"><span class="champ-label">${r.label}:</span><span class="champ-name">${titleCase(r.name)}</span></div>`
+    ).join('');
+  } catch (e) {
+    document.getElementById('champs-list').innerHTML = '<div class="loading">error</div>';
+  }
+}
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UBA Events</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Share+Tech+Mono&family=VT323&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { scrollbar-width: none; }
+  html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+  body { background: transparent; color: #fff; font-family: 'Barlow Condensed', sans-serif; padding: 0; }
+
+  .wrap { width: 100%; max-width: 860px; }
+
+  /* tabs */
+  .tabs { display: flex; border-bottom: 1px solid #2e2e40; margin-bottom: 20px; }
+  .tab { padding: 10px 22px; font-size: 15px; font-weight: 700; letter-spacing: 0.06em; color: #6a6a7a;
+         cursor: pointer; border: none; background: none; text-transform: uppercase; position: relative; transition: color 0.15s; }
+  .tab:hover { color: #bbb; }
+  .tab.active { color: #fff; }
+  .tab.active::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px;
+         background: linear-gradient(90deg, #7c3aed, #a78bfa, #7c3aed); }
+
+  .list { display: flex; flex-direction: column; gap: 14px; }
+  .day-group { border-left: 2px solid #3a3a5a; padding-left: 12px; }
+  .day-header { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; color: #9090b8; text-transform: uppercase;
+         padding: 0 0 8px; font-family: 'Share Tech Mono', monospace; }
+  .day-group .row-wrapper + .row-wrapper { margin-top: 4px; }
+
+  /* event row */
+  .row-wrapper { position: relative; }
+  .row-toggle { display: none; }
+  .row-label { display: block; cursor: pointer; user-select: none; }
+  .event-row { display: flex; align-items: center; background: #141428; border: 1px solid #2a2a42;
+         border-left: 2px solid #6644aa; padding: 14px 16px; gap: 12px; min-height: 62px; transition: background 0.15s; }
+  .row-label:hover .event-row { background: #1c1c34; }
+
+  .event-badges { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; align-items: flex-start; width: 64px; }
+  .league-badge { font-family: 'VT323', monospace; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase;
+         padding: 0 5px 1px; white-space: nowrap; border: 1px solid currentColor;
+         clip-path: polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 4px 100%, 0 calc(100% - 4px)); }
+  .league-badge.uba { color: #fdb927; background: rgba(253,185,39,0.08); }
+  .event-badge { font-family: 'VT323', monospace; font-size: 13px; letter-spacing: 0.05em; text-transform: uppercase;
+         padding: 0 6px 1px; white-space: nowrap;
+         clip-path: polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 4px 100%, 0 calc(100% - 4px)); }
+  .event-badge.fight_night { color: #fdb927; background: rgba(253,185,39,0.1); }
+  .event-badge.numbered { color: #a78bfa; background: rgba(167,139,250,0.1); }
+  .event-badge.ama { color: #38bdf8; background: rgba(56,189,248,0.1); }
+
+  .event-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .event-title { font-size: 17px; font-weight: 700; color: #e6e6f0; letter-spacing: 0.02em;
+         white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .event-sub { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: #6a6a8a; letter-spacing: 0.06em; }
+
+  .event-meta { flex-shrink: 0; display: flex; align-items: center; }
+  .meta-pill { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.06em;
+         text-transform: uppercase; padding: 6px 14px; border: 1px solid #2a2a3a; background: rgba(255,255,255,0.02); }
+  .meta-pill.done { color: #22c55e; border-color: rgba(34,197,94,0.25); background: rgba(34,197,94,0.05); }
+  .meta-pill.soon { color: #9b72f5; border-color: rgba(124,58,237,0.25); background: rgba(124,58,237,0.05); }
+
+  .row-chevron { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: #444; flex-shrink: 0;
+         transition: transform 0.2s, color 0.15s; width: 14px; text-align: center; }
+  .row-toggle:checked ~ .row-label .row-chevron { transform: rotate(90deg); color: #888; }
+
+  /* expanded card */
+  .row-dropdown { display: none; background: linear-gradient(180deg, rgba(80,40,160,0.12), rgba(20,16,40,0.95) 40%);
+         border: 1px solid #3a2a6a; border-top: none; border-left: 3px solid #7c3aed; padding: 6px 16px 12px; }
+  .row-toggle:checked ~ .row-dropdown { display: block; }
+  .card-head { font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 0.18em; color: #8b6fd4;
+         text-transform: uppercase; padding: 8px 0 6px; }
+  .bout { display: grid; grid-template-columns: 26px 1fr 70px 1fr; align-items: center; gap: 0;
+         padding: 7px 0; border-bottom: 1px solid #1c1c2a; }
+  .bout:last-child { border-bottom: none; }
+  .bout-num { font-family: 'VT323', monospace; font-size: 13px; color: #3a3a4a; }
+  .bout-f { font-size: 15px; font-weight: 700; letter-spacing: 0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bout-f.a { text-align: right; padding-right: 10px; }
+  .bout-f.b { text-align: left; padding-left: 10px; }
+  .bout-f.win { color: #fff; }
+  .bout-f.lose { color: #5a5a70; }
+  .bout-f.pending { color: #c8c8d8; }
+  .bout-mid { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .bout-vs { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; color: #6060a0; text-transform: uppercase; }
+  .bout-method { font-family: 'VT323', monospace; font-size: 11px; color: #22c55e; letter-spacing: 0.04em; white-space: nowrap; }
+  .bout-title { font-family: 'VT323', monospace; font-size: 10px; color: #fdb927; letter-spacing: 0.05em; white-space: nowrap; }
+  .bout-wc { font-family: 'Share Tech Mono', monospace; font-size: 8px; color: #555; letter-spacing: 0.05em; text-transform: uppercase; }
+  .no-card { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: #555; padding: 10px 0; letter-spacing: 0.05em; }
+
+  .status-msg { color: #444; font-family: 'Share Tech Mono', monospace; font-size: 12px; padding: 48px 0; text-align: center; letter-spacing: 0.06em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab active" data-tab="upcoming">Upcoming</button>
+    <button class="tab" data-tab="past">Past</button>
+  </div>
+  <div class="list" id="list"><div class="status-msg">Loading…</div></div>
+</div>
+
+<script>
+const SB  = 'https://emzlivoykbhhjcugupit.supabase.co';
+const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtemxpdm95a2JoaGpjdWd1cGl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTk5MzAsImV4cCI6MjA5Nzk5NTkzMH0.o3EWnaEHr2PN8kLuzZrf6hAtOmTFKHEH6IzViXqv1L4';
+const H   = { apikey: KEY, Authorization: 'Bearer ' + KEY };
+const DAYS = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const TYPE_LABEL = { fight_night:'Fight Night', numbered:'Numbered', ama:'AMA' };
+
+let events = [], cardsByEvent = {}, activeTab = 'upcoming';
+
+async function sb(table, params) {
+  const r = await fetch(`${SB}/rest/v1/${table}?${params}`, { headers: H });
+  return r.json();
+}
+
+function fmtDay(d) { return `${DAYS[d.getUTCDay()]}, ${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`; }
+function fmtTime(d) {
+  let h = d.getUTCHours(), m = d.getUTCMinutes();
+  const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+  return `${h}:${String(m).padStart(2,'0')} ${ap}`;
+}
+
+function boutHTML(b, i) {
+  const done = b.status === 'completed';
+  const aWin = b.winner_corner === 'a', bWin = b.winner_corner === 'b';
+  const draw = done && !b.winner_corner;
+  const ca = done ? (aWin ? 'win' : (draw ? 'pending' : 'lose')) : 'pending';
+  const cb = done ? (bWin ? 'win' : (draw ? 'pending' : 'lose')) : 'pending';
+  const num = b.bout_number || (i + 1);
+  const mid = done
+    ? `<span class="bout-method">${draw ? 'DRAW' : (b.method || 'WIN')}</span>`
+    : `<span class="bout-vs">vs</span>`;
+  const title = b.is_title_fight ? `<span class="bout-title">★ ${b.title_name || 'TITLE'}</span>` : '';
+  const wc = b.weight_class ? `<span class="bout-wc">${(b.weight_class||'').replace(/_/g,' ')}</span>` : '';
+  return `<div class="bout">
+    <span class="bout-num">M${num}</span>
+    <span class="bout-f a ${ca}">${b.fighter_a_name}</span>
+    <div class="bout-mid">${mid}${title}${wc}</div>
+    <span class="bout-f b ${cb}">${b.fighter_b_name}</span>
+  </div>`;
+}
+
+function eventHTML(e) {
+  const d = new Date(e.event_date);
+  const done = e.status === 'completed';
+  const uid = 'e-' + e.id.slice(0, 8);
+  const type = e.type || 'general';
+  const card = (cardsByEvent[e.id] || []).slice().sort((a,b)=>(a.bout_number||99)-(b.bout_number||99));
+  const cardHTML = card.length
+    ? `<div class="card-head">${done ? 'Results' : 'Fight Card'}</div>` + card.map(boutHTML).join('')
+    : `<div class="no-card">No matches listed for this event.</div>`;
+  const meta = done
+    ? `<span class="meta-pill done">Done</span>`
+    : `<span class="meta-pill soon">${fmtTime(d)}</span>`;
+  return `<div class="row-wrapper">
+    <input type="checkbox" class="row-toggle" id="${uid}">
+    <label class="row-label" for="${uid}">
+      <div class="event-row">
+        <div class="event-badges">
+          <span class="league-badge uba">UBA</span>
+          <span class="event-badge ${type}">${TYPE_LABEL[type] || 'Event'}</span>
+        </div>
+        <div class="event-info">
+          <div class="event-title">${e.name}</div>
+          <div class="event-sub">${fmtDay(d)} · ${fmtTime(d)}</div>
+        </div>
+        <div class="event-meta">${meta}</div>
+        <span class="row-chevron">▶</span>
+      </div>
+    </label>
+    <div class="row-dropdown">${cardHTML}</div>
+  </div>`;
+}
+
+function render() {
+  const list = document.getElementById('list');
+  const now = Date.now();
+  let rows = events.filter(e =>
+    activeTab === 'upcoming' ? e.status !== 'completed' : e.status === 'completed'
+  );
+  rows.sort((a, b) => activeTab === 'upcoming'
+    ? new Date(a.event_date) - new Date(b.event_date)
+    : new Date(b.event_date) - new Date(a.event_date));
+
+  if (!rows.length) {
+    list.innerHTML = `<div class="status-msg">No ${activeTab} events.</div>`;
+    return;
+  }
+
+  // group by day
+  const byDay = {};
+  rows.forEach(e => { const k = e.event_date.slice(0, 10); (byDay[k] = byDay[k] || []).push(e); });
+  const dayKeys = Object.keys(byDay).sort((a, b) => activeTab === 'upcoming' ? a.localeCompare(b) : b.localeCompare(a));
+
+  list.innerHTML = dayKeys.map(k => {
+    const d = new Date(k + 'T00:00:00Z');
+    return `<div class="day-group"><div class="day-header">${fmtDay(d)}</div>${byDay[k].map(eventHTML).join('')}</div>`;
+  }).join('');
+}
+
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  t.classList.add('active'); activeTab = t.dataset.tab; render();
+}));
+
+(async () => {
+  try {
+    const [ev, cards] = await Promise.all([
+      sb('events_public', 'select=id,name,type,status,event_date&order=event_date.desc'),
+      sb('event_matches', 'select=event_id,bout_number,fighter_a_name,fighter_b_name,status,method,winner_corner,is_title_fight,title_name,weight_class')
+    ]);
+    events = Array.isArray(ev) ? ev : [];
+    (Array.isArray(cards) ? cards : []).forEach(c => { (cardsByEvent[c.event_id] = cardsByEvent[c.event_id] || []).push(c); });
+    render();
+  } catch (e) {
+    document.getElementById('list').innerHTML = '<div class="status-msg">Failed to load.</div>';
+    console.error(e);
+  }
+})();
+</script>
+</body>
+</html>
