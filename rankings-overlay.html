@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>UBA — Rankings Overlay</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --void: #07050f;
+    --neon-violet: #8b5cf6;
+    --gold: #e8c468;
+    --text-hi: #f3f1fa;
+    --text-lo: #9d93b8;
+    --font-display: 'Oswald', 'Arial Narrow', sans-serif;
+    --font-mono: 'JetBrains Mono', 'Consolas', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 1920px;
+    height: 1080px;
+    background: transparent;
+    overflow: hidden;
+  }
+
+  .stage {
+    position: relative;
+    width: 1920px;
+    height: 1080px;
+    background: transparent;
+  }
+
+  /* ---------- MAIN PANEL — left-aligned ---------- */
+  .panel {
+    position: absolute;
+    top: 60px;
+    left: 60px;
+    width: 560px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* Panel header — UBA branding + section title */
+  .panel-header {
+    background: linear-gradient(90deg, rgba(139,92,246,0.9), rgba(139,92,246,0.4));
+    padding: 14px 22px;
+    border-radius: 6px 6px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    opacity: 0;
+    animation: fadeDown 0.5s ease forwards 0.1s;
+  }
+  .panel-header-left {
+    display: flex;
+    flex-direction: column;
+  }
+  .panel-org {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: rgba(243,241,250,0.7);
+    text-transform: uppercase;
+  }
+  .panel-title {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #fff;
+    text-transform: uppercase;
+    line-height: 1;
+    margin-top: 2px;
+  }
+  .panel-scope-tag {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: rgba(243,241,250,0.55);
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border: 1px solid rgba(243,241,250,0.2);
+    border-radius: 3px;
+    align-self: center;
+    cursor: pointer;
+  }
+  .panel-scope-tag:hover { border-color: rgba(243,241,250,0.5); }
+
+  /* Section labels (POUND FOR POUND, CHAMPIONS) */
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--neon-violet);
+    text-transform: uppercase;
+    padding: 10px 22px 6px;
+    background: rgba(22,16,43,0.92);
+    border-left: 1px solid rgba(139,92,246,0.3);
+    border-right: 1px solid rgba(139,92,246,0.3);
+    opacity: 0;
+    animation: fadeDown 0.4s ease forwards;
+  }
+
+  /* Rank rows */
+  .rank-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 11px 22px;
+    background: rgba(22,16,43,0.88);
+    border-left: 1px solid rgba(139,92,246,0.3);
+    border-right: 1px solid rgba(139,92,246,0.3);
+    border-bottom: 1px solid rgba(139,92,246,0.12);
+    opacity: 0;
+    transform: translateX(-30px);
+    animation: slideRight 0.5s cubic-bezier(.16,.6,.25,1) forwards;
+  }
+  .rank-row.champ {
+    background: rgba(30,20,5,0.92);
+    border-left-color: rgba(232,196,104,0.45);
+    border-right-color: rgba(232,196,104,0.45);
+    border-bottom-color: rgba(232,196,104,0.15);
+  }
+  .rank-row:last-child { border-radius: 0 0 6px 6px; }
+
+  .rank-num {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 700;
+    color: rgba(139,92,246,0.6);
+    width: 32px;
+    flex-shrink: 0;
+    text-align: center;
+  }
+  .rank-row.champ .rank-num { color: var(--gold); }
+
+  .rank-belt {
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .rank-name {
+    flex: 1;
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--text-hi);
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .rank-row.champ .rank-name { color: #f0d870; }
+
+  .rank-wc {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    color: var(--text-lo);
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .rank-row.champ .rank-wc { color: rgba(232,196,104,0.65); }
+
+  .rank-record {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-lo);
+    flex-shrink: 0;
+    width: 58px;
+    text-align: right;
+  }
+
+  /* Bottom rule that closes the panel */
+  .panel-foot {
+    height: 3px;
+    background: linear-gradient(90deg, rgba(139,92,246,0.8), rgba(139,92,246,0.15));
+    border-radius: 0 0 4px 4px;
+    opacity: 0;
+    animation: fadeDown 0.4s ease forwards 0.8s;
+  }
+
+  /* Empty state */
+  .empty-row {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: rgba(157,147,184,0.4);
+    letter-spacing: 2px;
+    padding: 16px 22px;
+    background: rgba(22,16,43,0.88);
+    border-left: 1px solid rgba(139,92,246,0.3);
+    border-right: 1px solid rgba(139,92,246,0.3);
+  }
+
+  /* ---------- MODE SWITCHER PANEL (hidden until hotspot clicked) ---------- */
+  .control-hotspot {
+    position: fixed;
+    top: 8px; left: 8px;
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: rgba(139,92,246,0.12);
+    border: 1px solid rgba(139,92,246,0.25);
+    cursor: pointer;
+    z-index: 900;
+  }
+  .picker-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.78);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+  }
+  .picker-box {
+    background: #16101f;
+    border: 1px solid rgba(139,92,246,0.4);
+    border-radius: 8px;
+    width: 400px;
+    padding: 28px;
+    color: var(--text-hi);
+  }
+  .picker-box h2 { font-size: 18px; letter-spacing: 1px; margin-bottom: 4px; font-weight: 700; }
+  .picker-box p { font-size: 12px; color: var(--text-lo); margin-bottom: 18px; font-family: var(--font-mono); }
+  .mode-btn {
+    width: 100%;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    background: rgba(22,16,43,0.9);
+    border: 1px solid rgba(139,92,246,0.3);
+    border-radius: 5px;
+    color: var(--text-hi);
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .mode-btn:hover { border-color: rgba(139,92,246,0.7); background: rgba(139,92,246,0.15); }
+  .mode-btn.active { border-color: var(--neon-violet); background: rgba(139,92,246,0.2); }
+  .mode-btn span { font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px; color: var(--text-lo); display: block; margin-top: 2px; font-weight: 400; }
+  .btn-close-picker { margin-top: 8px; padding: 9px 20px; background: transparent; border: 1px solid rgba(157,147,184,0.3); color: var(--text-lo); border-radius: 5px; cursor: pointer; font-size: 13px; }
+
+  @keyframes slideRight {
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes fadeDown {
+    to { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="panel" id="panel"></div>
+</div>
+
+<!-- Corner hotspot — click via OBS Interact to switch mode -->
+<div class="control-hotspot" id="controlHotspot"></div>
+
+<div class="picker-overlay" id="pickerOverlay">
+  <div class="picker-box">
+    <h2>Rankings View</h2>
+    <p>Pick what to show on stream. Saved between scene switches.</p>
+    <button class="mode-btn" data-mode="p4p" id="btnP4P">
+      Pound for Pound
+      <span>Pro P4P top 10</span>
+    </button>
+    <button class="mode-btn" data-mode="champs" id="btnChamps">
+      Champions
+      <span>Title holder per division</span>
+    </button>
+    <button class="mode-btn" data-mode="heavyweight" id="btnHW">
+      Heavyweight
+      <span>Top ranked in division</span>
+    </button>
+    <button class="mode-btn" data-mode="light_heavyweight" id="btnLHW">
+      Light Heavyweight
+      <span>Top ranked in division</span>
+    </button>
+    <button class="mode-btn" data-mode="middleweight" id="btnMW">
+      Middleweight
+      <span>Top ranked in division</span>
+    </button>
+    <button class="mode-btn" data-mode="lightweight" id="btnLW">
+      Lightweight
+      <span>Top ranked in division</span>
+    </button>
+    <button class="btn-close-picker" id="pickerClose">Close</button>
+  </div>
+</div>
+
+<script>
+  const SB  = 'https://emzlivoykbhhjcugupit.supabase.co';
+  const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtemxpdm95a2JoaGpjdWd1cGl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTk5MzAsImV4cCI6MjA5Nzk5NTkzMH0.o3EWnaEHr2PN8kLuzZrf6hAtOmTFKHEH6IzViXqv1L4';
+  const H   = { apikey: KEY, Authorization: 'Bearer ' + KEY };
+  const MODE_KEY = 'uba_rankings_mode';
+
+  const WC_LABEL = {
+    heavyweight: 'HEAVYWEIGHT', light_heavyweight: 'LIGHT HWT',
+    middleweight: 'MIDDLEWEIGHT', lightweight: 'LIGHTWEIGHT',
+    welterweight: 'WELTERWEIGHT', featherweight: 'FEATHERWEIGHT',
+    bantamweight: 'BANTAMWEIGHT', flyweight: 'FLYWEIGHT'
+  };
+  const WC_FULL = {
+    heavyweight: 'HEAVYWEIGHT', light_heavyweight: 'LIGHT HEAVYWEIGHT',
+    middleweight: 'MIDDLEWEIGHT', lightweight: 'LIGHTWEIGHT',
+    welterweight: 'WELTERWEIGHT', featherweight: 'FEATHERWEIGHT',
+    bantamweight: 'BANTAMWEIGHT', flyweight: 'FLYWEIGHT'
+  };
+  function wc(w) { return WC_LABEL[w] || (w ? w.replace(/_/g,' ').toUpperCase() : ''); }
+  function wcFull(w) { return WC_FULL[w] || (w ? w.replace(/_/g,' ').toUpperCase() : ''); }
+  function titleCase(s) { return s ? s.replace(/\w\S*/g, t => t.charAt(0).toUpperCase() + t.substr(1).toLowerCase()) : ''; }
+  function fmt(r) { return r ? `${r.wins}-${r.losses}-${r.draws}` : ''; }
+
+  async function sb(path) {
+    const r = await fetch(`${SB}/rest/v1/${path}`, { headers: H });
+    return r.json();
+  }
+
+  let allRanks = [], recBySlug = {}, currentMode = 'p4p';
+
+  function rowHTML(r, delay) {
+    const rec = fmt(recBySlug[r.fighter_slug]);
+    const isChamp = r.rank === 1 && r.scope === 'weight_class';
+    return `<div class="rank-row${isChamp ? ' champ' : ''}" style="animation-delay:${delay}s">
+      <div class="rank-num">${r.rank}</div>
+      ${isChamp ? '<div class="rank-belt">🏆</div>' : ''}
+      <div class="rank-name">${titleCase(r.fighter_name)}</div>
+      ${r.weight_class ? `<div class="rank-wc">${wc(r.weight_class)}</div>` : ''}
+      ${rec ? `<div class="rank-record">${rec}</div>` : ''}
+    </div>`;
+  }
+
+  function render() {
+    const panel = document.getElementById('panel');
+    let rows = [], title = '', scope = '';
+
+    if (currentMode === 'p4p') {
+      rows = allRanks.filter(r => r.level === 'pro' && r.scope === 'overall').sort((a,b) => a.rank - b.rank).slice(0, 10);
+      title = 'Rankings';
+      scope = 'POUND FOR POUND · PRO';
+    } else if (currentMode === 'champs') {
+      const ORDER = ['heavyweight','light_heavyweight','middleweight','lightweight','welterweight','featherweight','bantamweight','flyweight'];
+      rows = allRanks.filter(r => r.level === 'pro' && r.scope === 'weight_class' && r.rank === 1)
+        .sort((a,b) => ORDER.indexOf(a.weight_class) - ORDER.indexOf(b.weight_class));
+      title = 'Champions';
+      scope = 'UBA · ALL DIVISIONS';
+    } else {
+      // division view
+      rows = allRanks.filter(r => r.level === 'pro' && r.scope === 'weight_class' && r.weight_class === currentMode)
+        .sort((a,b) => a.rank - b.rank).slice(0, 10);
+      title = wcFull(currentMode);
+      scope = 'PRO DIVISION RANKINGS';
+    }
+
+    const headerDelay = '0.1';
+    const labelDelay  = '0.25';
+
+    let html = `
+      <div class="panel-header" style="animation-delay:${headerDelay}s">
+        <div class="panel-header-left">
+          <div class="panel-org">UBA · Unified Boxing Association</div>
+          <div class="panel-title">${title}</div>
+        </div>
+        <div class="panel-scope-tag">${scope}</div>
+      </div>`;
+
+    if (!rows.length) {
+      html += `<div class="section-label" style="animation-delay:${labelDelay}s">NO DATA YET</div>
+               <div class="empty-row">Rankings not set yet.</div>`;
+    } else {
+      if (currentMode === 'champs') {
+        html += `<div class="section-label" style="animation-delay:${labelDelay}s">Title Holders</div>`;
+      } else if (currentMode === 'p4p') {
+        html += `<div class="section-label" style="animation-delay:${labelDelay}s">Top ${rows.length}</div>`;
+      } else {
+        html += `<div class="section-label" style="animation-delay:${labelDelay}s">Top ${rows.length}</div>`;
+      }
+      rows.forEach((r, i) => { html += rowHTML(r, 0.35 + i * 0.08); });
+    }
+
+    html += `<div class="panel-foot"></div>`;
+    panel.innerHTML = html;
+  }
+
+  // ---------- MODE SWITCHER ----------
+  function setMode(mode) {
+    currentMode = mode;
+    localStorage.setItem(MODE_KEY, mode);
+    document.querySelectorAll('.mode-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.mode === mode);
+    });
+    render();
+  }
+
+  document.getElementById('controlHotspot').addEventListener('click', () => {
+    document.getElementById('pickerOverlay').style.display = 'flex';
+    // highlight current mode
+    document.querySelectorAll('.mode-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.mode === currentMode);
+    });
+  });
+  document.getElementById('pickerClose').addEventListener('click', () => {
+    document.getElementById('pickerOverlay').style.display = 'none';
+  });
+  document.getElementById('pickerOverlay').addEventListener('click', e => {
+    if (e.target.id === 'pickerOverlay') e.target.style.display = 'none';
+  });
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      setMode(b.dataset.mode);
+      document.getElementById('pickerOverlay').style.display = 'none';
+    });
+  });
+
+  // ---------- BOOT ----------
+  async function boot() {
+    const saved = localStorage.getItem(MODE_KEY);
+    if (saved) currentMode = saved;
+
+    const [ranks, cards] = await Promise.all([
+      sb('rankings_public?select=scope,weight_class,rank,fighter_name,fighter_slug,level'),
+      sb('fighter_cards?select=slug,wins,losses,draws')
+    ]);
+
+    allRanks = Array.isArray(ranks) ? ranks : [];
+    (Array.isArray(cards) ? cards : []).forEach(c => { recBySlug[c.slug] = c; });
+    render();
+  }
+
+  boot();
+</script>
+</body>
+</html>

@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>UBA — Fight Card (Live from Supabase)</title>
+<style>
+  :root {
+    --void: #07050f;
+    --neon-violet: #8b5cf6;
+    --neon-cyan: #3ee8d8;
+    --hot: #ff3b5c;
+    --gold: #e8c468;
+    --text-hi: #f3f1fa;
+    --text-lo: #9d93b8;
+    --font-display: 'Oswald', 'Arial Narrow', sans-serif;
+    --font-body: 'Inter', 'Helvetica Neue', sans-serif;
+    --font-mono: 'JetBrains Mono', 'Consolas', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 1920px;
+    height: 1080px;
+    background: transparent;
+    overflow: hidden;
+    font-family: var(--font-body);
+  }
+
+  /* TRANSPARENT STAGE — no background fill, overlays cleanly on top
+     of VRChat footage / other layers. */
+  .stage {
+    position: relative;
+    width: 1920px;
+    height: 1080px;
+    background: transparent;
+  }
+
+  /* ---------- Single column, right-aligned, bottom-to-top order ---------- */
+  .card-column {
+    position: absolute;
+    top: 60px;
+    right: 60px;
+    bottom: 60px;
+    width: 620px;
+    display: flex;
+    flex-direction: column-reverse; /* first child = bottom of stack visually */
+    gap: 14px;
+    justify-content: flex-start;
+  }
+
+  .fight-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    height: 108px;
+    padding: 0 26px;
+    background: linear-gradient(90deg, rgba(22,16,43,0.88), rgba(22,16,43,0.62) 50%, rgba(22,16,43,0.88));
+    border: 1px solid rgba(139,92,246,0.30);
+    border-radius: 6px;
+    opacity: 0;
+    transform: translateX(60px);
+    animation: slideIn 0.6s cubic-bezier(.16,.6,.25,1) forwards;
+  }
+  .fight-row::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--neon-violet);
+    border-radius: 6px 0 0 6px;
+  }
+  .fight-row.title-fight {
+    border-color: rgba(232,196,104,0.5);
+    box-shadow: 0 0 26px rgba(232,196,104,0.10);
+    height: 124px;
+  }
+  .fight-row.title-fight::before { background: var(--gold); }
+
+  .fighter {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s ease;
+  }
+  .fighter:hover { background: rgba(139,92,246,0.10); }
+  .fighter.right { flex-direction: row-reverse; text-align: right; }
+
+  /* W marker — hidden by default, shows green when toggled on */
+  .w-marker {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 800;
+    color: transparent;
+    flex-shrink: 0;
+    transition: all 0.18s cubic-bezier(.34,1.56,.64,1);
+  }
+  .fighter.won .w-marker {
+    border-color: #39e87a;
+    background: #39e87a;
+    color: #07050f;
+    box-shadow: 0 0 14px rgba(57,232,122,0.55);
+    transform: scale(1.08);
+  }
+
+  .rank-box {
+    width: 30px;
+    height: 30px;
+    border-radius: 4px;
+    background: rgba(58,58,64,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-hi);
+    flex-shrink: 0;
+  }
+  .title-fight .rank-box { background: rgba(232,196,104,0.18); color: var(--gold); }
+
+  .fighter-info { min-width: 0; }
+  .fighter-name {
+    font-family: var(--font-display);
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--text-hi);
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .title-fight .fighter-name { font-size: 24px; }
+  .fighter-record {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-lo);
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+
+  .vs-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 0 10px;
+  }
+  .vs-text {
+    font-family: var(--font-display);
+    font-size: 16px;
+    color: var(--text-lo);
+    letter-spacing: 1px;
+  }
+  .tier-tag {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    color: var(--neon-cyan);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .title-fight .tier-tag { color: var(--gold); }
+
+  @keyframes slideIn {
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  /* ---------- EVENT TITLE (top of card) ---------- */
+  .event-title {
+    position: absolute;
+    top: 18px;
+    right: 60px;
+    width: 620px;
+    text-align: center;
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    color: var(--text-lo);
+    text-transform: uppercase;
+    opacity: 0.85;
+  }
+
+  /* ---------- CONTROL HOTSPOT + EVENT PICKER ----------
+     The hotspot is a small, faint dot in the top-left corner. It is
+     only meant to be clicked through OBS's "Interact" window — on the
+     clean program feed it's nearly invisible and never triggered. It
+     opens the event picker panel; the picker itself is hidden until
+     opened, so the broadcast output stays clean. */
+  .control-hotspot {
+    position: fixed;
+    top: 8px; left: 8px;
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: rgba(139,92,246,0.12);
+    border: 1px solid rgba(139,92,246,0.25);
+    cursor: pointer;
+    z-index: 900;
+  }
+  .picker-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.78);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-body);
+  }
+  .picker-box {
+    background: #16101f;
+    border: 1px solid rgba(139,92,246,0.4);
+    border-radius: 8px;
+    width: 460px;
+    padding: 28px;
+    color: var(--text-hi);
+  }
+  .picker-box h2 { font-size: 18px; letter-spacing: 1px; margin-bottom: 4px; }
+  .picker-box p { font-size: 12px; color: var(--text-lo); margin-bottom: 18px; }
+  .picker-box select {
+    width: 100%;
+    padding: 10px;
+    background: #221833;
+    border: 1px solid rgba(139,92,246,0.35);
+    color: var(--text-hi);
+    border-radius: 5px;
+    font-size: 14px;
+  }
+  .picker-actions { margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end; }
+  .picker-actions button {
+    padding: 9px 20px;
+    border-radius: 5px;
+    font-size: 13px;
+    cursor: pointer;
+    border: none;
+  }
+  .btn-close { background: transparent; border: 1px solid rgba(157,147,184,0.4); color: var(--text-lo); }
+  .btn-apply { background: var(--neon-violet); color: #fff; font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="event-title" id="eventTitle"></div>
+    <div class="card-column" id="cardColumn"></div>
+  </div>
+
+  <!-- Control hotspot — click via OBS Interact to open the event picker -->
+  <div class="control-hotspot" id="controlHotspot" title="Open event picker"></div>
+
+  <!-- Event picker — hidden until the hotspot is clicked -->
+  <div class="picker-overlay" id="pickerOverlay">
+    <div class="picker-box">
+      <h2>Pick Event Card</h2>
+      <p>Newest event is at the top. Pick one and click Show — it stays selected even when OBS reloads the scene.</p>
+      <select id="eventPicker"></select>
+      <div class="picker-actions">
+        <button class="btn-close" id="pickerClose">Cancel</button>
+        <button class="btn-apply" id="pickerApply">Show This Card</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // =========================================================
+  // SUPABASE — read-only anon key, reads safe views only.
+  // =========================================================
+  const SB  = 'https://emzlivoykbhhjcugupit.supabase.co';
+  const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtemxpdm95a2JoaGpjdWd1cGl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTk5MzAsImV4cCI6MjA5Nzk5NTkzMH0.o3EWnaEHr2PN8kLuzZrf6hAtOmTFKHEH6IzViXqv1L4';
+  const H   = { apikey: KEY, Authorization: 'Bearer ' + KEY };
+
+  const SELECTED_EVENT_KEY = 'uba_card_selected_event_id';
+  const WIN_KEY_PREFIX = 'uba_card_wins_';
+
+  const WC_LABEL = {
+    strawweight:'STRAWWEIGHT', flyweight:'FLYWEIGHT', bantamweight:'BANTAMWEIGHT',
+    featherweight:'FEATHERWEIGHT', lightweight:'LIGHTWEIGHT', welterweight:'WELTERWEIGHT',
+    middleweight:'MIDDLEWEIGHT', light_heavyweight:'LIGHT HEAVYWEIGHT',
+    heavyweight:'HEAVYWEIGHT', catchweight:'CATCHWEIGHT'
+  };
+  function wcLabel(w){ return WC_LABEL[w] || (w ? w.replace(/_/g,' ').toUpperCase() : 'BOUT'); }
+
+  async function sb(path) {
+    const r = await fetch(`${SB}/rest/v1/${path}`, { headers: H });
+    return r.json();
+  }
+
+  function initials(name) {
+    return name.replace(/["']/g, '').split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
+  }
+
+  // ---------- WIN STATE (per event) ----------
+  // Seeded from the DB's winner_corner on load, then any manual clicks
+  // (for a live show before results are entered) override and persist
+  // per event so they survive OBS scene-switch reloads.
+  let currentEventId = null;
+  let wins = {};
+  function winKey() { return WIN_KEY_PREFIX + currentEventId; }
+  function loadManualWins() {
+    try { return JSON.parse(localStorage.getItem(winKey())) || {}; }
+    catch (e) { return {}; }
+  }
+  function saveManualWins() { localStorage.setItem(winKey(), JSON.stringify(wins)); }
+
+  // ---------- RENDER ONE CARD ----------
+  function rowHTML(m, idx, recBySlug) {
+    const idA = `f${idx}-a`, idB = `f${idx}-b`;
+    const recA = recBySlug[m.fighter_a_slug];
+    const recB = recBySlug[m.fighter_b_slug];
+    const fmt = r => r ? `${r.wins}-${r.losses}-${r.draws}` : '—';
+    const tier = m.is_title_fight ? (m.title_name ? m.title_name.toUpperCase() : 'TITLE FIGHT') : wcLabel(m.weight_class);
+    return `
+      <div class="fight-row${m.is_title_fight ? ' title-fight' : ''}">
+        <div class="fighter left" data-fid="${idA}">
+          <div class="rank-box">${initials(m.fighter_a_name)}</div>
+          <div class="fighter-info">
+            <div class="fighter-name">${m.fighter_a_name}</div>
+            <div class="fighter-record">${fmt(recA)}</div>
+          </div>
+          <div class="w-marker">W</div>
+        </div>
+        <div class="vs-block">
+          <div class="vs-text">VS</div>
+          <div class="tier-tag">${tier}</div>
+        </div>
+        <div class="fighter right" data-fid="${idB}">
+          <div class="w-marker">W</div>
+          <div class="rank-box">${initials(m.fighter_b_name)}</div>
+          <div class="fighter-info">
+            <div class="fighter-name">${m.fighter_b_name}</div>
+            <div class="fighter-record">${fmt(recB)}</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function applyWins() {
+    document.querySelectorAll('.fighter[data-fid]').forEach(el => {
+      el.classList.toggle('won', !!wins[el.getAttribute('data-fid')]);
+    });
+  }
+
+  async function renderEvent(eventId, eventName) {
+    currentEventId = eventId;
+    document.getElementById('eventTitle').textContent = eventName || '';
+
+    const [matches, cards] = await Promise.all([
+      sb(`event_matches?event_id=eq.${eventId}&select=bout_number,weight_class,is_title_fight,title_name,fighter_a_name,fighter_a_slug,fighter_b_name,fighter_b_slug,winner_corner`),
+      sb('fighter_cards?select=slug,wins,losses,draws')
+    ]);
+
+    const recBySlug = {};
+    (Array.isArray(cards) ? cards : []).forEach(c => { recBySlug[c.slug] = c; });
+
+    // Sort: nulls last, then ascending bout_number. With column-reverse,
+    // lowest bout (prelim) sits at the bottom, highest (main/title) on top.
+    const list = (Array.isArray(matches) ? matches : []).slice().sort((a, b) => {
+      if (a.bout_number == null) return 1;
+      if (b.bout_number == null) return -1;
+      return a.bout_number - b.bout_number;
+    });
+
+    // Seed win state from the DB, then layer any saved manual overrides.
+    wins = {};
+    list.forEach((m, i) => {
+      if (m.winner_corner === 'a') wins[`f${i}-a`] = true;
+      if (m.winner_corner === 'b') wins[`f${i}-b`] = true;
+    });
+    Object.assign(wins, loadManualWins());
+
+    const col = document.getElementById('cardColumn');
+    col.innerHTML = list.map((m, i) => rowHTML(m, i, recBySlug)).join('');
+
+    // Stagger entrance, bottom fight first.
+    document.querySelectorAll('.fight-row').forEach((el, i) => {
+      el.style.animationDelay = (0.15 + i * 0.12) + 's';
+    });
+
+    // Manual win toggle (live shows, before results are entered).
+    document.querySelectorAll('.fighter[data-fid]').forEach(el => {
+      el.addEventListener('click', () => {
+        const fid = el.getAttribute('data-fid');
+        wins[fid] = !wins[fid];
+        saveManualWins();
+        applyWins();
+      });
+    });
+
+    applyWins();
+  }
+
+  // ---------- EVENT PICKER ----------
+  let allEvents = [];
+
+  async function boot() {
+    // Newest event first.
+    allEvents = await sb('events_public?select=id,name,event_date&order=event_date.desc');
+    allEvents = Array.isArray(allEvents) ? allEvents : [];
+
+    // Fill the dropdown.
+    const picker = document.getElementById('eventPicker');
+    picker.innerHTML = allEvents.map(e => {
+      const d = e.event_date ? new Date(e.event_date).toLocaleDateString() : '';
+      return `<option value="${e.id}">${e.name}${d ? '  ·  ' + d : ''}</option>`;
+    }).join('');
+
+    // Decide which event to show:
+    //   1. ?event=NAME in the URL (exact, case-insensitive)
+    //   2. last picked event (saved in localStorage)
+    //   3. newest event (top of list)
+    const params = new URLSearchParams(location.search);
+    const wanted = (params.get('event') || '').trim().toLowerCase();
+    let chosen = null;
+    if (wanted) chosen = allEvents.find(e => (e.name || '').toLowerCase() === wanted);
+    if (!chosen) {
+      const savedId = localStorage.getItem(SELECTED_EVENT_KEY);
+      if (savedId) chosen = allEvents.find(e => e.id === savedId);
+    }
+    if (!chosen) chosen = allEvents[0];
+
+    if (chosen) {
+      picker.value = chosen.id;
+      renderEvent(chosen.id, chosen.name);
+    }
+  }
+
+  // Hotspot opens picker; Apply shows the chosen card and remembers it.
+  document.getElementById('controlHotspot').addEventListener('click', () => {
+    document.getElementById('pickerOverlay').style.display = 'flex';
+  });
+  document.getElementById('pickerClose').addEventListener('click', () => {
+    document.getElementById('pickerOverlay').style.display = 'none';
+  });
+  document.getElementById('pickerApply').addEventListener('click', () => {
+    const id = document.getElementById('eventPicker').value;
+    const ev = allEvents.find(e => e.id === id);
+    if (ev) {
+      localStorage.setItem(SELECTED_EVENT_KEY, id);
+      document.getElementById('pickerOverlay').style.display = 'none';
+      renderEvent(ev.id, ev.name);
+    }
+  });
+  document.getElementById('pickerOverlay').addEventListener('click', (e) => {
+    if (e.target.id === 'pickerOverlay') e.target.style.display = 'none';
+  });
+
+  boot();
+</script>
+</body>
+</html>
