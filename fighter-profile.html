@@ -229,7 +229,21 @@ async function load() {
     const recent = completed.slice(0, 5);
     const upcoming = scheduled[0];
 
-    const contractTier = f.contract_tier ? toTitleCase(f.contract_tier) : 'No Contract';
+    // null-safe record + stats (never render "null")
+    const wins = f.wins ?? 0, losses = f.losses ?? 0, draws = f.draws ?? 0, koWins = f.ko_wins ?? 0;
+
+    // standing label adapts to level: amateurs have no contract; pros are tiered or free agents
+    let standingLabel, standingVal;
+    if (f.level === 'amateur') { standingLabel = 'Standing'; standingVal = 'Amateur'; }
+    else if (f.contract_tier) { standingLabel = 'Contract Tier'; standingVal = toTitleCase(f.contract_tier); }
+    else { standingLabel = 'Standing'; standingVal = 'Free Agent'; }
+
+    // rank: real number, or a clean "Unranked"
+    const rankHTML = f.rank
+      ? `# <span>${f.rank}</span> Rank`
+      : `<span style="color:rgba(255,255,255,0.22)">Unranked</span>`;
+
+    const wcText = wcLabel(f.weight_class) || 'Unclassified';
 
     // 3. upcoming bar
     let upcomingHTML = '';
@@ -258,7 +272,7 @@ async function load() {
     // 5. recent fights
     const recentHTML = recent.length
       ? recent.map(r => {
-          const isDraw = r.method === 'draw';
+          const isDraw = (r.method || '').toLowerCase() === 'draw';
           const res = isDraw ? 'd' : (r.won ? 'w' : 'l');
           return `<div class="fight-row">
             <div class="fight-result ${res}">${res.toUpperCase()}</div>
@@ -274,21 +288,21 @@ async function load() {
         <div class="header-main">
           <div class="header-top">
             <div>
-              <div class="fighter-name">${f.display_name}</div>
-              <div class="weight-class">${wcLabel(f.weight_class)}</div>
+              <div class="fighter-name">${f.display_name || 'Unknown Fighter'}</div>
+              <div class="weight-class">${wcText}</div>
               <div class="contract-box">
-                <div class="contract-label">Contract Tier</div>
-                <div class="contract-tier">${contractTier}</div>
+                <div class="contract-label">${standingLabel}</div>
+                <div class="contract-tier">${standingVal}</div>
               </div>
             </div>
-            <div class="rank-badge"># <span>${f.rank ? f.rank : '-'}</span> Rank</div>
+            <div class="rank-badge">${rankHTML}</div>
           </div>
           <div class="header-stats">
             <div class="stat-row"><div class="stat-label">Age</div><div class="stat-value">—</div></div>
             <div class="stat-row"><div class="stat-label">Current Team</div><div class="stat-value">—</div></div>
             <div class="stat-row">
               <div class="stat-label">Record</div>
-              <div class="record-val">${f.wins}<em>W</em> <em>/</em> ${f.draws}<em>D</em> <em>/</em> ${f.losses}<em>L</em></div>
+              <div class="record-val">${wins}<em>W</em> <em>/</em> ${draws}<em>D</em> <em>/</em> ${losses}<em>L</em></div>
             </div>
           </div>
         </div>
@@ -304,7 +318,7 @@ async function load() {
         </div>
         <div class="advanced-stats">
           <div class="adv-label">Advanced Stats</div>
-          <div class="adv-row"><div class="adv-name">Wins via KO</div><div class="adv-val">${f.ko_wins}</div></div>
+          <div class="adv-row"><div class="adv-name">Wins via KO</div><div class="adv-val ${koWins ? '' : 'dim'}">${koWins}</div></div>
           <div class="adv-row"><div class="adv-name">Total KD</div><div class="adv-val dim">—</div></div>
           <div class="adv-row"><div class="adv-name">Prize Money</div><div class="adv-val dim">$0</div></div>
           <div class="adv-row"><div class="adv-name">Achievements</div><div class="adv-val dim">—</div></div>

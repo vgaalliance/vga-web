@@ -251,22 +251,23 @@ async function load() {
   if (!s) { document.getElementById('root').innerHTML = '<div class="loading">Fighter not found</div>'; return; }
 
   try {
-    const [cards, matches] = await Promise.all([
-      sb('fighter_cards', `slug=eq.${encodeURIComponent(s)}&select=id,display_name,weight_class,level,profile_photo_url,wins,losses,draws,ko_wins,rank,contract_tier`),
-      sb('fighter_matches', `fighter_id=eq.${encodeURIComponent(s)}&order=created_at.desc&select=status,method,won,opponent_name,event_name`)
-    ]);
-
+    // header first — need the real id before we can pull matches
+    const cards = await sb('fighter_cards', `slug=eq.${encodeURIComponent(s)}&select=id,display_name,weight_class,level,profile_photo_url,wins,losses,draws,ko_wins,rank,contract_tier`);
     if (!cards.length) { document.getElementById('root').innerHTML = '<div class="loading">Fighter not found</div>'; return; }
     const f = cards[0];
 
-    // re-fetch matches with real id
     const matchData = await sb('fighter_matches', `fighter_id=eq.${f.id}&order=created_at.desc&select=status,method,won,opponent_name,event_name`);
     const completed = matchData.filter(m => m.status === 'completed');
     const scheduled = matchData.filter(m => m.status === 'scheduled');
     const recent = completed.slice(0, 5);
     const upcoming = scheduled[0];
 
-    const contractTier = f.contract_tier ? titleCase(f.contract_tier) : 'No Contract';
+    // null-safe stats + adaptive standing (amateurs have no contract; pros are tiered or free agents)
+    const koWins = f.ko_wins ?? 0;
+    let standingLabel, standingVal;
+    if (f.level === 'amateur') { standingLabel = 'Standing'; standingVal = 'Amateur'; }
+    else if (f.contract_tier) { standingLabel = 'Contract Tier'; standingVal = titleCase(f.contract_tier); }
+    else { standingLabel = 'Standing'; standingVal = 'Free Agent'; }
 
     const photoHTML = f.profile_photo_url
       ? `<div class="hero-photo"><img src="${f.profile_photo_url}" alt="${f.display_name}"></div>`
@@ -287,7 +288,7 @@ async function load() {
 
     const recentHTML = recent.length
       ? recent.map(m => {
-          const isDraw = m.method === 'draw';
+          const isDraw = (m.method || '').toLowerCase() === 'draw';
           const res = isDraw ? 'd' : (m.won ? 'w' : 'l');
           return `<div class="fight-row">
             <div class="fight-result ${res}">${res.toUpperCase()}</div>
@@ -303,10 +304,10 @@ async function load() {
         <div class="hero-fade"></div>
         <div class="hero-left-bar"></div>
         <div class="hero-content">
-          <div class="hero-name">${f.display_name}</div>
+          <div class="hero-name">${f.display_name || 'Unknown Fighter'}</div>
           <div class="hero-sub">
             <div class="hero-wc">${wcLabel(f.weight_class)}</div>
-            ${f.rank ? `<div class="hero-rank">#${f.rank}</div>` : ''}
+            <div class="hero-rank">${f.rank ? '#' + f.rank : 'Unranked'}</div>
           </div>
         </div>
       </div>
@@ -318,8 +319,8 @@ async function load() {
       </div>
 
       <div class="contract-row">
-        <div class="contract-label">Contract Tier</div>
-        <div class="contract-val">${contractTier}</div>
+        <div class="contract-label">${standingLabel}</div>
+        <div class="contract-val">${standingVal}</div>
       </div>
 
       ${upcomingHTML}
@@ -331,7 +332,7 @@ async function load() {
       <div class="stats-grid">
         <div class="stat-cell">
           <div class="stat-cell-label">KO Wins</div>
-          <div class="stat-cell-val ${f.ko_wins ? 'gold' : 'dim'}">${f.ko_wins ?? 0}</div>
+          <div class="stat-cell-val ${koWins ? 'gold' : 'dim'}">${koWins}</div>
         </div>
         <div class="stat-cell">
           <div class="stat-cell-label">Level</div>
