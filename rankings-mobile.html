@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>UBA Rankings</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --p: #7B2FFF; --pl: #A855F7; --pc: #C084FC;
+  --gold: #F5C842; --bg: #06060A; --surf: #0B0B12;
+  --border: #181824; --text: #DDD8F0; --muted: #4A4A68; --dim: #131320;
+  --glow-sm: 0 0 8px rgba(123,47,255,0.7), 0 0 20px rgba(123,47,255,0.3);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: #000; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'Barlow Condensed', sans-serif;
+  min-height: 100vh; max-width: 360px; margin: 0 auto;
+  overflow-x: hidden; position: relative;
+  animation: flicker 10s infinite;
+}
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.10) 2px,rgba(0,0,0,0.10) 4px);
+  pointer-events: none; z-index: 9999;
+}
+body::after {
+  content: ''; position: fixed; inset: 0;
+  background: radial-gradient(ellipse 90% 90% at 50% 50%, transparent 50%, rgba(0,0,0,0.6) 100%);
+  pointer-events: none; z-index: 9998;
+}
+@keyframes flicker { 0%,89%,100%{opacity:1} 90%{opacity:0.98} 92%{opacity:0.96} 93%{opacity:1} }
+@keyframes chroma { 0%,80%,100%{text-shadow:none} 82%{text-shadow:-1px 0 rgba(255,30,100,0.4),1px 0 rgba(0,200,255,0.4)} 84%{text-shadow:none} }
+@keyframes blink { 0%,100%{opacity:.15} 50%{opacity:1} }
+
+.header {
+  padding: 10px 16px 8px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: relative;
+}
+.header::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg,transparent,rgba(168,85,247,0.5),transparent);
+}
+.header-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.2em; color: #fff; text-shadow: 0 0 20px rgba(168,85,247,0.5); }
+.header-sub { font-family: 'Share Tech Mono', monospace; font-size: 7px; letter-spacing: 0.25em; color: rgba(168,85,247,0.5); text-transform: uppercase; }
+.back-btn { font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 0.12em; color: rgba(168,85,247,0.45); text-decoration: none; border: 1px solid rgba(168,85,247,0.2); padding: 4px 10px; text-transform: uppercase; }
+
+.section-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px 4px; }
+.section-title { font-family: 'Share Tech Mono', monospace; font-size: 8px; letter-spacing: 0.28em; color: var(--muted); text-transform: uppercase; white-space: nowrap; animation: chroma 12s 2s infinite; }
+.section-title::before { content: '// '; color: var(--p); opacity: 0.5; }
+.section-line { flex: 1; height: 1px; background: linear-gradient(90deg,var(--border),transparent); }
+
+.top-row { display: flex; gap: 6px; padding: 0 12px 10px; align-items: flex-start; }
+
+.standings-box {
+  width: 162px; flex-shrink: 0; background: var(--surf);
+  border: 1px solid rgba(123,47,255,0.15);
+  border-top: 2px solid rgba(123,47,255,0.55);
+  border-left: 3px solid var(--p);
+  overflow: hidden;
+}
+.box-hdr {
+  font-family: 'Share Tech Mono', monospace; font-size: 6px; letter-spacing: 0.2em;
+  color: var(--pl); padding: 4px 8px 3px;
+  border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between;
+  text-shadow: var(--glow-sm);
+}
+.box-hdr-sub { color: var(--muted); }
+.st-row { display: flex; align-items: center; padding: 4px 8px; gap: 5px; border-bottom: 1px solid rgba(123,47,255,0.06); }
+.st-row:last-child { border-bottom: none; }
+.st-row.top { background: rgba(123,47,255,0.10); }
+.st-row.bot { opacity: 0.38; }
+.st-pos { font-family: 'Share Tech Mono', monospace; font-size: 7px; color: rgba(168,85,247,0.4); min-width: 14px; text-align: right; flex-shrink: 0; }
+.st-pos.hi { color: var(--pc); }
+.st-name { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; color: rgba(220,210,255,0.85); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; }
+.st-rec { font-family: 'Share Tech Mono', monospace; font-size: 7px; color: rgba(123,47,255,0.65); flex-shrink: 0; }
+.st-rec .w { color: rgba(120,220,120,0.8); }
+
+.right-col { flex: 1; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+
+.tr-box {
+  background: var(--surf);
+  border: 1px solid rgba(123,47,255,0.15);
+  border-top: 2px solid rgba(123,47,255,0.45);
+  overflow: hidden; position: relative;
+}
+.tr-box::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg,rgba(123,47,255,0.06) 0%,transparent 60%); pointer-events: none; }
+.tr-row { display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 3px 7px; border-bottom: 1px solid rgba(123,47,255,0.07); gap: 2px; }
+.tr-row:last-child { border-bottom: none; }
+.tr-name { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tr-badge { font-family: 'Share Tech Mono', monospace; font-size: 5px; letter-spacing: 0.06em; padding: 1px 3px; border: 1px solid; flex-shrink: 0; }
+.tr-badge.player { color: rgba(200,160,255,.8); border-color: rgba(168,85,247,.4); background: rgba(168,85,247,.10); }
+.tr-badge.coach  { color: rgba(120,200,255,.8); border-color: rgba(80,180,255,.35); background: rgba(80,180,255,.07); }
+.tr-badge.bench  { color: rgba(160,160,160,.6); border-color: rgba(140,140,140,.28); background: rgba(140,140,140,.05); }
+.tr-move { grid-column: 1/-1; display: flex; align-items: center; gap: 2px; padding-bottom: 1px; }
+.tr-pill { font-family: 'Share Tech Mono', monospace; font-size: 5px; padding: 1px 3px; min-width: 18px; text-align: center; }
+.tr-pill.team { background: rgba(168,85,247,.13); border: 1px solid rgba(168,85,247,.36); color: rgba(210,180,255,.85); }
+.tr-pill.free { background: transparent; border: 1px dashed rgba(168,85,247,.22); color: rgba(168,85,247,.38); }
+.tr-shaft { width: 7px; height: 1px; background: linear-gradient(90deg,rgba(168,85,247,.4),rgba(216,180,254,.85)); }
+.tr-head { width: 0; height: 0; border-top: 2px solid transparent; border-bottom: 2px solid transparent; border-left: 3px solid rgba(216,180,254,.85); }
+
+.champs-box {
+  background: var(--surf);
+  border: 1px solid rgba(180,140,30,0.15);
+  border-top: 2px solid rgba(200,160,32,0.5);
+  overflow: hidden;
+}
+.champs-hdr { font-family: 'Share Tech Mono', monospace; font-size: 6px; letter-spacing: 0.18em; color: rgba(200,160,32,0.6); padding: 4px 7px 3px; border-bottom: 1px solid rgba(180,140,30,0.12); text-transform: uppercase; }
+.ch-row { display: flex; align-items: center; padding: 3px 7px; gap: 4px; border-bottom: 1px solid rgba(180,140,30,0.07); background: rgba(180,140,30,0.04); }
+.ch-row:last-child { border-bottom: none; }
+.ch-lbl { font-family: 'Share Tech Mono', monospace; font-size: 6px; color: rgba(200,160,32,0.5); min-width: 24px; flex-shrink: 0; }
+.ch-name { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; color: #f0d060; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.tr-empty { padding: 10px 7px; font-family: 'Share Tech Mono', monospace; font-size: 6px; color: var(--muted); text-align: center; letter-spacing: 0.1em; }
+
+.wc-tabs { display: flex; padding: 0 16px; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
+.wc-tabs::-webkit-scrollbar { display: none; }
+.wc-tab { font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 6px 11px; border: none; background: transparent; color: var(--muted); cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s; }
+.wc-tab.active { color: var(--pl); border-bottom-color: var(--p); text-shadow: var(--glow-sm); }
+
+.search-bar { padding: 8px 16px 4px; position: relative; }
+.search-input { width: 100%; height: 30px; background: rgba(123,47,255,0.05); border: none; border-bottom: 1px solid rgba(123,47,255,0.22); padding: 0 10px 0 30px; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; letter-spacing: 0.06em; color: rgba(255,255,255,0.6); outline: none; }
+.search-input::placeholder { color: rgba(255,255,255,0.15); }
+.search-input:focus { border-bottom-color: rgba(168,85,247,0.45); }
+.search-ico { position: absolute; left: 24px; top: 50%; transform: translateY(-50%); width: 13px; height: 13px; opacity: 0.2; pointer-events: none; }
+.sort-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 16px 6px; }
+.count-lbl { font-family: 'Share Tech Mono', monospace; font-size: 8px; color: rgba(255,255,255,0.14); letter-spacing: 0.08em; }
+.sorts { display: flex; gap: 12px; }
+.sort-btn { font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; background: transparent; border: none; color: rgba(255,255,255,0.2); cursor: pointer; position: relative; padding-bottom: 2px; }
+.sort-btn::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 1px; background: rgba(255,255,255,0.4); transform: scaleX(0); transition: transform 0.15s; }
+.sort-btn.active { color: rgba(255,255,255,0.7); }
+.sort-btn.active::after { transform: scaleX(1); }
+
+.fighter-list { padding: 0 12px 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.fcard {
+  display: flex; flex-direction: column;
+  background: #1a0e38;
+  border-top: 2px solid rgba(110,70,255,0.65);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  box-shadow: inset -1px 0 0 rgba(255,255,255,0.03), inset 1px 0 0 rgba(255,255,255,0.03);
+  text-decoration: none; min-height: 66px;
+  overflow: hidden; position: relative;
+  padding: 6px 8px 6px 10px;
+  transition: background 0.15s;
+}
+.fcard::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: rgba(110,70,255,0.8); transform: scaleY(0); transform-origin: bottom; transition: transform 0.18s ease; z-index: 3; }
+.fcard:active { background: #200f42; }
+.fcard:active::before { transform: scaleY(1); }
+.fcard.is-champ { background: #1e1205; border-top-color: rgba(220,170,32,0.85); }
+.fcard.is-champ::before { background: rgba(200,160,32,0.9); }
+.fcard.is-nr { opacity: 0.28; border-top-color: rgba(255,255,255,0.05); }
+.fcard.is-ama { border-top-color: rgba(60,160,100,0.3); }
+.fcard.t2 { background: #180d34; }
+.fcard.t3 { background: #160c30; }
+.fc-rank { position: absolute; top: 5px; right: 7px; font-family: 'Share Tech Mono', monospace; font-size: 9px; color: rgba(255,255,255,0.12); }
+.fcard.is-champ .fc-rank { color: rgba(200,160,32,0.6); }
+.fc-name { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; color: rgba(220,210,255,0.78); line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 20px; }
+.fcard.is-champ .fc-name { color: #f0d870; font-weight: 900; }
+.fc-wc { font-family: 'Share Tech Mono', monospace; font-size: 7px; text-transform: uppercase; color: rgba(255,255,255,0.22); margin-top: 1px; }
+.fc-rec { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 900; color: rgba(255,255,255,0.65); line-height: 1; margin-top: 3px; }
+.fc-rec em { font-style: normal; font-size: 9px; font-weight: 400; color: rgba(255,255,255,0.18); margin: 0 1px; }
+.fcard.is-champ .fc-rec { color: #e8c840; }
+
+.pagination { margin: 4px 12px 20px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px; }
+.page-info { font-family: 'Share Tech Mono', monospace; font-size: 8px; color: rgba(255,255,255,0.18); }
+.page-dots { display: flex; gap: 5px; }
+.page-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.1); cursor: pointer; }
+.page-dot.active { background: rgba(168,85,247,0.55); }
+.page-btns { display: flex; gap: 8px; }
+.page-btn { font-family: 'Share Tech Mono', monospace; font-size: 9px; text-transform: uppercase; background: transparent; border: none; color: rgba(255,255,255,0.22); cursor: pointer; }
+.page-btn:disabled { opacity: 0.1; cursor: default; }
+
+.dot { display: inline-block; width: 4px; height: 4px; background: var(--p); border-radius: 50%; animation: blink 1s ease-in-out infinite; margin: 0 2px; vertical-align: middle; }
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+.load-msg { padding: 28px 16px; text-align: center; font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--muted); letter-spacing: 0.2em; grid-column: 1/-1; }
+#flwcv { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 9990; }
+</style>
+</head>
+<body>
+<canvas id="flwcv"></canvas>
+
+<div class="header">
+  <div>
+    <div class="header-title">RANKINGS</div>
+    <div class="header-sub">UBA / UBAe &middot; S1 2026</div>
+  </div>
+  <a class="back-btn" href="https://www.ubaesports.com" target="_parent">&#8592; Home</a>
+</div>
+
+<div class="section-head"><div class="section-title">UBAe S1 Standings</div><div class="section-line"></div></div>
+
+<div class="top-row">
+  <div class="standings-box">
+    <div class="box-hdr"><span>Teams</span><span class="box-hdr-sub">W–L</span></div>
+    <div id="standings-list"><div class="tr-empty">Loading<span class="dot"></span></div></div>
+  </div>
+  <div class="right-col">
+    <div class="tr-box">
+      <div class="box-hdr"><span>Transfers</span><span class="box-hdr-sub">S1</span></div>
+      <div id="tr-rows"><div class="tr-empty">Loading<span class="dot"></span></div></div>
+    </div>
+    <div class="champs-box">
+      <div class="champs-hdr"><span>UBA Champs</span></div>
+      <div id="champs-list"><div class="tr-empty">Loading<span class="dot"></span></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="section-head"><div class="section-title">Fighter Database</div><div class="section-line"></div></div>
+
+<div class="wc-tabs" id="wc-tabs">
+  <button class="wc-tab active" data-wc="all">All</button>
+  <button class="wc-tab" data-wc="lightweight">LW</button>
+  <button class="wc-tab" data-wc="middleweight">MW</button>
+  <button class="wc-tab" data-wc="light_heavyweight">LHW</button>
+  <button class="wc-tab" data-wc="heavyweight">HW</button>
+</div>
+
+<div class="search-bar">
+  <svg class="search-ico" viewBox="0 0 16 16" fill="none">
+    <circle cx="6.5" cy="6.5" r="5" stroke="white" stroke-width="1.5"/>
+    <line x1="10.5" y1="10.5" x2="14" y2="14" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+  </svg>
+  <input class="search-input" id="search" type="text" placeholder="Search fighter...">
+</div>
+
+<div class="sort-row">
+  <div class="count-lbl" id="count-lbl"></div>
+  <div class="sorts">
+    <button class="sort-btn active" data-s="rank">Rank</button>
+    <button class="sort-btn" data-s="wins">Wins</button>
+  </div>
+</div>
+
+<div class="fighter-list" id="fighter-list">
+  <div class="load-msg">Loading<span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+</div>
+
+<div class="pagination" id="pagination" style="display:none">
+  <div class="page-info" id="page-info"></div>
+  <div class="page-dots" id="page-dots"></div>
+  <div class="page-btns">
+    <button class="page-btn" id="btn-prev" onclick="changePage(-1)">← prev</button>
+    <button class="page-btn" id="btn-next" onclick="changePage(1)">next →</button>
+  </div>
+</div>
+
+<script>
+// UBAe DB — standings + transfers
+const SB_E  = 'https://xwsbyxkjfqqrgbzxmmrn.supabase.co';
+const KEY_E = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3c2J5eGtqZnFxcmdienhtbXJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNjAyNDcsImV4cCI6MjA4NzkzNjI0N30.6amkt0zGMLT3_N3fKY6sMMTdaBr5eS7Ig-hAPvPCB4g';
+const HE = { 'apikey': KEY_E, 'Authorization': 'Bearer ' + KEY_E };
+
+// UBA DB — fighters + champions
+const SB_U  = 'https://emzlivoykbhhjcugupit.supabase.co';
+const KEY_U = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtemxpdm95a2JoaGpjdWd1cGl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTk5MzAsImV4cCI6MjA5Nzk5NTkzMH0.o3EWnaEHr2PN8kLuzZrf6hAtOmTFKHEH6IzViXqv1L4';
+const HU = { 'apikey': KEY_U, 'Authorization': 'Bearer ' + KEY_U };
+
+const FIGHTER_URL = 'https://www.ubaesports.com/fighter?f=';
+const PER_PAGE = 20;
+const WC_LBL = { heavyweight:'HWC', light_heavyweight:'LHWC', middleweight:'MWC', lightweight:'LWC' };
+const WC_DISPLAY = { heavyweight:'Heavyweight', light_heavyweight:'Lt. Heavyweight', middleweight:'Middleweight', lightweight:'Lightweight' };
+const WC_ORDER = ['heavyweight','light_heavyweight','middleweight','lightweight'];
+
+let all=[], filtered=[], wc='all', sort='rank', q='', page=0;
+const dir = { rank:1, wins:-1 };
+
+function toTitle(s){ return s ? s.replace(/\w\S*/g, t=>t[0].toUpperCase()+t.substr(1).toLowerCase()) : ''; }
+
+function tierClass(f) {
+  if (f.rank === 1 && f.level === 'pro') return 'is-champ';
+  if (f.level === 'amateur') return 'is-ama';
+  if (!f.rank) return 'is-nr';
+  if (f.rank <= 3) return '';
+  if (f.rank <= 6) return 't2';
+  return 't3';
+}
+
+function rlbl(f) {
+  if (f.rank === 1 && f.level === 'pro') return 'C';
+  return f.rank ? '#' + f.rank : '–';
+}
+
+function buildCard(f) {
+  const cls = tierClass(f);
+  const d = f.draws > 0 ? ` <em>/</em> ${f.draws}<em>D</em>` : '';
+  const wcText = WC_DISPLAY[f.weight_class] || (f.weight_class || '');
+  return `<a class="fcard ${cls}" href="${FIGHTER_URL}${f.slug}" target="_parent">
+    <div class="fc-rank">${rlbl(f)}</div>
+    <div class="fc-name">${toTitle(f.display_name)}</div>
+    <div class="fc-wc">${wcText}</div>
+    <div class="fc-rec">${f.wins ?? 0}<em>W</em> <em>/</em> ${f.losses ?? 0}<em>L</em>${d}</div>
+  </a>`;
+}
+
+function getFiltered() {
+  let list = wc === 'all' ? [...all] : all.filter(f => f.weight_class === wc);
+  if (q) list = list.filter(f => f.display_name.toLowerCase().includes(q));
+  list.sort((a, b) => {
+    if (sort === 'rank') {
+      const al = a.level === 'pro' ? 0 : 1, bl = b.level === 'pro' ? 0 : 1;
+      if (al !== bl) return al - bl;
+      return ((a.rank || 999) - (b.rank || 999)) * dir.rank;
+    }
+    return ((b.wins || 0) - (a.wins || 0)) * dir.wins;
+  });
+  return list;
+}
+
+function render() { filtered = getFiltered(); page = 0; draw(); }
+
+function draw() {
+  const total = filtered.length, pages = Math.ceil(total / PER_PAGE);
+  const slice = filtered.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
+  document.getElementById('count-lbl').textContent = total + ' fighter' + (total !== 1 ? 's' : '') + (pages > 1 ? ' · pg ' + (page + 1) + '/' + pages : '');
+  document.getElementById('fighter-list').innerHTML = slice.length ? slice.map(buildCard).join('') : '<div class="load-msg">No results</div>';
+  const pg = document.getElementById('pagination');
+  if (pages <= 1) { pg.style.display = 'none'; return; }
+  pg.style.display = 'flex';
+  document.getElementById('page-info').textContent = `${page * PER_PAGE + 1}–${Math.min((page + 1) * PER_PAGE, total)} of ${total}`;
+  document.getElementById('btn-prev').disabled = page === 0;
+  document.getElementById('btn-next').disabled = page >= pages - 1;
+  document.getElementById('page-dots').innerHTML = Array.from({ length: pages }, (_, i) =>
+    `<div class="page-dot${i === page ? ' active' : ''}" onclick="goPage(${i})"></div>`).join('');
+}
+
+function changePage(d) { page = Math.max(0, Math.min(Math.ceil(filtered.length / PER_PAGE) - 1, page + d)); draw(); }
+function goPage(p) { page = p; draw(); }
+
+document.getElementById('wc-tabs').addEventListener('click', e => {
+  const b = e.target.closest('.wc-tab'); if (!b) return;
+  document.querySelectorAll('.wc-tab').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); wc = b.dataset.wc; render();
+});
+document.querySelectorAll('.sort-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    const s = b.dataset.s;
+    if (sort === s) { dir[s] *= -1; }
+    else { document.querySelectorAll('.sort-btn').forEach(x => x.classList.remove('active')); sort = s; }
+    b.classList.add('active'); render();
+  });
+});
+document.getElementById('search').addEventListener('input', e => { q = e.target.value.toLowerCase().trim(); render(); });
+
+// Load UBA fighters from fighter_cards view
+fetch(`${SB_U}/rest/v1/fighter_cards?select=slug,display_name,weight_class,level,wins,losses,draws,rank`, { headers: HU })
+  .then(r => r.json())
+  .then(d => { all = Array.isArray(d) ? d : []; render(); })
+  .catch(() => { document.getElementById('fighter-list').innerHTML = '<div class="load-msg">Error loading fighters</div>'; });
+
+// UBAe standings
+async function loadStandings() {
+  try {
+    const r = await fetch(`${SB_E}/rest/v1/ubae_teams?select=team_name,wins,losses&order=wins.desc,losses.asc&limit=8`, { headers: HE });
+    const t = await r.json();
+    const el = document.getElementById('standings-list');
+    if (!Array.isArray(t) || !t.length) { el.innerHTML = '<div class="tr-empty">No data yet</div>'; return; }
+    const maxW = t[0].wins;
+    el.innerHTML = t.map((row, i) => {
+      const top = row.wins === maxW, bot = row.wins === 0 && row.losses >= 3;
+      const name = row.team_name.replace(/^Team\s+/i, '');
+      return `<div class="st-row ${top ? 'top' : bot ? 'bot' : ''}">
+        <div class="st-pos ${top ? 'hi' : ''}">${i + 1}</div>
+        <div class="st-name">${name}</div>
+        <div class="st-rec"><span class="w">${row.wins}</span>–${row.losses}</div>
+      </div>`;
+    }).join('');
+  } catch(e) { document.getElementById('standings-list').innerHTML = '<div class="tr-empty">Error</div>'; }
+}
+
+// UBA champions from rankings_public view
+async function loadChamps() {
+  try {
+    const r = await fetch(`${SB_U}/rest/v1/rankings_public?rank=eq.1&level=eq.pro&scope=eq.weight_class&select=weight_class,fighter_name`, { headers: HU });
+    const d = await r.json();
+    const el = document.getElementById('champs-list');
+    if (!Array.isArray(d) || !d.length) { el.innerHTML = '<div class="tr-empty">No champions yet</div>'; return; }
+    el.innerHTML = d.sort((a, b) => WC_ORDER.indexOf(a.weight_class) - WC_ORDER.indexOf(b.weight_class))
+      .map(f => `<div class="ch-row">
+        <span class="ch-lbl">${WC_LBL[f.weight_class] || '?'}</span>
+        <span class="ch-name">${f.fighter_name ? f.fighter_name.toUpperCase() : '—'}</span>
+      </div>`).join('');
+  } catch(e) { document.getElementById('champs-list').innerHTML = '<div class="tr-empty">Error</div>'; }
+}
+
+// UBAe transfers
+async function loadTransfers() {
+  const el = document.getElementById('tr-rows');
+  try {
+    const r = await fetch(`${SB_E}/rest/v1/transfers?select=*&order=created_at.desc&limit=3`, { headers: HE });
+    const d = await r.json();
+    if (!Array.isArray(d) || !d.length) { el.innerHTML = '<div class="tr-empty">None yet</div>'; return; }
+    const MAP = {'sheath elite':'SE','team muds':'MUD','champions united':'CU','ukfc uncs':'UNC','junc':'JNC','ring reapers':'RPR','the 5 great kage':'5GK','team rag tags':'RAG'};
+    function ab(n) { if (!n) return null; const k = n.trim().toLowerCase(); return MAP[k] || (n.trim().split(/\s+/).pop().slice(0,3).toUpperCase()); }
+    el.innerHTML = d.map(t => {
+      const role = t.role || 'player', from = ab(t.from_team_name), to = ab(t.to_team_name);
+      return `<div class="tr-row">
+        <div class="tr-name">${t.fighter_name}</div>
+        <span class="tr-badge ${role}">${role.toUpperCase()}</span>
+        <div class="tr-move">
+          <div class="tr-pill ${from ? 'team' : 'free'}">${from || 'FREE'}</div>
+          <div style="display:flex;align-items:center"><div class="tr-shaft"></div><div class="tr-head"></div></div>
+          <div class="tr-pill ${to ? 'team' : 'free'}">${to || 'FREE'}</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { el.innerHTML = '<div class="tr-empty">Error</div>'; }
+}
+
+loadStandings(); loadChamps(); loadTransfers();
+
+// Ambient flowers
+(function(){
+  var cv=document.getElementById('flwcv'),cx=cv.getContext('2d'),W,H,T=0,fl=[];
+  function resize(){W=window.innerWidth;H=window.innerHeight;cv.setAttribute('width',W);cv.setAttribute('height',H);cv.style.width=W+'px';cv.style.height=H+'px';}
+  function rnd(a,b){return a+Math.random()*(b-a);}
+  function ph(){var r=Math.random();return r<0.35?rnd(248,268):r<0.65?rnd(262,285):r<0.85?rnd(280,300):rnd(255,275);}
+  function mkp(){var c=Math.floor(Math.random()*4),d=Math.pow(Math.random(),1.8)*0.28,j=rnd(-0.5,0.5);var a=[Math.PI*.25,Math.PI*.75,-Math.PI*.25,-Math.PI*.75][c]+j;var x=[.01,.99,.01,.99][c],y=[.01,.01,.99,.99][c];return{xf:Math.max(.01,Math.min(.99,x+Math.cos(a)*d)),yf:Math.max(.01,Math.min(.99,y+Math.sin(a)*d))};}
+  function mkf(){var p=mkp();var ds=[Math.sqrt(p.xf*p.xf+p.yf*p.yf),Math.sqrt((1-p.xf)*(1-p.xf)+p.yf*p.yf),Math.sqrt(p.xf*p.xf+(1-p.yf)*(1-p.yf)),Math.sqrt((1-p.xf)*(1-p.xf)+(1-p.yf)*(1-p.yf))];var sf=Math.pow(1-Math.min(Math.min(...ds)/.35,1),1.2);return{xf:p.xf,yf:p.yf,r:4+sf*9,h:ph(),ph:rnd(0,Math.PI*2),sp:(Math.random()<.5?1:-1)*rnd(.001,.003),ss:0,st:0,lf:0,spd:rnd(.001,.002),pd:Math.floor(rnd(2500,5000)),pt:0,dl:Math.floor(rnd(0,120)),sd:Math.random()*100};}
+  function tc(xf,yf){for(var k=0;k<fl.length;k++){var dx=(fl[k].xf-xf)*W,dy=(fl[k].yf-yf)*H;if(Math.sqrt(dx*dx+dy*dy)<50)return true;}return false;}
+  function fill(){var n=Math.min(12,Math.max(6,Math.floor(W*H/45000)));var t=0;while(fl.length<n&&t<200){t++;var f=mkf();if(tc(f.xf,f.yf))continue;fl.push(f);}}
+  function df(x,y,r,h,a,p){if(a<.004)return;cx.save();for(var i=0;i<5;i++){var ang=(i/5)*Math.PI*2+p,px=x+Math.cos(ang)*r*.8,py=y+Math.sin(ang)*r*.8,h2=(h+i*6)%360,pr=r*.34;cx.beginPath();cx.arc(px,py,pr*2.2,0,Math.PI*2);cx.fillStyle='hsla('+h2+',100%,65%,'+(a*.09)+')';cx.fill();cx.beginPath();cx.arc(px,py,pr*1.4,0,Math.PI*2);cx.fillStyle='hsla('+h2+',100%,74%,'+(a*.22)+')';cx.fill();cx.beginPath();cx.arc(px,py,pr,0,Math.PI*2);cx.fillStyle='hsla('+h2+',100%,80%,'+(a*.44)+')';cx.fill();}cx.beginPath();cx.arc(x,y,r*.35,0,Math.PI*2);cx.fillStyle='hsla('+((h+160)%360)+',80%,80%,'+(a*.38)+')';cx.fill();if(a>.1){cx.beginPath();cx.arc(x,y,r*.14,0,Math.PI*2);cx.fillStyle='hsla('+h+',70%,92%,'+((a-.1)/.9)+')';cx.fill();}cx.restore();}
+  function tick(f){var ts=f.st===0?Math.abs(f.sp)*.15:f.st===1?Math.abs(f.sp):Math.abs(f.sp)*1.5;f.ss+=(ts-f.ss)*.018;f.ph+=f.ss*(f.sp<0?-1:1);var lh=185+((((f.st===2?(f.h+T*2.5)%360:f.h)-185)+360)%360)%120,a=0;if(f.st===0){if(f.dl>0){f.dl--;return;}f.lf+=f.spd*.3;a=Math.pow(f.lf,1.8)*.5;if(f.lf>=1){f.st=1;f.pt=0;}}else if(f.st===1){a=.3+.06*Math.sin(T*.028+f.sd*1.3);f.pt++;if(f.pt>=f.pd)f.st=2;}else{f.lf-=f.spd*1.5;a=Math.pow(Math.max(0,f.lf),1)*.48;if(f.lf<=0){var nf,att=0;do{nf=mkf();att++;}while(tc(nf.xf,nf.yf)&&att<20);Object.assign(f,nf,{ss:0,st:0,lf:0,pt:0,dl:Math.floor(rnd(400,1200))});return;}}if(a>.004)df(f.xf*W,f.yf*H,f.r,lh,a,f.ph);}
+  function frame(){T++;cx.clearRect(0,0,W,H);fl.forEach(tick);requestAnimationFrame(frame);}
+  setTimeout(function(){resize();fill();frame();},50);
+  window.addEventListener('resize',function(){resize();fl=[];fill();});
+})();
+</script>
+</body>
+</html>
