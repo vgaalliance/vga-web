@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;600;700;900&family=Space+Mono:wght@400;700&display=swap');
+  :root {
+    --p: #7B2FFF; --pl: #A855F7; --pc: #C084FC;
+    --pg: rgba(123,47,255,0.18); --pb: rgba(123,47,255,0.35);
+    --gold: #F5C842; --surf: #0B0B12; --border: #181824;
+    --text: #DDD8F0; --muted: #4A4A68;
+    --glow-sm: 0 0 8px rgba(123,47,255,0.7),0 0 20px rgba(123,47,255,0.3);
+    --glow-gold: 0 0 10px rgba(245,200,66,0.6),0 0 25px rgba(245,200,66,0.2);
+    --card-bg: #0d0820; --card-bg-champ: #100d02; --card-bg-ama: #0e0905;
+  }
+  @keyframes holo{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: transparent; font-family: 'Barlow Condensed', sans-serif; padding: 0 0 24px; }
+
+  /* ── CONTROLS ── */
+  .controls {
+    max-width: 770px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 16px;
+  }
+
+  .ctrl-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    line-height: 1.2;
+    flex-shrink: 0;
+    padding-top: 2px;
+  }
+
+  .ctrl-right {
+    display: flex; flex-direction: column;
+    gap: 9px; align-items: flex-end;
+  }
+
+  .search-wrap { position: relative; }
+  .search-input {
+    width: 220px; height: 28px;
+    background: transparent; border: none;
+    border-bottom: 1px solid var(--border);
+    padding: 0 8px 0 26px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px; font-weight: 400; letter-spacing: 0.06em;
+    color: var(--text); outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-input::placeholder { color: var(--muted); }
+  .search-input:focus { border-bottom-color: var(--pl); }
+  .search-ico { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; opacity: 0.2; pointer-events: none; }
+
+  .pills { display: flex; gap: 2px; }
+  .pill {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 4px 11px; border: none; background: transparent;
+    color: var(--muted); cursor: pointer; transition: color 0.15s;
+    position: relative;
+  }
+  .pill::after {
+    content: ''; position: absolute; bottom: 0; left: 11px;
+    width: calc(100% - 22px); height: 1px;
+    background: var(--pl); transform: scaleX(0); transition: transform 0.15s;
+  }
+  .pill:hover { color: var(--text); }
+  .pill.active { color: var(--pl); text-shadow: var(--glow-sm); }
+  .pill.active::after { transform: scaleX(1); }
+
+  .sorts { display: flex; gap: 14px; }
+  .sort-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    background: transparent; border: none;
+    color: var(--muted); cursor: pointer;
+    transition: color 0.15s; position: relative; padding-bottom: 2px;
+  }
+  .sort-btn::after {
+    content: ''; position: absolute; bottom: 0; left: 0;
+    width: 100%; height: 1px;
+    background: var(--pl); transform: scaleX(0); transition: transform 0.15s;
+  }
+  .sort-btn:hover { color: var(--text); }
+  .sort-btn.active { color: var(--pl); }
+  .sort-btn.active::after { transform: scaleX(1); }
+
+  .count {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px; color: var(--muted);
+    letter-spacing: 0.08em; margin-bottom: 10px; max-width: 770px;
+  }
+
+  /* ── GRID ── */
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-width: 770px; }
+
+  /* ── CARD ── */
+  .card {
+    position: relative;
+    display: flex; flex-direction: column;
+    min-height: 76px;
+    text-decoration: none; overflow: hidden;
+    transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--p);
+    background: var(--card-bg);
+  }
+  /* left-edge reveal on hover */
+  .card::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+    background: var(--pl);
+    transform: scaleY(0); transform-origin: bottom;
+    transition: transform 0.2s ease; z-index: 3;
+  }
+  .card:hover { background: #150d2e; border-top-color: var(--pl); transform: translateY(-2px); }
+  .card:hover::before { transform: scaleY(1); }
+  .card:hover .card-name { color: var(--text); }
+  .card:hover .card-rank { color: var(--muted); }
+
+  /* ── Champion ── */
+  .card.is-champ {
+    background: var(--card-bg-champ);
+    border-top: 2px solid var(--gold);
+    border-color: rgba(245,200,66,0.18);
+    position: relative;
+  }
+  /* holo shimmer overlay */
+  .card.is-champ::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    background: linear-gradient(115deg,transparent 20%,rgba(245,200,66,0.07) 38%,rgba(255,230,100,0.12) 50%,rgba(245,200,66,0.06) 62%,transparent 75%);
+    background-size: 200% 100%; animation: holo 3s ease-in-out infinite;
+  }
+  .card.is-champ::before { background: var(--gold); }
+  .card.is-champ:hover { background: #18110a; border-top-color: var(--gold); transform: translateY(-2px); }
+  .card.is-champ:hover .card-name { color: var(--gold); }
+
+  /* ── Ranked tiers — subtle bg steps, gradient matches exactly ── */
+  .card.t2 { background: #0c071d; }
+  .card.t3 { background: #0b071b; }
+  .card.t4 { background: #0a0619; }
+  .card.t5 { background: #090617; }
+
+  /* ── Unranked ── */
+  .card.is-nr {
+    opacity: 0.35;
+    border-top: 2px solid var(--border);
+    background: #09090f;
+  }
+
+  /* ── Amateur — bronze/brown ── */
+  .card.is-ama {
+    border-top: 2px solid rgba(139,94,60,0.6);
+    border-color: rgba(139,94,60,0.15);
+    background: var(--card-bg-ama);
+  }
+
+  .card-rank {
+    position: absolute; top: 7px; right: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px; color: var(--muted);
+    letter-spacing: 0.04em; z-index: 4;
+    transition: color 0.18s ease;
+  }
+  .card.is-champ .card-rank { color: rgba(245,200,66,0.75); font-size: 11px; }
+
+  .card-img {
+    position: absolute; right: 0; bottom: 0;
+    width: 65px; height: 100%; overflow: hidden; z-index: 1;
+  }
+  .card-img img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+  /* gradient matches each card bg — fixes the seam bug */
+  .card-img::before {
+    content: ''; position: absolute;
+    left: 0; top: 0; bottom: 0; width: 32px;
+    background: linear-gradient(to right, var(--card-bg), transparent); z-index: 2;
+  }
+  .card.t2 .card-img::before   { background: linear-gradient(to right, #0c071d, transparent); }
+  .card.t3 .card-img::before   { background: linear-gradient(to right, #0b071b, transparent); }
+  .card.t4 .card-img::before   { background: linear-gradient(to right, #0a0619, transparent); }
+  .card.t5 .card-img::before   { background: linear-gradient(to right, #090617, transparent); }
+  .card.is-champ .card-img::before { background: linear-gradient(to right, var(--card-bg-champ), transparent); }
+  .card.is-ama .card-img::before   { background: linear-gradient(to right, var(--card-bg-ama), transparent); }
+  .card.is-nr .card-img::before    { background: linear-gradient(to right, #09090f, transparent); }
+
+  .card-body {
+    padding: 7px 30px 7px 11px;
+    display: flex; flex-direction: column;
+    justify-content: space-between;
+    flex: 1; position: relative; z-index: 4;
+    gap: 4px;
+  }
+
+  .card-name {
+    font-size: 15px; font-weight: 700;
+    color: rgba(221,216,240,0.75);
+    letter-spacing: 0.02em; line-height: 1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transition: color 0.18s ease;
+  }
+  .card.is-champ .card-name { color: var(--gold); font-weight: 900; }
+  .card.is-ama .card-name   { color: rgba(200,160,110,0.8); }
+
+  .card-weight {
+    font-size: 10px; font-weight: 400;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); margin-top: 1px;
+  }
+
+  .card-record {
+    font-size: 17px; font-weight: 900;
+    color: rgba(255,255,255,0.75); line-height: 1;
+    letter-spacing: 0.02em;
+  }
+  .card-record em {
+    font-style: normal; font-size: 10px; font-weight: 400;
+    color: var(--muted); margin: 0 2px;
+  }
+  .card.is-champ .card-record { color: var(--gold); }
+  .card.is-ama .card-record   { color: rgba(200,160,110,0.85); }
+
+  .card-status {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: transparent;
+  }
+  .card.is-champ .card-status { color: rgba(245,200,66,0.55); }
+  .card.is-ama .card-status   { color: rgba(139,94,60,0.65); }
+
+  /* ── PAGINATION ── */
+  .pagination {
+    max-width: 770px; margin-top: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-top: 1px solid var(--border); padding-top: 12px;
+  }
+  .page-info { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.08em; }
+  .page-dots { display: flex; gap: 5px; align-items: center; }
+  .page-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--border); cursor: pointer; transition: background 0.15s; }
+  .page-dot.active { background: var(--pl); box-shadow: 0 0 4px rgba(168,85,247,0.6); }
+  .page-btns { display: flex; gap: 10px; }
+  .page-btn {
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    background: transparent; border: none;
+    color: var(--muted); cursor: pointer; transition: color 0.15s;
+  }
+  .page-btn:hover:not(:disabled) { color: var(--pl); }
+  .page-btn:disabled { opacity: 0.12; cursor: default; }
+
+  .no-data { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); padding: 40px 0; text-align: center; grid-column: 1/-1; letter-spacing: 0.1em; }
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <div class="ctrl-title">Fighter<br>Database</div>
+  <div class="ctrl-right">
+    <div class="search-wrap">
+      <svg class="search-ico" viewBox="0 0 16 16" fill="none">
+        <circle cx="6.5" cy="6.5" r="5" stroke="white" stroke-width="1.5"/>
+        <line x1="10.5" y1="10.5" x2="14" y2="14" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <input class="search-input" id="search" type="text" placeholder="Search fighter...">
+    </div>
+    <div class="pills" id="filters">
+      <button class="pill active" data-f="all">All</button>
+      <button class="pill" data-f="lightweight">LW</button>
+      <button class="pill" data-f="middleweight">MW</button>
+      <button class="pill" data-f="light_heavyweight">LHW</button>
+      <button class="pill" data-f="heavyweight">HW</button>
+    </div>
+    <div class="sorts">
+      <button class="sort-btn active" data-s="rank">Rank</button>
+      <button class="sort-btn" data-s="wins">Wins</button>
+    </div>
+  </div>
+</div>
+
+<div class="count" id="count"></div>
+<div class="grid" id="grid"><div class="no-data">loading...</div></div>
+
+<div class="pagination" id="pagination" style="display:none">
+  <div class="page-info" id="page-info"></div>
+  <div class="page-dots" id="page-dots"></div>
+  <div class="page-btns">
+    <button class="page-btn" id="btn-prev" onclick="changePage(-1)">← prev</button>
+    <button class="page-btn" id="btn-next" onclick="changePage(1)">next →</button>
+  </div>
+</div>
+
+<script>
+const SB  = 'https://emzlivoykbhhjcugupit.supabase.co';
+const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtemxpdm95a2JoaGpjdWd1cGl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTk5MzAsImV4cCI6MjA5Nzk5NTkzMH0.o3EWnaEHr2PN8kLuzZrf6hAtOmTFKHEH6IzViXqv1L4';
+const H   = { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY };
+const BASE = 'https://www.ubaesports.com/fighter?f=';
+const PER_PAGE = 48;
+
+let all=[], filtered=[], filt='all', sort='rank', q='', page=0;
+const dir = { rank:1, wins:-1 };
+
+function tierClass(f) {
+  if (f.level === 'amateur') return 'is-ama';
+  if (!f.rank) return 'is-nr';
+  if (f.rank <= 3) return '';
+  if (f.rank <= 5) return 't2';
+  if (f.rank <= 7) return 't3';
+  if (f.rank <= 9) return 't4';
+  return 't5';
+}
+
+function toTitleCase(str) {
+  return str.replace(/\w\S*/g, t => t.charAt(0).toUpperCase() + t.substr(1).toLowerCase());
+}
+
+const WC = { lightweight:'Lightweight', middleweight:'Middleweight', light_heavyweight:'Light-Heavyweight', heavyweight:'Heavyweight' };
+function wcLabel(w) { return WC[w] || (w ? w.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase()) : ''); }
+
+const card = f => {
+  const cls = tierClass(f);
+  const d = f.draws > 0 ? ` <em>/</em> ${f.draws}<em>D</em>` : '';
+  const img = f.profile_photo_url ? `<img src="${f.profile_photo_url}" alt="${f.display_name}">` : '';
+  const rankLabel = f.rank ? `#${f.rank}` : '';
+  const name = toTitleCase(f.display_name);
+  const statusLabel = f.level === 'amateur' ? 'Amateur' : '';
+  const slug = f.slug || f.display_name.toLowerCase().replace(/\s+/g, '-');
+
+  return `<a class="card ${cls}" href="${BASE}${slug}" target="_parent">
+    ${rankLabel ? `<span class="card-rank">${rankLabel}</span>` : ''}
+    <div class="card-img">${img}</div>
+    <div class="card-body">
+      <div>
+        <div class="card-name">${name}</div>
+        <div class="card-weight">${wcLabel(f.weight_class)}</div>
+      </div>
+      <div>
+        <div class="card-record">${f.wins}<em>W</em> <em>/</em> ${f.losses}<em>L</em>${d}</div>
+        ${statusLabel ? `<div class="card-status">${statusLabel}</div>` : ''}
+      </div>
+    </div>
+  </a>`;
+};
+
+function getFiltered() {
+  let list = filt === 'all' ? [...all] : all.filter(f => f.weight_class === filt);
+  if (q) list = list.filter(f => f.display_name.toLowerCase().includes(q));
+  list.sort((a, b) => {
+    const aAma = a.level === 'amateur' ? 1 : 0;
+    const bAma = b.level === 'amateur' ? 1 : 0;
+    if (aAma !== bAma) return aAma - bAma;
+    if (sort === 'rank') return ((a.rank || 999) - (b.rank || 999)) * dir.rank;
+    if (sort === 'wins') return (b.wins - a.wins) * dir.wins;
+    return 0;
+  });
+  return list;
+}
+
+function render() { filtered = getFiltered(); page = 0; draw(); }
+
+function draw() {
+  const total = filtered.length;
+  const pages = Math.ceil(total / PER_PAGE);
+  const slice = filtered.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
+
+  document.getElementById('count').textContent =
+    total + ' fighter' + (total !== 1 ? 's' : '') + (pages > 1 ? `  ·  page ${page + 1} of ${pages}` : '');
+  document.getElementById('grid').innerHTML = slice.length ? slice.map(card).join('') : '<div class="no-data">no results</div>';
+
+  const pg = document.getElementById('pagination');
+  if (pages <= 1) { pg.style.display = 'none'; return; }
+  pg.style.display = 'flex';
+  document.getElementById('page-info').textContent = `${page * PER_PAGE + 1}–${Math.min((page + 1) * PER_PAGE, total)} of ${total}`;
+  document.getElementById('btn-prev').disabled = page === 0;
+  document.getElementById('btn-next').disabled = page >= pages - 1;
+  document.getElementById('page-dots').innerHTML = Array.from({ length: pages }, (_, i) =>
+    `<div class="page-dot${i === page ? ' active' : ''}" onclick="goPage(${i})"></div>`
+  ).join('');
+}
+
+function changePage(d) { page = Math.max(0, Math.min(Math.ceil(filtered.length / PER_PAGE) - 1, page + d)); draw(); }
+function goPage(p) { page = p; draw(); }
+
+document.getElementById('filters').addEventListener('click', e => {
+  const b = e.target.closest('.pill'); if (!b) return;
+  document.querySelectorAll('.pill').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); filt = b.dataset.f; render();
+});
+
+document.querySelectorAll('.sort-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    const s = b.dataset.s;
+    if (sort === s) { dir[s] *= -1; }
+    else { document.querySelectorAll('.sort-btn').forEach(x => x.classList.remove('active')); sort = s; }
+    b.classList.add('active'); render();
+  });
+});
+
+document.getElementById('search').addEventListener('input', e => {
+  q = e.target.value.toLowerCase().trim(); render();
+});
+
+fetch(`${SB}/rest/v1/fighter_cards?select=display_name,weight_class,wins,losses,draws,rank,level,slug,profile_photo_url`, { headers: H })
+  .then(r => r.json())
+  .then(d => { all = d; render(); })
+  .catch(() => { document.getElementById('grid').innerHTML = '<div class="no-data">error loading</div>'; });
+</script>
+</body>
+</html>
