@@ -5,28 +5,27 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,900;1,700;1,900&family=Space+Mono&display=swap" rel="stylesheet">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: transparent; font-family: 'Barlow Condensed', sans-serif; color: #fff; width: 975px; }
+body { background: transparent; font-family: 'Barlow Condensed', sans-serif; color: #fff; width: 820px; }
 
-/* ── Hero header ─────────────────────────────────── */
 .hero {
   position: relative;
   background: #0d0530;
   border-left: 3px solid rgba(168,85,247,0.7);
   border-top: 2px solid rgba(168,85,247,0.4);
   display: flex;
-  min-height: 240px;
+  min-height: 260px;
   overflow: hidden;
   margin-bottom: 4px;
 }
 .hero-main {
   flex: 1;
-  padding: 20px 28px 24px;
+  padding: 24px 30px 28px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   z-index: 2;
 }
-.tags { display: flex; gap: 6px; margin-bottom: 8px; }
+.tags { display: flex; gap: 6px; margin-bottom: 10px; }
 .tag {
   font-family: 'Space Mono', monospace;
   font-size: 10px;
@@ -37,6 +36,11 @@ body { background: transparent; font-family: 'Barlow Condensed', sans-serif; col
   border: 1px solid rgba(255,255,255,0.08);
   padding: 4px 10px;
   border-radius: 2px;
+}
+.tag-rank {
+  color: rgba(168,85,247,0.7);
+  background: rgba(168,85,247,0.1);
+  border-color: rgba(168,85,247,0.2);
 }
 .fighter-name {
   font-family: 'Bebas Neue', sans-serif;
@@ -50,54 +54,41 @@ body { background: transparent; font-family: 'Barlow Condensed', sans-serif; col
   font-weight: 300;
   font-style: italic;
   color: rgba(230,180,40,0.65);
-  margin-top: 2px;
+  margin-top: 4px;
 }
 .meta-line {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
-  color: rgba(255,255,255,0.6);
-  margin-top: 4px;
-  letter-spacing: 0.04em;
-}
-.meta-line .sep { margin: 0 6px; color: rgba(255,255,255,0.2); }
-.standing {
-  font-size: 13px;
-  font-weight: 400;
-  color: rgba(255,255,255,0.35);
-  margin-top: 2px;
+  color: rgba(255,255,255,0.55);
+  margin-top: 6px;
   letter-spacing: 0.04em;
 }
 
-.wld { display: flex; gap: 28px; margin-top: 20px; }
+.wld { display: flex; gap: 28px; margin-top: 24px; }
 .wld-item { text-align: center; }
 .wld-num {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 52px;
   line-height: 1;
+  color: rgba(255,255,255,0.9);
 }
-.wld-num.w { color: rgba(100,220,120,0.85); }
-.wld-num.l { color: rgba(220,80,80,0.75); }
-.wld-num.d { color: rgba(200,180,60,0.7); }
+.wld-bar { width: 28px; height: 2px; margin: 4px auto 0; border-radius: 1px; }
+.wld-bar.w { background: rgba(100,220,120,0.5); }
+.wld-bar.l { background: rgba(220,80,80,0.4); }
+.wld-bar.d { background: rgba(200,180,60,0.35); }
 .wld-label {
   font-family: 'Space Mono', monospace;
   font-size: 9px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.35);
-  margin-top: 2px;
+  margin-top: 3px;
 }
-.wld-bar {
-  width: 28px;
-  height: 2px;
-  margin: 4px auto 0;
-  border-radius: 1px;
-}
-.wld-bar.w { background: rgba(100,220,120,0.5); }
-.wld-bar.l { background: rgba(220,80,80,0.4); }
-.wld-bar.d { background: rgba(200,180,60,0.35); }
+.wld-label.w { color: rgba(100,220,120,0.6); }
+.wld-label.l { color: rgba(220,80,80,0.5); }
+.wld-label.d { color: rgba(200,180,60,0.45); }
 
 .hero-photo {
-  width: 200px;
+  width: 220px;
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
@@ -114,14 +105,13 @@ body { background: transparent; font-family: 'Barlow Condensed', sans-serif; col
 .no-photo { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
 .no-photo svg { opacity: 0.08; }
 
-/* ── Upcoming fight bar ──────────────────────────── */
 .upcoming-bar {
   background: #0d0530;
   padding: 0 24px;
-  height: 64px;
+  height: 56px;
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
   margin-bottom: 4px;
   border-top: 2px solid rgba(168,85,247,0.7);
   border-left: 3px solid rgba(168,85,247,0.7);
@@ -138,118 +128,47 @@ body { background: transparent; font-family: 'Barlow Condensed', sans-serif; col
   flex-shrink: 0;
 }
 .upcoming-tag.dim { color: rgba(230,180,40,0.35); }
-.upcoming-matchup { font-size: 26px; font-weight: 900; font-style: italic; letter-spacing: 0.04em; text-transform: uppercase; color: #fff; }
-.upcoming-matchup .vs { color: rgba(168,85,247,0.45); font-size: 20px; margin: 0 8px; }
+.upcoming-matchup { font-size: 24px; font-weight: 900; font-style: italic; letter-spacing: 0.04em; text-transform: uppercase; color: #fff; }
+.upcoming-matchup .vs { color: rgba(168,85,247,0.45); font-size: 18px; margin: 0 8px; }
 .upcoming-event { font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 0.2em; color: rgba(168,85,247,0.4); text-transform: uppercase; }
 .upcoming-none { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.28em; color: rgba(255,255,255,0.18); text-transform: uppercase; }
 
-/* ── Middle: last matches + stats & records ──────── */
-.middle { display: flex; gap: 4px; width: 100%; margin-bottom: 4px; }
-
-.last-matches {
-  width: 240px;
-  flex-shrink: 0;
+.tab-bar {
+  display: flex;
   background: #0a0420;
   border-left: 3px solid rgba(168,85,247,0.3);
-  padding: 16px;
 }
-.section-label {
+.tab {
+  padding: 12px 20px;
   font-family: 'Space Mono', monospace;
   font-size: 10px;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.35);
-  margin-bottom: 14px;
+  color: rgba(255,255,255,0.25);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
 }
-.fight-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+.tab:hover { color: rgba(255,255,255,0.45); }
+.tab.active {
+  color: rgba(230,180,40,0.85);
+  border-bottom-color: rgba(230,180,40,0.6);
 }
-.fight-result { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; width: 14px; flex-shrink: 0; }
-.fight-result.w { color: rgba(100,220,120,0.8); }
-.fight-result.l { color: rgba(220,80,80,0.8); }
-.fight-result.d { color: rgba(180,180,80,0.8); }
-.fight-opponent { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.7); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.fight-method { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 0.1em; color: rgba(255,255,255,0.2); text-transform: uppercase; flex-shrink: 0; }
-.no-fights { font-family: 'Space Mono', monospace; font-size: 10px; color: rgba(255,255,255,0.15); letter-spacing: 0.1em; padding: 8px 0; }
 
-.stats-panel {
-  flex: 1;
+.tab-content {
   background: #0a0420;
   border-left: 3px solid rgba(168,85,247,0.3);
-  padding: 16px 20px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  min-height: 400px;
 }
-.stats-title {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 28px;
-  letter-spacing: 0.06em;
-  margin-bottom: 14px;
-}
+.tab-pane { display: none; padding: 18px 20px; }
+.tab-pane.active { display: block; }
 
-.stat-highlights { display: flex; gap: 0; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 14px; }
-.stat-hl {
-  flex: 1;
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-.stat-hl-num {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 32px;
-  color: rgba(255,255,255,0.85);
-  line-height: 1;
-}
-.stat-hl-num.dim { color: rgba(255,255,255,0.25); }
-.stat-hl-label {
-  font-family: 'Space Mono', monospace;
-  font-size: 8px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.3);
-}
-
-.cards-row { display: flex; gap: 12px; }
-.stat-card {
-  flex: 1;
-  border: 1px solid rgba(255,255,255,0.06);
-  padding: 14px 16px;
-}
-.card-title {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 18px;
-  letter-spacing: 0.08em;
-  color: rgba(255,255,255,0.7);
-  margin-bottom: 10px;
-}
-.card-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 5px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.03);
-}
-.card-label {
-  font-size: 14px;
-  font-weight: 300;
-  color: rgba(255,255,255,0.45);
-}
-.card-val {
-  font-family: 'Space Mono', monospace;
-  font-size: 13px;
-  color: rgba(255,255,255,0.7);
-}
-.card-val.dim { color: rgba(255,255,255,0.25); }
-
-/* ── Physical tape ───────────────────────────────── */
-.tape { display: flex; gap: 4px; margin-bottom: 4px; }
+.tape { display: flex; gap: 4px; margin-bottom: 16px; }
 .tape-item {
   flex: 1;
-  background: #0a0420;
-  border-left: 3px solid rgba(168,85,247,0.25);
-  padding: 12px 16px;
+  background: rgba(168,85,247,0.06);
+  padding: 10px 12px;
 }
 .tape-label {
   font-family: 'Space Mono', monospace;
@@ -257,29 +176,126 @@ body { background: transparent; font-family: 'Barlow Condensed', sans-serif; col
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: rgba(255,255,255,0.3);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 .tape-val {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 24px;
+  font-size: 22px;
   color: rgba(255,255,255,0.85);
 }
 .tape-val.dim { color: rgba(255,255,255,0.25); }
 
-/* ── Placeholder sections ────────────────────────── */
-.placeholder-section {
-  background: #0a0420;
-  border-left: 3px solid rgba(168,85,247,0.15);
-  padding: 20px 24px;
+.two-col { display: flex; gap: 12px; }
+.col-box {
+  flex: 1;
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+}
+.col-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.65);
+  margin-bottom: 10px;
+}
+.col-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.col-row:last-child { border-bottom: none; }
+.col-label { font-size: 14px; font-weight: 300; color: rgba(255,255,255,0.45); }
+.col-val { font-family: 'Space Mono', monospace; font-size: 13px; color: rgba(255,255,255,0.7); }
+.col-val.dim { color: rgba(255,255,255,0.25); }
+
+.matches-scroll { flex: 1; overflow-y: auto; max-height: 280px; }
+.fight-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.fight-result { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; width: 14px; flex-shrink: 0; }
+.fight-result.w { color: rgba(100,220,120,0.8); }
+.fight-result.l { color: rgba(220,80,80,0.8); }
+.fight-result.d { color: rgba(180,180,80,0.8); }
+.fight-opponent { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.7); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fight-opponent a { color: inherit; text-decoration: none; }
+.fight-opponent a:hover { color: rgba(168,85,247,0.8); }
+.fight-method { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 0.1em; color: rgba(255,255,255,0.2); text-transform: uppercase; flex-shrink: 0; }
+.fight-event { font-family: 'Space Mono', monospace; font-size: 8px; color: rgba(255,255,255,0.15); flex-shrink: 0; }
+.fight-title-badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 7px;
+  letter-spacing: 0.1em;
+  color: rgba(230,180,40,0.7);
+  background: rgba(230,180,40,0.08);
+  padding: 2px 5px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.no-fights { font-family: 'Space Mono', monospace; font-size: 10px; color: rgba(255,255,255,0.15); letter-spacing: 0.1em; padding: 12px 0; }
+
+.ach-card {
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 16px 18px;
+  margin-bottom: 12px;
+}
+.ach-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.65);
+  margin-bottom: 10px;
+}
+.ach-big {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px;
+  color: rgba(255,255,255,0.85);
+  line-height: 1;
+}
+.ach-big.dim { color: rgba(255,255,255,0.2); }
+.ach-sub {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: rgba(255,255,255,0.3);
+  letter-spacing: 0.1em;
+  margin-top: 4px;
+}
+
+.stash-balance {
+  border: 1px solid rgba(230,180,40,0.15);
+  background: rgba(230,180,40,0.04);
+  padding: 20px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+.stash-vc {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 48px;
+  color: rgba(230,180,40,0.85);
+  line-height: 1;
+}
+.stash-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(230,180,40,0.4);
+  margin-top: 6px;
+}
+.stash-items-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  color: rgba(255,255,255,0.25);
   margin-bottom: 4px;
 }
-.ph-title {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 22px;
-  letter-spacing: 0.06em;
-  color: rgba(255,255,255,0.25);
-}
-.ph-sub {
+.stash-coming {
   font-family: 'Space Mono', monospace;
   font-size: 8px;
   letter-spacing: 0.18em;
@@ -287,17 +303,10 @@ body { background: transparent; font-family: 'Barlow Condensed', sans-serif; col
   color: rgba(255,255,255,0.12);
   margin-bottom: 12px;
 }
-.ph-boxes { display: flex; gap: 12px; }
-.ph-box {
-  flex: 1;
-  height: 64px;
-  border: 1px solid rgba(168,85,247,0.08);
-  border-radius: 2px;
-}
-.ph-circles { display: flex; gap: 8px; }
-.ph-circle {
-  width: 40px;
-  height: 40px;
+.stash-placeholders { display: flex; gap: 8px; }
+.stash-ph {
+  width: 44px;
+  height: 44px;
   border-radius: 4px;
   border: 1px solid rgba(168,85,247,0.08);
 }
@@ -320,8 +329,8 @@ function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.
 function fmtHeight(inches) {
   if (!inches) return null;
   const ft = Math.floor(inches / 12);
-  const rem = inches % 12;
-  return ft + "'" + rem + '"';
+  const r = inches % 12;
+  return ft + "'" + r + '"';
 }
 
 function slug() { return new URLSearchParams(window.location.search).get('fighter'); }
@@ -331,71 +340,75 @@ async function sb(table, params) {
   return r.json();
 }
 
+function fightRowHTML(m, showEvent) {
+  const isDraw = (m.method || '').toLowerCase() === 'draw';
+  const res = isDraw ? 'd' : (m.won ? 'w' : 'l');
+  const oppLink = m.opponent_slug
+    ? `<a href="?fighter=${encodeURIComponent(m.opponent_slug)}">${esc(m.opponent_name)}</a>`
+    : esc(m.opponent_name);
+  const titleBadge = m.is_title_fight ? `<span class="fight-title-badge">TITLE</span>` : '';
+  const eventCol = showEvent ? `<span class="fight-event">${esc(m.event_name) || ''}</span>` : '';
+  return `<div class="fight-row">
+    <div class="fight-result ${res}">${res.toUpperCase()}</div>
+    <div class="fight-opponent">${oppLink}</div>
+    ${titleBadge}
+    <div class="fight-method">${esc(m.method) || ''}</div>
+    ${eventCol}
+  </div>`;
+}
+
+function initTabs() {
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('pane-' + tab.dataset.tab).classList.add('active');
+    });
+  });
+}
+
 async function load() {
   const s = slug();
   if (!s) { document.getElementById('root').innerHTML = '<div class="loading">fighter not found</div>'; return; }
 
   try {
-    const cards = await sb('fighter_cards', `slug=eq.${encodeURIComponent(s)}&select=id,display_name,weight_class,level,profile_photo_url,wins,losses,draws,ko_wins,rank,contract_tier,nickname,height,reach,stance,country,age,gym`);
+    const cards = await sb('fighter_cards', `slug=eq.${encodeURIComponent(s)}&select=id,display_name,weight_class,level,profile_photo_url,wins,losses,draws,ko_wins,rank,nickname,height,reach,stance,country,age,gym,vc_balance`);
     if (!cards.length) { document.getElementById('root').innerHTML = '<div class="loading">fighter not found</div>'; return; }
     const f = cards[0];
 
-    const matches = await sb('fighter_matches', `fighter_id=eq.${f.id}&order=created_at.desc&select=status,method,won,opponent_name,event_name`);
+    const matches = await sb('fighter_matches', `fighter_id=eq.${f.id}&order=created_at.desc&select=status,method,won,opponent_name,opponent_slug,event_name,event_date,is_title_fight`);
     const completed = matches.filter(m => m.status === 'completed');
     const scheduled = matches.filter(m => m.status === 'scheduled');
-    const recent = completed.slice(0, 5);
+    const recent = completed.slice(0, 3);
     const upcoming = scheduled[0];
 
     const wins = f.wins ?? 0, losses = f.losses ?? 0, draws = f.draws ?? 0, koWins = f.ko_wins ?? 0;
     const totalFights = wins + losses + draws;
-    const decisionWins = wins - koWins;
+    const decisionWins = Math.max(0, wins - koWins);
     const koRate = totalFights > 0 ? Math.round((koWins / totalFights) * 100) + '%' : '—';
 
-    // win streak: count consecutive wins from most recent completed
     let winStreak = 0;
     for (const m of completed) { if (m.won) winStreak++; else break; }
 
-    // prize money from payouts
     let prizeMoney = 0;
     try {
       const payouts = await sb('prize_payouts', `fighter_id=eq.${f.id}&status=eq.paid&select=amount`);
       prizeMoney = payouts.reduce((sum, p) => sum + (p.amount || 0), 0);
     } catch(e) {}
 
-    // title fights + belts from bouts
-    let titleFights = 0, belts = 0;
-    try {
-      const bouts = await sb('fighter_matches', `fighter_id=eq.${f.id}&select=status,won,bout_id`);
-      const completedBoutIds = bouts.filter(b => b.status === 'completed').map(b => b.bout_id).filter(Boolean);
-      if (completedBoutIds.length) {
-        const boutData = await sb('bouts', `id=in.(${completedBoutIds.join(',')})&is_title_fight=eq.true&select=id`);
-        titleFights = boutData.length;
-        const wonBoutIds = bouts.filter(b => b.won && b.status === 'completed').map(b => b.bout_id).filter(Boolean);
-        belts = boutData.filter(b => wonBoutIds.includes(b.id)).length;
-      }
-    } catch(e) {}
-
-    // standing
-    let standingText;
-    if (f.level === 'amateur') standingText = 'Amateur';
-    else if (f.contract_tier) standingText = f.contract_tier.charAt(0).toUpperCase() + f.contract_tier.slice(1);
-    else standingText = 'Free Agent';
+    const titleFights = completed.filter(m => m.is_title_fight).length;
+    const belts = completed.filter(m => m.is_title_fight && m.won).length;
 
     const wcText = wcLabel(f.weight_class) || 'Unclassified';
     const levelText = (f.level || 'amateur').toUpperCase();
 
-    // meta line: country · gym
-    let metaParts = [];
-    if (f.country) metaParts.push(esc(f.country));
-    if (f.gym) metaParts.push(esc(f.gym));
-    const metaHTML = metaParts.length ? metaParts.join('<span class="sep">·</span>') : '';
+    const rankTag = f.rank ? `<span class="tag tag-rank">#${f.rank}</span>` : '';
 
-    // photo
     const photoHTML = f.profile_photo_url
       ? `<img src="${f.profile_photo_url}" alt="${esc(f.display_name)}">`
       : `<div class="no-photo"><svg width="80" height="80" viewBox="0 0 80 80"><circle cx="40" cy="30" r="18" fill="white"/><ellipse cx="40" cy="70" rx="28" ry="18" fill="white"/></svg></div>`;
 
-    // upcoming bar
     let upcomingHTML;
     if (upcoming) {
       upcomingHTML = `
@@ -414,24 +427,19 @@ async function load() {
         </div>`;
     }
 
-    // recent fights
     const recentHTML = recent.length
-      ? recent.map(r => {
-          const isDraw = (r.method || '').toLowerCase() === 'draw';
-          const res = isDraw ? 'd' : (r.won ? 'w' : 'l');
-          return `<div class="fight-row">
-            <div class="fight-result ${res}">${res.toUpperCase()}</div>
-            <div class="fight-opponent">${esc(r.opponent_name)}</div>
-            <div class="fight-method">${esc(r.method) || ''}</div>
-          </div>`;
-        }).join('')
+      ? recent.map(m => fightRowHTML(m, false)).join('')
       : '<div class="no-fights">No fights yet</div>';
 
-    // height / reach / stance / age
+    const allMatchesHTML = completed.length
+      ? completed.map(m => fightRowHTML(m, true)).join('')
+      : '<div class="no-fights">No fights yet</div>';
+
     const heightVal = fmtHeight(f.height);
     const reachVal = f.reach ? f.reach + '"' : null;
     const stanceVal = f.stance ? f.stance.charAt(0).toUpperCase() + f.stance.slice(1) : null;
     const ageVal = f.age || null;
+    const vcBalance = f.vc_balance ?? 0;
 
     document.getElementById('root').innerHTML = `
       <div class="hero">
@@ -440,27 +448,27 @@ async function load() {
             <div class="tags">
               <span class="tag">${esc(wcText)}</span>
               <span class="tag">${levelText}</span>
+              ${rankTag}
             </div>
             <div class="fighter-name">${esc(f.display_name) || 'Unknown Fighter'}</div>
             ${f.nickname ? `<div class="nickname">"${esc(f.nickname)}"</div>` : ''}
-            ${metaHTML ? `<div class="meta-line">${metaHTML}</div>` : ''}
-            <div class="standing">${standingText}</div>
+            ${f.country ? `<div class="meta-line">${esc(f.country)}</div>` : ''}
           </div>
           <div class="wld">
             <div class="wld-item">
-              <div class="wld-num w">${wins}</div>
+              <div class="wld-num">${wins}</div>
               <div class="wld-bar w"></div>
-              <div class="wld-label">Wins</div>
+              <div class="wld-label w">Wins</div>
             </div>
             <div class="wld-item">
-              <div class="wld-num l">${losses}</div>
+              <div class="wld-num">${losses}</div>
               <div class="wld-bar l"></div>
-              <div class="wld-label">Losses</div>
+              <div class="wld-label l">Losses</div>
             </div>
             <div class="wld-item">
-              <div class="wld-num d">${draws}</div>
+              <div class="wld-num">${draws}</div>
               <div class="wld-bar d"></div>
-              <div class="wld-label">Draws</div>
+              <div class="wld-label d">Draws</div>
             </div>
           </div>
         </div>
@@ -469,61 +477,70 @@ async function load() {
 
       ${upcomingHTML}
 
-      <div class="middle">
-        <div class="last-matches">
-          <div class="section-label">Last Matches</div>
-          ${recentHTML}
-        </div>
-        <div class="stats-panel">
-          <div class="stats-title">STATS & RECORDS</div>
-          <div class="stat-highlights">
-            <div class="stat-hl">
-              <div class="stat-hl-num ${koWins ? '' : 'dim'}">${koWins}</div>
-              <div class="stat-hl-label">KO Wins</div>
-            </div>
-            <div class="stat-hl">
-              <div class="stat-hl-num ${koRate === '—' ? 'dim' : ''}">${koRate}</div>
-              <div class="stat-hl-label">KO Rate</div>
-            </div>
-            <div class="stat-hl">
-              <div class="stat-hl-num ${winStreak ? '' : 'dim'}">${winStreak}</div>
-              <div class="stat-hl-label">Win Streak</div>
-            </div>
+      <div class="tab-bar">
+        <div class="tab active" data-tab="overview">Overview</div>
+        <div class="tab" data-tab="matches">Matches</div>
+        <div class="tab" data-tab="achievements">Achievements</div>
+        <div class="tab" data-tab="stash">Stash</div>
+      </div>
+
+      <div class="tab-content">
+        <div class="tab-pane active" id="pane-overview">
+          <div class="tape">
+            <div class="tape-item"><div class="tape-label">Height</div><div class="tape-val ${heightVal ? '' : 'dim'}">${heightVal || '—'}</div></div>
+            <div class="tape-item"><div class="tape-label">Reach</div><div class="tape-val ${reachVal ? '' : 'dim'}">${reachVal || '—'}</div></div>
+            <div class="tape-item"><div class="tape-label">Stance</div><div class="tape-val ${stanceVal ? '' : 'dim'}">${stanceVal || '—'}</div></div>
+            <div class="tape-item"><div class="tape-label">Age</div><div class="tape-val ${ageVal ? '' : 'dim'}">${ageVal || '—'}</div></div>
           </div>
-          <div class="cards-row">
-            <div class="stat-card">
-              <div class="card-title">WIN METHODS</div>
-              <div class="card-row"><div class="card-label">KO / TKO</div><div class="card-val ${koWins ? '' : 'dim'}">${koWins}</div></div>
-              <div class="card-row"><div class="card-label">Decision</div><div class="card-val ${decisionWins ? '' : 'dim'}">${decisionWins}</div></div>
+          <div class="two-col">
+            <div class="col-box">
+              <div class="col-title">Win Methods & Stats</div>
+              <div class="col-row"><span class="col-label">KO / TKO</span><span class="col-val ${koWins ? '' : 'dim'}">${koWins}</span></div>
+              <div class="col-row"><span class="col-label">Decision</span><span class="col-val ${decisionWins ? '' : 'dim'}">${decisionWins}</span></div>
+              <div class="col-row"><span class="col-label">KO rate</span><span class="col-val ${koRate === '—' ? 'dim' : ''}">${koRate}</span></div>
+              <div class="col-row"><span class="col-label">Win streak</span><span class="col-val ${winStreak ? '' : 'dim'}">${winStreak}</span></div>
             </div>
-            <div class="stat-card">
-              <div class="card-title">CAREER</div>
-              <div class="card-row"><div class="card-label">Prize money</div><div class="card-val ${prizeMoney ? '' : 'dim'}">$${prizeMoney.toLocaleString()}</div></div>
-              <div class="card-row"><div class="card-label">Title fights</div><div class="card-val ${titleFights ? '' : 'dim'}">${titleFights}</div></div>
-              <div class="card-row"><div class="card-label">Belts</div><div class="card-val ${belts ? '' : 'dim'}">${belts}</div></div>
+            <div class="col-box">
+              <div class="col-title">Last Matches</div>
+              <div class="matches-scroll">${recentHTML}</div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="tape">
-        <div class="tape-item"><div class="tape-label">Height</div><div class="tape-val ${heightVal ? '' : 'dim'}">${heightVal || '—'}</div></div>
-        <div class="tape-item"><div class="tape-label">Reach</div><div class="tape-val ${reachVal ? '' : 'dim'}">${reachVal || '—'}</div></div>
-        <div class="tape-item"><div class="tape-label">Stance</div><div class="tape-val ${stanceVal ? '' : 'dim'}">${stanceVal || '—'}</div></div>
-        <div class="tape-item"><div class="tape-label">Age</div><div class="tape-val ${ageVal ? '' : 'dim'}">${ageVal || '—'}</div></div>
-      </div>
+        <div class="tab-pane" id="pane-matches">
+          <div class="col-title" style="margin-bottom:12px;">Fight History</div>
+          <div class="matches-scroll" style="max-height:500px;">${allMatchesHTML}</div>
+        </div>
 
-      <div class="placeholder-section">
-        <div class="ph-title">UBA SPOTLIGHT</div>
-        <div class="ph-sub">Coming soon</div>
-        <div class="ph-boxes"><div class="ph-box"></div><div class="ph-box"></div><div class="ph-box"></div><div class="ph-box"></div></div>
-      </div>
+        <div class="tab-pane" id="pane-achievements">
+          <div class="two-col" style="margin-bottom:12px;">
+            <div class="ach-card" style="flex:1;">
+              <div class="ach-title">Prize Money</div>
+              <div class="ach-big ${prizeMoney ? '' : 'dim'}">$${prizeMoney.toLocaleString()}</div>
+              <div class="ach-sub">Career earnings</div>
+            </div>
+            <div class="ach-card" style="flex:1;">
+              <div class="ach-title">Title Fights</div>
+              <div class="ach-big ${titleFights ? '' : 'dim'}">${titleFights}</div>
+              <div class="ach-sub">${belts} belt${belts !== 1 ? 's' : ''} won</div>
+            </div>
+          </div>
+        </div>
 
-      <div class="placeholder-section">
-        <div class="ph-title">STASH</div>
-        <div class="ph-sub">Coming soon</div>
-        <div class="ph-circles"><div class="ph-circle"></div><div class="ph-circle"></div><div class="ph-circle"></div><div class="ph-circle"></div><div class="ph-circle"></div></div>
+        <div class="tab-pane" id="pane-stash">
+          <div class="stash-balance">
+            <div class="stash-vc">${vcBalance.toLocaleString()}</div>
+            <div class="stash-label">VC Balance</div>
+          </div>
+          <div class="stash-items-title">Items</div>
+          <div class="stash-coming">Coming soon</div>
+          <div class="stash-placeholders">
+            <div class="stash-ph"></div><div class="stash-ph"></div><div class="stash-ph"></div><div class="stash-ph"></div><div class="stash-ph"></div>
+          </div>
+        </div>
       </div>`;
+
+    initTabs();
 
   } catch(e) {
     console.error(e);
