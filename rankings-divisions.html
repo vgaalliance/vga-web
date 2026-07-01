@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --p: #7B2FFF; --pl: #A855F7; --pc: #C084FC;
+  --pg: rgba(123,47,255,0.18); --pb: rgba(123,47,255,0.35);
+  --gold: #F5C842; --bg: #06060A; --surf: #0B0B12;
+  --border: #181824; --text: #DDD8F0; --muted: #4A4A68; --dim: #131320;
+  --glow-sm: 0 0 8px rgba(123,47,255,0.7),0 0 20px rgba(123,47,255,0.3);
+  --glow-md: 0 0 12px rgba(123,47,255,0.9),0 0 30px rgba(123,47,255,0.4),0 0 60px rgba(123,47,255,0.15);
+  --glow-gold: 0 0 10px rgba(245,200,66,0.6),0 0 25px rgba(245,200,66,0.2);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { background:#000; }
+body {
+  background:var(--bg); color:var(--text); font-family:'Barlow Condensed',sans-serif;
+  width:820px; position:relative;
+  animation:flicker 10s infinite, crt-wave 7s ease-in-out infinite;
+}
+body::before {
+  content:''; position:fixed; inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.13) 2px,rgba(0,0,0,0.13) 4px);
+  pointer-events:none; z-index:9999;
+}
+body::after {
+  content:''; position:fixed; inset:0;
+  background:radial-gradient(ellipse 80% 90% at 50% 50%,transparent 45%,rgba(0,0,0,0.75) 100%);
+  pointer-events:none; z-index:9998;
+}
+@keyframes flicker{0%,89%,100%{opacity:1}90%{opacity:.98}91%{opacity:1}92%{opacity:.96}93%{opacity:1}}
+@keyframes crt-wave{0%,100%{transform:perspective(1200px) rotateX(0.15deg)}50%{transform:perspective(1200px) rotateX(0deg)}}
+@keyframes phosphor-glitch{0%,85%,100%{text-shadow:var(--glow-md);filter:blur(0)}87%{text-shadow:-2px 0 rgba(255,30,100,.65),2px 0 rgba(0,220,255,.65),0 0 20px rgba(123,47,255,.9);filter:blur(.3px)}89%{text-shadow:1px 0 rgba(255,30,100,.4),-1px 0 rgba(0,220,255,.4),0 0 30px rgba(168,85,247,1)}91%{text-shadow:var(--glow-md);filter:blur(0)}}
+@keyframes holo{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@keyframes row-in{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+@keyframes champ-pulse{0%,100%{box-shadow:0 0 6px rgba(245,200,66,.35),inset 0 0 10px rgba(245,200,66,.04)}50%{box-shadow:0 0 16px rgba(245,200,66,.7),0 0 32px rgba(245,200,66,.2),inset 0 0 14px rgba(245,200,66,.07)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* ── Header ── */
+.page-header {
+  padding:14px 20px 12px; border-bottom:1px solid var(--border);
+  display:flex; align-items:baseline; gap:12px;
+  position:relative; overflow:hidden;
+}
+.page-header::before {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(115deg,transparent 20%,rgba(168,85,247,.06) 48%,transparent 72%);
+  background-size:200% 100%; animation:holo 4s ease-in-out infinite; pointer-events:none;
+}
+.page-title {
+  font-family:'Bebas Neue',sans-serif; font-size:28px;
+  letter-spacing:.06em; animation:phosphor-glitch 11s infinite;
+}
+.page-sub {
+  font-family:'Space Mono',monospace; font-size:9px;
+  letter-spacing:.2em; color:var(--muted); text-transform:uppercase;
+}
+
+/* ── 4-column grid ── */
+.grid {
+  display:grid; grid-template-columns:repeat(4,1fr);
+  gap:3px; padding:3px;
+}
+
+/* ── Division column ── */
+.division {
+  background:var(--surf); border-top:2px solid var(--p);
+  display:flex; flex-direction:column; min-height:340px;
+  position:relative; overflow:hidden;
+}
+.division::before {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(180deg,var(--pg) 0%,transparent 35%);
+  pointer-events:none; z-index:0;
+}
+.div-head {
+  padding:8px 10px 7px; border-bottom:1px solid var(--border);
+  position:relative; z-index:1;
+}
+.div-name {
+  font-family:'Bebas Neue',sans-serif; font-size:15px;
+  letter-spacing:.08em; color:var(--pc); text-shadow:var(--glow-sm);
+}
+.div-weight {
+  font-family:'Space Mono',monospace; font-size:6.5px;
+  color:var(--muted); letter-spacing:.1em; margin-top:1px;
+}
+
+/* ── Fighter rows ── */
+.div-list { position:relative; z-index:1; flex:1; display:flex; flex-direction:column; }
+
+.fighter-row {
+  display:flex; align-items:center; gap:6px;
+  padding:5px 8px 5px 10px; border-bottom:1px solid rgba(123,47,255,.06);
+  text-decoration:none; color:inherit; position:relative;
+  transition:background .12s;
+  animation:row-in .35s ease both;
+}
+.fighter-row:hover { background:rgba(123,47,255,.09); }
+.fighter-row:last-child { border-bottom:none; }
+.fighter-row.champ {
+  background:rgba(245,200,66,.04);
+  border-left:2px solid rgba(245,200,66,.5);
+  border-bottom-color:rgba(245,200,66,.12);
+  animation:champ-pulse 2.5s ease-in-out infinite, row-in .35s ease both;
+}
+.fighter-row.champ:hover { background:rgba(245,200,66,.08); }
+
+.row-rank {
+  font-family:'Space Mono',monospace; font-size:9px;
+  min-width:18px; text-align:right; flex-shrink:0; color:var(--muted);
+}
+.row-rank.top { color:var(--pl); text-shadow:var(--glow-sm); }
+.row-rank.champ-num { color:var(--gold); text-shadow:var(--glow-gold); font-size:10px; }
+
+.row-name {
+  font-family:'Barlow Condensed',sans-serif; font-size:14px;
+  font-weight:700; flex:1; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis; letter-spacing:.02em;
+}
+.champ .row-name { color:var(--gold); }
+
+.row-record {
+  font-family:'Space Mono',monospace; font-size:8px;
+  flex-shrink:0; white-space:nowrap; color:var(--muted);
+}
+.row-record .rw { color:rgba(100,220,120,.75); }
+.row-record .rl { color:rgba(220,80,80,.55); }
+
+.tier-dot {
+  width:5px; height:5px; border-radius:50%; flex-shrink:0;
+}
+.tier-dot.diamond { background:rgba(0,220,255,.9); box-shadow:0 0 4px rgba(0,220,255,.7); }
+.tier-dot.gold    { background:var(--gold); box-shadow:0 0 4px rgba(245,200,66,.6); }
+.tier-dot.silver  { background:rgba(200,200,220,.7); }
+.tier-dot.bronze  { background:rgba(180,120,60,.85); }
+.tier-dot.pro     { background:var(--pl); box-shadow:0 0 3px rgba(168,85,247,.5); }
+.tier-dot.ama     { background:var(--muted); }
+
+.div-empty {
+  flex:1; display:flex; align-items:center; justify-content:center;
+  font-family:'Space Mono',monospace; font-size:7px; color:var(--muted);
+  letter-spacing:.12em; text-transform:uppercase; text-align:center; padding:20px;
+}
+.dot{display:inline-block;width:3px;height:3px;background:var(--p);border-radius:50%;animation:blink 1s ease-in-out infinite;margin:0 1px;vertical-align:middle;}
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="page-title">Division Rankings</div>
+  <div class="page-sub">UBA · S1 2026</div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script>
+const SB  = 'https://emzlivoykbhhjcugupit.supabase.co';
+const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtemxpdm95a2JoaGpjdWd1cGl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTk5MzAsImV4cCI6MjA5Nzk5NTkzMH0.o3EWnaEHr2PN8kLuzZrf6hAtOmTFKHEH6IzViXqv1L4';
+const H   = { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY };
+const FIGHTER_URL = 'https://www.ubaesports.com/fighter?f=';
+
+const DIVS = [
+  { key:'lightweight',       label:'LIGHTWEIGHT',     weight:'170 lbs & under' },
+  { key:'middleweight',      label:'MIDDLEWEIGHT',    weight:'171–185 lbs' },
+  { key:'light_heavyweight', label:'LT. HEAVYWEIGHT', weight:'186–205 lbs' },
+  { key:'heavyweight',       label:'HEAVYWEIGHT',     weight:'205+ lbs' },
+];
+
+function tierClass(f) {
+  const t = (f.contract_tier || f.level || '').toLowerCase();
+  if (t === 'diamond') return 'diamond';
+  if (t === 'gold')    return 'gold';
+  if (t === 'silver')  return 'silver';
+  if (t === 'bronze')  return 'bronze';
+  if (t === 'pro')     return 'pro';
+  return 'ama';
+}
+
+function rowHTML(f, i) {
+  const isChamp = i === 0;
+  const rankNum  = f.rank ?? (i + 1);
+  const rankDisp = isChamp ? '①' : `#${rankNum}`;
+  const rankCls  = isChamp ? 'champ-num' : (i < 3 ? 'top' : '');
+  const url = f.slug ? FIGHTER_URL + encodeURIComponent(f.slug) : '#';
+  const delay = `animation-delay:${i * 0.04}s`;
+  return `<a class="fighter-row${isChamp ? ' champ' : ''}" href="${url}" target="_parent" style="${delay}">
+    <div class="row-rank ${rankCls}">${rankDisp}</div>
+    <div class="row-name">${f.display_name || '—'}</div>
+    <div class="row-record"><span class="rw">${f.wins ?? 0}</span><span>-</span><span class="rl">${f.losses ?? 0}</span></div>
+    <div class="tier-dot ${tierClass(f)}"></div>
+  </a>`;
+}
+
+async function loadDiv(div, listEl) {
+  try {
+    const r = await fetch(
+      `${SB}/rest/v1/fighter_cards?weight_class=eq.${div.key}&select=slug,display_name,wins,losses,rank,contract_tier,level&order=rank.asc.nullslast,wins.desc&limit=12`,
+      { headers: H }
+    );
+    const data = await r.json();
+    if (!Array.isArray(data) || !data.length) {
+      listEl.innerHTML = '<div class="div-empty">No fighters ranked yet</div>';
+      return;
+    }
+    listEl.innerHTML = data.map((f, i) => rowHTML(f, i)).join('');
+  } catch(e) {
+    listEl.innerHTML = '<div class="div-empty">Error loading</div>';
+  }
+}
+
+function init() {
+  const grid = document.getElementById('grid');
+  DIVS.forEach(div => {
+    const col = document.createElement('div');
+    col.className = 'division';
+    col.innerHTML = `
+      <div class="div-head">
+        <div class="div-name">${div.label}</div>
+        <div class="div-weight">${div.weight}</div>
+      </div>
+      <div class="div-list"><div class="div-empty">Loading<span class="dot"></span><span class="dot"></span><span class="dot"></span></div></div>`;
+    grid.appendChild(col);
+    loadDiv(div, col.querySelector('.div-list'));
+  });
+}
+
+init();
+</script>
+</body>
+</html>

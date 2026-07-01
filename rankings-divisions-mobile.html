@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --p: #7B2FFF; --pl: #A855F7; --pc: #C084FC;
+  --pg: rgba(123,47,255,0.18); --pb: rgba(123,47,255,0.35);
+  --gold: #F5C842; --bg: #06060A; --surf: #0B0B12;
+  --border: #181824; --text: #DDD8F0; --muted: #4A4A68; --dim: #131320;
+  --glow-sm: 0 0 8px rgba(123,47,255,0.7),0 0 20px rgba(123,47,255,0.3);
+  --glow-md: 0 0 12px rgba(123,47,255,0.9),0 0 30px rgba(123,47,255,0.4),0 0 60px rgba(123,47,255,0.15);
+  --glow-gold: 0 0 10px rgba(245,200,66,0.6),0 0 25px rgba(245,200,66,0.2);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { background:#000; }
+body {
+  background:var(--bg); color:var(--text); font-family:'Barlow Condensed',sans-serif;
+  min-height:100vh; max-width:320px; margin:0 auto; overflow-x:hidden; position:relative;
+  animation:flicker 10s infinite, crt-wave 7s ease-in-out infinite;
+}
+body::before {
+  content:''; position:fixed; inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.13) 2px,rgba(0,0,0,0.13) 4px);
+  pointer-events:none; z-index:9999;
+}
+body::after {
+  content:''; position:fixed; inset:0;
+  background:radial-gradient(ellipse 80% 90% at 50% 50%,transparent 45%,rgba(0,0,0,0.75) 100%);
+  pointer-events:none; z-index:9998;
+}
+@keyframes flicker{0%,89%,100%{opacity:1}90%{opacity:.98}91%{opacity:1}92%{opacity:.96}93%{opacity:1}}
+@keyframes crt-wave{0%,100%{transform:perspective(1200px) rotateX(0.15deg)}50%{transform:perspective(1200px) rotateX(0deg)}}
+@keyframes phosphor-glitch{0%,85%,100%{text-shadow:var(--glow-md);filter:blur(0)}87%{text-shadow:-2px 0 rgba(255,30,100,.65),2px 0 rgba(0,220,255,.65),0 0 20px rgba(123,47,255,.9);filter:blur(.3px)}89%{text-shadow:1px 0 rgba(255,30,100,.4),-1px 0 rgba(0,220,255,.4),0 0 30px rgba(168,85,247,1)}91%{text-shadow:var(--glow-md);filter:blur(0)}}
+@keyframes holo{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@keyframes row-in{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+@keyframes champ-pulse{0%,100%{box-shadow:0 0 6px rgba(245,200,66,.35)}50%{box-shadow:0 0 16px rgba(245,200,66,.7),0 0 32px rgba(245,200,66,.2)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* ── Header ── */
+.page-header {
+  padding:8px 14px 7px; border-bottom:1px solid var(--border);
+  position:relative; overflow:hidden;
+  display:flex; align-items:baseline; gap:8px;
+}
+.page-header::before {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(115deg,transparent 20%,rgba(168,85,247,.07) 48%,transparent 72%);
+  background-size:200% 100%; animation:holo 4s ease-in-out infinite; pointer-events:none;
+}
+.page-title {
+  font-family:'Bebas Neue',sans-serif; font-size:20px;
+  letter-spacing:.06em; animation:phosphor-glitch 11s infinite; position:relative; z-index:1;
+}
+.page-sub {
+  font-family:'Space Mono',monospace; font-size:7px;
+  letter-spacing:.18em; color:var(--muted); text-transform:uppercase; position:relative; z-index:1;
+}
+
+/* ── Division tabs ── */
+.div-tabs {
+  display:flex; border-bottom:1px solid var(--border);
+  background:var(--dim);
+}
+.div-tab {
+  flex:1; padding:7px 4px 6px; text-align:center;
+  font-family:'Space Mono',monospace; font-size:6.5px;
+  letter-spacing:.08em; text-transform:uppercase;
+  color:var(--muted); cursor:pointer; border-bottom:2px solid transparent;
+  margin-bottom:-1px; transition:color .15s, border-color .15s;
+  -webkit-tap-highlight-color:transparent; user-select:none;
+}
+.div-tab.active { color:var(--pl); border-bottom-color:var(--p); text-shadow:var(--glow-sm); }
+
+/* ── Division panel ── */
+.div-panel { display:none; }
+.div-panel.active { display:block; }
+
+/* ── Division label bar ── */
+.div-label-bar {
+  padding:7px 14px 6px; border-bottom:1px solid var(--border);
+  background:var(--surf); border-left:3px solid var(--p);
+  position:relative; overflow:hidden;
+}
+.div-label-bar::before {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(90deg,var(--pg) 0%,transparent 60%);
+  pointer-events:none;
+}
+.div-label-name {
+  font-family:'Bebas Neue',sans-serif; font-size:18px;
+  letter-spacing:.08em; color:var(--pc); text-shadow:var(--glow-sm);
+  position:relative; z-index:1;
+}
+.div-label-weight {
+  font-family:'Space Mono',monospace; font-size:7px;
+  color:var(--muted); letter-spacing:.1em; position:relative; z-index:1;
+}
+
+/* ── Fighter rows ── */
+.fighter-row {
+  display:flex; align-items:center; gap:8px;
+  padding:7px 12px 7px 14px; border-bottom:1px solid rgba(123,47,255,.07);
+  text-decoration:none; color:inherit;
+  transition:background .12s;
+  animation:row-in .3s ease both;
+}
+.fighter-row:nth-child(even) { background:rgba(123,47,255,.03); }
+.fighter-row:hover { background:rgba(123,47,255,.1); }
+.fighter-row:last-child { border-bottom:none; }
+
+.fighter-row.champ {
+  background:rgba(245,200,66,.04);
+  border-left:3px solid rgba(245,200,66,.55);
+  padding-left:11px;
+  border-bottom-color:rgba(245,200,66,.14);
+  animation:champ-pulse 2.5s ease-in-out infinite, row-in .3s ease both;
+}
+.fighter-row.champ:nth-child(even) { background:rgba(245,200,66,.06); }
+.fighter-row.champ:hover { background:rgba(245,200,66,.09); }
+
+.row-rank {
+  font-family:'Space Mono',monospace; font-size:9px;
+  min-width:20px; text-align:right; flex-shrink:0; color:var(--muted);
+}
+.row-rank.top  { color:var(--pl); text-shadow:var(--glow-sm); }
+.row-rank.gold { color:var(--gold); text-shadow:var(--glow-gold); font-size:11px; }
+
+.row-name {
+  font-family:'Barlow Condensed',sans-serif; font-size:16px;
+  font-weight:700; flex:1; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis; letter-spacing:.02em;
+}
+.champ .row-name { color:var(--gold); }
+
+.row-record {
+  font-family:'Space Mono',monospace; font-size:9px;
+  flex-shrink:0; white-space:nowrap; color:var(--muted);
+}
+.row-record .rw { color:rgba(100,220,120,.8); }
+.row-record .rl { color:rgba(220,80,80,.6); }
+
+.tier-dot {
+  width:6px; height:6px; border-radius:50%; flex-shrink:0;
+}
+.tier-dot.diamond { background:rgba(0,220,255,.9); box-shadow:0 0 5px rgba(0,220,255,.7); }
+.tier-dot.gold    { background:var(--gold); box-shadow:0 0 5px rgba(245,200,66,.6); }
+.tier-dot.silver  { background:rgba(200,200,220,.7); }
+.tier-dot.bronze  { background:rgba(180,120,60,.85); }
+.tier-dot.pro     { background:var(--pl); box-shadow:0 0 3px rgba(168,85,247,.5); }
+.tier-dot.ama     { background:var(--muted); }
+
+.div-empty {
+  padding:24px 16px; text-align:center;
+  font-family:'Space Mono',monospace; font-size:7px;
+  color:var(--muted); letter-spacing:.12em; text-transform:uppercase;
+}
+.dot{display:inline-block;width:3px;height:3px;background:var(--p);border-radius:50%;animation:blink 1s ease-in-out infinite;margin:0 1px;vertical-align:middle;}
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="page-title">Rankings</div>
+  <div class="page-sub">UBA · S1 2026</div>
+</div>
+
+<div class="div-tabs" id="tabs">
+  <div class="div-tab active" data-div="0">LW</div>
+  <div class="div-tab" data-div="1">MW</div>
+  <div class="div-tab" data-div="2">LHW</div>
+  <div class="div-tab" data-div="3">HW</div>
+</div>
+
+<div id="panels"></div>
+
+<script>
+const SB  = 'https://emzlivoykbhhjcugupit.supabase.co';
+const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtemxpdm95a2JoaGpjdWd1cGl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTk5MzAsImV4cCI6MjA5Nzk5NTkzMH0.o3EWnaEHr2PN8kLuzZrf6hAtOmTFKHEH6IzViXqv1L4';
+const H   = { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY };
+const FIGHTER_URL = 'https://www.ubaesports.com/fighter?f=';
+
+const DIVS = [
+  { key:'lightweight',       label:'LIGHTWEIGHT',     weight:'170 lbs & under' },
+  { key:'middleweight',      label:'MIDDLEWEIGHT',    weight:'171–185 lbs' },
+  { key:'light_heavyweight', label:'LT. HEAVYWEIGHT', weight:'186–205 lbs' },
+  { key:'heavyweight',       label:'HEAVYWEIGHT',     weight:'205+ lbs' },
+];
+
+const cache = {};
+
+function tierClass(f) {
+  const t = (f.contract_tier || f.level || '').toLowerCase();
+  if (t === 'diamond') return 'diamond';
+  if (t === 'gold')    return 'gold';
+  if (t === 'silver')  return 'silver';
+  if (t === 'bronze')  return 'bronze';
+  if (t === 'pro')     return 'pro';
+  return 'ama';
+}
+
+function rowHTML(f, i) {
+  const isChamp  = i === 0;
+  const rankNum  = f.rank ?? (i + 1);
+  const rankDisp = isChamp ? '①' : `#${rankNum}`;
+  const rankCls  = isChamp ? 'gold' : (i < 3 ? 'top' : '');
+  const url = f.slug ? FIGHTER_URL + encodeURIComponent(f.slug) : '#';
+  const delay = `animation-delay:${i * 0.045}s`;
+  return `<a class="fighter-row${isChamp ? ' champ' : ''}" href="${url}" target="_parent" style="${delay}">
+    <div class="row-rank ${rankCls}">${rankDisp}</div>
+    <div class="row-name">${f.display_name || '—'}</div>
+    <div class="row-record"><span class="rw">${f.wins ?? 0}</span><span>-</span><span class="rl">${f.losses ?? 0}</span></div>
+    <div class="tier-dot ${tierClass(f)}"></div>
+  </a>`;
+}
+
+async function loadDiv(idx) {
+  const div = DIVS[idx];
+  const listEl = document.querySelector(`#panel-${idx} .div-list`);
+  if (cache[idx]) { listEl.innerHTML = cache[idx]; return; }
+  try {
+    const r = await fetch(
+      `${SB}/rest/v1/fighter_cards?weight_class=eq.${div.key}&select=slug,display_name,wins,losses,rank,contract_tier,level&order=rank.asc.nullslast,wins.desc&limit=16`,
+      { headers: H }
+    );
+    const data = await r.json();
+    if (!Array.isArray(data) || !data.length) {
+      cache[idx] = '<div class="div-empty">No fighters ranked yet</div>';
+    } else {
+      cache[idx] = data.map((f, i) => rowHTML(f, i)).join('');
+    }
+    listEl.innerHTML = cache[idx];
+  } catch(e) {
+    listEl.innerHTML = '<div class="div-empty">Error loading</div>';
+  }
+}
+
+function switchTab(idx) {
+  document.querySelectorAll('.div-tab').forEach((t, i) => t.classList.toggle('active', i === idx));
+  document.querySelectorAll('.div-panel').forEach((p, i) => p.classList.toggle('active', i === idx));
+  loadDiv(idx);
+}
+
+function init() {
+  const panels = document.getElementById('panels');
+  DIVS.forEach((div, i) => {
+    const panel = document.createElement('div');
+    panel.className = `div-panel${i === 0 ? ' active' : ''}`;
+    panel.id = `panel-${i}`;
+    panel.innerHTML = `
+      <div class="div-label-bar">
+        <div class="div-label-name">${div.label}</div>
+        <div class="div-label-weight">${div.weight}</div>
+      </div>
+      <div class="div-list"><div class="div-empty">Loading<span class="dot"></span><span class="dot"></span><span class="dot"></span></div></div>`;
+    panels.appendChild(panel);
+  });
+
+  document.querySelectorAll('.div-tab').forEach(tab => {
+    tab.addEventListener('click', () => switchTab(+tab.dataset.div));
+  });
+
+  loadDiv(0);
+}
+
+init();
+</script>
+</body>
+</html>
