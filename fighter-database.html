@@ -305,6 +305,7 @@ let all=[], filtered=[], filt='all', sort='rank', q='', page=0;
 const dir = { rank:1, wins:-1 };
 
 function tierClass(f) {
+  if (f.is_champion) return 'is-champ';
   if (f.level === 'amateur') return 'is-ama';
   if (!f.rank) return 'is-nr';
   if (f.rank <= 3) return '';
@@ -404,7 +405,7 @@ document.getElementById('search').addEventListener('input', e => {
   q = e.target.value.toLowerCase().trim(); render();
 });
 
-fetch(`${SB}/rest/v1/fighter_cards?select=display_name,weight_class,wins,losses,draws,rank,level,slug,profile_photo_url`, { headers: H })
+fetch(`${SB}/rest/v1/fighter_cards?select=display_name,weight_class,wins,losses,draws,rank,level,is_champion,slug,profile_photo_url`, { headers: H })
   .then(r => r.json())
   .then(d => { all = d; render(); })
   .catch(() => { document.getElementById('grid').innerHTML = '<div class="no-data">error loading</div>'; });
