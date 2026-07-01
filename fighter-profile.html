@@ -2,104 +2,109 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,900;1,700;1,900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,900;1,700;1,900&family=Space+Mono&display=swap" rel="stylesheet">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { background: transparent; font-family: 'Barlow Condensed', sans-serif; color: #fff; width: 975px; }
 
-.profile-header {
+/* ── Hero header ─────────────────────────────────── */
+.hero {
   position: relative;
-  width: 100%;
-  min-height: 220px;
   background: #0d0530;
   border-left: 3px solid rgba(168,85,247,0.7);
   border-top: 2px solid rgba(168,85,247,0.4);
   display: flex;
+  min-height: 240px;
   overflow: hidden;
   margin-bottom: 4px;
 }
-.header-main {
+.hero-main {
   flex: 1;
-  padding: 20px 24px;
+  padding: 20px 28px 24px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   z-index: 2;
 }
-.header-top { display: flex; align-items: flex-start; justify-content: space-between; }
-.fighter-name {
-  font-size: 56px;
-  font-weight: 900;
-  letter-spacing: 0.02em;
-  line-height: 1;
-  color: #fff;
-  text-transform: lowercase;
-}
-.rank-badge {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 13px;
-  color: rgba(255,255,255,0.3);
-  letter-spacing: 0.1em;
-  text-align: right;
-  padding-top: 6px;
-}
-.rank-badge span { color: rgba(168,85,247,0.8); font-size: 15px; }
-.weight-class {
-  font-size: 14px;
-  font-weight: 400;
+.tags { display: flex; gap: 6px; margin-bottom: 8px; }
+.tag {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.4);
-  margin-top: 4px;
+  color: rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 4px 10px;
+  border-radius: 2px;
 }
-.contract-box {
-  display: inline-block;
-  margin-top: 12px;
-  padding: 5px 12px;
-  background: rgba(168,85,247,0.12);
-  border: 1px solid rgba(168,85,247,0.25);
-}
-.contract-label {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.2em;
+.fighter-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 64px;
+  letter-spacing: 0.03em;
+  line-height: 1;
   text-transform: uppercase;
-  color: rgba(168,85,247,0.5);
-  margin-bottom: 2px;
 }
-.contract-tier {
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: rgba(216,180,254,0.9);
+.nickname {
+  font-size: 18px;
+  font-weight: 300;
+  font-style: italic;
+  color: rgba(230,180,40,0.65);
+  margin-top: 2px;
 }
-.header-stats { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
-.stat-row {
-  display: flex;
-  align-items: center;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  padding-bottom: 8px;
+.meta-line {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.6);
+  margin-top: 4px;
+  letter-spacing: 0.04em;
 }
-.stat-label {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  color: rgba(255,255,255,0.3);
-  width: 140px;
-  flex-shrink: 0;
+.meta-line .sep { margin: 0 6px; color: rgba(255,255,255,0.2); }
+.standing {
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.35);
+  margin-top: 2px;
+  letter-spacing: 0.04em;
 }
-.stat-value { font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.75); letter-spacing: 0.04em; }
-.record-val { font-size: 20px; font-weight: 900; color: rgba(255,255,255,0.85); letter-spacing: 0.02em; }
-.record-val em { font-style: normal; font-size: 11px; font-weight: 400; color: rgba(255,255,255,0.2); margin: 0 3px; }
-.header-photo {
+
+.wld { display: flex; gap: 28px; margin-top: 20px; }
+.wld-item { text-align: center; }
+.wld-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 52px;
+  line-height: 1;
+}
+.wld-num.w { color: rgba(100,220,120,0.85); }
+.wld-num.l { color: rgba(220,80,80,0.75); }
+.wld-num.d { color: rgba(200,180,60,0.7); }
+.wld-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  margin-top: 2px;
+}
+.wld-bar {
+  width: 28px;
+  height: 2px;
+  margin: 4px auto 0;
+  border-radius: 1px;
+}
+.wld-bar.w { background: rgba(100,220,120,0.5); }
+.wld-bar.l { background: rgba(220,80,80,0.4); }
+.wld-bar.d { background: rgba(200,180,60,0.35); }
+
+.hero-photo {
   width: 200px;
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
   background: rgba(168,85,247,0.05);
 }
-.header-photo img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
-.header-photo::before {
+.hero-photo img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.hero-photo::before {
   content: '';
   position: absolute;
   left: 0; top: 0; bottom: 0; width: 60px;
@@ -109,62 +114,11 @@ body { background: transparent; font-family: 'Barlow Condensed', sans-serif; col
 .no-photo { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
 .no-photo svg { opacity: 0.08; }
 
-.bottom { display: flex; gap: 4px; width: 100%; }
-.recent-fights {
-  width: 280px;
-  flex-shrink: 0;
-  background: #0a0420;
-  border-left: 3px solid rgba(168,85,247,0.3);
-  padding: 16px;
-}
-.section-label {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: rgba(230,180,40,0.7);
-  margin-bottom: 12px;
-}
-.fight-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-}
-.fight-result { font-family: 'Share Tech Mono', monospace; font-size: 11px; font-weight: 700; width: 14px; flex-shrink: 0; }
-.fight-result.w { color: rgba(100,220,120,0.8); }
-.fight-result.l { color: rgba(220,80,80,0.8); }
-.fight-result.d { color: rgba(180,180,80,0.8); }
-.fight-opponent { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.7); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.fight-method { font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 0.1em; color: rgba(255,255,255,0.2); text-transform: uppercase; flex-shrink: 0; }
-.no-fights { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: rgba(255,255,255,0.15); letter-spacing: 0.1em; padding: 8px 0; }
-
-.advanced-stats { flex: 1; background: #0a0318; border-left: 3px solid rgba(200,160,30,0.3); }
-.adv-label {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: rgba(230,180,40,0.55);
-  padding: 14px 16px 10px;
-  border-bottom: 1px solid rgba(200,160,30,0.1);
-}
-.adv-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  border-bottom: 1px solid rgba(200,160,30,0.08);
-}
-.adv-name { font-size: 18px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(200,160,30,0.75); }
-.adv-val { font-size: 22px; font-weight: 900; color: rgba(255,255,255,0.8); letter-spacing: 0.04em; }
-.adv-val.dim { color: rgba(255,255,255,0.25); }
-
+/* ── Upcoming fight bar ──────────────────────────── */
 .upcoming-bar {
   background: #0d0530;
-  padding: 0 20px;
-  height: 60px;
+  padding: 0 24px;
+  height: 64px;
   display: flex;
   align-items: center;
   gap: 24px;
@@ -174,10 +128,10 @@ body { background: transparent; font-family: 'Barlow Condensed', sans-serif; col
 }
 .upcoming-bar.empty { border-top-color: rgba(168,85,247,0.3); border-left-color: rgba(168,85,247,0.3); }
 .upcoming-tag {
-  font-size: 14px;
-  font-weight: 900;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
   font-style: italic;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: rgba(230,180,40,0.9);
   white-space: nowrap;
@@ -186,10 +140,169 @@ body { background: transparent; font-family: 'Barlow Condensed', sans-serif; col
 .upcoming-tag.dim { color: rgba(230,180,40,0.35); }
 .upcoming-matchup { font-size: 26px; font-weight: 900; font-style: italic; letter-spacing: 0.04em; text-transform: uppercase; color: #fff; }
 .upcoming-matchup .vs { color: rgba(168,85,247,0.45); font-size: 20px; margin: 0 8px; }
-.upcoming-event { font-family: 'Share Tech Mono', monospace; font-size: 8px; letter-spacing: 0.2em; color: rgba(168,85,247,0.4); text-transform: uppercase; }
-.upcoming-none { font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 0.28em; color: rgba(255,255,255,0.18); text-transform: uppercase; }
+.upcoming-event { font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 0.2em; color: rgba(168,85,247,0.4); text-transform: uppercase; }
+.upcoming-none { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.28em; color: rgba(255,255,255,0.18); text-transform: uppercase; }
 
-.loading { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: rgba(255,255,255,0.15); letter-spacing: 0.15em; padding: 40px; text-align: center; }
+/* ── Middle: last matches + stats & records ──────── */
+.middle { display: flex; gap: 4px; width: 100%; margin-bottom: 4px; }
+
+.last-matches {
+  width: 240px;
+  flex-shrink: 0;
+  background: #0a0420;
+  border-left: 3px solid rgba(168,85,247,0.3);
+  padding: 16px;
+}
+.section-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  margin-bottom: 14px;
+}
+.fight-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.fight-result { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; width: 14px; flex-shrink: 0; }
+.fight-result.w { color: rgba(100,220,120,0.8); }
+.fight-result.l { color: rgba(220,80,80,0.8); }
+.fight-result.d { color: rgba(180,180,80,0.8); }
+.fight-opponent { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.7); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fight-method { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 0.1em; color: rgba(255,255,255,0.2); text-transform: uppercase; flex-shrink: 0; }
+.no-fights { font-family: 'Space Mono', monospace; font-size: 10px; color: rgba(255,255,255,0.15); letter-spacing: 0.1em; padding: 8px 0; }
+
+.stats-panel {
+  flex: 1;
+  background: #0a0420;
+  border-left: 3px solid rgba(168,85,247,0.3);
+  padding: 16px 20px;
+}
+.stats-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 0.06em;
+  margin-bottom: 14px;
+}
+
+.stat-highlights { display: flex; gap: 0; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 14px; }
+.stat-hl {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.stat-hl-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  color: rgba(255,255,255,0.85);
+  line-height: 1;
+}
+.stat-hl-num.dim { color: rgba(255,255,255,0.25); }
+.stat-hl-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+}
+
+.cards-row { display: flex; gap: 12px; }
+.stat-card {
+  flex: 1;
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 14px 16px;
+}
+.card-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.7);
+  margin-bottom: 10px;
+}
+.card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.card-label {
+  font-size: 14px;
+  font-weight: 300;
+  color: rgba(255,255,255,0.45);
+}
+.card-val {
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  color: rgba(255,255,255,0.7);
+}
+.card-val.dim { color: rgba(255,255,255,0.25); }
+
+/* ── Physical tape ───────────────────────────────── */
+.tape { display: flex; gap: 4px; margin-bottom: 4px; }
+.tape-item {
+  flex: 1;
+  background: #0a0420;
+  border-left: 3px solid rgba(168,85,247,0.25);
+  padding: 12px 16px;
+}
+.tape-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+  margin-bottom: 4px;
+}
+.tape-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 24px;
+  color: rgba(255,255,255,0.85);
+}
+.tape-val.dim { color: rgba(255,255,255,0.25); }
+
+/* ── Placeholder sections ────────────────────────── */
+.placeholder-section {
+  background: #0a0420;
+  border-left: 3px solid rgba(168,85,247,0.15);
+  padding: 20px 24px;
+  margin-bottom: 4px;
+}
+.ph-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.25);
+}
+.ph-sub {
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.12);
+  margin-bottom: 12px;
+}
+.ph-boxes { display: flex; gap: 12px; }
+.ph-box {
+  flex: 1;
+  height: 64px;
+  border: 1px solid rgba(168,85,247,0.08);
+  border-radius: 2px;
+}
+.ph-circles { display: flex; gap: 8px; }
+.ph-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  border: 1px solid rgba(168,85,247,0.08);
+}
+
+.loading { font-family: 'Space Mono', monospace; font-size: 10px; color: rgba(255,255,255,0.15); letter-spacing: 0.15em; padding: 40px; text-align: center; }
 </style>
 </head>
 <body>
@@ -203,7 +316,13 @@ const H   = { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY };
 
 const WC = { lightweight:'Lightweight', middleweight:'Middleweight', light_heavyweight:'Light-Heavyweight', heavyweight:'Heavyweight' };
 function wcLabel(w) { return WC[w] || (w ? w.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase()) : ''); }
-function toTitleCase(str) { return str ? str.replace(/\w\S*/g, t => t.charAt(0).toUpperCase() + t.substr(1).toLowerCase()) : ''; }
+function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function fmtHeight(inches) {
+  if (!inches) return null;
+  const ft = Math.floor(inches / 12);
+  const rem = inches % 12;
+  return ft + "'" + rem + '"';
+}
 
 function slug() { return new URLSearchParams(window.location.search).get('fighter'); }
 
@@ -217,43 +336,74 @@ async function load() {
   if (!s) { document.getElementById('root').innerHTML = '<div class="loading">fighter not found</div>'; return; }
 
   try {
-    // 1. header data — single view query
-    const cards = await sb('fighter_cards', `slug=eq.${encodeURIComponent(s)}&select=id,display_name,weight_class,level,profile_photo_url,wins,losses,draws,ko_wins,rank,contract_tier`);
+    const cards = await sb('fighter_cards', `slug=eq.${encodeURIComponent(s)}&select=id,display_name,weight_class,level,profile_photo_url,wins,losses,draws,ko_wins,rank,contract_tier,nickname,height,reach,stance,country,age,gym`);
     if (!cards.length) { document.getElementById('root').innerHTML = '<div class="loading">fighter not found</div>'; return; }
     const f = cards[0];
 
-    // 2. match history — single view query
     const matches = await sb('fighter_matches', `fighter_id=eq.${f.id}&order=created_at.desc&select=status,method,won,opponent_name,event_name`);
     const completed = matches.filter(m => m.status === 'completed');
     const scheduled = matches.filter(m => m.status === 'scheduled');
     const recent = completed.slice(0, 5);
     const upcoming = scheduled[0];
 
-    // null-safe record + stats (never render "null")
     const wins = f.wins ?? 0, losses = f.losses ?? 0, draws = f.draws ?? 0, koWins = f.ko_wins ?? 0;
+    const totalFights = wins + losses + draws;
+    const decisionWins = wins - koWins;
+    const koRate = totalFights > 0 ? Math.round((koWins / totalFights) * 100) + '%' : '—';
 
-    // standing label adapts to level: amateurs have no contract; pros are tiered or free agents
-    let standingLabel, standingVal;
-    if (f.level === 'amateur') { standingLabel = 'Standing'; standingVal = 'Amateur'; }
-    else if (f.contract_tier) { standingLabel = 'Contract Tier'; standingVal = toTitleCase(f.contract_tier); }
-    else { standingLabel = 'Standing'; standingVal = 'Free Agent'; }
+    // win streak: count consecutive wins from most recent completed
+    let winStreak = 0;
+    for (const m of completed) { if (m.won) winStreak++; else break; }
 
-    // rank: real number, or a clean "Unranked"
-    const rankHTML = f.rank
-      ? `# <span>${f.rank}</span> Rank`
-      : `<span style="color:rgba(255,255,255,0.22)">Unranked</span>`;
+    // prize money from payouts
+    let prizeMoney = 0;
+    try {
+      const payouts = await sb('prize_payouts', `fighter_id=eq.${f.id}&status=eq.paid&select=amount`);
+      prizeMoney = payouts.reduce((sum, p) => sum + (p.amount || 0), 0);
+    } catch(e) {}
+
+    // title fights + belts from bouts
+    let titleFights = 0, belts = 0;
+    try {
+      const bouts = await sb('fighter_matches', `fighter_id=eq.${f.id}&select=status,won,bout_id`);
+      const completedBoutIds = bouts.filter(b => b.status === 'completed').map(b => b.bout_id).filter(Boolean);
+      if (completedBoutIds.length) {
+        const boutData = await sb('bouts', `id=in.(${completedBoutIds.join(',')})&is_title_fight=eq.true&select=id`);
+        titleFights = boutData.length;
+        const wonBoutIds = bouts.filter(b => b.won && b.status === 'completed').map(b => b.bout_id).filter(Boolean);
+        belts = boutData.filter(b => wonBoutIds.includes(b.id)).length;
+      }
+    } catch(e) {}
+
+    // standing
+    let standingText;
+    if (f.level === 'amateur') standingText = 'Amateur';
+    else if (f.contract_tier) standingText = f.contract_tier.charAt(0).toUpperCase() + f.contract_tier.slice(1);
+    else standingText = 'Free Agent';
 
     const wcText = wcLabel(f.weight_class) || 'Unclassified';
+    const levelText = (f.level || 'amateur').toUpperCase();
 
-    // 3. upcoming bar
-    let upcomingHTML = '';
+    // meta line: country · gym
+    let metaParts = [];
+    if (f.country) metaParts.push(esc(f.country));
+    if (f.gym) metaParts.push(esc(f.gym));
+    const metaHTML = metaParts.length ? metaParts.join('<span class="sep">·</span>') : '';
+
+    // photo
+    const photoHTML = f.profile_photo_url
+      ? `<img src="${f.profile_photo_url}" alt="${esc(f.display_name)}">`
+      : `<div class="no-photo"><svg width="80" height="80" viewBox="0 0 80 80"><circle cx="40" cy="30" r="18" fill="white"/><ellipse cx="40" cy="70" rx="28" ry="18" fill="white"/></svg></div>`;
+
+    // upcoming bar
+    let upcomingHTML;
     if (upcoming) {
       upcomingHTML = `
         <div class="upcoming-bar">
           <div class="upcoming-tag">Upcoming Fight</div>
           <div>
-            <div class="upcoming-matchup">${f.display_name} <span class="vs">vs</span> ${upcoming.opponent_name || 'TBD'}</div>
-            <div class="upcoming-event">${upcoming.event_name || ''}</div>
+            <div class="upcoming-matchup">${esc(f.display_name)} <span class="vs">vs</span> ${esc(upcoming.opponent_name) || 'TBD'}</div>
+            <div class="upcoming-event">${esc(upcoming.event_name) || ''}</div>
           </div>
         </div>`;
     } else {
@@ -264,65 +414,115 @@ async function load() {
         </div>`;
     }
 
-    // 4. photo
-    const photoHTML = f.profile_photo_url
-      ? `<img src="${f.profile_photo_url}" alt="${f.display_name}">`
-      : `<div class="no-photo"><svg width="80" height="80" viewBox="0 0 80 80"><circle cx="40" cy="30" r="18" fill="white"/><ellipse cx="40" cy="70" rx="28" ry="18" fill="white"/></svg></div>`;
-
-    // 5. recent fights
+    // recent fights
     const recentHTML = recent.length
       ? recent.map(r => {
           const isDraw = (r.method || '').toLowerCase() === 'draw';
           const res = isDraw ? 'd' : (r.won ? 'w' : 'l');
           return `<div class="fight-row">
             <div class="fight-result ${res}">${res.toUpperCase()}</div>
-            <div class="fight-opponent">${toTitleCase(r.opponent_name)}</div>
-            <div class="fight-method">${r.method || ''}</div>
+            <div class="fight-opponent">${esc(r.opponent_name)}</div>
+            <div class="fight-method">${esc(r.method) || ''}</div>
           </div>`;
         }).join('')
       : '<div class="no-fights">No fights yet</div>';
 
-    // 6. render
+    // height / reach / stance / age
+    const heightVal = fmtHeight(f.height);
+    const reachVal = f.reach ? f.reach + '"' : null;
+    const stanceVal = f.stance ? f.stance.charAt(0).toUpperCase() + f.stance.slice(1) : null;
+    const ageVal = f.age || null;
+
     document.getElementById('root').innerHTML = `
-      <div class="profile-header">
-        <div class="header-main">
-          <div class="header-top">
-            <div>
-              <div class="fighter-name">${f.display_name || 'Unknown Fighter'}</div>
-              <div class="weight-class">${wcText}</div>
-              <div class="contract-box">
-                <div class="contract-label">${standingLabel}</div>
-                <div class="contract-tier">${standingVal}</div>
-              </div>
+      <div class="hero">
+        <div class="hero-main">
+          <div>
+            <div class="tags">
+              <span class="tag">${esc(wcText)}</span>
+              <span class="tag">${levelText}</span>
             </div>
-            <div class="rank-badge">${rankHTML}</div>
+            <div class="fighter-name">${esc(f.display_name) || 'Unknown Fighter'}</div>
+            ${f.nickname ? `<div class="nickname">"${esc(f.nickname)}"</div>` : ''}
+            ${metaHTML ? `<div class="meta-line">${metaHTML}</div>` : ''}
+            <div class="standing">${standingText}</div>
           </div>
-          <div class="header-stats">
-            <div class="stat-row"><div class="stat-label">Age</div><div class="stat-value">—</div></div>
-            <div class="stat-row"><div class="stat-label">Current Team</div><div class="stat-value">—</div></div>
-            <div class="stat-row">
-              <div class="stat-label">Record</div>
-              <div class="record-val">${wins}<em>W</em> <em>/</em> ${draws}<em>D</em> <em>/</em> ${losses}<em>L</em></div>
+          <div class="wld">
+            <div class="wld-item">
+              <div class="wld-num w">${wins}</div>
+              <div class="wld-bar w"></div>
+              <div class="wld-label">Wins</div>
+            </div>
+            <div class="wld-item">
+              <div class="wld-num l">${losses}</div>
+              <div class="wld-bar l"></div>
+              <div class="wld-label">Losses</div>
+            </div>
+            <div class="wld-item">
+              <div class="wld-num d">${draws}</div>
+              <div class="wld-bar d"></div>
+              <div class="wld-label">Draws</div>
             </div>
           </div>
         </div>
-        <div class="header-photo">${photoHTML}</div>
+        <div class="hero-photo">${photoHTML}</div>
       </div>
 
       ${upcomingHTML}
 
-      <div class="bottom">
-        <div class="recent-fights">
-          <div class="section-label">Recent Fights</div>
+      <div class="middle">
+        <div class="last-matches">
+          <div class="section-label">Last Matches</div>
           ${recentHTML}
         </div>
-        <div class="advanced-stats">
-          <div class="adv-label">Advanced Stats</div>
-          <div class="adv-row"><div class="adv-name">Wins via KO</div><div class="adv-val ${koWins ? '' : 'dim'}">${koWins}</div></div>
-          <div class="adv-row"><div class="adv-name">Total KD</div><div class="adv-val dim">—</div></div>
-          <div class="adv-row"><div class="adv-name">Prize Money</div><div class="adv-val dim">$0</div></div>
-          <div class="adv-row"><div class="adv-name">Achievements</div><div class="adv-val dim">—</div></div>
+        <div class="stats-panel">
+          <div class="stats-title">STATS & RECORDS</div>
+          <div class="stat-highlights">
+            <div class="stat-hl">
+              <div class="stat-hl-num ${koWins ? '' : 'dim'}">${koWins}</div>
+              <div class="stat-hl-label">KO Wins</div>
+            </div>
+            <div class="stat-hl">
+              <div class="stat-hl-num ${koRate === '—' ? 'dim' : ''}">${koRate}</div>
+              <div class="stat-hl-label">KO Rate</div>
+            </div>
+            <div class="stat-hl">
+              <div class="stat-hl-num ${winStreak ? '' : 'dim'}">${winStreak}</div>
+              <div class="stat-hl-label">Win Streak</div>
+            </div>
+          </div>
+          <div class="cards-row">
+            <div class="stat-card">
+              <div class="card-title">WIN METHODS</div>
+              <div class="card-row"><div class="card-label">KO / TKO</div><div class="card-val ${koWins ? '' : 'dim'}">${koWins}</div></div>
+              <div class="card-row"><div class="card-label">Decision</div><div class="card-val ${decisionWins ? '' : 'dim'}">${decisionWins}</div></div>
+            </div>
+            <div class="stat-card">
+              <div class="card-title">CAREER</div>
+              <div class="card-row"><div class="card-label">Prize money</div><div class="card-val ${prizeMoney ? '' : 'dim'}">$${prizeMoney.toLocaleString()}</div></div>
+              <div class="card-row"><div class="card-label">Title fights</div><div class="card-val ${titleFights ? '' : 'dim'}">${titleFights}</div></div>
+              <div class="card-row"><div class="card-label">Belts</div><div class="card-val ${belts ? '' : 'dim'}">${belts}</div></div>
+            </div>
+          </div>
         </div>
+      </div>
+
+      <div class="tape">
+        <div class="tape-item"><div class="tape-label">Height</div><div class="tape-val ${heightVal ? '' : 'dim'}">${heightVal || '—'}</div></div>
+        <div class="tape-item"><div class="tape-label">Reach</div><div class="tape-val ${reachVal ? '' : 'dim'}">${reachVal || '—'}</div></div>
+        <div class="tape-item"><div class="tape-label">Stance</div><div class="tape-val ${stanceVal ? '' : 'dim'}">${stanceVal || '—'}</div></div>
+        <div class="tape-item"><div class="tape-label">Age</div><div class="tape-val ${ageVal ? '' : 'dim'}">${ageVal || '—'}</div></div>
+      </div>
+
+      <div class="placeholder-section">
+        <div class="ph-title">UBA SPOTLIGHT</div>
+        <div class="ph-sub">Coming soon</div>
+        <div class="ph-boxes"><div class="ph-box"></div><div class="ph-box"></div><div class="ph-box"></div><div class="ph-box"></div></div>
+      </div>
+
+      <div class="placeholder-section">
+        <div class="ph-title">STASH</div>
+        <div class="ph-sub">Coming soon</div>
+        <div class="ph-circles"><div class="ph-circle"></div><div class="ph-circle"></div><div class="ph-circle"></div><div class="ph-circle"></div><div class="ph-circle"></div></div>
       </div>`;
 
   } catch(e) {
