@@ -43,6 +43,12 @@
          border-left: 2px solid var(--p); padding: 8px 12px; gap: 10px; min-height: 44px; transition: background 0.15s; }
   .row-label:hover .event-row { background: #12101f; }
 
+  .event-date { flex-shrink: 0; width: 34px; text-align: center; line-height: 1.05; }
+  .ed-dow { font-family: 'Space Mono', monospace; font-size: 7px; color: var(--muted); letter-spacing: 0.06em; }
+  .ed-num { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--pc); text-shadow: var(--glow-sm); }
+  .ed-mon { font-family: 'Space Mono', monospace; font-size: 7px; color: var(--muted); letter-spacing: 0.06em; }
+  .event-div { width: 1px; align-self: stretch; background: var(--border); flex-shrink: 0; margin: 2px 0; }
+
   .event-badges { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; align-items: flex-start; width: 58px; }
   .league-badge { font-family: 'Space Mono', monospace; font-size: 8px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
          padding: 1px 5px; white-space: nowrap; border: 1px solid currentColor;
@@ -141,6 +147,7 @@ const PLACEHOLDER_EVENTS = [
   { id:'ph-draft', name:'UBAe S2 Draft',  league:'UBAe', type:'draft',       status:'scheduled', event_date:'2026-07-16T19:00:00Z' },
   { id:'ph-ubae1', name:'UBAe Season 2',  league:'UBAe', type:'ubae',        status:'scheduled', event_date:'2026-07-24T19:00:00Z' },
   { id:'ph-ama57', name:'AMA 57',         league:'UBA',  type:'ama',         status:'completed', event_date:'2026-07-02T18:00:00Z' },
+  { id:'ph-ama56', name:'AMA 56',         league:'UBA',  type:'ama',         status:'completed', event_date:'2026-06-24T18:00:00Z' },
   { id:'ph-uba14', name:'UBA 14',         league:'UBA',  type:'numbered',    status:'completed', event_date:'2026-06-20T17:00:00Z' },
 ];
 
@@ -222,6 +229,12 @@ function eventHTML(e) {
     <input type="checkbox" class="row-toggle" id="${uid}">
     <label class="row-label" for="${uid}">
       <div class="event-row">
+        <div class="event-date">
+          <div class="ed-dow">${DAYS[d.getUTCDay()]}</div>
+          <div class="ed-num">${d.getUTCDate()}</div>
+          <div class="ed-mon">${MONTHS[d.getUTCMonth()]}</div>
+        </div>
+        <div class="event-div"></div>
         <div class="event-badges">
           <span class="league-badge ${(e.league || 'UBA').toLowerCase()}">${e.league || 'UBA'}</span>
           <span class="event-badge ${type}">${TYPE_LABEL[type] || 'Event'}</span>
@@ -253,15 +266,8 @@ function render() {
     return;
   }
 
-  // group by day
-  const byDay = {};
-  rows.forEach(e => { const k = e.event_date.slice(0, 10); (byDay[k] = byDay[k] || []).push(e); });
-  const dayKeys = Object.keys(byDay).sort((a, b) => activeTab === 'upcoming' ? a.localeCompare(b) : b.localeCompare(a));
-
-  list.innerHTML = dayKeys.map(k => {
-    const d = new Date(k + 'T00:00:00Z');
-    return `<div class="day-group"><div class="day-header">${fmtDay(d)}</div>${byDay[k].map(eventHTML).join('')}</div>`;
-  }).join('');
+  // flat list — each row carries its own date (no day-header lines)
+  list.innerHTML = rows.map(eventHTML).join('');
 }
 
 document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
