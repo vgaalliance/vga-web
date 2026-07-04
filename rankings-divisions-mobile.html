@@ -253,7 +253,7 @@ async function loadDiv(idx) {
   const div = DIVS[idx];
   const [rankRes, cardRes] = await Promise.all([
     fetch(`${SB}/rest/v1/rankings_public?scope=eq.weight_class&level=eq.pro&weight_class=eq.${div.key}&select=rank,fighter_slug&order=rank.asc`, { headers: H }),
-    fetch(`${SB}/rest/v1/fighter_cards?weight_class=eq.${div.key}&select=slug,display_name,wins,losses,contract_tier,level,is_champion`, { headers: H }),
+    fetch(`${SB}/rest/v1/fighter_cards?weight_class=eq.${div.key}&select=slug,display_name,wins,losses,is_champion`, { headers: H }),
   ]);
   const rankArr = await rankRes.json().then(d => Array.isArray(d) ? d : []);
   const cardArr = await cardRes.json().then(d => Array.isArray(d) ? d : []);
