@@ -258,8 +258,6 @@ body::after { content:''; position:fixed; inset:0; background:radial-gradient(el
       <div class="social-tags">
         <a href="https://discord.gg/uba" target="_blank" class="social-tag discord">Discord</a>
         <a href="https://www.youtube.com/@UBAesports" target="_blank" class="social-tag yt">YouTube</a>
-        <a href="#" id="vod-tag" target="_blank" class="social-tag vod">Latest VOD</a>
-        <span class="social-tag prize" onclick="window.parent.postMessage({type:'navigate',url:'https://www.ubaesports.com/event-details/uba-13-prize-fund'},'*')">UBA13 Fund</span>
       </div>
     </div>
     <div class="cd-big-digits">
@@ -729,7 +727,7 @@ async function loadFighters(){
       if(Array.isArray(d2)&&d2.length&&d2[0].vod_url)url=d2[0].vod_url;
     }
   }catch(e){}
-  document.getElementById('vod-tag').href=url;
+  var vt=document.getElementById('vod-tag'); if(vt)vt.href=url;
   var m=url.match(/(?:youtube\.com\/(?:watch\?v=|live\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
   if(m){
     var id=m[1],box=document.getElementById('vod-embed'),th=document.getElementById('vod-thumb');
