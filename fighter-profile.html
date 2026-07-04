@@ -83,6 +83,11 @@ body::after {
   border-color: var(--pb);
   text-shadow: var(--glow-sm);
 }
+.tag-champ    { color: var(--gold); background: rgba(245,200,66,0.10); border-color: rgba(245,200,66,0.40); text-shadow: var(--glow-gold); }
+.tag-platinum { color: #a8f0ff; background: rgba(168,240,255,0.08); border-color: rgba(168,240,255,0.35); text-shadow: 0 0 8px rgba(168,240,255,0.5); }
+.tag-gold     { color: var(--gold); background: rgba(245,200,66,0.08); border-color: rgba(245,200,66,0.30); }
+.tag-silver   { color: #c0c0c8; background: rgba(192,192,200,0.08); border-color: rgba(192,192,200,0.30); }
+.tag-bronze   { color: #cd7f32; background: rgba(205,127,50,0.08); border-color: rgba(205,127,50,0.30); }
 .fighter-name {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 64px;
@@ -431,7 +436,7 @@ async function load() {
   if (!s) { document.getElementById('root').innerHTML = '<div class="loading">fighter not found</div>'; return; }
 
   try {
-    const cards = await sb('fighter_cards', `slug=eq.${encodeURIComponent(s)}&select=id,display_name,weight_class,level,profile_photo_url,wins,losses,draws,ko_wins,rank,nickname,height,reach,stance,country,age,gym,vc_balance`);
+    const cards = await sb('fighter_cards', `slug=eq.${encodeURIComponent(s)}&select=id,display_name,weight_class,level,profile_photo_url,wins,losses,draws,ko_wins,rank,nickname,height,reach,stance,country,age,gym,vc_balance,contract_tier,is_champion`);
     if (!cards.length) { document.getElementById('root').innerHTML = '<div class="loading">fighter not found</div>'; return; }
     const f = cards[0];
 
@@ -506,7 +511,9 @@ async function load() {
             <div class="tags">
               <span class="tag">${esc(wcText)}</span>
               <span class="tag">${levelText}</span>
+              ${f.is_champion ? '<span class="tag tag-champ">Champion</span>' : ''}
               ${rankTag}
+              ${f.contract_tier ? `<span class="tag tag-${esc(f.contract_tier)}">${esc(f.contract_tier)}</span>` : ''}
             </div>
             <div class="fighter-name">${esc(f.display_name) || 'Unknown Fighter'}</div>
             ${f.nickname ? `<div class="nickname">"${esc(f.nickname)}"</div>` : ''}
