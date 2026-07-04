@@ -37,8 +37,11 @@ body { background: var(--bg); color: var(--text); font-family: 'Barlow Condensed
 .brand-name span { color: var(--pl); }
 .brand-tag { font-family: 'Space Mono', monospace; font-size: 7px; letter-spacing: 0.18em; color: var(--muted); text-transform: uppercase; }
 
-/* HERO GAME CUTOUT — transparent iframe, just the avatar + PLAY floating on the hero */
-.hero-ava { position: absolute; right: 8px; bottom: 0; width: 70px; height: 100px; z-index: 2; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+/* HERO GAME CUTOUT — transparent iframe, just the avatar + PLAY. Sits outside
+   the hero's overflow so the feet stand ON the purple border line and the
+   PLAY tag hangs just below it. */
+.hero-wrap { position: relative; }
+.hero-ava { position: absolute; right: 10px; bottom: -13px; width: 70px; height: 98px; z-index: 3; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .hero-ava iframe { width: 100%; height: 100%; border: 0; background: transparent; pointer-events: none; }
 .hero-ava-tap { position: absolute; inset: 0; }
 
@@ -264,14 +267,11 @@ function render(f, recent, upcoming, lastVod, beltCount) {
   // Hero
   const nickEl = f.nickname ? `<div class="hero-nick">"${esc(f.nickname)}"</div>` : '';
   const hero = `
+    <div class="hero-wrap">
     <div class="hero">
       <div class="hero-lb"></div>
       <div class="hero-holo"></div>
       ${badgeHTML(f)}
-      <div class="hero-ava" onclick="openGame()">
-        <iframe src="game/avatar.html" scrolling="no" title="Play the training demo"></iframe>
-        <div class="hero-ava-tap"></div>
-      </div>
       <div class="hero-inner">
         ${nickEl}
         <div class="hero-name">${esc(f.display_name)}</div>
@@ -280,6 +280,11 @@ function render(f, recent, upcoming, lastVod, beltCount) {
           <span class="hero-rank">${f.rank ? '#' + f.rank : 'Unranked'}</span>
         </div>
       </div>
+    </div>
+    <div class="hero-ava" onclick="openGame()">
+      <iframe src="game/avatar.html" scrolling="no" title="Play the training demo"></iframe>
+      <div class="hero-ava-tap"></div>
+    </div>
     </div>`;
 
   // Next fight banner
