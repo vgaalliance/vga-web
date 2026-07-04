@@ -25,7 +25,17 @@
   100% { background-position: -200% 0; }
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { background: var(--bg); color: var(--text); font-family: 'Barlow Condensed', sans-serif; min-height: 100vh; overflow-x: hidden; }
+html { background: var(--bg); }
+body { background: var(--bg); color: var(--text); font-family: 'Barlow Condensed', sans-serif; overflow-x: hidden; }
+
+/* BRAND BAR */
+.brand-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 14px 6px; border-bottom: 1px solid var(--border); position: relative;
+}
+.brand-name { font-family: 'Bebas Neue', sans-serif; font-size: 17px; letter-spacing: 0.12em; color: var(--text); text-shadow: var(--glow-sm); }
+.brand-name span { color: var(--pl); }
+.brand-tag { font-family: 'Space Mono', monospace; font-size: 7px; letter-spacing: 0.18em; color: var(--muted); text-transform: uppercase; }
 /* CRT scanlines */
 body::before {
   content: ''; position: fixed; inset: 0;
@@ -131,6 +141,10 @@ body::before {
 </style>
 </head>
 <body>
+<div class="brand-bar">
+  <div class="brand-name">VGA <span>ESPORTS</span></div>
+  <div class="brand-tag">Fighter</div>
+</div>
 <div id="root"><div class="loading-state">Loading...</div></div>
 <script>
 const SB  = 'https://emzlivoykbhhjcugupit.supabase.co';
