@@ -13,14 +13,13 @@
 
   .wrap { width: 100%; max-width: 860px; }
 
-  /* tabs */
-  .tabs { display: flex; border-bottom: 1px solid #2e2e40; margin-bottom: 20px; }
-  .tab { padding: 10px 22px; font-size: 15px; font-weight: 700; letter-spacing: 0.06em; color: #6a6a7a;
-         cursor: pointer; border: none; background: none; text-transform: uppercase; position: relative; transition: color 0.15s; }
+  /* tabs — compact attachment bar */
+  .tabs { display: inline-flex; border: 1px solid #2e2e40; background: rgba(20,20,40,0.6); margin-bottom: 14px; }
+  .tab { padding: 5px 16px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; color: #6a6a7a;
+         cursor: pointer; border: none; background: none; text-transform: uppercase; transition: color 0.15s, background 0.15s; }
+  .tab + .tab { border-left: 1px solid #2e2e40; }
   .tab:hover { color: #bbb; }
-  .tab.active { color: #fff; }
-  .tab.active::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px;
-         background: linear-gradient(90deg, #7c3aed, #a78bfa, #7c3aed); }
+  .tab.active { color: #fff; background: rgba(124,58,237,0.22); box-shadow: inset 0 -2px 0 #7c3aed; }
 
   .list { display: flex; flex-direction: column; gap: 14px; }
   .day-group { border-left: 2px solid #3a3a5a; padding-left: 12px; }
@@ -86,6 +85,14 @@
   .bout-wc { font-family: 'Share Tech Mono', monospace; font-size: 8px; color: #555; letter-spacing: 0.05em; text-transform: uppercase; }
   .no-card { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: #555; padding: 10px 0; letter-spacing: 0.05em; }
 
+  /* VOD embed — thumbnail only until tapped */
+  .vod-box { margin: 4px 0 8px; position: relative; border: 1px solid #3a2a6a; background: #000; }
+  .vod-thumb { position: relative; cursor: pointer; padding-top: 56.25%; background-size: cover; background-position: center; }
+  .vod-play { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(4,0,16,0.25); }
+  .vod-play-btn { width: 46px; height: 32px; background: rgba(4,0,16,0.85); border: 1px solid rgba(167,139,250,0.6); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 12px rgba(124,58,237,0.5); }
+  .vod-play-tri { width: 0; height: 0; border-top: 7px solid transparent; border-bottom: 7px solid transparent; border-left: 11px solid #a78bfa; margin-left: 3px; }
+  .vod-link { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: #a78bfa; text-decoration: none; border: 1px solid rgba(167,139,250,0.4); padding: 4px 10px; display: inline-block; margin: 4px 0 8px; }
+
   .status-msg { color: #444; font-family: 'Share Tech Mono', monospace; font-size: 12px; padding: 48px 0; text-align: center; letter-spacing: 0.06em; }
 </style>
 </head>
@@ -149,6 +156,17 @@ function eventHTML(e) {
   const cardHTML = card.length
     ? `<div class="card-head">${done ? 'Results' : 'Fight Card'}</div>` + card.map(boutHTML).join('')
     : `<div class="no-card">No matches listed for this event.</div>`;
+
+  // VOD: tap-to-play embed for completed events with a YouTube link
+  // (thumbnail only until tapped — keeps the page light)
+  let vodHTML = '';
+  if (done && e.vod_link) {
+    const vid = (e.vod_link.match(/(?:youtube\.com\/(?:watch\?v=|live\/|shorts\/)|youtu\.be\/)([\w-]{11})/) || [])[1];
+    const ts  = (e.vod_link.match(/[?&]t=(\d+)/) || [])[1];
+    vodHTML = vid
+      ? `<div class="card-head">Watch</div><div class="vod-box"><div class="vod-thumb" data-vid="${vid}"${ts ? ` data-start="${ts}"` : ''} style="background-image:url(https://i.ytimg.com/vi/${vid}/hqdefault.jpg)"><div class="vod-play"><div class="vod-play-btn"><div class="vod-play-tri"></div></div></div></div></div>`
+      : `<div class="card-head">Watch</div><a class="vod-link" href="${e.vod_link}" target="_blank">WATCH VOD ↗</a>`;
+  }
   const meta = done
     ? `<span class="meta-pill done">Done</span>`
     : `<span class="meta-pill soon">${fmtTime(d)}</span>`;
@@ -168,7 +186,7 @@ function eventHTML(e) {
         <span class="row-chevron">▶</span>
       </div>
     </label>
-    <div class="row-dropdown">${cardHTML}</div>
+    <div class="row-dropdown">${vodHTML}${cardHTML}</div>
   </div>`;
 }
 
@@ -203,10 +221,18 @@ document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () =>
   t.classList.add('active'); activeTab = t.dataset.tab; render();
 }));
 
+// Tap a VOD thumbnail -> swap in the actual player (honors ?t= start time)
+document.addEventListener('click', ev => {
+  const th = ev.target.closest('.vod-thumb');
+  if (!th) return;
+  const vid = th.dataset.vid, start = th.dataset.start;
+  th.parentElement.innerHTML = `<div style="position:relative;padding-top:56.25%;"><iframe src="https://www.youtube.com/embed/${vid}?autoplay=1&playsinline=1${start ? `&start=${start}` : ''}" style="position:absolute;inset:0;width:100%;height:100%;border:0;" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>`;
+});
+
 (async () => {
   try {
     const [ev, cards] = await Promise.all([
-      sb('events_public', 'select=id,name,type,status,event_date&order=event_date.desc'),
+      sb('events_public', 'select=id,name,type,status,event_date,vod_link&order=event_date.desc'),
       sb('event_matches', 'select=event_id,bout_number,fighter_a_name,fighter_b_name,status,method,winner_corner,is_title_fight,title_name,weight_class')
     ]);
     events = Array.isArray(ev) ? ev : [];
