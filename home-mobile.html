@@ -298,7 +298,7 @@ body::after { content:''; position:fixed; inset:0; background:radial-gradient(el
 <!-- UBAe S2 teaser + sponsor — frame the video above -->
 <div class="split-banner" style="margin:8px 16px 0;">
   <div class="split-name">UBAe Season 2</div>
-  <div class="split-dates">COMING SOON</div>
+  <div class="split-dates" style="font-size:9px;color:var(--pc);letter-spacing:2px;text-shadow:var(--glow-sm);">COMING SOON</div>
 </div>
 
 <div class="sheath-banner">
@@ -687,7 +687,7 @@ async function loadTeams(){
 async function loadFighters(){
   const el=document.getElementById('s-fighters');
   try{
-    const r=await fetch(SB_U+'/rest/v1/fighter_cards?select=display_name,wins,losses,rank,is_champion&order=rank.asc.nullslast,wins.desc&limit=16',HU);
+    const r=await fetch(SB_U+'/rest/v1/fighter_cards?select=display_name,wins,losses,rank,is_champion&order=rank.asc.nullslast,wins.desc&limit=8',HU);
     let data=await r.json();
     if(!Array.isArray(data)||!data.length){el.innerHTML='<div class="s-loading" style="color:#3a3a55">No fighters</div>';return;}
     el.innerHTML=data.map(f=>{
