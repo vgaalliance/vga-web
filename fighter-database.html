@@ -109,9 +109,20 @@
     text-decoration: none; overflow: hidden;
     transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
     border: 1px solid var(--border);
-    border-top: 2px solid var(--p);
     background: var(--card-bg);
   }
+  /* Ranked-pro top strip: 40% purple with a slow, super-subtle shimmer.
+     (Champs override this with their gold border + holo; ama/nr opt out below.) */
+  .card::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background:
+      linear-gradient(90deg, transparent 35%, rgba(196,132,252,0.45) 50%, transparent 65%),
+      rgba(123, 47, 255, 0.40);
+    background-size: 250% 100%, 100% 100%;
+    animation: holo 8s ease-in-out infinite;
+    z-index: 3; pointer-events: none;
+  }
+  .card.is-ama::after, .card.is-nr::after { content: none; }
   /* left-edge reveal on hover */
   .card::before {
     content: '';
@@ -120,7 +131,7 @@
     transform: scaleY(0); transform-origin: bottom;
     transition: transform 0.2s ease; z-index: 3;
   }
-  .card:hover { background: #150d2e; border-top-color: var(--pl); transform: translateY(-2px); }
+  .card:hover { background: #150d2e; transform: translateY(-2px); }
   .card:hover::before { transform: scaleY(1); }
   .card:hover .card-name { color: var(--text); }
   .card:hover .card-rank { color: var(--muted); }
@@ -148,9 +159,9 @@
   .card.t4 { background: #0a0619; }
   .card.t5 { background: #090617; }
 
-  /* ── Unranked pro — same purple identity, dulled ── */
+  /* ── Unranked pro — same purple identity, half the ranked strip, no shimmer ── */
   .card.is-nr {
-    border-top: 2px solid rgba(123, 47, 255, 0.30);
+    border-top: 2px solid rgba(123, 47, 255, 0.20);
     background: #09090f;
   }
 
