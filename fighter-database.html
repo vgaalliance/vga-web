@@ -111,15 +111,11 @@
     border: 1px solid var(--border);
     background: var(--card-bg);
   }
-  /* Ranked-pro top strip: 40% purple with a slow, super-subtle shimmer.
+  /* Ranked-pro top strip: 40% purple, flat — no shimmer. Shimmer is champs-only.
      (Champs override this with their gold border + holo; ama/nr opt out below.) */
   .card::after {
     content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-    background:
-      linear-gradient(90deg, transparent 35%, rgba(196,132,252,0.45) 50%, transparent 65%),
-      rgba(123, 47, 255, 0.40);
-    background-size: 250% 100%, 100% 100%;
-    animation: holo 8s ease-in-out infinite;
+    background: rgba(123, 47, 255, 0.40);
     z-index: 3; pointer-events: none;
   }
   .card.is-ama::after, .card.is-nr::after { content: none; }
