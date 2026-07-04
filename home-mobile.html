@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>UBAe Season 1</title>
+<title>UBA Esports</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -223,8 +223,8 @@ body::after { content:''; position:fixed; inset:0; background:radial-gradient(el
 <canvas id="flwcv"></canvas>
 
 <div class="header">
-  <div class="logo-placeholder"><span>YOUR LOGO</span></div>
-  <div class="header-tag">UBAe &middot; S1 2026</div>
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.14em;color:var(--text);text-shadow:var(--glow-sm);">UBA <span style="color:var(--pl);">ESPORTS</span></div>
+  <div class="header-tag">VGA &middot; 2026</div>
 </div>
 
 <!-- VGA FEED TICKER -->
@@ -289,6 +289,18 @@ body::after { content:''; position:fixed; inset:0; background:radial-gradient(el
   <div class="sheath-inner">
     <span class="sheath-main">Brought to you by <a href="https://sheath.com" target="_blank">Sheath.com</a></span>
     <span class="sheath-sub">Underwear of Legends</span>
+  </div>
+</div>
+
+<!-- LATEST FIGHT — lite YouTube embed: thumbnail only until tapped -->
+<div class="section-head" id="vod-section-head" style="display:none;"><div class="section-title">Latest Fight</div><div class="section-line"></div></div>
+<div id="vod-embed" style="display:none;margin:0 16px 4px;position:relative;border:1px solid rgba(168,85,247,.3);background:#000;box-shadow:0 0 10px rgba(123,47,255,.15);">
+  <div id="vod-thumb" style="position:relative;cursor:pointer;padding-top:56.25%;background-size:cover;background-position:center;">
+    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(4,0,16,.25);">
+      <div style="width:44px;height:30px;background:rgba(4,0,16,.85);border:1px solid rgba(168,85,247,.6);display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px rgba(123,47,255,.5);">
+        <div style="width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:11px solid #C084FC;margin-left:3px;"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -380,20 +392,22 @@ body::after { content:''; position:fixed; inset:0; background:radial-gradient(el
 </div>
 
 <script>
+// Legacy UBAe project (teams, transfers, team schedule — S2 stays here per Open Decision #3)
 const SB='https://xwsbyxkjfqqrgbzxmmrn.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3c2J5eGtqZnFxcmdienhtbXJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNjAyNDcsImV4cCI6MjA4NzkzNjI0N30.6amkt0zGMLT3_N3fKY6sMMTdaBr5eS7Ig-hAPvPCB4g';
 const H={headers:{'apikey':KEY,'Authorization':'Bearer '+KEY}};
+// UBA project (fighters, rankings, events)
+const SB_U='https://emzlivoykbhhjcugupit.supabase.co';
+const KEY_U='sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF';
+const HU={headers:{'apikey':KEY_U,'Authorization':'Bearer '+KEY_U}};
 function pad(n){return String(n).padStart(2,'0');}
 const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DOT_WEEKS=[1,2,3,4,5,6,7,0];
 
-// Special event countdowns
-const SPECIAL_EVENTS = [
-  { label:'Playoffs', date:'2026-05-14T21:00:00Z', color:'purple' },
-  { label:'UBA 13',   date:'2026-05-23T22:00:00Z', color:'gold' },
-  { label:'Vail',     date:'2026-05-29T21:00:00Z', color:'green' },
-];
+// Special event countdowns (S1 events all passed — refill when the S2/UBA
+// calendar locks; the hero countdown now reads both DBs automatically)
+const SPECIAL_EVENTS = [];
 
 let scheduleData={};
 let scheduleLoaded=false;
@@ -568,35 +582,38 @@ document.addEventListener('touchmove',e=>{if(dragging)goWeek(weekFromPct(pctFrom
 document.addEventListener('mouseup',()=>dragging=false);
 document.addEventListener('touchend',()=>dragging=false);
 
-// countdown main
+// countdown main — league-agnostic: next upcoming thing across UBA events,
+// UBAe matches, and any hand-set SPECIAL_EVENTS. Earliest future wins.
 let nextEventTarget=null,tickInterval=null;
 async function loadNextEvent(){
   try{
-    // Check special upcoming events first
     const now=Date.now();
-    const upcoming=SPECIAL_EVENTS.filter(e=>new Date(e.date)>now);
-    if(upcoming.length){
-      const next=upcoming[0];
-      nextEventTarget=new Date(next.date);
-      tickCountdown();
-      document.getElementById('next-label').textContent='Coming Up';
-      document.getElementById('next-matchup').textContent=next.label;
-      document.getElementById('next-date').textContent=nextEventTarget.toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZone:'America/New_York'})+' EST';
-      if(!tickInterval)tickInterval=setInterval(tickCountdown,1000);
+    const candidates=[];
+    SPECIAL_EVENTS.forEach(e=>{const t=new Date(e.date).getTime();if(t>now)candidates.push({t,label:e.label,tag:'Coming Up'});});
+    try{
+      const r1=await fetch(SB_U+'/rest/v1/events_public?select=name,event_date,status&status=eq.scheduled&order=event_date.asc&limit=5',HU);
+      const d1=await r1.json();
+      (Array.isArray(d1)?d1:[]).forEach(e=>{const t=new Date(e.event_date).getTime();if(t>now)candidates.push({t,label:e.name,tag:'UBA — Next Event'});});
+    }catch(e){}
+    try{
+      const r2=await fetch(SB+'/rest/v1/ubae_matches?select=match_date,week,team1:ubae_teams!team1_id(team_name),team2:ubae_teams!team2_id(team_name)&winner_id=is.null&order=match_date.asc&limit=5',H);
+      const d2=await r2.json();
+      (Array.isArray(d2)?d2:[]).forEach(m=>{const t=parseDateUTC(m.match_date).getTime();if(t>now)candidates.push({t,label:(m.team1?.team_name||'TBD')+' VS '+(m.team2?.team_name||'TBD'),tag:'UBAe — Week '+m.week});});
+    }catch(e){}
+    if(!candidates.length){
+      document.getElementById('next-label').textContent='Next Event';
+      document.getElementById('next-matchup').textContent='TBA — Stay Tuned';
+      document.getElementById('next-date').textContent='';
       return;
     }
-    // Fall back to next UBAe match
-    const r=await fetch(SB+'/rest/v1/ubae_matches?select=match_date,week,team1:ubae_teams!team1_id(team_name),team2:ubae_teams!team2_id(team_name)&winner_id=is.null&order=match_date.asc',H);
-    const all=await r.json();
-    if(!Array.isArray(all)||!all.length){document.getElementById('next-matchup').textContent='Season Complete';return;}
-    const future=all.filter(m=>parseDateUTC(m.match_date).getTime()>now);
-    if(!future.length){document.getElementById('next-matchup').textContent='Season Complete';return;}
-    const m=future[0];
-    nextEventTarget=parseDateUTC(m.match_date);
+    candidates.sort((a,b)=>a.t-b.t);
+    const n=candidates[0];
+    nextEventTarget=new Date(n.t);
     tickCountdown();
-    document.getElementById('next-label').textContent='Week '+m.week+' — Next Match';
-    document.getElementById('next-matchup').textContent=(m.team1?.team_name||'TBD')+' VS '+(m.team2?.team_name||'TBD');
+    document.getElementById('next-label').textContent=n.tag;
+    document.getElementById('next-matchup').textContent=n.label;
     document.getElementById('next-date').textContent=nextEventTarget.toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZone:'America/New_York'})+' EST';
+    if(!tickInterval)tickInterval=setInterval(tickCountdown,1000);
   }catch(e){document.getElementById('next-matchup').textContent='Schedule Loading';}
 }
 function tickCountdown(){
@@ -656,14 +673,16 @@ async function loadTeams(){
   try{const r=await fetch(SB+'/rest/v1/ubae_teams?select=team_name,wins,losses&order=wins.desc,losses.asc&limit=8',H);el.innerHTML=makeRows(await r.json(),'team_name','wins','losses',4);}
   catch(e){el.innerHTML='<div class="s-loading" style="color:#3a3a55">Could not load</div>';}
 }
+// Fighters tab — reads the NEW UBA project: champions (belt flag) pinned
+// first, then P4P order, then best records.
 async function loadFighters(){
   const el=document.getElementById('s-fighters');
   try{
-    const r=await fetch(SB+'/rest/v1/fighters?select=display_name,wins,losses,rank,status&order=rank.asc.nullslast,wins.desc&limit=16',H);
+    const r=await fetch(SB_U+'/rest/v1/fighter_cards?select=display_name,wins,losses,rank,is_champion&order=rank.asc.nullslast,wins.desc&limit=16',HU);
     let data=await r.json();
-    if(!data.length){el.innerHTML='<div class="s-loading" style="color:#3a3a55">No fighters</div>';return;}
-    const champs=data.filter(f=>(f.status||'').toUpperCase()==='CHAMP');
-    const rest=data.filter(f=>(f.status||'').toUpperCase()!=='CHAMP');
+    if(!Array.isArray(data)||!data.length){el.innerHTML='<div class="s-loading" style="color:#3a3a55">No fighters</div>';return;}
+    const champs=data.filter(f=>f.is_champion);
+    const rest=data.filter(f=>!f.is_champion);
     el.innerHTML=makeRows([...champs,...rest],'display_name','wins','losses',8);
   }catch(e){el.innerHTML='<div class="s-loading" style="color:#3a3a55">Load failed</div>';}
 }
@@ -685,10 +704,32 @@ async function loadFighters(){
   window.addEventListener('resize',function(){resize();flowers=[];fill();});
 })();
 
-// latest vod
+// latest vod — prefers the newest UBA fight VOD, falls back to legacy UBAe,
+// then the channel. Also powers the tap-to-play embed (thumbnail only until
+// tapped, so the page stays fast on mobile).
 (async function(){
-  try{var r=await fetch(SB+'/rest/v1/ubae_matches?select=vod_url&vod_url=not.is.null&order=match_date.desc&limit=1',H);var d=await r.json();document.getElementById('vod-tag').href=(Array.isArray(d)&&d.length&&d[0].vod_url)?d[0].vod_url:'https://www.youtube.com/@UBAesports';}
-  catch(e){document.getElementById('vod-tag').href='https://www.youtube.com/@UBAesports';}
+  var url='https://www.youtube.com/@UBAesports';
+  try{
+    var d1=[];
+    try{var r1=await fetch(SB_U+'/rest/v1/fighter_matches?select=vod_link,event_date&vod_link=not.is.null&order=event_date.desc&limit=1',HU);d1=await r1.json();}catch(e){}
+    if(Array.isArray(d1)&&d1.length&&d1[0].vod_link){url=d1[0].vod_link;}
+    else{
+      var r2=await fetch(SB+'/rest/v1/ubae_matches?select=vod_url&vod_url=not.is.null&order=match_date.desc&limit=1',H);
+      var d2=await r2.json();
+      if(Array.isArray(d2)&&d2.length&&d2[0].vod_url)url=d2[0].vod_url;
+    }
+  }catch(e){}
+  document.getElementById('vod-tag').href=url;
+  var m=url.match(/(?:youtube\.com\/(?:watch\?v=|live\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
+  if(m){
+    var id=m[1],box=document.getElementById('vod-embed'),th=document.getElementById('vod-thumb');
+    document.getElementById('vod-section-head').style.display='flex';
+    box.style.display='block';
+    th.style.backgroundImage='url(https://i.ytimg.com/vi/'+id+'/hqdefault.jpg)';
+    th.addEventListener('click',function(){
+      box.innerHTML='<div style="position:relative;padding-top:56.25%;"><iframe src="https://www.youtube.com/embed/'+id+'?autoplay=1&playsinline=1" style="position:absolute;inset:0;width:100%;height:100%;border:0;" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>';
+    });
+  }
 })();
 
 // VGA feed ticker
