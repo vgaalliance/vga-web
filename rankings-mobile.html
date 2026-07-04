@@ -249,7 +249,7 @@ const dir = { rank:1, wins:-1 };
 function toTitle(s){ return s ? s.replace(/\w\S*/g, t=>t[0].toUpperCase()+t.substr(1).toLowerCase()) : ''; }
 
 function tierClass(f) {
-  if (f.rank === 1 && f.level === 'pro') return 'is-champ';
+  if (f.is_champion) return 'is-champ';
   if (f.level === 'amateur') return 'is-ama';
   if (!f.rank) return 'is-nr';
   if (f.rank <= 3) return '';
@@ -258,7 +258,7 @@ function tierClass(f) {
 }
 
 function rlbl(f) {
-  if (f.rank === 1 && f.level === 'pro') return 'C';
+  if (f.is_champion) return 'C';
   return f.rank ? '#' + f.rank : '–';
 }
 
@@ -324,7 +324,7 @@ document.querySelectorAll('.sort-btn').forEach(b => {
 document.getElementById('search').addEventListener('input', e => { q = e.target.value.toLowerCase().trim(); render(); });
 
 // Load UBA fighters
-fetch(`${SB_U}/rest/v1/fighter_cards?select=slug,display_name,weight_class,level,wins,losses,draws,rank`, { headers: HU })
+fetch(`${SB_U}/rest/v1/fighter_cards?select=slug,display_name,weight_class,level,wins,losses,draws,rank,is_champion`, { headers: HU })
   .then(r => r.json())
   .then(d => { all = Array.isArray(d) ? d : []; render(); })
   .catch(() => { document.getElementById('fighter-list').innerHTML = '<div class="load-msg">Error loading fighters</div>'; });
@@ -332,14 +332,15 @@ fetch(`${SB_U}/rest/v1/fighter_cards?select=slug,display_name,weight_class,level
 // UBA champions
 async function loadChamps() {
   try {
-    const r = await fetch(`${SB_U}/rest/v1/rankings_public?rank=eq.1&level=eq.pro&scope=eq.weight_class&select=weight_class,fighter_name`, { headers: HU });
+    // Champions = is_champion flag (belt holders), NOT division rank #1.
+    const r = await fetch(`${SB_U}/rest/v1/fighter_cards?is_champion=eq.true&select=weight_class,display_name`, { headers: HU });
     const d = await r.json();
     const el = document.getElementById('champs-list');
     if (!Array.isArray(d) || !d.length) { el.innerHTML = '<div class="tr-empty">No champions yet</div>'; return; }
     el.innerHTML = d.sort((a, b) => WC_ORDER.indexOf(a.weight_class) - WC_ORDER.indexOf(b.weight_class))
       .map(f => `<div class="ch-row">
         <span class="ch-lbl">${WC_LBL[f.weight_class] || '?'}</span>
-        <span class="ch-name">${f.fighter_name ? f.fighter_name.toUpperCase() : '—'}</span>
+        <span class="ch-name">${f.display_name ? f.display_name.toUpperCase() : '—'}</span>
       </div>`).join('');
   } catch(e) { document.getElementById('champs-list').innerHTML = '<div class="tr-empty">Error</div>'; }
 }
