@@ -161,7 +161,7 @@ body::after {
   font-family:'Space Mono',monospace; font-size:9px;
   min-width:20px; text-align:right; flex-shrink:0; color:var(--muted);
 }
-.row-rank.top  { color:var(--pl); text-shadow:var(--glow-sm); }
+.row-rank.top  { color:var(--pc); text-shadow:var(--glow-sm); }
 .row-rank.gold { color:var(--gold); text-shadow:var(--glow-gold); font-size:11px; }
 
 .row-name {
@@ -234,16 +234,6 @@ const DIVS = [
 const divRows = {};        // idx -> [{f, disp, champ, top}] in rank order
 let q = '', sortMode = 'rank', activeTab = 0;
 
-function tierClass(f) {
-  const t = (f.contract_tier || f.level || '').toLowerCase();
-  if (t === 'platinum') return 'platinum';
-  if (t === 'gold')    return 'gold';
-  if (t === 'silver')  return 'silver';
-  if (t === 'bronze')  return 'bronze';
-  if (t === 'pro')     return 'pro';
-  return 'ama';
-}
-
 function rowHTML(row, i) {
   const { f, disp, champ, top } = row;
   const rankCls = champ ? 'gold' : (top ? 'top' : '');
@@ -253,7 +243,6 @@ function rowHTML(row, i) {
     <div class="row-rank ${rankCls}">${disp}</div>
     <div class="row-name">${f.display_name || '—'}</div>
     <div class="row-record"><span class="rw">${f.wins ?? 0}</span><span>-</span><span class="rl">${f.losses ?? 0}</span></div>
-    <div class="tier-dot ${tierClass(f)}"></div>
   </a>`;
 }
 
@@ -338,7 +327,6 @@ function renderSearch() {
           <div class="row-name">${f.display_name || '—'}</div>
           <span class="res-div-tag">${tag}</span>
           <div class="row-record"><span class="rw">${f.wins ?? 0}</span><span>-</span><span class="rl">${f.losses ?? 0}</span></div>
-          <div class="tier-dot ${tierClass(f)}"></div>
         </a>`;
       }).join('')
     : '<div class="div-empty">No matches</div>';
