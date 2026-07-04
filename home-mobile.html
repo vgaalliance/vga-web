@@ -722,9 +722,13 @@ async function loadFighters(){
 // latest vod — prefers the newest UBA fight VOD, falls back to legacy UBAe,
 // then the channel. Also powers the tap-to-play embed (thumbnail only until
 // tapped, so the page stays fast on mobile).
+// Hand-picked featured video. Leave the URL in to pin it; set to '' to resume
+// auto-picking the newest VOD from the databases.
+var FEATURED_VOD='https://www.youtube.com/live/PsNLe-NNqk0';
 (async function(){
   var url='https://www.youtube.com/@UBAesports';
-  try{
+  if(FEATURED_VOD){url=FEATURED_VOD;}
+  else try{
     var d1=[];
     try{var r1=await fetch(SB_U+'/rest/v1/fighter_matches?select=vod_link,event_date&vod_link=not.is.null&order=event_date.desc&limit=1',HU);d1=await r1.json();}catch(e){}
     if(Array.isArray(d1)&&d1.length&&d1[0].vod_link){url=d1[0].vod_link;}
