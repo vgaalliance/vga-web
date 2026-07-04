@@ -98,6 +98,16 @@
 </head>
 <body>
 <div class="wrap">
+  <!-- Featured video — pinned/auto latest fight, stacked above the schedule -->
+  <div id="featured" style="display:none;margin-bottom:16px;">
+    <div class="card-head" style="padding:0 0 6px;">Latest Fight</div>
+    <div class="vod-box" style="margin:0;">
+      <div class="vod-thumb" id="featured-thumb">
+        <div class="vod-play"><div class="vod-play-btn"><div class="vod-play-tri"></div></div></div>
+      </div>
+    </div>
+  </div>
+
   <div class="tabs">
     <button class="tab active" data-tab="upcoming">Upcoming</button>
     <button class="tab" data-tab="past">Past</button>
@@ -114,6 +124,23 @@ const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV
 const TYPE_LABEL = { fight_night:'Fight Night', numbered:'Numbered', ama:'AMA' };
 
 let events = [], cardsByEvent = {}, activeTab = 'upcoming';
+
+// Hand-picked featured video for the top block. Auto-picking prefers the
+// newest completed event's vod_link; this pin is the fallback when no event
+// VODs exist yet. Set to '' to hide the block entirely when nothing matches.
+const FEATURED_VOD = 'https://www.youtube.com/live/PsNLe-NNqk0?t=8975';
+
+function setFeatured(url) {
+  if (!url) return;
+  const vid = (url.match(/(?:youtube\.com\/(?:watch\?v=|live\/|shorts\/)|youtu\.be\/)([\w-]{11})/) || [])[1];
+  if (!vid) return;
+  const ts = (url.match(/[?&]t=(\d+)/) || [])[1];
+  const th = document.getElementById('featured-thumb');
+  th.dataset.vid = vid;
+  if (ts) th.dataset.start = ts;
+  th.style.backgroundImage = `url(https://i.ytimg.com/vi/${vid}/hqdefault.jpg)`;
+  document.getElementById('featured').style.display = 'block';
+}
 
 async function sb(table, params) {
   const r = await fetch(`${SB}/rest/v1/${table}?${params}`, { headers: H });
@@ -238,6 +265,12 @@ document.addEventListener('click', ev => {
     events = Array.isArray(ev) ? ev : [];
     (Array.isArray(cards) ? cards : []).forEach(c => { (cardsByEvent[c.event_id] = cardsByEvent[c.event_id] || []).push(c); });
     render();
+
+    // Featured block: newest completed event with a VOD wins; pin is fallback
+    const latestVod = events
+      .filter(e => e.status === 'completed' && e.vod_link)
+      .sort((a, b) => new Date(b.event_date) - new Date(a.event_date))[0];
+    setFeatured(latestVod ? latestVod.vod_link : FEATURED_VOD);
   } catch (e) {
     document.getElementById('list').innerHTML = '<div class="status-msg">Failed to load.</div>';
     console.error(e);
