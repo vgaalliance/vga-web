@@ -325,11 +325,13 @@
     return r.json();
   }
 
-  let allRanks = [], recBySlug = {}, currentMode = 'p4p';
+  let allRanks = [], recBySlug = {}, champions = [], champSlugs = new Set(), currentMode = 'p4p';
 
   function rowHTML(r, delay) {
     const rec = fmt(recBySlug[r.fighter_slug]);
-    const isChamp = r.rank === 1 && r.scope === 'weight_class';
+    // Champion = is_champion flag on the fighter, NOT division rank #1.
+    // The belt holder sits above the rankings; #1 is the first contender.
+    const isChamp = !!r.isChamp;
     return `<div class="rank-row${isChamp ? ' champ' : ''}" style="animation-delay:${delay}s">
       <div class="rank-num">${r.rank}</div>
       ${isChamp ? '<div class="rank-belt">🏆</div>' : ''}
@@ -344,19 +346,22 @@
     let rows = [], title = '', scope = '';
 
     if (currentMode === 'p4p') {
-      rows = allRanks.filter(r => r.level === 'pro' && r.scope === 'overall').sort((a,b) => a.rank - b.rank).slice(0, 10);
+      // Champs keep their P4P number but get belt styling.
+      rows = allRanks.filter(r => r.level === 'pro' && r.scope === 'overall').sort((a,b) => a.rank - b.rank).slice(0, 10)
+        .map(r => champSlugs.has(r.fighter_slug) ? { ...r, isChamp: true } : r);
       title = 'Rankings';
       scope = 'POUND FOR POUND · PRO';
     } else if (currentMode === 'champs') {
       const ORDER = ['heavyweight','light_heavyweight','middleweight','lightweight','welterweight','featherweight','bantamweight','flyweight'];
-      rows = allRanks.filter(r => r.level === 'pro' && r.scope === 'weight_class' && r.rank === 1)
-        .sort((a,b) => ORDER.indexOf(a.weight_class) - ORDER.indexOf(b.weight_class));
+      rows = champions.slice().sort((a,b) => ORDER.indexOf(a.weight_class) - ORDER.indexOf(b.weight_class));
       title = 'Champions';
       scope = 'UBA · ALL DIVISIONS';
     } else {
-      // division view
-      rows = allRanks.filter(r => r.level === 'pro' && r.scope === 'weight_class' && r.weight_class === currentMode)
+      // division view: belt holder on top, contenders keep their stored numbers
+      const champ = champions.find(c => c.weight_class === currentMode);
+      const contenders = allRanks.filter(r => r.level === 'pro' && r.scope === 'weight_class' && r.weight_class === currentMode)
         .sort((a,b) => a.rank - b.rank).slice(0, 10);
+      rows = champ ? [champ, ...contenders] : contenders;
       title = wcFull(currentMode);
       scope = 'PRO DIVISION RANKINGS';
     }
@@ -428,11 +433,17 @@
 
     const [ranks, cards] = await Promise.all([
       sb('rankings_public?select=scope,weight_class,rank,fighter_name,fighter_slug,level'),
-      sb('fighter_cards?select=slug,wins,losses,draws')
+      sb('fighter_cards?select=slug,display_name,weight_class,wins,losses,draws,is_champion')
     ]);
 
     allRanks = Array.isArray(ranks) ? ranks : [];
-    (Array.isArray(cards) ? cards : []).forEach(c => { recBySlug[c.slug] = c; });
+    (Array.isArray(cards) ? cards : []).forEach(c => {
+      recBySlug[c.slug] = c;
+      if (c.is_champion) {
+        champSlugs.add(c.slug);
+        champions.push({ fighter_name: c.display_name, fighter_slug: c.slug, weight_class: c.weight_class, rank: 'C', isChamp: true });
+      }
+    });
     render();
   }
 

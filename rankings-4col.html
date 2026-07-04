@@ -217,15 +217,14 @@
       </div>`;
   }
 
-  function divisionColumn(div, ranksByWC, recBySlug, colDelay) {
+  function divisionColumn(div, ranksByWC, recBySlug, champByWC, colDelay) {
     const rows = ranksByWC[div.key] || [];
 
-    // Champion = rank 1 scope weight_class; numbered list = ranks 2+
-    // (rank 1 in scope weight_class IS the champion, so we show rank 1
-    // as "C" and 2–N as numbered 1–N-1 visually, which matches the
-    // original design where the belt holder sits above the #1 contender)
-    const champ  = rows.find(r => r.rank === 1);
-    const ranked = rows.filter(r => r.rank > 1).sort((a, b) => a.rank - b.rank);
+    // Champion = the fighter with is_champion=true in this division (the belt
+    // holder sits ABOVE the rankings). Ranked rows are the contenders and keep
+    // their stored numbers: #1 = first contender, not the champ.
+    const champ  = champByWC[div.key];
+    const ranked = rows.slice().sort((a, b) => a.rank - b.rank);
 
     let html = `<div class="division-header" style="animation-delay:${colDelay}s">${div.label}</div>`;
 
@@ -234,11 +233,11 @@
     } else {
       let rowIdx = 0;
       if (champ) {
-        html += fighterRow('C', champ.fighter_name, fmt(recBySlug[champ.fighter_slug]), true, colDelay + 0.08 + rowIdx * 0.045);
+        html += fighterRow('C', champ.display_name, fmt(recBySlug[champ.slug]), true, colDelay + 0.08 + rowIdx * 0.045);
         rowIdx++;
       }
       ranked.forEach(r => {
-        html += fighterRow(r.rank - 1, r.fighter_name, fmt(recBySlug[r.fighter_slug]), false, colDelay + 0.08 + rowIdx * 0.045);
+        html += fighterRow(r.rank, r.fighter_name, fmt(recBySlug[r.fighter_slug]), false, colDelay + 0.08 + rowIdx * 0.045);
         rowIdx++;
       });
     }
@@ -249,11 +248,15 @@
   async function boot() {
     const [ranks, cards] = await Promise.all([
       fetch(`${SB}/rest/v1/rankings_public?level=eq.pro&scope=eq.weight_class&select=weight_class,rank,fighter_name,fighter_slug&order=weight_class.asc,rank.asc`, { headers: H }).then(r => r.json()),
-      fetch(`${SB}/rest/v1/fighter_cards?select=slug,wins,losses,draws`, { headers: H }).then(r => r.json())
+      fetch(`${SB}/rest/v1/fighter_cards?select=slug,display_name,weight_class,wins,losses,draws,is_champion`, { headers: H }).then(r => r.json())
     ]);
 
     const recBySlug = {};
-    (Array.isArray(cards) ? cards : []).forEach(c => { recBySlug[c.slug] = c; });
+    const champByWC = {};
+    (Array.isArray(cards) ? cards : []).forEach(c => {
+      recBySlug[c.slug] = c;
+      if (c.is_champion) champByWC[c.weight_class] = c;
+    });
 
     // Group rankings by weight class
     const ranksByWC = {};
@@ -267,7 +270,7 @@
     // Build all 4 columns; stagger each column slightly so they don't all
     // animate in at the same instant — feels smoother on stream
     grid.innerHTML = DIVISIONS.map((div, i) =>
-      divisionColumn(div, ranksByWC, recBySlug, i * 0.07)
+      divisionColumn(div, ranksByWC, recBySlug, champByWC, i * 0.07)
     ).join('');
 
     // Reveal the whole grid only after it's fully built — this is what

@@ -180,33 +180,57 @@ function tierClass(f) {
   return 'ama';
 }
 
-function rowHTML(f, i) {
-  const isChamp = i === 0;
-  const rankNum  = f.rank ?? (i + 1);
-  const rankDisp = isChamp ? '①' : `#${rankNum}`;
-  const rankCls  = isChamp ? 'champ-num' : (i < 3 ? 'top' : '');
+function rowHTML(row, i) {
+  const { f, disp, champ, top } = row;
+  const rankCls = champ ? 'champ-num' : (top ? 'top' : '');
   const url = f.slug ? FIGHTER_URL + encodeURIComponent(f.slug) : '#';
   const delay = `animation-delay:${i * 0.04}s`;
-  return `<a class="fighter-row${isChamp ? ' champ' : ''}" href="${url}" target="_parent" style="${delay}">
-    <div class="row-rank ${rankCls}">${rankDisp}</div>
+  return `<a class="fighter-row${champ ? ' champ' : ''}" href="${url}" target="_parent" style="${delay}">
+    <div class="row-rank ${rankCls}">${disp}</div>
     <div class="row-name">${f.display_name || '—'}</div>
     <div class="row-record"><span class="rw">${f.wins ?? 0}</span><span>-</span><span class="rl">${f.losses ?? 0}</span></div>
     <div class="tier-dot ${tierClass(f)}"></div>
   </a>`;
 }
 
+// Champion = is_champion flag (belt holder above the list, shown as C).
+// Contenders = division-scope rankings with their stored numbers (#1 = first
+// contender, NOT the champ). Unranked fighters fill remaining rows as NR.
 async function loadDiv(div, listEl) {
   try {
-    const r = await fetch(
-      `${SB}/rest/v1/fighter_cards?weight_class=eq.${div.key}&select=slug,display_name,wins,losses,rank,contract_tier,level&order=rank.asc.nullslast,wins.desc&limit=12`,
-      { headers: H }
-    );
-    const data = await r.json();
-    if (!Array.isArray(data) || !data.length) {
+    const [rankRes, cardRes] = await Promise.all([
+      fetch(`${SB}/rest/v1/rankings_public?scope=eq.weight_class&level=eq.pro&weight_class=eq.${div.key}&select=rank,fighter_slug&order=rank.asc`, { headers: H }),
+      fetch(`${SB}/rest/v1/fighter_cards?weight_class=eq.${div.key}&select=slug,display_name,wins,losses,contract_tier,level,is_champion`, { headers: H }),
+    ]);
+    const rankArr = await rankRes.json().then(d => Array.isArray(d) ? d : []);
+    const cardArr = await cardRes.json().then(d => Array.isArray(d) ? d : []);
+
+    const bySlug = {};
+    cardArr.forEach(c => { bySlug[c.slug] = c; });
+
+    const rows = [];
+    const used = new Set();
+
+    const champ = cardArr.find(c => c.is_champion);
+    if (champ) { rows.push({ f: champ, disp: 'C', champ: true }); used.add(champ.slug); }
+
+    rankArr.forEach(r => {
+      const f = bySlug[r.fighter_slug];
+      if (!f || used.has(f.slug)) return;
+      rows.push({ f, disp: `#${r.rank}`, top: r.rank <= 3 });
+      used.add(f.slug);
+    });
+
+    cardArr.filter(c => !used.has(c.slug))
+      .sort((a, b) => (b.wins ?? 0) - (a.wins ?? 0))
+      .forEach(f => rows.push({ f, disp: 'NR' }));
+
+    const shown = rows.slice(0, 12);
+    if (!shown.length) {
       listEl.innerHTML = '<div class="div-empty">No fighters ranked yet</div>';
       return;
     }
-    listEl.innerHTML = data.map((f, i) => rowHTML(f, i)).join('');
+    listEl.innerHTML = shown.map((row, i) => rowHTML(row, i)).join('');
   } catch(e) {
     listEl.innerHTML = '<div class="div-empty">Error loading</div>';
   }

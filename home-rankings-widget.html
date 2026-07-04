@@ -143,20 +143,25 @@ function titleCase(s){ return s ? s.replace(/\w\S*/g, t => t.charAt(0).toUpperCa
 
 async function load() {
   try {
-    // champions = the #1 ranked pro in each list (P4P + each division)
-    const r = await fetch(`${SB}/rest/v1/rankings_public?rank=eq.1&level=eq.pro&select=scope,weight_class,fighter_name`, { headers: H });
-    const champs = await r.json();
+    // Division champions = is_champion flag on the fighter (belt holders sit
+    // above the rankings). P4P line = the overall #1 ranked pro.
+    const [champRes, p4pRes] = await Promise.all([
+      fetch(`${SB}/rest/v1/fighter_cards?is_champion=eq.true&select=display_name,weight_class`, { headers: H }),
+      fetch(`${SB}/rest/v1/rankings_public?rank=eq.1&level=eq.pro&scope=eq.overall&select=fighter_name`, { headers: H }),
+    ]);
+    const champs = await champRes.json();
+    const p4pArr = await p4pRes.json();
     const cl = document.getElementById('champs-list');
     const arr = Array.isArray(champs) ? champs : [];
 
     const rows = [];
     // P4P first
-    const p4p = arr.find(c => c.scope === 'overall');
+    const p4p = Array.isArray(p4pArr) ? p4pArr[0] : null;
     if (p4p) rows.push({ label: 'P4P', name: p4p.fighter_name });
-    // then divisions in order
+    // then division belt holders in order
     DIVISIONS.forEach(d => {
-      const champ = arr.find(c => c.scope === 'weight_class' && c.weight_class === d.wc);
-      if (champ) rows.push({ label: d.label, name: champ.fighter_name });
+      const champ = arr.find(c => c.weight_class === d.wc);
+      if (champ) rows.push({ label: d.label, name: champ.display_name });
     });
 
     if (!rows.length) {
