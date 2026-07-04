@@ -681,17 +681,21 @@ async function loadTeams(){
   try{const r=await fetch(SB+'/rest/v1/ubae_teams?select=team_name,wins,losses&order=wins.desc,losses.asc&limit=8',H);el.innerHTML=makeRows(await r.json(),'team_name','wins','losses',4);}
   catch(e){el.innerHTML='<div class="s-loading" style="color:#3a3a55">Could not load</div>';}
 }
-// Fighters tab — reads the NEW UBA project: champions (belt flag) pinned
-// first, then P4P order, then best records.
+// Fighters tab — reads the NEW UBA project, pure pound-for-pound order with
+// REAL P4P numbers (gaps = unregistered spots). Champs get a gold C. Unranked
+// fill the bottom by record.
 async function loadFighters(){
   const el=document.getElementById('s-fighters');
   try{
     const r=await fetch(SB_U+'/rest/v1/fighter_cards?select=display_name,wins,losses,rank,is_champion&order=rank.asc.nullslast,wins.desc&limit=16',HU);
     let data=await r.json();
     if(!Array.isArray(data)||!data.length){el.innerHTML='<div class="s-loading" style="color:#3a3a55">No fighters</div>';return;}
-    const champs=data.filter(f=>f.is_champion);
-    const rest=data.filter(f=>!f.is_champion);
-    el.innerHTML=makeRows([...champs,...rest],'display_name','wins','losses',8);
+    el.innerHTML=data.map(f=>{
+      const num=f.rank?('#'+f.rank):'–';
+      const hi=f.rank&&f.rank<=8;
+      const champ=f.is_champion?' <span style="color:var(--gold);text-shadow:var(--glow-gold);font-size:9px;font-family:\'Space Mono\',monospace;">C</span>':'';
+      return `<div class="s-row"><div class="s-num ${hi?'hi':''}">${num}</div><div class="s-name">${f.display_name}${champ}</div><div class="s-wl"><span>${f.wins??0}</span><span style="color:var(--muted)">-</span><span class="s-wl-l">${f.losses??0}</span></div></div>`;
+    }).join('');
   }catch(e){el.innerHTML='<div class="s-loading" style="color:#3a3a55">Load failed</div>';}
 }
 
