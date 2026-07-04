@@ -223,7 +223,7 @@ body::after { content:''; position:fixed; inset:0; background:radial-gradient(el
 <canvas id="flwcv"></canvas>
 
 <div class="header">
-  <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.14em;color:var(--text);text-shadow:var(--glow-sm);">UBA <span style="color:var(--pl);">ESPORTS</span></div>
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.14em;color:var(--text);text-shadow:var(--glow-sm);">VGA <span style="color:var(--pl);">ESPORTS</span></div>
   <div class="header-tag">VGA &middot; 2026</div>
 </div>
 
@@ -274,7 +274,8 @@ body::after { content:''; position:fixed; inset:0; background:radial-gradient(el
   </div>
 </div>
 
-<div class="lower-row">
+<!-- S1 transfers + team results — PARKED until UBAe S2 (flip display to revive) -->
+<div class="lower-row" style="display:none;">
   <div class="transfers-sq">
     <div class="tr-header"><span>TRANSFERS</span><span class="tr-sub">S1</span></div>
     <div id="tr-rows"><div class="tr-empty">Loading<span class="dot"></span><span class="dot"></span></div></div>
@@ -282,6 +283,12 @@ body::after { content:''; position:fixed; inset:0; background:radial-gradient(el
   <div class="broadcast-box" id="bc-box">
     <div class="bc-empty">Loading<span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
   </div>
+</div>
+
+<!-- UBAe S2 teaser — swap in the real date when the calendar locks -->
+<div class="split-banner" style="margin:8px 16px 0;">
+  <div class="split-name">UBAe Season 2</div>
+  <div class="split-dates">COMING SOON</div>
 </div>
 
 <div class="sheath-banner">
@@ -310,12 +317,12 @@ body::after { content:''; position:fixed; inset:0; background:radial-gradient(el
   <a href="https://www.ubaesports.com/rankings" target="_blank" style="flex-shrink:0;font-family:'Space Mono',monospace;font-size:7px;letter-spacing:0.12em;color:rgba(168,85,247,0.3);text-decoration:none;text-transform:uppercase;padding-left:8px;white-space:nowrap;">View All ›</a>
 </div>
 <div class="s-tabs">
-  <div class="s-tab active" onclick="switchTab('teams')">Teams</div>
-  <div class="s-tab" onclick="switchTab('fighters')">Fighters</div>
+  <div class="s-tab active" onclick="switchTab('fighters')">Fighters</div>
+  <div class="s-tab" onclick="switchTab('teams')">Teams</div>
   <div class="s-tab" onclick="switchTab('bracket')">Bracket</div>
 </div>
-<div id="s-teams" class="s-panel active"><div class="s-loading">Loading<span class="dot"></span><span class="dot"></span><span class="dot"></span></div></div>
-<div id="s-fighters" class="s-panel"><div class="s-loading">Loading<span class="dot"></span><span class="dot"></span><span class="dot"></span></div></div>
+<div id="s-fighters" class="s-panel active"><div class="s-loading">Loading<span class="dot"></span><span class="dot"></span><span class="dot"></span></div></div>
+<div id="s-teams" class="s-panel"><div class="s-loading">Loading<span class="dot"></span><span class="dot"></span><span class="dot"></span></div></div>
 <div id="s-bracket" class="s-panel">
   <div class="bracket-wrap">
     <div class="bracket-title">UBAe Season 1 Playoffs</div>
@@ -356,6 +363,8 @@ body::after { content:''; position:fixed; inset:0; background:radial-gradient(el
   </div>
 </div>
 
+<!-- S1 SCHEDULE BLOCK — PARKED until UBAe S2 (Pass 2: refresh weeks/dates/bracket, then flip display) -->
+<div id="s2-parked" style="display:none;">
 <div class="section-head"><div class="section-title">Schedule</div><div class="section-line"></div></div>
 <div class="split-banner">
   <div class="split-name">Split 1</div>
@@ -386,6 +395,7 @@ body::after { content:''; position:fixed; inset:0; background:radial-gradient(el
   </div>
 </div>
 <div class="week-panel" id="wk-panel"><div class="sched-loading">Loading schedule<span class="dot"></span><span class="dot"></span></div></div>
+</div><!-- /s2-parked -->
 
 <div class="footer">
   <div class="footer-text"><a href="https://ubaesports.com">ubaesports.com</a> &nbsp;&middot;&nbsp; All times EST</div>
@@ -659,7 +669,7 @@ async function loadRecentResults(){
 
 // rankings
 function switchTab(tab){
-  document.querySelectorAll('.s-tab').forEach((t,i)=>t.classList.toggle('active',(tab==='teams'&&i===0)||(tab==='fighters'&&i===1)||(tab==='bracket'&&i===2)));
+  document.querySelectorAll('.s-tab').forEach((t,i)=>t.classList.toggle('active',(tab==='fighters'&&i===0)||(tab==='teams'&&i===1)||(tab==='bracket'&&i===2)));
   document.getElementById('s-teams').classList.toggle('active',tab==='teams');
   document.getElementById('s-fighters').classList.toggle('active',tab==='fighters');
   document.getElementById('s-bracket').classList.toggle('active',tab==='bracket');
