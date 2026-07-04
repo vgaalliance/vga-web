@@ -26,30 +26,24 @@
     opacity: 0.8;
     flex-shrink: 0;
   }
-  .placeholder-box {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 8px;
-    min-height: 90px;
+  #teams-list { flex: 1; overflow: hidden; }
+  .team-row {
+    display: flex; align-items: center; gap: 5px;
+    padding: 2px 8px;
+    border-bottom: 1px solid rgba(120,80,255,0.1);
   }
-  .ph-title {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.1em;
-    color: #6a5aa8;
-    text-transform: uppercase;
+  .team-row:nth-child(even) { background: rgba(120,80,255,0.04); }
+  .team-row.s1champ { background: rgba(120,80,255,0.12); }
+  .team-rank {
+    font-family: 'Share Tech Mono', monospace; font-size: 8px;
+    color: #7b5fff; min-width: 9px; text-align: right; flex-shrink: 0;
   }
-  .ph-sub {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 7px;
-    letter-spacing: 0.08em;
-    color: #4a3a7a;
-    text-transform: uppercase;
+  .team-name {
+    font-size: 10px; font-weight: 700; color: #c5b0ff;
+    flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    text-transform: uppercase; letter-spacing: 0.01em;
   }
+  .team-wl { font-family: 'Share Tech Mono', monospace; font-size: 7px; color: #6a5aa8; flex-shrink: 0; }
   .section-header {
     font-family: 'Share Tech Mono', monospace;
     font-size: 7px;
@@ -117,10 +111,17 @@
 </head>
 <body>
 <div class="vga-widget">
-  <div class="vga-section-label">UBAe S1 Standings</div>
-  <div class="placeholder-box">
-    <div class="ph-title">Season Not Started</div>
-    <div class="ph-sub">Teams · Coming Soon</div>
+  <div class="vga-section-label">UBAe S1 · Final Standings</div>
+  <!-- PLACEHOLDER: hardcoded S1 final standings. Replace with live UBAe S2 data when the season starts. -->
+  <div id="teams-list">
+    <div class="team-row"><span class="team-rank">1</span><span class="team-name">Sheath Elite</span><span class="team-wl">6-1</span></div>
+    <div class="team-row"><span class="team-rank">2</span><span class="team-name">jUnC</span><span class="team-wl">5-2</span></div>
+    <div class="team-row"><span class="team-rank">3</span><span class="team-name">Team MUDS</span><span class="team-wl">4-3</span></div>
+    <div class="team-row"><span class="team-rank">4</span><span class="team-name">5 Great Kage</span><span class="team-wl">4-3</span></div>
+    <div class="team-row"><span class="team-rank">5</span><span class="team-name">Champions Utd</span><span class="team-wl">4-3</span></div>
+    <div class="team-row"><span class="team-rank">6</span><span class="team-name">Ring Reapers</span><span class="team-wl">3-4</span></div>
+    <div class="team-row"><span class="team-rank">7</span><span class="team-name">UKFC UNCS</span><span class="team-wl">3-4</span></div>
+    <div class="team-row"><span class="team-rank">8</span><span class="team-name">Team Rag Tags</span><span class="team-wl">0-7</span></div>
   </div>
   <div class="section-header">UBA Champions</div>
   <div id="champs-list"><div class="loading">loading...</div></div>
