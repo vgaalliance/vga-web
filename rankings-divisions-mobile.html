@@ -59,6 +59,44 @@ body::after {
   letter-spacing:.18em; color:var(--muted); text-transform:uppercase; position:relative; z-index:1;
 }
 
+/* ── Search + sort controls ── */
+.m-controls {
+  display:flex; align-items:center; gap:10px;
+  padding:7px 14px; border-bottom:1px solid var(--border); background:var(--dim);
+}
+.m-search-wrap { position:relative; flex:1; }
+.m-search {
+  width:100%; height:26px; background:transparent; border:none;
+  border-bottom:1px solid var(--border); padding:0 6px 0 22px;
+  font-family:'Barlow Condensed',sans-serif; font-size:13px;
+  letter-spacing:.05em; color:var(--text); outline:none;
+  transition:border-color .2s;
+}
+.m-search::placeholder { color:var(--muted); }
+.m-search:focus { border-bottom-color:var(--pl); }
+.m-search-ico { position:absolute; left:4px; top:50%; transform:translateY(-50%); width:11px; height:11px; opacity:.25; pointer-events:none; }
+.m-sorts { display:flex; gap:10px; flex-shrink:0; }
+.m-sort-btn {
+  font-family:'Space Mono',monospace; font-size:7px; letter-spacing:.1em;
+  text-transform:uppercase; background:transparent; border:none;
+  color:var(--muted); cursor:pointer; padding-bottom:2px; position:relative;
+  -webkit-tap-highlight-color:transparent;
+}
+.m-sort-btn::after {
+  content:''; position:absolute; bottom:0; left:0; width:100%; height:1px;
+  background:var(--pl); transform:scaleX(0); transition:transform .15s;
+}
+.m-sort-btn.active { color:var(--pl); text-shadow:var(--glow-sm); }
+.m-sort-btn.active::after { transform:scaleX(1); }
+
+/* ── Search results (cross-division) ── */
+#search-panel { display:none; }
+.res-div-tag {
+  font-family:'Space Mono',monospace; font-size:6px; letter-spacing:.08em;
+  color:var(--muted); border:1px solid var(--border); padding:1px 4px;
+  flex-shrink:0; text-transform:uppercase;
+}
+
 /* ── Division tabs ── */
 .div-tabs {
   display:flex; border-bottom:1px solid var(--border);
@@ -168,6 +206,20 @@ body::after {
   <div class="page-sub">UBA · S1 2026</div>
 </div>
 
+<div class="m-controls">
+  <div class="m-search-wrap">
+    <svg class="m-search-ico" viewBox="0 0 16 16" fill="none">
+      <circle cx="6.5" cy="6.5" r="5" stroke="white" stroke-width="1.5"/>
+      <line x1="10.5" y1="10.5" x2="14" y2="14" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <input class="m-search" id="m-search" type="text" placeholder="Search fighter...">
+  </div>
+  <div class="m-sorts">
+    <button class="m-sort-btn active" data-s="rank">Rank</button>
+    <button class="m-sort-btn" data-s="wins">Wins</button>
+  </div>
+</div>
+
 <div class="div-tabs" id="tabs">
   <div class="div-tab active" data-div="0">LW</div>
   <div class="div-tab" data-div="1">MW</div>
@@ -176,6 +228,7 @@ body::after {
 </div>
 
 <div id="panels"></div>
+<div id="search-panel"></div>
 
 <script>
 const SB  = 'https://emzlivoykbhhjcugupit.supabase.co';
@@ -190,7 +243,8 @@ const DIVS = [
   { key:'heavyweight',       label:'HEAVYWEIGHT',     weight:'205+ lbs' },
 ];
 
-const cache = {};
+const divRows = {};        // idx -> [{f, disp, champ, top}] in rank order
+let q = '', sortMode = 'rank', activeTab = 0;
 
 function tierClass(f) {
   const t = (f.contract_tier || f.level || '').toLowerCase();
@@ -220,53 +274,96 @@ function rowHTML(row, i) {
 // contender, NOT the champ). Unranked fighters fill remaining rows as NR.
 async function loadDiv(idx) {
   const div = DIVS[idx];
+  const [rankRes, cardRes] = await Promise.all([
+    fetch(`${SB}/rest/v1/rankings_public?scope=eq.weight_class&level=eq.pro&weight_class=eq.${div.key}&select=rank,fighter_slug&order=rank.asc`, { headers: H }),
+    fetch(`${SB}/rest/v1/fighter_cards?weight_class=eq.${div.key}&select=slug,display_name,wins,losses,contract_tier,level,is_champion`, { headers: H }),
+  ]);
+  const rankArr = await rankRes.json().then(d => Array.isArray(d) ? d : []);
+  const cardArr = await cardRes.json().then(d => Array.isArray(d) ? d : []);
+
+  const bySlug = {};
+  cardArr.forEach(c => { bySlug[c.slug] = c; });
+
+  const rows = [];
+  const used = new Set();
+
+  const champ = cardArr.find(c => c.is_champion);
+  if (champ) { rows.push({ f: champ, disp: 'C', champ: true }); used.add(champ.slug); }
+
+  rankArr.forEach(r => {
+    const f = bySlug[r.fighter_slug];
+    if (!f || used.has(f.slug)) return;
+    rows.push({ f, disp: `#${r.rank}`, top: r.rank <= 3 });
+    used.add(f.slug);
+  });
+
+  cardArr.filter(c => !used.has(c.slug))
+    .sort((a, b) => (b.wins ?? 0) - (a.wins ?? 0))
+    .forEach(f => rows.push({ f, disp: 'NR' }));
+
+  divRows[idx] = rows;
+}
+
+// Wins sort keeps the belt holder pinned on top.
+function orderedRows(idx) {
+  const rows = divRows[idx] || [];
+  if (sortMode === 'rank') return rows;
+  const champ = rows.filter(r => r.champ);
+  const rest  = rows.filter(r => !r.champ)
+    .slice().sort((a, b) => (b.f.wins ?? 0) - (a.f.wins ?? 0));
+  return [...champ, ...rest];
+}
+
+function renderTab(idx) {
   const listEl = document.querySelector(`#panel-${idx} .div-list`);
-  if (cache[idx]) { listEl.innerHTML = cache[idx]; return; }
-  try {
-    const [rankRes, cardRes] = await Promise.all([
-      fetch(`${SB}/rest/v1/rankings_public?scope=eq.weight_class&level=eq.pro&weight_class=eq.${div.key}&select=rank,fighter_slug&order=rank.asc`, { headers: H }),
-      fetch(`${SB}/rest/v1/fighter_cards?weight_class=eq.${div.key}&select=slug,display_name,wins,losses,contract_tier,level,is_champion`, { headers: H }),
-    ]);
-    const rankArr = await rankRes.json().then(d => Array.isArray(d) ? d : []);
-    const cardArr = await cardRes.json().then(d => Array.isArray(d) ? d : []);
+  if (!listEl) return;
+  const rows = orderedRows(idx).slice(0, 16);
+  listEl.innerHTML = rows.length
+    ? rows.map((row, i) => rowHTML(row, i)).join('')
+    : '<div class="div-empty">No fighters ranked yet</div>';
+}
 
-    const bySlug = {};
-    cardArr.forEach(c => { bySlug[c.slug] = c; });
+// Search spans ALL divisions — tabs hide, one combined results list shows.
+function renderSearch() {
+  const sp = document.getElementById('search-panel');
+  const searching = q.length > 0;
+  document.getElementById('tabs').style.display = searching ? 'none' : 'flex';
+  document.getElementById('panels').style.display = searching ? 'none' : 'block';
+  sp.style.display = searching ? 'block' : 'none';
+  if (!searching) return;
 
-    const rows = [];
-    const used = new Set();
-
-    const champ = cardArr.find(c => c.is_champion);
-    if (champ) { rows.push({ f: champ, disp: 'C', champ: true }); used.add(champ.slug); }
-
-    rankArr.forEach(r => {
-      const f = bySlug[r.fighter_slug];
-      if (!f || used.has(f.slug)) return;
-      rows.push({ f, disp: `#${r.rank}`, top: r.rank <= 3 });
-      used.add(f.slug);
+  const TAGS = ['LW', 'MW', 'LHW', 'HW'];
+  const matches = [];
+  DIVS.forEach((div, idx) => {
+    orderedRows(idx).forEach(row => {
+      if ((row.f.display_name || '').toLowerCase().includes(q)) matches.push({ ...row, tag: TAGS[idx] });
     });
+  });
 
-    cardArr.filter(c => !used.has(c.slug))
-      .sort((a, b) => (b.wins ?? 0) - (a.wins ?? 0))
-      .forEach(f => rows.push({ f, disp: 'NR' }));
-
-    const shown = rows.slice(0, 16);
-    cache[idx] = shown.length
-      ? shown.map((row, i) => rowHTML(row, i)).join('')
-      : '<div class="div-empty">No fighters ranked yet</div>';
-    listEl.innerHTML = cache[idx];
-  } catch(e) {
-    listEl.innerHTML = '<div class="div-empty">Error loading</div>';
-  }
+  sp.innerHTML = matches.length
+    ? matches.map((row, i) => {
+        const { f, disp, champ, top, tag } = row;
+        const rankCls = champ ? 'gold' : (top ? 'top' : '');
+        const url = f.slug ? FIGHTER_URL + encodeURIComponent(f.slug) : '#';
+        return `<a class="fighter-row${champ ? ' champ' : ''}" href="${url}" target="_parent" style="animation-delay:${i * 0.045}s">
+          <div class="row-rank ${rankCls}">${disp}</div>
+          <div class="row-name">${f.display_name || '—'}</div>
+          <span class="res-div-tag">${tag}</span>
+          <div class="row-record"><span class="rw">${f.wins ?? 0}</span><span>-</span><span class="rl">${f.losses ?? 0}</span></div>
+          <div class="tier-dot ${tierClass(f)}"></div>
+        </a>`;
+      }).join('')
+    : '<div class="div-empty">No matches</div>';
 }
 
 function switchTab(idx) {
+  activeTab = idx;
   document.querySelectorAll('.div-tab').forEach((t, i) => t.classList.toggle('active', i === idx));
   document.querySelectorAll('.div-panel').forEach((p, i) => p.classList.toggle('active', i === idx));
-  loadDiv(idx);
+  renderTab(idx);
 }
 
-function init() {
+async function init() {
   const panels = document.getElementById('panels');
   DIVS.forEach((div, i) => {
     const panel = document.createElement('div');
@@ -284,8 +381,26 @@ function init() {
   document.querySelectorAll('.div-tab').forEach(tab => {
     tab.addEventListener('click', () => switchTab(+tab.dataset.div));
   });
+  document.getElementById('m-search').addEventListener('input', e => {
+    q = e.target.value.toLowerCase().trim();
+    renderSearch();
+  });
+  document.querySelectorAll('.m-sort-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.m-sort-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      sortMode = b.dataset.s;
+      q.length ? renderSearch() : renderTab(activeTab);
+    });
+  });
 
-  loadDiv(0);
+  // Preload every division so search + tab switches are instant
+  try {
+    await Promise.all(DIVS.map((d, i) => loadDiv(i)));
+    DIVS.forEach((d, i) => renderTab(i));
+  } catch(e) {
+    document.querySelectorAll('.div-list').forEach(el => el.innerHTML = '<div class="div-empty">Error loading</div>');
+  }
 }
 
 init();
