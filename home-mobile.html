@@ -329,24 +329,24 @@ body::after { content:''; position:fixed; inset:0; background:radial-gradient(el
       <div class="bracket-match">
         <div class="bracket-seed">
           <span class="bracket-seed-num">#1</span>
-          <span class="bracket-seed-name">Sheath Elite</span>
+          <span class="bracket-seed-name">Sheath Elite <span style="font-family:'Space Mono',monospace;font-size:6px;color:var(--pl);text-shadow:var(--glow-sm);">W</span></span>
           <span class="bracket-seed-wl">6-1</span>
         </div>
         <div class="bracket-seed">
           <span class="bracket-seed-num">#4</span>
-          <span class="bracket-seed-name">Champions United</span>
+          <span class="bracket-seed-name" style="color:var(--muted);">Champions United</span>
           <span class="bracket-seed-wl">5-2</span>
         </div>
       </div>
       <div class="bracket-match">
         <div class="bracket-seed">
           <span class="bracket-seed-num">#2</span>
-          <span class="bracket-seed-name">jUnC</span>
+          <span class="bracket-seed-name" style="color:var(--muted);">jUnC</span>
           <span class="bracket-seed-wl">5-2</span>
         </div>
         <div class="bracket-seed">
           <span class="bracket-seed-num">#3</span>
-          <span class="bracket-seed-name">Team MUDS</span>
+          <span class="bracket-seed-name">Team MUDS <span style="font-family:'Space Mono',monospace;font-size:6px;color:var(--pl);text-shadow:var(--glow-sm);">W</span></span>
           <span class="bracket-seed-wl">3-3</span>
         </div>
       </div>
@@ -354,8 +354,8 @@ body::after { content:''; position:fixed; inset:0; background:radial-gradient(el
     <div class="bracket-round">
       <div class="bracket-round-label">Grand Final — May 16</div>
       <div class="bracket-final">
-        <div class="bracket-final-label">SF1 Winner vs SF2 Winner</div>
-        <div class="bracket-final-teams">TBD vs TBD</div>
+        <div class="bracket-final-teams"><span style="color:var(--gold);text-shadow:var(--glow-gold);font-weight:700;">Team MUDS</span> <span style="font-family:'Space Mono',monospace;color:var(--pl);text-shadow:var(--glow-sm);">3–0</span> <span style="color:var(--muted);">Sheath Elite</span></div>
+        <div style="margin-top:3px;font-family:'Space Mono',monospace;font-size:6px;letter-spacing:2px;color:var(--gold);text-shadow:var(--glow-gold);text-transform:uppercase;">🏆 UBAe S1 Champions</div>
       </div>
     </div>
   </div>
@@ -694,7 +694,9 @@ async function loadFighters(){
       const num=f.rank?('#'+f.rank):'–';
       const hi=f.rank&&f.rank<=8;
       const champ=f.is_champion?' <span style="color:var(--gold);text-shadow:var(--glow-gold);font-size:9px;font-family:\'Space Mono\',monospace;">C</span>':'';
-      return `<div class="s-row"><div class="s-num ${hi?'hi':''}">${num}</div><div class="s-name">${f.display_name}${champ}</div><div class="s-wl"><span>${f.wins??0}</span><span style="color:var(--muted)">-</span><span class="s-wl-l">${f.losses??0}</span></div></div>`;
+      const rowStyle=f.is_champion?' style="background:rgba(245,200,66,0.05);border-left:2px solid rgba(245,200,66,0.45);"':'';
+      const nameStyle=f.is_champion?' style="color:var(--gold);"':'';
+      return `<div class="s-row"${rowStyle}><div class="s-num ${hi?'hi':''}">${num}</div><div class="s-name"${nameStyle}>${f.display_name}${champ}</div><div class="s-wl"><span>${f.wins??0}</span><span style="color:var(--muted)">-</span><span class="s-wl-l">${f.losses??0}</span></div></div>`;
     }).join('');
   }catch(e){el.innerHTML='<div class="s-loading" style="color:#3a3a55">Load failed</div>';}
 }
