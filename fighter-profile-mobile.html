@@ -37,17 +37,12 @@ body { background: var(--bg); color: var(--text); font-family: 'Barlow Condensed
 .brand-name span { color: var(--pl); }
 .brand-tag { font-family: 'Space Mono', monospace; font-size: 7px; letter-spacing: 0.18em; color: var(--muted); text-transform: uppercase; }
 
-/* HERO GAME CUTOUT — transparent iframe, just the avatar + PLAY. Sits outside
-   the hero's overflow so the feet stand ON the purple border line and the
-   PLAY tag hangs just below it. */
+/* HERO PLAYABLE CUTOUT — transparent iframe of the fighter + a crate. Tapping
+   it punches the crate right in place; nothing opens. Sits outside the hero's
+   overflow so the feet stand ON the purple border line. */
 .hero-wrap { position: relative; }
-.hero-ava { position: absolute; right: 10px; bottom: -13px; width: 70px; height: 98px; z-index: 3; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.hero-ava iframe { width: 100%; height: 100%; border: 0; background: transparent; pointer-events: none; }
-.hero-ava-tap { position: absolute; inset: 0; }
-
-/* TRAINING DEMO PANE — lazy-mounted on first tap */
-.game-pane { display: none; border-bottom: 1px solid var(--border); }
-.game-pane iframe { width: 100%; height: 620px; border: 0; display: block; background: #04000f; }
+.hero-ava { position: absolute; right: 6px; bottom: -22px; width: 160px; height: 118px; z-index: 3; -webkit-tap-highlight-color: transparent; }
+.hero-ava iframe { width: 100%; height: 100%; border: 0; background: transparent; }
 /* CRT scanlines */
 body::before {
   content: ''; position: fixed; inset: 0;
@@ -281,9 +276,8 @@ function render(f, recent, upcoming, lastVod, beltCount) {
         </div>
       </div>
     </div>
-    <div class="hero-ava" onclick="openGame()">
-      <iframe src="game/avatar.html" scrolling="no" title="Play the training demo"></iframe>
-      <div class="hero-ava-tap"></div>
+    <div class="hero-ava">
+      <iframe src="game/mini.html" scrolling="no" title="Tap the fighter to punch"></iframe>
     </div>
     </div>`;
 
@@ -357,8 +351,6 @@ function render(f, recent, upcoming, lastVod, beltCount) {
   return `
     ${hero}
     ${nextBanner}
-    <div class="sec-head" id="game-head" style="display:none;">Training · Demo</div>
-    <div class="game-pane" id="game-pane"></div>
     ${statsStrip}
     <div class="sec-head">Fights</div>
     <div>${fightsInner}</div>
@@ -374,21 +366,6 @@ function render(f, recent, upcoming, lastVod, beltCount) {
 }
 
 function show(html) { document.getElementById('root').innerHTML = html; }
-
-// Tap the hero avatar -> reveal the training demo. The 156KB game bundle only
-// loads on first tap (?demo=1 = nothing saved, fresh run every load).
-function openGame() {
-  const pane = document.getElementById('game-pane');
-  const head = document.getElementById('game-head');
-  if (!pane) return;
-  if (!pane.dataset.loaded) {
-    pane.innerHTML = '<iframe src="game/demo.html?demo=1&instant=1" title="UBA training demo"></iframe>';
-    pane.dataset.loaded = '1';
-  }
-  head.style.display = 'block';
-  pane.style.display = 'block';
-  pane.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
 
 load();
 </script>
