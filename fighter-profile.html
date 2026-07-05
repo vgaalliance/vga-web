@@ -152,6 +152,15 @@ body::after {
 .no-photo { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
 .no-photo svg { opacity: 0.08; }
 
+/* Playable cutout in the photo slot when a fighter has no photo: tap the
+   fighter to punch a crate in place (same inline demo as the mobile profile). */
+.hero-game { position: absolute; inset: 0; z-index: 3; }
+.hero-game iframe {
+  position: absolute; bottom: 8px; right: 14px;
+  width: 152px; height: 112px; border: 0; background: transparent;
+  transform: scale(1.35); transform-origin: bottom right;
+}
+
 .upcoming-bar {
   background: var(--surf);
   padding: 0 24px;
@@ -470,7 +479,7 @@ async function load() {
 
     const photoHTML = f.profile_photo_url
       ? `<img src="${f.profile_photo_url}" alt="${esc(f.display_name)}">`
-      : `<div class="no-photo"><svg width="80" height="80" viewBox="0 0 80 80"><circle cx="40" cy="30" r="18" fill="white"/><ellipse cx="40" cy="70" rx="28" ry="18" fill="white"/></svg></div>`;
+      : `<div class="hero-game"><iframe src="game/mini.html?v=${Date.now()}" scrolling="no" title="Tap the fighter to punch"></iframe></div>`;
 
     let upcomingHTML;
     if (upcoming) {
