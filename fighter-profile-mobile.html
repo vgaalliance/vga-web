@@ -43,6 +43,20 @@ body { background: var(--bg); color: var(--text); font-family: 'Barlow Condensed
 .hero-wrap { position: relative; }
 .hero-ava { position: absolute; right: 6px; bottom: -22px; width: 160px; height: 118px; z-index: 3; -webkit-tap-highlight-color: transparent; }
 .hero-ava iframe { width: 100%; height: 100%; border: 0; background: transparent; }
+/* EARN VC — small door to the full training game (opens as an overlay) */
+.game-earn-btn { position: absolute; right: 8px; bottom: -8px; z-index: 6;
+  background: linear-gradient(135deg,#6c3bff,#8b5cff); color: #fff; border: none;
+  border-radius: 10px; padding: 3px 9px; font-family: inherit; font-size: 8px;
+  font-weight: 900; letter-spacing: 1px; cursor: pointer; box-shadow: 0 0 9px #6c3bff66;
+  -webkit-tap-highlight-color: transparent; white-space: nowrap; }
+/* Full-game overlay */
+#game-overlay { display: none; position: fixed; inset: 0; z-index: 9999;
+  background: rgba(4,0,15,0.93); backdrop-filter: blur(5px);
+  align-items: flex-start; justify-content: center; overflow-y: auto; padding: 8px 0 40px; }
+#game-mount { width: 100%; max-width: 420px; }
+.game-close { position: fixed; top: 10px; right: 12px; z-index: 10000; width: 38px; height: 38px;
+  border-radius: 50%; background: #1a0a3a; border: 1px solid #6c3bff; color: #fff;
+  font-size: 18px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 /* CRT scanlines */
 body::before {
   content: ''; position: fixed; inset: 0;
@@ -278,6 +292,7 @@ function render(f, recent, upcoming, lastVod, beltCount) {
     </div>
     <div class="hero-ava">
       <iframe src="game/mini.html?v=${Date.now()}" scrolling="no" title="Tap the fighter to punch"></iframe>
+      <button class="game-earn-btn" onclick="openTrainingGame()">EARN VC</button>
     </div>
     </div>`;
 
@@ -368,6 +383,28 @@ function render(f, recent, upcoming, lastVod, beltCount) {
 function show(html) { document.getElementById('root').innerHTML = html; }
 
 load();
+
+// ── Training game overlay: lazy-load the bundle on first EARN VC tap ──
+let _gameLoaded = false;
+function openTrainingGame() {
+  document.getElementById('game-overlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  if (!_gameLoaded) {
+    _gameLoaded = true;
+    const s = document.createElement('script');
+    s.src = 'game/vga-game.embed.js';
+    s.onload = () => window.VGAGame && window.VGAGame.mount(document.getElementById('game-mount'));
+    document.body.appendChild(s);
+  }
+}
+function closeTrainingGame() {
+  document.getElementById('game-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
 </script>
+<div id="game-overlay">
+  <button class="game-close" onclick="closeTrainingGame()">✕</button>
+  <div id="game-mount"></div>
+</div>
 </body>
 </html>
