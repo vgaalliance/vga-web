@@ -492,7 +492,7 @@ async function load() {
 
     const photoHTML = f.profile_photo_url
       ? `<img src="${f.profile_photo_url}" alt="${esc(f.display_name)}">`
-      : `<div class="hero-game"><iframe src="game/mini.html?v=${Date.now()}" scrolling="no" title="Tap the fighter to punch"></iframe><button class="game-earn-btn" onclick="openTrainingGame()">EARN VC</button></div>`;
+      : `<div class="hero-game"><iframe src="game/mini.html?v=${Date.now()}&slug=${encodeURIComponent(slug())}" scrolling="no" title="Tap the fighter to punch"></iframe><button class="game-earn-btn" onclick="openTrainingGame()">EARN VC</button></div>`;
 
     let upcomingHTML;
     if (upcoming) {
