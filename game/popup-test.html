@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Popup Test</title>
+<style>
+  body { margin:0; padding:24px 16px; background:#0b0b10; color:#eee;
+         font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  h1 { font-size:18px; margin:0 0 4px; }
+  p  { font-size:13px; color:#999; margin:0 0 20px; }
+  button { display:block; width:100%; padding:16px; margin:0 0 12px; font-size:16px;
+           font-weight:700; border:none; border-radius:10px; cursor:pointer; }
+  #t1 { background:#5865F2; color:#fff; }
+  #t2 { background:#2b2d31; color:#fff; }
+  #log { margin-top:20px; padding:12px; background:#15151d; border-radius:10px;
+         font-size:14px; line-height:1.7; min-height:60px; white-space:pre-wrap; }
+</style>
+</head>
+<body>
+  <h1>Login Popup Test</h1>
+  <p>Open this inside the Wix site on your iPhone, then tap both buttons. Results show below.</p>
+
+  <button id="t1">TEST 1 — open popup + get answer back</button>
+  <button id="t2">TEST 2 — open Discord in a popup</button>
+
+  <div id="log">waiting…</div>
+
+<script>
+  var log = document.getElementById('log');
+  function say(msg) { log.textContent += '\n' + msg; }
+  log.textContent = 'ready · ' + (window.top === window ? 'NOT inside an embed' : 'inside an embed ✓');
+
+  // This mimics the real login flow's last step: the popup reports back to this page.
+  window.addEventListener('message', function (e) {
+    if (e.origin !== location.origin) return;
+    if (e.data && e.data.test) say('✅ TEST 1 PASS — popup talked back: "' + e.data.test + '"');
+  });
+
+  document.getElementById('t1').onclick = function () {
+    // window.open must run directly in the tap or iOS blocks it
+    var w = window.open('popup-test-return.html', 'test1', 'width=480,height=720');
+    say(w ? '… TEST 1: popup opened, waiting for it to talk back' : '❌ TEST 1 FAIL — popup blocked');
+  };
+
+  document.getElementById('t2').onclick = function () {
+    var w = window.open('https://discord.com/login', 'test2', 'width=480,height=720');
+    say(w ? '✅ TEST 2 PASS if you can see the Discord login page' : '❌ TEST 2 FAIL — popup blocked');
+  };
+</script>
+</body>
+</html>

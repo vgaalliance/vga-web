@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Popup Test — Return</title>
+<style>
+  body { margin:0; padding:40px 16px; background:#0b0b10; color:#eee; text-align:center;
+         font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+</style>
+</head>
+<body>
+  <h2 id="msg">talking to the page that opened me…</h2>
+<script>
+  // Mimics the login callback page: report back to the opener, then close.
+  if (window.opener) {
+    window.opener.postMessage({ test: 'hello from the popup' }, location.origin);
+    document.getElementById('msg').textContent = '✅ message sent — closing…';
+    setTimeout(function () { window.close(); }, 1200);
+  } else {
+    document.getElementById('msg').textContent = '❌ lost the link to the page that opened me';
+  }
+</script>
+</body>
+</html>
