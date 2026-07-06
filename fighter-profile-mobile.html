@@ -294,7 +294,7 @@ function render(f, recent, upcoming, lastVod, beltCount) {
       </div>
     </div>
     <div class="hero-ava">
-      <iframe src="game/mini.html?v=${Date.now()}&slug=${encodeURIComponent(slug)}" scrolling="no" title="Tap the fighter to punch"></iframe>
+      <iframe src="game/mini.html?v=${Date.now()}&slug=${encodeURIComponent(new URLSearchParams(location.search).get('fighter')||'')}" scrolling="no" title="Tap the fighter to punch"></iframe>
       <button class="game-earn-btn" onclick="openTrainingGame()">EARN VC</button>
     </div>
     </div>`;
