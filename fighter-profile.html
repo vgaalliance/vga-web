@@ -160,6 +160,19 @@ body::after {
   width: 152px; height: 112px; border: 0; background: transparent;
   transform: scale(1.35); transform-origin: bottom right;
 }
+/* EARN VC — small door to the full training game (opens as an overlay) */
+.game-earn-btn { position: absolute; right: 14px; bottom: 6px; z-index: 6;
+  background: linear-gradient(135deg,#6c3bff,#8b5cff); color: #fff; border: none;
+  border-radius: 10px; padding: 3px 10px; font-family: inherit; font-size: 9px;
+  font-weight: 900; letter-spacing: 1px; cursor: pointer; box-shadow: 0 0 9px #6c3bff66;
+  white-space: nowrap; }
+#game-overlay { display: none; position: fixed; inset: 0; z-index: 9999;
+  background: rgba(4,0,15,0.93); backdrop-filter: blur(5px);
+  align-items: flex-start; justify-content: center; overflow-y: auto; padding: 16px 0 40px; }
+#game-mount { width: 100%; max-width: 440px; }
+.game-close { position: fixed; top: 14px; right: 16px; z-index: 10000; width: 40px; height: 40px;
+  border-radius: 50%; background: #1a0a3a; border: 1px solid #6c3bff; color: #fff;
+  font-size: 19px; cursor: pointer; }
 
 .upcoming-bar {
   background: var(--surf);
@@ -479,7 +492,7 @@ async function load() {
 
     const photoHTML = f.profile_photo_url
       ? `<img src="${f.profile_photo_url}" alt="${esc(f.display_name)}">`
-      : `<div class="hero-game"><iframe src="game/mini.html?v=${Date.now()}" scrolling="no" title="Tap the fighter to punch"></iframe></div>`;
+      : `<div class="hero-game"><iframe src="game/mini.html?v=${Date.now()}" scrolling="no" title="Tap the fighter to punch"></iframe><button class="game-earn-btn" onclick="openTrainingGame()">EARN VC</button></div>`;
 
     let upcomingHTML;
     if (upcoming) {
@@ -623,6 +636,28 @@ async function load() {
 }
 
 load();
+
+// ── Training game overlay: lazy-load the bundle on first EARN VC tap ──
+let _gameLoaded = false;
+function openTrainingGame() {
+  document.getElementById('game-overlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  if (!_gameLoaded) {
+    _gameLoaded = true;
+    const s = document.createElement('script');
+    s.src = 'game/vga-game.embed.js';
+    s.onload = () => window.VGAGame && window.VGAGame.mount(document.getElementById('game-mount'));
+    document.body.appendChild(s);
+  }
+}
+function closeTrainingGame() {
+  document.getElementById('game-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
 </script>
+<div id="game-overlay">
+  <button class="game-close" onclick="closeTrainingGame()">✕</button>
+  <div id="game-mount"></div>
+</div>
 </body>
 </html>
