@@ -166,6 +166,8 @@ body::after {
   border-radius: 10px; padding: 3px 10px; font-family: inherit; font-size: 9px;
   font-weight: 900; letter-spacing: 1px; cursor: pointer; box-shadow: 0 0 9px #6c3bff66;
   white-space: nowrap; }
+.game-earn-btn.gm-out { background: #ff2200; box-shadow: 0 0 9px #ff220088; color: #fff; }
+.game-earn-btn.gm-in  { background: #00e676; box-shadow: 0 0 9px #00e67688; color: #04140a; }
 #game-overlay { display: none; position: fixed; inset: 0; z-index: 9999;
   background: rgba(4,0,15,0.93); backdrop-filter: blur(5px);
   align-items: flex-start; justify-content: center; overflow-y: auto; padding: 16px 0 40px; }
@@ -492,7 +494,7 @@ async function load() {
 
     const photoHTML = f.profile_photo_url
       ? `<img src="${f.profile_photo_url}" alt="${esc(f.display_name)}">`
-      : `<div class="hero-game"><iframe src="game/mini.html?v=${Date.now()}&slug=${encodeURIComponent(slug())}" scrolling="no" title="Tap the fighter to punch"></iframe><button class="game-earn-btn" onclick="openTrainingGame()">EARN VC</button></div>`;
+      : `<div class="hero-game"><iframe src="game/mini.html?v=${Date.now()}&slug=${encodeURIComponent(slug())}" scrolling="no" title="Tap the fighter to punch"></iframe><button class="game-earn-btn ${gameLoggedIn()?'gm-in':'gm-out'}" onclick="openTrainingGame()">${gameLoggedIn()?'EARN VC':'LOG IN'}</button></div>`;
 
     let upcomingHTML;
     if (upcoming) {
@@ -650,9 +652,18 @@ function openTrainingGame() {
     document.body.appendChild(s);
   }
 }
+function gameLoggedIn() { try { return !!localStorage.getItem('vga_game_token'); } catch (e) { return false; } }
+function refreshEarnBtn() {
+  const b = document.querySelector('.game-earn-btn');
+  if (!b) return;
+  const i = gameLoggedIn();
+  b.className = 'game-earn-btn ' + (i ? 'gm-in' : 'gm-out');
+  b.textContent = i ? 'EARN VC' : 'LOG IN';
+}
 function closeTrainingGame() {
   document.getElementById('game-overlay').style.display = 'none';
   document.body.style.overflow = '';
+  refreshEarnBtn();
 }
 </script>
 <div id="game-overlay">
