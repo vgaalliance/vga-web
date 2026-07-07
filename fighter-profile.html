@@ -488,7 +488,7 @@ async function load() {
       if (sr && sr.length) streakHTML = renderStreak(sr[0].streak, sr[0].played_today);
     } catch (e) {}
 
-    const matches = await sb('fighter_matches', `fighter_id=eq.${f.id}&order=created_at.desc&select=status,method,won,opponent_name,opponent_slug,event_name,event_date,is_title_fight`);
+    const matches = await sb('fighter_matches', `fighter_id=eq.${f.id}&order=event_date.desc.nullslast,created_at.desc&select=status,method,won,opponent_name,opponent_slug,event_name,event_date,is_title_fight`);
     const completed = matches.filter(m => m.status === 'completed');
     const scheduled = matches.filter(m => m.status === 'scheduled');
     const recent = completed.slice(0, 3);
