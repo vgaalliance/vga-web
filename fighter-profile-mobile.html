@@ -51,6 +51,12 @@ body { background: var(--bg); color: var(--text); font-family: 'Barlow Condensed
   -webkit-tap-highlight-color: transparent; white-space: nowrap; }
 .game-earn-btn.gm-out { background: #ff2200; box-shadow: 0 0 9px #ff220088; color: #fff; }
 .game-earn-btn.gm-in  { background: #00e676; box-shadow: 0 0 9px #00e67688; color: #04140a; }
+.daily-tracker { display: flex; flex-direction: column-reverse; gap: 3px; }
+.dt-cell { width: 7px; height: 7px; border-radius: 2px; }
+.dt-cell.on { background: #00e676; }
+.dt-cell.today { border: 1px dashed var(--pl); }
+.dt-cell.off { background: rgba(255,255,255,0.06); border: 1px solid var(--border); }
+.hero-ava .daily-tracker { position: absolute; right: 0; bottom: 22px; z-index: 6; }
 /* Full-game overlay — scrolls inside the Wix embed frame; the game must not
    force full-frame height or its bottom (START) gets clipped on mobile. */
 #game-overlay { display: none; position: fixed; inset: 0; z-index: 9999;
@@ -267,14 +273,32 @@ async function load() {
     const lastVod   = completed.find(m => m.vod_link)?.vod_link ?? null;
     const beltCount = completed.filter(m => m.is_title_fight && m.won === true).length;
 
-    show(render(f, recent, upcoming, lastVod, beltCount));
+    let streakHTML = '';
+    try {
+      const sr = await sb('game_streak_public', `slug=eq.${encodeURIComponent(slug)}&select=streak,played_today`);
+      if (sr && sr.length) streakHTML = renderStreak(sr[0].streak, sr[0].played_today);
+    } catch (e) {}
+
+    show(render(f, recent, upcoming, lastVod, beltCount, streakHTML));
   } catch(e) {
     console.error(e);
     show('<div class="loading-state">Error loading fighter</div>');
   }
 }
 
-function render(f, recent, upcoming, lastVod, beltCount) {
+function renderStreak(streak, playedToday) {
+  const filled = Math.min(streak || 0, 7);
+  let cells = '';
+  for (let i = 0; i < 7; i++) {
+    if (i < filled) cells += '<span class="dt-cell on"></span>';
+    else if (!playedToday && i === filled) cells += '<span class="dt-cell today"></span>';
+    else cells += '<span class="dt-cell off"></span>';
+  }
+  const tip = playedToday ? `Daily done today · ${streak||0}-day streak` : `Daily ready — play to earn VC · ${streak||0}-day streak`;
+  return `<div class="daily-tracker" title="${tip}">${cells}</div>`;
+}
+
+function render(f, recent, upcoming, lastVod, beltCount, streakHTML) {
   const countryFlag = FLAGS[f.country] ?? null;
   const vodEl = lastVod ? `<a class="vod-strip" href="${esc(lastVod)}" target="_blank" rel="noopener"><span>▶ VOD</span></a>` : '';
 
@@ -298,6 +322,7 @@ function render(f, recent, upcoming, lastVod, beltCount) {
     <div class="hero-ava">
       <iframe src="game/mini.html?v=${Date.now()}&slug=${encodeURIComponent(new URLSearchParams(location.search).get('fighter')||'')}" scrolling="no" title="Tap the fighter to punch"></iframe>
       <button class="game-earn-btn ${gameLoggedIn()?'gm-in':'gm-out'}" onclick="openTrainingGame()">${gameLoggedIn()?'EARN VC':'LOG IN'}</button>
+      ${streakHTML}
     </div>
     </div>`;
 
