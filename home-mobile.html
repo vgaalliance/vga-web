@@ -401,11 +401,13 @@ body::after { content:''; position:fixed; inset:0; background:radial-gradient(el
 </div>
 
 <script>
-// Legacy UBAe project (teams, transfers, team schedule — S2 stays here per Open Decision #3)
+// UBAe now lives in the MAIN project (Summer Split onward; repointed 2026-07-16).
+// The legacy Spring project is a read-only archive. ONE thing still reads it:
+// the fighter-messages ticker (loadFeed) — that table only exists in legacy.
 const SB='https://xwsbyxkjfqqrgbzxmmrn.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3c2J5eGtqZnFxcmdienhtbXJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNjAyNDcsImV4cCI6MjA4NzkzNjI0N30.6amkt0zGMLT3_N3fKY6sMMTdaBr5eS7Ig-hAPvPCB4g';
 const H={headers:{'apikey':KEY,'Authorization':'Bearer '+KEY}};
-// UBA project (fighters, rankings, events)
+// UBA + UBAe project (fighters, rankings, events, teams, team schedule)
 const SB_U='https://emzlivoykbhhjcugupit.supabase.co';
 const KEY_U='sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF';
 const HU={headers:{'apikey':KEY_U,'Authorization':'Bearer '+KEY_U}};
@@ -437,9 +439,14 @@ function fmtCd(diff){
 
 async function loadSchedule(){
   try{
-    const r=await fetch(SB+'/rest/v1/ubae_matches?select=id,week,match_date,team1_score,team2_score,winner_id,vod_url,team1:ubae_teams!team1_id(id,team_name),team2:ubae_teams!team2_id(id,team_name),winner:ubae_teams!winner_id(id,team_name)&order=match_date.asc',H);
-    const matches=await r.json();
-    if(!Array.isArray(matches))return;
+    const r=await fetch(SB_U+'/rest/v1/team_matches_public?select=id,week,match_date,score_a,score_b,team_a_name,team_b_name,winner_name,vod_link&order=match_date.asc.nullslast',HU);
+    const raw=await r.json();
+    if(!Array.isArray(raw))return;
+    // Map the new view's flat columns into the legacy nested shape the render expects.
+    const matches=raw.map(m=>({id:m.id,week:m.week,match_date:m.match_date,
+      team1_score:m.score_a,team2_score:m.score_b,vod_url:m.vod_link,
+      team1:{team_name:m.team_a_name},team2:{team_name:m.team_b_name},
+      winner:m.winner_name?{team_name:m.winner_name}:null}));
     scheduleData={};
     matches.forEach(m=>{const w=m.week||0;if(!scheduleData[w])scheduleData[w]=[];scheduleData[w].push(m);});
     scheduleLoaded=true;
@@ -447,7 +454,9 @@ async function loadSchedule(){
   }catch(e){document.getElementById('wk-panel').innerHTML='<div class="sched-loading">Error loading schedule</div>';}
 }
 
-function parseDateUTC(s){return new Date(s.replace(' ','T')+'Z');}
+// Legacy rows were 'YYYY-MM-DD HH:MM:SS' (needs a Z); the new project returns
+// full ISO with a timezone already — appending Z there would make an invalid date.
+function parseDateUTC(s){if(/[zZ]$|[+-]\d\d:?\d\d$/.test(s))return new Date(s);return new Date(s.replace(' ','T')+'Z');}
 function fmtDate(s){
   const dt=parseDateUTC(s);
   return{day:DAYS[dt.getUTCDay()],num:dt.getUTCDate(),mon:MONTHS[dt.getUTCMonth()],
@@ -608,9 +617,9 @@ async function loadNextEvent(){
       (Array.isArray(d1)?d1:[]).forEach(e=>{const t=new Date(e.event_date).getTime();if(t>now)candidates.push({t,label:e.name,tag:'UBA — Next Event'});});
     }catch(e){}
     try{
-      const r2=await fetch(SB+'/rest/v1/ubae_matches?select=match_date,week,team1:ubae_teams!team1_id(team_name),team2:ubae_teams!team2_id(team_name)&winner_id=is.null&order=match_date.asc&limit=5',H);
+      const r2=await fetch(SB_U+'/rest/v1/team_matches_public?select=match_date,week,team_a_name,team_b_name&winner_name=is.null&match_date=not.is.null&order=match_date.asc&limit=5',HU);
       const d2=await r2.json();
-      (Array.isArray(d2)?d2:[]).forEach(m=>{const t=parseDateUTC(m.match_date).getTime();if(t>now)candidates.push({t,label:(m.team1?.team_name||'TBD')+' VS '+(m.team2?.team_name||'TBD'),tag:'UBAe — Week '+m.week});});
+      (Array.isArray(d2)?d2:[]).forEach(m=>{const t=parseDateUTC(m.match_date).getTime();if(t>now)candidates.push({t,label:(m.team_a_name||'TBD')+' VS '+(m.team_b_name||'TBD'),tag:'UBAe — Week '+m.week});});
     }catch(e){}
     if(!candidates.length){
       document.getElementById('next-label').textContent='Next Event';
@@ -644,9 +653,14 @@ setInterval(loadNextEvent,300000);
 async function loadTransfers(){
   const el=document.getElementById('tr-rows');
   try{
-    const r=await fetch(SB+'/rest/v1/transfers?select=*&order=created_at.desc&limit=3',H);
-    const d=await r.json();
-    if(!Array.isArray(d)||!d.length){el.innerHTML='<div class="tr-empty">None yet</div>';return;}
+    const r=await fetch(SB_U+'/rest/v1/roster_moves_public?select=fighter_name,team_name,status,moved_at&order=moved_at.desc&limit=3',HU);
+    const raw=await r.json();
+    if(!Array.isArray(raw)||!raw.length){el.innerHTML='<div class="tr-empty">None yet</div>';return;}
+    // Roster history rows -> the from/to shape this widget renders: a released
+    // row is team -> FREE; an active row is FREE -> team.
+    const d=raw.map(m=>({fighter_name:m.fighter_name,role:'player',
+      from_team_name:m.status==='released'?m.team_name:null,
+      to_team_name:m.status==='released'?null:m.team_name}));
     function abbr(n){if(!n)return null;const map={'team muds':'MUDS','muds':'MUDS','the 5 great kage':'KAGE','sheath elite':'SHTH','team rag tags':'RAGS','champions united':'CHMP','ring reapers':'REAP','ukfc uncs':'UNCS','junc':'jUnC'};const k=n.trim().toLowerCase();if(map[k])return map[k];const w=n.trim().split(/\s+/);return w[w.length-1].slice(0,4).toUpperCase();}
     el.innerHTML=d.map(t=>{const role=t.role||'player';const from=abbr(t.from_team_name);const to=abbr(t.to_team_name);return`<div class="tr-row"><div class="tr-name">${t.fighter_name}</div><span class="tr-badge ${role}">${role.toUpperCase()}</span><div class="tr-move"><div class="tr-pill ${from?'team':'free'}">${from||'FREE'}</div><div class="tr-arr"><div class="tr-shaft"></div><div class="tr-head"></div></div><div class="tr-pill ${to?'team':'free'}">${to||'FREE'}</div></div></div>`;}).join('');
   }catch(e){el.innerHTML='<div class="tr-empty">Error</div>';}
@@ -656,8 +670,12 @@ async function loadTransfers(){
 async function loadRecentResults(){
   const el=document.getElementById('bc-box');
   try{
-    const r=await fetch(SB+'/rest/v1/ubae_matches?select=week,match_date,team1_score,team2_score,team1:ubae_teams!team1_id(team_name),team2:ubae_teams!team2_id(team_name),winner:ubae_teams!winner_id(team_name)&winner_id=not.is.null&order=match_date.desc&limit=3',H);
-    const d=await r.json();
+    const r=await fetch(SB_U+'/rest/v1/team_matches_public?select=week,match_date,score_a,score_b,team_a_name,team_b_name,winner_name&winner_name=not.is.null&order=match_date.desc.nullslast&limit=3',HU);
+    const raw=await r.json();
+    const d=(Array.isArray(raw)?raw:[]).map(m=>({week:m.week,match_date:m.match_date,
+      team1_score:m.score_a,team2_score:m.score_b,
+      team1:{team_name:m.team_a_name},team2:{team_name:m.team_b_name},
+      winner:{team_name:m.winner_name}}));
     const hdr='<div class="bc-header">// Recent Results</div>';
     if(!Array.isArray(d)||!d.length){el.innerHTML=hdr+'<div class="bc-empty">No results yet</div>';return;}
     el.innerHTML=hdr+d.map(m=>{
@@ -682,7 +700,7 @@ function makeRows(items,nk,wk,lk,cut){
 }
 async function loadTeams(){
   const el=document.getElementById('s-teams');
-  try{const r=await fetch(SB+'/rest/v1/ubae_teams?select=team_name,wins,losses&order=wins.desc,losses.asc&limit=8',H);el.innerHTML=makeRows(await r.json(),'team_name','wins','losses',4);}
+  try{const r=await fetch(SB_U+'/rest/v1/team_standings?select=team_name,match_wins,match_losses&order=match_wins.desc,bout_diff.desc&limit=8',HU);el.innerHTML=makeRows(await r.json(),'team_name','match_wins','match_losses',4);}
   catch(e){el.innerHTML='<div class="s-loading" style="color:#3a3a55">Could not load</div>';}
 }
 // Fighters tab — reads the NEW UBA project, pure pound-for-pound order with
@@ -736,9 +754,9 @@ var FEATURED_VOD='https://www.youtube.com/live/PsNLe-NNqk0?t=8975';
     try{var r1=await fetch(SB_U+'/rest/v1/fighter_matches?select=vod_link,event_date&vod_link=not.is.null&order=event_date.desc&limit=1',HU);d1=await r1.json();}catch(e){}
     if(Array.isArray(d1)&&d1.length&&d1[0].vod_link){url=d1[0].vod_link;}
     else{
-      var r2=await fetch(SB+'/rest/v1/ubae_matches?select=vod_url&vod_url=not.is.null&order=match_date.desc&limit=1',H);
+      var r2=await fetch(SB_U+'/rest/v1/team_matches_public?select=vod_link&vod_link=not.is.null&order=match_date.desc.nullslast&limit=1',HU);
       var d2=await r2.json();
-      if(Array.isArray(d2)&&d2.length&&d2[0].vod_url)url=d2[0].vod_url;
+      if(Array.isArray(d2)&&d2.length&&d2[0].vod_link)url=d2[0].vod_link;
     }
   }catch(e){}
   var vt=document.getElementById('vod-tag'); if(vt)vt.href=url;
