@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rankings — VGA Esports</title>
+<!-- ═══════════════════════════════════════════════════════════════════════
+     THE RANKINGS PAGE — ONE responsive CRT file (website-plan.md step 5).
+     Two leagues, one page: UBA (P4P + the 4 divisions + champions) and UBAe
+     (team standings by conference, each team clicking through to its page).
+     "Rankings" finally means rankings; the fighter DATABASE is /fighters.
+     Reads only public views. Renders zeros cleanly pre-season.
+     ══════════════════════════════════════════════════════════════════════ -->
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --p:#7B2FFF; --pl:#A855F7; --pc:#C084FC;
+    --pg:rgba(123,47,255,.18); --pb:rgba(123,47,255,.35);
+    --gold:#F5C842; --bg:#06060A; --surf:#0B0B12; --border:#181824;
+    --text:#DDD8F0; --muted:#4A4A68; --dim:#131320;
+    --glow:0 0 8px rgba(123,47,255,.7),0 0 20px rgba(123,47,255,.3);
+    --glow-gold:0 0 10px rgba(245,200,66,.6),0 0 25px rgba(245,200,66,.2);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-serif;overflow-x:hidden;}
+  body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:99;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.12) 2px,rgba(0,0,0,.12) 4px);}
+  a{color:inherit;text-decoration:none;}
+  .wrap{max-width:1180px;margin:0 auto;padding:16px 12px 50px;}
+
+  .head{text-align:center;padding:6px 0 14px;}
+  .head h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(30px,6vw,46px);letter-spacing:2px;text-shadow:var(--glow);}
+  .head .s{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2.5px;color:var(--muted);}
+
+  .switch{display:flex;gap:6px;justify-content:center;margin-bottom:16px;}
+  .sw{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;padding:7px 18px;border-radius:4px;
+    border:1px solid var(--border);color:var(--muted);cursor:pointer;}
+  .sw.on{border-color:var(--pb);color:var(--pc);background:var(--pg);box-shadow:var(--glow);}
+
+  .cols{display:grid;gap:12px;grid-template-columns:1fr;}
+  @media(min-width:760px){ .cols{grid-template-columns:1fr 1fr;} .cols.four{grid-template-columns:repeat(4,1fr);} }
+  .card{border:1px solid var(--border);border-radius:8px;background:var(--surf);overflow:hidden;}
+  .card.hero{border-color:var(--pb);background:radial-gradient(ellipse 90% 130% at 50% 0%,var(--pg),transparent 70%),var(--surf);}
+  .ch{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2.5px;color:var(--pl);text-transform:uppercase;
+    padding:9px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;}
+  .ch .r{color:var(--muted);letter-spacing:1px;}
+  .cb{padding:6px 12px 10px;}
+
+  .row{display:flex;align-items:center;gap:9px;padding:6px 0;border-top:1px solid var(--border);}
+  .row:first-child{border-top:none;}
+  .row:hover{background:var(--dim);}
+  .row .i{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);width:22px;text-align:right;}
+  .row .i.hi{color:var(--pc);}
+  .row .n{flex:1;min-width:0;font-weight:600;font-size:15px;letter-spacing:.3px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .row .v{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);}
+  .row .v b{color:var(--text);font-weight:400;}
+  .row.c .n{color:var(--gold);text-shadow:var(--glow-gold);}
+  .belt{font-family:'Space Mono',monospace;font-size:8px;color:var(--gold);border:1px solid rgba(245,200,66,.4);
+    border-radius:2px;padding:1px 4px;}
+  .conf{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:2.5px;color:var(--pl);padding:9px 0 3px;}
+  .none{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px;padding:16px 0;text-align:center;}
+  .asof{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:1px;text-align:center;margin-top:14px;}
+  .hidden{display:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head"><h1 id="title">RANKINGS</h1><div class="s" id="sub">—</div></div>
+  <div class="switch">
+    <div class="sw on" data-v="uba">UBA</div>
+    <div class="sw" data-v="ubae">UBAe</div>
+  </div>
+
+  <div id="uba">
+    <div class="cols" style="margin-bottom:12px;">
+      <div class="card hero">
+        <div class="ch"><span>Pound for Pound</span><span class="r">TOP 10</span></div>
+        <div class="cb" id="p4p"><div class="none">LOADING</div></div>
+      </div>
+      <div class="card hero">
+        <div class="ch"><span>Champions</span><span class="r">CURRENT</span></div>
+        <div class="cb" id="champs"><div class="none">LOADING</div></div>
+      </div>
+    </div>
+    <div class="cols four" id="divs"></div>
+    <div class="asof" id="asof"></div>
+  </div>
+
+  <div id="ubae" class="hidden">
+    <div class="cols" id="standings"><div class="none">LOADING</div></div>
+    <div class="asof">TEAM STANDINGS DERIVE FROM MATCH RESULTS — THEY UPDATE THEMSELVES</div>
+  </div>
+</div>
+
+<script>
+const SB='https://emzlivoykbhhjcugupit.supabase.co';
+const KEY='sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF';
+const H={headers:{apikey:KEY,Authorization:'Bearer '+KEY}};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const get=async p=>{try{const r=await fetch(SB+'/rest/v1/'+p,H);return r.ok?await r.json():[];}catch(e){return [];}};
+const el=i=>document.getElementById(i);
+const FP=s=>'https://www.ubaesports.com/fighter?f='+encodeURIComponent(s);
+const TP=s=>'https://www.ubaesports.com/team?team='+encodeURIComponent(s);
+const WC={heavyweight:'HEAVYWEIGHT',light_heavyweight:'LIGHT HEAVYWEIGHT',middleweight:'MIDDLEWEIGHT',lightweight:'LIGHTWEIGHT'};
+
+/* switch */
+document.querySelectorAll('.sw').forEach(s=>s.addEventListener('click',()=>{
+  document.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x===s));
+  const v=s.dataset.v;
+  el('uba').classList.toggle('hidden',v!=='uba');
+  el('ubae').classList.toggle('hidden',v!=='ubae');
+  el('sub').textContent=v==='uba'?'UNIFIED BOXING ASSOCIATION':'UBAe — TEAM LEAGUE';
+}));
+
+/* ── UBA: P4P · champions · the 4 divisions ── */
+(async()=>{
+  // rankings_public: scope 'overall' = P4P (weight_class null); the rest are per-division.
+  const [ranks,cards]=await Promise.all([
+    get('rankings_public?select=weight_class,rank,fighter_name,fighter_slug,level,as_of_date,scope&league=eq.UBA&order=rank.asc'),
+    get('fighter_cards?select=display_name,slug,weight_class,wins,losses,draws,is_champion'),
+  ]);
+  const rec={}; cards.forEach(c=>rec[c.slug]=c);
+  const R=s=>{const c=rec[s];return c?`${c.wins}-${c.losses}${c.draws?'-'+c.draws:''}`:'';};
+  el('sub').textContent='UNIFIED BOXING ASSOCIATION';
+  if(ranks.length&&ranks[0].as_of_date) el('asof').textContent='AS OF '+String(ranks[0].as_of_date).toUpperCase();
+
+  const line=(r,i,cls='')=>`<a class="row ${cls}" href="${FP(r.fighter_slug)}" target="_parent">
+      <span class="i hi">#${r.rank??i+1}</span><span class="n">${esc(r.fighter_name)}</span>
+      <span class="v"><b>${R(r.fighter_slug)}</b></span></a>`;
+
+  const p4p=ranks.filter(r=>!r.weight_class).slice(0,10);
+  el('p4p').innerHTML=p4p.length?p4p.map((r,i)=>line(r,i)).join(''):'<div class="none">NO P4P RANKINGS YET</div>';
+
+  const champs=cards.filter(c=>c.is_champion);
+  el('champs').innerHTML=champs.length?champs.map(c=>
+    `<a class="row c" href="${FP(c.slug)}" target="_parent"><span class="i">★</span>
+      <span class="n">${esc(c.display_name)}</span>
+      <span class="belt">${esc(WC[c.weight_class]||c.weight_class||'')}</span></a>`).join('')
+    :'<div class="none">NO CHAMPIONS SET</div>';
+
+  // A division card per weight class that HAS rankings; champion floats to the top.
+  const classes=[...new Set(ranks.filter(r=>r.weight_class).map(r=>r.weight_class))];
+  el('divs').innerHTML=classes.length?classes.map(wc=>{
+    const list=ranks.filter(r=>r.weight_class===wc).slice(0,10);
+    const champ=cards.find(c=>c.is_champion&&c.weight_class===wc);
+    return `<div class="card"><div class="ch"><span>${esc(WC[wc]||wc)}</span></div><div class="cb">
+      ${champ?`<a class="row c" href="${FP(champ.slug)}" target="_parent"><span class="i">★</span>
+        <span class="n">${esc(champ.display_name)}</span><span class="v"><b>${R(champ.slug)}</b></span></a>`:''}
+      ${list.map((r,i)=>line(r,i)).join('')||'<div class="none">—</div>'}
+    </div></div>`;
+  }).join(''):'';
+})();
+
+/* ── UBAe: standings by conference (split read from the VIEW, never ubae_splits —
+   that's a raw table and anon gets 42501). Teams click through to /team. ── */
+(async()=>{
+  const all=await get('team_standings?select=*&order=season.desc,split_number.desc,conference.asc,match_wins.desc,bout_diff.desc');
+  if(!all.length){el('standings').innerHTML='<div class="none">NO TEAMS YET</div>';return;}
+  const cur=all[0];
+  const rows=all.filter(r=>r.season===cur.season&&r.split_number===cur.split_number);
+  const by={}; rows.forEach(r=>(by[r.conference]=by[r.conference]||[]).push(r));
+  el('standings').innerHTML=Object.keys(by).sort().map(c=>
+    `<div class="card"><div class="ch"><span>Conference ${esc(c)}</span><span class="r">${esc(cur.split_name||'')}</span></div>
+      <div class="cb">${by[c].map((r,i)=>
+        `<a class="row" href="${TP(r.team_slug)}" target="_parent">
+          <span class="i ${i<2?'hi':''}">${i+1}</span><span class="n">${esc(r.team_name)}</span>
+          <span class="v"><b>${r.match_wins}-${r.match_losses}${r.match_draws?'-'+r.match_draws:''}</b></span></a>`).join('')}
+      </div></div>`).join('');
+})();
+</script>
+</body>
+</html>
