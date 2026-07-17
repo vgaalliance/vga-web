@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Team — VGA Esports</title>
+<!-- ═══════════════════════════════════════════════════════════════════════
+     THE TEAM PAGE — ONE responsive CRT file (website-plan.md step 6).
+     /team?team=<slug>. One page serves all 8 teams (same pattern as the
+     fighter profile — the Wix tax is paid once).
+
+     Roster comes from ubae_fighter_records filtered on current_team_slug:
+     the planned team_roster_public view was CUT as redundant, and this
+     arrives with each fighter's UBAe W-L-D already attached.
+     Past fights link into /matchup, closing the last click-path.
+     ══════════════════════════════════════════════════════════════════════ -->
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --p:#7B2FFF; --pl:#A855F7; --pc:#C084FC;
+    --pg:rgba(123,47,255,.18); --pb:rgba(123,47,255,.35);
+    --gold:#F5C842; --bg:#06060A; --surf:#0B0B12; --border:#181824;
+    --text:#DDD8F0; --muted:#4A4A68; --dim:#131320;
+    --win:#6ee7a0; --loss:#55506e;
+    --glow:0 0 8px rgba(123,47,255,.7),0 0 20px rgba(123,47,255,.3);
+    --glow-gold:0 0 10px rgba(245,200,66,.6),0 0 25px rgba(245,200,66,.2);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-serif;overflow-x:hidden;}
+  body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:99;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.12) 2px,rgba(0,0,0,.12) 4px);}
+  a{color:inherit;text-decoration:none;}
+  .wrap{max-width:980px;margin:0 auto;padding:16px 12px 50px;}
+  .crumb{font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:2px;color:var(--muted);
+    text-transform:uppercase;margin-bottom:12px;}
+  .crumb b{color:var(--pl);}
+
+  .hero{border:1px solid var(--pb);border-radius:8px;padding:20px 16px;text-align:center;margin-bottom:12px;
+    background:radial-gradient(ellipse 90% 130% at 50% 0%,var(--pg),transparent 70%),var(--surf);}
+  .hero .k{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2.5px;color:var(--pc);}
+  .hero h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(32px,7vw,56px);letter-spacing:2px;
+    line-height:1.02;margin:6px 0 8px;text-shadow:var(--glow);}
+  .stats{display:flex;justify-content:center;gap:22px;}
+  .stats div{text-align:center;}
+  .stats .n{font-family:'Bebas Neue',sans-serif;font-size:clamp(24px,4vw,32px);color:var(--pc);text-shadow:var(--glow);line-height:1;}
+  .stats .n.g{color:var(--gold);text-shadow:var(--glow-gold);}
+  .stats .l{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:1.5px;}
+
+  .cols{display:grid;gap:12px;grid-template-columns:1fr;}
+  @media(min-width:820px){ .cols{grid-template-columns:340px minmax(0,1fr);align-items:start;} }
+  .card{border:1px solid var(--border);border-radius:8px;background:var(--surf);overflow:hidden;}
+  .ch{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2.5px;color:var(--pl);text-transform:uppercase;
+    padding:9px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;}
+  .ch .r{color:var(--muted);letter-spacing:1px;}
+  .cb{padding:6px 12px 10px;}
+  .none{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px;padding:16px 0;text-align:center;}
+
+  .row{display:flex;align-items:center;gap:9px;padding:7px 0;border-top:1px solid var(--border);}
+  .row:first-child{border-top:none;}
+  .row:hover{background:var(--dim);}
+  .row .i{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);width:14px;}
+  .row .n{flex:1;min-width:0;font-weight:600;font-size:15px;letter-spacing:.3px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .row .v{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);}
+  .row .v b{color:var(--text);font-weight:400;}
+
+  .m{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--border);}
+  .m:last-child{border-bottom:none;}
+  .m:hover{background:var(--dim);}
+  .m .d{text-align:center;min-width:30px;}
+  .m .d .dd{font-family:'Bebas Neue',sans-serif;font-size:19px;color:var(--pc);line-height:1;}
+  .m .d .mm{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);}
+  .m .b{flex:1;min-width:0;}
+  .m .t{font-weight:600;font-size:15px;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .m .s{font-family:'Space Mono',monospace;font-size:8.5px;color:var(--muted);letter-spacing:1px;}
+  .res{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1px;}
+  .res.w{color:var(--win);} .res.l{color:var(--loss);} .res.d{color:var(--muted);}
+  .go{font-size:13px;color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="crumb" id="crumb">VGA <b>//</b> UBAe <b>//</b> TEAM</div>
+  <div id="page"><div class="none">LOADING</div></div>
+</div>
+
+<script>
+const SB='https://emzlivoykbhhjcugupit.supabase.co';
+const KEY='sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF';
+const H={headers:{apikey:KEY,Authorization:'Bearer '+KEY}};
+const q=new URLSearchParams(location.search);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const get=async p=>{try{const r=await fetch(SB+'/rest/v1/'+p,H);return r.ok?await r.json():[];}catch(e){return [];}};
+const page=document.getElementById('page');
+const FP=s=>'https://www.ubaesports.com/fighter?f='+encodeURIComponent(s);
+const MATCH=id=>'https://www.ubaesports.com/matchup?m='+encodeURIComponent(id);
+const state=(b,w)=>`<div class="card"><div class="cb"><div class="none" style="font-family:'Bebas Neue';font-size:24px;color:var(--pc);letter-spacing:2px">${b}</div>${w?`<div class="none" style="padding-top:0">${w}</div>`:''}</div></div>`;
+
+(async()=>{
+  const slug=q.get('team');
+  if(!slug){ page.innerHTML=state('NO TEAM SELECTED','GET HERE FROM THE RANKINGS PAGE'); return; }
+
+  const teams=await get(`teams_public?select=id,name,slug,status&slug=eq.${encodeURIComponent(slug)}`);
+  const t=teams[0];
+  if(!t){ page.innerHTML=state('TEAM NOT FOUND'); return; }
+  document.getElementById('crumb').innerHTML=`VGA <b>//</b> UBAe <b>//</b> ${esc(t.name).toUpperCase()}`;
+
+  const [stand,roster,matches]=await Promise.all([
+    get(`team_standings?select=*&team_slug=eq.${encodeURIComponent(slug)}&order=season.desc,split_number.desc`),
+    // The cut team_roster_public's replacement — arrives with UBAe W-L-D attached.
+    get(`ubae_fighter_records?select=stage_name,slug,wins,losses,draws&current_team_slug=eq.${encodeURIComponent(slug)}`),
+    get(`team_matches_public?select=*&or=(team_a_name.eq.${encodeURIComponent(t.name)},team_b_name.eq.${encodeURIComponent(t.name)})&order=match_date.asc.nullslast`),
+  ]);
+  const s=stand[0];
+
+  const hero=`<div class="hero">
+      <div class="k">UBAe${s?` · CONFERENCE ${esc(s.conference)} · ${esc(s.split_name||'')}`:''}</div>
+      <h1>${esc(t.name)}</h1>
+      <div class="stats">
+        <div><div class="n">${s?`${s.match_wins}-${s.match_losses}${s.match_draws?'-'+s.match_draws:''}`:'0-0'}</div><div class="l">RECORD</div></div>
+        <div><div class="n ${s&&s.bout_diff>0?'g':''}">${s?(s.bout_diff>0?'+':'')+s.bout_diff:'0'}</div><div class="l">BOUT DIFF</div></div>
+        <div><div class="n">${roster.length}<span style="font-size:.5em;color:var(--muted)">/7</span></div><div class="l">ROSTER</div></div>
+      </div></div>`;
+
+  const rosterCard=`<div class="card"><div class="ch"><span>Roster</span><span class="r">${roster.length}/7</span></div>
+    <div class="cb">${roster.length?roster
+      .sort((a,b)=>(b.wins-b.losses)-(a.wins-a.losses))
+      .map(f=>`<a class="row" href="${FP(f.slug)}" target="_parent">
+        <span class="i">•</span><span class="n">${esc(f.stage_name)}</span>
+        <span class="v"><b>${f.wins}-${f.losses}${f.draws?'-'+f.draws:''}</b></span></a>`).join('')
+      :'<div class="none">NO FIGHTERS ROSTERED YET</div>'}</div></div>`;
+
+  const now=Date.now();
+  const row=m=>{
+    const home=m.team_a_name===t.name;
+    const opp=home?m.team_b_name:m.team_a_name;
+    const done=m.status==='completed';
+    const us=home?m.score_a:m.score_b, them=home?m.score_b:m.score_a;
+    const r=!done?'':(!m.winner_name?'D':(m.winner_name===t.name?'W':'L'));
+    const d=m.match_date?new Date(m.match_date):null;
+    return `<a class="m" href="${MATCH(m.id)}" target="_parent">
+      <div class="d">${d?`<div class="dd">${d.getDate()}</div><div class="mm">${d.toLocaleString(undefined,{month:'short'}).toUpperCase()}</div>`:'<div class="mm">TBD</div>'}</div>
+      <div class="b"><div class="t">${home?'vs':'@'} ${esc(opp)}</div>
+        <div class="s">${m.round_label?esc(m.round_label).toUpperCase():'WEEK '+m.week}${d?' · '+d.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}).toUpperCase():''}</div></div>
+      ${done?`<span class="res ${r==='W'?'w':r==='L'?'l':'d'}">${r} ${us}–${them}</span>`:''}
+      <span class="go">›</span></a>`;
+  };
+  const past=matches.filter(m=>m.status==='completed');
+  const up=matches.filter(m=>m.status!=='completed');
+
+  const schedCard=`<div class="card"><div class="ch"><span>Schedule</span><span class="r">${matches.length} MATCHES</span></div>
+    ${up.length?up.map(row).join(''):''}
+    ${past.length?past.map(row).join(''):''}
+    ${!matches.length?'<div class="none">NO MATCHES SCHEDULED</div>':''}</div>`;
+
+  page.innerHTML=hero+`<div class="cols"><div>${rosterCard}</div><div>${schedCard}</div></div>`;
+})();
+</script>
+</body>
+</html>
