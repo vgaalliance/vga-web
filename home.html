@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VGA Esports — Home</title>
+<!-- ═══════════════════════════════════════════════════════════════════════
+     THE HOME PAGE — ONE responsive file for desktop AND mobile.
+     (website-plan.md step 4. Replaces ~10 separate Wix embeds on desktop and
+     supersedes home-mobile.html. Point BOTH Wix elements at this URL.)
+
+     Layout: mobile = one column, stacked. ≥900px = 3 columns (rail · main ·
+     rail). Same markup, same data, one paste, one design.
+
+     Everything reads the MAIN Supabase project through public views. The one
+     exception is the VGA feed ticker (fighter_messages), which only exists in
+     the legacy project — documented in runtime.md.
+     ══════════════════════════════════════════════════════════════════════ -->
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --p:#7B2FFF; --pl:#A855F7; --pc:#C084FC;
+    --pg:rgba(123,47,255,0.18); --pb:rgba(123,47,255,0.35);
+    --gold:#F5C842; --bg:#06060A; --surf:#0B0B12; --border:#181824;
+    --text:#DDD8F0; --muted:#4A4A68; --dim:#131320;
+    --win:#6ee7a0; --glow:0 0 8px rgba(123,47,255,.7),0 0 20px rgba(123,47,255,.3);
+    --glow-gold:0 0 10px rgba(245,200,66,.6),0 0 25px rgba(245,200,66,.2);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-serif;overflow-x:hidden;}
+  body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:99;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.12) 2px,rgba(0,0,0,.12) 4px);}
+  a{color:inherit;text-decoration:none;}
+
+  .wrap{max-width:1280px;margin:0 auto;padding:12px 12px 50px;}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr;}
+  @media(min-width:900px){
+    .grid{grid-template-columns:300px minmax(0,1fr) 300px;align-items:start;}
+    .col{position:sticky;top:12px;}
+  }
+  .col{display:flex;flex-direction:column;gap:12px;min-width:0;}
+
+  .card{border:1px solid var(--border);border-radius:8px;background:var(--surf);overflow:hidden;}
+  .ch{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2.5px;color:var(--pl);
+    text-transform:uppercase;padding:9px 12px;border-bottom:1px solid var(--border);
+    display:flex;justify-content:space-between;align-items:center;}
+  .ch .r{color:var(--muted);letter-spacing:1px;}
+  .cb{padding:10px 12px;}
+  .none{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px;padding:14px 0;text-align:center;}
+
+  /* ticker */
+  .tick{display:flex;align-items:center;gap:10px;border:1px solid var(--pb);border-radius:6px;
+    background:linear-gradient(90deg,var(--pg),transparent);padding:7px 11px;margin-bottom:12px;}
+  .tick .tag{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:2px;color:var(--pc);white-space:nowrap;}
+  .tick .msg{font-size:14px;font-weight:500;letter-spacing:.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+  /* hero */
+  .hero{border:1px solid var(--pb);border-radius:8px;padding:16px 14px;text-align:center;
+    background:radial-gradient(ellipse 90% 120% at 50% 0%,var(--pg),transparent 70%),var(--surf);}
+  .hero .k{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2.5px;color:var(--pc);}
+  .hero h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(26px,5vw,40px);letter-spacing:1.5px;
+    line-height:1.05;margin:5px 0 3px;text-shadow:var(--glow);}
+  .hero .w{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px;}
+  .cd{display:flex;justify-content:center;gap:14px;margin-top:11px;}
+  .cd div{text-align:center;}
+  .cd .n{font-family:'Bebas Neue',sans-serif;font-size:clamp(26px,4.5vw,36px);color:var(--pc);
+    text-shadow:var(--glow);line-height:1;}
+  .cd .l{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:1.5px;}
+
+  /* schedule rows */
+  .ev{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border);}
+  .ev:last-child{border-bottom:none;}
+  .ev:hover{background:var(--dim);}
+  .ev .d{text-align:center;min-width:30px;}
+  .ev .d .dd{font-family:'Bebas Neue',sans-serif;font-size:19px;color:var(--pc);line-height:1;}
+  .ev .d .mm{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);}
+  .ev .b{flex:1;min-width:0;}
+  .ev .t{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:15px;letter-spacing:.4px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ev .s{font-family:'Space Mono',monospace;font-size:8.5px;color:var(--muted);letter-spacing:1px;}
+  .pill{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1px;padding:1.5px 5px;border-radius:3px;
+    border:1px solid var(--pb);color:var(--pc);}
+  .pill.uba{border-color:rgba(245,200,66,.4);color:var(--gold);}
+  .ev .go{font-size:13px;color:var(--muted);}
+
+  .tabs{display:flex;gap:5px;padding:8px 12px 0;}
+  .tab{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1.5px;padding:4px 10px;border-radius:3px;
+    border:1px solid var(--border);color:var(--muted);cursor:pointer;}
+  .tab.on{border-color:var(--pb);color:var(--pc);background:var(--pg);}
+
+  /* list rows (rankings / standings) */
+  .row{display:flex;align-items:center;gap:8px;padding:4.5px 0;border-top:1px solid var(--border);}
+  .row:first-child{border-top:none;}
+  .row .i{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);width:16px;}
+  .row .i.hi{color:var(--pc);}
+  .row .n{flex:1;min-width:0;font-weight:600;font-size:14.5px;letter-spacing:.3px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .row .v{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);}
+  .row .v b{color:var(--text);font-weight:400;}
+  .champ{color:var(--gold);text-shadow:var(--glow-gold);}
+  .conf{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--pl);padding:7px 0 2px;}
+
+  /* vod */
+  .vod{position:relative;aspect-ratio:16/9;background:#000;cursor:pointer;}
+  .vod img{width:100%;height:100%;object-fit:cover;opacity:.75;}
+  .vod .play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+  .vod .play span{width:46px;height:46px;border-radius:50%;border:1px solid var(--pb);background:rgba(11,11,18,.8);
+    display:flex;align-items:center;justify-content:center;color:var(--pc);font-size:15px;box-shadow:var(--glow);}
+  .vod iframe{width:100%;height:100%;border:0;}
+
+  /* transfers */
+  .tr{display:flex;align-items:center;gap:7px;padding:6px 0;border-top:1px solid var(--border);}
+  .tr:first-child{border-top:none;}
+  .tr .f{flex:1;min-width:0;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tr .m{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.5px;display:flex;align-items:center;gap:4px;}
+  .tr .tm{border:1px solid var(--pb);color:var(--pc);border-radius:2px;padding:1px 4px;}
+  .tr .fa{border:1px dashed var(--muted);color:var(--muted);border-radius:2px;padding:1px 4px;}
+
+  .btn{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border);
+    border-radius:6px;background:var(--surf);padding:10px 12px;}
+  .btn:hover{border-color:var(--pb);}
+  .btn .l{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1.5px;}
+  .btn .s{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="tick"><span class="tag">VGA FEED</span><span class="msg" id="feed">—</span></div>
+
+  <div class="grid">
+    <!-- ── LEFT RAIL ── -->
+    <div class="col">
+      <div class="hero" id="hero">
+        <div class="k">NEXT EVENT</div><h1 id="h-name">—</h1>
+        <div class="w" id="h-when"></div>
+        <div class="cd" id="h-cd"></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span>Transfers</span><span class="r" id="tr-split"></span></div>
+        <div class="cb" id="transfers"><div class="none">LOADING</div></div>
+      </div>
+
+      <a class="btn" href="https://discord.gg/uba" target="_blank" rel="noopener">
+        <span class="l">DISCORD</span><span class="s">JOIN ›</span></a>
+      <a class="btn" href="https://www.youtube.com/@unifiedboxi" target="_blank" rel="noopener">
+        <span class="l">YOUTUBE</span><span class="s">WATCH ›</span></a>
+    </div>
+
+    <!-- ── MAIN ── -->
+    <div class="col" style="position:static;">
+      <div class="card">
+        <div class="ch"><span>Latest Fight</span></div>
+        <div class="vod" id="vod"><div class="play"><span>▶</span></div></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span>Schedule</span><span class="r">UBA + UBAe</span></div>
+        <div class="tabs">
+          <div class="tab on" data-t="up">UPCOMING</div>
+          <div class="tab" data-t="past">PAST</div>
+        </div>
+        <div id="sched"><div class="none">LOADING</div></div>
+      </div>
+    </div>
+
+    <!-- ── RIGHT RAIL ── -->
+    <div class="col">
+      <div class="card">
+        <div class="ch"><span>UBAe Standings</span><span class="r" id="st-split"></span></div>
+        <div class="cb" id="standings"><div class="none">LOADING</div></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span>Champions</span></div>
+        <div class="cb" id="champs"><div class="none">LOADING</div></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span>P4P Top 5</span><span class="r">UBA</span></div>
+        <div class="cb" id="p4p"><div class="none">LOADING</div></div>
+      </div>
+
+      <a class="btn" href="https://www.ubaesports.com/rankings"><span class="l">ALL RANKINGS</span><span class="s">›</span></a>
+    </div>
+  </div>
+</div>
+
+<script>
+const SB='https://emzlivoykbhhjcugupit.supabase.co';
+const KEY='sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF';
+const H={headers:{apikey:KEY,Authorization:'Bearer '+KEY}};
+// Legacy project — ONLY the fighter-messages ticker still lives here (runtime.md).
+const LSB='https://xwsbyxkjfqqrgbzxmmrn.supabase.co';
+const LKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3c2J5eGtqZnFxcmdienhtbXJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNjAyNDcsImV4cCI6MjA4NzkzNjI0N30.6amkt0zGMLT3_N3fKY6sMMTdaBr5eS7Ig-hAPvPCB4g';
+const LH={headers:{apikey:LKEY,Authorization:'Bearer '+LKEY}};
+
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const get=async(p,h=H,base=SB)=>{try{const r=await fetch(base+'/rest/v1/'+p,h);return r.ok?await r.json():[];}catch(e){return [];}};
+const el=i=>document.getElementById(i);
+const MATCH='https://www.ubaesports.com/matchup?';
+// Legacy rows were 'YYYY-MM-DD HH:MM:SS'; the main project returns full ISO.
+const D=s=>/[zZ]$|[+-]\d\d:?\d\d$/.test(s)?new Date(s):new Date(String(s).replace(' ','T')+'Z');
+
+/* ── ticker ── */
+(async()=>{const d=await get('fighter_messages?select=*&active=eq.true&order=created_at.desc&limit=8',LH,LSB);
+  if(!d.length){el('feed').textContent='—';return;}
+  let i=0;const show=()=>{const m=d[i%d.length];
+    el('feed').textContent=(m.author||m.fighter_name?((m.author||m.fighter_name)+' // '):'')+(m.message||m.text||'');i++;};
+  show(); if(d.length>1) setInterval(show,7000);})();
+
+/* ── hero countdown: earliest future UBA event or UBAe match ── */
+let heroT=null;
+(async()=>{
+  const [evs,tms]=await Promise.all([
+    get('events_public?select=name,event_date,status&status=eq.scheduled&order=event_date.asc&limit=5'),
+    get('team_matches_public?select=team_a_name,team_b_name,week,match_date&status=eq.scheduled&match_date=not.is.null&order=match_date.asc&limit=5'),
+  ]);
+  const now=Date.now(), c=[];
+  evs.forEach(e=>{const t=D(e.event_date).getTime(); if(t>now) c.push({t,name:e.name,tag:'UBA — NEXT EVENT'});});
+  tms.forEach(m=>{const t=D(m.match_date).getTime(); if(t>now) c.push({t,name:`${m.team_a_name} vs ${m.team_b_name}`,tag:`UBAe — WEEK ${m.week}`});});
+  if(!c.length){el('h-name').textContent='TBA';el('h-when').textContent='STAY TUNED';return;}
+  c.sort((a,b)=>a.t-b.t); heroT=c[0];
+  el('hero').querySelector('.k').textContent=heroT.tag;
+  el('h-name').textContent=heroT.name;
+  el('h-when').textContent=new Date(heroT.t).toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).toUpperCase();
+  const tick=()=>{const s=heroT.t-Date.now();
+    if(s<=0){el('h-cd').innerHTML='<div><div class="n" style="color:var(--gold)">LIVE</div></div>';return;}
+    const u=[[Math.floor(s/864e5),'DAYS'],[Math.floor(s/36e5)%24,'HRS'],[Math.floor(s/6e4)%60,'MIN'],[Math.floor(s/1e3)%60,'SEC']];
+    el('h-cd').innerHTML=u.map(([v,l])=>`<div><div class="n">${String(v).padStart(2,'0')}</div><div class="l">${l}</div></div>`).join('');};
+  tick(); setInterval(tick,1000);
+})();
+
+/* ── schedule (UBA events + UBAe matches) → matchup page ── */
+let SCHED={up:[],past:[]};
+(async()=>{
+  const [evs,tms]=await Promise.all([
+    get('events_public?select=id,name,event_date,status&order=event_date.desc&limit=40'),
+    get('team_matches_public?select=id,week,team_a_name,team_b_name,match_date,status,score_a,score_b,winner_name&order=match_date.desc&limit=40'),
+  ]);
+  const now=Date.now();
+  const rows=[
+    ...evs.filter(e=>e.event_date).map(e=>({t:D(e.event_date).getTime(),kind:'UBA',
+      title:e.name,href:MATCH+'event='+e.id,sub:e.status==='completed'?'FINAL':'FIGHT NIGHT'})),
+    ...tms.filter(m=>m.match_date).map(m=>({t:D(m.match_date).getTime(),kind:'UBAe',
+      title:`${m.team_a_name} vs ${m.team_b_name}`,href:MATCH+'m='+m.id,
+      sub:m.status==='completed'?`FINAL ${m.score_a}–${m.score_b}${m.winner_name?' · '+m.winner_name.toUpperCase():''}`:`WEEK ${m.week}`})),
+  ];
+  SCHED.up=rows.filter(r=>r.t>now).sort((a,b)=>a.t-b.t);
+  SCHED.past=rows.filter(r=>r.t<=now).sort((a,b)=>b.t-a.t).slice(0,12);
+  paint('up');
+})();
+function paint(which){
+  const list=SCHED[which];
+  el('sched').innerHTML = list.length ? list.map(r=>{
+    const d=new Date(r.t);
+    return `<a class="ev" href="${r.href}" target="_parent">
+      <div class="d"><div class="dd">${d.getDate()}</div><div class="mm">${d.toLocaleString(undefined,{month:'short'}).toUpperCase()}</div></div>
+      <div class="b"><div class="t">${esc(r.title)}</div>
+        <div class="s">${d.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}).toUpperCase()} · ${esc(r.sub)}</div></div>
+      <span class="pill ${r.kind==='UBA'?'uba':''}">${r.kind}</span><span class="go">›</span></a>`;
+  }).join('') : `<div class="none">${which==='up'?'NOTHING SCHEDULED':'NO PAST EVENTS'}</div>`;
+}
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
+  paint(t.dataset.t);
+}));
+
+/* ── UBAe standings (by conference) ──
+   NOTE: read the split from team_standings, NOT ubae_splits — that's a raw
+   table and anon gets 42501 permission-denied. The view already carries
+   split_name/season/split_number. (Bit me once; don't reach for raw tables.) */
+(async()=>{
+  const all=await get('team_standings?select=conference,team_name,match_wins,match_losses,match_draws,season,split_number,split_name&order=season.desc,split_number.desc,conference.asc,match_wins.desc,bout_diff.desc');
+  if(!all.length){el('standings').innerHTML='<div class="none">NO TEAMS</div>';return;}
+  const cur=all[0];                                   // newest split sorts first
+  el('st-split').textContent=(cur.split_name||'').toUpperCase();
+  const rows=all.filter(r=>r.season===cur.season&&r.split_number===cur.split_number);
+  const by={}; rows.forEach(r=>(by[r.conference]=by[r.conference]||[]).push(r));
+  el('standings').innerHTML=Object.keys(by).sort().map(c=>
+    `<div class="conf">CONFERENCE ${esc(c)}</div>`+by[c].map((r,i)=>
+      `<div class="row"><span class="i ${i<2?'hi':''}">${i+1}</span><span class="n">${esc(r.team_name)}</span>
+       <span class="v"><b>${r.match_wins}-${r.match_losses}${r.match_draws?'-'+r.match_draws:''}</b></span></div>`).join('')
+  ).join('');
+})();
+
+/* ── champions + P4P ── */
+(async()=>{
+  const champs=await get('fighter_cards?select=display_name,slug,weight_class,wins,losses&is_champion=eq.true&order=weight_class.asc');
+  el('champs').innerHTML=champs.length?champs.map(c=>
+    `<a class="row" href="https://www.ubaesports.com/fighter?f=${encodeURIComponent(c.slug)}" target="_parent">
+      <span class="i">★</span><span class="n champ">${esc(c.display_name)}</span>
+      <span class="v">${esc((c.weight_class||'').slice(0,3).toUpperCase())}</span></a>`).join('')
+    :'<div class="none">NO CHAMPIONS SET</div>';
+
+  const p4p=await get('rankings_public?select=rank,display_name,slug&league=eq.uba&weight_class=is.null&order=rank.asc&limit=5');
+  const list=p4p.length?p4p:await get('fighter_cards?select=display_name,slug,rank&rank=not.is.null&order=rank.asc&limit=5');
+  el('p4p').innerHTML=list.length?list.map((r,i)=>
+    `<a class="row" href="https://www.ubaesports.com/fighter?f=${encodeURIComponent(r.slug)}" target="_parent">
+      <span class="i hi">#${r.rank??i+1}</span><span class="n">${esc(r.display_name)}</span></a>`).join('')
+    :'<div class="none">NO RANKINGS YET</div>';
+})();
+
+/* ── transfers ── */
+(async()=>{
+  const d=await get('roster_moves_public?select=fighter_name,team_name,status,moved_at,split_number&order=moved_at.desc&limit=5');
+  if(d.length) el('tr-split').textContent='SPLIT '+d[0].split_number;
+  el('transfers').innerHTML=d.length?d.map(m=>{
+    const out=m.status==='released';
+    return `<div class="tr"><span class="f">${esc(m.fighter_name)}</span>
+      <span class="m">${out?`<span class="tm">${esc(m.team_name)}</span>→<span class="fa">FREE</span>`
+                          :`<span class="fa">FREE</span>→<span class="tm">${esc(m.team_name)}</span>`}</span></div>`;
+  }).join(''):'<div class="none">NO MOVES YET</div>';
+})();
+
+/* ── latest fight VOD (lite embed: thumbnail until tapped) ──
+   FEATURED_VOD is a hand-set override (carried over from home-mobile) — set it
+   to pin a specific VOD, or leave null to auto-pick the newest one in the DB.
+   Falls back through: UBA fights → UBAe matches → the legacy Spring archive
+   (there are no vod_links in the main project yet — checked live 2026-07-17). */
+const FEATURED_VOD='https://www.youtube.com/live/PsNLe-NNqk0?t=8975';
+(async()=>{
+  let url=FEATURED_VOD;
+  if(!url){
+    const uba=await get('fighter_matches?select=vod_link,event_date&vod_link=not.is.null&order=event_date.desc&limit=1');
+    if(uba.length) url=uba[0].vod_link;
+  }
+  if(!url){const t=await get('team_matches_public?select=vod_link&vod_link=not.is.null&order=match_date.desc.nullslast&limit=1');
+    if(t.length) url=t[0].vod_link;}
+  if(!url){const l=await get('ubae_matches?select=vod_url&vod_url=not.is.null&order=match_date.desc&limit=1',LH,LSB);
+    if(l.length) url=l[0].vod_url;}
+  const v=el('vod');
+  const id=url&&url.match(/(?:youtube\.com\/(?:watch\?v=|live\/|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/);
+  if(!id){v.innerHTML='<div class="none" style="padding:38px 0">NO VOD YET</div>';return;}
+  const t=url.match(/[?&]t=(\d+)/);
+  v.innerHTML=`<img src="https://i.ytimg.com/vi/${id[1]}/hqdefault.jpg" alt=""><div class="play"><span>▶</span></div>`;
+  v.addEventListener('click',()=>{v.innerHTML=`<iframe src="https://www.youtube.com/embed/${id[1]}?autoplay=1${t?'&start='+t[1]:''}" allow="accelerometer;autoplay;encrypted-media;picture-in-picture" allowfullscreen></iframe>`;},{once:true});
+})();
+</script>
+</body>
+</html>
