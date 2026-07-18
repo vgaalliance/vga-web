@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VGA Esports — Home</title>
+<!-- ═══════════════════════════════════════════════════════════════════════
+     THE DESKTOP HOME PAGE — one file, 3-column composed layout.
+     Modeled on the founder's approved screenshot (2026-07-17):
+       LEFT   splits rail · transfers · last results
+       CENTER latest fight · schedule (CAPPED, tabbed) · news
+       RIGHT  vga feed · standings · champions · rankings · fighter of month · socials
+
+     Mobile keeps home-mobile.html (deliberately NOT superseded — founder's call).
+     Reads the MAIN Supabase project via public views; the feed ticker
+     (fighter_messages) is the one legacy-project read (runtime.md).
+
+     HAND-SET bits (search "EDIT ME"): FIGHTER_OF_MONTH, SPLITS, NEWS fallback,
+     FEATURED_VOD, the Discord/YouTube links. News also accepts live Wix-blog
+     posts via a Velo postMessage bridge (see NEWS section).
+     ══════════════════════════════════════════════════════════════════════ -->
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --p:#7B2FFF; --pl:#A855F7; --pc:#C084FC;
+    --pg:rgba(123,47,255,0.18); --pb:rgba(123,47,255,0.35);
+    --gold:#F5C842; --bg:#06060A; --surf:#0B0B12; --border:#181824;
+    --text:#DDD8F0; --muted:#4A4A68; --dim:#131320;
+    --win:#6ee7a0; --glow:0 0 8px rgba(123,47,255,.7),0 0 20px rgba(123,47,255,.3);
+    --glow-gold:0 0 10px rgba(245,200,66,.6),0 0 25px rgba(245,200,66,.2);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-serif;overflow-x:hidden;}
+  body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:99;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.12) 2px,rgba(0,0,0,.12) 4px);}
+  /* CRT vignette + flicker — matches the mobile home's screen effect */
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:50;
+    background:radial-gradient(ellipse 82% 92% at 50% 50%,transparent 52%,rgba(0,0,0,.55) 100%);}
+  body{animation:crt-flicker 10s infinite;}
+  @keyframes crt-flicker{0%,89%,100%{opacity:1}90%{opacity:.98}91%{opacity:1}92%{opacity:.97}93%{opacity:1}}
+  a{color:inherit;text-decoration:none;}
+
+  .wrap{max-width:1280px;margin:0 auto;padding:12px 12px 50px;position:relative;z-index:1;}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr;}
+  @media(min-width:900px){
+    .grid{grid-template-columns:230px minmax(0,1fr) 172px;align-items:start;}
+  }
+  .col{display:flex;flex-direction:column;gap:12px;min-width:0;}
+
+  .card{border:1px solid var(--border);border-radius:8px;background:var(--surf);overflow:hidden;}
+  .ch{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2.5px;color:var(--pl);
+    text-transform:uppercase;padding:9px 12px;border-bottom:1px solid var(--border);
+    display:flex;justify-content:space-between;align-items:center;}
+  .ch .r{color:var(--muted);letter-spacing:1px;}
+  .ch a.r{color:var(--pc);}
+  .cb{padding:10px 12px;}
+  .none{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px;padding:14px 0;text-align:center;}
+
+  /* splits rail */
+  .split{display:block;border:1px solid var(--pb);border-radius:8px;
+    background:linear-gradient(135deg,rgba(123,47,255,.08),var(--surf));
+    padding:12px 14px;position:relative;overflow:hidden;}
+  .split:hover{border-color:var(--pl);background:linear-gradient(135deg,rgba(123,47,255,.16),var(--surf));}
+  .split.on{border-color:var(--pl);
+    background:radial-gradient(ellipse 130% 150% at 100% 0%,rgba(168,85,247,.40),transparent 60%),linear-gradient(135deg,rgba(123,47,255,.20),var(--surf));
+    box-shadow:0 0 16px rgba(123,47,255,.6),0 0 38px rgba(168,85,247,.32),inset 0 0 22px rgba(123,47,255,.14);}
+  .split .rg{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--pl);text-transform:uppercase;}
+  .split .nm{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;line-height:1;margin:3px 0 4px;color:var(--text);}
+  .split.on .rg{color:var(--pc);}
+  .split.on .nm{color:#fff;text-shadow:0 0 10px rgba(192,132,252,.95),0 0 24px rgba(123,47,255,.65);}
+  .split .dt{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1px;color:var(--pc);opacity:.72;}
+  .split.on .spin{position:absolute;top:12px;right:12px;width:18px;height:18px;border-radius:50%;
+    border:1.5px solid var(--pb);border-top-color:var(--pc);animation:spin 2.2s linear infinite;z-index:2;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  /* light-sweep shimmer on the active split card */
+  .split.on::after{content:'';position:absolute;top:0;left:0;height:100%;width:55%;pointer-events:none;z-index:1;
+    background:linear-gradient(100deg,transparent,rgba(216,180,254,.13),transparent);
+    transform:skewX(-18deg) translateX(-180%);animation:shimmer 4.2s ease-in-out infinite;}
+  .split.on>*{position:relative;z-index:2;}
+  @keyframes shimmer{0%{transform:skewX(-18deg) translateX(-180%);}55%,100%{transform:skewX(-18deg) translateX(360%);}}
+
+  /* flower overlay — the mobile home's corner-bloom effect, ON TOP of the cards
+     (subtle per-bloom alpha keeps it off the text). Bound to content height. */
+  #petals{position:absolute;top:0;left:0;pointer-events:none;z-index:60;opacity:.6;}
+
+  /* schedule rows */
+  .ev{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border);}
+  .ev:last-child{border-bottom:none;}
+  .ev:hover{background:var(--dim);}
+  .ev .d{text-align:center;min-width:30px;}
+  .ev .d .dd{font-family:'Bebas Neue',sans-serif;font-size:19px;color:var(--pc);line-height:1;}
+  .ev .d .mm{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);}
+  .ev .b{flex:1;min-width:0;}
+  .ev .t{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:15px;letter-spacing:.4px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ev .s{font-family:'Space Mono',monospace;font-size:8.5px;color:var(--muted);letter-spacing:1px;}
+  .pill{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1px;padding:1.5px 5px;border-radius:3px;
+    border:1px solid var(--pb);color:var(--pc);}
+  .pill.uba{border-color:rgba(245,200,66,.4);color:var(--gold);}
+  .ev .go{font-size:13px;color:var(--muted);}
+  .more{display:block;text-align:center;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1.5px;
+    color:var(--pc);padding:9px 0;border-top:1px solid var(--border);}
+  .more:hover{background:var(--dim);}
+
+  /* doubleheader — two UBAe matchups on one bar, split diagonally */
+  .dh{display:flex;align-items:stretch;border-bottom:1px solid var(--border);min-height:54px;}
+  .dh:last-child{border-bottom:none;}
+  .dh .d{display:flex;flex-direction:column;justify-content:center;text-align:center;min-width:30px;padding-left:12px;flex-shrink:0;}
+  .dh .d .dd{font-family:'Bebas Neue',sans-serif;font-size:19px;color:var(--pc);line-height:1;}
+  .dh .d .mm{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);}
+  .dhwrap{flex:1;min-width:0;display:flex;position:relative;margin:0 6px;}
+  .dhwrap::after{content:'';position:absolute;top:8px;bottom:8px;left:50%;width:2px;margin-left:-1px;
+    background:linear-gradient(var(--pc),var(--p));transform:skewX(-20deg);box-shadow:var(--glow);border-radius:2px;}
+  .dhm{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;padding:6px 8px;}
+  .dhm:first-child{padding-right:18px;}
+  .dhm:last-child{padding-left:18px;align-items:flex-end;text-align:right;}
+  .dhm:hover{background:var(--dim);}
+  .dhm .t{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:13px;letter-spacing:.2px;line-height:1.05;}
+  .dhm .s{font-family:'Space Mono',monospace;font-size:7.5px;color:var(--muted);letter-spacing:.5px;margin-top:3px;}
+  .dh .pill{align-self:center;margin-right:12px;flex-shrink:0;}
+
+  .tabs{display:flex;gap:5px;padding:8px 12px 0;}
+  .tab{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1.5px;padding:4px 10px;border-radius:3px;
+    border:1px solid var(--border);color:var(--muted);cursor:pointer;}
+  .tab.on{border-color:var(--pb);color:var(--pc);background:var(--pg);}
+
+  /* list rows (rankings / standings) */
+  .row{display:flex;align-items:center;gap:8px;padding:4.5px 0;border-top:1px solid var(--border);}
+  .row:first-child{border-top:none;}
+  .row .i{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);width:16px;}
+  .row .i.hi{color:var(--pc);}
+  .row .n{flex:1;min-width:0;font-weight:600;font-size:14.5px;letter-spacing:.3px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .row .v{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);}
+  .row .v b{color:var(--text);font-weight:400;}
+  .champ{color:var(--gold);text-shadow:var(--glow-gold);}
+  .conf{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--pl);padding:7px 0 2px;}
+  .cbelt{font-family:'Space Mono',monospace;font-size:8px;color:var(--gold);border:1px solid rgba(245,200,66,.4);
+    border-radius:2px;padding:1px 4px;}
+
+  /* last results */
+  .lr{padding:8px 12px;border-bottom:1px solid var(--border);}
+  .lr:last-child{border-bottom:none;}
+  .lr .wk{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1.5px;color:var(--muted);margin-bottom:3px;}
+  .lr .mt{display:flex;align-items:center;gap:7px;font-size:14px;}
+  .lr .mt .sc{font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--pc);}
+  .lr .win{color:var(--win);font-weight:600;}
+  .lr .badge{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:1px;color:var(--gold);
+    border:1px solid rgba(245,200,66,.35);border-radius:2px;padding:1px 4px;margin-top:4px;display:inline-block;}
+
+  /* vod */
+  .vod{position:relative;aspect-ratio:16/9;background:#000;cursor:pointer;}
+  .vod img{width:100%;height:100%;object-fit:cover;opacity:.75;}
+  .vod .play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+  .vod .play span{width:52px;height:52px;border-radius:50%;border:1px solid var(--pb);background:rgba(11,11,18,.8);
+    display:flex;align-items:center;justify-content:center;color:var(--pc);font-size:17px;box-shadow:var(--glow);}
+  .vod iframe{width:100%;height:100%;border:0;}
+
+  /* transfers */
+  .tr{display:flex;align-items:center;gap:7px;padding:6px 0;border-top:1px solid var(--border);}
+  .tr:first-child{border-top:none;}
+  .tr .f{flex:1;min-width:0;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tr .m{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.5px;display:flex;align-items:center;gap:4px;}
+  .tr .tm{border:1px solid var(--pb);color:var(--pc);border-radius:2px;padding:1px 4px;}
+  .tr .fa{border:1px dashed var(--muted);color:var(--muted);border-radius:2px;padding:1px 4px;}
+
+  /* feed panel */
+  .feed{display:flex;align-items:center;gap:9px;padding:9px 12px;}
+  .feed .pip{width:5px;height:5px;border-radius:50%;background:var(--pc);box-shadow:0 0 5px var(--pc);flex-shrink:0;}
+  .feed .who{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.5px;color:var(--pc);flex-shrink:0;}
+  .feed .msg{font-size:13px;color:var(--text);opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+
+  /* fighter of the month */
+  .fotm{position:relative;padding:14px 14px 16px;text-align:center;overflow:hidden;
+    background:radial-gradient(ellipse 90% 120% at 50% 110%,var(--pg),transparent 65%),var(--surf);}
+  .fotm .k{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--muted);}
+  .fotm .nm{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:1.5px;line-height:1;
+    color:var(--pc);text-shadow:var(--glow);margin:5px 0 3px;}
+  .fotm .sub{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--gold);text-shadow:var(--glow-gold);}
+  .fotm .go{display:inline-block;margin-top:9px;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1.5px;
+    color:var(--pc);border:1px solid var(--pb);border-radius:3px;padding:3px 9px;}
+
+  /* news */
+  .nw{display:flex;gap:9px;padding:9px 12px;border-bottom:1px solid var(--border);align-items:flex-start;}
+  .nw:last-child{border-bottom:none;}
+  .nw:hover{background:var(--dim);}
+  .nw .dot{color:var(--pl);font-size:11px;line-height:1.5;flex-shrink:0;}
+  .nw .b{flex:1;min-width:0;}
+  .nw .t{font-weight:600;font-size:14.5px;letter-spacing:.2px;line-height:1.25;}
+  .nw .dt{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1px;color:var(--muted);margin-top:2px;}
+  .pg{display:flex;justify-content:center;gap:6px;padding:9px 0;border-top:1px solid var(--border);}
+  .pg span{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);width:20px;height:20px;
+    display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:3px;cursor:pointer;}
+  .pg span.on{color:var(--pc);border-color:var(--pb);background:var(--pg);}
+
+  /* buttons */
+  .btn{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border);
+    border-radius:6px;background:var(--surf);padding:10px 12px;}
+  .btn:hover{border-color:var(--pb);}
+  .btn .l{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1.5px;}
+  .btn .s{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);}
+</style>
+</head>
+<body>
+<canvas id="petals"></canvas>
+<div class="wrap">
+  <div class="grid">
+
+    <!-- ══ LEFT RAIL ══ -->
+    <div class="col">
+      <div id="splits"></div>
+
+      <a class="card fotm" id="fotm" href="#"></a>
+
+      <div class="card">
+        <div class="ch"><span>Transfers</span><span class="r" id="tr-split"></span></div>
+        <div class="cb" id="transfers"><div class="none">LOADING</div></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span>Last Results</span><span class="r">UBAe</span></div>
+        <div id="results"><div class="none">LOADING</div></div>
+      </div>
+    </div>
+
+    <!-- ══ CENTER ══ -->
+    <div class="col">
+      <div class="card">
+        <div class="ch"><span>Latest Fight</span><span class="r" id="vod-lbl"></span></div>
+        <div class="vod" id="vod"><div class="play"><span>▶</span></div></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span>Schedule</span><span class="r">UBA + UBAe</span></div>
+        <div class="tabs">
+          <div class="tab on" data-t="up">UPCOMING</div>
+          <div class="tab" data-t="past">PAST</div>
+        </div>
+        <div id="sched"><div class="none">LOADING</div></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span>News</span><span class="r">VGA</span></div>
+        <div id="news"><div class="none">LOADING</div></div>
+        <div class="pg" id="news-pg"></div>
+      </div>
+    </div>
+
+    <!-- ══ RIGHT RAIL ══ -->
+    <div class="col">
+      <a class="btn" id="btn-discord" href="#" target="_blank" rel="noopener">
+        <span class="l">DISCORD</span><span class="s">JOIN ›</span></a>
+      <a class="btn" id="btn-yt" href="#" target="_blank" rel="noopener">
+        <span class="l">YOUTUBE</span><span class="s">WATCH ›</span></a>
+      <a class="btn" id="btn-vod" href="#" target="_blank" rel="noopener">
+        <span class="l">LATEST VOD</span><span class="s">▶ PLAY ›</span></a>
+
+      <div class="card">
+        <div class="ch"><span>VGA Feed</span><span class="r">LIVE</span></div>
+        <div class="feed"><span class="pip"></span><span class="who" id="feed-who"></span><span class="msg" id="feed-msg">—</span></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span>UBAe Standings</span><span class="r" id="st-split"></span></div>
+        <div class="cb" id="standings"><div class="none">LOADING</div></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span>Champions</span><span class="r">UBA</span></div>
+        <div class="cb" id="champs"><div class="none">LOADING</div></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span>Rankings</span><a class="r" href="https://www.ubaesports.com/rankings" target="_parent">VIEW ALL ›</a></div>
+        <div class="cb" id="p4p"><div class="none">LOADING</div></div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+const SB='https://emzlivoykbhhjcugupit.supabase.co';
+const KEY='sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF';
+const H={headers:{apikey:KEY,Authorization:'Bearer '+KEY}};
+// Legacy project — ONLY the fighter-messages ticker still lives here (runtime.md).
+const LSB='https://xwsbyxkjfqqrgbzxmmrn.supabase.co';
+const LKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3c2J5eGtqZnFxcmdienhtbXJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNjAyNDcsImV4cCI6MjA4NzkzNjI0N30.6amkt0zGMLT3_N3fKY6sMMTdaBr5eS7Ig-hAPvPCB4g';
+const LH={headers:{apikey:LKEY,Authorization:'Bearer '+LKEY}};
+
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const get=async(p,h=H,base=SB)=>{try{const r=await fetch(base+'/rest/v1/'+p,h);return r.ok?await r.json():[];}catch(e){return [];}};
+const el=i=>document.getElementById(i);
+const MATCH='https://www.ubaesports.com/matchup?';
+const FIGHTER='https://www.ubaesports.com/fighter?f=';
+// Legacy rows were 'YYYY-MM-DD HH:MM:SS'; the main project returns full ISO.
+const D=s=>/[zZ]$|[+-]\d\d:?\d\d$/.test(s)?new Date(s):new Date(String(s).replace(' ','T')+'Z');
+
+/* ══ EDIT ME — hand-set values ══ */
+const FIGHTER_OF_MONTH={ name:'Ronin', slug:'ronin', tag:'x KDS' };   // fallback if none set in the dashboard
+const DISCORD_URL='https://discord.gg/uba';
+const YOUTUBE_URL='https://www.youtube.com/@unifiedboxi';
+// The season roadmap rail. `on:true` = the current/next phase (highlighted).
+const SPLITS=[
+  { region:'North America', name:'Spring Split',        dates:'FEB 19 — MAY 19' },
+  { region:'North America', name:'Summer Split Draft',  dates:'JUL 19',          on:true },
+  { region:'North America', name:'Summer Split',        dates:'JUL 24 — SEP 6' },
+  { region:'North America', name:'Playoffs',            dates:'TBD' },
+  { region:'North America', name:'Finals',              dates:'TBD' },
+];
+// News fallback — shown until the Wix-blog Velo bridge posts live data (see below).
+const NEWS_FALLBACK=[
+  { title:'UBAe Summer Split — draft & schedule live', date:'JUL 17, 2026', url:'https://www.ubaesports.com' },
+  { title:'160+ fighters now registered & viewable', date:'JUL 15, 2026', url:'https://www.ubaesports.com/rankings' },
+];
+
+/* ── splits rail ── */
+el('splits').innerHTML=SPLITS.map(s=>
+  `<a class="split ${s.on?'on':''}" href="https://www.ubaesports.com/rankings" target="_parent">
+    ${s.on?'<div class="spin"></div>':''}
+    <div class="rg">${esc(s.region)}</div><div class="nm">${esc(s.name)}</div><div class="dt">${esc(s.dates)}</div></a>`).join('');
+
+/* ── feed ticker (legacy fighter_messages) ── */
+(async()=>{const d=await get('fighter_messages?select=*&active=eq.true&order=created_at.desc&limit=8',LH,LSB);
+  if(!d.length){el('feed-msg').textContent='—';return;}
+  let i=0;const show=()=>{const m=d[i%d.length];
+    el('feed-who').textContent=(m.author||m.fighter_name||'');
+    el('feed-msg').textContent=(m.message||m.text||'');i++;};
+  show(); if(d.length>1) setInterval(show,7000);})();
+
+/* ── schedule (UBA events + UBAe matches) → matchup page. Upcoming CAPPED. ── */
+const SHOW_UP=6, SHOW_PAST=6;
+let SCHED={up:[],past:[]}, expanded={up:false,past:false};
+(async()=>{
+  const [evs,tms]=await Promise.all([
+    get('events_public?select=id,name,event_date,status&order=event_date.desc&limit=40'),
+    get('team_matches_public?select=id,week,team_a_name,team_b_name,match_date,status,score_a,score_b,winner_name&order=match_date.desc&limit=40'),
+  ]);
+  const now=Date.now();
+  const rows=[
+    ...evs.filter(e=>e.event_date).map(e=>({t:D(e.event_date).getTime(),kind:'UBA',
+      title:e.name,href:MATCH+'event='+e.id,sub:e.status==='completed'?'FINAL':'FIGHT NIGHT'})),
+    ...tms.filter(m=>m.match_date).map(m=>({t:D(m.match_date).getTime(),kind:'UBAe',week:m.week,
+      title:`${m.team_a_name} vs ${m.team_b_name}`,href:MATCH+'m='+m.id,
+      sub:m.status==='completed'?`FINAL ${m.score_a}–${m.score_b}${m.winner_name?' · '+m.winner_name.toUpperCase():''}`:`WEEK ${m.week}`})),
+  ];
+  // UPCOMING: promote EVERY announced UBA card, but only the nearest UBAe week
+  // (the season is 20 matches — show just the current week's slate, which rolls
+  // forward as weeks complete). PAST keeps everything.
+  const up=rows.filter(r=>r.t>now);
+  const ubaeUp=up.filter(r=>r.kind==='UBAe');
+  const nextWeek=ubaeUp.length?Math.min.apply(null,ubaeUp.map(r=>r.week)):null;
+  SCHED.up=up.filter(r=>r.kind==='UBA'||r.week===nextWeek).sort((a,b)=>a.t-b.t);
+  SCHED.past=rows.filter(r=>r.t<=now).sort((a,b)=>b.t-a.t);
+  paint('up');
+})();
+// Combine UBAe matches that fall on the SAME DAY into one doubleheader bar
+// (up to 2 per bar). UBA events and lone UBAe matches stay as single rows.
+function groupSched(items){
+  const out=[], dayIdx={};
+  for(const r of items){
+    if(r.kind==='UBAe'){
+      const key=new Date(r.t).toDateString();
+      if(dayIdx[key]!=null && out[dayIdx[key]].matches.length<2){ out[dayIdx[key]].matches.push(r); continue; }
+      dayIdx[key]=out.length;
+      out.push({dh:true,t:r.t,kind:'UBAe',week:r.week,matches:[r]});
+    } else out.push(r);
+  }
+  return out;
+}
+function schedItem(r){
+  const d=new Date(r.t);
+  const dd=`<div class="d"><div class="dd">${d.getDate()}</div><div class="mm">${d.toLocaleString(undefined,{month:'short'}).toUpperCase()}</div></div>`;
+  if(r.dh && r.matches.length>1){
+    const half=m=>{const md=new Date(m.t);return `<a class="dhm" href="${m.href}" target="_parent">`
+      +`<div class="t">${esc(m.title)}</div>`
+      +`<div class="s">${md.toLocaleString(undefined,{hour:'numeric',minute:'2-digit'}).toUpperCase()} · WK ${r.week}</div></a>`;};
+    return `<div class="dh">${dd}<div class="dhwrap">${half(r.matches[0])}${half(r.matches[1])}</div><span class="pill">UBAe</span></div>`;
+  }
+  const s=r.dh?r.matches[0]:r;
+  return `<a class="ev" href="${s.href}" target="_parent">${dd}`
+    +`<div class="b"><div class="t">${esc(s.title)}</div>`
+    +`<div class="s">${d.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}).toUpperCase()} · ${esc(s.sub)}</div></div>`
+    +`<span class="pill ${s.kind==='UBA'?'uba':''}">${s.kind}</span><span class="go">›</span></a>`;
+}
+function paint(which){
+  const grouped=groupSched(SCHED[which]), cap=which==='up'?SHOW_UP:SHOW_PAST;
+  const list=expanded[which]?grouped:grouped.slice(0,cap);
+  el('sched').innerHTML = (list.length ? list.map(schedItem).join('')
+      : `<div class="none">${which==='up'?'NOTHING SCHEDULED':'NO PAST EVENTS'}</div>`)
+    + (grouped.length>cap ? `<a class="more" id="more">${expanded[which]?'SHOW LESS ▲':`+ ${grouped.length-cap} MORE ▾`}</a>` : '');
+  const m=el('more'); if(m) m.addEventListener('click',e=>{e.preventDefault();expanded[which]=!expanded[which];paint(which);});
+}
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
+  paint(t.dataset.t);
+}));
+
+/* ── UBAe standings (by conference) — split read from the VIEW, never ubae_splits. ── */
+(async()=>{
+  const all=await get('team_standings?select=conference,team_name,match_wins,match_losses,match_draws,season,split_number,split_name&order=season.desc,split_number.desc,conference.asc,match_wins.desc,bout_diff.desc');
+  if(!all.length){el('standings').innerHTML='<div class="none">NO TEAMS</div>';return;}
+  const cur=all[0];
+  el('st-split').textContent=(cur.split_name||'').toUpperCase();
+  const rows=all.filter(r=>r.season===cur.season&&r.split_number===cur.split_number);
+  const by={}; rows.forEach(r=>(by[r.conference]=by[r.conference]||[]).push(r));
+  el('standings').innerHTML=Object.keys(by).sort().map(c=>
+    `<div class="conf">CONFERENCE ${esc(c)}</div>`+by[c].map((r,i)=>
+      `<div class="row"><span class="i ${i<2?'hi':''}">${i+1}</span><span class="n">${esc(r.team_name)}</span>
+       <span class="v"><b>${r.match_wins}-${r.match_losses}${r.match_draws?'-'+r.match_draws:''}</b></span></div>`).join('')
+  ).join('');
+})();
+
+/* ── champions + P4P ── */
+(async()=>{
+  const champs=await get('fighter_cards?select=display_name,slug,weight_class,wins,losses&is_champion=eq.true&order=weight_class.asc');
+  el('champs').innerHTML=champs.length?champs.map(c=>
+    `<a class="row" href="${FIGHTER}${encodeURIComponent(c.slug)}" target="_parent">
+      <span class="i">★</span><span class="n champ">${esc(c.display_name)}</span>
+      <span class="cbelt">${({lightweight:'LW',middleweight:'MW',light_heavyweight:'LHW',heavyweight:'HW'})[c.weight_class]||''}</span></a>`).join('')
+    :'<div class="none">NO CHAMPIONS SET</div>';
+
+  const p4p=await get('rankings_public?select=rank,display_name,slug&league=eq.uba&weight_class=is.null&order=rank.asc&limit=5');
+  const list=p4p.length?p4p:await get('fighter_cards?select=display_name,slug,rank&rank=not.is.null&order=rank.asc&limit=5');
+  el('p4p').innerHTML=list.length?list.map((r,i)=>
+    `<a class="row" href="${FIGHTER}${encodeURIComponent(r.slug)}" target="_parent">
+      <span class="i hi">#${r.rank??i+1}</span><span class="n">${esc(r.display_name)}</span></a>`).join('')
+    :'<div class="none">NO RANKINGS YET</div>';
+})();
+
+/* ── transfers ── */
+(async()=>{
+  const d=await get('roster_moves_public?select=fighter_name,team_name,status,moved_at,split_number&order=moved_at.desc&limit=5');
+  if(d.length) el('tr-split').textContent='SPLIT '+d[0].split_number;
+  el('transfers').innerHTML=d.length?d.map(m=>{
+    const out=m.status==='released';
+    return `<div class="tr"><span class="f">${esc(m.fighter_name)}</span>
+      <span class="m">${out?`<span class="tm">${esc(m.team_name)}</span>→<span class="fa">FREE</span>`
+                          :`<span class="fa">FREE</span>→<span class="tm">${esc(m.team_name)}</span>`}</span></div>`;
+  }).join(''):'<div class="none">NO MOVES YET</div>';
+})();
+
+/* ── last results (completed UBAe team matches) ── */
+(async()=>{
+  const d=await get('team_matches_public?select=week,match_date,score_a,score_b,team_a_name,team_b_name,winner_name&winner_name=not.is.null&order=match_date.desc.nullslast&limit=4');
+  el('results').innerHTML=d.length?d.map(m=>{
+    const aWin=m.winner_name===m.team_a_name, bWin=m.winner_name===m.team_b_name;
+    return `<div class="lr"><div class="wk">WEEK ${m.week??'—'}</div>
+      <div class="mt"><span class="${aWin?'win':''}">${esc(m.team_a_name)}</span>
+        <span class="sc">${m.score_a}–${m.score_b}</span>
+        <span class="${bWin?'win':''}">${esc(m.team_b_name)}</span></div>
+      ${m.winner_name?`<span class="badge">${esc(m.winner_name)} WIN</span>`:''}</div>`;
+  }).join(''):'<div class="none">NO RESULTS YET</div>';
+})();
+
+/* ── fighter of the month — set from the dashboard (fighter_of_month_public),
+   falls back to the hard-set constant if none is set. Clickable → profile. ── */
+(async()=>{
+  const rows=await get('fighter_of_month_public?select=name,slug,tag');
+  const f=(rows&&rows[0]&&rows[0].slug)?rows[0]:FIGHTER_OF_MONTH;
+  const a=el('fotm'); if(!a) return;
+  if(!f.slug){ a.style.display='none'; return; }
+  a.href=FIGHTER+encodeURIComponent(f.slug);
+  a.innerHTML=`<div class="k">FIGHTER OF THE MONTH</div><div class="nm">${esc(f.name)}</div>
+    ${f.tag?`<div class="sub">${esc(f.tag)}</div>`:''}<div class="go">VIEW PROFILE ›</div>`;
+})();
+
+/* ── news: live from Wix blog via a Velo postMessage bridge, else the fallback.
+   The Wix /home page posts: window.frames[...].postMessage({type:'vga-news',
+   posts:[{title,date,url}]}, '*') — see the Velo snippet handed to the founder.
+   6 per page, paginated. ── */
+let NEWS=NEWS_FALLBACK, newsPage=0; const NEWS_PER=6;
+function renderNews(){
+  const pages=Math.ceil(NEWS.length/NEWS_PER)||1;
+  const slice=NEWS.slice(newsPage*NEWS_PER,newsPage*NEWS_PER+NEWS_PER);
+  el('news').innerHTML=slice.length?slice.map(n=>
+    `<a class="nw" href="${esc(n.url||'#')}" target="_parent"><span class="dot">▸</span>
+      <div class="b"><div class="t">${esc(n.title)}</div>${n.date?`<div class="dt">${esc(n.date)}</div>`:''}</div></a>`).join('')
+    :'<div class="none">NO NEWS YET</div>';
+  el('news-pg').innerHTML=pages>1?Array.from({length:pages},(_,i)=>
+    `<span class="${i===newsPage?'on':''}" data-p="${i}">${i+1}</span>`).join(''):'';
+  el('news-pg').querySelectorAll('span').forEach(s=>s.addEventListener('click',()=>{newsPage=+s.dataset.p;renderNews();}));
+}
+renderNews();
+window.addEventListener('message',e=>{
+  if(e.data&&e.data.type==='vga-news'&&Array.isArray(e.data.posts)&&e.data.posts.length){
+    NEWS=e.data.posts; newsPage=0; renderNews();
+  }
+});
+
+/* ── latest fight VOD (lite embed) + the LATEST VOD button ── */
+const FEATURED_VOD='https://www.youtube.com/live/PsNLe-NNqk0?t=8975';   // EDIT ME (or null = auto-pick newest)
+(async()=>{
+  el('btn-discord').href=DISCORD_URL; el('btn-yt').href=YOUTUBE_URL;
+  let url=FEATURED_VOD;
+  if(!url){
+    const uba=await get('fighter_matches?select=vod_link,event_date&vod_link=not.is.null&order=event_date.desc&limit=1');
+    if(uba.length) url=uba[0].vod_link;
+  }
+  if(!url){const t=await get('team_matches_public?select=vod_link&vod_link=not.is.null&order=match_date.desc.nullslast&limit=1');
+    if(t.length) url=t[0].vod_link;}
+  if(!url){const l=await get('ubae_matches?select=vod_url&vod_url=not.is.null&order=match_date.desc&limit=1',LH,LSB);
+    if(l.length) url=l[0].vod_url;}
+  el('btn-vod').href=url||YOUTUBE_URL;
+  const v=el('vod');
+  const id=url&&url.match(/(?:youtube\.com\/(?:watch\?v=|live\/|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/);
+  if(!id){v.innerHTML='<div class="none" style="padding:60px 0">NO VOD YET</div>';return;}
+  const t=url.match(/[?&]t=(\d+)/);
+  el('vod-lbl').textContent='WATCH ›';
+  v.innerHTML=`<img src="https://i.ytimg.com/vi/${id[1]}/hqdefault.jpg" alt=""><div class="play"><span>▶</span></div>`;
+  v.addEventListener('click',()=>{v.innerHTML=`<iframe src="https://www.youtube.com/embed/${id[1]}?autoplay=1${t?'&start='+t[1]:''}" allow="accelerometer;autoplay;encrypted-media;picture-in-picture" allowfullscreen></iframe>`;},{once:true});
+})();
+</script>
+
+<!-- ── ambient flowers — the exact corner-bloom effect from home-mobile.html ── -->
+<script>
+(function(){
+  var cv=document.getElementById('petals'),cx=cv.getContext('2d'),W,H,T=0,flowers=[];
+  // Track the CONTENT height (the .wrap), not the window — so the bottom corners
+  // hug the columns instead of sinking into empty space when the page is short.
+  function resize(){var wrap=document.querySelector('.wrap');W=document.documentElement.clientWidth;H=wrap?wrap.offsetHeight:window.innerHeight;cv.setAttribute('width',W);cv.setAttribute('height',H);cv.style.width=W+'px';cv.style.height=H+'px';}
+  function rnd(a,b){return a+Math.random()*(b-a);}
+  function pickHue(){var r=Math.random();return r<0.35?rnd(248,268):r<0.65?rnd(262,285):r<0.85?rnd(280,300):rnd(255,275);}
+  function mkPos(){var c=Math.floor(Math.random()*4),d=Math.pow(Math.random(),1.8)*0.32,j=rnd(-0.55,0.55);var ba=[Math.PI*0.25,Math.PI*0.75,-Math.PI*0.25,-Math.PI*0.75][c],a=ba+j;var cx2=[0.01,0.99,0.01,0.99][c],cy2=[0.01,0.01,0.99,0.99][c];return{xf:Math.max(0.01,Math.min(0.99,cx2+Math.cos(a)*d)),yf:Math.max(0.01,Math.min(0.99,cy2+Math.sin(a)*d))};}
+  function mkFlower(){var p=mkPos();var ds=[Math.sqrt(p.xf*p.xf+p.yf*p.yf),Math.sqrt((1-p.xf)*(1-p.xf)+p.yf*p.yf),Math.sqrt(p.xf*p.xf+(1-p.yf)*(1-p.yf)),Math.sqrt((1-p.xf)*(1-p.xf)+(1-p.yf)*(1-p.yf))];var sf=Math.pow(1-Math.min(Math.min.apply(null,ds)/0.35,1),1.2);return{xf:p.xf,yf:p.yf,r:5+sf*11,hue:pickHue(),ph:rnd(0,Math.PI*2),spin:(Math.random()<.5?1:-1)*rnd(0.001,0.003),spinSpd:0,st:0,lf:0,spd:rnd(0.0012,0.0022),pd:Math.floor(rnd(2000,4500)),pt:0,delay:Math.floor(rnd(0,80)),seed:Math.random()*100};}
+  function tooClose(xf,yf){for(var k=0;k<flowers.length;k++){var dx=(flowers[k].xf-xf)*W,dy=(flowers[k].yf-yf)*H;if(Math.sqrt(dx*dx+dy*dy)<55)return true;}return false;}
+  var seeded=false;
+  function fill(){var need=Math.min(40,Math.max(16,Math.floor(W*H/34000)));var tries=0;while(flowers.length<need&&tries<400){tries++;var f=mkFlower();if(tooClose(f.xf,f.yf))continue;flowers.push(f);}
+    if(!seeded&&flowers.length){flowers.forEach(function(f){f.st=1;f.lf=1;f.delay=0;f.pt=Math.floor(rnd(0,f.pd));});seeded=true;}}
+  function df(x,y,r,h,a,ph,fad){if(a<0.005)return;cx.save();if(fad&&a>0.05){for(var p=0;p<5;p++){var ang=(p/5)*Math.PI*2+ph;cx.beginPath();cx.arc(x+Math.cos(ang)*r*0.80+r*0.05,y+Math.sin(ang)*r*0.80,r*0.28,0,Math.PI*2);cx.fillStyle='hsla('+((h+40)%360)+',100%,78%,'+(a*0.14)+')';cx.fill();}}for(var p=0;p<5;p++){var ang=(p/5)*Math.PI*2+ph,px=x+Math.cos(ang)*r*0.80,py=y+Math.sin(ang)*r*0.80,h2=(h+p*6)%360,pr=r*0.34;cx.beginPath();cx.arc(px,py,pr*2.4,0,Math.PI*2);cx.fillStyle='hsla('+h2+',100%,65%,'+(a*0.10)+')';cx.fill();cx.beginPath();cx.arc(px,py,pr*1.5,0,Math.PI*2);cx.fillStyle='hsla('+h2+',100%,74%,'+(a*0.25)+')';cx.fill();cx.beginPath();cx.arc(px,py,pr,0,Math.PI*2);cx.fillStyle='hsla('+h2+',100%,80%,'+(a*0.48)+')';cx.fill();}cx.beginPath();cx.arc(x,y,r*0.38,0,Math.PI*2);cx.fillStyle='hsla('+((h+160)%360)+',80%,80%,'+(a*0.42)+')';cx.fill();if(a>0.10){cx.beginPath();cx.arc(x,y,r*0.15,0,Math.PI*2);cx.fillStyle='hsla('+h+',70%,92%,'+((a-0.10)/0.90)+')';cx.fill();}cx.restore();}
+  function tick(f){var ts=f.st===0?Math.abs(f.spin)*0.15:f.st===1?Math.abs(f.spin):Math.abs(f.spin)*1.5;f.spinSpd+=(ts-f.spinSpd)*0.018;f.ph+=f.spinSpd*(f.spin<0?-1:1);var lh=185+((((f.st===2?(f.hue+T*2.5)%360:f.hue)-185)+360)%360)%120,a=0;if(f.st===0){if(f.delay>0){f.delay--;return;}f.lf+=f.spd*0.35;a=Math.pow(f.lf,1.8)*0.52;if(f.lf>=1){f.st=1;f.pt=0;}}else if(f.st===1){a=0.35+0.06*Math.sin(T*0.028+f.seed*1.3);f.pt++;if(f.pt>=f.pd)f.st=2;}else{f.lf-=f.spd*1.5;a=Math.pow(Math.max(0,f.lf),1.0)*0.50*(0.88+0.12*Math.sin(T*0.16+f.seed*2.1))*(1+0.08*Math.sin(T*0.10+f.seed*0.8));if(f.lf<=0){var nf,att=0;do{nf=mkFlower();att++;}while(tooClose(nf.xf,nf.yf)&&att<20);Object.assign(f,nf,{spinSpd:0,st:0,lf:0,pt:0,delay:Math.floor(rnd(500,1400))});return;}}if(a>0.005)df(f.xf*W,f.yf*H,f.r,lh,a,f.ph,f.st===2);}
+  function frame(){T++;cx.clearRect(0,0,W,H);flowers.forEach(tick);requestAnimationFrame(frame);}
+  setTimeout(function(){resize();fill();frame();},50);
+  window.addEventListener('resize',function(){resize();fill();});
+  // Content loads async and grows the page — recompute height + top up the field.
+  // Flowers use fractional coords, so they reposition on their own; no rebuild/flicker.
+  if(window.ResizeObserver){new ResizeObserver(function(){resize();fill();}).observe(document.querySelector('.wrap'));}
+})();
+</script>
+</body>
+</html>

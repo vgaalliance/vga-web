@@ -23,6 +23,8 @@
     <div class="col">
       <div id="splits"></div>
 
+      <a class="card fotm" id="fotm" href="#"></a>
+
       <div class="card">
         <div class="ch"><span>Transfers</span><span class="r" id="tr-split"></span></div>
         <div class="cb" id="transfers"><div class="none">LOADING</div></div>
@@ -59,6 +61,13 @@
 
     <!-- ══ RIGHT RAIL ══ -->
     <div class="col">
+      <a class="btn" id="btn-discord" href="#" target="_blank" rel="noopener">
+        <span class="l">DISCORD</span><span class="s">JOIN ›</span></a>
+      <a class="btn" id="btn-yt" href="#" target="_blank" rel="noopener">
+        <span class="l">YOUTUBE</span><span class="s">WATCH ›</span></a>
+      <a class="btn" id="btn-vod" href="#" target="_blank" rel="noopener">
+        <span class="l">LATEST VOD</span><span class="s">▶ PLAY ›</span></a>
+
       <div class="card">
         <div class="ch"><span>VGA Feed</span><span class="r">LIVE</span></div>
         <div class="feed"><span class="pip"></span><span class="who" id="feed-who"></span><span class="msg" id="feed-msg">—</span></div>
@@ -79,14 +88,6 @@
         <div class="cb" id="p4p"><div class="none">LOADING</div></div>
       </div>
 
-      <a class="card fotm" id="fotm" href="#"></a>
-
-      <a class="btn" id="btn-discord" href="#" target="_blank" rel="noopener">
-        <span class="l">DISCORD</span><span class="s">JOIN ›</span></a>
-      <a class="btn" id="btn-yt" href="#" target="_blank" rel="noopener">
-        <span class="l">YOUTUBE</span><span class="s">WATCH ›</span></a>
-      <a class="btn" id="btn-vod" href="#" target="_blank" rel="noopener">
-        <span class="l">LATEST VOD</span><span class="s">▶ PLAY ›</span></a>
     </div>
 
   </div>
@@ -304,7 +305,7 @@
   .wrap{max-width:1280px;margin:0 auto;padding:12px 12px 50px;position:relative;z-index:1;}
   .grid{display:grid;gap:12px;grid-template-columns:1fr;}
   @media(min-width:900px){
-    .grid{grid-template-columns:236px minmax(0,1fr) 192px;align-items:start;}
+    .grid{grid-template-columns:230px minmax(0,1fr) 172px;align-items:start;}
   }
   .col{display:flex;flex-direction:column;gap:12px;min-width:0;}
 
@@ -318,15 +319,18 @@
   .none{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px;padding:14px 0;text-align:center;}
 
   /* splits rail */
-  .split{display:block;border:1px solid var(--border);border-radius:8px;background:var(--surf);
+  .split{display:block;border:1px solid var(--pb);border-radius:8px;
+    background:linear-gradient(135deg,rgba(123,47,255,.08),var(--surf));
     padding:12px 14px;position:relative;overflow:hidden;}
-  .split:hover{border-color:var(--pb);}
-  .split.on{border-color:var(--pb);
-    background:radial-gradient(ellipse 120% 140% at 100% 0%,var(--pg),transparent 65%),var(--surf);box-shadow:var(--glow);}
-  .split .rg{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
-  .split .nm{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;line-height:1;margin:3px 0 4px;}
-  .split.on .nm{color:var(--pc);text-shadow:var(--glow);}
-  .split .dt{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1px;color:var(--muted);}
+  .split:hover{border-color:var(--pl);background:linear-gradient(135deg,rgba(123,47,255,.16),var(--surf));}
+  .split.on{border-color:var(--pl);
+    background:radial-gradient(ellipse 130% 150% at 100% 0%,rgba(168,85,247,.40),transparent 60%),linear-gradient(135deg,rgba(123,47,255,.20),var(--surf));
+    box-shadow:0 0 16px rgba(123,47,255,.6),0 0 38px rgba(168,85,247,.32),inset 0 0 22px rgba(123,47,255,.14);}
+  .split .rg{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--pl);text-transform:uppercase;}
+  .split .nm{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;line-height:1;margin:3px 0 4px;color:var(--text);}
+  .split.on .rg{color:var(--pc);}
+  .split.on .nm{color:#fff;text-shadow:0 0 10px rgba(192,132,252,.95),0 0 24px rgba(123,47,255,.65);}
+  .split .dt{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1px;color:var(--pc);opacity:.72;}
   .split.on .spin{position:absolute;top:12px;right:12px;width:18px;height:18px;border-radius:50%;
     border:1.5px solid var(--pb);border-top-color:var(--pc);animation:spin 2.2s linear infinite;z-index:2;}
   @keyframes spin{to{transform:rotate(360deg);}}
@@ -359,6 +363,23 @@
   .more{display:block;text-align:center;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1.5px;
     color:var(--pc);padding:9px 0;border-top:1px solid var(--border);}
   .more:hover{background:var(--dim);}
+
+  /* doubleheader — two UBAe matchups on one bar, split diagonally */
+  .dh{display:flex;align-items:stretch;border-bottom:1px solid var(--border);min-height:54px;}
+  .dh:last-child{border-bottom:none;}
+  .dh .d{display:flex;flex-direction:column;justify-content:center;text-align:center;min-width:30px;padding-left:12px;flex-shrink:0;}
+  .dh .d .dd{font-family:'Bebas Neue',sans-serif;font-size:19px;color:var(--pc);line-height:1;}
+  .dh .d .mm{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);}
+  .dhwrap{flex:1;min-width:0;display:flex;position:relative;margin:0 6px;}
+  .dhwrap::after{content:'';position:absolute;top:8px;bottom:8px;left:50%;width:2px;margin-left:-1px;
+    background:linear-gradient(var(--pc),var(--p));transform:skewX(-20deg);box-shadow:var(--glow);border-radius:2px;}
+  .dhm{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;padding:6px 8px;}
+  .dhm:first-child{padding-right:18px;}
+  .dhm:last-child{padding-left:18px;align-items:flex-end;text-align:right;}
+  .dhm:hover{background:var(--dim);}
+  .dhm .t{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:13px;letter-spacing:.2px;line-height:1.05;}
+  .dhm .s{font-family:'Space Mono',monospace;font-size:7.5px;color:var(--muted);letter-spacing:.5px;margin-top:3px;}
+  .dh .pill{align-self:center;margin-right:12px;flex-shrink:0;}
 
   .tabs{display:flex;gap:5px;padding:8px 12px 0;}
   .tab{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1.5px;padding:4px 10px;border-radius:3px;
@@ -731,18 +752,41 @@ let SCHED={up:[],past:[]}, expanded={up:false,past:false};
   SCHED.past=rows.filter(r=>r.t<=now).sort((a,b)=>b.t-a.t);
   paint('up');
 })();
+// Combine UBAe matches that fall on the SAME DAY into one doubleheader bar
+// (up to 2 per bar). UBA events and lone UBAe matches stay as single rows.
+function groupSched(items){
+  const out=[], dayIdx={};
+  for(const r of items){
+    if(r.kind==='UBAe'){
+      const key=new Date(r.t).toDateString();
+      if(dayIdx[key]!=null && out[dayIdx[key]].matches.length<2){ out[dayIdx[key]].matches.push(r); continue; }
+      dayIdx[key]=out.length;
+      out.push({dh:true,t:r.t,kind:'UBAe',week:r.week,matches:[r]});
+    } else out.push(r);
+  }
+  return out;
+}
+function schedItem(r){
+  const d=new Date(r.t);
+  const dd=`<div class="d"><div class="dd">${d.getDate()}</div><div class="mm">${d.toLocaleString(undefined,{month:'short'}).toUpperCase()}</div></div>`;
+  if(r.dh && r.matches.length>1){
+    const half=m=>{const md=new Date(m.t);return `<a class="dhm" href="${m.href}" target="_parent">`
+      +`<div class="t">${esc(m.title)}</div>`
+      +`<div class="s">${md.toLocaleString(undefined,{hour:'numeric',minute:'2-digit'}).toUpperCase()} · WK ${r.week}</div></a>`;};
+    return `<div class="dh">${dd}<div class="dhwrap">${half(r.matches[0])}${half(r.matches[1])}</div><span class="pill">UBAe</span></div>`;
+  }
+  const s=r.dh?r.matches[0]:r;
+  return `<a class="ev" href="${s.href}" target="_parent">${dd}`
+    +`<div class="b"><div class="t">${esc(s.title)}</div>`
+    +`<div class="s">${d.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}).toUpperCase()} · ${esc(s.sub)}</div></div>`
+    +`<span class="pill ${s.kind==='UBA'?'uba':''}">${s.kind}</span><span class="go">›</span></a>`;
+}
 function paint(which){
-  const all=SCHED[which], cap=which==='up'?SHOW_UP:SHOW_PAST;
-  const list=expanded[which]?all:all.slice(0,cap);
-  el('sched').innerHTML = (list.length ? list.map(r=>{
-    const d=new Date(r.t);
-    return `<a class="ev" href="${r.href}" target="_parent">
-      <div class="d"><div class="dd">${d.getDate()}</div><div class="mm">${d.toLocaleString(undefined,{month:'short'}).toUpperCase()}</div></div>
-      <div class="b"><div class="t">${esc(r.title)}</div>
-        <div class="s">${d.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}).toUpperCase()} · ${esc(r.sub)}</div></div>
-      <span class="pill ${r.kind==='UBA'?'uba':''}">${r.kind}</span><span class="go">›</span></a>`;
-  }).join('') : `<div class="none">${which==='up'?'NOTHING SCHEDULED':'NO PAST EVENTS'}</div>`)
-    + (all.length>cap ? `<a class="more" id="more">${expanded[which]?'SHOW LESS ▲':`+ ${all.length-cap} MORE ▾`}</a>` : '');
+  const grouped=groupSched(SCHED[which]), cap=which==='up'?SHOW_UP:SHOW_PAST;
+  const list=expanded[which]?grouped:grouped.slice(0,cap);
+  el('sched').innerHTML = (list.length ? list.map(schedItem).join('')
+      : `<div class="none">${which==='up'?'NOTHING SCHEDULED':'NO PAST EVENTS'}</div>`)
+    + (grouped.length>cap ? `<a class="more" id="more">${expanded[which]?'SHOW LESS ▲':`+ ${grouped.length-cap} MORE ▾`}</a>` : '');
   const m=el('more'); if(m) m.addEventListener('click',e=>{e.preventDefault();expanded[which]=!expanded[which];paint(which);});
 }
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
@@ -771,7 +815,7 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   el('champs').innerHTML=champs.length?champs.map(c=>
     `<a class="row" href="${FIGHTER}${encodeURIComponent(c.slug)}" target="_parent">
       <span class="i">★</span><span class="n champ">${esc(c.display_name)}</span>
-      <span class="cbelt">${esc((c.weight_class||'').replace(/_/g,' ').slice(0,3).toUpperCase())}</span></a>`).join('')
+      <span class="cbelt">${({lightweight:'LW',middleweight:'MW',light_heavyweight:'LHW',heavyweight:'HW'})[c.weight_class]||''}</span></a>`).join('')
     :'<div class="none">NO CHAMPIONS SET</div>';
 
   const p4p=await get('rankings_public?select=rank,display_name,slug&league=eq.uba&weight_class=is.null&order=rank.asc&limit=5');
