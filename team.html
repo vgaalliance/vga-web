@@ -39,6 +39,9 @@
   .crumb{font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:2px;color:var(--muted);
     text-transform:uppercase;margin-bottom:12px;}
   .crumb b{color:var(--pl);}
+  .crumb .back{color:var(--pc);border:1px solid var(--pb);border-radius:3px;padding:3px 8px;
+    background:var(--pg);transition:background .15s,border-color .15s;}
+  .crumb .back:hover{background:rgba(123,47,255,.3);border-color:var(--pc);}
 
   .hero{border:1px solid var(--pb);border-radius:8px;padding:20px 16px;text-align:center;margin-bottom:12px;
     background:radial-gradient(ellipse 90% 130% at 50% 0%,var(--pg),transparent 70%),var(--surf);}
@@ -108,7 +111,11 @@ const state=(b,w)=>`<div class="card"><div class="cb"><div class="none" style="f
   const teams=await get(`teams_public?select=id,name,slug,status&slug=eq.${encodeURIComponent(slug)}`);
   const t=teams[0];
   if(!t){ page.innerHTML=state('TEAM NOT FOUND'); return; }
-  document.getElementById('crumb').innerHTML=`VGA <b>//</b> UBAe <b>//</b> ${esc(t.name).toUpperCase()}`;
+  // "‹ ALL TEAMS" goes back to the grid. Needed because the nav's Teams link
+  // can't clear the ?team= query when you're already on the /teams page.
+  document.getElementById('crumb').innerHTML=
+    `<a class="back" href="https://www.ubaesports.com/teams" target="_parent">‹ ALL TEAMS</a>`
+    +` <b>//</b> ${esc(t.name).toUpperCase()}`;
 
   const [stand,roster,matches]=await Promise.all([
     get(`team_standings?select=*&team_slug=eq.${encodeURIComponent(slug)}&order=season.desc,split_number.desc`),
