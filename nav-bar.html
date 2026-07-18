@@ -5,65 +5,81 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VGA Nav Bar — mock</title>
 <!-- ═══════════════════════════════════════════════════════════════════════
-     NAV BAR MOCK — the UFC-style condense-on-scroll header, CRT styled.
-     This is the DESIGN + BEHAVIOR reference. In production this lives as the
-     Wix site header (styled to match + native scroll behavior, or this exact
-     markup/Velo). Scroll the page to see it shrink; scroll up to expand.
+     NAV BAR MOCK v2 — UFC-style condense-on-scroll, CRT-branded.
+     Design + behavior reference for the Wix header. Scroll to shrink.
      ══════════════════════════════════════════════════════════════════════ -->
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --p:#7B2FFF; --pl:#A855F7; --pc:#C084FC;
     --pg:rgba(123,47,255,.18); --pb:rgba(123,47,255,.35);
     --gold:#F5C842; --bg:#06060A; --surf:#0B0B12; --border:#181824;
-    --text:#DDD8F0; --muted:#4A4A68;
+    --text:#EDEAF7; --muted:#5A5876;
     --glow:0 0 8px rgba(123,47,255,.7),0 0 20px rgba(123,47,255,.3);
+    --glow-gold:0 0 10px rgba(245,200,66,.6);
   }
   *{margin:0;padding:0;box-sizing:border-box;}
   body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-serif;}
   a{color:inherit;text-decoration:none;}
 
   /* ── the bar ── */
-  .nav{position:fixed;top:0;left:0;right:0;z-index:1000;
-    display:flex;align-items:center;gap:22px;
-    height:72px;padding:0 26px;
-    background:linear-gradient(180deg,rgba(6,6,10,.82),rgba(6,6,10,.35));
-    border-bottom:1px solid transparent;
-    backdrop-filter:blur(2px);
-    transition:height .28s ease, background .28s ease, border-color .28s ease, box-shadow .28s ease;}
-  .nav.small{height:50px;background:var(--bg);
-    border-bottom:1px solid var(--pb);box-shadow:0 6px 24px rgba(0,0,0,.55),0 0 20px rgba(123,47,255,.10);}
+  .nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:74px;
+    display:flex;align-items:center;gap:26px;padding:0 30px;
+    background:linear-gradient(180deg,rgba(9,8,16,.92),rgba(7,6,12,.62));
+    border-bottom:1px solid rgba(123,47,255,.14);
+    transition:height .3s cubic-bezier(.4,0,.2,1),background .3s ease,border-color .3s ease,box-shadow .3s ease;}
+  /* thin gold hairline across the very top — a small premium tell */
+  .nav::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(245,200,66,.55),rgba(123,47,255,.55),transparent);}
+  /* CRT scanlines to match the pages */
+  .nav::after{content:'';position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.14) 2px,rgba(0,0,0,.14) 4px);}
+  .nav.small{height:52px;background:rgba(6,6,10,.97);
+    border-bottom-color:var(--pb);box-shadow:0 8px 30px rgba(0,0,0,.6),0 1px 0 rgba(123,47,255,.15);}
 
-  .logo{display:flex;align-items:center;gap:9px;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;
-    font-size:28px;line-height:1;transition:font-size .28s ease;}
-  .nav.small .logo{font-size:21px;}
-  .logo .mark{width:16px;height:16px;border-radius:50%;border:2px solid var(--pc);box-shadow:var(--glow);flex-shrink:0;}
-  .logo b{color:var(--pc);text-shadow:var(--glow);font-weight:400;}
+  /* wordmark — no placeholder circle; a sharp bracketed lockup */
+  .logo{display:flex;align-items:baseline;gap:2px;font-family:'Bebas Neue',sans-serif;letter-spacing:1.5px;
+    font-size:30px;line-height:1;position:relative;z-index:1;transition:font-size .3s ease;white-space:nowrap;}
+  .nav.small .logo{font-size:22px;}
+  .logo .v{color:var(--text);}
+  .logo .e{color:var(--pc);text-shadow:var(--glow);}
+  .logo .slash{color:var(--gold);text-shadow:var(--glow-gold);font-size:.7em;margin:0 3px;transform:translateY(-1px);}
 
-  .links{display:flex;align-items:center;gap:4px;margin-left:8px;}
-  .links a{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;
-    color:var(--muted);padding:8px 12px;border-radius:4px;position:relative;transition:color .18s;}
+  .links{display:flex;align-items:stretch;height:100%;margin-left:14px;position:relative;z-index:1;}
+  .links a{display:flex;align-items:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:15.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);
+    padding:0 16px;position:relative;transition:color .16s;}
   .links a:hover{color:var(--text);}
-  .links a.on{color:var(--pc);}
-  .links a.on::after{content:'';position:absolute;left:12px;right:12px;bottom:2px;height:2px;
-    background:var(--pc);box-shadow:var(--glow);border-radius:2px;}
+  .links a::after{content:'';position:absolute;left:16px;right:16px;bottom:20px;height:2px;
+    background:var(--pc);box-shadow:var(--glow);border-radius:2px;transform:scaleX(0);transform-origin:left;
+    transition:transform .2s ease;}
+  .nav.small .links a::after{bottom:12px;}
+  .links a:hover::after{transform:scaleX(.55);}
+  .links a.on{color:var(--text);}
+  .links a.on::after{transform:scaleX(1);}
 
-  .cta{margin-left:auto;display:flex;align-items:center;gap:10px;}
-  .pill{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;
-    color:var(--pc);border:1px solid var(--pb);border-radius:5px;padding:7px 14px;background:var(--pg);
-    box-shadow:0 0 10px rgba(123,47,255,.18);transition:padding .28s ease;}
-  .nav.small .pill{padding:5px 12px;}
-  .pill:hover{color:#fff;border-color:var(--pc);}
+  .cta{margin-left:auto;display:flex;align-items:center;gap:16px;position:relative;z-index:1;}
+  .live{display:flex;align-items:center;gap:6px;font-family:'Space Mono',monospace;font-size:10px;
+    letter-spacing:2px;color:var(--gold);text-transform:uppercase;}
+  .live .dot{width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:var(--glow-gold);
+    animation:pulse 1.6s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.25;}}
+  .join{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:2px;
+    text-transform:uppercase;color:#fff;
+    background:linear-gradient(135deg,var(--p),var(--pl));border:1px solid rgba(192,132,252,.5);
+    border-radius:5px;padding:9px 18px;box-shadow:0 0 18px rgba(123,47,255,.35);transition:padding .3s ease,filter .16s;}
+  .nav.small .join{padding:6px 16px;}
+  .join:hover{filter:brightness(1.15);}
 
-  @media(max-width:720px){ .links{display:none;} }
+  @media(max-width:760px){ .links,.live{display:none;} }
 
   /* ── demo body so the page scrolls ── */
-  .spacer{height:72px;}
+  .spacer{height:74px;}
   .demo{max-width:1000px;margin:0 auto;padding:40px 20px 120px;}
   .demo h2{font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:1.5px;color:var(--pc);
-    text-shadow:var(--glow);margin:40px 0 10px;}
+    text-shadow:var(--glow);margin:36px 0 10px;}
   .demo p{color:var(--muted);font-size:16px;max-width:640px;line-height:1.5;}
-  .demo .hint{font-family:'Space Mono',monospace;font-size:11px;color:var(--gold);letter-spacing:1px;margin-top:14px;}
+  .demo .hint{font-family:'Space Mono',monospace;font-size:11px;color:var(--gold);letter-spacing:1px;}
   .block{height:220px;border:1px solid var(--border);border-radius:8px;margin:22px 0;background:var(--surf);
     display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;color:var(--muted);font-size:11px;letter-spacing:2px;}
 </style>
@@ -71,31 +87,32 @@
 <body>
 
 <div class="nav" id="nav">
-  <a class="logo" href="#"><span class="mark"></span>VGA<b>ESPORTS</b></a>
-  <div class="links">
+  <a class="logo" href="#"><span class="v">VGA</span><span class="slash">//</span><span class="e">ESPORTS</span></a>
+  <nav class="links">
     <a class="on" href="#">Home</a>
     <a href="#">Fighters</a>
     <a href="#">Rankings</a>
     <a href="#">Teams</a>
     <a href="#">News</a>
     <a href="#">Merch</a>
+  </nav>
+  <div class="cta">
+    <span class="live"><span class="dot"></span>FN29 · AUG 1</span>
+    <a class="join" href="#">Join Discord</a>
   </div>
-  <div class="cta"><a class="pill" href="#">Join Discord ›</a></div>
 </div>
 
 <div class="spacer"></div>
 <div class="demo">
-  <div class="hint">▼ SCROLL DOWN — the bar shrinks & goes solid. Scroll up — it expands back.</div>
+  <p class="hint">▼ SCROLL DOWN — the bar shrinks & goes solid. Scroll up — it expands back.</p>
   <h2>The Bar</h2>
-  <p>Tall and semi-transparent at the top, condenses to a slim solid bar with a purple underglow as you scroll. Sticky across every page. The active link glows.</p>
-  <div class="block">PAGE CONTENT</div>
+  <p>Bracketed wordmark, bold condensed links with a sliding underline, a live "next event" ticker, and a gradient Discord button — CRT scanlines and a gold hairline tie it to the site.</p>
   <div class="block">PAGE CONTENT</div>
   <div class="block">PAGE CONTENT</div>
   <div class="block">PAGE CONTENT</div>
 </div>
 
 <script>
-// Condense on scroll-down past a threshold; expand back near the top.
 var nav=document.getElementById('nav');
 function onScroll(){ if(window.scrollY>40) nav.classList.add('small'); else nav.classList.remove('small'); }
 window.addEventListener('scroll',onScroll,{passive:true}); onScroll();
