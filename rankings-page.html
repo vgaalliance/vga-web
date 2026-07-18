@@ -167,15 +167,6 @@ const rec=c=>c?`${c.wins}-${c.losses}${c.draws?'-'+c.draws:''}`:'';
 const BMF_SLUG='adonnis';                                   // current BMF holder
 const TEAM_CHAMP={name:'Team MUDS',slug:'team-muds',sub:'SEASON 1'};
 
-/* switch */
-document.querySelectorAll('.sw').forEach(s=>s.addEventListener('click',()=>{
-  document.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x===s));
-  const v=s.dataset.v;
-  el('uba').classList.toggle('hidden',v!=='uba');
-  el('ubae').classList.toggle('hidden',v!=='ubae');
-  el('sub').textContent=v==='uba'?'UNIFIED BOXING ASSOCIATION':'UBAe — TEAM LEAGUE';
-}));
-
 /* portrait: real photo when one exists, else a branded initial panel */
 const portrait=(name,photo)=>`<div class="por">${photo?`<img src="${esc(photo)}" alt="">`
   :`<span class="ini">${esc((name||'?').trim().charAt(0).toUpperCase())}</span>`}</div>`;
