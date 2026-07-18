@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Champion Banner — 6 styles</title>
+<!-- Style comparison for the rankings champion banners. Same 6 champions,
+     six distinct treatments. Pick a number; that one gets built for real. -->
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --p:#7B2FFF; --pl:#A855F7; --pc:#C084FC; --pb:rgba(123,47,255,.35);
+    --gold:#F5C842; --bg:#0C0B14; --surf:#14131E; --border:#22212F;
+    --text:#EDEAF7; --muted:#6E6C82;
+    --glow:0 0 8px rgba(123,47,255,.7),0 0 22px rgba(123,47,255,.32);
+    --gglow:0 0 10px rgba(245,200,66,.6),0 0 26px rgba(245,200,66,.25);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-serif;padding:26px 18px 70px;}
+  .wrap{max-width:1280px;margin:0 auto;}
+  h1{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:3px;text-align:center;
+    text-shadow:0 0 12px rgba(192,132,252,.8);margin-bottom:4px;}
+  .sub{text-align:center;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;
+    color:var(--muted);margin-bottom:30px;}
+  .styleblock{margin-bottom:44px;}
+  .sh{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .sh .num{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--pc);text-shadow:var(--glow);}
+  .sh .nm{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2.5px;}
+  .sh .ds{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;}
+  .sh .line{flex:1;height:1px;background:linear-gradient(90deg,var(--pb),transparent);}
+  .rowb{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;}
+  .vt{writing-mode:vertical-rl;text-orientation:mixed;}
+
+  /* ─── 1 · PENNANT — vertical name, notched bottom ─── */
+  .s1{position:relative;height:380px;display:flex;flex-direction:column;align-items:center;
+    background:linear-gradient(180deg,#1a1430,#0d0b18);border:1px solid rgba(245,200,66,.45);
+    border-bottom:none;clip-path:polygon(0 0,100% 0,100% 88%,50% 100%,0 88%);padding:10px 0 34px;}
+  .s1 .belt{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:1.4px;color:var(--gold);
+    padding-bottom:8px;border-bottom:1px solid rgba(245,200,66,.3);width:78%;text-align:center;}
+  .s1 .nm{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:2px;color:var(--gold);
+    text-shadow:var(--gglow);margin-top:14px;flex:1;}
+  .s1 .rec{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);}
+
+  /* ─── 2 · NEON TUBE — outlined, arcade sign ─── */
+  .s2{position:relative;height:380px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+    background:#0a0912;border:2px solid var(--pc);border-radius:4px;padding:12px 0;
+    box-shadow:0 0 12px rgba(192,132,252,.55),inset 0 0 18px rgba(123,47,255,.25);}
+  .s2 .belt{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:1.4px;color:var(--pc);}
+  .s2 .nm{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:2px;color:#fff;
+    text-shadow:0 0 6px #fff,0 0 16px var(--pc),0 0 34px var(--p);}
+  .s2 .rec{font-family:'Space Mono',monospace;font-size:9px;color:var(--pc);}
+
+  /* ─── 3 · HOLO FOIL — sweeping sheen, horizontal name ─── */
+  .s3{position:relative;height:380px;display:flex;flex-direction:column;justify-content:flex-end;
+    border-radius:8px;overflow:hidden;border:1px solid rgba(245,200,66,.4);
+    background:linear-gradient(150deg,#2a1b4d,#141026 45%,#3a2a12);}
+  .s3::before{content:'';position:absolute;inset:0;
+    background:linear-gradient(115deg,transparent 20%,rgba(255,255,255,.16) 45%,rgba(192,132,252,.2) 52%,transparent 78%);
+    background-size:250% 100%;animation:sheen 4s ease-in-out infinite;}
+  @keyframes sheen{0%{background-position:180% 0}100%{background-position:-80% 0}}
+  .s3 .belt{position:absolute;top:10px;left:0;right:0;text-align:center;font-family:'Space Mono',monospace;
+    font-size:7px;letter-spacing:1.4px;color:var(--gold);}
+  .s3 .btm{position:relative;padding:12px 10px;background:linear-gradient(0deg,rgba(0,0,0,.85),transparent);text-align:center;}
+  .s3 .nm{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;color:#fff;line-height:1;}
+  .s3 .rec{font-family:'Space Mono',monospace;font-size:9px;color:var(--gold);margin-top:3px;}
+
+  /* ─── 4 · BRUTALIST — type only, no decoration ─── */
+  .s4{position:relative;height:380px;display:flex;flex-direction:column;justify-content:space-between;
+    background:#08070d;border-left:3px solid var(--gold);padding:12px 8px;}
+  .s4 .belt{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:1.4px;color:var(--muted);}
+  .s4 .nm{font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:0;color:#fff;line-height:.9;
+    align-self:flex-start;}
+  .s4 .rec{font-family:'Space Mono',monospace;font-size:10px;color:var(--gold);}
+
+  /* ─── 5 · DIAGONAL SPLIT — purple/gold, ghost initial ─── */
+  .s5{position:relative;height:380px;overflow:hidden;border:1px solid var(--pb);border-radius:6px;
+    background:linear-gradient(150deg,rgba(123,47,255,.5) 0%,rgba(123,47,255,.15) 48%,rgba(245,200,66,.22) 52%,rgba(10,9,18,1) 100%);}
+  .s5 .ini{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    font-family:'Bebas Neue',sans-serif;font-size:150px;color:rgba(255,255,255,.07);line-height:1;}
+  .s5 .belt{position:absolute;top:10px;left:0;right:0;text-align:center;font-family:'Space Mono',monospace;
+    font-size:7px;letter-spacing:1.4px;color:#fff;opacity:.75;}
+  .s5 .nm{position:absolute;left:8px;bottom:12px;font-family:'Bebas Neue',sans-serif;font-size:28px;
+    letter-spacing:2px;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.9);}
+  .s5 .rec{position:absolute;right:8px;bottom:14px;font-family:'Space Mono',monospace;font-size:9px;color:var(--gold);}
+
+  /* ─── 6 · ARENA RAFTER — hanging championship banner ─── */
+  .s6{position:relative;height:380px;display:flex;flex-direction:column;align-items:center;
+    padding:16px 0 30px;background:linear-gradient(180deg,#241a08,#150f22 40%,#0c0b14);
+    border:1px solid rgba(245,200,66,.5);border-top:4px solid var(--gold);
+    clip-path:polygon(0 0,100% 0,100% 100%,50% 90%,0 100%);box-shadow:inset 0 0 30px rgba(245,200,66,.10);}
+  .s6 .belt{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:1.4px;color:var(--gold);
+    margin-bottom:10px;}
+  .s6 .nm{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:2px;color:var(--gold);
+    text-shadow:var(--gglow);flex:1;}
+  .s6 .rec{font-family:'Space Mono',monospace;font-size:9px;color:rgba(245,200,66,.7);letter-spacing:1px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>CHAMPION BANNER — 6 STYLES</h1>
+  <div class="sub">SAME 6 CHAMPIONS · PICK A NUMBER</div>
+  <div id="out"></div>
+</div>
+
+<script>
+const CH=[
+  {belt:'HEAVYWEIGHT',      name:'BOADY',      rec:'13-14'},
+  {belt:'LIGHT HEAVYWEIGHT',name:'MAKI',       rec:'11-3'},
+  {belt:'MIDDLEWEIGHT',     name:'KILLER KAM', rec:'9-1-1'},
+  {belt:'LIGHTWEIGHT',      name:'JON JONES',  rec:'17-6'},
+  {belt:'BMF',              name:'ADONNIS',    rec:'7-3'},
+  {belt:'UBAe TEAM',        name:'TEAM MUDS',  rec:'SEASON 1'},
+];
+const STYLES=[
+  {n:1,nm:'PENNANT',        ds:'vertical name · notched bottom · gold trim'},
+  {n:2,nm:'NEON TUBE',      ds:'arcade sign · glowing outline · white-hot name'},
+  {n:3,nm:'HOLO FOIL',      ds:'animated sheen sweep · horizontal name'},
+  {n:4,nm:'BRUTALIST',      ds:'type only · no decoration · gold rule'},
+  {n:5,nm:'DIAGONAL SPLIT', ds:'purple→gold split · ghosted initial'},
+  {n:6,nm:'ARENA RAFTER',   ds:'hanging championship banner · gold on dark'},
+];
+const card=(s,c)=>{
+  if(s===3) return `<div class="s3"><div class="belt">${c.belt}</div>
+    <div class="btm"><div class="nm">${c.name}</div><div class="rec">${c.rec}</div></div></div>`;
+  if(s===4) return `<div class="s4"><div class="belt">${c.belt}</div>
+    <div class="nm vt">${c.name}</div><div class="rec">${c.rec}</div></div>`;
+  if(s===5) return `<div class="s5"><div class="belt">${c.belt}</div>
+    <div class="ini">${c.name.charAt(0)}</div>
+    <div class="nm vt">${c.name}</div><div class="rec">${c.rec}</div></div>`;
+  const cls='s'+s;
+  return `<div class="${cls}"><div class="belt">${c.belt}</div>
+    <div class="nm vt">${c.name}</div><div class="rec">${c.rec}</div></div>`;
+};
+document.getElementById('out').innerHTML=STYLES.map(st=>
+  `<div class="styleblock">
+     <div class="sh"><span class="num">${st.n}</span><span class="nm">${st.nm}</span>
+       <span class="ds">// ${st.ds}</span><span class="line"></span></div>
+     <div class="rowb">${CH.map(c=>card(st.n,c)).join('')}</div>
+   </div>`).join('');
+</script>
+</body>
+</html>
