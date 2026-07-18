@@ -5,22 +5,283 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VGA Esports — Home</title>
 <!-- ═══════════════════════════════════════════════════════════════════════
-     THE DESKTOP HOME PAGE — one file, 3-column composed layout.
-     Modeled on the founder's approved screenshot (2026-07-17):
-       LEFT   splits rail · transfers · last results
-       CENTER latest fight · schedule (CAPPED, tabbed) · news
-       RIGHT  vga feed · standings · champions · rankings · fighter of month · socials
-
-     Mobile keeps home-mobile.html (deliberately NOT superseded — founder's call).
-     Reads the MAIN Supabase project via public views; the feed ticker
-     (fighter_messages) is the one legacy-project read (runtime.md).
-
-     HAND-SET bits (search "EDIT ME"): FIGHTER_OF_MONTH, SPLITS, NEWS fallback,
-     FEATURED_VOD, the Discord/YouTube links. News also accepts live Wix-blog
-     posts via a Velo postMessage bridge (see NEWS section).
+     ONE responsive home. Desktop = the 3-column layout; phones = the mobile
+     design (was home-mobile.html). Only the matching layout's DOM + CSS + JS
+     is activated at load, so the two never collide (dup ids, inline handlers,
+     body rules). Point BOTH Wix elements here.
      ══════════════════════════════════════════════════════════════════════ -->
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<style>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>#vga-mobile{display:none}@media(max-width:767px){#vga-desktop{display:none}#vga-mobile{display:block}}</style>
+</head>
+<body>
+<div id="vga-desktop">
+<canvas id="petals"></canvas>
+<div class="wrap">
+  <div class="grid">
+
+    <!-- ══ LEFT RAIL ══ -->
+    <div class="col">
+      <div id="splits"></div>
+
+      <div class="card">
+        <div class="ch"><span>Transfers</span><span class="r" id="tr-split"></span></div>
+        <div class="cb" id="transfers"><div class="none">LOADING</div></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span>Last Results</span><span class="r">UBAe</span></div>
+        <div id="results"><div class="none">LOADING</div></div>
+      </div>
+    </div>
+
+    <!-- ══ CENTER ══ -->
+    <div class="col">
+      <div class="card">
+        <div class="ch"><span>Latest Fight</span><span class="r" id="vod-lbl"></span></div>
+        <div class="vod" id="vod"><div class="play"><span>▶</span></div></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span>Schedule</span><span class="r">UBA + UBAe</span></div>
+        <div class="tabs">
+          <div class="tab on" data-t="up">UPCOMING</div>
+          <div class="tab" data-t="past">PAST</div>
+        </div>
+        <div id="sched"><div class="none">LOADING</div></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span>News</span><span class="r">VGA</span></div>
+        <div id="news"><div class="none">LOADING</div></div>
+        <div class="pg" id="news-pg"></div>
+      </div>
+    </div>
+
+    <!-- ══ RIGHT RAIL ══ -->
+    <div class="col">
+      <div class="card">
+        <div class="ch"><span>VGA Feed</span><span class="r">LIVE</span></div>
+        <div class="feed"><span class="pip"></span><span class="who" id="feed-who"></span><span class="msg" id="feed-msg">—</span></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span>UBAe Standings</span><span class="r" id="st-split"></span></div>
+        <div class="cb" id="standings"><div class="none">LOADING</div></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span>Champions</span><span class="r">UBA</span></div>
+        <div class="cb" id="champs"><div class="none">LOADING</div></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span>Rankings</span><a class="r" href="https://www.ubaesports.com/rankings" target="_parent">VIEW ALL ›</a></div>
+        <div class="cb" id="p4p"><div class="none">LOADING</div></div>
+      </div>
+
+      <a class="card fotm" id="fotm" href="#"></a>
+
+      <a class="btn" id="btn-discord" href="#" target="_blank" rel="noopener">
+        <span class="l">DISCORD</span><span class="s">JOIN ›</span></a>
+      <a class="btn" id="btn-yt" href="#" target="_blank" rel="noopener">
+        <span class="l">YOUTUBE</span><span class="s">WATCH ›</span></a>
+      <a class="btn" id="btn-vod" href="#" target="_blank" rel="noopener">
+        <span class="l">LATEST VOD</span><span class="s">▶ PLAY ›</span></a>
+    </div>
+
+  </div>
+</div>
+
+
+
+<!-- ── ambient flowers — the exact corner-bloom effect from home-mobile.html ── -->
+
+</div>
+<div id="vga-mobile">
+<canvas id="flwcv"></canvas>
+
+<div class="header">
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.14em;color:var(--text);text-shadow:var(--glow-sm);">VGA <span style="color:var(--pl);">ESPORTS</span></div>
+  <div class="header-tag">VGA &middot; 2026</div>
+</div>
+
+<!-- VGA FEED TICKER -->
+<div style="margin:6px 16px 0;height:28px;position:relative;overflow:hidden;background:rgba(10,5,20,.85);border:1px solid rgba(168,85,247,.25);border-left:2px solid rgba(168,85,247,.6);display:flex;align-items:center;">
+  <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(216,180,254,.8),transparent);pointer-events:none;z-index:2;"></div>
+  <div style="position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(168,85,247,.35),transparent);pointer-events:none;z-index:2;"></div>
+  <div id="feed-shimmer" style="position:absolute;top:0;left:-40%;width:30%;height:100%;background:linear-gradient(90deg,transparent,rgba(216,180,254,.04),transparent);animation:feed-sw 5s ease-in-out infinite;pointer-events:none;z-index:0;"></div>
+  <div style="position:absolute;inset:0;pointer-events:none;z-index:1;background:repeating-linear-gradient(to bottom,transparent 0,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px);"></div>
+  <div style="flex-shrink:0;display:flex;align-items:center;gap:4px;padding:0 7px 0 6px;height:100%;border-right:1px solid rgba(168,85,247,.18);position:relative;z-index:3;">
+    <div id="feed-pip" style="width:4px;height:4px;border-radius:50%;background:rgba(168,85,247,.9);box-shadow:0 0 4px rgba(168,85,247,.8),0 0 8px rgba(168,85,247,.4);animation:feed-pip 1.8s ease-in-out infinite;flex-shrink:0;"></div>
+    <span style="font-family:'Barlow Condensed',sans-serif;font-size:7.5px;font-weight:900;letter-spacing:.22em;color:rgba(216,180,254,.75);text-transform:uppercase;text-shadow:0 0 7px rgba(168,85,247,.5);white-space:nowrap;">VGA Feed</span>
+  </div>
+  <div id="feed-content" style="flex:1;overflow:hidden;height:100%;display:flex;align-items:center;padding:0 8px 0 7px;position:relative;z-index:3;">
+    <div style="position:absolute;right:0;top:0;bottom:0;width:20px;background:linear-gradient(to right,transparent,rgba(10,5,20,.95));pointer-events:none;z-index:4;"></div>
+    <div style="display:flex;align-items:baseline;white-space:nowrap;">
+      <span id="feed-name" style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:900;letter-spacing:.06em;color:rgba(216,180,254,.95);text-shadow:0 0 6px rgba(168,85,247,.45);flex-shrink:0;"></span>
+      <span id="feed-sep" style="font-family:'Space Mono',monospace;font-size:8px;color:rgba(168,85,247,.35);margin:0 4px;flex-shrink:0;"></span>
+      <span id="feed-msg" style="font-family:'Barlow Condensed',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.01em;color:rgba(240,232,255,.68);">Loading...</span>
+    </div>
+  </div>
+</div>
+
+<div class="cd-next-main">
+  <div class="cd-next-inner">
+    <div class="cd-next-top">
+      <div>
+        <div class="next-label" id="next-label">Next Event</div>
+        <div class="next-matchup" id="next-matchup">Loading...</div>
+        <div class="next-date" id="next-date"></div>
+      </div>
+      <div class="social-tags">
+        <a href="https://discord.gg/uba" target="_blank" class="social-tag discord">Discord</a>
+        <a href="https://www.youtube.com/@UBAesports" target="_blank" class="social-tag yt">YouTube</a>
+      </div>
+    </div>
+    <div class="cd-big-digits">
+      <div class="cd-unit"><span class="cd-num" id="n-d">00</span><div class="cd-unit-label">days</div></div>
+      <div class="cd-sep">:</div>
+      <div class="cd-unit"><span class="cd-num" id="n-h">00</span><div class="cd-unit-label">hrs</div></div>
+      <div class="cd-sep">:</div>
+      <div class="cd-unit"><span class="cd-num" id="n-m">00</span><div class="cd-unit-label">min</div></div>
+      <div class="cd-sep">:</div>
+      <div class="cd-unit"><span class="cd-num" id="n-s">00</span><div class="cd-unit-label">sec</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- S1 transfers + team results — PARKED until UBAe S2 (flip display to revive) -->
+<div class="lower-row" style="display:none;">
+  <div class="transfers-sq">
+    <div class="tr-header"><span>TRANSFERS</span><span class="tr-sub">S1</span></div>
+    <div id="tr-rows"><div class="tr-empty">Loading<span class="dot"></span><span class="dot"></span></div></div>
+  </div>
+  <div class="broadcast-box" id="bc-box">
+    <div class="bc-empty">Loading<span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+  </div>
+</div>
+
+<!-- LATEST FIGHT — lite YouTube embed: thumbnail only until tapped -->
+<div class="section-head" id="vod-section-head" style="display:none;"><div class="section-title">Latest Fight</div><div class="section-line"></div></div>
+<div id="vod-embed" style="display:none;margin:0 16px 4px;position:relative;border:1px solid rgba(168,85,247,.3);background:#000;box-shadow:0 0 10px rgba(123,47,255,.15);">
+  <div id="vod-thumb" style="position:relative;cursor:pointer;padding-top:56.25%;background-size:cover;background-position:center;">
+    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(4,0,16,.25);">
+      <div style="width:44px;height:30px;background:rgba(4,0,16,.85);border:1px solid rgba(168,85,247,.6);display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px rgba(123,47,255,.5);">
+        <div style="width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:11px solid #C084FC;margin-left:3px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- UBAe S2 teaser + sponsor — frame the video above -->
+<div class="split-banner" style="margin:8px 16px 0;">
+  <div class="split-name">UBAe Season 2</div>
+  <div class="split-dates" style="font-size:9px;color:rgba(221,216,240,0.6);letter-spacing:2px;">COMING SOON</div>
+</div>
+
+<div class="sheath-banner">
+  <div class="sheath-shimmer"></div>
+  <div class="sheath-inner" style="flex:1;">
+    <span class="sheath-main">Brought to you by <a href="https://sheath.com" target="_blank">Sheath.com</a></span>
+    <span class="sheath-sub">Underwear of Legends</span>
+  </div>
+  <a href="https://sheath.com" target="_blank" style="flex-shrink:0;margin-left:8px;display:flex;align-items:center;justify-content:center;padding:5px 10px;border:1px solid rgba(168,85,247,.5);background:rgba(123,47,255,.12);text-decoration:none;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.18em;color:var(--pc);text-shadow:var(--glow-sm);box-shadow:0 0 8px rgba(123,47,255,.2);position:relative;z-index:1;">SHEATH</a>
+</div>
+
+<div class="section-head">
+  <div class="section-title" style="color:rgba(221,216,240,0.8);">Rankings</div>
+  <div class="section-line"></div>
+  <a href="https://www.ubaesports.com/rankings" target="_blank" style="flex-shrink:0;font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:0.12em;color:#C084FC;text-decoration:none;text-transform:uppercase;white-space:nowrap;padding:3px 8px;border:1px solid rgba(168,85,247,0.55);background:rgba(123,47,255,0.14);text-shadow:0 0 8px rgba(123,47,255,0.6);box-shadow:0 0 8px rgba(123,47,255,0.25);">View All ›</a>
+</div>
+<div class="s-tabs">
+  <div class="s-tab active" onclick="switchTab('fighters')">Fighters</div>
+  <div class="s-tab" onclick="switchTab('teams')">Teams</div>
+  <div class="s-tab" onclick="switchTab('bracket')">Bracket</div>
+</div>
+<div id="s-fighters" class="s-panel active"><div class="s-loading">Loading<span class="dot"></span><span class="dot"></span><span class="dot"></span></div></div>
+<div id="s-teams" class="s-panel"><div class="s-loading">Loading<span class="dot"></span><span class="dot"></span><span class="dot"></span></div></div>
+<div id="s-bracket" class="s-panel">
+  <div class="bracket-wrap">
+    <div class="bracket-title">UBAe Season 1 Playoffs</div>
+    <div class="bracket-round">
+      <div class="bracket-round-label">Semifinals — May 14</div>
+      <div class="bracket-match">
+        <div class="bracket-seed">
+          <span class="bracket-seed-num">#1</span>
+          <span class="bracket-seed-name">Sheath Elite <span style="font-family:'Space Mono',monospace;font-size:6px;color:var(--pl);text-shadow:var(--glow-sm);">W</span></span>
+          <span class="bracket-seed-wl">6-1</span>
+        </div>
+        <div class="bracket-seed">
+          <span class="bracket-seed-num">#4</span>
+          <span class="bracket-seed-name" style="color:var(--muted);">Champions United</span>
+          <span class="bracket-seed-wl">5-2</span>
+        </div>
+      </div>
+      <div class="bracket-match">
+        <div class="bracket-seed">
+          <span class="bracket-seed-num">#2</span>
+          <span class="bracket-seed-name" style="color:var(--muted);">jUnC</span>
+          <span class="bracket-seed-wl">5-2</span>
+        </div>
+        <div class="bracket-seed">
+          <span class="bracket-seed-num">#3</span>
+          <span class="bracket-seed-name">Team MUDS <span style="font-family:'Space Mono',monospace;font-size:6px;color:var(--pl);text-shadow:var(--glow-sm);">W</span></span>
+          <span class="bracket-seed-wl">3-3</span>
+        </div>
+      </div>
+    </div>
+    <div class="bracket-round">
+      <div class="bracket-round-label">Grand Final — May 16</div>
+      <div class="bracket-final">
+        <div class="bracket-final-teams"><span style="color:var(--gold);text-shadow:var(--glow-gold);font-weight:700;">Team MUDS</span> <span style="font-family:'Space Mono',monospace;color:var(--pl);text-shadow:var(--glow-sm);">3–0</span> <span style="color:var(--muted);">Sheath Elite</span></div>
+        <div style="margin-top:3px;font-family:'Space Mono',monospace;font-size:6px;letter-spacing:2px;color:var(--gold);text-shadow:var(--glow-gold);text-transform:uppercase;">UBAe S1 Champions</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S1 SCHEDULE BLOCK — PARKED until UBAe S2 (Pass 2: refresh weeks/dates/bracket, then flip display) -->
+<div id="s2-parked" style="display:none;">
+<div class="section-head"><div class="section-title">Schedule</div><div class="section-line"></div></div>
+<div class="split-banner">
+  <div class="split-name">Split 1</div>
+  <div class="split-dates">MAR 19 &mdash; MAY 2</div>
+</div>
+<div class="week-label-bar">
+  <div class="week-label-cur" id="wk-label">Week <span>6</span></div>
+  <div class="week-label-dates" id="wk-dates"></div>
+</div>
+<div class="week-dots" id="wk-dots">
+  <div class="week-dot" onclick="goWeek(1)"><div class="week-dot-label">W1</div></div>
+  <div class="week-dot" onclick="goWeek(2)"><div class="week-dot-label">W2</div></div>
+  <div class="week-dot" onclick="goWeek(3)"><div class="week-dot-label">W3</div></div>
+  <div class="week-dot" onclick="goWeek(4)"><div class="week-dot-label">W4</div></div>
+  <div class="week-dot special" onclick="goWeek(5)"><div class="week-dot-label">W5</div></div>
+  <div class="week-dot active" onclick="goWeek(6)"><div class="week-dot-label">W6</div></div>
+  <div class="week-dot" onclick="goWeek(7)"><div class="week-dot-label">W7</div></div>
+  <div class="week-dot playoffs" onclick="goWeek(0)"><div class="week-dot-label">PO</div></div>
+</div>
+<div class="week-slider-wrap">
+  <div class="slider-drag-hint">
+    <span class="slider-hint-text">&#x2015; drag to switch week &#x2015;</span>
+  </div>
+  <div class="slider-track-wrap" id="wk-track">
+    <div class="slider-track-bg"></div>
+    <div class="slider-track-fill" id="wk-fill"></div>
+    <div class="slider-thumb" id="wk-thumb"><div class="slider-thumb-inner"></div></div>
+  </div>
+</div>
+<div class="week-panel" id="wk-panel"><div class="sched-loading">Loading schedule<span class="dot"></span><span class="dot"></span></div></div>
+</div><!-- /s2-parked -->
+
+<div class="footer">
+  <div class="footer-text"><a href="https://ubaesports.com">ubaesports.com</a> &nbsp;&middot;&nbsp; All times EST</div>
+</div>
+
+
+</div>
+
+<script type="text/plain" id="css-d">
   :root{
     --p:#7B2FFF; --pl:#A855F7; --pc:#C084FC;
     --pg:rgba(123,47,255,0.18); --pb:rgba(123,47,255,0.35);
@@ -33,6 +294,11 @@
   body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-serif;overflow-x:hidden;}
   body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:99;
     background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.12) 2px,rgba(0,0,0,.12) 4px);}
+  /* CRT vignette + flicker — matches the mobile home's screen effect */
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:50;
+    background:radial-gradient(ellipse 82% 92% at 50% 50%,transparent 52%,rgba(0,0,0,.55) 100%);}
+  body{animation:crt-flicker 10s infinite;}
+  @keyframes crt-flicker{0%,89%,100%{opacity:1}90%{opacity:.98}91%{opacity:1}92%{opacity:.97}93%{opacity:1}}
   a{color:inherit;text-decoration:none;}
 
   .wrap{max-width:1280px;margin:0 auto;padding:12px 12px 50px;position:relative;z-index:1;}
@@ -174,87 +440,223 @@
   .btn:hover{border-color:var(--pb);}
   .btn .l{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1.5px;}
   .btn .s{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);}
-</style>
-</head>
-<body>
-<canvas id="petals"></canvas>
-<div class="wrap">
-  <div class="grid">
+</script>
+<script type="text/plain" id="css-m">
+:root {
+  --p: #7B2FFF;
+  --pl: #A855F7;
+  --pc: #C084FC;
+  --pg: rgba(123,47,255,0.18);
+  --pb: rgba(123,47,255,0.35);
+  --gold: #F5C842;
+  --bg: #06060A;
+  --surf: #0B0B12;
+  --border: #181824;
+  --text: #DDD8F0;
+  --muted: #4A4A68;
+  --dim: #131320;
+  --glow-sm: 0 0 8px rgba(123,47,255,0.7), 0 0 20px rgba(123,47,255,0.3);
+  --glow-md: 0 0 12px rgba(123,47,255,0.9), 0 0 30px rgba(123,47,255,0.4), 0 0 60px rgba(123,47,255,0.15);
+  --glow-gold: 0 0 10px rgba(245,200,66,0.6), 0 0 25px rgba(245,200,66,0.2);
+  --green: #22c55e;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: #000; }
+body {
+  background: var(--bg); color: var(--text); font-family: 'Barlow Condensed', sans-serif;
+  min-height: 100vh; max-width: 320px; margin: 0 auto; overflow-x: hidden; position: relative;
+  animation: flicker 10s infinite, crt-wave 7s ease-in-out infinite;
+}
+body::before { content:''; position:fixed; inset:0; background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.13) 2px,rgba(0,0,0,0.13) 4px); pointer-events:none; z-index:9999; }
+body::after { content:''; position:fixed; inset:0; background:radial-gradient(ellipse 80% 90% at 50% 50%,transparent 45%,rgba(0,0,0,0.75) 100%); pointer-events:none; z-index:9998; }
+@keyframes flicker{0%,89%,100%{opacity:1}90%{opacity:0.98}91%{opacity:1}92%{opacity:0.96}93%{opacity:1}}
+@keyframes crt-wave{0%,100%{transform:perspective(1200px) rotateX(0.15deg)}50%{transform:perspective(1200px) rotateX(0deg)}}
+@keyframes phosphor-glitch{0%,85%,100%{text-shadow:var(--glow-md);filter:blur(0)}87%{text-shadow:-2px 0 rgba(255,30,100,0.65),2px 0 rgba(0,220,255,0.65),0 0 20px rgba(123,47,255,0.9);filter:blur(0.3px)}89%{text-shadow:1px 0 rgba(255,30,100,0.4),-1px 0 rgba(0,220,255,0.4),0 0 30px rgba(168,85,247,1)}91%{text-shadow:var(--glow-md);filter:blur(0)}}
+@keyframes chroma{0%,80%,100%{text-shadow:none}82%{text-shadow:-1px 0 rgba(255,30,100,0.5),1px 0 rgba(0,200,255,0.5)}84%{text-shadow:none}}
+@keyframes holo{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@keyframes feed-pip{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.15;transform:scale(.5)}}
+@keyframes feed-sw{0%{left:-40%}100%{left:120%}}
+@keyframes glow-pulse{0%,100%{box-shadow:0 0 4px rgba(168,85,247,.18),0 0 10px rgba(168,85,247,.06)}50%{box-shadow:0 0 10px rgba(168,85,247,.45),0 0 24px rgba(168,85,247,.18)}}
+@keyframes feed-scroll{0%{transform:translateX(0)}100%{transform:translateX(var(--scroll-dist))}}
+@keyframes badge-pulse{0%,100%{box-shadow:0 0 8px rgba(123,47,255,0.6)}50%{box-shadow:0 0 16px rgba(123,47,255,0.9),0 0 30px rgba(123,47,255,0.4)}}
+@keyframes prize-pulse{0%,100%{box-shadow:0 0 6px rgba(34,197,94,0.5)}50%{box-shadow:0 0 14px rgba(34,197,94,0.9),0 0 28px rgba(34,197,94,0.4)}}
 
-    <!-- ══ LEFT RAIL ══ -->
-    <div class="col">
-      <div id="splits"></div>
+.header{padding:7px 16px 0;display:flex;align-items:center;justify-content:space-between;position:relative;}
+.logo-placeholder{width:100px;height:28px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+.logo-placeholder::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--pg) 0%,transparent 60%);}
+.logo-placeholder span{font-family:'Space Mono',monospace;font-size:7px;color:var(--muted);letter-spacing:1px;position:relative;z-index:1;}
+.header-tag{font-family:'Space Mono',monospace;font-size:7px;color:var(--pl);letter-spacing:3px;text-transform:uppercase;text-shadow:var(--glow-sm);}
 
-      <div class="card">
-        <div class="ch"><span>Transfers</span><span class="r" id="tr-split"></span></div>
-        <div class="cb" id="transfers"><div class="none">LOADING</div></div>
-      </div>
+.cd-next-main{margin:6px 16px 0;position:relative;overflow:hidden;border:1px solid transparent;background:linear-gradient(var(--surf),var(--surf)) padding-box,linear-gradient(135deg,#7B2FFF,#A855F7,#C084FC,#5B21B6,#4F46E5) border-box;border-left-width:3px;padding:6px 10px 6px 12px;display:block;}
+.cd-next-main::before{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 20%,rgba(168,85,247,0.08) 38%,rgba(196,132,252,0.14) 48%,rgba(123,47,255,0.08) 58%,transparent 72%);background-size:200% 100%;animation:holo 3.5s ease-in-out infinite;pointer-events:none;}
+.cd-next-inner{position:relative;z-index:1;}
+.cd-next-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2px;}
+.next-label{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;background:linear-gradient(90deg,#A855F7,#C084FC);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.next-matchup{font-family:'Barlow Condensed',monospace;font-size:11px;font-weight:700;color:var(--text);letter-spacing:1px;margin-top:1px;}
+.next-date{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);margin-top:1px;}
+.cd-big-digits{display:flex;gap:4px;align-items:center;}
+.cd-unit{text-align:center;}
+.cd-num{font-family:'Bebas Neue',sans-serif;font-size:38px;line-height:1;display:block;min-width:40px;background:linear-gradient(135deg,#fff 0%,#C084FC 60%,#A855F7 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:phosphor-glitch 11s infinite;}
+.cd-unit-label{font-family:'Space Mono',monospace;font-size:7px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+.cd-sep{font-family:'Bebas Neue',sans-serif;font-size:28px;margin-bottom:10px;color:var(--p);opacity:0.6;flex-shrink:0;text-shadow:var(--glow-sm);}
 
-      <div class="card">
-        <div class="ch"><span>Last Results</span><span class="r">UBAe</span></div>
-        <div id="results"><div class="none">LOADING</div></div>
-      </div>
-    </div>
+/* SOCIAL TAGS - now 4 items, slightly smaller */
+.social-tags{display:flex;flex-direction:column;gap:2px;align-items:flex-end;flex-shrink:0;}
+.social-tag{font-family:'Space Mono',monospace;font-size:5.5px;letter-spacing:.10em;text-transform:uppercase;text-decoration:none;padding:2px 6px;white-space:nowrap;display:flex;align-items:center;gap:3px;transition:filter .15s;cursor:pointer;}
+.social-tag::before{content:'›';opacity:.6;}
+.social-tag:hover{filter:brightness(1.3);}
+.social-tag.discord{border:1px solid rgba(88,101,242,.45);color:rgba(140,153,255,.85);background:rgba(88,101,242,.12);}
+.social-tag.yt{border:1px solid rgba(255,60,60,.4);color:rgba(255,120,120,.8);background:rgba(255,0,0,.08);}
+.social-tag.vod{border:1px solid rgba(168,85,247,.4);color:rgba(200,160,255,.8);background:rgba(168,85,247,.10);}
+.social-tag.prize{border:1px solid rgba(34,197,94,.5);color:rgba(134,239,172,.9);background:rgba(34,197,94,.10);animation:prize-pulse 2s ease-in-out infinite;}
 
-    <!-- ══ CENTER ══ -->
-    <div class="col">
-      <div class="card">
-        <div class="ch"><span>Latest Fight</span><span class="r" id="vod-lbl"></span></div>
-        <div class="vod" id="vod"><div class="play"><span>▶</span></div></div>
-      </div>
+.lower-row{margin:8px 10px 0;display:flex;gap:4px;min-height:80px;}
+.transfers-sq{width:120px;flex-shrink:0;background:var(--surf);border:1px solid var(--pb);border-left:3px solid var(--p);display:flex;flex-direction:column;overflow:hidden;position:relative;}
+.transfers-sq::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--pg) 0%,transparent 70%);pointer-events:none;}
+.tr-header{font-family:'Space Mono',monospace;font-size:6px;letter-spacing:2px;color:var(--p);padding:3px 6px;border-bottom:1px solid var(--border);text-shadow:var(--glow-sm);position:relative;display:flex;align-items:center;justify-content:space-between;}
+.tr-sub{color:var(--muted);letter-spacing:1px;}
+.tr-row{display:grid;grid-template-columns:1fr auto;align-items:center;padding:2px 6px;border-bottom:1px solid rgba(123,47,255,0.08);gap:3px;position:relative;}
+.tr-row:last-child{border-bottom:none;}
+.tr-name{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tr-badge{font-family:'Space Mono',monospace;font-size:5px;letter-spacing:.1em;padding:1px 3px;border:1px solid;flex-shrink:0;}
+.tr-badge.player{color:rgba(200,160,255,.8);border-color:rgba(168,85,247,.45);background:rgba(168,85,247,.12);}
+.tr-badge.coach{color:rgba(120,200,255,.8);border-color:rgba(80,180,255,.4);background:rgba(80,180,255,.08);}
+.tr-badge.bench{color:rgba(170,170,170,.65);border-color:rgba(140,140,140,.35);background:rgba(140,140,140,.06);}
+.tr-move{grid-column:1/-1;display:flex;align-items:center;gap:2px;padding-bottom:1px;}
+.tr-pill{font-family:'Space Mono',monospace;font-size:5.5px;padding:1px 3px;min-width:20px;text-align:center;}
+.tr-pill.team{background:rgba(168,85,247,.16);border:1px solid rgba(168,85,247,.40);color:rgba(210,180,255,.85);}
+.tr-pill.free{background:transparent;border:1px dashed rgba(168,85,247,.25);color:rgba(168,85,247,.4);}
+.tr-arr{display:flex;align-items:center;}
+.tr-shaft{width:7px;height:1px;background:linear-gradient(90deg,rgba(168,85,247,.5),rgba(216,180,254,.9));}
+.tr-head{width:0;height:0;border-top:2px solid transparent;border-bottom:2px solid transparent;border-left:3px solid rgba(216,180,254,.9);}
+.tr-empty{flex:1;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:5px;color:var(--muted);letter-spacing:1px;text-align:center;padding:4px;}
 
-      <div class="card">
-        <div class="ch"><span>Schedule</span><span class="r">UBA + UBAe</span></div>
-        <div class="tabs">
-          <div class="tab on" data-t="up">UPCOMING</div>
-          <div class="tab" data-t="past">PAST</div>
-        </div>
-        <div id="sched"><div class="none">LOADING</div></div>
-      </div>
+.broadcast-box{flex:1;background:var(--surf);border:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative;}
+.broadcast-box::before{content:'';position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(123,47,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(123,47,255,0.04) 1px,transparent 1px);background-size:20px 20px;}
+.bc-header{font-family:'Space Mono',monospace;font-size:6px;letter-spacing:2px;text-transform:uppercase;color:var(--p);padding:3px 7px;border-bottom:1px solid var(--border);flex-shrink:0;position:relative;text-shadow:var(--glow-sm);}
+.bc-match{display:flex;flex-direction:column;padding:3px 7px;border-bottom:1px solid var(--border);flex-shrink:0;position:relative;gap:1px;}
+.bc-match:last-child{border-bottom:none;}
+.bc-teams-row{display:flex;align-items:center;justify-content:space-between;gap:4px;}
+.bc-team{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;line-height:1.1;flex:1;}
+.bc-team.winner{color:var(--text);font-weight:700;}
+.bc-team.loser{color:var(--muted);}
+.bc-team.t2{text-align:right;}
+.bc-score{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:var(--pl);flex-shrink:0;text-shadow:var(--glow-sm);}
+.bc-meta{font-family:'Space Mono',monospace;font-size:5px;color:var(--muted);letter-spacing:1px;}
+.bc-empty{flex:1;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:6px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;text-align:center;padding:8px;}
 
-      <div class="card">
-        <div class="ch"><span>News</span><span class="r">VGA</span></div>
-        <div id="news"><div class="none">LOADING</div></div>
-        <div class="pg" id="news-pg"></div>
-      </div>
-    </div>
+.section-head{display:flex;align-items:center;gap:8px;padding:8px 16px 3px;}
+.section-title{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:3px;color:var(--muted);white-space:nowrap;text-transform:uppercase;animation:chroma 15s 3s infinite;}
+.section-title::before{content:'// ';color:var(--p);opacity:0.5;}
+.section-line{flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent);}
 
-    <!-- ══ RIGHT RAIL ══ -->
-    <div class="col">
-      <div class="card">
-        <div class="ch"><span>VGA Feed</span><span class="r">LIVE</span></div>
-        <div class="feed"><span class="pip"></span><span class="who" id="feed-who"></span><span class="msg" id="feed-msg">—</span></div>
-      </div>
+.s-tabs{display:flex;margin:0 16px;border-bottom:1px solid var(--border);}
+.s-tab{font-family:'Space Mono',monospace;font-size:6.5px;letter-spacing:1px;text-transform:uppercase;padding:4px 8px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.15s;user-select:none;}
+.s-tab.active{color:var(--pl);border-bottom-color:var(--p);text-shadow:var(--glow-sm);}
+.s-panel{display:none;}
+.s-panel.active{display:block;}
+.s-row{display:flex;align-items:center;padding:4px 10px;border-bottom:1px solid rgba(123,47,255,0.08);gap:8px;}
+.s-row:nth-child(even){background:rgba(123,47,255,0.05);}
+.s-row:last-child{border-bottom:none;}
+.s-row.cut{border-top:1px solid rgba(123,47,255,0.25);}
+.s-num{font-family:'Space Mono',monospace;font-size:8px;color:rgba(120,100,160,.8);min-width:18px;text-align:right;flex-shrink:0;}
+.s-num.hi{color:#c084fc;text-shadow:var(--glow-sm);}
+.s-name{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;flex:1;color:var(--text);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;letter-spacing:0.03em;}
+.s-wl{font-family:'Space Mono',monospace;font-size:8px;min-width:32px;text-align:right;flex-shrink:0;}
+.s-wl span{color:#7ee87e;}
+.s-wl-l{color:rgba(255,80,80,0.6);}
+.s-loading{padding:12px 16px;text-align:center;font-family:'Space Mono',monospace;font-size:7px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
 
-      <div class="card">
-        <div class="ch"><span>UBAe Standings</span><span class="r" id="st-split"></span></div>
-        <div class="cb" id="standings"><div class="none">LOADING</div></div>
-      </div>
+/* BRACKET */
+.bracket-wrap{padding:8px 10px;}
+.bracket-title{font-family:'Space Mono',monospace;font-size:6px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;text-align:center;}
+.bracket-round{margin-bottom:10px;}
+.bracket-round-label{font-family:'Space Mono',monospace;font-size:6px;letter-spacing:2px;color:var(--p);text-transform:uppercase;margin-bottom:5px;text-shadow:var(--glow-sm);}
+.bracket-match{background:var(--dim);border:1px solid rgba(123,47,255,0.2);border-left:2px solid var(--p);margin-bottom:4px;padding:4px 8px;}
+.bracket-seed{display:flex;align-items:center;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(123,47,255,0.1);}
+.bracket-seed:last-child{border-bottom:none;}
+.bracket-seed-num{font-family:'Space Mono',monospace;font-size:6px;color:var(--muted);min-width:16px;}
+.bracket-seed-name{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:var(--text);flex:1;}
+.bracket-seed-wl{font-family:'Space Mono',monospace;font-size:6px;color:var(--muted);}
+.bracket-final{background:rgba(123,47,255,0.08);border:1px solid rgba(168,85,247,0.4);border-left:2px solid var(--pl);margin-bottom:4px;padding:4px 8px;text-align:center;}
+.bracket-final-label{font-family:'Space Mono',monospace;font-size:6px;letter-spacing:2px;color:var(--pl);text-transform:uppercase;margin-bottom:3px;text-shadow:var(--glow-sm);}
+.bracket-final-teams{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:var(--muted);}
 
-      <div class="card">
-        <div class="ch"><span>Champions</span><span class="r">UBA</span></div>
-        <div class="cb" id="champs"><div class="none">LOADING</div></div>
-      </div>
+.split-banner{margin:0 16px 6px;background:var(--dim);padding:3px 10px;display:flex;align-items:center;justify-content:space-between;border-left:2px solid var(--p);}
+.split-name{font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:3px;color:var(--pl);text-shadow:var(--glow-sm);}
+.split-dates{font-family:'Space Mono',monospace;font-size:6px;color:var(--muted);}
+.week-label-bar{display:flex;align-items:center;justify-content:space-between;padding:0 16px;margin-bottom:3px;}
+.week-label-cur{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:var(--text);line-height:1;}
+.week-label-cur span{color:var(--p);text-shadow:var(--glow-sm);}
+.week-label-dates{font-family:'Space Mono',monospace;font-size:6px;color:var(--muted);text-align:right;}
+.week-dots{display:flex;align-items:center;gap:3px;padding:0 16px;margin-bottom:14px;}
+.week-dot{width:14px;height:3px;background:var(--border);cursor:pointer;transition:all 0.2s;position:relative;-webkit-tap-highlight-color:transparent;}
+.week-dot.active{background:var(--p);box-shadow:0 0 6px rgba(123,47,255,0.6);}
+.week-dot.special{border-top:1px solid var(--gold);}
+.week-dot.playoffs{border-top:1px solid var(--p);}
+.week-dot-label{position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);font-family:'Space Mono',monospace;font-size:5px;color:var(--muted);white-space:nowrap;opacity:0;transition:opacity 0.15s;}
+.week-dot.active .week-dot-label{opacity:1;color:var(--pl);}
+.week-slider-wrap{padding:0 16px;margin-bottom:8px;position:relative;}
+.slider-drag-hint{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;}
+.slider-hint-text{font-family:'Space Mono',monospace;font-size:6px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+.slider-track-wrap{position:relative;height:6px;cursor:pointer;touch-action:none;user-select:none;}
+.slider-track-bg{position:absolute;inset:0;background:#0d0d1a;border:1px solid rgba(123,47,255,0.25);box-shadow:inset 0 0 8px rgba(0,0,0,0.8);}
+.slider-track-fill{position:absolute;top:0;bottom:0;left:0;width:0%;background:linear-gradient(90deg,rgba(123,47,255,0.15),rgba(123,47,255,0.4));transition:width 0.05s;}
+.slider-thumb{position:absolute;top:50%;transform:translate(-50%,-50%);width:28px;height:12px;cursor:grab;z-index:10;}
+.slider-thumb:active{cursor:grabbing;}
+.slider-thumb-inner{width:100%;height:100%;position:relative;overflow:hidden;background:linear-gradient(180deg,#2a1a4e 0%,#1a0d33 100%);border:1px solid rgba(168,85,247,0.5);box-shadow:0 0 8px rgba(123,47,255,0.5),0 0 16px rgba(123,47,255,0.2);}
+.slider-thumb-inner::before{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 20%,rgba(168,85,247,0.12) 38%,rgba(196,132,252,0.2) 50%,rgba(123,47,255,0.1) 62%,transparent 75%);background-size:200% 100%;animation:holo 3.5s ease-in-out infinite;}
+.week-panel{border-top:1px solid var(--border);}
+.match-row{display:flex;align-items:center;padding:5px 10px;border-bottom:1px solid rgba(123,47,255,0.08);gap:10px;position:relative;}
+.match-row:nth-child(even){background:rgba(123,47,255,0.04);}
+.match-row:last-child{border-bottom:none;}
+.match-row.next-up{background:linear-gradient(90deg,rgba(123,47,255,0.10) 0%,transparent 100%);border-left:2px solid var(--p);padding-left:10px;}
+.match-row.completed{opacity:0.5;}
+.match-date{min-width:38px;text-align:center;flex-shrink:0;}
+.match-day{font-family:'Space Mono',monospace;font-size:6px;color:var(--muted);text-transform:uppercase;}
+.match-date-num{font-family:'Bebas Neue',sans-serif;font-size:18px;line-height:1.1;}
+.match-date-mon{font-family:'Space Mono',monospace;font-size:6px;color:var(--muted);text-transform:uppercase;}
+.match-divider{width:1px;height:30px;background:var(--dim);flex-shrink:0;}
+.match-teams{flex:1;display:flex;flex-direction:column;gap:1px;}
+.match-team{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;line-height:1.2;letter-spacing:0.02em;}
+.match-team.winner{color:var(--text);}
+.match-team.loser{color:var(--muted);font-weight:600;}
+.match-vs{font-family:'Space Mono',monospace;font-size:5.5px;color:var(--p);letter-spacing:1px;text-shadow:var(--glow-sm);}
+.match-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px;min-width:36px;flex-shrink:0;}
+.match-time{font-family:'Space Mono',monospace;font-size:8px;color:var(--pl);text-align:right;line-height:1.4;text-shadow:var(--glow-sm);}
+.match-score{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--pl);text-shadow:var(--glow-sm);}
+.match-vod{font-family:'Space Mono',monospace;font-size:6px;color:rgba(168,85,247,0.5);text-decoration:none;letter-spacing:1px;border:1px solid rgba(168,85,247,0.25);padding:1px 4px;}
+.match-vod:hover{color:var(--pl);border-color:var(--pl);}
+.next-badge{position:absolute;top:0;right:8px;background:var(--p);font-family:'Space Mono',monospace;font-size:5.5px;letter-spacing:1px;color:#fff;padding:2px 5px;text-transform:uppercase;box-shadow:0 0 8px rgba(123,47,255,0.6);animation:badge-pulse 2s ease-in-out infinite;}
+.special-row{display:flex;align-items:center;padding:4px 10px;border-bottom:1px solid var(--border);gap:10px;background:rgba(245,200,66,0.04);border-left:2px solid var(--gold);}
+.special-row.finals{background:rgba(123,47,255,0.06);border-left-color:var(--p);}
+.special-name{font-family:'Bebas Neue',sans-serif;font-size:13px;color:var(--gold);letter-spacing:1px;flex:1;text-shadow:var(--glow-gold);}
+.special-row.finals .special-name{color:var(--pl);text-shadow:var(--glow-sm);}
+.sched-loading{padding:16px;text-align:center;font-family:'Space Mono',monospace;font-size:7px;color:var(--muted);letter-spacing:2px;}
 
-      <div class="card">
-        <div class="ch"><span>Rankings</span><a class="r" href="https://www.ubaesports.com/rankings" target="_parent">VIEW ALL ›</a></div>
-        <div class="cb" id="p4p"><div class="none">LOADING</div></div>
-      </div>
+/* Countdown mini for special events */
+.cd-mini{font-family:'Space Mono',monospace;font-size:7px;color:var(--pl);text-align:right;min-width:44px;flex-shrink:0;letter-spacing:0.5px;text-shadow:var(--glow-sm);}
+.cd-mini.gold{color:var(--gold);text-shadow:var(--glow-gold);}
+.cd-mini.green{color:var(--green);}
 
-      <a class="card fotm" id="fotm" href="#"></a>
+.footer{padding:8px 16px 16px;text-align:center;}
+.footer-text{font-family:'Space Mono',monospace;font-size:7px;color:var(--muted);letter-spacing:2px;}
+.footer-text a{color:var(--pl);text-decoration:none;text-shadow:var(--glow-sm);}
+.dot{display:inline-block;width:4px;height:4px;background:var(--p);border-radius:50%;animation:blink 1s ease-in-out infinite;margin:0 2px;vertical-align:middle;box-shadow:var(--glow-sm);}
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+#flwcv{position:fixed;top:0;left:0;pointer-events:none;z-index:9990;transform:none;will-change:auto;}
+.sheath-banner{position:relative;overflow:hidden;margin:4px 16px 0;padding:4px 12px;background:rgba(10,5,20,.85);border:1px solid rgba(168,85,247,.25);border-left:2px solid rgba(168,85,247,.6);display:flex;align-items:center;}
+.sheath-inner{display:flex;align-items:center;gap:7px;flex-wrap:wrap;position:relative;z-index:1;}
+.sheath-main{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.12em;color:rgba(200,170,255,.75);text-transform:uppercase;white-space:nowrap;}
+.sheath-main a{color:rgba(220,190,255,.95);text-decoration:none;text-shadow:0 0 8px rgba(168,85,247,.5);}
+.sheath-sub{font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:.22em;color:rgba(168,85,247,.55);text-transform:uppercase;white-space:nowrap;}
+.sheath-shimmer{position:absolute;top:0;left:-100%;width:55%;height:100%;background:linear-gradient(90deg,transparent,rgba(216,180,254,.07),transparent);animation:sheath-sw 5s ease-in-out infinite;pointer-events:none;}
+@keyframes sheath-sw{0%{left:-60%}100%{left:160%}}
+</script>
+<script type="text/plain" id="js-d">
+;
 
-      <a class="btn" id="btn-discord" href="#" target="_blank" rel="noopener">
-        <span class="l">DISCORD</span><span class="s">JOIN ›</span></a>
-      <a class="btn" id="btn-yt" href="#" target="_blank" rel="noopener">
-        <span class="l">YOUTUBE</span><span class="s">WATCH ›</span></a>
-      <a class="btn" id="btn-vod" href="#" target="_blank" rel="noopener">
-        <span class="l">LATEST VOD</span><span class="s">▶ PLAY ›</span></a>
-    </div>
-
-  </div>
-</div>
-
-<script>
 const SB='https://emzlivoykbhhjcugupit.supabase.co';
 const KEY='sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF';
 const H={headers:{apikey:KEY,Authorization:'Bearer '+KEY}};
@@ -462,10 +864,9 @@ const FEATURED_VOD='https://www.youtube.com/live/PsNLe-NNqk0?t=8975';   // EDIT 
   v.innerHTML=`<img src="https://i.ytimg.com/vi/${id[1]}/hqdefault.jpg" alt=""><div class="play"><span>▶</span></div>`;
   v.addEventListener('click',()=>{v.innerHTML=`<iframe src="https://www.youtube.com/embed/${id[1]}?autoplay=1${t?'&start='+t[1]:''}" allow="accelerometer;autoplay;encrypted-media;picture-in-picture" allowfullscreen></iframe>`;},{once:true});
 })();
-</script>
 
-<!-- ── ambient flowers — the exact corner-bloom effect from home-mobile.html ── -->
-<script>
+;
+
 (function(){
   var cv=document.getElementById('petals'),cx=cv.getContext('2d'),W,H,T=0,flowers=[];
   // Track the CONTENT height (the .wrap), not the window — so the bottom corners
@@ -487,6 +888,410 @@ const FEATURED_VOD='https://www.youtube.com/live/PsNLe-NNqk0?t=8975';   // EDIT 
   // Content loads async and grows the page — recompute height + top up the field.
   // Flowers use fractional coords, so they reposition on their own; no rebuild/flicker.
   if(window.ResizeObserver){new ResizeObserver(function(){resize();fill();}).observe(document.querySelector('.wrap'));}
+})();
+</script>
+<script type="text/plain" id="js-m">
+;
+
+// UBAe now lives in the MAIN project (Summer Split onward; repointed 2026-07-16).
+// The legacy Spring project is a read-only archive. ONE thing still reads it:
+// the fighter-messages ticker (loadFeed) — that table only exists in legacy.
+const SB='https://xwsbyxkjfqqrgbzxmmrn.supabase.co';
+const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3c2J5eGtqZnFxcmdienhtbXJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNjAyNDcsImV4cCI6MjA4NzkzNjI0N30.6amkt0zGMLT3_N3fKY6sMMTdaBr5eS7Ig-hAPvPCB4g';
+const H={headers:{'apikey':KEY,'Authorization':'Bearer '+KEY}};
+// UBA + UBAe project (fighters, rankings, events, teams, team schedule)
+const SB_U='https://emzlivoykbhhjcugupit.supabase.co';
+const KEY_U='sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF';
+const HU={headers:{'apikey':KEY_U,'Authorization':'Bearer '+KEY_U}};
+function pad(n){return String(n).padStart(2,'0');}
+const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DOT_WEEKS=[1,2,3,4,5,6,7,0];
+
+// Special event countdowns — hand-set placeholders; the hero countdown also
+// reads both DBs automatically, earliest future event wins.
+// 21:00Z = 5:00 PM Eastern in July.
+const SPECIAL_EVENTS = [
+  { label:'Fight Night 28', date:'2026-07-11T21:00:00Z' },
+];
+
+let scheduleData={};
+let scheduleLoaded=false;
+let currentWeek=6;
+
+function fmtCd(diff){
+  if(diff<=0)return'LIVE';
+  const d=Math.floor(diff/86400000);
+  const h=Math.floor((diff%86400000)/3600000);
+  const m=Math.floor((diff%3600000)/60000);
+  const s=Math.floor((diff%60000)/1000);
+  if(d>0)return d+'d '+pad(h)+'h';
+  return pad(h)+':'+pad(m)+':'+pad(s);
+}
+
+async function loadSchedule(){
+  try{
+    const r=await fetch(SB_U+'/rest/v1/team_matches_public?select=id,week,match_date,score_a,score_b,team_a_name,team_b_name,winner_name,vod_link&order=match_date.asc.nullslast',HU);
+    const raw=await r.json();
+    if(!Array.isArray(raw))return;
+    // Map the new view's flat columns into the legacy nested shape the render expects.
+    const matches=raw.map(m=>({id:m.id,week:m.week,match_date:m.match_date,
+      team1_score:m.score_a,team2_score:m.score_b,vod_url:m.vod_link,
+      team1:{team_name:m.team_a_name},team2:{team_name:m.team_b_name},
+      winner:m.winner_name?{team_name:m.winner_name}:null}));
+    scheduleData={};
+    matches.forEach(m=>{const w=m.week||0;if(!scheduleData[w])scheduleData[w]=[];scheduleData[w].push(m);});
+    scheduleLoaded=true;
+    goWeek(currentWeek);
+  }catch(e){document.getElementById('wk-panel').innerHTML='<div class="sched-loading">Error loading schedule</div>';}
+}
+
+// Legacy rows were 'YYYY-MM-DD HH:MM:SS' (needs a Z); the new project returns
+// full ISO with a timezone already — appending Z there would make an invalid date.
+function parseDateUTC(s){if(/[zZ]$|[+-]\d\d:?\d\d$/.test(s))return new Date(s);return new Date(s.replace(' ','T')+'Z');}
+function fmtDate(s){
+  const dt=parseDateUTC(s);
+  return{day:DAYS[dt.getUTCDay()],num:dt.getUTCDate(),mon:MONTHS[dt.getUTCMonth()],
+    time:dt.toLocaleString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/New_York',hour12:true}).replace(':00','').replace(' ','')};
+}
+function dateRange(matches){
+  if(!matches||!matches.length)return'';
+  const first=parseDateUTC(matches[0].match_date);
+  const last=parseDateUTC(matches[matches.length-1].match_date);
+  if(first.getUTCMonth()===last.getUTCMonth())return MONTHS[first.getUTCMonth()]+' '+first.getUTCDate()+'–'+last.getUTCDate();
+  return MONTHS[first.getUTCMonth()]+' '+first.getUTCDate()+' – '+MONTHS[last.getUTCMonth()]+' '+last.getUTCDate();
+}
+
+function renderMatch(m,isNext){
+  const d=fmtDate(m.match_date);
+  const t1=m.team1?.team_name||'?';const t2=m.team2?.team_name||'?';
+  const winner=m.winner?.team_name||'';const done=!!m.winner_id;
+  const t1w=winner===t1,t2w=winner===t2;
+  const right=done
+    ?`<div class="match-score">${m.team1_score??'?'}-${m.team2_score??'?'}</div>${m.vod_url?`<a href="${m.vod_url}" target="_blank" class="match-vod">VOD</a>`:''}`
+    :`<div class="match-time">${d.time}<br>EST</div>`;
+  const cls=done?'match-row completed':(isNext?'match-row next-up':'match-row');
+  return`<div class="${cls}">${isNext?'<div class="next-badge">NEXT</div>':''}
+    <div class="match-date"><div class="match-day">${d.day}</div><div class="match-date-num">${d.num}</div><div class="match-date-mon">${d.mon}</div></div>
+    <div class="match-divider"></div>
+    <div class="match-teams"><div class="match-team ${done?(t1w?'winner':'loser'):''}">${t1}</div><div class="match-vs">VS</div><div class="match-team ${done?(t2w?'winner':'loser'):''}">${t2}</div></div>
+    <div class="match-right">${right}</div>
+  </div>`;
+}
+
+function renderSpecialRow(label, dateStr, cls, colorClass){
+  const dt = new Date(dateStr);
+  const day = DAYS[dt.getUTCDay()];
+  const num = dt.getUTCDate();
+  const mon = MONTHS[dt.getUTCMonth()];
+  const cdId = 'scd-'+label.replace(/\s+/g,'');
+  return`<div class="special-row ${cls||''}">
+    <div class="match-date"><div class="match-day">${day}</div><div class="match-date-num">${num}</div><div class="match-date-mon">${mon}</div></div>
+    <div class="match-divider"></div>
+    <div class="special-name">${label}</div>
+    <div class="cd-mini ${colorClass||''}" id="${cdId}">--:--</div>
+  </div>`;
+}
+
+function goWeek(weekNum){
+  currentWeek=weekNum;
+  const panel=document.getElementById('wk-panel');
+  const label=document.getElementById('wk-label');
+  const datesEl=document.getElementById('wk-dates');
+  const thumb=document.getElementById('wk-thumb');
+  const fill=document.getElementById('wk-fill');
+  const sliderIdx=weekNum===0?7:weekNum-1;
+  const pct=(sliderIdx/7)*100;
+  if(thumb)thumb.style.left=pct+'%';
+  if(fill)fill.style.width=pct+'%';
+  document.querySelectorAll('.week-dot').forEach((d,i)=>d.classList.toggle('active',DOT_WEEKS[i]===weekNum));
+  if(weekNum===0)label.innerHTML='Playoffs';
+  else if(weekNum===5)label.innerHTML='Week <span>5</span> <span style="font-size:9px;color:var(--gold);font-family:\'Space Mono\',monospace;letter-spacing:1px">&middot; Media Day</span>';
+  else label.innerHTML='Week <span>'+weekNum+'</span>';
+  if(!scheduleLoaded){panel.innerHTML='<div class="sched-loading">Loading<span class="dot"></span><span class="dot"></span></div>';return;}
+
+  if(weekNum===0){
+    datesEl.textContent='May 8–16';
+    panel.innerHTML=
+      renderSpecialRow('Playoff Media Day 1','2026-05-08T21:00:00Z','','purple') +
+      renderSpecialRow('Playoff Media Day 2','2026-05-09T21:00:00Z','','purple') +
+      `<div class="match-row">
+        <div class="match-date"><div class="match-day">Thu</div><div class="match-date-num">14</div><div class="match-date-mon">May</div></div>
+        <div class="match-divider"></div>
+        <div class="match-teams">
+          <div class="match-team">Sheath Elite vs Champs</div>
+          <div class="match-vs">+</div>
+          <div class="match-team">jUnC vs MUDS</div>
+        </div>
+        <div class="match-right"><div class="cd-mini" id="scd-SF">--</div></div>
+      </div>` +
+      renderSpecialRow('Grand Final','2026-05-16T21:00:00Z','finals','');
+    tickSpecialCds();
+    return;
+  }
+
+  // UBA 13 week
+  if(weekNum===8){
+    datesEl.textContent='May 23';
+    panel.innerHTML=renderSpecialRow('UBA 13 — Title Night','2026-05-23T22:00:00Z','','gold')+
+      `<div style="padding:4px 10px;font-family:'Space Mono',monospace;font-size:6px;color:rgba(34,197,94,0.7);letter-spacing:1px;border-bottom:1px solid var(--border);">
+        <span onclick="window.parent.postMessage({type:'navigate',url:'https://www.ubaesports.com/event-details/uba-13-prize-fund'},'*')" style="cursor:pointer;border:1px solid rgba(34,197,94,0.4);padding:2px 6px;background:rgba(34,197,94,0.08);">💰 PRIZE FUND — TAP TO CONTRIBUTE</span>
+      </div>`;
+    tickSpecialCds();
+    return;
+  }
+
+  // Vail week
+  if(weekNum===9){
+    datesEl.textContent='May 29–30';
+    panel.innerHTML=
+      renderSpecialRow('Vail Tournament — Day 1','2026-05-29T21:00:00Z','','green')+
+      renderSpecialRow('Vail Tournament — Day 2','2026-05-30T21:00:00Z','finals','green');
+    tickSpecialCds();
+    return;
+  }
+
+  const wm=scheduleData[weekNum]||[];
+  if(!wm.length){panel.innerHTML='<div class="sched-loading">No matches</div>';datesEl.textContent='';return;}
+  datesEl.textContent=dateRange(wm);
+  const now=Date.now();
+  const nextMatch=wm.find(m=>!m.winner_id&&parseDateUTC(m.match_date).getTime()>now);
+  let html='';
+  if(weekNum===5)html+=`<div class="special-row"><div class="match-date"><div class="match-day">Wed</div><div class="match-date-num">15</div><div class="match-date-mon">Apr</div></div><div class="match-divider"></div><div class="special-name">Mid-Split Media Day</div></div>`;
+  wm.forEach(m=>{html+=renderMatch(m,!!(nextMatch&&m.id===nextMatch.id));});
+  panel.innerHTML=html;
+}
+
+function tickSpecialCds(){
+  const now=Date.now();
+  const map={
+    'scd-PlayoffMediaDay1':'2026-05-08T21:00:00Z',
+    'scd-PlayoffMediaDay2':'2026-05-09T21:00:00Z',
+    'scd-SF':'2026-05-14T21:00:00Z',
+    'scd-GrandFinal':'2026-05-16T21:00:00Z',
+    'scd-UBA13—TitleNight':'2026-05-23T22:00:00Z',
+    'scd-VailTournament—Day1':'2026-05-29T21:00:00Z',
+    'scd-VailTournament—Day2':'2026-05-30T21:00:00Z',
+  };
+  Object.entries(map).forEach(([id,dt])=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    const diff=new Date(dt)-now;
+    el.textContent=fmtCd(diff);
+  });
+}
+setInterval(tickSpecialCds,1000);
+tickSpecialCds();
+
+// slider drag
+let dragging=false;
+function weekFromPct(pct){pct=Math.max(0,Math.min(1,pct));return DOT_WEEKS[Math.round(pct*7)];}
+function pctFromEv(e,el){const r=el.getBoundingClientRect();return((e.touches?e.touches[0].clientX:e.clientX)-r.left)/r.width;}
+const trk=document.getElementById('wk-track');
+trk.addEventListener('mousedown',e=>{dragging=true;goWeek(weekFromPct(pctFromEv(e,trk)));});
+trk.addEventListener('touchstart',e=>{dragging=true;goWeek(weekFromPct(pctFromEv(e,trk)));},{passive:true});
+document.addEventListener('mousemove',e=>{if(dragging)goWeek(weekFromPct(pctFromEv(e,trk)));});
+document.addEventListener('touchmove',e=>{if(dragging)goWeek(weekFromPct(pctFromEv(e,trk)));},{passive:true});
+document.addEventListener('mouseup',()=>dragging=false);
+document.addEventListener('touchend',()=>dragging=false);
+
+// countdown main — league-agnostic: next upcoming thing across UBA events,
+// UBAe matches, and any hand-set SPECIAL_EVENTS. Earliest future wins.
+let nextEventTarget=null,tickInterval=null;
+async function loadNextEvent(){
+  try{
+    const now=Date.now();
+    const candidates=[];
+    SPECIAL_EVENTS.forEach(e=>{const t=new Date(e.date).getTime();if(t>now)candidates.push({t,label:e.label,tag:'Coming Up'});});
+    try{
+      const r1=await fetch(SB_U+'/rest/v1/events_public?select=name,event_date,status&status=eq.scheduled&order=event_date.asc&limit=5',HU);
+      const d1=await r1.json();
+      (Array.isArray(d1)?d1:[]).forEach(e=>{const t=new Date(e.event_date).getTime();if(t>now)candidates.push({t,label:e.name,tag:'UBA — Next Event'});});
+    }catch(e){}
+    try{
+      const r2=await fetch(SB_U+'/rest/v1/team_matches_public?select=match_date,week,team_a_name,team_b_name&winner_name=is.null&match_date=not.is.null&order=match_date.asc&limit=5',HU);
+      const d2=await r2.json();
+      (Array.isArray(d2)?d2:[]).forEach(m=>{const t=parseDateUTC(m.match_date).getTime();if(t>now)candidates.push({t,label:(m.team_a_name||'TBD')+' VS '+(m.team_b_name||'TBD'),tag:'UBAe — Week '+m.week});});
+    }catch(e){}
+    if(!candidates.length){
+      document.getElementById('next-label').textContent='Next Event';
+      document.getElementById('next-matchup').textContent='TBA — Stay Tuned';
+      document.getElementById('next-date').textContent='';
+      return;
+    }
+    candidates.sort((a,b)=>a.t-b.t);
+    const n=candidates[0];
+    nextEventTarget=new Date(n.t);
+    tickCountdown();
+    document.getElementById('next-label').textContent=n.tag;
+    document.getElementById('next-matchup').textContent=n.label;
+    document.getElementById('next-date').textContent=nextEventTarget.toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZone:'America/New_York'})+' EST';
+    if(!tickInterval)tickInterval=setInterval(tickCountdown,1000);
+  }catch(e){document.getElementById('next-matchup').textContent='Schedule Loading';}
+}
+function tickCountdown(){
+  if(!nextEventTarget)return;
+  const diff=nextEventTarget-new Date();
+  if(diff<=0){['n-d','n-h','n-m','n-s'].forEach(id=>document.getElementById(id).textContent='00');document.getElementById('next-label').textContent='LIVE NOW';return;}
+  document.getElementById('n-d').textContent=pad(Math.floor(diff/86400000));
+  document.getElementById('n-h').textContent=pad(Math.floor((diff%86400000)/3600000));
+  document.getElementById('n-m').textContent=pad(Math.floor((diff%3600000)/60000));
+  document.getElementById('n-s').textContent=pad(Math.floor((diff%60000)/1000));
+}
+loadNextEvent().then(()=>{if(!tickInterval)tickInterval=setInterval(tickCountdown,1000);});
+setInterval(loadNextEvent,300000);
+
+// transfers
+async function loadTransfers(){
+  const el=document.getElementById('tr-rows');
+  try{
+    const r=await fetch(SB_U+'/rest/v1/roster_moves_public?select=fighter_name,team_name,status,moved_at&order=moved_at.desc&limit=3',HU);
+    const raw=await r.json();
+    if(!Array.isArray(raw)||!raw.length){el.innerHTML='<div class="tr-empty">None yet</div>';return;}
+    // Roster history rows -> the from/to shape this widget renders: a released
+    // row is team -> FREE; an active row is FREE -> team.
+    const d=raw.map(m=>({fighter_name:m.fighter_name,role:'player',
+      from_team_name:m.status==='released'?m.team_name:null,
+      to_team_name:m.status==='released'?null:m.team_name}));
+    function abbr(n){if(!n)return null;const map={'team muds':'MUDS','muds':'MUDS','the 5 great kage':'KAGE','sheath elite':'SHTH','team rag tags':'RAGS','champions united':'CHMP','ring reapers':'REAP','ukfc uncs':'UNCS','junc':'jUnC'};const k=n.trim().toLowerCase();if(map[k])return map[k];const w=n.trim().split(/\s+/);return w[w.length-1].slice(0,4).toUpperCase();}
+    el.innerHTML=d.map(t=>{const role=t.role||'player';const from=abbr(t.from_team_name);const to=abbr(t.to_team_name);return`<div class="tr-row"><div class="tr-name">${t.fighter_name}</div><span class="tr-badge ${role}">${role.toUpperCase()}</span><div class="tr-move"><div class="tr-pill ${from?'team':'free'}">${from||'FREE'}</div><div class="tr-arr"><div class="tr-shaft"></div><div class="tr-head"></div></div><div class="tr-pill ${to?'team':'free'}">${to||'FREE'}</div></div></div>`;}).join('');
+  }catch(e){el.innerHTML='<div class="tr-empty">Error</div>';}
+}
+
+// recent results
+async function loadRecentResults(){
+  const el=document.getElementById('bc-box');
+  try{
+    const r=await fetch(SB_U+'/rest/v1/team_matches_public?select=week,match_date,score_a,score_b,team_a_name,team_b_name,winner_name&winner_name=not.is.null&order=match_date.desc.nullslast&limit=3',HU);
+    const raw=await r.json();
+    const d=(Array.isArray(raw)?raw:[]).map(m=>({week:m.week,match_date:m.match_date,
+      team1_score:m.score_a,team2_score:m.score_b,
+      team1:{team_name:m.team_a_name},team2:{team_name:m.team_b_name},
+      winner:{team_name:m.winner_name}}));
+    const hdr='<div class="bc-header">// Recent Results</div>';
+    if(!Array.isArray(d)||!d.length){el.innerHTML=hdr+'<div class="bc-empty">No results yet</div>';return;}
+    el.innerHTML=hdr+d.map(m=>{
+      const t1=m.team1?.team_name||'?',t2=m.team2?.team_name||'?',w=m.winner?.team_name||'';
+      const t1w=w===t1,t2w=w===t2;const score=(m.team1_score??'—')+'-'+(m.team2_score??'—');
+      const dt=m.match_date?new Date(m.match_date).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+      return`<div class="bc-match"><div class="bc-teams-row"><span class="bc-team ${t1w?'winner':t2w?'loser':''}">${t1}</span><span class="bc-score">${score}</span><span class="bc-team t2 ${t2w?'winner':t1w?'loser':''}">${t2}</span></div><div class="bc-meta">WK${m.week} · ${dt}</div></div>`;
+    }).join('');
+  }catch(e){el.innerHTML='<div class="bc-header">// Recent Results</div><div class="bc-empty">Error</div>';}
+}
+
+// rankings
+function switchTab(tab){
+  document.querySelectorAll('.s-tab').forEach((t,i)=>t.classList.toggle('active',(tab==='fighters'&&i===0)||(tab==='teams'&&i===1)||(tab==='bracket'&&i===2)));
+  document.getElementById('s-teams').classList.toggle('active',tab==='teams');
+  document.getElementById('s-fighters').classList.toggle('active',tab==='fighters');
+  document.getElementById('s-bracket').classList.toggle('active',tab==='bracket');
+}
+function makeRows(items,nk,wk,lk,cut){
+  if(!items.length)return'<div class="s-loading" style="color:#3a3a55">No data yet</div>';
+  return items.map((r,i)=>`<div class="s-row ${i===cut?'cut':''}"><div class="s-num ${i<cut?'hi':''}">${i+1}</div><div class="s-name">${r[nk]}</div><div class="s-wl"><span>${r[wk]??0}</span><span style="color:var(--muted)">-</span><span class="s-wl-l">${r[lk]??0}</span></div></div>`).join('');
+}
+async function loadTeams(){
+  const el=document.getElementById('s-teams');
+  try{const r=await fetch(SB_U+'/rest/v1/team_standings?select=team_name,match_wins,match_losses&order=match_wins.desc,bout_diff.desc&limit=8',HU);el.innerHTML=makeRows(await r.json(),'team_name','match_wins','match_losses',4);}
+  catch(e){el.innerHTML='<div class="s-loading" style="color:#3a3a55">Could not load</div>';}
+}
+// Fighters tab — reads the NEW UBA project, pure pound-for-pound order with
+// REAL P4P numbers (gaps = unregistered spots). Champs get a gold C. Unranked
+// fill the bottom by record.
+async function loadFighters(){
+  const el=document.getElementById('s-fighters');
+  try{
+    const r=await fetch(SB_U+'/rest/v1/fighter_cards?select=display_name,wins,losses,rank,is_champion&order=rank.asc.nullslast,wins.desc&limit=8',HU);
+    let data=await r.json();
+    if(!Array.isArray(data)||!data.length){el.innerHTML='<div class="s-loading" style="color:#3a3a55">No fighters</div>';return;}
+    el.innerHTML=data.map(f=>{
+      const num=f.rank?('#'+f.rank):'–';
+      const hi=f.rank&&f.rank<=8;
+      const champ=f.is_champion?' <span style="color:var(--gold);text-shadow:var(--glow-gold);font-size:9px;font-family:\'Space Mono\',monospace;">C</span>':'';
+      const rowStyle=f.is_champion?' style="background:rgba(245,200,66,0.05);border-left:2px solid rgba(245,200,66,0.45);"':'';
+      const nameStyle=f.is_champion?' style="color:var(--gold);"':'';
+      return `<div class="s-row"${rowStyle}><div class="s-num ${hi?'hi':''}">${num}</div><div class="s-name"${nameStyle}>${f.display_name}${champ}</div><div class="s-wl"><span>${f.wins??0}</span><span style="color:var(--muted)">-</span><span class="s-wl-l">${f.losses??0}</span></div></div>`;
+    }).join('');
+  }catch(e){el.innerHTML='<div class="s-loading" style="color:#3a3a55">Load failed</div>';}
+}
+
+// ambient flowers
+(function(){
+  var cv=document.getElementById('flwcv'),cx=cv.getContext('2d'),W,H,T=0,flowers=[];
+  function resize(){W=window.innerWidth;H=window.innerHeight;cv.setAttribute('width',W);cv.setAttribute('height',H);cv.style.width=W+'px';cv.style.height=H+'px';}
+  function rnd(a,b){return a+Math.random()*(b-a);}
+  function pickHue(){var r=Math.random();return r<0.35?rnd(248,268):r<0.65?rnd(262,285):r<0.85?rnd(280,300):rnd(255,275);}
+  function mkPos(){var c=Math.floor(Math.random()*4),d=Math.pow(Math.random(),1.8)*0.32,j=rnd(-0.55,0.55);var ba=[Math.PI*0.25,Math.PI*0.75,-Math.PI*0.25,-Math.PI*0.75][c],a=ba+j;var cx2=[0.01,0.99,0.01,0.99][c],cy2=[0.01,0.01,0.99,0.99][c];return{xf:Math.max(0.01,Math.min(0.99,cx2+Math.cos(a)*d)),yf:Math.max(0.01,Math.min(0.99,cy2+Math.sin(a)*d))};}
+  function mkFlower(){var p=mkPos();var ds=[Math.sqrt(p.xf*p.xf+p.yf*p.yf),Math.sqrt((1-p.xf)*(1-p.xf)+p.yf*p.yf),Math.sqrt(p.xf*p.xf+(1-p.yf)*(1-p.yf)),Math.sqrt((1-p.xf)*(1-p.xf)+(1-p.yf)*(1-p.yf))];var sf=Math.pow(1-Math.min(Math.min(...ds)/0.35,1),1.2);return{xf:p.xf,yf:p.yf,r:5+sf*11,hue:pickHue(),ph:rnd(0,Math.PI*2),spin:(Math.random()<.5?1:-1)*rnd(0.001,0.003),spinSpd:0,st:0,lf:0,spd:rnd(0.0012,0.0022),pd:Math.floor(rnd(2000,4500)),pt:0,delay:Math.floor(rnd(0,80)),seed:Math.random()*100};}
+  function tooClose(xf,yf){for(var k=0;k<flowers.length;k++){var dx=(flowers[k].xf-xf)*W,dy=(flowers[k].yf-yf)*H;if(Math.sqrt(dx*dx+dy*dy)<55)return true;}return false;}
+  function fill(){var need=Math.min(14,Math.max(8,Math.floor(W*H/40000)));var tries=0;while(flowers.length<need&&tries<200){tries++;var f=mkFlower();if(tooClose(f.xf,f.yf))continue;flowers.push(f);}}
+  function df(x,y,r,h,a,ph,fad){if(a<0.005)return;cx.save();if(fad&&a>0.05){for(var p=0;p<5;p++){var ang=(p/5)*Math.PI*2+ph;cx.beginPath();cx.arc(x+Math.cos(ang)*r*0.80+r*0.05,y+Math.sin(ang)*r*0.80,r*0.28,0,Math.PI*2);cx.fillStyle='hsla('+((h+40)%360)+',100%,78%,'+(a*0.14)+')';cx.fill();}}for(var p=0;p<5;p++){var ang=(p/5)*Math.PI*2+ph,px=x+Math.cos(ang)*r*0.80,py=y+Math.sin(ang)*r*0.80,h2=(h+p*6)%360,pr=r*0.34;cx.beginPath();cx.arc(px,py,pr*2.4,0,Math.PI*2);cx.fillStyle='hsla('+h2+',100%,65%,'+(a*0.10)+')';cx.fill();cx.beginPath();cx.arc(px,py,pr*1.5,0,Math.PI*2);cx.fillStyle='hsla('+h2+',100%,74%,'+(a*0.25)+')';cx.fill();cx.beginPath();cx.arc(px,py,pr,0,Math.PI*2);cx.fillStyle='hsla('+h2+',100%,80%,'+(a*0.48)+')';cx.fill();}cx.beginPath();cx.arc(x,y,r*0.38,0,Math.PI*2);cx.fillStyle='hsla('+((h+160)%360)+',80%,80%,'+(a*0.42)+')';cx.fill();if(a>0.10){cx.beginPath();cx.arc(x,y,r*0.15,0,Math.PI*2);cx.fillStyle='hsla('+h+',70%,92%,'+((a-0.10)/0.90)+')';cx.fill();}cx.restore();}
+  function tick(f){var ts=f.st===0?Math.abs(f.spin)*0.15:f.st===1?Math.abs(f.spin):Math.abs(f.spin)*1.5;f.spinSpd+=(ts-f.spinSpd)*0.018;f.ph+=f.spinSpd*(f.spin<0?-1:1);var lh=185+((((f.st===2?(f.hue+T*2.5)%360:f.hue)-185)+360)%360)%120,a=0;if(f.st===0){if(f.delay>0){f.delay--;return;}f.lf+=f.spd*0.35;a=Math.pow(f.lf,1.8)*0.52;if(f.lf>=1){f.st=1;f.pt=0;}}else if(f.st===1){a=0.35+0.06*Math.sin(T*0.028+f.seed*1.3);f.pt++;if(f.pt>=f.pd)f.st=2;}else{f.lf-=f.spd*1.5;a=Math.pow(Math.max(0,f.lf),1.0)*0.50*(0.88+0.12*Math.sin(T*0.16+f.seed*2.1))*(1+0.08*Math.sin(T*0.10+f.seed*0.8));if(f.lf<=0){var nf,att=0;do{nf=mkFlower();att++;}while(tooClose(nf.xf,nf.yf)&&att<20);Object.assign(f,nf,{spinSpd:0,st:0,lf:0,pt:0,delay:Math.floor(rnd(500,1400))});return;}}if(a>0.005)df(f.xf*W,f.yf*H,f.r,lh,a,f.ph,f.st===2);}
+  function frame(){T++;cx.clearRect(0,0,W,H);flowers.forEach(tick);requestAnimationFrame(frame);}
+  setTimeout(function(){resize();fill();frame();},50);
+  window.addEventListener('resize',function(){resize();flowers=[];fill();});
+})();
+
+// latest vod — prefers the newest UBA fight VOD, falls back to legacy UBAe,
+// then the channel. Also powers the tap-to-play embed (thumbnail only until
+// tapped, so the page stays fast on mobile).
+// Hand-picked featured video. Leave the URL in to pin it; set to '' to resume
+// auto-picking the newest VOD from the databases.
+var FEATURED_VOD='https://www.youtube.com/live/PsNLe-NNqk0?t=8975';
+(async function(){
+  var url='https://www.youtube.com/@UBAesports';
+  if(FEATURED_VOD){url=FEATURED_VOD;}
+  else try{
+    var d1=[];
+    try{var r1=await fetch(SB_U+'/rest/v1/fighter_matches?select=vod_link,event_date&vod_link=not.is.null&order=event_date.desc&limit=1',HU);d1=await r1.json();}catch(e){}
+    if(Array.isArray(d1)&&d1.length&&d1[0].vod_link){url=d1[0].vod_link;}
+    else{
+      var r2=await fetch(SB_U+'/rest/v1/team_matches_public?select=vod_link&vod_link=not.is.null&order=match_date.desc.nullslast&limit=1',HU);
+      var d2=await r2.json();
+      if(Array.isArray(d2)&&d2.length&&d2[0].vod_link)url=d2[0].vod_link;
+    }
+  }catch(e){}
+  var vt=document.getElementById('vod-tag'); if(vt)vt.href=url;
+  var m=url.match(/(?:youtube\.com\/(?:watch\?v=|live\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
+  if(m){
+    var id=m[1],box=document.getElementById('vod-embed'),th=document.getElementById('vod-thumb');
+    document.getElementById('vod-section-head').style.display='flex';
+    box.style.display='block';
+    th.style.backgroundImage='url(https://i.ytimg.com/vi/'+id+'/hqdefault.jpg)';
+    var ts=url.match(/[?&]t=(\d+)/);
+    th.addEventListener('click',function(){
+      box.innerHTML='<div style="position:relative;padding-top:56.25%;"><iframe src="https://www.youtube.com/embed/'+id+'?autoplay=1&playsinline=1'+(ts?'&start='+ts[1]:'')+'" style="position:absolute;inset:0;width:100%;height:100%;border:0;" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>';
+    });
+  }
+})();
+
+// VGA feed ticker
+(function(){
+  var msgs=[],idx=0,timer=null;
+  function setMsg(m){var fn=document.getElementById('feed-name'),fs=document.getElementById('feed-sep'),fm=document.getElementById('feed-msg');fm.style.animation='none';fm.style.removeProperty('--scroll-dist');fn.textContent=m.fighter_name||'';fs.textContent=m.fighter_name?'//':'';fm.textContent=m.message||'';requestAnimationFrame(function(){requestAnimationFrame(function(){var cw=document.getElementById('feed-content').offsetWidth-20;var tw=fm.scrollWidth;if(tw>cw+4){var dur=((tw+cw)/45).toFixed(1);fm.style.setProperty('--scroll-dist',-(tw+16)+'px');fm.style.animation='feed-scroll '+dur+'s linear 1s infinite';}});});}
+  function next(){idx=(idx+1)%msgs.length;setMsg(msgs[idx]);}
+  async function loadFeed(){try{var r=await fetch(SB+'/rest/v1/fighter_messages?select=*&active=eq.true&order=created_at.desc&limit=8',H);var d=await r.json();if(!Array.isArray(d)||!d.length){document.getElementById('feed-msg').textContent='No messages yet';return;}msgs=d;idx=0;setMsg(msgs[0]);if(msgs.length>1){if(timer)clearInterval(timer);timer=setInterval(next,7000);}}catch(e){document.getElementById('feed-msg').textContent='—';}}
+  loadFeed();
+})();
+
+// init
+loadSchedule();
+loadTeams();
+loadFighters();
+loadTransfers();
+loadRecentResults();
+</script>
+
+<script>
+(function(){
+  var mob = window.matchMedia('(max-width: 767px)').matches;
+  document.getElementById(mob ? 'vga-desktop' : 'vga-mobile').remove();   // keep one subtree
+  var st = document.createElement('style');                               // inject matching CSS
+  st.textContent = document.getElementById(mob ? 'css-m' : 'css-d').textContent;
+  document.head.appendChild(st);
+  var sc = document.createElement('script');                              // run matching JS (global)
+  sc.textContent = document.getElementById(mob ? 'js-m' : 'js-d').textContent;
+  document.body.appendChild(sc);
 })();
 </script>
 </body>

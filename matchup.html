@@ -24,6 +24,11 @@
   body { background:#070510; color:var(--text); font-family:'Barlow Condensed',sans-serif; min-height:100vh; }
   body::after { content:''; position:fixed; inset:0; pointer-events:none; z-index:99;
     background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.12) 2px,rgba(0,0,0,0.12) 4px); }
+  /* CRT vignette + flicker — matches the mobile home's screen effect */
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:50;
+    background:radial-gradient(ellipse 82% 92% at 50% 50%,transparent 52%,rgba(0,0,0,.55) 100%);}
+  body{animation:crt-flicker 10s infinite;}
+  @keyframes crt-flicker{0%,89%,100%{opacity:1}90%{opacity:.98}91%{opacity:1}92%{opacity:.97}93%{opacity:1}}
   .wrap { max-width:860px; margin:0 auto; padding:22px 14px 60px; }
   .crumb { font-family:'Space Mono',monospace; font-size:10px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; margin-bottom:14px; }
   .crumb b { color:var(--pl); }
