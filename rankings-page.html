@@ -5,96 +5,141 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rankings — VGA Esports</title>
 <!-- ═══════════════════════════════════════════════════════════════════════
-     THE RANKINGS PAGE — ONE responsive CRT file (website-plan.md step 5).
-     Two leagues, one page: UBA (P4P + the 4 divisions + champions) and UBAe
-     (team standings by conference, each team clicking through to its page).
-     "Rankings" finally means rankings; the fighter DATABASE is /fighters.
-     Reads only public views. Renders zeros cleanly pre-season.
+     THE RANKINGS PAGE — champion banners + UFC-style division rankings.
+       ① 6 vertical champion banners (4 divisions + BMF + UBAe team champ)
+       ② P4P top 10
+       ③ Divisions as clean editorial lists (HW → LHW → MW → LW)
+     Full CRT treatment: scanlines, vignette, flicker, phosphor headers.
+
+     HAND-SET (search "EDIT ME"): BMF holder + UBAe team champion — neither is
+     tracked in this database (no title records; S1 lives in the legacy project).
+     Portraits are branded placeholders — no fighter has a photo_url yet, so when
+     photos land, drop the URL into the portrait and the layout is unchanged.
      ══════════════════════════════════════════════════════════════════════ -->
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --p:#7B2FFF; --pl:#A855F7; --pc:#C084FC;
     --pg:rgba(123,47,255,.18); --pb:rgba(123,47,255,.35);
-    --gold:#F5C842; --bg:#06060A; --surf:#0B0B12; --border:#181824;
-    --text:#DDD8F0; --muted:#4A4A68; --dim:#131320;
+    --gold:#F5C842; --goldd:#8a6a12; --bg:#06060A; --surf:#0B0B12; --border:#181824;
+    --text:#EDEAF7; --muted:#5A5876; --dim:#131320;
     --glow:0 0 8px rgba(123,47,255,.7),0 0 20px rgba(123,47,255,.3);
-    --glow-gold:0 0 10px rgba(245,200,66,.6),0 0 25px rgba(245,200,66,.2);
+    --glow-gold:0 0 10px rgba(245,200,66,.6),0 0 26px rgba(245,200,66,.22);
   }
   *{margin:0;padding:0;box-sizing:border-box;}
-  body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-serif;overflow-x:hidden;}
-  body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:99;
-    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.12) 2px,rgba(0,0,0,.12) 4px);}
-  /* CRT vignette + flicker — matches the mobile home's screen effect */
-  body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:50;
-    background:radial-gradient(ellipse 82% 92% at 50% 50%,transparent 52%,rgba(0,0,0,.55) 100%);}
-  body{animation:crt-flicker 10s infinite;}
-  @keyframes crt-flicker{0%,89%,100%{opacity:1}90%{opacity:.98}91%{opacity:1}92%{opacity:.97}93%{opacity:1}}
+  body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-serif;overflow-x:hidden;
+    animation:crt-flicker 10s infinite;}
   a{color:inherit;text-decoration:none;}
-  .wrap{max-width:1180px;margin:0 auto;padding:16px 12px 50px;}
+  /* CRT: scanlines + vignette + flicker */
+  body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:99;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.13) 2px,rgba(0,0,0,.13) 4px);}
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:50;
+    background:radial-gradient(ellipse 82% 92% at 50% 50%,transparent 50%,rgba(0,0,0,.6) 100%);}
+  @keyframes crt-flicker{0%,89%,100%{opacity:1}90%{opacity:.98}91%{opacity:1}92%{opacity:.97}93%{opacity:1}}
+  @keyframes chroma{0%,80%,100%{text-shadow:none}82%{text-shadow:-1px 0 rgba(255,30,100,.5),1px 0 rgba(0,200,255,.5)}84%{text-shadow:none}}
 
-  .head{text-align:center;padding:6px 0 14px;}
-  .head h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(30px,6vw,46px);letter-spacing:2px;text-shadow:var(--glow);}
-  .head .s{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2.5px;color:var(--muted);}
+  .wrap{max-width:1240px;margin:0 auto;padding:18px 14px 60px;}
 
-  .switch{display:flex;gap:6px;justify-content:center;margin-bottom:16px;}
-  .sw{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;padding:7px 18px;border-radius:4px;
-    border:1px solid var(--border);color:var(--muted);cursor:pointer;}
+  /* header */
+  .head{text-align:center;padding:4px 0 16px;}
+  .head h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,7vw,58px);letter-spacing:3px;
+    text-shadow:0 0 12px rgba(192,132,252,.9),0 0 34px rgba(123,47,255,.5);}
+  .head .s{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);}
+  .switch{display:flex;gap:6px;justify-content:center;margin:14px 0 4px;}
+  .sw{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;padding:7px 20px;border-radius:4px;
+    border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .18s;}
   .sw.on{border-color:var(--pb);color:var(--pc);background:var(--pg);box-shadow:var(--glow);}
 
-  .cols{display:grid;gap:12px;grid-template-columns:1fr;}
-  @media(min-width:760px){ .cols{grid-template-columns:1fr 1fr;} .cols.four{grid-template-columns:repeat(4,1fr);} }
-  .card{border:1px solid var(--border);border-radius:8px;background:var(--surf);overflow:hidden;}
-  .card.hero{border-color:var(--pb);background:radial-gradient(ellipse 90% 130% at 50% 0%,var(--pg),transparent 70%),var(--surf);}
-  .ch{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2.5px;color:var(--pl);text-transform:uppercase;
-    padding:9px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;}
-  .ch .r{color:var(--muted);letter-spacing:1px;}
-  .cb{padding:6px 12px 10px;}
+  /* section titles */
+  .sect{display:flex;align-items:center;gap:10px;margin:26px 0 12px;}
+  .sect h2{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--text);white-space:nowrap;}
+  .sect .tag{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2.5px;color:var(--pl);
+    animation:chroma 15s 3s infinite;}
+  .sect .line{flex:1;height:1px;background:linear-gradient(90deg,var(--pb),transparent);}
 
-  .row{display:flex;align-items:center;gap:9px;padding:6px 0;border-top:1px solid var(--border);}
-  .row:first-child{border-top:none;}
-  .row:hover{background:var(--dim);}
-  .row .i{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);width:22px;text-align:right;}
-  .row .i.hi{color:var(--pc);}
-  .row .n{flex:1;min-width:0;font-weight:600;font-size:15px;letter-spacing:.3px;
+  /* ── ① CHAMPION BANNERS ── */
+  .belts{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  @media(min-width:640px){ .belts{grid-template-columns:repeat(3,1fr);} }
+  @media(min-width:1000px){ .belts{grid-template-columns:repeat(6,1fr);} }
+  .belt{position:relative;display:flex;flex-direction:column;border:1px solid rgba(245,200,66,.34);
+    border-radius:9px;overflow:hidden;background:var(--surf);transition:transform .2s,box-shadow .2s,border-color .2s;}
+  .belt:hover{transform:translateY(-4px);border-color:var(--gold);
+    box-shadow:0 0 20px rgba(245,200,66,.32),0 10px 30px rgba(0,0,0,.6);}
+  .belt .lbl{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:1.6px;color:var(--gold);
+    text-align:center;padding:7px 4px 6px;border-bottom:1px solid rgba(245,200,66,.22);
+    background:linear-gradient(180deg,rgba(245,200,66,.14),transparent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  /* portrait — branded placeholder until real photos exist */
+  .por{position:relative;aspect-ratio:3/4;display:flex;align-items:center;justify-content:center;overflow:hidden;
+    background:radial-gradient(ellipse 100% 80% at 50% 15%,rgba(123,47,255,.42),transparent 62%),
+               linear-gradient(180deg,rgba(123,47,255,.20),rgba(245,200,66,.10) 70%,transparent),var(--bg);}
+  .por img{width:100%;height:100%;object-fit:cover;}
+  .por .ini{font-family:'Bebas Neue',sans-serif;font-size:clamp(40px,7vw,64px);letter-spacing:1px;
+    color:rgba(255,255,255,.16);text-shadow:0 0 26px rgba(192,132,252,.5);line-height:1;}
+  .por::after{content:'';position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.18) 2px,rgba(0,0,0,.18) 4px);}
+  .por .crown{position:absolute;top:7px;right:8px;font-size:12px;color:var(--gold);text-shadow:var(--glow-gold);}
+  .belt .nm{font-family:'Bebas Neue',sans-serif;font-size:clamp(15px,1.5vw,19px);letter-spacing:.8px;
+    color:var(--gold);text-shadow:var(--glow-gold);text-align:center;padding:8px 6px 2px;line-height:1.05;}
+  .belt .rec{font-family:'Space Mono',monospace;font-size:8.5px;color:var(--muted);text-align:center;padding:0 6px 9px;}
+
+  /* ── ② P4P ── */
+  .p4pgrid{display:grid;grid-template-columns:1fr;gap:0 26px;}
+  @media(min-width:720px){ .p4pgrid{grid-template-columns:1fr 1fr;} }
+
+  /* ── ③ DIVISIONS (UFC-style lists, no boxes) ── */
+  .divs{display:grid;grid-template-columns:1fr;gap:10px 34px;}
+  @media(min-width:900px){ .divs{grid-template-columns:1fr 1fr;} }
+  .div h3{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:2.5px;color:var(--pc);
+    text-shadow:var(--glow);padding-bottom:6px;border-bottom:1px solid var(--pb);margin-bottom:2px;}
+
+  /* rows — minimal, editorial */
+  .row{display:flex;align-items:center;gap:12px;padding:9px 4px;border-bottom:1px solid rgba(24,24,36,.9);
+    transition:background .15s,padding-left .15s;}
+  .row:hover{background:var(--dim);padding-left:9px;}
+  .row .i{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);width:26px;flex-shrink:0;}
+  .row .n{flex:1;min-width:0;font-weight:600;font-size:16.5px;letter-spacing:.3px;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .row .v{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);}
-  .row .v b{color:var(--text);font-weight:400;}
-  .row.c .n{color:var(--gold);text-shadow:var(--glow-gold);}
-  .belt{font-family:'Space Mono',monospace;font-size:8px;color:var(--gold);border:1px solid rgba(245,200,66,.4);
-    border-radius:2px;padding:1px 4px;}
-  .conf{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:2.5px;color:var(--pl);padding:9px 0 3px;}
+  .row .v{font-family:'Space Mono',monospace;font-size:10.5px;color:var(--muted);flex-shrink:0;}
+  /* champion feature row inside a division */
+  .row.champ{border-bottom:1px solid rgba(245,200,66,.3);padding:11px 4px;
+    background:linear-gradient(90deg,rgba(245,200,66,.09),transparent 70%);}
+  .row.champ .n{color:var(--gold);text-shadow:var(--glow-gold);font-size:19px;font-weight:700;}
+  .row.champ .i{color:var(--gold);}
+  .row.champ .tagc{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:1.5px;color:var(--gold);
+    border:1px solid rgba(245,200,66,.4);border-radius:2px;padding:2px 5px;}
+
   .none{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px;padding:16px 0;text-align:center;}
-  .asof{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:1px;text-align:center;margin-top:14px;}
+  .conf{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:2.5px;color:var(--pl);padding:12px 0 4px;}
   .hidden{display:none;}
+  .asof{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:1px;text-align:center;margin-top:22px;}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="head"><h1 id="title">RANKINGS</h1><div class="s" id="sub">—</div></div>
+  <div class="head">
+    <h1 id="title">RANKINGS</h1>
+    <div class="s" id="sub">UNIFIED BOXING ASSOCIATION</div>
+  </div>
   <div class="switch">
     <div class="sw on" data-v="uba">UBA</div>
     <div class="sw" data-v="ubae">UBAe</div>
   </div>
 
   <div id="uba">
-    <div class="cols" style="margin-bottom:12px;">
-      <div class="card hero">
-        <div class="ch"><span>Pound for Pound</span><span class="r">TOP 10</span></div>
-        <div class="cb" id="p4p"><div class="none">LOADING</div></div>
-      </div>
-      <div class="card hero">
-        <div class="ch"><span>Champions</span><span class="r">CURRENT</span></div>
-        <div class="cb" id="champs"><div class="none">LOADING</div></div>
-      </div>
-    </div>
-    <div class="cols four" id="divs"></div>
+    <div class="sect"><h2>CHAMPIONS</h2><span class="tag">// TITLE HOLDERS</span><div class="line"></div></div>
+    <div class="belts" id="belts"><div class="none">LOADING</div></div>
+
+    <div class="sect"><h2>POUND FOR POUND</h2><span class="tag">// TOP 10</span><div class="line"></div></div>
+    <div class="p4pgrid" id="p4p"><div class="none">LOADING</div></div>
+
+    <div class="sect"><h2>DIVISIONS</h2><span class="tag">// BY WEIGHT CLASS</span><div class="line"></div></div>
+    <div class="divs" id="divs"><div class="none">LOADING</div></div>
     <div class="asof" id="asof"></div>
   </div>
 
   <div id="ubae" class="hidden">
-    <div class="cols" id="standings"><div class="none">LOADING</div></div>
-    <div class="asof"></div>
+    <div class="sect"><h2>TEAM STANDINGS</h2><span class="tag">// UBAe</span><div class="line"></div></div>
+    <div class="divs" id="standings"><div class="none">LOADING</div></div>
   </div>
 </div>
 
@@ -107,7 +152,13 @@ const get=async p=>{try{const r=await fetch(SB+'/rest/v1/'+p,H);return r.ok?awai
 const el=i=>document.getElementById(i);
 const FP=s=>'https://www.ubaesports.com/fighter?f='+encodeURIComponent(s);
 const TP=s=>'https://www.ubaesports.com/teams?team='+encodeURIComponent(s);
-const WC={heavyweight:'HEAVYWEIGHT',light_heavyweight:'LIGHT HEAVYWEIGHT',middleweight:'MIDDLEWEIGHT',lightweight:'LIGHTWEIGHT'};
+const WCN={heavyweight:'HEAVYWEIGHT',light_heavyweight:'LIGHT HEAVYWEIGHT',middleweight:'MIDDLEWEIGHT',lightweight:'LIGHTWEIGHT'};
+const ORDER=['heavyweight','light_heavyweight','middleweight','lightweight'];   // heaviest → lightest
+const rec=c=>c?`${c.wins}-${c.losses}${c.draws?'-'+c.draws:''}`:'';
+
+/* ══ EDIT ME — not tracked in the DB, set by hand ══ */
+const BMF_SLUG='adonnis';                                   // current BMF holder
+const TEAM_CHAMP={name:'Team MUDS',slug:'team-muds',sub:'SEASON 1'};
 
 /* switch */
 document.querySelectorAll('.sw').forEach(s=>s.addEventListener('click',()=>{
@@ -118,47 +169,65 @@ document.querySelectorAll('.sw').forEach(s=>s.addEventListener('click',()=>{
   el('sub').textContent=v==='uba'?'UNIFIED BOXING ASSOCIATION':'UBAe — TEAM LEAGUE';
 }));
 
-/* ── UBA: P4P · champions · the 4 divisions ── */
+/* portrait: real photo when one exists, else a branded initial panel */
+const portrait=(name,photo)=>`<div class="por">${photo?`<img src="${esc(photo)}" alt="">`
+  :`<span class="ini">${esc((name||'?').trim().charAt(0).toUpperCase())}</span>`}<span class="crown">★</span></div>`;
+
+/* ── ① champion banners + ② P4P + ③ divisions ── */
 (async()=>{
-  // rankings_public: scope 'overall' = P4P (weight_class null); the rest are per-division.
   const [ranks,cards]=await Promise.all([
-    get('rankings_public?select=weight_class,rank,fighter_name,fighter_slug,level,as_of_date,scope&league=eq.UBA&order=rank.asc'),
-    get('fighter_cards?select=display_name,slug,weight_class,wins,losses,draws,is_champion'),
+    get('rankings_public?select=weight_class,rank,fighter_name,fighter_slug,as_of_date&league=eq.UBA&order=rank.asc'),
+    get('fighter_cards?select=display_name,slug,weight_class,wins,losses,draws,is_champion,profile_photo_url'),
   ]);
-  const rec={}; cards.forEach(c=>rec[c.slug]=c);
-  const R=s=>{const c=rec[s];return c?`${c.wins}-${c.losses}${c.draws?'-'+c.draws:''}`:'';};
-  el('sub').textContent='UNIFIED BOXING ASSOCIATION';
+  const byslug={}; cards.forEach(c=>byslug[c.slug]=c);
+  const champOf=wc=>cards.find(c=>c.is_champion&&c.weight_class===wc);
   if(ranks.length&&ranks[0].as_of_date) el('asof').textContent='AS OF '+String(ranks[0].as_of_date).toUpperCase();
 
-  const line=(r,i,cls='')=>`<a class="row ${cls}" href="${FP(r.fighter_slug)}" target="_parent">
-      <span class="i hi">#${r.rank??i+1}</span><span class="n">${esc(r.fighter_name)}</span>
-      <span class="v"><b>${R(r.fighter_slug)}</b></span></a>`;
+  /* ① banners: 4 divisions + BMF + UBAe team champ */
+  const banners=ORDER.map(wc=>{
+    const c=champOf(wc);
+    return c?{label:WCN[wc],name:c.display_name,sub:rec(c),href:FP(c.slug),photo:c.profile_photo_url}
+            :{label:WCN[wc],name:'VACANT',sub:'—',href:'#',photo:null};
+  });
+  const bmf=byslug[BMF_SLUG];
+  banners.push({label:'BMF',name:bmf?bmf.display_name:'—',sub:bmf?rec(bmf):'—',
+    href:bmf?FP(bmf.slug):'#',photo:bmf?bmf.profile_photo_url:null});
+  banners.push({label:'UBAe TEAM',name:TEAM_CHAMP.name,sub:TEAM_CHAMP.sub,href:TP(TEAM_CHAMP.slug),photo:null});
 
+  el('belts').innerHTML=banners.map(b=>
+    `<a class="belt" href="${b.href}" target="_parent">
+      <div class="lbl">${esc(b.label)}</div>
+      ${portrait(b.name,b.photo)}
+      <div class="nm">${esc(b.name)}</div>
+      <div class="rec">${esc(b.sub)}</div></a>`).join('');
+
+  /* ② P4P top 10 — two columns of five */
   const p4p=ranks.filter(r=>!r.weight_class).slice(0,10);
-  el('p4p').innerHTML=p4p.length?p4p.map((r,i)=>line(r,i)).join(''):'<div class="none">NO P4P RANKINGS YET</div>';
+  el('p4p').innerHTML=p4p.length?p4p.map((r,i)=>{
+    const c=byslug[r.fighter_slug];
+    return `<a class="row" href="${FP(r.fighter_slug)}" target="_parent">
+      <span class="i">#${r.rank??i+1}</span><span class="n">${esc(r.fighter_name)}</span>
+      <span class="v">${rec(c)}</span></a>`;
+  }).join(''):'<div class="none">NO P4P RANKINGS YET</div>';
 
-  const champs=cards.filter(c=>c.is_champion);
-  el('champs').innerHTML=champs.length?champs.map(c=>
-    `<a class="row c" href="${FP(c.slug)}" target="_parent"><span class="i">★</span>
-      <span class="n">${esc(c.display_name)}</span>
-      <span class="belt">${esc(WC[c.weight_class]||c.weight_class||'')}</span></a>`).join('')
-    :'<div class="none">NO CHAMPIONS SET</div>';
-
-  // A division card per weight class that HAS rankings; champion floats to the top.
-  const classes=[...new Set(ranks.filter(r=>r.weight_class).map(r=>r.weight_class))];
-  el('divs').innerHTML=classes.length?classes.map(wc=>{
+  /* ③ divisions — champion featured, then the ranked list */
+  el('divs').innerHTML=ORDER.map(wc=>{
     const list=ranks.filter(r=>r.weight_class===wc).slice(0,10);
-    const champ=cards.find(c=>c.is_champion&&c.weight_class===wc);
-    return `<div class="card"><div class="ch"><span>${esc(WC[wc]||wc)}</span></div><div class="cb">
-      ${champ?`<a class="row c" href="${FP(champ.slug)}" target="_parent"><span class="i">★</span>
-        <span class="n">${esc(champ.display_name)}</span><span class="v"><b>${R(champ.slug)}</b></span></a>`:''}
-      ${list.map((r,i)=>line(r,i)).join('')||'<div class="none">—</div>'}
-    </div></div>`;
-  }).join(''):'';
+    const c=champOf(wc);
+    const champRow=c?`<a class="row champ" href="${FP(c.slug)}" target="_parent">
+        <span class="i">★</span><span class="n">${esc(c.display_name)}</span>
+        <span class="tagc">CHAMPION</span><span class="v">${rec(c)}</span></a>`:'';
+    const rows=list.map((r,i)=>{
+      const f=byslug[r.fighter_slug];
+      return `<a class="row" href="${FP(r.fighter_slug)}" target="_parent">
+        <span class="i">${r.rank??i+1}</span><span class="n">${esc(r.fighter_name)}</span>
+        <span class="v">${rec(f)}</span></a>`;
+    }).join('');
+    return `<div class="div"><h3>${esc(WCN[wc])}</h3>${champRow}${rows||'<div class="none">NO RANKINGS YET</div>'}</div>`;
+  }).join('');
 })();
 
-/* ── UBAe: standings by conference (split read from the VIEW, never ubae_splits —
-   that's a raw table and anon gets 42501). Teams click through to /team. ── */
+/* ── UBAe team standings ── */
 (async()=>{
   const all=await get('team_standings?select=*&order=season.desc,split_number.desc,conference.asc,match_wins.desc,bout_diff.desc');
   if(!all.length){el('standings').innerHTML='<div class="none">NO TEAMS YET</div>';return;}
@@ -166,12 +235,11 @@ document.querySelectorAll('.sw').forEach(s=>s.addEventListener('click',()=>{
   const rows=all.filter(r=>r.season===cur.season&&r.split_number===cur.split_number);
   const by={}; rows.forEach(r=>(by[r.conference]=by[r.conference]||[]).push(r));
   el('standings').innerHTML=Object.keys(by).sort().map(c=>
-    `<div class="card"><div class="ch"><span>Conference ${esc(c)}</span><span class="r">${esc(cur.split_name||'')}</span></div>
-      <div class="cb">${by[c].map((r,i)=>
-        `<a class="row" href="${TP(r.team_slug)}" target="_parent">
-          <span class="i ${i<2?'hi':''}">${i+1}</span><span class="n">${esc(r.team_name)}</span>
-          <span class="v"><b>${r.match_wins}-${r.match_losses}${r.match_draws?'-'+r.match_draws:''}</b></span></a>`).join('')}
-      </div></div>`).join('');
+    `<div class="div"><h3>CONFERENCE ${esc(c)}</h3>`+by[c].map((r,i)=>
+      `<a class="row" href="${TP(r.team_slug)}" target="_parent">
+        <span class="i">${i+1}</span><span class="n">${esc(r.team_name)}</span>
+        <span class="v">${r.match_wins}-${r.match_losses}${r.match_draws?'-'+r.match_draws:''}</span></a>`).join('')
+    +`</div>`).join('');
 })();
 </script>
 </body>
