@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teams — VGA Esports</title>
+<!-- ═══════════════════════════════════════════════════════════════════════
+     THE TEAMS INDEX — one responsive CRT file. A front door for the 8 UBAe
+     teams: grouped by conference, each card → /team?team=<slug>.
+     Parameter-free, so the Wix element just points at this URL (no Velo).
+     Reads team_standings (record/conference/split) + ubae_fighter_records
+     (roster count). Renders zeros cleanly pre-season.
+     ══════════════════════════════════════════════════════════════════════ -->
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --p:#7B2FFF; --pl:#A855F7; --pc:#C084FC;
+    --pg:rgba(123,47,255,.18); --pb:rgba(123,47,255,.35);
+    --gold:#F5C842; --bg:#06060A; --surf:#0B0B12; --border:#181824;
+    --text:#DDD8F0; --muted:#4A4A68; --dim:#131320;
+    --glow:0 0 8px rgba(123,47,255,.7),0 0 20px rgba(123,47,255,.3);
+    --glow-gold:0 0 10px rgba(245,200,66,.6),0 0 25px rgba(245,200,66,.2);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-serif;overflow-x:hidden;}
+  body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:99;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.12) 2px,rgba(0,0,0,.12) 4px);}
+  a{color:inherit;text-decoration:none;}
+  .wrap{max-width:1100px;margin:0 auto;padding:16px 12px 50px;}
+
+  .head{text-align:center;padding:6px 0 16px;}
+  .head h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(30px,6vw,48px);letter-spacing:2px;text-shadow:var(--glow);}
+  .head .s{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2.5px;color:var(--muted);}
+
+  .confs{display:grid;gap:14px;grid-template-columns:1fr;}
+  @media(min-width:780px){ .confs{grid-template-columns:1fr 1fr;align-items:start;} }
+  .conf{}
+  .ct{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2.5px;color:var(--pl);text-transform:uppercase;
+    padding:4px 2px 9px;display:flex;justify-content:space-between;}
+  .ct .r{color:var(--muted);letter-spacing:1px;}
+
+  .tcard{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:8px;
+    background:var(--surf);padding:12px 14px;margin-bottom:10px;position:relative;overflow:hidden;}
+  .tcard:hover{border-color:var(--pb);background:radial-gradient(ellipse 120% 140% at 100% 0%,var(--pg),transparent 60%),var(--surf);}
+  .tcard .seed{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--muted);width:24px;text-align:center;line-height:1;}
+  .tcard.top .seed{color:var(--pc);text-shadow:var(--glow);}
+  .tmain{flex:1;min-width:0;}
+  .tname{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;line-height:1;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tmeta{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:1px;color:var(--muted);margin-top:4px;}
+  .tmeta b{color:var(--text);font-weight:400;}
+  .tmeta .g{color:var(--gold);}
+  .tros{text-align:center;font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--pc);line-height:1;}
+  .tros span{font-size:11px;color:var(--muted);}
+  .tros .l{display:block;font-family:'Space Mono',monospace;font-size:7px;color:var(--muted);letter-spacing:1px;margin-top:2px;}
+  .go{font-size:15px;color:var(--muted);}
+  .none{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px;padding:26px 0;text-align:center;}
+  .foot{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:1px;text-align:center;margin-top:16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head"><h1>TEAMS</h1><div class="s" id="sub">UBAe — TEAM LEAGUE</div></div>
+  <div class="confs" id="confs"><div class="none">LOADING</div></div>
+  <div class="foot">STANDINGS DERIVE FROM MATCH RESULTS — THEY UPDATE THEMSELVES</div>
+</div>
+
+<script>
+const SB='https://emzlivoykbhhjcugupit.supabase.co';
+const KEY='sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF';
+const H={headers:{apikey:KEY,Authorization:'Bearer '+KEY}};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const get=async p=>{try{const r=await fetch(SB+'/rest/v1/'+p,H);return r.ok?await r.json():[];}catch(e){return [];}};
+const el=i=>document.getElementById(i);
+const TP=s=>'https://www.ubaesports.com/team?team='+encodeURIComponent(s);
+
+(async()=>{
+  const [stand,roster]=await Promise.all([
+    get('team_standings?select=*&order=season.desc,split_number.desc,conference.asc,match_wins.desc,bout_diff.desc'),
+    get('ubae_fighter_records?select=current_team_slug&current_team_slug=not.is.null'),
+  ]);
+  if(!stand.length){ el('confs').innerHTML='<div class="none">NO TEAMS YET</div>'; return; }
+
+  // roster count per team slug
+  const rc={}; roster.forEach(r=>{rc[r.current_team_slug]=(rc[r.current_team_slug]||0)+1;});
+
+  const cur=stand[0];                                  // newest split sorts first
+  el('sub').textContent='UBAe · '+(cur.split_name||'').toUpperCase();
+  const rows=stand.filter(r=>r.season===cur.season&&r.split_number===cur.split_number);
+  const by={}; rows.forEach(r=>(by[r.conference]=by[r.conference]||[]).push(r));
+
+  el('confs').innerHTML=Object.keys(by).sort().map(c=>{
+    const cards=by[c].map((t,i)=>{
+      const rec=`${t.match_wins}-${t.match_losses}${t.match_draws?'-'+t.match_draws:''}`;
+      const bd=(t.bout_diff>0?'+':'')+t.bout_diff;
+      const n=rc[t.team_slug]||0;
+      return `<a class="tcard ${i<2?'top':''}" href="${TP(t.team_slug)}" target="_parent">
+        <div class="seed">${i+1}</div>
+        <div class="tmain"><div class="tname">${esc(t.team_name)}</div>
+          <div class="tmeta"><b>${rec}</b> · <span class="${t.bout_diff>0?'g':''}">${bd} BOUT DIFF</span></div></div>
+        <div class="tros">${n}<span>/7</span><span class="l">ROSTER</span></div>
+        <span class="go">›</span></a>`;
+    }).join('');
+    return `<div class="conf"><div class="ct"><span>Conference ${esc(c)}</span><span class="r">${by[c].length} TEAMS</span></div>${cards}</div>`;
+  }).join('');
+})();
+</script>
+</body>
+</html>
