@@ -272,7 +272,7 @@ const FIGHTER='https://www.ubaesports.com/fighter?f=';
 const D=s=>/[zZ]$|[+-]\d\d:?\d\d$/.test(s)?new Date(s):new Date(String(s).replace(' ','T')+'Z');
 
 /* ══ EDIT ME — hand-set values ══ */
-const FIGHTER_OF_MONTH={ name:'Ronin', slug:'ronin', tag:'x KDS' };   // crown a new one here
+const FIGHTER_OF_MONTH={ name:'Ronin', slug:'ronin', tag:'x KDS' };   // fallback if none set in the dashboard
 const DISCORD_URL='https://discord.gg/uba';
 const YOUTUBE_URL='https://www.youtube.com/@unifiedboxi';
 // The season roadmap rail. `on:true` = the current/next phase (highlighted).
@@ -405,10 +405,14 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   }).join(''):'<div class="none">NO RESULTS YET</div>';
 })();
 
-/* ── fighter of the month (hand-set, clickable) ── */
-(function(){
-  const f=FIGHTER_OF_MONTH;
-  const a=el('fotm'); a.href=FIGHTER+encodeURIComponent(f.slug);
+/* ── fighter of the month — set from the dashboard (fighter_of_month_public),
+   falls back to the hard-set constant if none is set. Clickable → profile. ── */
+(async()=>{
+  const rows=await get('fighter_of_month_public?select=name,slug,tag');
+  const f=(rows&&rows[0]&&rows[0].slug)?rows[0]:FIGHTER_OF_MONTH;
+  const a=el('fotm'); if(!a) return;
+  if(!f.slug){ a.style.display='none'; return; }
+  a.href=FIGHTER+encodeURIComponent(f.slug);
   a.innerHTML=`<div class="k">FIGHTER OF THE MONTH</div><div class="nm">${esc(f.name)}</div>
     ${f.tag?`<div class="sub">${esc(f.tag)}</div>`:''}<div class="go">VIEW PROFILE ›</div>`;
 })();
