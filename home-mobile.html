@@ -296,10 +296,10 @@ body::after { content:''; position:fixed; inset:0; background:radial-gradient(el
 </div>
 
 <!-- UBAe S2 teaser + sponsor — frame the video above -->
-<div class="split-banner" style="margin:8px 16px 0;">
+<a class="split-banner" href="https://www.ubaesports.com/teams" target="_parent" style="margin:8px 16px 0;text-decoration:none;">
   <div class="split-name">UBAe Season 2</div>
-  <div class="split-dates" style="font-size:9px;color:rgba(221,216,240,0.6);letter-spacing:2px;">COMING SOON</div>
-</div>
+  <div class="split-dates" style="font-family:'Space Mono',monospace;font-size:9px;color:#F5C842;letter-spacing:2px;text-shadow:0 0 10px rgba(245,200,66,.55);animation:sched-pulse 2.2s ease-in-out infinite;">$500 ON THE LINE ›</div>
+</a>
 
 <div class="sheath-banner">
   <div class="sheath-shimmer"></div>
@@ -309,6 +309,25 @@ body::after { content:''; position:fixed; inset:0; background:radial-gradient(el
   </div>
   <a href="https://sheath.com" target="_blank" style="flex-shrink:0;margin-left:8px;display:flex;align-items:center;justify-content:center;padding:5px 10px;border:1px solid rgba(168,85,247,.5);background:rgba(123,47,255,.12);text-decoration:none;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.18em;color:var(--pc);text-shadow:var(--glow-sm);box-shadow:0 0 8px rgba(123,47,255,.2);position:relative;z-index:1;">SHEATH</a>
 </div>
+
+<!-- SUMMER SCHEDULE — compact swipe strip: one card per fight day (both matchups),
+     FN cards gold. Fed by loadSchedStrip(); rolls forward on its own. -->
+<style>
+  @keyframes sched-pulse{0%,100%{opacity:1}50%{opacity:.5}}
+  .sched-strip{display:flex;gap:8px;overflow-x:auto;padding:8px 16px 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .sched-strip::-webkit-scrollbar{display:none;}
+  .sc-card{flex:0 0 142px;background:rgba(20,18,31,.9);border:1px solid rgba(168,85,247,.25);border-radius:7px;padding:8px 9px;text-decoration:none;color:var(--text);}
+  .sc-card .scd{display:flex;align-items:baseline;gap:5px;margin-bottom:5px;}
+  .sc-card .scd b{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1px;color:var(--pc);font-weight:400;}
+  .sc-card .scd span{font-family:'Space Mono',monospace;font-size:7px;color:rgba(221,216,240,.45);letter-spacing:1px;}
+  .sc-card .scm{display:block;font-family:'Barlow Condensed',sans-serif;font-size:11.5px;font-weight:700;line-height:1.2;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:rgba(240,232,255,.9);text-decoration:none;}
+  .sc-card .sct{font-family:'Space Mono',monospace;font-size:7px;color:rgba(221,216,240,.4);letter-spacing:1px;margin:1px 0 4px;}
+  .sc-card.uba{border-color:rgba(245,200,66,.5);background:linear-gradient(180deg,rgba(245,200,66,.10),rgba(20,18,31,.9) 65%);}
+  .sc-card.uba .scd b{color:#F5C842;text-shadow:0 0 8px rgba(245,200,66,.45);}
+</style>
+<div class="section-head"><div class="section-title">Schedule</div><div class="section-line"></div></div>
+<div class="sched-strip" id="sched-strip"></div>
 
 <div class="section-head">
   <div class="section-title" style="color:rgba(221,216,240,0.8);">Rankings</div>
@@ -648,6 +667,38 @@ function tickCountdown(){
 }
 loadNextEvent().then(()=>{if(!tickInterval)tickInterval=setInterval(tickCountdown,1000);});
 setInterval(loadNextEvent,300000);
+
+// summer schedule strip — one swipe row: a card per fight day (both matchups), FN cards gold
+async function loadSchedStrip(){
+  var el=document.getElementById('sched-strip'); if(!el) return;
+  try{
+    var now=Date.now(), ET={timeZone:'America/New_York'};
+    function dd(t){var d=new Date(t);return{day:d.toLocaleString('en-US',{timeZone:'America/New_York',weekday:'short'}).toUpperCase(),
+      num:d.toLocaleString('en-US',{timeZone:'America/New_York',day:'numeric'}),
+      mon:d.toLocaleString('en-US',{timeZone:'America/New_York',month:'short'}).toUpperCase(),
+      tm:d.toLocaleString('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit'})};}
+    var r1=await fetch(SB_U+'/rest/v1/team_matches_public?select=id,week,team_a_name,team_b_name,match_date,status&status=eq.scheduled&match_date=not.is.null&order=match_date.asc&limit=40',HU);
+    var tms=(await r1.json()).filter(function(m){return new Date(m.match_date).getTime()>now;});
+    var r2=await fetch(SB_U+'/rest/v1/events_public?select=id,name,event_date,status&status=eq.scheduled&order=event_date.asc&limit=10',HU);
+    var evs=(await r2.json()).filter(function(e){return e.event_date&&new Date(e.event_date).getTime()>now;});
+    // nearest UBAe week only — rolls forward as weeks complete
+    var wk=tms.length?Math.min.apply(null,tms.map(function(m){return m.week;})):null;
+    tms=tms.filter(function(m){return m.week===wk;});
+    var days={},order=[];
+    tms.forEach(function(m){var k=new Date(m.match_date).toLocaleDateString('en-US',ET);
+      if(!days[k]){days[k]={t:new Date(m.match_date).getTime(),wk:m.week,ms:[]};order.push(k);}days[k].ms.push(m);});
+    var cards=order.map(function(k){var g=days[k],h=dd(g.t);
+      return {t:g.t,html:'<div class="sc-card"><div class="scd"><b>'+h.day+' '+h.num+'</b><span>'+h.mon+' · WK'+g.wk+'</span></div>'+
+        g.ms.slice(0,2).map(function(m){var mt=dd(new Date(m.match_date).getTime());
+          return '<a class="scm" href="https://www.ubaesports.com/matchup?m='+m.id+'" target="_parent">'+m.team_a_name+' vs '+m.team_b_name+'</a><div class="sct">'+mt.tm+' ET</div>';}).join('')+'</div>'};});
+    evs.forEach(function(e){var h=dd(new Date(e.event_date).getTime());
+      cards.push({t:new Date(e.event_date).getTime(),html:'<a class="sc-card uba" href="https://www.ubaesports.com/matchup?event='+e.id+'" target="_parent"><div class="scd"><b>'+h.day+' '+h.num+'</b><span>'+h.mon+'</span></div><div class="scm">'+e.name.toUpperCase()+'</div><div class="sct">'+h.tm+' ET</div></a>'});});
+    cards.sort(function(a,b){return a.t-b.t;});
+    if(!cards.length){el.style.display='none';return;}
+    el.innerHTML=cards.map(function(c){return c.html;}).join('');
+  }catch(e){el.style.display='none';}
+}
+loadSchedStrip();
 
 // transfers
 async function loadTransfers(){
