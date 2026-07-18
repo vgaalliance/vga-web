@@ -93,26 +93,32 @@
   @media(min-width:720px){ .p4pgrid{grid-template-columns:1fr 1fr;} }
 
   /* ── ③ DIVISIONS (UFC-style lists, no boxes) ── */
-  .divs{display:grid;grid-template-columns:1fr;gap:10px 34px;}
-  @media(min-width:900px){ .divs{grid-template-columns:1fr 1fr;} }
-  .div h3{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:2.5px;color:var(--pc);
-    text-shadow:var(--glow);padding-bottom:6px;border-bottom:1px solid var(--pb);margin-bottom:2px;}
+  .divs{display:grid;grid-template-columns:1fr;gap:14px 22px;}
+  @media(min-width:700px){ .divs{grid-template-columns:1fr 1fr;} }
+  @media(min-width:1020px){ .divs{grid-template-columns:repeat(4,1fr);} }
+  /* UBAe standings stay two-up — only two conferences */
+  @media(min-width:1020px){ .divs.two{grid-template-columns:1fr 1fr;} }
+  .div h3{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px;color:var(--pc);
+    text-shadow:var(--glow);padding-bottom:6px;border-bottom:1px solid var(--pb);margin-bottom:2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
   /* rows — minimal, editorial */
-  .row{display:flex;align-items:center;gap:12px;padding:9px 4px;border-bottom:1px solid rgba(24,24,36,.9);
+  .row{display:flex;align-items:center;gap:8px;padding:8px 3px;border-bottom:1px solid rgba(24,24,36,.9);
     transition:background .15s,padding-left .15s;}
-  .row:hover{background:var(--dim);padding-left:9px;}
-  .row .i{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);width:26px;flex-shrink:0;}
-  .row .n{flex:1;min-width:0;font-weight:600;font-size:16.5px;letter-spacing:.3px;
+  .row:hover{background:var(--dim);padding-left:7px;}
+  .row .i{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);width:19px;flex-shrink:0;}
+  .row .n{flex:1;min-width:0;font-weight:600;font-size:15px;letter-spacing:.2px;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .row .v{font-family:'Space Mono',monospace;font-size:10.5px;color:var(--muted);flex-shrink:0;}
+  .row .v{font-family:'Space Mono',monospace;font-size:9.5px;color:var(--muted);flex-shrink:0;}
   /* champion feature row inside a division */
-  .row.champ{border-bottom:1px solid rgba(245,200,66,.3);padding:11px 4px;
+  .row.champ{border-bottom:1px solid rgba(245,200,66,.3);padding:10px 3px;
     background:linear-gradient(90deg,rgba(245,200,66,.09),transparent 70%);}
-  .row.champ .n{color:var(--gold);text-shadow:var(--glow-gold);font-size:19px;font-weight:700;}
+  .row.champ .n{color:var(--gold);text-shadow:var(--glow-gold);font-size:16.5px;font-weight:700;}
   .row.champ .i{color:var(--gold);}
   .row.champ .tagc{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:1.5px;color:var(--gold);
     border:1px solid rgba(245,200,66,.4);border-radius:2px;padding:2px 5px;}
+  /* at 4-up the columns are tight — the gold name already reads as champion */
+  @media(min-width:1020px){ .row.champ .tagc{display:none;} }
 
   .none{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px;padding:16px 0;text-align:center;}
   .conf{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:2.5px;color:var(--pl);padding:12px 0 4px;}
@@ -145,7 +151,7 @@
 
   <div id="ubae" class="hidden">
     <div class="sect"><h2>TEAM STANDINGS</h2><span class="tag">// UBAe</span><div class="line"></div></div>
-    <div class="divs" id="standings"><div class="none">LOADING</div></div>
+    <div class="divs two" id="standings"><div class="none">LOADING</div></div>
   </div>
 </div>
 
