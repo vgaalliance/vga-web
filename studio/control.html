@@ -67,6 +67,24 @@
   #mnState{font-size:19px;color:var(--g);margin:8px 0 4px;}
   #mnState b{background:var(--g);color:var(--bg);padding:0 6px;text-shadow:none;}
 
+  /* ── match-night cockpit ── */
+  #mnCockpit{display:none;gap:14px;flex-wrap:wrap;margin:10px 0 12px;}
+  #mnCockpit.on{display:flex;}
+  .mncol{flex:1;min-width:280px;border:2px solid var(--gdim);border-radius:2px;padding:10px 14px 14px;
+    box-shadow:inset 0 0 14px rgba(58,255,110,.05);}
+  .mnhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .mnteam{font-size:22px;letter-spacing:.06em;}
+  .mnpips{font-size:22px;letter-spacing:.15em;color:var(--g);}
+  .mnchips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+  .mnchip{font-family:'VT323',monospace;font-size:19px;cursor:pointer;padding:6px 12px;
+    background:transparent;color:var(--g);border:2px solid var(--gdim);border-radius:2px;}
+  .mnchip::before,.mnchip::after{content:none;}
+  .mnchip:hover{border-color:var(--g);}
+  .mnchip.picked{background:var(--g);color:var(--bg);text-shadow:none;border-color:var(--g);
+    box-shadow:0 0 14px rgba(58,255,110,.5);}
+  .mnchip.used{color:var(--gdark);border-color:var(--gdark);text-decoration:line-through;cursor:default;}
+  .mnwin{width:100%;}
+
   #log{margin-top:6px;font-size:16px;color:var(--gdim);max-height:96px;overflow:auto;line-height:1.3;}
   #log div::before{content:'> ';}
 </style>
@@ -81,15 +99,16 @@
 
   <div class="sec">
     <h4>UBAE MATCH NIGHT — TRACKER</h4>
+    <div class="row" id="mnWeekNav" style="margin-bottom:8px"></div>
     <div class="row" id="mnMatches">SCANNING SCHEDULE…</div>
     <div id="mnState">NO MATCH LOADED</div>
+    <div id="mnCockpit"></div>
     <div class="row">
-      <button onclick="mnScore('A',1)">Team A +</button>
-      <button onclick="mnScore('B',1)">Team B +</button>
-      <button class="hide" onclick="mnScore(null,0)">Reset score</button>
-      <button onclick="mnCountdown()">Fire countdown</button>
-      <button onclick="mnLoadbar()">Fire loading bar</button>
-      <button onclick="mnTape()">Fire tale of tape (bout)</button>
+      <button onclick="mnTimer()">Start 2:00 pick clock</button>
+      <button onclick="mnCountdown()">Re-fire countdown</button>
+      <button onclick="mnLoadbar()">Re-fire loading bar</button>
+      <button onclick="mnTape()">Tale of tape (bout)</button>
+      <button class="hide" onclick="mnReset()">Reset match</button>
     </div>
     <div class="row" style="margin-top:8px">
       <input id="mnBoutA" placeholder="BOUT: LEFT FIGHTER…" style="width:200px">
@@ -194,24 +213,35 @@ window.loadOdds=async()=>{
 }
 
 /* ── UBAe MATCH NIGHT tracker — deck state only, never writes the DB ── */
-const MN={ id:null, a:null, b:null, scoreA:0, scoreB:0, date:null, week:null, lineups:{} }
+const MN={ id:null, a:null, b:null, scoreA:0, scoreB:0, date:null, week:null, lineups:{},
+  pickA:null, pickB:null, usedA:[], usedB:[] }
 const DAY=['SUN','MON','TUE','WED','THU','FRI','SAT']
 const fmtDay=d=>{const x=new Date(d);return DAY[x.getDay()]+' '+String(x.getDate()).padStart(2,'0')+'.'+String(x.getMonth()+1).padStart(2,'0')}
 
 window.mnLoad=async()=>{
   const { data } = await sb.from('team_matches_public').select('*')
-    .eq('status','scheduled').order('match_date').limit(12)
+    .eq('status','scheduled').order('match_date')
+  if(!data||!data.length){ document.getElementById('mnMatches').textContent='NO SCHEDULED MATCHES'; return }
+  window._mnAll=data
+  window._mnWeeks=[...new Set(data.map(m=>m.week))].sort((a,b)=>a-b)
+  window._mnWeek=window._mnWeeks[0]           // nearest upcoming week
+  mnWeekDraw()
+}
+function mnWeekDraw(){
+  const wks=window._mnWeeks, cur=window._mnWeek
+  const nav=document.getElementById('mnWeekNav')
+  nav.innerHTML = wks.map(w=>`<button class="${w===cur?'active':''}" onclick="mnSetWeek(${w})" style="padding:4px 12px">WK${w}</button>`).join('')
   const box=document.getElementById('mnMatches')
-  if(!data||!data.length){ box.textContent='NO SCHEDULED MATCHES'; return }
-  window._mnMatches=data
   box.innerHTML=''
-  data.forEach(m=>{
+  window._mnMatches=window._mnAll.filter(m=>m.week===cur)   // this week's 4
+  window._mnMatches.forEach(m=>{
     const b=document.createElement('button')
-    b.innerHTML=`${m.team_a_name} vs ${m.team_b_name}<small>WK${m.week} · ${fmtDay(m.match_date)}</small>`
+    b.innerHTML=`${m.team_a_name} vs ${m.team_b_name}<small>${fmtDay(m.match_date)}</small>`
     b.onclick=()=>mnPick(m,b)
     box.appendChild(b)
   })
 }
+window.mnSetWeek=w=>{ window._mnWeek=w; mnWeekDraw() }
 
 async function lineupFor(matchId){
   const { data } = await sb.from('team_lineups_public')
@@ -225,7 +255,8 @@ async function lineupFor(matchId){
 window.mnPick=async(m,btn)=>{
   document.querySelectorAll('#mnMatches button').forEach(b=>b.classList.remove('active'))
   if(btn) btn.classList.add('active')
-  Object.assign(MN,{ id:m.id, a:m.team_a_name, b:m.team_b_name, scoreA:0, scoreB:0, date:m.match_date, week:m.week })
+  Object.assign(MN,{ id:m.id, a:m.team_a_name, b:m.team_b_name, scoreA:0, scoreB:0,
+    date:m.match_date, week:m.week, pickA:null, pickB:null, usedA:[], usedB:[] })
   MN.lineups=await lineupFor(m.id)
   // one click = every scene updates: pick bar, countdown VS, week loading bar
   mnPush(); mnCountdown(); mnLoadbar(); mnStateDraw()
@@ -233,23 +264,66 @@ window.mnPick=async(m,btn)=>{
 
 function mnStateDraw(){
   document.getElementById('mnState').innerHTML = MN.id
-    ? `LOADED: <b>${MN.a} ${MN.scoreA} — ${MN.scoreB} ${MN.b}</b> · WK${MN.week} · picks + score push live`
+    ? `LOADED: <b>${MN.a} ${MN.scoreA} — ${MN.scoreB} ${MN.b}</b> · WK${MN.week} · everything pushes live`
     : 'NO MATCH LOADED'
+  mnCockpitDraw()
 }
 
 function mnPush(){
   send({type:'pickbar', d:{ teamA:MN.a, teamB:MN.b,
     left:(MN.lineups[MN.a]||{}).starters||[], right:(MN.lineups[MN.b]||{}).starters||[],
-    scoreA:MN.scoreA, scoreB:MN.scoreB }})
+    scoreA:MN.scoreA, scoreB:MN.scoreB,
+    pickL:MN.pickA, pickR:MN.pickB, usedL:MN.usedA, usedR:MN.usedB }})
 }
 
-window.mnScore=(side,inc)=>{
+/* the cockpit — tap a fighter = picked on stream · WIN scores the bout */
+function mnCockpitDraw(){
+  const box=document.getElementById('mnCockpit')
+  box.classList.toggle('on', !!MN.id)
+  if(!MN.id){ box.innerHTML=''; return }
+  const col=(team,side)=>{
+    const st=(MN.lineups[team]||{}).starters||[]
+    const pick= side==='A'?MN.pickA:MN.pickB, used= side==='A'?MN.usedA:MN.usedB
+    const score= side==='A'?MN.scoreA:MN.scoreB
+    const pips='█'.repeat(score)+'░'.repeat(3-score)
+    return `<div class="mncol">
+      <div class="mnhead"><span class="mnteam">${team}</span><span class="mnpips">${pips}</span></div>
+      <div class="mnchips">${st.map((n,i)=>
+        `<span class="mnchip${i===pick?' picked':''}${used.includes(i)?' used':''}" onclick="mnChip('${side}',${i})">${n}</span>`).join('')}</div>
+      <button class="mnwin" onclick="mnWin('${side}')">WIN — ${team}</button>
+    </div>`
+  }
+  box.innerHTML=col(MN.a,'A')+col(MN.b,'B')
+}
+
+window.mnChip=(side,i)=>{
+  const used= side==='A'?MN.usedA:MN.usedB
+  if(used.includes(i)) return
+  if(side==='A') MN.pickA=(MN.pickA===i?null:i)
+  else MN.pickB=(MN.pickB===i?null:i)
+  mnPush(); mnCockpitDraw()
+}
+
+window.mnWin=side=>{
   if(!MN.id) return
-  if(side===null){ MN.scoreA=0; MN.scoreB=0 }
-  else if(side==='A') MN.scoreA=Math.min(3,MN.scoreA+inc)
-  else MN.scoreB=Math.min(3,MN.scoreB+inc)
+  if(side==='A') MN.scoreA=Math.min(3,MN.scoreA+1); else MN.scoreB=Math.min(3,MN.scoreB+1)
+  // both picked fighters are spent for this cycle
+  if(MN.pickA!=null && !MN.usedA.includes(MN.pickA)) MN.usedA.push(MN.pickA)
+  if(MN.pickB!=null && !MN.usedB.includes(MN.pickB)) MN.usedB.push(MN.pickB)
+  MN.pickA=null; MN.pickB=null
+  // format rule: picks reset after bout 3
+  if(MN.scoreA+MN.scoreB===3){ MN.usedA=[]; MN.usedB=[] }
   mnPush(); mnStateDraw()
 }
+
+window.mnReset=()=>{
+  if(!MN.id) return
+  MN.scoreA=0; MN.scoreB=0; MN.pickA=null; MN.pickB=null; MN.usedA=[]; MN.usedB=[]
+  send({type:'pickbar', d:{ scoreA:0, scoreB:0, pickL:null, pickR:null, usedL:[], usedR:[], timer:null }})
+  mnPush(); mnStateDraw()
+}
+
+window.mnTimer=()=>send({type:'pickbar', d:{ timer:120 }})
 
 window.mnCountdown=()=>{
   if(!MN.id) return

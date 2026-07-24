@@ -632,6 +632,9 @@ function makeCursor(sideEl) {
   }
 
   function next() {
+    // deck pin: when the operator has picked a fighter, the cursor locks on him
+    const _pin = (window.__pin||{})[sideEl.id==='sideL'?'L':'R'];
+    if (_pin != null) { activate(_pin); schedule(); return; }
     const roll = Math.random();
     let nextIdx = current;
 
@@ -856,12 +859,20 @@ arcadeLoop();
 })();
 </script>
 
-<!-- ── VGA STUDIO WIRE — deck listener (added 2026-07-24, visuals untouched) ── -->
+<!-- ── VGA STUDIO WIRE — deck listener (visuals untouched; pins/used/timer added) ── -->
+<style>
+  /* deck-driven states — additive classes only */
+  .card.used{ filter:grayscale(.9) brightness(.55); }
+  .card.used .c-name input{ text-decoration:line-through; opacity:.6; }
+</style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 (function(){
+  window.__pin={L:null,R:null}
+  let _cd=null
   const _sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
     'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
+  const cards=side=>[...document.querySelectorAll('#'+side+' .card')]
   _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
     if(c.type!=='pickbar') return
     const d=c.d||{}
@@ -874,10 +885,28 @@ arcadeLoop();
       })
     }
     fill('sideL',d.left); fill('sideR',d.right)
+    // picked fighter pin (cursor locks on him); null unpins
+    if('pickL' in d){ window.__pin.L=d.pickL
+      if(d.pickL!=null){ cards('sideL').forEach((cd,i)=>cd.classList.toggle('sel-active',i===d.pickL)) } }
+    if('pickR' in d){ window.__pin.R=d.pickR
+      if(d.pickR!=null){ cards('sideR').forEach((cd,i)=>cd.classList.toggle('sel-active',i===d.pickR)) } }
+    // used fighters grey out
+    if(d.usedL) cards('sideL').forEach((cd,i)=>cd.classList.toggle('used', d.usedL.includes(i)))
+    if(d.usedR) cards('sideR').forEach((cd,i)=>cd.classList.toggle('used', d.usedR.includes(i)))
+    // score pips
     const pips=(ids,n)=>{ if(n==null) return
       ids.forEach((id,i)=>{ const p=document.getElementById(id); if(p) p.classList.toggle('on', i<n) }) }
     pips(['l1','l2','l3'],d.scoreA); pips(['r1','r2','r3'],d.scoreB)
     if((d.scoreA!=null||d.scoreB!=null) && typeof updateScores==='function') updateScores()
+    // battle-room countdown: {timer:120} starts 2:00 → 0:00; {timer:null} clears
+    if('timer' in d){
+      const tv=document.querySelector('.timer-val'); clearInterval(_cd)
+      if(d.timer!=null && tv){ let s=d.timer
+        const f=n=>String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')
+        tv.textContent=f(s)
+        _cd=setInterval(()=>{ s--; tv.textContent=f(Math.max(0,s)); if(s<=0) clearInterval(_cd) },1000)
+      } else if(tv){ tv.textContent='00:00' }
+    }
   }).subscribe()
 })()
 </script>
