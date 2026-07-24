@@ -7,9 +7,13 @@
   @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
   *{box-sizing:border-box;}
   :root{ --g:#3aff6e; --gdim:#1c8f3f; --gdark:#0b3a1c; --bg:#050b06; }
-  html,body{margin:0;min-height:100%;background:var(--bg);}
+  html{background:var(--bg);}
+  html,body{margin:0;min-height:100%;}
   body{font-family:'VT323',monospace;color:var(--g);padding:26px 30px;font-size:20px;
-    text-shadow:0 0 6px rgba(58,255,110,.45);}
+    text-shadow:0 0 6px rgba(58,255,110,.45);
+    max-width:1180px;margin:0 auto;}          /* fixed control-room width, centered on wide monitors */
+  .mnwin{max-width:340px;}                     /* WIN button stops eating the row */
+  .mncol{max-width:540px;}
 
   /* ── CRT effects ── */
   #crt{position:fixed;inset:0;pointer-events:none;z-index:9;
@@ -111,10 +115,24 @@
       <button class="hide" onclick="mnReset()">Reset match</button>
     </div>
     <div class="row" style="margin-top:8px">
-      <input id="mnBoutA" placeholder="BOUT: LEFT FIGHTER…" style="width:200px">
-      <input id="mnBoutB" placeholder="RIGHT FIGHTER…" style="width:200px">
-      <input id="bugText" placeholder="VENUE / INFO BUG TEXT…" style="width:200px">
-      <button onclick="fireBug()">Fire bug</button>
+      <input id="cdMins" placeholder="COUNTDOWN MINS (e.g. 10)" style="width:200px">
+      <button onclick="mnCountdownIn()">Set countdown timer</button>
+    </div>
+    <h4 style="margin-top:14px">TALE OF THE TAPE — type both fighters, fires the VS stat screen</h4>
+    <div class="row">
+      <input id="mnBoutA" placeholder="LEFT FIGHTER NAME…" style="width:200px">
+      <input id="mnBoutB" placeholder="RIGHT FIGHTER NAME…" style="width:200px">
+      <button onclick="mnTape()">Fire tale of the tape</button>
+    </div>
+    <h4 style="margin-top:14px">INFO BUG — small lower-third (e.g. "LIVE FROM…")</h4>
+    <div class="row">
+      <input id="bugText" placeholder="INFO BUG TEXT…" style="width:280px">
+      <button onclick="fireBug()">Fire info bug</button>
+    </div>
+    <h4 style="margin-top:14px">CUSTOM MESSAGE — put any text on screen (shoutouts, etc.)</h4>
+    <div class="row">
+      <input id="msgText" placeholder="MESSAGE TEXT…" style="width:360px" onkeydown="if(event.key==='Enter')fireMsg()">
+      <button onclick="fireMsg()">Fire message</button>
     </div>
   </div>
 
@@ -179,7 +197,7 @@ const cap = s => (s||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())
 window.searchFighter=async()=>{
   const q=document.getElementById('fq').value.trim(); if(!q) return
   const { data } = await sb.from('fighter_cards')
-    .select('display_name,nickname,wins,losses,draws,ko_wins,rank,rank_weight_class,weight_class,country,is_champion')
+    .select('id,display_name,nickname,wins,losses,draws,ko_wins,rank,rank_weight_class,weight_class,country,is_champion')
     .ilike('display_name','%'+q+'%').limit(6)
   const box=document.getElementById('fresults')
   if(!data||!data.length){ box.textContent='NO RECORD FOUND'; return }
@@ -187,11 +205,18 @@ window.searchFighter=async()=>{
   data.forEach(f=>{
     const b=document.createElement('button')
     b.innerHTML=`${f.display_name}<small>${f.wins}-${f.losses}-${f.draws}${f.rank?' · #'+f.rank:''}</small>`
-    b.onclick=()=>send({type:'fighter',d:{
-      name:f.display_name, nickname:f.nickname,
-      record:`${f.wins}-${f.losses}-${f.draws}`, ko:f.ko_wins,
-      rank:f.rank, weight:cap(f.rank_weight_class||f.weight_class),
-      country:f.country, champion:f.is_champion }})
+    b.onclick=async()=>{
+      let next=null
+      const { data:nm } = await sb.from('fighter_matches')
+        .select('opponent_name,event_name').eq('fighter_id',f.id).eq('status','scheduled')
+        .order('event_date').limit(1)
+      if(nm&&nm[0]) next=`vs ${nm[0].opponent_name} · ${nm[0].event_name}`
+      send({type:'fighter',d:{
+        name:f.display_name, nickname:f.nickname,
+        record:`${f.wins}-${f.losses}-${f.draws}`, ko:f.ko_wins,
+        rank:f.rank, weight:cap(f.rank_weight_class||f.weight_class),
+        country:f.country, champion:f.is_champion, next }})
+    }
     box.appendChild(b)
   })
 }
@@ -273,7 +298,8 @@ function mnPush(){
   send({type:'pickbar', d:{ teamA:MN.a, teamB:MN.b,
     left:(MN.lineups[MN.a]||{}).starters||[], right:(MN.lineups[MN.b]||{}).starters||[],
     scoreA:MN.scoreA, scoreB:MN.scoreB,
-    pickL:MN.pickA, pickR:MN.pickB, usedL:MN.usedA, usedR:MN.usedB }})
+    pickL:MN.pickA, pickR:MN.pickB, usedL:MN.usedA, usedR:MN.usedB,
+    won: MN.scoreA>=3?'L':(MN.scoreB>=3?'R':null) }})
 }
 
 /* the cockpit — tap a fighter = picked on stream · WIN scores the bout */
@@ -363,6 +389,18 @@ window.mnTape=async()=>{
 window.fireBug=()=>{
   const t=document.getElementById('bugText').value.trim(); if(!t) return
   send({type:'bug', d:{ text:t }})
+}
+
+window.fireMsg=()=>{
+  const t=document.getElementById('msgText').value.trim(); if(!t) return
+  send({type:'flash', w:'msg', d:t })
+}
+
+// countdown to N minutes from now (changeable, independent of match start)
+window.mnCountdownIn=()=>{
+  const m=parseFloat(document.getElementById('cdMins').value); if(!m||m<=0) return
+  const target=new Date(Date.now()+m*60000).toISOString()
+  send({type:'countdown', d:{ a:MN.a||'TEAM A', b:MN.b||'TEAM B', target, eventMain:'SUMMER SPLIT', eventSub:'ubaesports.com' }})
 }
 
 window.loadBetFeed=async()=>{

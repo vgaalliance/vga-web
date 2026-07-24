@@ -561,5 +561,24 @@ function tick(){
 }
 tick();
 </script>
+
+<!-- ── VGA STUDIO WIRE — auto-fill the two picked fighters (2026-07-24) ── -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+  const _sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
+    'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
+  _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
+    if(c.type!=='pickbar') return
+    const d=c.d||{}
+    const f=document.querySelectorAll('.fighter')
+    if(!f.length) return
+    const nL = (d.pickL!=null && d.left)  ? d.left[d.pickL]  : d.teamA
+    const nR = (d.pickR!=null && d.right) ? d.right[d.pickR] : d.teamB
+    if(f[0] && nL!=null) f[0].textContent=nL
+    if(f[1] && nR!=null) f[1].textContent=nR
+  }).subscribe()
+})()
+</script>
 </body>
 </html>

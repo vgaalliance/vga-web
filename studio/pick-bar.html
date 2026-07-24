@@ -864,6 +864,17 @@ arcadeLoop();
   /* deck-driven states — additive classes only */
   .card.used{ filter:grayscale(.9) brightness(.55); }
   .card.used .c-name input{ text-decoration:line-through; opacity:.6; }
+  /* PICKED — unmistakable gold selection + shimmer */
+  .card.picked{ box-shadow: inset 0 0 46px rgba(255,206,0,.4), 0 0 34px rgba(255,206,0,.65); z-index:3; }
+  .card.picked::after{ content:''; position:absolute; inset:0; z-index:6; pointer-events:none;
+    background:linear-gradient(115deg,transparent 30%,rgba(255,214,64,.28) 50%,transparent 70%);
+    background-size:250% 100%; animation:pickShine 1.9s linear infinite; }
+  @keyframes pickShine{ 0%{background-position:200% 0} 100%{background-position:-120% 0} }
+  .card.picked .portrait{ box-shadow: inset 0 0 0 4px #ffce00, inset 0 0 30px rgba(255,206,0,.4); }
+  /* TEAM WON — light all 3 boxes gold */
+  .card.team-won{ box-shadow: inset 0 0 54px rgba(255,206,0,.5), 0 0 42px rgba(255,206,0,.85); }
+  .card.team-won .portrait{ box-shadow: inset 0 0 0 3px #ffce00; }
+  .card.team-won .c-name input{ -webkit-text-fill-color:#ffd740; color:#ffd740; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
@@ -885,11 +896,15 @@ arcadeLoop();
       })
     }
     fill('sideL',d.left); fill('sideR',d.right)
-    // picked fighter pin (cursor locks on him); null unpins
+    // picked fighter = gold shimmer (cursor also locks on him); null unpins
     if('pickL' in d){ window.__pin.L=d.pickL
-      if(d.pickL!=null){ cards('sideL').forEach((cd,i)=>cd.classList.toggle('sel-active',i===d.pickL)) } }
+      cards('sideL').forEach((cd,i)=>cd.classList.toggle('picked',i===d.pickL)) }
     if('pickR' in d){ window.__pin.R=d.pickR
-      if(d.pickR!=null){ cards('sideR').forEach((cd,i)=>cd.classList.toggle('sel-active',i===d.pickR)) } }
+      cards('sideR').forEach((cd,i)=>cd.classList.toggle('picked',i===d.pickR)) }
+    // team win — light all 3 of the winning side gold ('L' | 'R' | null)
+    if('won' in d){
+      cards('sideL').forEach(cd=>cd.classList.toggle('team-won', d.won==='L'))
+      cards('sideR').forEach(cd=>cd.classList.toggle('team-won', d.won==='R')) }
     // used fighters grey out
     if(d.usedL) cards('sideL').forEach((cd,i)=>cd.classList.toggle('used', d.usedL.includes(i)))
     if(d.usedR) cards('sideR').forEach((cd,i)=>cd.classList.toggle('used', d.usedR.includes(i)))

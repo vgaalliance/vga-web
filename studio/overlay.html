@@ -81,6 +81,10 @@
   @keyframes lout{to{transform:translateX(-135%);opacity:0;}}
   #fighter .accent{width:14px;background:var(--red);box-shadow:0 0 24px var(--red);}
   #fighter .fc{padding:16px 28px 16px 24px;}
+  #fnext{font:600 15px 'Barlow';letter-spacing:.14em;text-transform:uppercase;
+    color:var(--gold);margin-bottom:6px;display:none;}
+  #fnext.on{display:block;}
+  #fnext b{color:#fff;}
   #fname{font-family:'Barlow Condensed';font-weight:700;font-size:46px;line-height:.95;
     text-transform:uppercase;color:#fff;}
   #fnick{font:500 19px 'Barlow';color:var(--gold);margin-top:1px;font-style:italic;}
@@ -174,6 +178,7 @@
   <div id="fighter">
     <div class="accent"></div>
     <div class="fc">
+      <div id="fnext"></div>
       <div id="fname">—</div>
       <div id="fnick"></div>
       <div id="fstatrow"></div>
@@ -278,6 +283,9 @@ function handle(c){
   }
   if(c.type==='fighter'){
     const d=c.d
+    const nx=$('fnext')
+    if(d.next){ nx.innerHTML='Next match: <b>'+d.next+'</b>'; nx.classList.add('on') }
+    else { nx.classList.remove('on') }
     $('fname').textContent=d.name
     $('fnick').textContent=d.nickname?`"${d.nickname}"`:''
     const chips=[]
