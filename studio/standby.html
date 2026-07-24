@@ -107,11 +107,23 @@
   .ctastats{display:flex;justify-content:center;gap:56px;}
   .ctastat .num{font-weight:900;font-size:82px;color:#fff;line-height:1;text-shadow:0 0 30px rgba(155,48,255,.7);}
   .ctastat .lbl{font-family:'Press Start 2P',monospace;font-size:12px;color:var(--hi);letter-spacing:.16em;margin-top:8px;}
+  /* coin toss — flips over whatever standby view is showing */
+  #coin{position:fixed;left:50%;top:44%;transform:translate(-50%,-50%) scale(0);z-index:80;
+    width:180px;height:180px;border-radius:50%;
+    background:radial-gradient(circle at 38% 32%,#fff2c0,#ffce54 45%,#c99a1e);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:30px;color:#5a4200;text-align:center;
+    box-shadow:0 14px 40px rgba(0,0,0,.55),inset 0 0 0 6px rgba(255,255,255,.25),0 0 46px rgba(155,48,255,.5);}
+  #coin.flip{animation:coinflip 2.2s cubic-bezier(.2,.7,.2,1) forwards;}
+  @keyframes coinflip{0%{transform:translate(-50%,-50%) scale(.4) rotateX(0);}
+    15%{transform:translate(-50%,-74%) scale(1) rotateX(1440deg);}
+    100%{transform:translate(-50%,-50%) scale(1) rotateX(3600deg);}}
   #status{position:fixed;top:10px;left:12px;font:11px monospace;color:#666;z-index:70;}
 </style>
 </head>
 <body>
   <div id="crt"></div><div id="vig"></div>
+  <div id="coin">?</div>
   <div id="status">standby: connecting…</div>
 
   <div id="stage">
@@ -303,6 +315,13 @@ sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
   }
   // when the deck loads a match in the tracker, mirror it on the team-vs-team screen
   if(c.type==='pickbar' && c.d && c.d.teamA && c.d.teamB) setTvs(c.d.teamA, c.d.teamB, 'Tonight')
+  // coin toss — flips over the current standby view
+  if(c.type==='coin'){
+    const el=$('coin'); el.textContent='VGA'; el.classList.remove('flip'); void el.offsetWidth; el.classList.add('flip')
+    setTimeout(()=>{ el.textContent=(c.result||'?') }, 2000)
+    setTimeout(()=>{ el.classList.remove('flip'); el.style.transform='translate(-50%,-50%) scale(0)' }, 5600)
+    setTimeout(()=>{ el.style.transform='' }, 6000)
+  }
 }).subscribe(s=>{ $('status').textContent='standby: '+(s==='SUBSCRIBED'?'● live':s.toLowerCase()) })
 
 loadAll()
