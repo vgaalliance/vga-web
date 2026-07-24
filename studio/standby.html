@@ -107,24 +107,36 @@
   .ctastats{display:flex;justify-content:center;gap:56px;}
   .ctastat .num{font-weight:900;font-size:82px;color:#fff;line-height:1;text-shadow:0 0 30px rgba(155,48,255,.7);}
   .ctastat .lbl{font-family:'Press Start 2P',monospace;font-size:12px;color:var(--hi);letter-spacing:.16em;margin-top:8px;}
-  /* coin toss — CTA-purple, flips over whatever standby view is showing */
-  #coin{position:fixed;left:50%;top:44%;transform:translate(-50%,-50%) scale(0);z-index:80;
-    width:220px;height:220px;border-radius:50%;
+  /* coin toss — full CTA-styled moment: label · spin · HEADS/TAILS reveal · fade */
+  #cointoss{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:26px;opacity:0;pointer-events:none;transition:opacity .55s;}
+  #cointoss.on{opacity:1;}
+  .ct-eyebrow{font-family:'Press Start 2P',monospace;font-size:20px;letter-spacing:.34em;
+    color:var(--hi);text-shadow:0 0 16px rgba(204,102,255,.7);text-transform:uppercase;}
+  .ct-coin{width:200px;height:200px;border-radius:50%;
     background:radial-gradient(circle at 38% 32%,#f0d9ff,#b565ff 46%,#7a1fb0);
     display:flex;align-items:center;justify-content:center;
-    font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:44px;color:#fff;text-align:center;
-    text-shadow:0 2px 6px rgba(0,0,0,.45);letter-spacing:.02em;text-transform:uppercase;
+    font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:56px;color:#fff;
     box-shadow:0 16px 46px rgba(0,0,0,.55),inset 0 0 0 7px rgba(255,255,255,.22),0 0 56px rgba(155,48,255,.75);}
-  #coin.flip{animation:coinflip 4s cubic-bezier(.25,.6,.2,1) forwards;}
-  @keyframes coinflip{0%{transform:translate(-50%,-50%) scale(.3) rotateX(0);}
-    12%{transform:translate(-50%,-80%) scale(1) rotateX(1080deg);}
-    100%{transform:translate(-50%,-50%) scale(1) rotateX(5400deg);}}
+  .ct-coin.flip{animation:ctflip 4s cubic-bezier(.25,.6,.2,1);}
+  @keyframes ctflip{0%{transform:scale(.4) rotateX(0);}12%{transform:scale(1) rotateX(1080deg);}
+    100%{transform:scale(1) rotateX(5400deg);}}
+  .ct-result{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:130px;line-height:.9;
+    text-transform:uppercase;letter-spacing:.01em;
+    background:linear-gradient(180deg,#e8c8ff,#b565ff 46%,#8a2be2);-webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;filter:drop-shadow(0 0 30px rgba(155,48,255,.75));
+    opacity:0;transform:scale(.5);transition:opacity .35s cubic-bezier(.16,1,.3,1),transform .35s cubic-bezier(.16,1,.3,1);}
+  .ct-result.show{opacity:1;transform:scale(1);}
   #status{position:fixed;top:10px;left:12px;font:11px monospace;color:#666;z-index:70;}
 </style>
 </head>
 <body>
   <div id="crt"></div><div id="vig"></div>
-  <div id="coin">?</div>
+  <div id="cointoss">
+    <div class="ct-eyebrow">Coin Toss</div>
+    <div class="ct-coin" id="ctCoin">VGA</div>
+    <div class="ct-result" id="ctResult"></div>
+  </div>
   <div id="status">standby: connecting…</div>
 
   <div id="stage">
@@ -318,10 +330,13 @@ sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
   if(c.type==='pickbar' && c.d && c.d.teamA && c.d.teamB) setTvs(c.d.teamA, c.d.teamB, 'Tonight')
   // coin toss — flips over the current standby view
   if(c.type==='coin'){
-    const el=$('coin'); el.textContent='?'; el.classList.remove('flip'); void el.offsetWidth; el.classList.add('flip')
-    setTimeout(()=>{ el.textContent=(c.result||'?') }, 3600)   // reveal near the end of the 4s spin
-    setTimeout(()=>{ el.classList.remove('flip'); el.style.transform='translate(-50%,-50%) scale(0)' }, 7000)
-    setTimeout(()=>{ el.style.transform='' }, 7400)
+    const box=$('cointoss'), coin=$('ctCoin'), res=$('ctResult')
+    res.classList.remove('show'); res.textContent=''; coin.textContent='VGA'
+    box.classList.add('on')
+    coin.classList.remove('flip'); void coin.offsetWidth; coin.classList.add('flip')
+    setTimeout(()=>{ res.textContent=(c.result||'?'); res.classList.add('show') }, 3600)   // reveal HEADS/TAILS
+    setTimeout(()=>{ box.classList.remove('on') }, 6800)                                     // transition out
+    setTimeout(()=>{ coin.classList.remove('flip') }, 7400)
   }
 }).subscribe(s=>{ $('status').textContent='standby: '+(s==='SUBSCRIBED'?'● live':s.toLowerCase()) })
 

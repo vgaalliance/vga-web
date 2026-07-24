@@ -152,7 +152,7 @@ body::after { display:none; }
 .vs-slot.r { text-align:right; }
 .tabbr {
   font-family:'Barlow Condensed',sans-serif;
-  font-size:76px; font-weight:900; font-style:italic;
+  font-size:64px; font-weight:900; font-style:italic;
   letter-spacing:-.01em; line-height:.88; text-transform:uppercase;
   white-space:nowrap;
   background:linear-gradient(180deg,#e8c8ff 0%,#b565ff 44%,#8a2be2 100%);
@@ -811,16 +811,23 @@ tick();
 (function(){
   const _sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
     'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
-  // big team name: one line, shrinks to fit its slot so long names never overflow
-  const fit=el=>{ el.style.whiteSpace='nowrap'; let fs=88; el.style.fontSize=fs+'px'
-    const max=700   // stacked: names get the full left-panel width, shrink only if huge
-    while(el.scrollWidth>max && fs>26){ fs-=3; el.style.fontSize=fs+'px' } }
+  // BOTH team names get ONE shared size: whatever fits the LONGER name (so jUnC
+  // and Champions United are identical size, capped at a sensible max).
+  const fitPair=()=>{
+    const L=document.getElementById('cdBigL'), R=document.getElementById('cdBigR'); if(!L||!R) return
+    const MAX=64, MIN=26, maxW=700
+    const sizeFor=el=>{ el.style.whiteSpace='nowrap'; let fs=MAX; el.style.fontSize=fs+'px'
+      while(el.scrollWidth>maxW && fs>MIN){ fs-=2; el.style.fontSize=fs+'px' } return fs }
+    const fs=Math.min(sizeFor(L), sizeFor(R))
+    L.style.fontSize=fs+'px'; R.style.fontSize=fs+'px'
+  }
   _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
     if(c.type!=='countdown') return
     const d=c.d||{}
-    // team name goes in the BIG slot (auto-fit); the small chip stays TEAM A / TEAM B
-    if(d.a){ const e=document.getElementById('cdBigL'); if(e){ e.textContent=d.a; fit(e) } }
-    if(d.b){ const e=document.getElementById('cdBigR'); if(e){ e.textContent=d.b; fit(e) } }
+    // team name goes in the BIG slot; the small chip stays TEAM A / TEAM B
+    if(d.a){ const e=document.getElementById('cdBigL'); if(e) e.textContent=d.a }
+    if(d.b){ const e=document.getElementById('cdBigR'); if(e) e.textContent=d.b }
+    if(d.a||d.b) fitPair()
     if(d.eventMain && document.getElementById('tbEventMain')) document.getElementById('tbEventMain').textContent=d.eventMain
     if(d.eventSub  && document.getElementById('tbEventSub'))  document.getElementById('tbEventSub').textContent=d.eventSub
     if(d.target){ CFG.target=new Date(d.target); tick() }
