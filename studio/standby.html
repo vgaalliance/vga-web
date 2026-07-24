@@ -69,8 +69,10 @@
     -webkit-text-fill-color:transparent;}
 
   /* team vs team */
-  .tvs{display:flex;align-items:center;justify-content:center;gap:60px;padding:40px 0;}
-  .tvs .side{flex:1;text-align:center;}
+  .tvs{display:flex;align-items:center;justify-content:center;gap:70px;padding:40px 0;}
+  .tvs .side{flex:1;}
+  .tvs .side.l{text-align:right;}   /* names hug the VS so short + long teams balance */
+  .tvs .side.r{text-align:left;}
   .tvs .tn{font-weight:900;font-size:96px;line-height:.9;text-transform:uppercase;
     background:linear-gradient(180deg,#e8c8ff,#b565ff 46%,#8a2be2);-webkit-background-clip:text;background-clip:text;
     -webkit-text-fill-color:transparent;filter:drop-shadow(0 0 26px rgba(155,48,255,.6));}
@@ -78,6 +80,21 @@
   .tvs .mid{font-family:'Press Start 2P',monospace;font-size:60px;color:var(--pink);
     text-shadow:0 0 26px rgba(255,51,204,.7);}
 
+  /* card reveal */
+  .cdate{font-family:'Press Start 2P',monospace;font-size:15px;letter-spacing:.2em;
+    color:var(--dim);margin:-14px 0 22px;}
+  .cbouts{display:flex;flex-direction:column;gap:10px;}
+  .cbout{display:grid;grid-template-columns:1fr 120px 1fr;align-items:center;
+    padding:12px 26px;background:var(--panel);border-left:4px solid var(--pur);
+    box-shadow:0 0 18px rgba(60,0,110,.4);}
+  .cbout .fa{text-align:right;font-weight:700;font-size:36px;text-transform:uppercase;}
+  .cbout .fb{text-align:left;font-weight:700;font-size:36px;text-transform:uppercase;}
+  .cbout .vs{font-family:'Press Start 2P',monospace;font-size:18px;color:var(--pink);
+    text-align:center;text-shadow:0 0 10px rgba(255,51,204,.5);}
+  .cbout.title{border-left-color:#ffce00;box-shadow:0 0 26px rgba(255,206,0,.28);}
+  .cbout.title .vs{color:#ffce00;}
+  .cbadge{grid-column:1/-1;text-align:center;font-family:'Press Start 2P',monospace;
+    font-size:10px;letter-spacing:.2em;color:#ffce00;margin-bottom:4px;}
   #status{position:fixed;top:10px;left:12px;font:11px monospace;color:#666;z-index:70;}
 </style>
 </head>
@@ -115,6 +132,13 @@
       <div class="title sm" id="tvsTitle">Tonight</div>
       <div class="tvs" id="tvsContent"></div>
     </div>
+
+    <div class="view" id="v-card">
+      <div class="eyebrow">VGA · UBA · Fight Card</div>
+      <div class="title" id="cardTitle">The Card</div>
+      <div class="cdate" id="cardDate"></div>
+      <div class="cbouts" id="cardContent"></div>
+    </div>
   </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -127,16 +151,33 @@ const DAY=['SUN','MON','TUE','WED','THU','FRI','SAT']
 const fdate=d=>{const x=new Date(d);return DAY[x.getDay()]+' '+MO[x.getMonth()]+' '+x.getDate()}
 const ftime=d=>{const x=new Date(d);let h=x.getHours(),m=x.getMinutes();const ap=h>=12?'PM':'AM';h=h%12||12;return h+(m?':'+String(m).padStart(2,'0'):'')+ap+' ET'}
 
-let VIEWS=['standings','rosters','schedule','next3','teamvs'], cycle=null
+let VIEWS=['standings','rosters','schedule','next3','teamvs','card'], cycle=null
 
 async function loadAll(){
   const [{data:st},{data:rec},{data:mt},{data:ev}] = await Promise.all([
     sb.from('team_standings').select('*'),
     sb.from('ubae_fighter_records').select('stage_name,current_team'),
     sb.from('team_matches_public').select('*').eq('status','scheduled').order('match_date').limit(8),
-    sb.from('events_public').select('*').eq('status','scheduled').order('event_date').limit(3),
+    sb.from('events_public').select('*').eq('status','scheduled').gte('event_date',new Date(Date.now()-6*3600e3).toISOString()).order('event_date').limit(3),
   ])
   renderStandings(st||[]); renderRosters(st||[], rec||[]); renderSchedule(mt||[]); renderNext(ev||[]); renderTvs(mt||[])
+  // card reveal — soonest upcoming event's full card
+  const ev0=(ev||[])[0]
+  if(ev0){ const {data:em}=await sb.from('event_matches').select('*').eq('event_id',ev0.id).order('bout_number'); renderCard(ev0, em||[]) }
+}
+
+function renderCard(ev, bouts){
+  document.getElementById('cardTitle').textContent=ev.name
+  document.getElementById('cardDate').textContent=fdate(ev.event_date).toUpperCase()
+  const box=document.getElementById('cardContent')
+  const open=bouts.filter(b=>b.fighter_a_name && b.fighter_b_name)
+  box.innerHTML = open.length ? open.map(b=>
+    `<div class="cbout${b.is_title_fight?' title':''}">
+      ${b.is_title_fight?`<div class="cbadge">★ ${b.title_name||'Title Fight'} ★</div>`:''}
+      <span class="fa">${b.fighter_a_name}</span>
+      <span class="vs">VS</span>
+      <span class="fb">${b.fighter_b_name}</span></div>`).join('')
+    : '<div class="cbout"><span class="fa"></span><span class="vs">CARD SOON</span><span class="fb"></span></div>'
 }
 
 function renderStandings(st){
@@ -176,13 +217,16 @@ function renderNext(ev){
       <span class="dt">${fdate(e.event_date)}</span></div>`).join('') || '<div class="lrow"><span class="ev">More soon</span></div>'
 }
 
+function setTvs(a, b, sub){
+  if(sub!=null) $('tvsTitle').textContent=sub
+  $('tvsContent').innerHTML=
+    `<div class="side l"><div class="tn">${a}</div></div>
+     <div class="mid">VS</div>
+     <div class="side r"><div class="tn">${b}</div></div>`
+}
 function renderTvs(mt){
   const m=mt[0]; if(!m) return
-  $('tvsTitle').textContent='Week '+m.week+' · '+fdate(m.match_date)
-  $('tvsContent').innerHTML=
-    `<div class="side"><div class="tn">${m.team_a_name}</div></div>
-     <div class="mid">VS</div>
-     <div class="side"><div class="tn">${m.team_b_name}</div></div>`
+  setTvs(m.team_a_name, m.team_b_name, 'Week '+m.week+' · '+fdate(m.match_date))
 }
 
 function show(view){
@@ -195,8 +239,9 @@ function show(view){
 }
 
 sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
-  if(c.type!=='standby') return
-  show(c.on===false?'off':c.view)
+  if(c.type==='standby'){ show(c.on===false?'off':c.view); return }
+  // when the deck loads a match in the tracker, mirror it on the team-vs-team screen
+  if(c.type==='pickbar' && c.d && c.d.teamA && c.d.teamB) setTvs(c.d.teamA, c.d.teamB, 'Tonight')
 }).subscribe(s=>{ $('status').textContent='standby: '+(s==='SUBSCRIBED'?'● live':s.toLowerCase()) })
 
 loadAll()
