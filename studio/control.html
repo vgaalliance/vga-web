@@ -388,7 +388,7 @@ window.loadBetFeed=async()=>{
 }
 
 async function fireRanking(weight,label){
-  let q=sb.from('rankings_public').select('rank,fighter_name,weight_class').order('rank').limit(5)
+  let q=sb.from('rankings_public').select('rank,fighter_name,weight_class').order('rank').limit(30)
   q = weight==='p4p' ? q.eq('scope','overall') : q.eq('weight_class',weight).eq('scope','weight_class')
   const { data } = await q
   send({type:'panel',on:true,d:{title:label,

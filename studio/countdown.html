@@ -151,6 +151,7 @@ body::after { display:none; }
   font-family:'Barlow Condensed',sans-serif;
   font-size:118px; font-weight:900; font-style:italic;
   letter-spacing:-.01em; line-height:.88; text-transform:uppercase;
+  white-space:nowrap;
 }
 .tabbr.l {
   color:#fff;
@@ -376,6 +377,7 @@ body::after { display:none; }
   <div class="vs-row">
     <div class="vs-slot l">
       <div class="team-frame">TEAM A</div>
+      <div class="tabbr l" id="cdBigL">TEAM A</div>
     </div>
     <div class="vs-mid">
       <div class="vs-word">VS</div>
@@ -383,6 +385,7 @@ body::after { display:none; }
     </div>
     <div class="vs-slot r">
       <div class="team-frame">TEAM B</div>
+      <div class="tabbr r" id="cdBigR">TEAM B</div>
     </div>
   </div>
   <div class="game-menu" id="gameMenu">
@@ -796,12 +799,16 @@ tick();
 (function(){
   const _sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
     'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
+  // big team name: one line, shrinks to fit its slot so long names never overflow
+  const fit=el=>{ el.style.whiteSpace='nowrap'; let fs=118; el.style.fontSize=fs+'px'
+    const max=(el.parentElement.clientWidth||600)-14
+    while(el.scrollWidth>max && fs>26){ fs-=3; el.style.fontSize=fs+'px' } }
   _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
     if(c.type!=='countdown') return
     const d=c.d||{}
-    const frames=document.querySelectorAll('.team-frame')
-    if(d.a && frames[0]) frames[0].textContent=d.a
-    if(d.b && frames[1]) frames[1].textContent=d.b
+    // team name goes in the BIG slot (auto-fit); the small chip stays TEAM A / TEAM B
+    if(d.a){ const e=document.getElementById('cdBigL'); if(e){ e.textContent=d.a; fit(e) } }
+    if(d.b){ const e=document.getElementById('cdBigR'); if(e){ e.textContent=d.b; fit(e) } }
     if(d.eventMain && document.getElementById('tbEventMain')) document.getElementById('tbEventMain').textContent=d.eventMain
     if(d.eventSub  && document.getElementById('tbEventSub'))  document.getElementById('tbEventSub').textContent=d.eventSub
     if(d.target){ CFG.target=new Date(d.target); tick() }
