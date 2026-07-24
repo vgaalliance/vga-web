@@ -137,14 +137,11 @@ body::after { display:none; }
   padding:0 50px 0 70px; z-index:30; padding-bottom:60px;
 }
 .vs-row {
-  display:flex; flex-direction:column; align-items:flex-start;
-  gap:2px; margin-bottom:16px; width:100%;
+  display:flex; flex-direction:row; align-items:center; justify-content:space-between;
+  gap:10px; margin-bottom:16px; width:100%;
   transform: perspective(1200px) rotateY(2deg);
   transform-origin: left center;
 }
-.vs-slot{ flex:none !important; width:auto; }
-.vs-slot.r, .vs-slot.r .name-wrap{ text-align:left !important; }
-.vs-mid{ align-items:flex-start !important; padding:0 !important; margin:2px 0 !important; }
 /* spacer slots for team names on each side */
 .vs-slot {
   flex:1; min-width:180px;
@@ -815,7 +812,7 @@ tick();
   // and Champions United are identical size, capped at a sensible max).
   const fitPair=()=>{
     const L=document.getElementById('cdBigL'), R=document.getElementById('cdBigR'); if(!L||!R) return
-    const MAX=64, MIN=26, maxW=700
+    const MAX=60, MIN=20, maxW=260
     const sizeFor=el=>{ el.style.whiteSpace='nowrap'; let fs=MAX; el.style.fontSize=fs+'px'
       while(el.scrollWidth>maxW && fs>MIN){ fs-=2; el.style.fontSize=fs+'px' } return fs }
     const fs=Math.min(sizeFor(L), sizeFor(R))
