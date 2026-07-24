@@ -7,7 +7,8 @@
   @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap');
   html,body{margin:0;height:100%;background:transparent;overflow:hidden;
     font-family:'Barlow',system-ui,Arial,sans-serif;color:#fff;}
-  :root{ --red:#ff2e2e; --red2:#c00c0c; --gold:#ffce54; --green:#3fdd6a; --ink:#08080b; }
+  /* CTA-purple theme: the accent tab + glows are purple (was red); gold/green stay for amounts */
+  :root{ --red:#b565ff; --red2:#8a2be2; --gold:#ffce54; --green:#3fdd6a; --ink:#08080b; }
   .cond{font-family:'Barlow Condensed',sans-serif;}
 
   #status{position:fixed;top:8px;left:10px;font:11px monospace;color:#888;
@@ -111,11 +112,11 @@
   .oside{flex:1;} .oside.r{text-align:right;}
   .oname{font-family:'Barlow Condensed';font-weight:700;font-size:34px;text-transform:uppercase;color:#fff;line-height:1;}
   .omult{font-family:'Barlow Condensed';font-weight:700;font-size:30px;margin-top:2px;}
-  .oside.l .omult{color:#ff5a4f;} .oside.r .omult{color:#4d9bff;}
+  .oside.l .omult{color:#c98bff;} .oside.r .omult{color:#ff5ad8;}
   .obar{flex:2;height:26px;border-radius:5px;overflow:hidden;display:flex;
     box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);}
-  .obar .ba{background:linear-gradient(90deg,#c00c0c,#ff3b30);}
-  .obar .bb{background:linear-gradient(90deg,#2f6fd6,#4d9bff);}
+  .obar .ba{background:linear-gradient(90deg,#6a1fb0,#b565ff);}
+  .obar .bb{background:linear-gradient(90deg,#a3187f,#ff33cc);}
   .opct{font:700 13px 'Barlow';color:#fff;display:flex;align-items:center;padding:0 8px;}
 
   /* ── PERSISTENT SCHEDULE PANEL ── */
@@ -203,7 +204,8 @@ const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
   'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
 
 const $=id=>document.getElementById(id)
-let hideTimer=null
+let hideTimer=null, panelTimer=null, oddsTimer=null
+const AUTOHIDE=13000   // persistent widgets (odds board, standings/rankings panel) auto-clear after this
 function setAcc(c){ $('flash').style.setProperty('--acc', c) }
 
 /* ── SFX — synthesized in-browser (no files, original, OBS-routable). SFX=false to mute. ── */
@@ -260,7 +262,7 @@ function handle(c){
       $('ftowin').textContent=Math.round(c.d.amt*c.d.odds).toLocaleString()
       $('fodds').textContent=c.d.odds.toFixed(2)+'×'
     } else if(c.w==='fact'){
-      setAcc('#3b82f6'); $('fkick').textContent='Fun fact'; $('ftitle').textContent='';
+      setAcc('#cc66ff'); $('fkick').textContent='Fun fact'; $('ftitle').textContent='';
       $('ftitle').classList.remove('cond'); $('fsub').innerHTML=`<span style="font-size:30px;color:#fff;line-height:1.15;display:block">${c.d}</span>`
     } else if(c.w==='cta'){
       setAcc('var(--green)'); $('fkick').textContent=c.d.k; $('ftitle').classList.add('cond')
@@ -282,6 +284,8 @@ function handle(c){
     if(c.d){ $('phh').textContent=c.d.title||'Schedule'
       $('prows').innerHTML=(c.d.rows||[]).map(r=>`<div class="prow"><span>${r[0]}</span><span>${r[1]}</span></div>`).join('') }
     $('panel').classList.toggle('show', c.on)
+    clearTimeout(panelTimer)
+    if(c.on) panelTimer=setTimeout(()=>$('panel').classList.remove('show'), AUTOHIDE)
   }
   if(c.type==='fighter'){
     const d=c.d
@@ -303,7 +307,7 @@ function handle(c){
     sfx.whoosh()
   }
   if(c.type==='odds'){
-    if(c.on===false){ $('odds').classList.remove('show'); return }
+    if(c.on===false){ $('odds').classList.remove('show'); clearTimeout(oddsTimer); return }
     const d=c.d, pool=d.total_a+d.total_b
     const pa= pool? Math.round(d.total_a/pool*100):50, pb=100-pa
     const oa= d.total_a? (pool/d.total_a):0, ob= d.total_b? (pool/d.total_b):0
@@ -313,6 +317,7 @@ function handle(c){
     $('oba').style.width=pa+'%'; $('obb').style.width=pb+'%'
     $('opa').textContent=pa+'%'; $('opb').textContent=pb+'%'
     $('odds').classList.add('show')
+    clearTimeout(oddsTimer); oddsTimer=setTimeout(()=>$('odds').classList.remove('show'), AUTOHIDE)
     sfx.riser()
   }
   if(c.type==='coin'){
