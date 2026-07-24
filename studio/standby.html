@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>UBAe — Standby</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Barlow+Condensed:wght@500;700;900&family=Barlow:wght@500;600&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  :root{ --pur:#9b30ff; --hi:#cc66ff; --pink:#ff33cc; --bg:#04000c;
+    --panel:rgba(14,0,30,.82); --line:rgba(155,48,255,.28); --dim:rgba(200,160,255,.55); }
+  html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;
+    font-family:'Barlow Condensed',sans-serif;color:#fff;}
+
+  /* CRT scanlines + vignette to match the other overlays */
+  #crt{position:fixed;inset:0;pointer-events:none;z-index:60;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1px,transparent 1px 3px);}
+  #vig{position:fixed;inset:0;pointer-events:none;z-index:59;
+    background:radial-gradient(ellipse at center,transparent 58%,rgba(0,0,0,.6) 100%);}
+
+  #stage{position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;padding:70px 90px;}
+  .view{display:none;width:100%;max-width:1640px;animation:vin .5s cubic-bezier(.16,1,.3,1);}
+  .view.on{display:block;}
+  @keyframes vin{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:none;}}
+
+  .eyebrow{font-family:'Press Start 2P',monospace;font-size:14px;letter-spacing:.35em;
+    color:var(--hi);text-shadow:0 0 14px rgba(204,102,255,.6);margin-bottom:6px;}
+  .title{font-weight:900;font-size:78px;line-height:.92;text-transform:uppercase;letter-spacing:.01em;
+    color:#fff;text-shadow:0 0 34px rgba(155,48,255,.7);margin-bottom:26px;}
+  .title.sm{font-size:58px;}
+
+  /* two-conference grid */
+  .confs{display:grid;grid-template-columns:1fr 1fr;gap:34px;}
+  .conf-h{font-family:'Press Start 2P',monospace;font-size:15px;letter-spacing:.2em;
+    color:var(--pink);margin-bottom:14px;text-shadow:0 0 12px rgba(255,51,204,.5);}
+
+  /* standings rows */
+  .srow{display:grid;grid-template-columns:52px 1fr 150px 90px;align-items:center;gap:12px;
+    padding:12px 18px;margin-bottom:8px;background:var(--panel);
+    border-left:4px solid var(--pur);box-shadow:0 0 18px rgba(60,0,110,.4);}
+  .srow .rk{font-family:'Press Start 2P',monospace;font-size:16px;color:var(--hi);}
+  .srow .nm{font-weight:700;font-size:34px;text-transform:uppercase;}
+  .srow .rec{font-weight:700;font-size:30px;color:#fff;text-align:right;}
+  .srow .df{font-weight:600;font-size:22px;color:var(--dim);text-align:right;}
+  .srow.lead{border-left-color:#ffce00;box-shadow:0 0 26px rgba(255,206,0,.3);}
+  .srow.lead .rk{color:#ffce00;}
+
+  /* rosters — vertical team bars */
+  .rgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}
+  .tcol{background:var(--panel);border-top:5px solid var(--pur);padding:0 0 14px;
+    box-shadow:0 0 22px rgba(60,0,110,.45);}
+  .tcol .th{font-weight:900;font-size:30px;text-transform:uppercase;text-align:center;
+    padding:14px 8px;background:linear-gradient(180deg,rgba(155,48,255,.35),transparent);
+    letter-spacing:.02em;line-height:1;}
+  .tcol .plr{font-weight:600;font-size:23px;text-align:center;padding:8px 6px;
+    border-top:1px solid var(--line);color:#f0e0ff;}
+  .conf-tag{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--dim);
+    text-align:center;padding-top:8px;letter-spacing:.14em;}
+
+  /* schedule + next-events list */
+  .list{display:flex;flex-direction:column;gap:12px;}
+  .lrow{display:flex;align-items:center;gap:22px;padding:16px 26px;background:var(--panel);
+    border-left:4px solid var(--pur);box-shadow:0 0 18px rgba(60,0,110,.4);}
+  .lrow .wk{font-family:'Press Start 2P',monospace;font-size:16px;color:var(--hi);min-width:120px;}
+  .lrow .mt{font-weight:700;font-size:38px;text-transform:uppercase;flex:1;}
+  .lrow .dt{font-weight:600;font-size:26px;color:var(--dim);letter-spacing:.04em;}
+  .lrow .ev{font-weight:900;font-size:44px;text-transform:uppercase;flex:1;
+    background:linear-gradient(180deg,#e8c8ff,#b565ff);-webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;}
+
+  /* team vs team */
+  .tvs{display:flex;align-items:center;justify-content:center;gap:60px;padding:40px 0;}
+  .tvs .side{flex:1;text-align:center;}
+  .tvs .tn{font-weight:900;font-size:96px;line-height:.9;text-transform:uppercase;
+    background:linear-gradient(180deg,#e8c8ff,#b565ff 46%,#8a2be2);-webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;filter:drop-shadow(0 0 26px rgba(155,48,255,.6));}
+  .tvs .tr{font-weight:700;font-size:34px;color:var(--dim);margin-top:12px;letter-spacing:.06em;}
+  .tvs .mid{font-family:'Press Start 2P',monospace;font-size:60px;color:var(--pink);
+    text-shadow:0 0 26px rgba(255,51,204,.7);}
+
+  #status{position:fixed;top:10px;left:12px;font:11px monospace;color:#666;z-index:70;}
+</style>
+</head>
+<body>
+  <div id="crt"></div><div id="vig"></div>
+  <div id="status">standby: connecting…</div>
+
+  <div id="stage">
+    <div class="view" id="v-standings">
+      <div class="eyebrow">UBAe · Summer Split</div>
+      <div class="title">Standings</div>
+      <div class="confs" id="standContent"></div>
+    </div>
+
+    <div class="view" id="v-rosters">
+      <div class="eyebrow">UBAe · Summer Split</div>
+      <div class="title">Team Rosters</div>
+      <div class="rgrid" id="rosterContent"></div>
+    </div>
+
+    <div class="view" id="v-schedule">
+      <div class="eyebrow">UBAe · Summer Split</div>
+      <div class="title sm">Upcoming Match Nights</div>
+      <div class="list" id="schedContent"></div>
+    </div>
+
+    <div class="view" id="v-next3">
+      <div class="eyebrow">VGA · UBA</div>
+      <div class="title sm">Next 3 Events</div>
+      <div class="list" id="nextContent"></div>
+    </div>
+
+    <div class="view" id="v-teamvs">
+      <div class="eyebrow">UBAe · Match Night</div>
+      <div class="title sm" id="tvsTitle">Tonight</div>
+      <div class="tvs" id="tvsContent"></div>
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
+  'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
+const $=id=>document.getElementById(id)
+const MO=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+const DAY=['SUN','MON','TUE','WED','THU','FRI','SAT']
+const fdate=d=>{const x=new Date(d);return DAY[x.getDay()]+' '+MO[x.getMonth()]+' '+x.getDate()}
+const ftime=d=>{const x=new Date(d);let h=x.getHours(),m=x.getMinutes();const ap=h>=12?'PM':'AM';h=h%12||12;return h+(m?':'+String(m).padStart(2,'0'):'')+ap+' ET'}
+
+let VIEWS=['standings','rosters','schedule','next3','teamvs'], cycle=null
+
+async function loadAll(){
+  const [{data:st},{data:rec},{data:mt},{data:ev}] = await Promise.all([
+    sb.from('team_standings').select('*'),
+    sb.from('ubae_fighter_records').select('stage_name,current_team'),
+    sb.from('team_matches_public').select('*').eq('status','scheduled').order('match_date').limit(8),
+    sb.from('events_public').select('*').eq('status','scheduled').order('event_date').limit(3),
+  ])
+  renderStandings(st||[]); renderRosters(st||[], rec||[]); renderSchedule(mt||[]); renderNext(ev||[]); renderTvs(mt||[])
+}
+
+function renderStandings(st){
+  const byC={}
+  st.forEach(t=>{ (byC[t.conference]=byC[t.conference]||[]).push(t) })
+  const conf=Object.keys(byC).sort()
+  $('standContent').innerHTML=conf.map(c=>{
+    const rows=byC[c].sort((a,b)=>(b.match_wins-a.match_wins)||(b.bout_diff-a.bout_diff))
+    return `<div><div class="conf-h">Conference ${c}</div>${rows.map((t,i)=>
+      `<div class="srow${i===0?' lead':''}"><span class="rk">${i+1}</span>
+        <span class="nm">${t.team_name}</span>
+        <span class="rec">${t.match_wins}-${t.match_losses}${t.match_draws?'-'+t.match_draws:''}</span>
+        <span class="df">${t.bout_diff>0?'+':''}${t.bout_diff}</span></div>`).join('')}</div>`
+  }).join('')
+}
+
+function renderRosters(st, rec){
+  const confOf={}; st.forEach(t=>confOf[t.team_name]=t.conference)
+  const byTeam={}; rec.forEach(f=>{ if(!f.current_team) return; (byTeam[f.current_team]=byTeam[f.current_team]||[]).push(f.stage_name) })
+  const teams=Object.keys(byTeam).sort((a,b)=>(confOf[a]||'Z').localeCompare(confOf[b]||'Z')||a.localeCompare(b))
+  $('rosterContent').innerHTML=teams.map(t=>
+    `<div class="tcol"><div class="th">${t}</div>
+      ${byTeam[t].slice(0,8).map(n=>`<div class="plr">${n}</div>`).join('')}
+      <div class="conf-tag">Conf ${confOf[t]||'—'}</div></div>`).join('')
+}
+
+function renderSchedule(mt){
+  $('schedContent').innerHTML=mt.map(m=>
+    `<div class="lrow"><span class="wk">WK ${m.week}</span>
+      <span class="mt">${m.team_a_name} <span style="color:var(--pink)">vs</span> ${m.team_b_name}</span>
+      <span class="dt">${fdate(m.match_date)} · ${ftime(m.match_date)}</span></div>`).join('') || '<div class="lrow"><span class="mt">Schedule TBA</span></div>'
+}
+
+function renderNext(ev){
+  $('nextContent').innerHTML=ev.map(e=>
+    `<div class="lrow"><span class="ev">${e.name}</span>
+      <span class="dt">${fdate(e.event_date)}</span></div>`).join('') || '<div class="lrow"><span class="ev">More soon</span></div>'
+}
+
+function renderTvs(mt){
+  const m=mt[0]; if(!m) return
+  $('tvsTitle').textContent='Week '+m.week+' · '+fdate(m.match_date)
+  $('tvsContent').innerHTML=
+    `<div class="side"><div class="tn">${m.team_a_name}</div></div>
+     <div class="mid">VS</div>
+     <div class="side"><div class="tn">${m.team_b_name}</div></div>`
+}
+
+function show(view){
+  clearInterval(cycle); cycle=null
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'))
+  if(view==='off'||!view) return
+  if(view==='auto'){ let i=0; const step=()=>{ document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'))
+      const el=$('v-'+VIEWS[i%VIEWS.length]); if(el) el.classList.add('on'); i++ }; step(); cycle=setInterval(step,15000); return }
+  const el=$('v-'+view); if(el) el.classList.add('on')
+}
+
+sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
+  if(c.type!=='standby') return
+  show(c.on===false?'off':c.view)
+}).subscribe(s=>{ $('status').textContent='standby: '+(s==='SUBSCRIBED'?'● live':s.toLowerCase()) })
+
+loadAll()
+</script>
+</body>
+</html>

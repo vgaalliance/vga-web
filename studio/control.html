@@ -134,6 +134,19 @@
   </div>
 
   <div class="sec">
+    <h4>STANDBY SCREEN — waiting/promo views (one scene, toggle any)</h4>
+    <div class="row">
+      <button onclick="standby('standings')">Standings</button>
+      <button onclick="standby('rosters')">Rosters</button>
+      <button onclick="standby('schedule')">Schedule</button>
+      <button onclick="standby('next3')">Next 3 events</button>
+      <button onclick="standby('teamvs')">Team vs team</button>
+      <button onclick="standby('auto')">▶ Auto-cycle</button>
+      <button class="hide" onclick="standby('off')">Hide</button>
+    </div>
+  </div>
+
+  <div class="sec">
     <h4>💬 CUSTOM MESSAGE — type anything, put it on screen (shoutouts, hype, etc.)</h4>
     <div class="row">
       <input id="msgText" placeholder="MESSAGE TEXT…" style="width:420px" onkeydown="if(event.key==='Enter')fireMsg()">
@@ -408,6 +421,8 @@ window.fireMsg=()=>{
   const t=document.getElementById('msgText').value.trim(); if(!t) return
   send({type:'flash', w:'msg', d:t })
 }
+
+window.standby=view=>send({type:'standby', view, on:view!=='off'})
 
 // countdown to N minutes from now (changeable, independent of match start)
 window.mnCountdownIn=()=>{
