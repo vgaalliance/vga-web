@@ -138,13 +138,16 @@
     <div class="row">
       <button onclick="standby('standings')">Standings</button>
       <button onclick="standby('rosters')">Rosters</button>
+      <button onclick="standby('ubarank')">UBA rankings</button>
       <button onclick="standby('schedule')">Schedule</button>
       <button onclick="standby('next3')">Next 3 events</button>
       <button onclick="standby('teamvs')">Team vs team</button>
-      <button onclick="standby('card')">🃏 Card reveal</button>
+      <button onclick="standby('cta')">📣 Call to action</button>
       <button onclick="standby('auto')">▶ Auto-cycle</button>
       <button class="hide" onclick="standby('off')">Hide</button>
     </div>
+    <h4 style="margin-top:8px">🃏 Card reveal — pick which event's card to show</h4>
+    <div class="row" id="cardEvents">loading events…</div>
   </div>
 
   <div class="sec">
@@ -427,6 +430,18 @@ window.fireMsg=()=>{
 
 window.standby=view=>send({type:'standby', view, on:view!=='off'})
 
+window.loadCardEvents=async()=>{
+  const { data } = await sb.from('events_public').select('name,event_date')
+    .eq('status','scheduled').gte('event_date',new Date(Date.now()-6*3600e3).toISOString())
+    .order('event_date').limit(6)
+  const box=document.getElementById('cardEvents'); box.innerHTML=''
+  if(!data||!data.length){ box.textContent='NO UPCOMING EVENTS'; return }
+  data.forEach(e=>{ const b=document.createElement('button')
+    b.textContent='🃏 '+e.name
+    b.onclick=()=>send({type:'standby', view:'card', on:true, event:e.name})
+    box.appendChild(b) })
+}
+
 // countdown to N minutes from now (changeable, independent of match start)
 window.mnCountdownIn=()=>{
   const m=parseFloat(document.getElementById('cdMins').value); if(!m||m<=0) return
@@ -480,6 +495,7 @@ window.loadStandings=async()=>{
 loadOdds()
 loadBetFeed()
 mnLoad()
+loadCardEvents()
 </script>
 </body>
 </html>

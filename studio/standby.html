@@ -95,6 +95,18 @@
   .cbout.title .vs{color:#ffce00;}
   .cbadge{grid-column:1/-1;text-align:center;font-family:'Press Start 2P',monospace;
     font-size:10px;letter-spacing:.2em;color:#ffce00;margin-bottom:4px;}
+  /* call to action */
+  #v-cta{text-align:center;}
+  .ctarow{display:flex;flex-direction:column;align-items:center;gap:30px;margin:24px 0 40px;}
+  .ctalink{font-weight:900;font-size:72px;text-transform:uppercase;line-height:1;
+    background:linear-gradient(180deg,#e8c8ff,#b565ff 46%,#8a2be2);-webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;filter:drop-shadow(0 0 26px rgba(155,48,255,.6));}
+  .ctalink.sm{font-size:56px;}
+  .ctasub{font-family:'Barlow',sans-serif;font-weight:600;font-size:26px;color:var(--dim);
+    text-transform:uppercase;letter-spacing:.1em;margin-top:6px;}
+  .ctastats{display:flex;justify-content:center;gap:56px;}
+  .ctastat .num{font-weight:900;font-size:82px;color:#fff;line-height:1;text-shadow:0 0 30px rgba(155,48,255,.7);}
+  .ctastat .lbl{font-family:'Press Start 2P',monospace;font-size:12px;color:var(--hi);letter-spacing:.16em;margin-top:8px;}
   #status{position:fixed;top:10px;left:12px;font:11px monospace;color:#666;z-index:70;}
 </style>
 </head>
@@ -113,6 +125,12 @@
       <div class="eyebrow">UBAe · Summer Split</div>
       <div class="title">Team Rosters</div>
       <div class="rgrid" id="rosterContent"></div>
+    </div>
+
+    <div class="view" id="v-ubarank">
+      <div class="eyebrow">VGA · UBA</div>
+      <div class="title">Division Rankings</div>
+      <div class="rgrid" id="ubarankContent"></div>
     </div>
 
     <div class="view" id="v-schedule">
@@ -139,6 +157,16 @@
       <div class="cdate" id="cardDate"></div>
       <div class="cbouts" id="cardContent"></div>
     </div>
+
+    <div class="view" id="v-cta">
+      <div class="eyebrow">Virtual Global Alliance</div>
+      <div class="title">Step In The Ring</div>
+      <div class="ctarow">
+        <div><div class="ctalink">discord.gg/uba</div><div class="ctasub">Fight · Community · Live Drops</div></div>
+        <div><div class="ctalink sm">ubaesports.com</div><div class="ctasub">Rankings · Records · Everything</div></div>
+      </div>
+      <div class="ctastats" id="ctaStats"></div>
+    </div>
   </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -151,19 +179,48 @@ const DAY=['SUN','MON','TUE','WED','THU','FRI','SAT']
 const fdate=d=>{const x=new Date(d);return DAY[x.getDay()]+' '+MO[x.getMonth()]+' '+x.getDate()}
 const ftime=d=>{const x=new Date(d);let h=x.getHours(),m=x.getMinutes();const ap=h>=12?'PM':'AM';h=h%12||12;return h+(m?':'+String(m).padStart(2,'0'):'')+ap+' ET'}
 
-let VIEWS=['standings','rosters','schedule','next3','teamvs','card'], cycle=null
+let VIEWS=['standings','rosters','ubarank','schedule','next3','teamvs','card','cta'], cycle=null
+const FUTURE=()=>new Date(Date.now()-6*3600e3).toISOString()
 
 async function loadAll(){
-  const [{data:st},{data:rec},{data:mt},{data:ev}] = await Promise.all([
+  const [{data:st},{data:rec},{data:mt},{data:ev},{data:rk}] = await Promise.all([
     sb.from('team_standings').select('*'),
     sb.from('ubae_fighter_records').select('stage_name,current_team'),
     sb.from('team_matches_public').select('*').eq('status','scheduled').order('match_date').limit(8),
-    sb.from('events_public').select('*').eq('status','scheduled').gte('event_date',new Date(Date.now()-6*3600e3).toISOString()).order('event_date').limit(3),
+    sb.from('events_public').select('*').eq('status','scheduled').gte('event_date',FUTURE()).order('event_date').limit(3),
+    sb.from('rankings_public').select('rank,fighter_name,weight_class').eq('scope','weight_class').order('rank'),
   ])
-  renderStandings(st||[]); renderRosters(st||[], rec||[]); renderSchedule(mt||[]); renderNext(ev||[]); renderTvs(mt||[])
-  // card reveal — soonest upcoming event's full card
-  const ev0=(ev||[])[0]
-  if(ev0){ const {data:em}=await sb.from('event_matches').select('*').eq('event_id',ev0.id).order('bout_number'); renderCard(ev0, em||[]) }
+  renderStandings(st||[]); renderRosters(st||[], rec||[]); renderSchedule(mt||[]); renderNext(ev||[]); renderTvs(mt||[]); renderUbaRank(rk||[])
+  showCard(null)   // preload soonest card
+  const { count } = await sb.from('fighter_cards').select('id',{count:'exact',head:true})
+  renderCta(count||0)
+}
+
+function renderCta(count){
+  const floor=Math.max(0, Math.floor(count/50)*50)
+  document.getElementById('ctaStats').innerHTML=
+    `<div class="ctastat"><div class="num">${floor}+</div><div class="lbl">Registered Fighters</div></div>
+     <div class="ctastat"><div class="num">4</div><div class="lbl">Divisions</div></div>
+     <div class="ctastat"><div class="num">1</div><div class="lbl">Team League</div></div>`
+}
+
+// card reveal for a SPECIFIC event (by name) or the soonest upcoming one
+async function showCard(eventName){
+  let q=sb.from('events_public').select('id,name,event_date').eq('status','scheduled')
+  q = eventName ? q.eq('name',eventName) : q.gte('event_date',FUTURE()).order('event_date')
+  const { data:evs } = await q.limit(1)
+  const ev0=evs&&evs[0]; if(!ev0) return
+  const { data:em } = await sb.from('event_matches').select('*').eq('event_id',ev0.id).order('bout_number')
+  renderCard(ev0, em||[])
+}
+
+const UBA_DIVS=[['lightweight','LIGHTWEIGHT'],['middleweight','MIDDLEWEIGHT'],['light_heavyweight','LIGHT HEAVY'],['heavyweight','HEAVYWEIGHT']]
+function renderUbaRank(rk){
+  document.getElementById('ubarankContent').innerHTML = UBA_DIVS.map(([w,lbl])=>{
+    const rows=rk.filter(r=>r.weight_class===w).sort((a,b)=>a.rank-b.rank).slice(0,8)
+    return `<div class="tcol"><div class="th" style="font-size:24px">${lbl}</div>
+      ${rows.map(r=>`<div class="plr"><b style="color:var(--hi)">${r.rank}</b> ${r.fighter_name}</div>`).join('')||'<div class="plr">—</div>'}</div>`
+  }).join('')
 }
 
 function renderCard(ev, bouts){
@@ -238,8 +295,12 @@ function show(view){
   const el=$('v-'+view); if(el) el.classList.add('on')
 }
 
-sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
-  if(c.type==='standby'){ show(c.on===false?'off':c.view); return }
+sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
+  if(c.type==='standby'){
+    if(c.on===false){ show('off'); return }
+    if(c.view==='card'){ await showCard(c.event); show('card'); return }   // c.event picks FN29/FN30/…
+    show(c.view); return
+  }
   // when the deck loads a match in the tracker, mirror it on the team-vs-team screen
   if(c.type==='pickbar' && c.d && c.d.teamA && c.d.teamB) setTvs(c.d.teamA, c.d.teamB, 'Tonight')
 }).subscribe(s=>{ $('status').textContent='standby: '+(s==='SUBSCRIBED'?'● live':s.toLowerCase()) })
