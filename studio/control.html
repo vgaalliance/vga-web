@@ -54,9 +54,11 @@
   button small{display:block;font-size:15px;text-transform:none;letter-spacing:.03em;
     color:inherit;opacity:.75;margin-top:1px;}
 
-  input{font-family:'VT323',monospace;font-size:20px;background:var(--bg);color:var(--g);
+  input,select{font-family:'VT323',monospace;font-size:20px;background:var(--bg);color:var(--g);
     border:2px solid var(--gdim);border-radius:2px;padding:7px 12px;width:240px;outline:none;
     text-shadow:0 0 6px rgba(58,255,110,.45);caret-color:var(--g);}
+  select{width:auto;text-transform:uppercase;cursor:pointer;}
+  select option{background:var(--bg);color:var(--g);}
   input:focus{border-color:var(--g);box-shadow:0 0 12px rgba(58,255,110,.3);}
   ::placeholder{color:var(--gdark);}
 
@@ -129,9 +131,12 @@
       <input id="bugText" placeholder="INFO BUG TEXT…" style="width:280px">
       <button onclick="fireBug()">Fire info bug</button>
     </div>
-    <h4 style="margin-top:14px">CUSTOM MESSAGE — put any text on screen (shoutouts, etc.)</h4>
+  </div>
+
+  <div class="sec">
+    <h4>💬 CUSTOM MESSAGE — type anything, put it on screen (shoutouts, hype, etc.)</h4>
     <div class="row">
-      <input id="msgText" placeholder="MESSAGE TEXT…" style="width:360px" onkeydown="if(event.key==='Enter')fireMsg()">
+      <input id="msgText" placeholder="MESSAGE TEXT…" style="width:420px" onkeydown="if(event.key==='Enter')fireMsg()">
       <button onclick="fireMsg()">Fire message</button>
     </div>
   </div>
@@ -147,19 +152,15 @@
   </div>
 
   <div class="sec">
-    <h4>WAGER TELEMETRY — ODDS BOARD</h4>
+    <h4>WAGERS — pick an event, then fire odds board / bet alerts</h4>
     <div class="row" style="margin-bottom:10px">
-      <button onclick="loadOdds()">Reload fights</button>
-      <button class="hide" onclick="send({type:'odds',on:false})">Hide</button>
+      <select id="evFilter" onchange="loadOdds();loadBetFeed()"><option value="">ALL EVENTS</option></select>
+      <button onclick="loadOdds();loadBetFeed()">Reload</button>
+      <button class="hide" onclick="send({type:'odds',on:false})">Hide odds</button>
     </div>
+    <h4 style="margin-top:6px">Odds board — click a fight</h4>
     <div class="row" id="oddsFights">SCANNING MARKETS…</div>
-  </div>
-
-  <div class="sec">
-    <h4>BET ALERTS — ANONYMOUS FEED</h4>
-    <div class="row" style="margin-bottom:10px">
-      <button onclick="loadBetFeed()">Reload bets</button>
-    </div>
+    <h4 style="margin-top:14px">Bet alerts — click a bet (anonymous)</h4>
     <div class="row" id="betFeed">SCANNING WAGERS…</div>
   </div>
 
@@ -221,9 +222,21 @@ window.searchFighter=async()=>{
   })
 }
 
+const evFilter=()=>document.getElementById('evFilter').value
+
 window.loadOdds=async()=>{
-  const { data } = await sb.from('bet_pools_public')
-    .select('*').order('event_status',{ascending:true}).order('bout_number')
+  let q=sb.from('bet_pools_public').select('*').order('event_status',{ascending:true}).order('bout_number')
+  if(evFilter()) q=q.eq('event_name',evFilter())
+  const { data } = await q
+  // populate the event dropdown once (all events with open markets)
+  const sel=document.getElementById('evFilter')
+  if(sel.options.length<=1 && data){
+    const evs=[...new Set(data.map(m=>m.event_name))]
+    // re-query unfiltered so the dropdown always lists every event, not just the filtered one
+    const { data:allEv }=await sb.from('bet_pools_public').select('event_name')
+    ;[...new Set((allEv||[]).map(m=>m.event_name))].forEach(e=>{
+      const o=document.createElement('option'); o.value=e; o.textContent=e; sel.appendChild(o) })
+  }
   const box=document.getElementById('oddsFights')
   if(!data||!data.length){ box.textContent='NO OPEN MARKETS'; return }
   box.innerHTML=''
@@ -405,8 +418,10 @@ window.mnCountdownIn=()=>{
 
 window.loadBetFeed=async()=>{
   // bets (no names) + current pool odds for each pick side
+  let fq=sb.from('bet_feed_public').select('*').order('amount',{ascending:false}).limit(24)
+  if(evFilter()) fq=fq.eq('event_name',evFilter())
   const [{ data: feed }, { data: pools }] = await Promise.all([
-    sb.from('bet_feed_public').select('*').order('amount',{ascending:false}).limit(24),
+    fq,
     sb.from('bet_pools_public').select('match_id,side_a,side_b,total_a,total_b'),
   ])
   const box=document.getElementById('betFeed')
