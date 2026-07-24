@@ -227,7 +227,8 @@ window.mnPick=async(m,btn)=>{
   if(btn) btn.classList.add('active')
   Object.assign(MN,{ id:m.id, a:m.team_a_name, b:m.team_b_name, scoreA:0, scoreB:0, date:m.match_date, week:m.week })
   MN.lineups=await lineupFor(m.id)
-  mnPush(); mnStateDraw()
+  // one click = every scene updates: pick bar, countdown VS, week loading bar
+  mnPush(); mnCountdown(); mnLoadbar(); mnStateDraw()
 }
 
 function mnStateDraw(){

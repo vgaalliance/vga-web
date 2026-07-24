@@ -201,6 +201,37 @@ const $=id=>document.getElementById(id)
 let hideTimer=null
 function setAcc(c){ $('flash').style.setProperty('--acc', c) }
 
+/* ── SFX — synthesized in-browser (no files, original, OBS-routable). SFX=false to mute. ── */
+const SFX = true
+const AC = SFX ? new (window.AudioContext||window.webkitAudioContext)() : null
+function _resume(){ if(AC && AC.state==='suspended') AC.resume() }
+document.addEventListener('visibilitychange',_resume); setInterval(_resume,3000)
+function _noise(dur){ const n=AC.sampleRate*dur, b=AC.createBuffer(1,n,AC.sampleRate), d=b.getChannelData(0)
+  for(let i=0;i<n;i++) d[i]=Math.random()*2-1; const s=AC.createBufferSource(); s.buffer=b; return s }
+function _env(g,t,a,d,peak){ g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(peak,t+a); g.gain.exponentialRampToValueAtTime(0.0001,t+a+d) }
+const sfx = {
+  whoosh(){ if(!AC)return; const t=AC.currentTime, s=_noise(.45), f=AC.createBiquadFilter(), g=AC.createGain()
+    f.type='bandpass'; f.Q.value=1.2; f.frequency.setValueAtTime(400,t); f.frequency.exponentialRampToValueAtTime(3200,t+.35)
+    _env(g,t,.03,.4,.35); s.connect(f); f.connect(g); g.connect(AC.destination); s.start(t); s.stop(t+.5) },
+  ching(){ if(!AC)return; const t=AC.currentTime; [1568,2093,3136].forEach((hz,i)=>{ const o=AC.createOscillator(), g=AC.createGain()
+    o.type='triangle'; o.frequency.value=hz; _env(g,t+i*.04,.005,.35,.18); o.connect(g); g.connect(AC.destination); o.start(t+i*.04); o.stop(t+i*.04+.4) }) },
+  impact(){ if(!AC)return; const t=AC.currentTime, o=AC.createOscillator(), g=AC.createGain()
+    o.type='sine'; o.frequency.setValueAtTime(120,t); o.frequency.exponentialRampToValueAtTime(38,t+.5); _env(g,t,.005,.6,.9)
+    o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t+.7)
+    const s=_noise(.12), ng=AC.createGain(); _env(ng,t,.002,.12,.4); s.connect(ng); ng.connect(AC.destination); s.start(t); s.stop(t+.14) },
+  riser(){ if(!AC)return; const t=AC.currentTime, s=_noise(.9), f=AC.createBiquadFilter(), g=AC.createGain()
+    f.type='bandpass'; f.Q.value=3; f.frequency.setValueAtTime(300,t); f.frequency.exponentialRampToValueAtTime(6000,t+.85)
+    _env(g,t,.6,.35,.3); s.connect(f); f.connect(g); g.connect(AC.destination); s.start(t); s.stop(t+.95) },
+  blip(){ if(!AC)return; const t=AC.currentTime, o=AC.createOscillator(), g=AC.createGain()
+    o.type='square'; o.frequency.setValueAtTime(660,t); o.frequency.exponentialRampToValueAtTime(990,t+.06); _env(g,t,.003,.09,.12)
+    o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t+.12) },
+  coin(){ if(!AC)return; const t=AC.currentTime           // spinning ticks → landing ding
+    for(let i=0;i<16;i++){ const o=AC.createOscillator(), g=AC.createGain(); o.type='square'; o.frequency.value=1200+Math.sin(i)*300
+      const tt=t+i*.11; _env(g,tt,.001,.03,.05); o.connect(g); g.connect(AC.destination); o.start(tt); o.stop(tt+.04) }
+    const dt=t+1.9; [2093,3136].forEach(hz=>{ const o=AC.createOscillator(), g=AC.createGain(); o.type='triangle'; o.frequency.value=hz
+      _env(g,dt,.005,.5,.2); o.connect(g); g.connect(AC.destination); o.start(dt); o.stop(dt+.6) }) },
+}
+
 function showFlash(){ const f=$('flash'); f.classList.remove('out'); void f.offsetWidth; f.classList.add('in')
   clearTimeout(hideTimer); hideTimer=setTimeout(()=>{ f.classList.remove('in'); f.classList.add('out') }, 8600) }
 
@@ -235,6 +266,10 @@ function handle(c){
     }
     if(isBet||c.w==='cta'){ $('ftitle').classList.add('cond'); $('ftitle').style.fontSize=''; $('ftitle').style.textTransform='' }
     showFlash()
+    // SFX per moment — whoosh on entrance, bet stinger, whale = big hit
+    if(isBet){ sfx.whoosh(); setTimeout(()=>sfx.ching(),120); if(c.d.amt>=50000){ setTimeout(()=>sfx.impact(),90) } }
+    else if(c.w==='cta'){ sfx.whoosh() }
+    else { sfx.blip() }
   }
   if(c.type==='panel'){
     if(c.d){ $('phh').textContent=c.d.title||'Schedule'
@@ -255,6 +290,7 @@ function handle(c){
     $('fstatrow').innerHTML=chips.join('')
     const f=$('fighter'); f.classList.remove('out'); void f.offsetWidth; f.classList.add('in')
     clearTimeout(hideTimer); hideTimer=setTimeout(()=>{ f.classList.remove('in'); f.classList.add('out') }, 9000)
+    sfx.whoosh()
   }
   if(c.type==='odds'){
     if(c.on===false){ $('odds').classList.remove('show'); return }
@@ -267,9 +303,11 @@ function handle(c){
     $('oba').style.width=pa+'%'; $('obb').style.width=pb+'%'
     $('opa').textContent=pa+'%'; $('opb').textContent=pb+'%'
     $('odds').classList.add('show')
+    sfx.riser()
   }
   if(c.type==='coin'){
     const el=$('coin'); el.textContent='VGA'; el.classList.remove('flip'); void el.offsetWidth; el.classList.add('flip')
+    sfx.coin()
     setTimeout(()=>{ el.textContent=(c.result||'?') }, 2000)
     setTimeout(()=>{ el.classList.remove('flip'); el.style.transform='translate(-50%,-50%) scale(0)' }, 5600)
     setTimeout(()=>{ el.style.transform='' }, 6000)
