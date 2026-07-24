@@ -136,15 +136,16 @@
 
   /* ── COIN ── */
   #coin{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%) scale(0);
-    width:160px;height:160px;border-radius:50%;
-    background:radial-gradient(circle at 38% 32%,#fff2c0,#ffce54 45%,#c99a1e);
+    width:220px;height:220px;border-radius:50%;
+    background:radial-gradient(circle at 38% 32%,#f0d9ff,#b565ff 46%,#7a1fb0);
     display:flex;align-items:center;justify-content:center;
-    font-family:'Barlow Condensed';font-weight:700;font-size:26px;color:#5a4200;text-align:center;
-    box-shadow:0 14px 40px rgba(0,0,0,.55),inset 0 0 0 6px rgba(255,255,255,.25),0 0 40px rgba(255,206,84,.4);}
-  #coin.flip{animation:flip 2.2s cubic-bezier(.2,.7,.2,1) forwards;}
-  @keyframes flip{0%{transform:translate(-50%,-50%) scale(.4) rotateX(0);}
-    15%{transform:translate(-50%,-72%) scale(1) rotateX(1440deg);}
-    100%{transform:translate(-50%,-50%) scale(1) rotateX(3600deg);}}
+    font-family:'Barlow Condensed';font-weight:900;font-size:44px;color:#fff;text-align:center;
+    text-transform:uppercase;letter-spacing:.02em;text-shadow:0 2px 6px rgba(0,0,0,.45);
+    box-shadow:0 16px 46px rgba(0,0,0,.55),inset 0 0 0 7px rgba(255,255,255,.22),0 0 56px rgba(155,48,255,.75);}
+  #coin.flip{animation:flip 4s cubic-bezier(.25,.6,.2,1) forwards;}
+  @keyframes flip{0%{transform:translate(-50%,-50%) scale(.3) rotateX(0);}
+    12%{transform:translate(-50%,-80%) scale(1) rotateX(1080deg);}
+    100%{transform:translate(-50%,-50%) scale(1) rotateX(5400deg);}}
 </style>
 </head>
 <body>
@@ -321,11 +322,11 @@ function handle(c){
     sfx.riser()
   }
   if(c.type==='coin'){
-    const el=$('coin'); el.textContent='VGA'; el.classList.remove('flip'); void el.offsetWidth; el.classList.add('flip')
+    const el=$('coin'); el.textContent='?'; el.classList.remove('flip'); void el.offsetWidth; el.classList.add('flip')
     sfx.coin()
-    setTimeout(()=>{ el.textContent=(c.result||'?') }, 2000)
-    setTimeout(()=>{ el.classList.remove('flip'); el.style.transform='translate(-50%,-50%) scale(0)' }, 5600)
-    setTimeout(()=>{ el.style.transform='' }, 6000)
+    setTimeout(()=>{ el.textContent=(c.result||'?') }, 3600)
+    setTimeout(()=>{ el.classList.remove('flip'); el.style.transform='translate(-50%,-50%) scale(0)' }, 7000)
+    setTimeout(()=>{ el.style.transform='' }, 7400)
   }
 }
 

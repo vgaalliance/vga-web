@@ -432,11 +432,8 @@ window.fireMsg=()=>{
 
 window.standby=view=>send({type:'standby', view, on:view!=='off'})
 
-// coin toss — lands on one of the two loaded teams (or heads/tails if no match yet)
-window.fireCoin=()=>{
-  const opts = (MN.a && MN.b) ? [MN.a, MN.b] : ['HEADS','TAILS']
-  send({type:'coin', result: opts[Math.floor(Math.random()*2)] })
-}
+// coin toss — heads or tails
+window.fireCoin=()=>send({type:'coin', result: Math.random()<.5?'HEADS':'TAILS' })
 
 window.loadCardEvents=async()=>{
   const { data } = await sb.from('events_public').select('name,event_date')
