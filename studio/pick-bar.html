@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Barlow+Condensed:wght@700;900&display=swap');
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+  :root {
+    --pur:   #9b30ff;
+    --hi:    #cc66ff;
+    --pink:  #ff33cc;
+    --bg:    #04000c;
+    --BAR:   260px;
+    --NAME:  38px;
+    --ACC:   4px;
+    --CARD:  218px;
+  }
+
+  body {
+    width:1920px; height:1080px;
+    background:transparent;
+    overflow:hidden; position:relative;
+  }
+
+  @keyframes pulse  { 0%,100%{opacity:.4} 50%{opacity:1} }
+  @keyframes blink  { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+  @keyframes vspop  { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+  @keyframes pglow  { 0%,100%{opacity:.3} 50%{opacity:.75} }
+  @keyframes selblink { 0%,45%{opacity:1} 46%,100%{opacity:0} }
+
+  @keyframes crtScan {
+    0%   { transform:translateY(-100%); }
+    100% { transform:translateY(400%); }
+  }
+  @keyframes rgbShift {
+    0%   { text-shadow: -2px 0 #ff00ff, 2px 0 #00ffff; }
+    25%  { text-shadow:  2px 0 #ff00ff,-2px 0 #00ffff; }
+    50%  { text-shadow: -3px 0 #9b30ff, 3px 0 #ff33cc; }
+    75%  { text-shadow:  1px 0 #cc66ff,-1px 0 #ff00ff; }
+    100% { text-shadow: -2px 0 #ff00ff, 2px 0 #00ffff; }
+  }
+  @keyframes holoBorder {
+    0%   { border-color:rgba(204,102,255,1);  box-shadow:inset 0 0 50px rgba(155,48,255,.9), 0 0 40px rgba(155,48,255,1),   0 0 80px rgba(155,48,255,.5); }
+    25%  { border-color:rgba(255,0,255,1);    box-shadow:inset 0 0 50px rgba(255,0,255,.8),  0 0 40px rgba(255,0,255,.9),   0 0 80px rgba(255,0,255,.4); }
+    50%  { border-color:rgba(0,255,255,.95);  box-shadow:inset 0 0 50px rgba(0,255,255,.7),  0 0 40px rgba(0,255,255,.9),   0 0 80px rgba(0,255,255,.4); }
+    75%  { border-color:rgba(255,51,204,1);   box-shadow:inset 0 0 50px rgba(255,51,204,.8), 0 0 40px rgba(255,51,204,1),  0 0 80px rgba(255,51,204,.5); }
+    100% { border-color:rgba(204,102,255,1);  box-shadow:inset 0 0 50px rgba(155,48,255,.9), 0 0 40px rgba(155,48,255,1),   0 0 80px rgba(155,48,255,.5); }
+  }
+  @keyframes holoNoise {
+    0%,100% { opacity:.07; }
+    50%     { opacity:.13; }
+  }
+  @keyframes holoGrain {
+    0%   { background-position: 0px 0px; }
+    10%  { background-position:-10px 5px; }
+    20%  { background-position: 15px-8px; }
+    30%  { background-position:-5px 12px; }
+    40%  { background-position: 8px-3px; }
+    50%  { background-position:-12px 7px; }
+    60%  { background-position: 3px-11px; }
+    70%  { background-position:-8px 9px; }
+    80%  { background-position: 11px-6px; }
+    90%  { background-position:-4px 14px; }
+    100% { background-position: 0px 0px; }
+  }
+  @keyframes chromaFlick {
+    0%,89%,91%,93%,100% { opacity:0; }
+    90%,92%             { opacity:1; }
+  }
+  @keyframes idleBreath {
+    0%,100% { opacity:.18; }
+    50%     { opacity:.38; }
+  }
+  @keyframes pipFlash {
+    0%   { transform:scale(1);   box-shadow:0 0 8px currentColor; }
+    30%  { transform:scale(1.4); box-shadow:0 0 28px currentColor; }
+    60%  { transform:scale(1.1); box-shadow:0 0 16px currentColor; }
+    100% { transform:scale(1);   box-shadow:0 0 10px currentColor; }
+  }
+  @keyframes nameGlow {
+    0%,100% { box-shadow:0 0 8px rgba(155,48,255,.3); }
+    50%     { box-shadow:0 0 20px rgba(204,102,255,.6); }
+  }
+  @keyframes nameSweep {
+    0%   { background-position: -200% center; }
+    100% { background-position:  300% center; }
+  }
+  @keyframes teamPulse {
+    0%,100% { opacity:.55; letter-spacing:.35em; }
+    50%     { opacity:1;   letter-spacing:.42em; }
+  }
+  @keyframes outGlow {
+    0%,100% { box-shadow: -12px 0 28px rgba(155,48,255,.0), 12px 0 28px rgba(155,48,255,.0); }
+    50%     { box-shadow: -12px 0 28px rgba(204,102,255,.5), 12px 0 28px rgba(204,102,255,.5); }
+  }
+  @keyframes vhsGlitch {
+    0%,94%,100% { transform:translateX(0) skewX(0); opacity:1; }
+    95% { transform:translateX(-4px) skewX(-2deg); opacity:.9; }
+    96% { transform:translateX(6px)  skewX(1deg);  opacity:.8; }
+    97% { transform:translateX(-2px) skewX(.5deg); opacity:.95; }
+  }
+
+  /* ═══ TOP RIGHT ═══ */
+  .info {
+    position:absolute; top:28px; right:36px;
+    display:flex; flex-direction:column; align-items:flex-end; gap:6px; z-index:200;
+  }
+  .coach-lbl {
+    font-family:'Press Start 2P',monospace;
+    font-size:9px; letter-spacing:.35em;
+    color:rgba(204,102,255,.6); text-shadow:1px 1px 0 #000;
+  }
+  .coach-val {
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:52px; font-weight:900; letter-spacing:.05em;
+    color:#fff; text-transform:uppercase;
+    text-shadow:3px 3px 0 #000, 0 0 26px var(--pur);
+  }
+  .timer-box {
+    padding:10px 20px;
+    background:rgba(4,0,12,.95);
+    border:3px solid var(--pur);
+    box-shadow:0 0 0 3px rgba(155,48,255,.12);
+    display:flex; flex-direction:column; align-items:flex-end; gap:3px;
+    cursor:pointer; position:relative;
+  }
+  .timer-box::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(to right,transparent,var(--hi),transparent);
+    animation:pulse 2s ease-in-out infinite;
+  }
+  .timer-val {
+    font-family:'Press Start 2P',monospace;
+    font-size:46px; letter-spacing:.08em; color:#fff;
+    text-shadow:2px 2px 0 #000, 0 0 18px var(--hi), -2px 0 rgba(255,51,204,.4);
+  }
+  .timer-lbl {
+    font-family:'Press Start 2P',monospace;
+    font-size:8px; letter-spacing:.4em; color:rgba(200,160,255,.5);
+  }
+
+  /* ═══ BAR ═══ */
+  .bar {
+    position:absolute; bottom:0; left:0; right:0;
+    height:var(--BAR);
+    background:var(--bg);
+    border-top:3px solid var(--pur);
+    box-shadow:0 -3px 0 rgba(155,48,255,.25), 0 -18px 50px rgba(50,0,100,.55);
+    display:flex; align-items:stretch;
+    z-index:50; overflow:hidden;
+  }
+  .bar::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:2px; z-index:20;
+    background:linear-gradient(to right,transparent 2%,var(--pink) 20%,var(--hi) 50%,var(--pink) 80%,transparent 98%);
+    animation:pulse 3s ease-in-out infinite;
+  }
+  .bar::after {
+    content:''; position:absolute; inset:0; pointer-events:none; z-index:18;
+    background:
+      repeating-linear-gradient(0deg,rgba(0,0,0,.12) 0,rgba(0,0,0,.12) 1px,transparent 1px,transparent 20px),
+      repeating-linear-gradient(90deg,rgba(155,48,255,.06) 0,rgba(155,48,255,.06) 1px,transparent 1px,transparent 20px);
+  }
+
+  /* ═══ SIDES ═══ */
+  .side { display:flex; align-items:stretch; flex-shrink:0; z-index:10; }
+  .side.left  { flex-direction:row; }
+  .side.right { flex-direction:row-reverse; }
+
+  /* ═══ CARD ═══ */
+  .card {
+    width:var(--CARD);
+    display:flex; flex-direction:column; align-items:stretch;
+    border-right:2px solid rgba(155,48,255,.12);
+    background:rgba(8,0,20,.5);
+    position:relative;
+  }
+  .side.right .card { border-right:none; border-left:2px solid rgba(155,48,255,.12); }
+
+  /* colour accent */
+  .c-acc { height:var(--ACC); flex-shrink:0; animation:pulse 2.5s ease-in-out infinite; }
+  .side.left  .card:nth-child(1) .c-acc { background:var(--hi);   animation-delay:0s; }
+  .side.left  .card:nth-child(2) .c-acc { background:var(--pur);  animation-delay:.55s; }
+  .side.left  .card:nth-child(3) .c-acc { background:var(--pink); animation-delay:1.1s; }
+  .side.right .card:nth-child(1) .c-acc { background:var(--hi);   animation-delay:0s; }
+  .side.right .card:nth-child(2) .c-acc { background:var(--pur);  animation-delay:.55s; }
+  .side.right .card:nth-child(3) .c-acc { background:var(--pink); animation-delay:1.1s; }
+
+  /* portrait */
+  .portrait {
+    flex:1; position:relative; overflow:hidden;
+    background:rgba(14,0,30,.9);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .p-glow {
+    position:absolute; inset:0;
+    background:linear-gradient(to bottom,rgba(155,48,255,.2) 0%,transparent 55%);
+    animation:pglow 2.8s ease-in-out infinite; pointer-events:none;
+  }
+  .p-badge {
+    position:absolute; top:8px; left:10px;
+    font-family:'Press Start 2P',monospace;
+    font-size:8px; letter-spacing:.2em;
+    color:rgba(204,102,255,.45); text-shadow:1px 1px 0 #000; z-index:5;
+  }
+  .p-tl, .p-br {
+    position:absolute; width:14px; height:14px;
+    border:3px solid var(--hi); z-index:6;
+  }
+  .p-tl { top:0; left:0;     border-right:none; border-bottom:none; }
+  .p-br { bottom:0; right:0; border-left:none;  border-top:none; }
+  .p-empty {
+    font-family:'Press Start 2P',monospace;
+    font-size:8px; color:rgba(155,48,255,.28);
+    text-align:center; line-height:2.6; z-index:2;
+    animation:blink 1.5s steps(1) infinite;
+  }
+
+  /* SELECT FIGHTER overlay */
+  .sel-overlay {
+    position:absolute; inset:0; z-index:10;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    gap:6px;
+    pointer-events:none;
+    opacity:0; transition:opacity .08s;
+    background:rgba(4,0,12,.55);
+  }
+  .card.sel-active .sel-overlay { opacity:1; }
+  .card.sel-active .p-empty     { opacity:0; }
+
+  .sel-label {
+    font-family:'Press Start 2P',monospace;
+    font-size:7px; letter-spacing:.25em;
+    color:var(--hi); text-shadow:0 0 10px var(--hi);
+    animation:selblink .7s steps(1) infinite;
+  }
+
+  .sel-arrow {
+    font-family:'Press Start 2P',monospace;
+    font-size:18px;
+    color:var(--hi); text-shadow:0 0 14px var(--hi);
+    animation:selblink .7s steps(1) infinite .35s;
+  }
+
+  /* active card — LSD CRT synthwave */
+  .card.sel-active {
+    animation: vhsGlitch 1.8s steps(1) infinite, outGlow 1.4s ease-in-out infinite;
+    z-index: 20;
+  }
+
+  /* arcade canvas overlay fills the whole card */
+  .arcade-canvas {
+    position:absolute; inset:0; z-index:15;
+    pointer-events:none; width:100%; height:100%;
+  }
+
+  /* SELECT FIGHTER text gets max intensity */
+  .card.sel-active .sel-label {
+    animation: selblink .5s steps(1) infinite, rgbShift .2s linear infinite;
+    font-size:8px;
+  }
+
+  /* noise grain canvas */
+  .holo-canvas {
+    position:absolute; inset:0; z-index:10;
+    pointer-events:none; opacity:.22;
+    mix-blend-mode: screen;
+  }
+
+  /* chroma aberration flicker strip */
+  .holo-chroma {
+    position:absolute; left:0; right:0; z-index:13;
+    height:5px; pointer-events:none;
+    background: linear-gradient(to right, rgba(0,255,255,.8), transparent, rgba(255,0,255,.8));
+    animation: chromaFlick 2.2s linear infinite;
+    top: 35%;
+  }
+
+  /* name strip */
+  .c-name {
+    height:var(--NAME); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(6,0,18,.98);
+    border-top:2px solid rgba(155,48,255,.2);
+    padding:0 8px;
+  }
+  /* editable input */
+  .c-name input {
+    width:100%; height:100%; display:block;
+    background:transparent; border:none; outline:none;
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:17px; font-weight:900; letter-spacing:.1em;
+    color:rgba(240,224,255,.9); text-transform:uppercase;
+    text-align:center; text-shadow:1px 1px 0 #000;
+    caret-color:var(--hi);
+    padding:0; margin:0; line-height:var(--NAME);
+    vertical-align:top;
+  }
+  .c-name input::placeholder {
+    color:rgba(155,48,255,.28); font-size:8px;
+    font-family:'Press Start 2P',monospace;
+    letter-spacing:.15em; text-transform:uppercase;
+  }
+  .c-name input:focus {
+    background:rgba(155,48,255,.09);
+    box-shadow:0 0 0 1px rgba(204,102,255,.4);
+  }
+  .c-name.has-name {
+    background:rgba(30,0,60,.6);
+    border-top-color:rgba(204,102,255,.6);
+    box-shadow: 0 0 18px rgba(155,48,255,.35), inset 0 0 12px rgba(100,0,180,.3);
+  }
+  .c-name.has-name input {
+    color: transparent;
+    background: linear-gradient(
+      90deg,
+      #cc66ff 0%,
+      #ff33cc 20%,
+      #ffffff 35%,
+      #cc66ff 50%,
+      #9b30ff 65%,
+      #ff33cc 80%,
+      #cc66ff 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: nameSweep 2.4s linear infinite;
+    letter-spacing:.16em;
+    filter: drop-shadow(0 0 6px rgba(204,102,255,.8));
+  }
+
+  /* ═══ SIDEBARS ═══ */
+  @keyframes sbPulse {
+    0%,100% { opacity:.45; }
+    50%     { opacity:.9; }
+  }
+  @keyframes sbSweep {
+    0%   { background-position: 0% 0%; }
+    100% { background-position: 0% 200%; }
+  }
+  .sidebar {
+    width:38px; flex-shrink:0;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    gap:6px;
+    background:rgba(4,0,14,.92);
+    position:relative; overflow:hidden;
+  }
+  .sidebar::before {
+    content:'';
+    position:absolute; inset:0;
+    background: linear-gradient(
+      180deg,
+      rgba(155,48,255,.12) 0%,
+      rgba(204,102,255,.06) 40%,
+      rgba(155,48,255,.12) 100%
+    );
+    background-size: 100% 200%;
+    animation: sbSweep 4s linear infinite;
+    pointer-events:none;
+  }
+  .sidebar-l { border-right:2px solid rgba(155,48,255,.25); }
+  .sidebar-r { border-left:2px solid rgba(155,48,255,.25); }
+
+  .sb-text {
+    font-family:'Press Start 2P',monospace;
+    font-size:9px; letter-spacing:.12em;
+    writing-mode:vertical-rl;
+    text-orientation:mixed;
+    color:var(--hi);
+    text-shadow:0 0 12px var(--hi), 0 0 24px rgba(155,48,255,.5);
+    animation:sbPulse 2.8s ease-in-out infinite;
+    transform:rotate(180deg);
+  }
+  .sb-season {
+    font-family:'Press Start 2P',monospace;
+    font-size:13px; letter-spacing:.08em;
+    color:#fff;
+    text-shadow:0 0 14px var(--hi), 0 0 30px rgba(155,48,255,.6);
+    animation:sbPulse 2.8s ease-in-out infinite .4s;
+  }
+  .sb-divider {
+    width:18px; height:2px;
+    background:linear-gradient(to right, transparent, var(--pur), transparent);
+    animation:sbPulse 2.8s ease-in-out infinite .8s;
+  }
+  .sb-year {
+    font-family:'Press Start 2P',monospace;
+    font-size:6px; letter-spacing:.1em;
+    color:rgba(204,102,255,.5);
+    writing-mode:vertical-rl;
+    transform:rotate(180deg);
+    animation:sbPulse 2.8s ease-in-out infinite 1.2s;
+  }
+
+  .sb-team {
+    font-family:'Press Start 2P',monospace;
+    font-size:7px; letter-spacing:.15em;
+    writing-mode:vertical-rl;
+    transform:rotate(180deg);
+    color:rgba(240,224,255,.7);
+    text-shadow:0 0 8px var(--hi);
+    animation:sbPulse 3s ease-in-out infinite;
+    text-transform:uppercase;
+    max-height:72px; overflow:hidden;
+  }
+
+  /* ═══ CENTRE ═══ */
+  .centre {
+    flex:1; min-width:0;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    gap:14px; z-index:10; padding:0 20px;
+    position:relative;
+  }
+  .score-plate {
+    display:flex; flex-direction:column;
+    align-items:center; gap:5px;
+  }
+  .score-digit { display:none; }
+  .vs-wrap {
+    position:relative; width:90px; height:90px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #vsRing { position:absolute; inset:0; width:100%; height:100%; }
+  .vs {
+    font-family:'Press Start 2P',monospace;
+    font-size:22px; color:#fff; position:relative; z-index:2;
+    text-shadow:2px 2px 0 #000, 0 0 18px var(--hi),-2px 0 var(--pink),2px 0 var(--hi);
+    animation:vspop 1.8s ease-in-out infinite;
+  }
+  .divider {
+    width:90%; height:2px;
+    background:linear-gradient(to right,transparent,rgba(155,48,255,.3),transparent);
+  }
+
+  /* BO5 pips */
+  .bo { display:flex; align-items:center; gap:7px; }
+  .bo-tag {
+    font-family:'Press Start 2P',monospace;
+    font-size:7px; letter-spacing:.35em;
+    color:rgba(200,160,255,.4);
+    text-align:center; width:100%;
+    margin-bottom:2px;
+  }
+  .pip {
+    width:36px; height:18px; border:2px solid; cursor:pointer;
+    transition:background .1s;
+    position:relative;
+  }
+  .pip.lp           { border-color:var(--hi);  background:rgba(204,102,255,.07); color:var(--hi); }
+  .pip.lp.on        { background:var(--hi);    animation:pipFlash .35s ease-out forwards; }
+  .pip.rp           { border-color:var(--pink); background:rgba(255,51,204,.07); color:var(--pink); }
+  .pip.rp.on        { background:var(--pink);  animation:pipFlash .35s ease-out forwards; }
+  .pip.lp.on::after { content:''; position:absolute; inset:0; background:rgba(204,102,255,.5); animation:pipFlash .35s ease-out forwards; }
+  .pip.rp.on::after { content:''; position:absolute; inset:0; background:rgba(255,51,204,.5);  animation:pipFlash .35s ease-out forwards; }
+  .pip-sep   { width:2px; height:18px; background:rgba(155,48,255,.25); margin:0 3px; }
+
+  .status {
+    font-family:'Press Start 2P',monospace;
+    font-size:6px; letter-spacing:.3em;
+    color:rgba(200,160,255,.32);
+    animation:blink 1.9s steps(1) infinite;
+    text-align:center;
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP RIGHT -->
+<div class="info">
+  <div class="coach-lbl">COACH DECISION</div>
+  <div class="coach-val">WAITING...</div>
+  <div class="timer-box">
+    <div class="timer-val">00:00</div>
+    <div class="timer-lbl">DECISION CLOCK</div>
+  </div>
+</div>
+
+<!-- BAR -->
+<div class="bar">
+
+  <!-- LEFT SIDEBAR -->
+  <div class="sidebar sidebar-l">
+    <div class="sb-team" id="teamLbl">TEAM A</div>
+    <div class="sb-divider"></div>
+    <div class="sb-text">UBAe</div>
+    <div class="sb-season">S1</div>
+    <div class="sb-divider"></div>
+    <div class="sb-year">2026</div>
+  </div>
+
+  <!-- LEFT TEAM -->
+  <div class="side left" id="sideL">
+    <div class="card" data-idx="0">
+      <div class="c-acc"></div>
+      <div class="portrait">
+        <div class="p-glow"></div>
+        <div class="p-tl"></div><div class="p-br"></div>
+        <div class="p-badge">P1</div>
+        <div class="p-empty">EMPTY<br>SLOT</div>
+        <div class="sel-overlay">
+          <div class="sel-label">SELECT FIGHTER</div>
+          <div class="sel-arrow">▶</div>
+        </div>
+      </div>
+      <div class="c-name"><input type="text" placeholder="fighter name" spellcheck="false"></div>
+    </div>
+    <div class="card" data-idx="1">
+      <div class="c-acc"></div>
+      <div class="portrait">
+        <div class="p-glow"></div>
+        <div class="p-tl"></div><div class="p-br"></div>
+        <div class="p-badge">P2</div>
+        <div class="p-empty">EMPTY<br>SLOT</div>
+        <div class="sel-overlay">
+          <div class="sel-label">SELECT FIGHTER</div>
+          <div class="sel-arrow">▶</div>
+        </div>
+      </div>
+      <div class="c-name"><input type="text" placeholder="fighter name" spellcheck="false"></div>
+    </div>
+    <div class="card" data-idx="2">
+      <div class="c-acc"></div>
+      <div class="portrait">
+        <div class="p-glow"></div>
+        <div class="p-tl"></div><div class="p-br"></div>
+        <div class="p-badge">P3</div>
+        <div class="p-empty">EMPTY<br>SLOT</div>
+        <div class="sel-overlay">
+          <div class="sel-label">SELECT FIGHTER</div>
+          <div class="sel-arrow">▶</div>
+        </div>
+      </div>
+      <div class="c-name"><input type="text" placeholder="fighter name" spellcheck="false"></div>
+    </div>
+  </div>
+
+  <!-- CENTRE -->
+  <div class="centre">
+    <div class="vs-wrap">
+      <canvas id="vsRing"></canvas>
+      <div class="vs">VS</div>
+    </div>
+    <div class="score-plate">
+      <div class="bo-tag">BO5</div>
+      <div class="bo">
+        <div class="pip lp" id="l1"></div>
+        <div class="pip lp" id="l2"></div>
+        <div class="pip lp" id="l3"></div>
+        <div class="pip-sep"></div>
+        <div class="pip rp" id="r1"></div>
+        <div class="pip rp" id="r2"></div>
+        <div class="pip rp" id="r3"></div>
+      </div>
+      <div class="status">ROUND IN PROGRESS</div>
+    </div>
+  </div>
+
+  <!-- RIGHT TEAM -->
+  <div class="side right" id="sideR">
+    <div class="card" data-idx="0">
+      <div class="c-acc"></div>
+      <div class="portrait">
+        <div class="p-glow"></div>
+        <div class="p-tl"></div><div class="p-br"></div>
+        <div class="p-badge">P1</div>
+        <div class="p-empty">EMPTY<br>SLOT</div>
+        <div class="sel-overlay">
+          <div class="sel-label">SELECT FIGHTER</div>
+          <div class="sel-arrow">◀</div>
+        </div>
+      </div>
+      <div class="c-name"><input type="text" placeholder="fighter name" spellcheck="false"></div>
+    </div>
+    <div class="card" data-idx="1">
+      <div class="c-acc"></div>
+      <div class="portrait">
+        <div class="p-glow"></div>
+        <div class="p-tl"></div><div class="p-br"></div>
+        <div class="p-badge">P2</div>
+        <div class="p-empty">EMPTY<br>SLOT</div>
+        <div class="sel-overlay">
+          <div class="sel-label">SELECT FIGHTER</div>
+          <div class="sel-arrow">◀</div>
+        </div>
+      </div>
+      <div class="c-name"><input type="text" placeholder="fighter name" spellcheck="false"></div>
+    </div>
+    <div class="card" data-idx="2">
+      <div class="c-acc"></div>
+      <div class="portrait">
+        <div class="p-glow"></div>
+        <div class="p-tl"></div><div class="p-br"></div>
+        <div class="p-badge">P3</div>
+        <div class="p-empty">EMPTY<br>SLOT</div>
+        <div class="sel-overlay">
+          <div class="sel-label">SELECT FIGHTER</div>
+          <div class="sel-arrow">◀</div>
+        </div>
+      </div>
+      <div class="c-name"><input type="text" placeholder="fighter name" spellcheck="false"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT SIDEBAR -->
+  <div class="sidebar sidebar-r">
+    <div class="sb-team" id="teamLblR">TEAM B</div>
+    <div class="sb-divider"></div>
+    <div class="sb-text">UBAe</div>
+    <div class="sb-season">S1</div>
+    <div class="sb-divider"></div>
+    <div class="sb-year">2026</div>
+  </div>
+
+</div>
+
+<script>
+// ── SELECT FIGHTER CURSOR ──
+// Sporadic human-like movement — same logic as the VS screen
+function makeCursor(sideEl) {
+  const cards = Array.from(sideEl.querySelectorAll('.card'));
+  let current = 0;
+
+  function activate(i) {
+    cards.forEach(c => c.classList.remove('sel-active'));
+    cards[i].classList.add('sel-active');
+    current = i;
+  }
+
+  function next() {
+    const roll = Math.random();
+    let nextIdx = current;
+
+    if      (roll < 0.40) { // slow drift: move 1 step
+      nextIdx = Math.min(cards.length-1, Math.max(0, current + (Math.random()<.5?1:-1)));
+    } else if (roll < 0.60) { // quick flick: jump 2
+      nextIdx = Math.min(cards.length-1, Math.max(0, current + (Math.random()<.5?2:-2)));
+    } else if (roll < 0.75) { // stall: stay
+      nextIdx = current;
+    } else if (roll < 0.88) { // random jump
+      nextIdx = Math.floor(Math.random() * cards.length);
+    } else {                  // double tap: step and back
+      const dir = Math.random()<.5?1:-1;
+      const tmp = Math.min(cards.length-1, Math.max(0, current+dir));
+      activate(tmp);
+      setTimeout(()=>activate(current), 150 + Math.random()*200);
+      schedule(); return;
+    }
+
+    activate(nextIdx);
+    schedule();
+  }
+
+  function schedule() {
+    const delays = [900,1100,1400,1800,2200,2600,3000];
+    const d = delays[Math.floor(Math.random()*delays.length)] + Math.random()*400;
+    setTimeout(next, d);
+  }
+
+  activate(Math.floor(Math.random() * cards.length));
+  schedule();
+}
+
+makeCursor(document.getElementById('sideL'));
+// offset right side so they don't sync
+setTimeout(() => makeCursor(document.getElementById('sideR')), 700);
+
+// ── TIMER ──
+let s=0,running=false,iv=null,clicks=0;
+const tv=document.querySelector('.timer-val');
+const fmt=n=>String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');
+document.querySelector('.timer-box').addEventListener('click',()=>{
+  clicks++;
+  setTimeout(()=>{
+    if(clicks===1){running=!running;if(running&&!iv)iv=setInterval(()=>{s++;tv.textContent=fmt(s);},1000);else{clearInterval(iv);iv=null;}}
+    clicks=0;
+  },220);
+});
+document.querySelector('.timer-box').addEventListener('dblclick',()=>{
+  clicks=0;running=false;clearInterval(iv);iv=null;s=0;tv.textContent='00:00';
+});
+
+// ── BO PIPS ──
+function countOn(cls){ return document.querySelectorAll('.pip.'+cls+'.on').length; }
+function updateScores(){
+  document.getElementById('scoreL').textContent = countOn('lp');
+  document.getElementById('scoreR').textContent = countOn('rp');
+}
+['l1','l2','l3','r1','r2','r3'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',e=>{
+    const pip = e.currentTarget;
+    pip.classList.toggle('on');
+    if(pip.classList.contains('on')){
+      pip.style.animation='none';
+      void pip.offsetWidth;
+      pip.style.animation='';
+    }
+    updateScores();
+  });
+});
+
+// name strip — has-name class
+document.querySelectorAll('.c-name input').forEach(inp=>{
+  const strip = inp.closest('.c-name');
+  inp.addEventListener('input',()=>{
+    strip.classList.toggle('has-name', inp.value.trim().length > 0);
+  });
+});
+</script>
+
+<script>
+// ── Arcade Canvas Effect on selected cards ────────────────────
+const arcadeCanvases = new Map();
+
+document.querySelectorAll('.portrait').forEach(p => {
+  // chroma strip
+  const ch = document.createElement('div');
+  ch.className = 'holo-chroma';
+  p.appendChild(ch);
+
+  // arcade overlay canvas
+  const ac = document.createElement('canvas');
+  ac.className = 'arcade-canvas';
+  p.appendChild(ac);
+  arcadeCanvases.set(p, ac);
+});
+
+// Main arcade render loop
+let at = 0;
+const PALETTE = [
+  '#ff00ff','#cc00ff','#9b30ff','#cc66ff',
+  '#00ffff','#ff33cc','#ffffff','#ffff00'
+];
+function hx(n){ return parseInt(n,16); }
+function parseHex(h){ return [hx(h.slice(1,3)),hx(h.slice(3,5)),hx(h.slice(5,7))]; }
+
+function drawArcade(ac, card, t){
+  const W = ac.offsetWidth, H = ac.offsetHeight;
+  if(!W||!H) return;
+  if(ac.width!==W||ac.height!==H){ ac.width=W; ac.height=H; }
+  const ctx = ac.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  const active = card.classList.contains('sel-active');
+
+  if(!active){
+    // idle: subtle breathing gradient shimmer
+    const idleHue = 270 + 15*Math.sin(t*0.7 + W*0.01);
+    const alpha   = 0.04 + 0.04*Math.sin(t*1.2);
+    const idleBg  = ctx.createLinearGradient(0,0,0,H);
+    idleBg.addColorStop(0, `hsla(${idleHue},80%,30%,${alpha})`);
+    idleBg.addColorStop(1, 'transparent');
+    ctx.fillStyle = idleBg;
+    ctx.fillRect(0,0,W,H);
+    // dim border
+    ctx.strokeStyle=`rgba(155,48,255,${0.1+0.08*Math.sin(t*1.2)})`;
+    ctx.lineWidth=1;
+    ctx.strokeRect(1,1,W-2,H-2);
+    return;
+  }
+
+  // ═══ ACTIVE — subtle indicator only (full effect on select layer) ═══
+
+  // 1) very faint purple tint
+  ctx.fillStyle = 'rgba(80,0,140,0.12)';
+  ctx.fillRect(0,0,W,H);
+
+  // 2) thin top gradient edge
+  const topGrad = ctx.createLinearGradient(0,0,0,H*0.25);
+  topGrad.addColorStop(0, 'rgba(204,102,255,0.18)');
+  topGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = topGrad;
+  ctx.fillRect(0,0,W,H*0.25);
+
+  // 3) border — steady purple, soft glow
+  const bHue = 270 + 10*Math.sin(t*0.5);
+  ctx.shadowColor = `hsl(${bHue},100%,65%)`;
+  ctx.shadowBlur  = 14;
+  ctx.strokeStyle = `hsla(${bHue},100%,72%,0.85)`;
+  ctx.lineWidth   = 2;
+  ctx.strokeRect(1,1,W-2,H-2);
+  ctx.shadowBlur  = 0;
+
+  // 4) corner brackets — small, clean
+  const bl = 10, bt = 2;
+  ctx.fillStyle   = 'rgba(204,102,255,0.9)';
+  ctx.shadowColor = 'rgba(204,102,255,0.6)';
+  ctx.shadowBlur  = 8;
+  [ [0,0,1,1], [W,0,-1,1], [0,H,1,-1], [W,H,-1,-1] ].forEach(([cx2,cy2,dx,dy])=>{
+    ctx.fillRect(cx2, cy2, dx*bl, dy*bt);
+    ctx.fillRect(cx2, cy2, dx*bt, dy*bl);
+  });
+  ctx.shadowBlur = 0;
+}
+
+
+function arcadeLoop(){
+  document.querySelectorAll('.portrait').forEach(p => {
+    const ac = arcadeCanvases.get(p);
+    const card = p.closest('.card');
+    if(ac && card) drawArcade(ac, card, at);
+  });
+  at += 1/60;
+  requestAnimationFrame(arcadeLoop);
+}
+arcadeLoop();
+
+</script>
+
+<script>
+  // ── VS Ring — single circle ───────────────────────────────────
+(function(){
+  const cv = document.getElementById('vsRing');
+  const wrap = cv.parentElement;
+  let W, H, cx, cy;
+  function resize(){ W=wrap.clientWidth; H=wrap.clientHeight; cv.width=W; cv.height=H; cx=W/2; cy=H/2; }
+  resize();
+  const ctx = cv.getContext('2d');
+  let t = 0;
+
+  const SEGS = 16;
+
+  const R    = 32;
+  const GAP  = 0.28; // fraction of each seg that's empty
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const seg = (Math.PI*2)/SEGS;
+    for(let s=0;s<SEGS;s++){
+      const a0 = t*0.018 + s*seg;
+      const a1 = a0 + seg*(1-GAP);
+      // brightness pulses per segment
+      const alpha = 0.5 + 0.5*Math.abs(Math.sin(t*1.6 + s*0.45));
+      // colour drifts slowly through purple range
+      const hue = 270 + 20*Math.sin(t*0.4 + s*0.3);
+      ctx.beginPath();
+      ctx.arc(cx,cy,R,a0,a1);
+      ctx.strokeStyle = `hsla(${hue},100%,72%,${alpha})`;
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    }
+    // centre glow
+    const g = ctx.createRadialGradient(cx,cy,0,cx,cy,20);
+    g.addColorStop(0,`rgba(204,102,255,${0.12+0.1*Math.sin(t*2)})`);
+    g.addColorStop(1,'transparent');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,20,0,Math.PI*2); ctx.fill();
+    t+=1/60;
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
+
+<!-- ── VGA STUDIO WIRE — deck listener (added 2026-07-24, visuals untouched) ── -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+  const _sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
+    'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
+  _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
+    if(c.type!=='pickbar') return
+    const d=c.d||{}
+    if(d.teamA){ const e=document.getElementById('teamLbl');  if(e) e.textContent=d.teamA }
+    if(d.teamB){ const e=document.getElementById('teamLblR'); if(e) e.textContent=d.teamB }
+    const fill=(sideId,names)=>{
+      if(!names) return
+      document.querySelectorAll('#'+sideId+' .card .c-name input').forEach((inp,i)=>{
+        if(names[i]!=null){ inp.value=names[i]; inp.dispatchEvent(new Event('input',{bubbles:true})) }
+      })
+    }
+    fill('sideL',d.left); fill('sideR',d.right)
+    const pips=(ids,n)=>{ if(n==null) return
+      ids.forEach((id,i)=>{ const p=document.getElementById(id); if(p) p.classList.toggle('on', i<n) }) }
+    pips(['l1','l2','l3'],d.scoreA); pips(['r1','r2','r3'],d.scoreB)
+    if((d.scoreA!=null||d.scoreB!=null) && typeof updateScores==='function') updateScores()
+  }).subscribe()
+})()
+</script>
+</body>
+</html>

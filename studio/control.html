@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VGA BROADCAST TERMLINK</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+  *{box-sizing:border-box;}
+  :root{ --g:#3aff6e; --gdim:#1c8f3f; --gdark:#0b3a1c; --bg:#050b06; }
+  html,body{margin:0;min-height:100%;background:var(--bg);}
+  body{font-family:'VT323',monospace;color:var(--g);padding:26px 30px;font-size:20px;
+    text-shadow:0 0 6px rgba(58,255,110,.45);}
+
+  /* ── CRT effects ── */
+  #crt{position:fixed;inset:0;pointer-events:none;z-index:9;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px);}
+  #vig{position:fixed;inset:0;pointer-events:none;z-index:8;
+    background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%);}
+  body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:10;
+    background:rgba(58,255,110,.03);animation:flick 4s infinite;}
+  @keyframes flick{0%,100%{opacity:1;}92%{opacity:1;}93%{opacity:.6;}94%{opacity:1;}
+    96%{opacity:.8;}97%{opacity:1;}}
+
+  .hr{border:none;border-top:2px solid var(--gdim);margin:10px 0 16px;
+    box-shadow:0 0 8px rgba(58,255,110,.3);}
+  #boot{color:var(--gdim);font-size:17px;line-height:1.35;}
+  h1{font-size:34px;margin:2px 0 0;letter-spacing:.06em;font-weight:400;}
+  h1 b{background:var(--g);color:var(--bg);padding:0 8px;text-shadow:none;}
+
+  #status{position:fixed;top:20px;right:26px;font-size:18px;color:var(--gdim);z-index:11;}
+  #status.on{color:var(--g);}
+  #status.on::before{content:'▓ ';animation:blink 1.2s step-end infinite;}
+  @keyframes blink{50%{opacity:.3;}}
+
+  .sec{border:2px solid var(--gdim);border-radius:2px;padding:12px 16px 16px;margin:0 0 16px;
+    box-shadow:inset 0 0 18px rgba(58,255,110,.06);}
+  .sec h4{margin:0 0 10px;font-size:21px;font-weight:400;letter-spacing:.08em;color:var(--g);}
+  .sec h4::before{content:'▸ ';}
+  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+
+  button{font-family:'VT323',monospace;font-size:19px;letter-spacing:.05em;cursor:pointer;
+    background:transparent;color:var(--g);border:2px solid var(--g);border-radius:2px;
+    padding:6px 16px;text-transform:uppercase;text-shadow:0 0 6px rgba(58,255,110,.45);
+    box-shadow:0 0 10px rgba(58,255,110,.15),inset 0 0 10px rgba(58,255,110,.05);}
+  button::before{content:'[ ';} button::after{content:' ]';}
+  button:hover{background:var(--g);color:var(--bg);text-shadow:none;
+    box-shadow:0 0 18px rgba(58,255,110,.6);}
+  button.hide{border-color:var(--gdim);color:var(--gdim);}
+  button.hide:hover{background:var(--gdim);color:var(--bg);}
+  button small{display:block;font-size:15px;text-transform:none;letter-spacing:.03em;
+    color:inherit;opacity:.75;margin-top:1px;}
+
+  input{font-family:'VT323',monospace;font-size:20px;background:var(--bg);color:var(--g);
+    border:2px solid var(--gdim);border-radius:2px;padding:7px 12px;width:240px;outline:none;
+    text-shadow:0 0 6px rgba(58,255,110,.45);caret-color:var(--g);}
+  input:focus{border-color:var(--g);box-shadow:0 0 12px rgba(58,255,110,.3);}
+  ::placeholder{color:var(--gdark);}
+
+  /* uniform tiles — every box the same size regardless of name length */
+  #oddsFights,#betFeed,#mnMatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;align-items:stretch;}
+  #oddsFights button,#betFeed button,#mnMatches button{width:100%;min-height:82px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;padding:8px 10px;line-height:1.15;}
+  #oddsFights button::before,#oddsFights button::after,
+  #betFeed button::before,#betFeed button::after,
+  #mnMatches button::before,#mnMatches button::after{content:none;}
+  #mnMatches button.active{background:var(--g);color:var(--bg);text-shadow:none;}
+  #mnState{font-size:19px;color:var(--g);margin:8px 0 4px;}
+  #mnState b{background:var(--g);color:var(--bg);padding:0 6px;text-shadow:none;}
+
+  #log{margin-top:6px;font-size:16px;color:var(--gdim);max-height:96px;overflow:auto;line-height:1.3;}
+  #log div::before{content:'> ';}
+</style>
+</head>
+<body>
+  <div id="crt"></div><div id="vig"></div>
+  <div id="status">ESTABLISHING LINK…</div>
+
+  <div id="boot">VGA-TEC UNIFIED OPERATING SYSTEM<br>COPYRIGHT 2026 VGA ALLIANCE — BROADCAST DIVISION<br>LOADER V1.1 · EXEC ATTEMPT ► SUCCESS</div>
+  <h1>█ VGA BROADCAST <b>TERMLINK</b></h1>
+  <hr class="hr">
+
+  <div class="sec">
+    <h4>UBAE MATCH NIGHT — TRACKER</h4>
+    <div class="row" id="mnMatches">SCANNING SCHEDULE…</div>
+    <div id="mnState">NO MATCH LOADED</div>
+    <div class="row">
+      <button onclick="mnScore('A',1)">Team A +</button>
+      <button onclick="mnScore('B',1)">Team B +</button>
+      <button class="hide" onclick="mnScore(null,0)">Reset score</button>
+      <button onclick="mnCountdown()">Fire countdown</button>
+      <button onclick="mnLoadbar()">Fire loading bar</button>
+      <button onclick="mnTape()">Fire tale of tape (bout)</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <input id="mnBoutA" placeholder="BOUT: LEFT FIGHTER…" style="width:200px">
+      <input id="mnBoutB" placeholder="RIGHT FIGHTER…" style="width:200px">
+      <input id="bugText" placeholder="VENUE / INFO BUG TEXT…" style="width:200px">
+      <button onclick="fireBug()">Fire bug</button>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h4>FIGHTER DOSSIER — LOWER THIRD</h4>
+    <div class="row">
+      <input id="fq" placeholder="QUERY FIGHTER NAME…" onkeydown="if(event.key==='Enter')searchFighter()">
+      <button onclick="searchFighter()">Search</button>
+      <button class="hide" onclick="send({type:'fighter',on:false})">Hide</button>
+    </div>
+    <div class="row" id="fresults" style="margin-top:10px"></div>
+  </div>
+
+  <div class="sec">
+    <h4>WAGER TELEMETRY — ODDS BOARD</h4>
+    <div class="row" style="margin-bottom:10px">
+      <button onclick="loadOdds()">Reload fights</button>
+      <button class="hide" onclick="send({type:'odds',on:false})">Hide</button>
+    </div>
+    <div class="row" id="oddsFights">SCANNING MARKETS…</div>
+  </div>
+
+  <div class="sec">
+    <h4>BET ALERTS — ANONYMOUS FEED</h4>
+    <div class="row" style="margin-bottom:10px">
+      <button onclick="loadBetFeed()">Reload bets</button>
+    </div>
+    <div class="row" id="betFeed">SCANNING WAGERS…</div>
+  </div>
+
+  <div class="sec">
+    <h4>RANKINGS ARCHIVE</h4>
+    <div class="row" id="rankBtns"></div>
+    <div class="row" style="margin-top:8px"><button class="hide" onclick="send({type:'panel',on:false})">Hide panel</button></div>
+  </div>
+
+  <div class="sec">
+    <h4>UBAE LEAGUE TABLE</h4>
+    <div class="row">
+      <button onclick="loadStandings()">Show standings</button>
+      <button class="hide" onclick="send({type:'panel',on:false})">Hide</button>
+    </div>
+  </div>
+
+  <div id="log"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
+  'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
+
+const channel = sb.channel('vga-overlay')
+channel.subscribe(s=>{ const el=document.getElementById('status')
+  if(s==='SUBSCRIBED'){ el.textContent='LINK ONLINE'; el.classList.add('on') }
+  else { el.textContent='LINK: '+s; el.classList.remove('on') } })
+window.send=cmd=>{ channel.send({type:'broadcast',event:'cmd',payload:cmd})
+  const l=document.getElementById('log'); const d=document.createElement('div')
+  d.textContent=`TX ${cmd.type}${cmd.on===false?' HIDE':''}`; l.prepend(d) }
+
+const cap = s => (s||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())
+
+window.searchFighter=async()=>{
+  const q=document.getElementById('fq').value.trim(); if(!q) return
+  const { data } = await sb.from('fighter_cards')
+    .select('display_name,nickname,wins,losses,draws,ko_wins,rank,rank_weight_class,weight_class,country,is_champion')
+    .ilike('display_name','%'+q+'%').limit(6)
+  const box=document.getElementById('fresults')
+  if(!data||!data.length){ box.textContent='NO RECORD FOUND'; return }
+  box.innerHTML=''
+  data.forEach(f=>{
+    const b=document.createElement('button')
+    b.innerHTML=`${f.display_name}<small>${f.wins}-${f.losses}-${f.draws}${f.rank?' · #'+f.rank:''}</small>`
+    b.onclick=()=>send({type:'fighter',d:{
+      name:f.display_name, nickname:f.nickname,
+      record:`${f.wins}-${f.losses}-${f.draws}`, ko:f.ko_wins,
+      rank:f.rank, weight:cap(f.rank_weight_class||f.weight_class),
+      country:f.country, champion:f.is_champion }})
+    box.appendChild(b)
+  })
+}
+
+window.loadOdds=async()=>{
+  const { data } = await sb.from('bet_pools_public')
+    .select('*').order('event_status',{ascending:true}).order('bout_number')
+  const box=document.getElementById('oddsFights')
+  if(!data||!data.length){ box.textContent='NO OPEN MARKETS'; return }
+  box.innerHTML=''
+  data.forEach(m=>{
+    const b=document.createElement('button')
+    b.innerHTML=`${m.side_a} vs ${m.side_b}<small>${m.event_name} · ${m.pool.toLocaleString()} VC · ${m.bets} bets</small>`
+    b.onclick=()=>send({type:'odds',on:true,d:{
+      a:m.side_a, b:m.side_b, total_a:m.total_a, total_b:m.total_b, bets:m.bets,
+      label:m.event_name }})
+    box.appendChild(b)
+  })
+}
+
+/* ── UBAe MATCH NIGHT tracker — deck state only, never writes the DB ── */
+const MN={ id:null, a:null, b:null, scoreA:0, scoreB:0, date:null, week:null, lineups:{} }
+const DAY=['SUN','MON','TUE','WED','THU','FRI','SAT']
+const fmtDay=d=>{const x=new Date(d);return DAY[x.getDay()]+' '+String(x.getDate()).padStart(2,'0')+'.'+String(x.getMonth()+1).padStart(2,'0')}
+
+window.mnLoad=async()=>{
+  const { data } = await sb.from('team_matches_public').select('*')
+    .eq('status','scheduled').order('match_date').limit(12)
+  const box=document.getElementById('mnMatches')
+  if(!data||!data.length){ box.textContent='NO SCHEDULED MATCHES'; return }
+  window._mnMatches=data
+  box.innerHTML=''
+  data.forEach(m=>{
+    const b=document.createElement('button')
+    b.innerHTML=`${m.team_a_name} vs ${m.team_b_name}<small>WK${m.week} · ${fmtDay(m.match_date)}</small>`
+    b.onclick=()=>mnPick(m,b)
+    box.appendChild(b)
+  })
+}
+
+async function lineupFor(matchId){
+  const { data } = await sb.from('team_lineups_public')
+    .select('team_name,role,slot,fighter_name').eq('team_match_id',matchId).order('slot')
+  const out={}
+  ;(data||[]).forEach(r=>{ (out[r.team_name]=out[r.team_name]||{starters:[],backups:[]})
+    [r.role==='starter'?'starters':'backups'].push(r.fighter_name) })
+  return out
+}
+
+window.mnPick=async(m,btn)=>{
+  document.querySelectorAll('#mnMatches button').forEach(b=>b.classList.remove('active'))
+  if(btn) btn.classList.add('active')
+  Object.assign(MN,{ id:m.id, a:m.team_a_name, b:m.team_b_name, scoreA:0, scoreB:0, date:m.match_date, week:m.week })
+  MN.lineups=await lineupFor(m.id)
+  mnPush(); mnStateDraw()
+}
+
+function mnStateDraw(){
+  document.getElementById('mnState').innerHTML = MN.id
+    ? `LOADED: <b>${MN.a} ${MN.scoreA} — ${MN.scoreB} ${MN.b}</b> · WK${MN.week} · picks + score push live`
+    : 'NO MATCH LOADED'
+}
+
+function mnPush(){
+  send({type:'pickbar', d:{ teamA:MN.a, teamB:MN.b,
+    left:(MN.lineups[MN.a]||{}).starters||[], right:(MN.lineups[MN.b]||{}).starters||[],
+    scoreA:MN.scoreA, scoreB:MN.scoreB }})
+}
+
+window.mnScore=(side,inc)=>{
+  if(!MN.id) return
+  if(side===null){ MN.scoreA=0; MN.scoreB=0 }
+  else if(side==='A') MN.scoreA=Math.min(3,MN.scoreA+inc)
+  else MN.scoreB=Math.min(3,MN.scoreB+inc)
+  mnPush(); mnStateDraw()
+}
+
+window.mnCountdown=()=>{
+  if(!MN.id) return
+  send({type:'countdown', d:{ a:MN.a, b:MN.b, target:MN.date, eventMain:'SUMMER SPLIT', eventSub:'ubaesports.com' }})
+}
+
+window.mnLoadbar=async()=>{
+  if(!window._mnMatches) return
+  const wk = MN.week ?? window._mnMatches[0].week
+  const wkMatches = window._mnMatches.filter(m=>m.week===wk).slice(0,4)
+  const matches=[]
+  for(const m of wkMatches){
+    const lu=await lineupFor(m.id)
+    matches.push({ day:fmtDay(m.match_date),
+      a:{name:m.team_a_name, roster:((lu[m.team_a_name]||{}).starters||[]).concat((lu[m.team_a_name]||{}).backups||[])},
+      b:{name:m.team_b_name, roster:((lu[m.team_b_name]||{}).starters||[]).concat((lu[m.team_b_name]||{}).backups||[])} })
+  }
+  const ds=wkMatches.map(m=>new Date(m.match_date))
+  const MO=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+  const dates= ds.length? MO[ds[0].getMonth()]+' '+ds[0].getDate()+'<br>'+MO[ds[ds.length-1].getMonth()]+' '+ds[ds.length-1].getDate()+'<br>'+ds[0].getFullYear() : ''
+  send({type:'loadbar', d:{ week:String(wk).padStart(2,'0'), dates, matches }})
+}
+
+window.mnTape=async()=>{
+  const an=document.getElementById('mnBoutA').value.trim(), bn=document.getElementById('mnBoutB').value.trim()
+  if(!an||!bn) return
+  const one=async n=>{ const {data}=await sb.from('fighter_cards')
+    .select('display_name,wins,losses,draws,rank,height,reach,age,country,weight_class').ilike('display_name','%'+n+'%').limit(1); return data&&data[0] }
+  const [A,B]=await Promise.all([one(an),one(bn)])
+  if(!A||!B){ document.getElementById('mnState').innerHTML='TAPE: fighter not found'; return }
+  const F=x=>({ name:x.display_name, record:`${x.wins}-${x.losses}-${x.draws}`,
+    rank:x.rank?('#'+x.rank):'—', age:x.age??'—', height:x.height??'—', reach:x.reach??'—',
+    weight:cap(x.weight_class), odds:'—' })
+  send({type:'tape', d:{ title:(MN.a&&MN.b)?`${MN.a} vs ${MN.b}`:'UBAe', subtitle:MN.week?('SUMMER SPLIT · WEEK '+MN.week):'SUMMER SPLIT', left:F(A), right:F(B) }})
+}
+
+window.fireBug=()=>{
+  const t=document.getElementById('bugText').value.trim(); if(!t) return
+  send({type:'bug', d:{ text:t }})
+}
+
+window.loadBetFeed=async()=>{
+  // bets (no names) + current pool odds for each pick side
+  const [{ data: feed }, { data: pools }] = await Promise.all([
+    sb.from('bet_feed_public').select('*').order('amount',{ascending:false}).limit(24),
+    sb.from('bet_pools_public').select('match_id,side_a,side_b,total_a,total_b'),
+  ])
+  const box=document.getElementById('betFeed')
+  if(!feed||!feed.length){ box.textContent='NO WAGERS ON RECORD'; return }
+  const pByM=Object.fromEntries((pools||[]).map(p=>[p.match_id,p]))
+  box.innerHTML=''
+  feed.forEach(w=>{
+    const p=pByM[w.match_id]; if(!p) return
+    const pool=p.total_a+p.total_b
+    const side= w.pick===p.side_a ? p.total_a : p.total_b
+    const odds= side ? pool/side : 1
+    const b=document.createElement('button')
+    b.innerHTML=`${w.amount.toLocaleString()} VC on ${w.pick}<small>${w.side_a} vs ${w.side_b} · ${w.event_name} · pays ${odds.toFixed(2)}×</small>`
+    b.onclick=()=>send({type:'flash',w:'bet',d:{amt:w.amount,pick:w.pick,odds}})
+    box.appendChild(b)
+  })
+}
+
+async function fireRanking(weight,label){
+  let q=sb.from('rankings_public').select('rank,fighter_name,weight_class').order('rank').limit(5)
+  q = weight==='p4p' ? q.eq('scope','overall') : q.eq('weight_class',weight).eq('scope','weight_class')
+  const { data } = await q
+  send({type:'panel',on:true,d:{title:label,
+    rows:(data||[]).map(r=>[`${r.rank}. ${r.fighter_name}`,''])}})
+}
+const RANKS=[['lightweight','LW'],['middleweight','MW'],['light_heavyweight','LHW'],['heavyweight','HW'],['p4p','P4P']]
+const rb=document.getElementById('rankBtns')
+RANKS.forEach(([w,l])=>{ const b=document.createElement('button'); b.textContent=l
+  b.onclick=()=>fireRanking(w, l==='P4P'?'Pound-for-Pound':l+' Rankings'); rb.appendChild(b) })
+
+window.loadStandings=async()=>{
+  const { data } = await sb.from('team_standings').select('*')
+  const rows=(data||[]).sort((a,b)=>(b.match_wins||0)-(a.match_wins||0))
+    .map(t=>[t.team_name, `${t.match_wins||0}-${t.match_losses||0}`])
+  send({type:'panel',on:true,d:{title:'UBAe Standings',rows}})
+}
+
+loadOdds()
+loadBetFeed()
+mnLoad()
+</script>
+</body>
+</html>

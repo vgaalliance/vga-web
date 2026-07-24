@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,900;1,900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:relative;}
+
+.hud-root{
+  position:absolute;bottom:24px;left:48px;
+  display:flex;flex-direction:column;align-items:flex-start;
+  filter:drop-shadow(0 8px 32px rgba(0,0,0,.85));
+}
+
+/* BO5 STRIP */
+.bo5-strip{
+  height:30px;
+  margin-left:36px;
+  margin-bottom:3px;
+  background:rgba(4,0,16,.58);
+  border:1px solid rgba(168,85,247,.38);
+  display:flex;align-items:center;gap:18px;padding:0 16px;
+  position:relative;
+  clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,0 100%);
+  backdrop-filter:blur(4px);
+}
+.bo5-strip::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(216,180,254,.7),transparent);}
+.team-label{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:.35em;color:rgba(220,200,255,1);letter-spacing:.2em;min-width:90px;}
+.pips{display:flex;gap:4px;align-items:center;}
+.pip{width:12px;height:8px;clip-path:polygon(0 100%,50% 0%,100% 100%);background:rgba(155,48,255,.35);}
+.pip.on{background:#dd88ff;filter:drop-shadow(0 0 5px rgba(168,85,247,1));}
+.bo5-mid{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:.25em;color:rgba(200,160,255,.8);}
+
+/* MAIN ROW */
+.main-row{display:flex;align-items:center;gap:0;}
+
+/* EMBLEM */
+.emblem{
+  width:52px;height:52px;border-radius:50%;
+  flex-shrink:0;
+  position:relative;z-index:10;
+  margin-right:-26px;
+  background:rgb(8,2,22);
+  border:1.5px solid rgba(200,160,255,.7);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+#flowerCanvas{
+  width:52px;height:52px;
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  z-index:2;
+}
+
+/* UBAE BLOCK */
+.ubae-block{
+  padding:0 14px 0 32px;
+  display:flex;flex-direction:column;justify-content:center;
+  height:52px;flex-shrink:0;
+  background:rgba(4,0,16,.52);
+  border-top:1px solid rgba(168,85,247,.45);
+  border-bottom:1px solid rgba(168,85,247,.45);
+  position:relative;overflow:hidden;
+}
+.ubae-block::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(216,180,254,.6),transparent);}
+@keyframes holoA{0%{transform:translateX(-200%)}100%{transform:translateX(400%)}}
+.ubae-holo{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.ubae-holo::after{content:'';position:absolute;top:0;bottom:0;width:60%;background:linear-gradient(90deg,transparent,rgba(216,180,254,.22),rgba(168,85,247,.3),transparent);animation:holoA 3.2s ease-in-out infinite;}
+.ubae-text{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;letter-spacing:.1em;color:#fff;line-height:1;position:relative;z-index:2;}
+@keyframes ubaGlow{0%,100%{text-shadow:0 0 10px rgba(216,180,254,.6),0 0 20px rgba(155,48,255,.3);}50%{text-shadow:0 0 18px rgba(216,180,254,.95),0 0 36px rgba(155,48,255,.55);}}
+.ubae-text{animation:ubaGlow 3s ease-in-out infinite;}
+.ubae-sub{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.35em;color:rgba(216,180,254,1);position:relative;z-index:2;margin-top:3px;text-shadow:0 0 10px rgba(216,180,254,.9),0 0 20px rgba(155,48,255,.6);text-transform:uppercase;}
+
+/* MAIN BAR */
+.main-bar{
+  display:flex;align-items:center;height:52px;
+  background:rgba(4,0,16,.45);
+  border:1px solid rgba(168,85,247,.28);
+  border-left:none;
+  position:relative;overflow:hidden;
+  clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,0 100%);
+  backdrop-filter:blur(5px);
+}
+.main-bar::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;z-index:6;background:linear-gradient(90deg,rgba(216,180,254,0),rgba(216,180,254,.5),rgba(216,180,254,0));}
+#holoCanvas{position:absolute;top:0;left:0;height:100%;pointer-events:none;z-index:5;opacity:0;}
+
+.fighter{display:flex;flex-direction:column;justify-content:center;padding:0 28px;width:280px;flex-shrink:0;position:relative;z-index:4;}
+.f-team{font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.4em;color:rgba(200,170,255,.65);}
+.f-name{font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:900;font-style:italic;color:#f0e8ff;letter-spacing:.04em;text-transform:uppercase;}
+@keyframes ng{0%,100%{text-shadow:0 0 10px rgba(155,48,255,.22);}50%{text-shadow:0 0 20px rgba(155,48,255,.6);}}
+.f-name{animation:ng 3.2s ease-in-out infinite;}
+
+.vs-section{display:flex;align-items:center;justify-content:center;padding:0 24px;height:100%;flex-shrink:0;z-index:4;border-left:1px solid rgba(168,85,247,.25);border-right:1px solid rgba(168,85,247,.25);background:rgba(50,8,100,.38);}
+.vs-text{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;font-style:italic;color:#d8b4fe;letter-spacing:.3em;text-shadow:0 0 14px rgba(168,85,247,.9);}
+@keyframes vp{0%,100%{opacity:.82}50%{opacity:1}}
+.vs-text{animation:vp 1.8s ease-in-out infinite;}
+
+/* ROUND */
+.round-float{
+  align-self:flex-end;
+  margin-left:36px;
+  margin-top:4px;
+  height:32px;
+  background:rgba(4,0,16,.62);
+  border:1px solid rgba(168,85,247,.4);border-top:none;
+  display:flex;align-items:center;gap:8px;padding:0 18px;
+  position:relative;
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%);
+}
+.round-float::before{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(168,85,247,.6),transparent);}
+.rnd-label{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.3em;color:rgba(200,170,255,.95);text-transform:uppercase;}
+.rnd-num{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:#d8b4fe;}
+</style>
+</head>
+<body>
+
+<div class="hud-root">
+
+  <div class="bo5-strip">
+    <div class="team-label">TEAM</div>
+    <div class="pips"><div class="pip"></div><div class="pip"></div><div class="pip"></div></div>
+    <div class="bo5-mid">BO·5</div>
+    <div class="pips"><div class="pip"></div><div class="pip"></div><div class="pip"></div></div>
+    <div class="team-label">TEAM</div>
+  </div>
+
+  <div class="main-row">
+    <div class="emblem" id="emblemEl">
+      <canvas id="flowerCanvas" width="52" height="52"></canvas>
+    </div>
+    <div class="ubae-block">
+      <div class="ubae-holo"></div>
+      <div class="ubae-text">UBAe</div>
+      <div class="ubae-sub">SPRING SPLIT</div>
+    </div>
+    <div class="main-bar">
+      <canvas id="holoCanvas"></canvas>
+      <div class="fighter">
+        
+      </div>
+      <div class="vs-section"><div class="vs-text" id="vsText">VS</div></div>
+      <div class="fighter">
+        
+        
+      </div>
+    </div>
+  </div>
+
+  <div class="round-float">
+    <div class="rnd-label">ROUND</div>
+    <div class="rnd-num"></div>
+  </div>
+
+</div>
+
+<script>
+const cv=document.getElementById('flowerCanvas');
+const ctx=cv.getContext('2d');
+const W=52,H=52,CX=W/2,CY=H/2;
+let T=0,spinAccum=0;
+
+// bezier spin cycle — smooth continuous intensity, no jumps
+let cycleT=0,cycleLen=0,inBurst=false;
+let spinIntensity=0, siTarget=0, siVel=0; // spring physics for smoothing
+function newCycle(){
+  cycleLen=inBurst?280+Math.random()*140:620+Math.random()*500;
+  cycleT=0;
+}
+newCycle();
+function bezierEase(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;}
+function easeInCubic(t){return t*t*t;}
+function easeOutQuint(t){return 1-Math.pow(1-t,5);}
+
+// Spring lerp — critically damped, never overshoots
+function springLerp(current, target, vel, stiffness, damping){
+  const force = (target-current)*stiffness - vel*damping;
+  vel += force;
+  current += vel;
+  return {val:current, vel};
+}
+
+// particles spawn at petal tips
+const sparks=Array.from({length:28},()=>({x:CX,y:CY,vx:0,vy:0,life:0,max:0,hue:270,r:.5,on:false}));
+function emitSpark(si){
+  const s=sparks.find(s=>!s.on||s.life>s.max);if(!s)return;
+  const pIdx=Math.floor(Math.random()*5);
+  const pAngle=(pIdx/5)*Math.PI*2+spinAccum;
+  const r=13;
+  s.x=CX+Math.cos(pAngle)*r*.88;s.y=CY+Math.sin(pAngle)*r*.88;
+  const tangent=pAngle+Math.PI/2;
+  const vel=si*.9+.05;
+  s.vx=Math.cos(tangent)*vel+(Math.random()-.5)*.08;
+  s.vy=Math.sin(tangent)*vel-(si*.1)+(Math.random()-.3)*.08;
+  s.life=0;s.max=si>.5?18+Math.random()*16:80+Math.random()*100;
+  s.hue=265+Math.random()*85;s.r=si>.5?.7+Math.random()*1.1:.3+Math.random()*.5;s.on=true;
+}
+
+function tick(){
+  ctx.clearRect(0,0,W,H);
+  T++;cycleT++;
+  const p=Math.min(1,cycleT/cycleLen);
+  // advance cycle — set TARGET only, spring does the actual smoothing
+  if(inBurst){
+    const p1=.22, p2=.48, p3=.72, p4=1.0;
+    if(p<p1){
+      // ease-in: very slow start, builds momentum
+      siTarget = easeInCubic(p/p1);
+    } else if(p<p2){
+      // peak hold with gentle pulse
+      const holdT=(p-p1)/(p2-p1);
+      siTarget = 1.0 - Math.sin(holdT*Math.PI)*.03;
+    } else if(p<p3){
+      // first stage release — quint easeout, fast initial drop
+      const t=(p-p2)/(p3-p2);
+      siTarget = easeOutQuint(1-t)*.6; // only drops to .6 here
+    } else {
+      // very long tail — last .6 drains with a quint so it barely moves at first
+      const t=(p-p3)/(p4-p3);
+      siTarget = Math.pow(1-t,2.5)*.45;
+    }
+    // only end burst when intensity has naturally decayed to near-zero
+    if(p>=1 && spinIntensity<.025){inBurst=false;siTarget=0;siVel=0;newCycle();}
+  } else {
+    siTarget=0;
+    if(p>=1){inBurst=true;newCycle();}
+  }
+
+  // SPRING — smooth follow, no sudden jumps, stiffness=0.028 damping=0.72
+  // softer spring when coming down than going up
+  const stiff = spinIntensity < siTarget ? 0.016 : 0.004;
+  const damp  = spinIntensity < siTarget ? 0.68  : 0.60;
+  const spring=springLerp(spinIntensity,siTarget,siVel,stiff,damp);
+  spinIntensity=Math.max(0,Math.min(1,spring.val));
+  siVel=spring.vel;
+  const spd=.003+spinIntensity*.18;
+  spinAccum+=spd;
+  const si=spinIntensity;
+  const emitProb=inBurst?si*.65:.025;
+  if(Math.random()<emitProb)emitSpark(si);
+
+  const hue=(T*.4+270)%360;
+  const r=13;
+  // bud/bloom sizes
+  const budEW=r*.48,budEH=r*.95;
+  const bloEW=r*.32,bloEH=r*1.2;
+  const ew=budEW+(bloEW-budEW)*si;
+  const eh=budEH+(bloEH-budEH)*si;
+
+  // base brightness
+  const basePulse=.85+si*.12;
+
+  // ambient bloom
+  {
+    const b1=ctx.createRadialGradient(CX,CY,0,CX,CY,CX);
+    b1.addColorStop(0,`hsla(${hue},100%,65%,${Math.pow(si,1.5)*.14})`);
+    b1.addColorStop(.5,`hsla(${(hue+60)%360},100%,55%,${Math.pow(si,1.5)*.07})`);
+    b1.addColorStop(1,'transparent');
+    ctx.beginPath();ctx.arc(CX,CY,CX,0,Math.PI*2);ctx.fillStyle=b1;ctx.fill();
+  }
+
+  // ghost trails when spinning
+  if(si>.01){
+    for(let g=1;g<=3;g++){
+      const gs=spinAccum-g*.08;
+      for(let p2=0;p2<5;p2++){
+        const a=(p2/5)*Math.PI*2+gs;
+        const px=CX+Math.cos(a)*r*.88,py=CY+Math.sin(a)*r*.88;
+        ctx.save();ctx.translate(px,py);ctx.rotate(a+Math.PI);
+        ctx.beginPath();ctx.ellipse(0,0,ew*.85,eh*.85,0,0,Math.PI*2);
+        ctx.fillStyle=`hsla(${(hue+p2*22)%360},100%,82%,${(1-g/4)*Math.pow(si,1.5)*.14})`;ctx.fill();
+        ctx.restore();
+      }
+    }
+  }
+
+  // PETALS
+  for(let p2=0;p2<5;p2++){
+    const a=(p2/5)*Math.PI*2+spinAccum;
+    const px=CX+Math.cos(a)*r*.88,py=CY+Math.sin(a)*r*.88;
+    // hue — always purple base, only expands to +/-30deg at peak bloom
+    const rawPh=(hue+p2*22)%360;
+    const purplePh=270+(rawPh%50)-5; // locked: 265-315
+    const ph=purplePh + (rawPh-purplePh)*Math.pow(si,3); // only opens at si>0.7
+    const depth=.75+.35*((CY-py)/r);
+    // eclipse: one petal at a time glows brightly like a crescent halo
+    const eclipsePetal=Math.floor(T/180)%5;
+    const isEclipse=p2===eclipsePetal;
+    const eclipseFade=Math.max(0,Math.sin((T%180)/180*Math.PI));
+    const basePetalGlow=.2+Math.max(0,Math.sin(T*.035+p2*1.4+p2*p2*.6))*.25;
+    const idleVal=isEclipse?basePetalGlow+eclipseFade*.8:basePetalGlow;
+    // smooth blend: si=0 → idleVal, si=1 → 1.0, no hard threshold
+    const idleGlow=idleVal + (1-idleVal)*Math.pow(si,0.6);
+    const bp=basePulse*Math.min(1.15,Math.max(.65,depth))*idleGlow;
+    const tiltA=a+Math.PI;
+
+    // outer glow
+    const glowR=ew*(1.8+si*2.0);
+    const g2=ctx.createRadialGradient(px,py,0,px,py,glowR);
+    g2.addColorStop(0,`hsla(${ph},100%,78%,${(.65+si*.3)*idleGlow})`);
+    g2.addColorStop(.5,`hsla(${(ph+20)%360},100%,65%,${(.45+si*.18)*idleGlow})`);
+    g2.addColorStop(1,'transparent');
+    ctx.beginPath();ctx.arc(px,py,glowR,0,Math.PI*2);ctx.fillStyle=g2;ctx.fill();
+
+    // chromatic aberration when spinning
+    {
+      const ca=1.2*si;
+      ctx.globalAlpha=Math.pow(si,3)*.32;
+      ctx.save();ctx.translate(px,py);ctx.rotate(tiltA);
+      ctx.beginPath();ctx.ellipse(-ca,0,ew,eh,0,0,Math.PI*2);ctx.fillStyle=`hsl(0,100%,72%)`;ctx.fill();
+      ctx.beginPath();ctx.ellipse(0,-ca*.5,ew,eh,0,0,Math.PI*2);ctx.fillStyle=`hsl(130,100%,72%)`;ctx.fill();
+      ctx.beginPath();ctx.ellipse(ca,0,ew,eh,0,0,Math.PI*2);ctx.fillStyle=`hsl(240,100%,78%)`;ctx.fill();
+      ctx.restore();ctx.globalAlpha=1;
+    }
+
+    // petal — ALWAYS teardrop, just closes/opens with si
+    // tip sharpness: tighter when unbloomed, wider when bloomed
+    const tipW = ew*(0.6+si*0.4);  // wider tip as it blooms
+    const baseW = ew*(0.9+si*0.1);
+    ctx.save();ctx.translate(px,py);ctx.rotate(tiltA);
+    ctx.beginPath();
+    ctx.moveTo(0,-eh);  // sharp pointed tip
+    ctx.bezierCurveTo( tipW,-eh*.55, baseW, eh*.1, 0, eh*.55);
+    ctx.bezierCurveTo(-baseW, eh*.1, -tipW,-eh*.55, 0,-eh);
+    ctx.closePath();
+
+    // fill gradient — fully continuous, no hard branch
+    // lightness: 22% (dark bud) → 80% (bright bloom), smooth all the way
+    const lBase  = 22  + si*58;   // 22→80
+    const lMid   = 16  + si*66;   // 16→82
+    const sat    = 88  + si*12;   // 88→100 saturation
+    const hShift1= 20  * si;       // hue shift only opens with si
+    const hShift2= 35  * si;
+    const pg=ctx.createLinearGradient(-ew,0,ew,0);
+    pg.addColorStop(0,  `hsla(${ph},${sat}%,${lBase}%,${bp})`);
+    pg.addColorStop(.5, `hsla(${(ph+hShift1)%360},${sat}%,${lMid}%,${bp})`);
+    pg.addColorStop(1,  `hsla(${(ph+hShift2)%360},${sat}%,${lBase}%,${bp})`);
+    ctx.fillStyle=pg;ctx.fill();
+
+    // neon edge — bright, visible
+    const strokeHue=290+(((ph+40)%360)-290)*Math.pow(si,2); // smooth hue shift
+    ctx.strokeStyle=`hsla(${strokeHue},100%,92%,${(.18+si*.6)*idleGlow+.12})`;
+    ctx.lineWidth=1.2+si*.4;ctx.stroke();
+
+    // inner crease
+    ctx.beginPath();ctx.arc(0,eh*.1,ew*.4,0,Math.PI*2);
+    ctx.strokeStyle=`hsla(${ph},100%,70%,${.04+si*.22})`;ctx.lineWidth=.4;ctx.stroke();
+    // specular
+    ctx.beginPath();ctx.ellipse(-ew*.22,-eh*.28,ew*.2*(.3+si*.7),eh*.17*(.3+si*.7),-.3,0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,255,255,${(.08+si*.35)*depth})`;ctx.fill();
+
+    // speckle dots — deterministic hash, never flickers
+    ctx.globalAlpha=bp*.5;
+    for(let di=0;di<12;di++){
+      // pseudo-random but stable positions per petal
+      const ang=di*2.399+p2*0.618; // golden angle spread
+      const rad=(((di*7+p2*3)%8)/8)*.75;
+      const sdx=Math.cos(ang)*rad*ew,sdy=Math.sin(ang)*rad*eh;
+      const sd=1-rad;
+      ctx.fillStyle=`hsla(${(ph+60+di*8)%360},100%,92%,${sd*.45})`;
+      ctx.fillRect(sdx-.5,sdy-.5,1,1);
+    }
+    ctx.globalAlpha=1;
+    ctx.restore();
+  }
+
+  // CENTRE
+  const ch=(hue+160)%360;
+  const centreR=r*.18+si*r*.12;
+  {
+    const cOuter=ctx.createRadialGradient(CX,CY,0,CX,CY,centreR*3.5*si+2);
+    cOuter.addColorStop(0,`hsla(${ch},80%,100%,${basePulse*Math.pow(si,1.5)*.5})`);
+    cOuter.addColorStop(1,'transparent');
+    ctx.beginPath();ctx.arc(CX,CY,centreR*3.5*si+2,0,Math.PI*2);ctx.fillStyle=cOuter;ctx.fill();
+  }
+  const cg=ctx.createRadialGradient(CX,CY,0,CX,CY,centreR+.5);
+  cg.addColorStop(0,`hsla(${ch},60%,100%,${.55+si*.4})`);
+  cg.addColorStop(.5,`hsla(${ch},100%,85%,${.32+si*.45})`);
+  cg.addColorStop(1,'transparent');
+  ctx.beginPath();ctx.arc(CX,CY,centreR+.5,0,Math.PI*2);ctx.fillStyle=cg;ctx.fill();
+  ctx.beginPath();ctx.arc(CX,CY,centreR*.4,0,Math.PI*2);ctx.fillStyle=`rgba(255,255,255,.75)`;ctx.fill();
+
+  // CRT SYNTHWAVE TRAIL — rainbow echo rings expanding outward when blooming
+  {
+    for(let ring=1;ring<=3;ring++){
+      const ringR=r*(1.2+ring*.5)*si;
+      const ringHue=(hue+ring*30+T*2)%360;
+      const ringA=Math.pow(si,2.5)*(1-ring/4)*.14;
+      ctx.beginPath();ctx.arc(CX,CY,ringR,0,Math.PI*2);
+      ctx.strokeStyle=`hsla(${ringHue},100%,75%,${ringA})`;
+      ctx.lineWidth=.8;ctx.stroke();
+    }
+    // scanline sweep on bloom — horizontal band
+    const scanY=CY+Math.sin(T*.08)*CY*.6;
+    const sg=ctx.createLinearGradient(0,scanY-1,0,scanY+1);
+    sg.addColorStop(0,'transparent');
+    sg.addColorStop(.5,`hsla(${hue},100%,90%,${Math.pow(si,2)*.2})`)
+    sg.addColorStop(1,'transparent');
+    ctx.fillStyle=sg;ctx.fillRect(0,scanY-1,W,2);
+  }
+
+  // starburst
+  {
+    const flare=Math.pow(si,2)*.16,rayRot=T*.008;
+    [[1,0],[0,1],[-1,0],[0,-1],[.7,.7],[-.7,.7],[.7,-.7],[-.7,-.7]].forEach(([dx,dy],i)=>{
+      const rdx=dx*Math.cos(rayRot)-dy*Math.sin(rayRot);
+      const rdy=dx*Math.sin(rayRot)+dy*Math.cos(rayRot);
+      const len=r*(i<4?1.1:.65)*si;
+      const fg=ctx.createLinearGradient(CX,CY,CX+rdx*len,CY+rdy*len);
+      fg.addColorStop(0,`hsla(${(ch+i*10)%360},90%,100%,${flare})`);
+      fg.addColorStop(1,'transparent');
+      ctx.strokeStyle=fg;ctx.lineWidth=i<4?.8:.5;
+      ctx.beginPath();ctx.moveTo(CX,CY);ctx.lineTo(CX+rdx*len,CY+rdy*len);ctx.stroke();
+    });
+  }
+
+  // ORBITALS
+  [[8,7,.04,0],[5,11,.022,55]].forEach(([n,orBase,sp2,ho])=>{
+    const or=orBase*.6+(orBase*.4)*si;
+    for(let i=0;i<n;i++){
+      const a=(i/n)*Math.PI*2+T*sp2;
+      const px=CX+Math.cos(a)*or,py=CY+Math.sin(a)*or;
+      const ph=(hue+ho+i*20)%360;
+      const dotA=Math.pow(si,.7)*.65;
+      if(si>.01){
+        for(let t=1;t<=3;t++){
+          ctx.beginPath();ctx.arc(CX+Math.cos(a-t*.04*sp2*60)*or,CY+Math.sin(a-t*.04*sp2*60)*or,.35,0,Math.PI*2);
+          ctx.fillStyle=`hsla(${ph},100%,85%,${(1-t/4)*Math.pow(si,2)*.18})`;ctx.fill();
+        }
+      }
+      const dg=ctx.createRadialGradient(px,py,0,px,py,1.2+si*.8);
+      dg.addColorStop(0,`hsla(${ph},${40+si*60}%,${70+si*25}%,${dotA})`);
+      dg.addColorStop(1,'transparent');
+      ctx.beginPath();ctx.arc(px,py,1.2+si*.8,0,Math.PI*2);ctx.fillStyle=dg;ctx.fill();
+      ctx.beginPath();ctx.arc(px,py,.45,0,Math.PI*2);ctx.fillStyle=`hsla(${ph},100%,95%,${dotA*.85})`;ctx.fill();
+    }
+  });
+
+  // SPARKS
+  sparks.forEach(s=>{
+    if(!s.on)return;
+    s.life++;if(s.life>s.max){s.on=false;return;}
+    s.vy-=.005;s.x+=s.vx;s.y+=s.vy;s.vx*=.95;s.vy*=.97;
+    const fa=1-s.life/s.max;
+    const tv=Math.sqrt(s.vx*s.vx+s.vy*s.vy);
+    if(tv>.025){
+      const tg=ctx.createLinearGradient(s.x,s.y,s.x-s.vx*4,s.y-s.vy*4);
+      tg.addColorStop(0,`hsla(${s.hue},100%,85%,${fa*.42})`);
+      tg.addColorStop(1,'transparent');
+      ctx.strokeStyle=tg;ctx.lineWidth=s.r*.75;
+      ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.x-s.vx*4,s.y-s.vy*4);ctx.stroke();
+    }
+    ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+    ctx.fillStyle=`hsla(${s.hue},100%,92%,${fa*.8})`;ctx.fill();
+  });
+
+  // emblem ring sync
+  const emblem=document.getElementById('emblemEl');
+  if(emblem){
+    const gs=si>.08
+      ?`0 0 ${10+si*20}px rgba(216,180,254,${.45+si*.5}),0 0 ${20+si*32}px rgba(155,48,255,${.2+si*.42})`
+      :`0 0 ${7+3*Math.sin(T*.055)}px rgba(168,85,247,.35),0 0 14px rgba(155,48,255,.15)`;
+    emblem.style.boxShadow=gs;
+    emblem.style.borderColor=`rgba(${180+Math.round(si*40)},${130+Math.round(si*30)},255,${.55+si*.35})`;
+  }
+
+  // HOLO BAR — iridescent holographic sticker effect
+  const holoCV=document.getElementById('holoCanvas');
+  if(holoCV && holoCV.parentElement){
+    if(!holoCV._init){const barEl=holoCV.parentElement;holoCV.width=barEl.offsetWidth||800;holoCV.height=barEl.offsetHeight||52;holoCV._init=true;}
+    const barW=holoCV.width,barH=holoCV.height;
+    const hx=holoCV.getContext('2d');
+
+    if(!window.holoState) window.holoState={pos:-1.2,sweeping:false,lastSi:0,fadeOut:0};
+    const hs=window.holoState;
+
+    if(!hs.sweeping && si>0.55 && hs.lastSi<=0.55){hs.sweeping=true;hs.pos=-1.2;}
+    hs.lastSi=si;
+
+    if(hs.sweeping || hs.pos>-1.2){
+      hx.clearRect(0,0,barW,barH);
+
+      const prog=Math.max(0,Math.min(1,(hs.pos+1.2)/2.6));
+      const easedSpeed=(0.004+Math.sin(prog*Math.PI)*0.013);
+      if(hs.sweeping) hs.pos+=easedSpeed;
+
+      // band centre in px
+      const cx=hs.pos*barW;
+      const bandW=barW*1.3;
+      const masterA=Math.min(1,si*1.8)*Math.sin(Math.max(0,prog)*Math.PI);
+
+      if(masterA>.01){
+        // draw iridescent band — 1px columns, tight frequencies, staggered time
+        for(let x=0;x<barW;x++){
+          const t=(x-(cx-bandW*.5))/bandW;
+          const edge=Math.sin(t*Math.PI);
+
+          // tight frequencies, staggered time
+          const f1=Math.sin(x*.028+T*.032)*0.5+0.5;
+          const f2=Math.sin(x*.019-T*.024+1.2)*0.5+0.5;
+          const f3=Math.sin(x*.034+T*.018+2.4)*0.5+0.5;
+          const f4=Math.sin(x*.014-T*.028+3.6)*0.5+0.5;
+
+          // purple base, a little more LSD color bleed
+          const blendHue=(265+(f1*45+f2*30+f3*20-40))%360;
+          const sat=65+f2*20;
+          const light=30+f1*30;
+          const alpha=edge*masterA*(0.10+f3*.11);
+
+          // blocky feel — snap column width to 1, 2 or 3px based on f4
+          const colW=f4>.72?3:f4>.44?2:1;
+          hx.fillStyle=`hsla(${blendHue},${sat}%,${light}%,${alpha})`;
+          hx.fillRect(x,0,colW,barH);
+
+          // micro-glints
+          if(f1*f2*f3>.65){
+            hx.fillStyle=`hsla(${blendHue+15},85%,85%,${edge*masterA*.2})`;
+            hx.fillRect(x,0,colW,barH);
+          }
+        }
+
+        // soft envelope glow over the whole band
+        const envG=hx.createLinearGradient(cx-bandW*.5,0,cx+bandW*.5,0);
+        envG.addColorStop(0,'transparent');
+        envG.addColorStop(.3,`rgba(180,130,255,${masterA*.05})`);
+        envG.addColorStop(.5,`rgba(190,140,255,${masterA*.08})`);
+        envG.addColorStop(.7,`rgba(180,130,255,${masterA*.05})`);
+        envG.addColorStop(1,'transparent');
+        hx.fillStyle=envG;
+        hx.fillRect(0,0,barW,barH);
+      }
+
+      holoCV.style.opacity='1';
+      if(hs.pos>1.5 && !hs.fadeOut){
+        hs.sweeping=false;
+        hs.fadeOut=1.0; // start fade
+      }
+    }
+
+    // fade out — blocky decay, canvas alpha drops gradually
+    if(hs.fadeOut>0){
+      hs.fadeOut=Math.max(0,hs.fadeOut-0.008);
+      holoCV.style.opacity=String(hs.fadeOut);
+      if(hs.fadeOut<=0){
+        hx.clearRect(0,0,barW,barH);
+        holoCV.style.opacity='0';
+        hs.pos=-1.2;
+        hs.fadeOut=0;
+      }
+    }
+  }
+
+  // VS glitch ~8s
+  const vsEl=document.getElementById('vsText');
+  const gp=T%480;
+  if(gp<5)vsEl.style.textShadow=`${gp%2?2:-2}px 0 rgba(255,51,204,.9),${gp%2?-2:2}px 0 rgba(0,200,255,.8),0 0 14px rgba(168,85,247,.9)`;
+  else vsEl.style.textShadow='';
+
+  requestAnimationFrame(tick);
+}
+tick();
+</script>
+</body>
+</html>

@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920">
+<title>UBAe — Match Countdown</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Barlow+Condensed:ital,wght@0,700;0,900;1,900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root { --pur:#9b30ff; --hi:#cc66ff; --pink:#ff33cc; --white:#f0e8ff; --bg:#03000a; }
+body {
+  background:#000000;
+  width:1920px; height:1080px;
+  overflow:hidden; position:relative;
+  font-family:'Press Start 2P',monospace; color:var(--white);
+}
+body::after { display:none; }
+#bgCanvas { position:absolute; inset:0; z-index:0; }
+
+/* corner brackets */
+.sc { position:absolute; width:52px; height:52px; border-style:solid; z-index:60; animation:cornercycle 3s linear infinite; }
+.sc-tl{top:12px;left:12px;border-width:3px 0 0 3px}
+.sc-tr{top:12px;right:12px;border-width:3px 3px 0 0}
+.sc-bl{bottom:12px;left:12px;border-width:0 0 3px 3px}
+.sc-br{bottom:12px;right:12px;border-width:0 3px 3px 0}
+@keyframes cornercycle{
+  0%  {border-color:#ff0080;box-shadow:0 0 12px #ff0080}
+  17% {border-color:#ff8c00;box-shadow:0 0 12px #ff8c00}
+  33% {border-color:#ffe000;box-shadow:0 0 12px #ffe000}
+  50% {border-color:#cc66ff;box-shadow:0 0 12px #cc66ff}
+  67% {border-color:#ff33cc;box-shadow:0 0 12px #ff33cc}
+  83% {border-color:#9b4dff;box-shadow:0 0 12px #9b4dff}
+  100%{border-color:#ff0080;box-shadow:0 0 12px #ff0080}
+}
+@keyframes textflow  {0%{background-position:0 0}100%{background-position:300% 0}}
+@keyframes textslide {0%{background-position:0 0}100%{background-position:0 300%}}
+@keyframes logopulse {
+  0%,100%{filter:drop-shadow(0 0 20px rgba(255,0,255,.9)) drop-shadow(0 0 50px rgba(0,255,255,.6))}
+  50%    {filter:drop-shadow(0 0 50px rgba(255,255,0,1))  drop-shadow(0 0 100px rgba(0,255,255,.9))}
+}
+@keyframes linepulse  {0%,100%{opacity:.3}50%{opacity:1}}
+@keyframes selblink   {0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes scandown   {0%{top:-80px}100%{top:110%}}
+@keyframes lflicker   {0%,95%,100%{opacity:1}96%{opacity:.85}97%{opacity:1}}
+@keyframes rflicker   {0%,93%,100%{opacity:1}94%{opacity:.8}95%{opacity:1}}
+@keyframes dotblink   {0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes colonblink {0%,49%{opacity:1}50%,100%{opacity:.15}}
+@keyframes rainbowslide{0%{background-position:0 0}100%{background-position:0 300%}}
+
+/* TOP BAR */
+.top-bar {
+  position:absolute; top:36px; left:50px; right:50px; height:110px;
+  background:transparent;
+  border:none;
+  display:flex; align-items:center;
+  z-index:40;
+}
+
+
+
+
+/* LEFT BLOCK: UBAe S1 */
+.tb-left {
+  display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:0;
+  padding:0 50px 0 60px;
+  flex-shrink:0;
+  transform: perspective(650px) rotateY(14deg);
+  transform-origin: left center;
+}
+.logo-ubae {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:82px; font-weight:900; letter-spacing:.12em;
+  background:linear-gradient(180deg,#d8b4fe 0%,#a78bfa 15%,#818cf8 30%,#6366f1 45%,#8b5cf6 60%,#a855f7 75%,#c084fc 90%,#d8b4fe 100%);
+  background-size:100% 300%;
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  animation:textslide 4s linear infinite, logopulse 2.5s ease-in-out infinite;
+}
+.logo-s1 {
+  font-size:14px; letter-spacing:.45em;
+  align-self:flex-end; margin-bottom:6px;
+  background:linear-gradient(90deg,#d8b4fe,#a78bfa,#818cf8,#6366f1,#8b5cf6,#a855f7,#c084fc,#d8b4fe);
+  background-size:300% 100%;
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  animation:textflow 3s linear infinite;
+}
+
+/* CENTRE BLOCK: live big clock */
+
+
+
+
+
+
+/* RIGHT BLOCK: event label */
+.tb-right {
+  display:flex; flex-direction:column; align-items:flex-end; justify-content:center;
+  padding:0 60px 0 50px;
+  flex-shrink:0; gap:4px;
+  transform: perspective(650px) rotateY(-14deg);
+  transform-origin: right center;
+}
+.tb-event-main {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:52px; font-weight:900; letter-spacing:.25em;
+  color:#fff; text-transform:uppercase;
+  text-shadow:0 0 24px rgba(204,102,255,.55);
+}
+.tb-event-sub {
+  font-size:15px; letter-spacing:.38em;
+  color:rgba(200,160,255,.6);
+}
+
+/* BOTTOM BAR */
+.bottom-bar {
+  position:absolute; bottom:0; left:0; right:0; height:46px;
+  background:rgba(3,0,10,.9);
+  border-top:2px solid rgba(155,77,255,.3);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 60px 0 90px; z-index:40;
+}
+.sponsor {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:32px; font-weight:900; letter-spacing:.28em;
+  background:linear-gradient(180deg,#d8b4fe 0%,#a78bfa 15%,#818cf8 30%,#6366f1 45%,#8b5cf6 60%,#a855f7 75%,#c084fc 90%,#d8b4fe 100%);
+  background-size:100% 300%;
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  animation:textslide 5s linear infinite, logopulse 3s ease-in-out infinite;
+}
+.sponsor-pre { font-size:8px; letter-spacing:.4em; color:rgba(204,102,255,.75); margin-right:10px; text-shadow:0 0 10px rgba(155,48,255,.5); }
+.b-links { font-family:'Share Tech Mono',monospace; font-size:11px; letter-spacing:.2em; color:rgba(155,77,255,.35); display:flex; gap:48px; }
+
+/* LEFT PANEL */
+.left-panel {
+  position:absolute;
+  left:0; top:190px; bottom:46px; width:860px;
+  display:flex; flex-direction:column; justify-content:center; align-items:flex-start;
+  padding:0 50px 0 70px; z-index:30; padding-bottom:60px;
+}
+.vs-row {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:16px; width:100%;
+  transform: perspective(1200px) rotateY(2deg);
+  transform-origin: left center;
+}
+/* spacer slots for team names on each side */
+.vs-slot {
+  flex:1; min-width:180px;
+}
+.vs-slot.r { text-align:right; }
+.tabbr {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:118px; font-weight:900; font-style:italic;
+  letter-spacing:-.01em; line-height:.88; text-transform:uppercase;
+}
+.tabbr.l {
+  color:#fff;
+  text-shadow:4px 0 0 rgba(255,34,68,.8),-2px 0 0 rgba(255,34,68,.3),
+    0 0 40px rgba(255,34,68,1),0 0 80px rgba(255,34,68,.35);
+  animation:lflicker 5s steps(1) infinite;
+}
+.tabbr.r {
+  color:#fff;
+  text-shadow:-4px 0 0 rgba(34,100,255,.8),2px 0 0 rgba(34,100,255,.3),
+    0 0 40px rgba(34,100,255,1),0 0 80px rgba(34,100,255,.35);
+  animation:rflicker 5s steps(1) infinite 2.5s;
+}
+.vs-mid { display:flex; flex-direction:column; align-items:center; gap:8px; flex-shrink:0; padding:0 40px; margin-bottom:10px; }
+@keyframes vsGlitch {
+    0%,92%,100% { transform:none; }
+    93%  { transform:translateX(-2px); text-shadow:-3px 0 #ff33cc, 3px 0 #ff33cc; }
+    94%  { transform:translateX(2px);  text-shadow: 3px 0 #ff33cc,-3px 0 #ff33cc; }
+    95%  { transform:none; }
+  }
+  .vs-word {
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:36px; font-weight:900; font-style:italic; letter-spacing:.15em;
+    color:var(--hi);
+    text-shadow:0 0 20px var(--hi), 3px 0 0 var(--pink), -3px 0 0 rgba(0,229,255,.7), 0 0 40px rgba(0,200,255,.3);
+    animation:vsGlitch 7s steps(1) infinite;
+  }
+.vs-bo { font-size:11px; letter-spacing:.4em; color:rgba(204,102,255,.55); text-shadow:0 0 8px rgba(155,48,255,.3); }
+.teams-sub {
+  display:flex; justify-content:space-between; width:100%; margin-bottom:20px;
+}
+.tsub { display:flex; flex-direction:column; gap:3px; }
+.tsub.r { align-items:flex-end; }
+.t-full { font-family:'Barlow Condensed',sans-serif; font-size:15px; font-weight:700; letter-spacing:.35em; color:rgba(240,224,255,.38); text-transform:uppercase; }
+.t-rec  { font-family:'Share Tech Mono',monospace; font-size:11px; letter-spacing:.25em; color:rgba(200,160,255,.25); }
+
+/* COUNTDOWN */
+.cd-box {
+  width:100%; background:rgba(3,0,10,.93);
+  border:2px solid rgba(155,77,255,.4);
+  box-shadow:0 0 36px rgba(155,48,255,.18),inset 0 0 20px rgba(60,0,100,.18);
+  position:relative; overflow:hidden;
+  /* HUD slant: slight perspective tilt toward centre */
+  transform: perspective(900px) rotateY(4deg);
+  transform-origin: left center;
+  
+  background-image: linear-gradient(
+    160deg,
+    rgba(255,255,255,.04) 0%,
+    transparent 40%,
+    rgba(155,48,255,.04) 100%
+  );
+}
+.cd-box::before {
+  content:''; position:absolute; left:0; right:0; top:0; height:1px;
+  background:linear-gradient(90deg,transparent,#9b4dff 20%,#ff0080 50%,#9b4dff 80%,transparent);
+  animation:linepulse 2s ease-in-out infinite; z-index:4;
+}
+.cd-scan {
+  position:absolute; left:0; right:0; height:35%;
+  background:linear-gradient(to bottom,transparent,rgba(155,77,255,.08),rgba(0,255,255,.04),transparent);
+  filter:blur(3px); animation:scandown 2.8s linear infinite;
+  pointer-events:none; z-index:1;
+}
+.cd-crt {
+  position:absolute; inset:0; pointer-events:none; z-index:2;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.12) 0,rgba(0,0,0,.12) 1px,transparent 1px,transparent 4px);
+}
+.cd-inner { display:flex; align-items:stretch; position:relative; z-index:3; }
+.cd-side {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:12px 14px; border-right:1px solid rgba(155,77,255,.2); gap:6px; min-width:50px;
+}
+.cd-dot { width:6px; height:6px; border-radius:50%; background:var(--hi); box-shadow:0 0 8px var(--hi); animation:dotblink 1s steps(1) infinite; }
+.cd-sidetxt { font-size:6px; letter-spacing:.35em; color:rgba(204,102,255,.45); writing-mode:vertical-rl; transform:rotate(180deg); }
+.cd-digits { display:flex; align-items:center; justify-content:center; flex:1; padding:8px 0; }
+.cd-seg { display:flex; flex-direction:column; align-items:center; padding:0 12px; }
+.cd-num {
+  font-family:'Share Tech Mono',monospace;
+  font-size:76px; line-height:1; letter-spacing:-.02em; min-width:2ch; text-align:center;
+  color:#fff; text-shadow:0 0 26px var(--hi),2px 2px 0 #000;
+}
+.cd-num.urgent { color:#ff2244; text-shadow:0 0 26px #ff2244,2px 2px 0 #000; }
+.cd-unit { font-size:7px; letter-spacing:.38em; color:rgba(200,160,255,.35); margin-top:3px; }
+.cd-colon { font-family:'Share Tech Mono',monospace; font-size:60px; color:rgba(155,77,255,.5); align-self:center; padding:0 2px; animation:colonblink 1s steps(1) infinite; }
+.cd-foot { border-top:1px solid rgba(155,77,255,.15); padding:6px 18px; display:flex; align-items:center; justify-content:space-between; position:relative; z-index:3; }
+.cd-foot-label { font-size:7px; letter-spacing:.4em; color:rgba(200,160,255,.38); animation:linepulse 2.5s ease-in-out infinite; }
+.cd-foot-id { font-family:'Share Tech Mono',monospace; font-size:10px; letter-spacing:.2em; color:rgba(204,102,255,.45); }
+.press-start { margin-top:12px; font-size:10px; letter-spacing:.5em; color:rgba(204,102,255,.6); animation:selblink 1s steps(1) infinite; text-shadow:0 0 12px rgba(204,102,255,.35); align-self:center; }
+
+/* RIGHT PANEL: ad box */
+
+
+
+  /* ── SYNTHWAVE BG ── */
+  @keyframes hueshift { 0%{filter:hue-rotate(0deg) saturate(2)} 100%{filter:hue-rotate(360deg) saturate(2)} }
+  @keyframes scandown { 0%{top:-80px} 100%{top:110%} }
+  @keyframes rainbowslide { 0%{background-position:0 0} 100%{background-position:0 100%} }
+
+  /* flat CSS prismatic grid */
+  .sw-bg {
+    position:absolute; top:0; left:0; width:1920px; height:1080px; z-index:1; pointer-events:none;
+    background:
+      repeating-linear-gradient(90deg,  rgba(180,0,255,0.07) 0px, rgba(180,0,255,0.06) 1px, transparent 1px, transparent 40px),
+      repeating-linear-gradient(180deg, rgba(0,200,255,0.05) 0px, rgba(0,200,255,0.04) 1px, transparent 1px, transparent 40px),
+      transparent;
+    animation: hueshift 10s linear infinite;
+  }
+  #swCanvas { position:absolute; top:0; left:0; width:1920px; height:1080px; z-index:2; pointer-events:none; }
+
+  /* ── GAME MENU ── */
+  @keyframes cursorBlink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+  @keyframes menuGlow {
+    0%,100%{text-shadow:0 0 10px var(--hi),1px 1px 0 #000}
+    50%    {text-shadow:0 0 24px var(--hi),0 0 40px rgba(204,102,255,.5),1px 1px 0 #000}
+  }
+  .game-menu {
+    display:flex; flex-direction:column; gap:0;
+    margin-top:52px;
+    width:70%;
+    transform: perspective(600px) rotateY(10deg);
+    transform-origin: right center;
+  }
+  .menu-item {
+    display:flex; align-items:center; gap:12px;
+    padding:7px 0;
+    border-bottom:1px solid rgba(155,48,255,.1);
+    position:relative;
+    cursor:default;
+    transition:none;
+    /* each row tilts slightly more than the last — stacked HUD depth */
+  }
+  .menu-item:last-child { border-bottom:none; }
+  @keyframes arrowBounce {
+    0%,100%{ transform:translateX(0);   }
+    50%    { transform:translateX(4px); }
+  }
+  .menu-cursor {
+    font-family:'Press Start 2P',monospace;
+    font-size:10px; color:var(--hi);
+    text-shadow:0 0 12px var(--hi), 0 0 24px rgba(155,48,255,.5);
+    width:22px; flex-shrink:0;
+    opacity:0;
+    letter-spacing:-.1em;
+  }
+  .menu-item.active .menu-cursor {
+    opacity:1;
+    animation:arrowBounce .6s ease-in-out infinite;
+  }
+  .menu-item.active {
+    background: linear-gradient(to right, rgba(155,48,255,.18) 0%, rgba(155,48,255,.06) 60%, transparent 100%);
+    border-left: 3px solid var(--hi);
+    padding-left: 10px;
+    box-shadow: inset 0 0 20px rgba(155,48,255,.08);
+  }
+  .menu-item.active .menu-cursor { opacity:1; }
+  .menu-item.active .menu-label  { animation:menuGlow 1.4s ease-in-out infinite; }
+  .menu-label {
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:24px; font-weight:900; letter-spacing:.22em;
+    text-transform:uppercase; color:rgba(240,224,255,.28);
+    text-shadow:1px 1px 0 #000;
+  }
+
+  .menu-item.active .menu-label {
+    color:rgba(240,224,255,.92);
+    text-shadow:0 0 20px rgba(204,102,255,.7), 0 0 40px rgba(155,48,255,.4), 1px 1px 0 #000;
+  }
+  .menu-sub {
+    font-family:'Share Tech Mono',monospace;
+    font-size:9px; letter-spacing:.18em;
+    color:rgba(155,48,255,.45);
+    margin-left:auto; padding-right:8px;
+  }
+
+  .team-frame {
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:13px; font-weight:700; letter-spacing:.5em;
+    text-transform:uppercase; color:rgba(200,160,255,.55);
+    border:1px solid rgba(155,48,255,.25);
+    text-shadow:0 0 8px rgba(155,48,255,.3);
+    padding:4px 12px;
+    display:inline-block;
+  }
+  .vs-slot.r { text-align:right; }
+  .vs-slot.r .team-frame { display:inline-block; }
+</style>
+</head>
+<body>
+
+<div class="sw-bg"></div>
+<canvas id="swCanvas" width="1920" height="1080"></canvas>
+
+<div class="sc sc-tl"></div><div class="sc sc-tr"></div>
+<div class="sc sc-bl"></div><div class="sc sc-br"></div>
+
+<!-- TOP -->
+<div class="top-bar">
+  <div class="tb-left">
+    <div class="logo-ubae">VGA</div>
+    <div class="logo-s1">ESPORTS</div>
+  </div>
+  <div style="flex:1"></div>
+  <div class="tb-right">
+    <div class="tb-event-main" id="tbEventMain">SUMMER SPLIT</div>
+    <div class="tb-event-sub"  id="tbEventSub">ubaesports.com</div>
+  </div>
+</div>
+
+<!-- BOTTOM -->
+<div class="bottom-bar">
+  <div style="display:flex;align-items:baseline;gap:8px">
+    <span class="sponsor-pre">POWERED BY</span>
+    <span class="sponsor">SHEATH.COM</span>
+  </div>
+  <div class="b-links">
+    <span>ubaesports.com</span><span>discord.gg/vga</span><span>ubaesports.com</span>
+  </div>
+</div>
+
+<!-- LEFT -->
+<div class="left-panel">
+  <div class="vs-row">
+    <div class="vs-slot l">
+      <div class="team-frame">TEAM A</div>
+    </div>
+    <div class="vs-mid">
+      <div class="vs-word">VS</div>
+      <div class="vs-bo">BEST OF 5</div>
+    </div>
+    <div class="vs-slot r">
+      <div class="team-frame">TEAM B</div>
+    </div>
+  </div>
+  <div class="game-menu" id="gameMenu">
+    <div class="menu-item active" data-idx="0">
+      <div class="menu-cursor">»</div>
+      <div class="menu-label">PLAY</div>
+      <div class="menu-sub">MATCH START</div>
+    </div>
+    <div class="menu-item" data-idx="1">
+      <div class="menu-cursor">»</div>
+      <div class="menu-label">REPLAYS</div>
+      <div class="menu-sub">SEASON ARCHIVE</div>
+    </div>
+    <div class="menu-item" data-idx="2">
+      <div class="menu-cursor">»</div>
+      <div class="menu-label">SETTINGS</div>
+      <div class="menu-sub">CONFIG</div>
+    </div>
+    <div class="menu-item" data-idx="3">
+      <div class="menu-cursor">»</div>
+      <div class="menu-label">SAVE &amp; EXIT</div>
+      <div class="menu-sub">SEASON 1 DATA</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──
+const CFG = {
+  target: new Date(2026,2,19,20,0,0),
+  tbEventMain: 'SUMMER SPLIT',
+  tbEventSub:  'ubaesports.com',
+};
+const el = id => document.getElementById(id);
+const pad = n => String(n).padStart(2,'0');
+
+// set static text
+if(el('tbEventMain')) el('tbEventMain').textContent = CFG.tbEventMain;
+if(el('tbEventSub'))  el('tbEventSub').textContent  = CFG.tbEventSub;
+
+// countdown — only touches elements that exist
+function tick(){
+  const diff = Math.max(0, CFG.target - Date.now());
+  const tot = Math.floor(diff/1000);
+  const hv = pad(Math.floor(tot/3600));
+  const mv = pad(Math.floor((tot%3600)/60));
+  const sv = pad(tot%60);
+  if(diff > 0) setTimeout(tick, 1000);
+}
+tick();
+
+// ── SYNTHWAVE GRID ──────────────────────────────────────
+(function(){
+  const cv = el('swCanvas');
+  if(!cv) return;
+  const cx = cv.getContext('2d');
+  const W = 1920, H = 1080;
+  const vp = {x: W/2, y: H*0.42};
+  let T = 0;
+
+  // stationary neon flowers
+  function drawFlower(ctx, x, y, r, hue, alpha, phase){
+    if(alpha <= 0) return;
+    ctx.save();
+
+    const petN = 5;
+    for(let p=0; p<petN; p++){
+      const angle = (p/petN)*Math.PI*2 + phase;
+      const px = x + Math.cos(angle)*r*0.8;
+      const py = y + Math.sin(angle)*r*0.8;
+      const ph = (hue + p*8) % 360;
+      const pr = r * 0.34;
+
+      // outer glow ring — large, very faint
+      ctx.beginPath(); ctx.arc(px, py, pr*2.2, 0, Math.PI*2);
+      ctx.fillStyle = `hsla(${ph},100%,75%,${alpha*0.12})`;
+      ctx.fill();
+
+      // mid glow
+      ctx.beginPath(); ctx.arc(px, py, pr*1.4, 0, Math.PI*2);
+      ctx.fillStyle = `hsla(${ph},100%,80%,${alpha*0.28})`;
+      ctx.fill();
+
+      // solid petal core
+      ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI*2);
+      ctx.fillStyle = `hsla(${ph},100%,82%,${alpha})`;
+      ctx.fill();
+    }
+
+    // centre glow
+    ctx.beginPath(); ctx.arc(x, y, r*0.35, 0, Math.PI*2);
+    ctx.fillStyle = `hsla(${(hue+180)%360},100%,70%,${alpha*0.35})`;
+    ctx.fill();
+
+    // centre dot
+    ctx.beginPath(); ctx.arc(x, y, r*0.18, 0, Math.PI*2);
+    ctx.fillStyle = `hsla(0,0%,100%,${alpha})`;
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  // flower positions — fixed, scattered in sky area
+  function newFlower(){
+    return {
+      x: (()=>{
+        const r = Math.random();
+        if(r < 0.40)       return 55 + Math.random()*340;    // left text halo (just around logo)
+        else if(r < 0.80)  return 1525 + Math.random()*340;  // right text halo
+        else               return 400 + Math.random()*1120;  // anywhere else
+      })(),
+      y: (()=>{ const r=Math.random(); if(r<0.5) return 155+Math.random()*100; else if(r<0.75) return 15+Math.random()*20; else return 270+Math.random()*100; })(),
+      r: 7   + Math.random()*14,
+      hue: 270 + Math.random()*90,
+      phase: Math.random()*Math.PI*2,
+      slowSpin: (Math.random()<0.5?1:-1)*(0.0002+Math.random()*0.0003),
+      // lifecycle: 0=rising in, 1=peak, 2=glitching, 3=fading out, 4=dead
+      state: 0,
+      life: 0,           // 0..1 within current state
+      riseSpeed:  0.0003 + Math.random()*0.0002,
+      peakDur:    120 + Math.floor(Math.random()*180),  // frames at peak
+      peakTimer:  0,
+      glitchDone: false,
+      glitchTimer:0,
+    };
+  }
+  const flowers = Array.from({length:9}, ()=>{ const f=newFlower(); f.life=Math.random()*0.4; return f; });
+
+  function drawPetal(ctx, x, y, size, rot, h, s, l, alpha){
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+    ctx.globalAlpha = alpha;
+    // petal shape: two bezier curves forming an elliptical leaf
+    const pw = size * 0.55;
+    const ph = size;
+    ctx.beginPath();
+    ctx.moveTo(0, -ph);
+    ctx.bezierCurveTo( pw, -ph*0.4,  pw,  ph*0.4,  0,  ph);
+    ctx.bezierCurveTo(-pw,  ph*0.4, -pw, -ph*0.4,  0, -ph);
+    ctx.closePath();
+    // gradient from bright centre to soft edge
+    const g = ctx.createRadialGradient(0,-ph*0.2,0, 0,0,ph);
+    g.addColorStop(0,   `hsl(${h},100%,92%)`);
+    g.addColorStop(0.5, `hsl(${h},100%,${l}%)`);
+    g.addColorStop(1,   `hsl(${h+20},100%,${l-8}%)`);
+    ctx.fillStyle = g;
+    ctx.fill();
+    // neon outline glow
+    ctx.shadowColor = `hsl(${h},100%,85%)`;
+    ctx.shadowBlur = 22;
+    ctx.strokeStyle = `hsla(${h},100%,95%,0.9)`;
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
+  function draw(){
+    cx.clearRect(0,0,W,H);
+
+    // dark transparent — body bg shows through
+    cx.fillStyle='rgba(3,0,10,0.0)';
+    cx.fillRect(0,0,W,H);
+
+    // full canvas gradient — purple haze top to bottom
+    const bgFull = cx.createLinearGradient(0,0,0,H);
+    bgFull.addColorStop(0,   'rgba(6,0,18,0.0)');
+    bgFull.addColorStop(0.3, 'rgba(10,0,28,0.25)');
+    bgFull.addColorStop(0.65,'rgba(16,0,40,0.55)');
+    bgFull.addColorStop(1,   'rgba(4,0,14,0.88)');
+    cx.fillStyle=bgFull; cx.fillRect(0,0,W,H);
+
+    // vertical lines — subtle, thin
+    for(let i=-28;i<=28;i++){
+      const hue = (T*1.2 + i*13 + 270) % 360;
+      const a = 0.13 + 0.10*Math.abs(Math.sin(T*0.02 + i*0.18));
+      cx.strokeStyle = `hsla(${hue},100%,65%,${a})`;
+      cx.lineWidth = 1;
+      cx.shadowBlur = 0;
+      cx.beginPath();
+      cx.moveTo(W/2 + i*78, H);
+      cx.lineTo(vp.x, vp.y);
+      cx.stroke();
+    }
+
+    // horizontal lines — subtle, perspective spaced
+    const rows = 18;
+    const scroll = (T*0.5) % 1;
+    for(let j=1; j<=rows; j++){
+      const t = Math.pow((j - 1 + scroll) / rows, 1.8);
+      if(t <= 0 || t > 1) continue;
+      const y = vp.y + (H - vp.y) * t;
+      const hue = (T*1.5 + j*20 + 290) % 360;
+      const a = 0.08 + t*0.20;
+      cx.strokeStyle = `hsla(${hue},100%,68%,${a})`;
+      cx.lineWidth = 0.5 + t*2;
+      cx.shadowBlur = 0;
+      cx.beginPath();
+      cx.moveTo(vp.x - t*W*0.92, y);
+      cx.lineTo(vp.x + t*W*0.92, y);
+      cx.stroke();
+    }
+
+    // ── HORIZON SEPARATION — fog band + seam + glow ──
+
+    // 1) fog band above horizon — dark purple haze rising into sky
+    const fogUp = cx.createLinearGradient(0, vp.y-180, 0, vp.y);
+    fogUp.addColorStop(0,   'transparent');
+    fogUp.addColorStop(0.5, 'rgba(20,0,45,0.06)');
+    fogUp.addColorStop(1,   'rgba(40,0,80,0.12)');
+    cx.fillStyle = fogUp;
+    cx.fillRect(0, vp.y-80, W, 80);
+
+    // 2) fog band below horizon — misty ground glow
+    const fogDown = cx.createLinearGradient(0, vp.y, 0, vp.y+120);
+    fogDown.addColorStop(0,   'rgba(80,0,160,0.08)');
+    fogDown.addColorStop(0.6, 'rgba(40,0,80,0.03)');
+    fogDown.addColorStop(1,   'transparent');
+    cx.fillStyle = fogDown;
+    cx.fillRect(0, vp.y, W, 60);
+
+    // 3) radial glow centred on horizon — wider and stronger
+    const hHue = (T*0.3+290)%360;
+    const hg = cx.createRadialGradient(W/2,vp.y,0, W/2,vp.y,700);
+    hg.addColorStop(0,   `hsla(${hHue},100%,72%,0.07)`);
+    hg.addColorStop(0.3, `hsla(${(hHue+30)%360},100%,60%,0.03)`);
+    hg.addColorStop(0.7, `hsla(${(hHue+60)%360},100%,50%,0.01)`);
+    hg.addColorStop(1,   'transparent');
+    cx.fillStyle = hg;
+    cx.fillRect(0, vp.y-300, W, 600);
+
+
+
+    // neon flowers — lifecycle: rise → peak+glitch → fade → respawn
+    flowers.forEach((f,fi)=>{
+      f.phase += f.slowSpin;
+      const lsdH = (f.hue + T*0.4) % 360;
+      let alpha = 0;
+      let drawX = f.x, drawY = f.y;
+
+      if(f.state === 0){
+        // ── RISING IN — slow ease
+        f.life += f.riseSpeed;
+        alpha = Math.pow(f.life, 2.5) * 0.5;  // ease-in curve
+        if(f.life >= 1){ f.state=1; f.peakTimer=0; f.life=1; }
+
+      } else if(f.state === 1){
+        // ── PEAK — full brightness, slow breathing
+        alpha = 0.42 + 0.08*Math.sin(T*0.06 + fi);
+        f.peakTimer++;
+        if(f.peakTimer >= f.peakDur){
+          f.state=2; f.glitchTimer=0;
+        }
+
+      } else if(f.state === 2){
+        // ── GLITCH — brief chroma shake (8 frames)
+        f.glitchTimer++;
+        alpha = 0.5;
+        const gf = f.glitchTimer;
+        if(gf < 3)       { drawX += (Math.random()-0.5)*6; drawY += (Math.random()-0.5)*3; }
+        else if(gf < 6)  { drawX -= 3; }
+        else if(gf < 8)  { drawX += 2; }
+        // draw second ghost offset for chroma feel
+        if(gf < 8){
+          drawFlower(cx, drawX+4, drawY, f.r, (lsdH+180)%360, alpha*0.25, f.phase);
+        }
+        if(f.glitchTimer >= 8){ f.state=3; f.life=1; }
+
+      } else if(f.state === 3){
+        // ── FADING OUT — flutter: tiny alpha oscillation as it vanishes
+        f.life -= f.riseSpeed * 0.9;  // slow fade
+        const flutter = 1 + 0.12*Math.sin(T*0.6 + fi*1.3);  // gentle tremor
+        alpha = Math.pow(Math.max(0,f.life), 1.8) * 0.45 * flutter;
+        if(f.life <= 0){
+          const nf = newFlower();
+          f.x=nf.x; f.y=nf.y; f.r=nf.r; f.hue=nf.hue;
+          f.phase=nf.phase; f.slowSpin=nf.slowSpin;
+          f.riseSpeed=nf.riseSpeed; f.peakDur=nf.peakDur;
+          f.peakTimer=0; f.glitchTimer=0; f.glitchDone=false;
+          f.state=0; f.life=0;
+          return;
+        }
+      }
+
+      if(alpha > 0.008)
+        drawFlower(cx, drawX, drawY, f.r, lsdH, alpha, f.phase);
+    });
+
+
+    // ── HOLOGRAPHIC SCANLINE ──
+    // Extremely slow drift — full pass takes ~5 minutes
+    // Modelled after TCG foil: thin prismatic diffraction band + sparkle
+    const holoT = (T * 0.0012) % 1;          // 0..1 over ~5 min
+    const activeWindow = 0.5;                  // 50% of cycle is active, 50% is dark pause
+
+    if(holoT < activeWindow){
+      const progress = holoT / activeWindow;
+      const sy = -80 + (H + 160) * progress;  // beam centre Y
+      const bh = 52;                           // wider band
+
+      // ── diffraction grating: micro rainbow stripes inside the band ──
+      // draw 7 spectral color slices across the band height
+      const spectrum = [
+        [0,   300], // magenta
+        [0.14,280], // violet
+        [0.28,240], // blue
+        [0.42,190], // cyan
+        [0.57,320], // pink instead of green
+        [0.71,50 ], // yellow
+        [0.85,15 ], // red-orange
+        [1,   330], // back to pink
+      ];
+      for(let si=0; si<spectrum.length-1; si++){
+        const [t0, h0] = spectrum[si];
+        const [t1, h1] = spectrum[si+1];
+        const sliceY = sy - bh/2 + t0*bh;
+        const sliceH = (t1-t0)*bh;
+        // hue shifts slightly as beam moves down — parallax feel
+        const hueShift = progress * 60;
+        const g = cx.createLinearGradient(0, sliceY, 0, sliceY+sliceH);
+        g.addColorStop(0, `hsla(${(h0+hueShift)%360},100%,80%,0.0)`);
+        g.addColorStop(0.5, `hsla(${(h0+hueShift+h1)/2%360},100%,90%,0.028)`);
+        g.addColorStop(1, `hsla(${(h1+hueShift)%360},100%,80%,0.0)`);
+        cx.fillStyle = g;
+        cx.fillRect(0, sliceY, W, sliceH + 1);
+      }
+
+      // ── soft outer glow wrapping the band ──
+      const glow = cx.createLinearGradient(0, sy-bh*2, 0, sy+bh*2);
+      const glowHue = (progress*120 + 270) % 360;
+      glow.addColorStop(0,   'transparent');
+      glow.addColorStop(0.3, `hsla(${glowHue},100%,85%,0.008)`);
+      glow.addColorStop(0.5, `hsla(${(glowHue+30)%360},100%,95%,0.018)`);
+      glow.addColorStop(0.7, `hsla(${glowHue},100%,85%,0.008)`);
+      glow.addColorStop(1,   'transparent');
+      cx.fillStyle = glow;
+      cx.fillRect(0, sy - bh*2, W, bh*4);
+
+      // ── sparkle points scattered along the scanline ──
+      const sparkCount = 12;
+      for(let sp=0; sp<sparkCount; sp++){
+        // deterministic position based on progress so they don't flicker randomly
+        const sx = ((sp * 173.13 + progress * 400) % W);
+        const sparkY = sy + Math.sin(sp * 2.4 + progress * 8) * (bh*0.4);
+        const sparkAlpha = 0.06 * Math.abs(Math.sin(sp * 1.7 + T * 0.08));
+        const sparkHue = (sp * 30 + progress * 180 + 260) % 360;
+        cx.beginPath();
+        cx.arc(sx, sparkY, 1.2, 0, Math.PI*2);
+        cx.fillStyle = `hsla(${sparkHue},100%,95%,${sparkAlpha})`;
+        cx.fill();
+      }
+    }
+
+    // second holographic scan — runs opposite direction, very long cycle (~8 min)
+    const holoT2 = 1 - ((T * 0.0006) % 1);  // reversed, slower
+    const active2 = holoT2 > 0.5;
+    if(active2){
+      const prog2 = (holoT2 - 0.5) / 0.5;
+      const sy2 = -80 + (H + 160) * prog2;
+      const bh2 = 38;
+      const hue2 = (T * 0.8 + 180) % 360;  // complementary hue
+      const g2 = cx.createLinearGradient(0,sy2,0,sy2+bh2);
+      g2.addColorStop(0,'transparent');
+      g2.addColorStop(0.5,`hsla(${hue2},100%,90%,0.022)`);
+      g2.addColorStop(1,'transparent');
+      cx.fillStyle=g2; cx.fillRect(0,sy2,W,bh2);
+    }
+
+    T += 0.5;
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ── GAME MENU CURSOR ──
+(function(){
+  const items = Array.from(document.querySelectorAll('.menu-item'));
+  let cur = 0;
+  function activate(i){
+    items.forEach(el => el.classList.remove('active'));
+    items[i].classList.add('active');
+    cur = i;
+  }
+  function next(){
+    const roll = Math.random();
+    let ni = cur;
+    if(roll < 0.38)      ni = Math.min(items.length-1, cur + 1); // step down
+    else if(roll < 0.60) ni = Math.max(0, cur - 1);              // step up
+    else                 ni = cur;                                // stall
+
+    activate(ni);
+
+    // stall longer when on top 2 items (PLAY / REPLAYS)
+    const isTop = ni <= 1;
+    const baseDelays = isTop
+      ? [1200,1800,2400,3200,4000]   // longer dwells on PLAY/REPLAYS
+      : [400,600,800,1000,1400];     // quicker moves through lower items
+    const d = baseDelays[Math.floor(Math.random()*baseDelays.length)] + Math.random()*400;
+    setTimeout(next, d);
+  }
+  activate(0);
+  setTimeout(next, 1200);
+})();
+</script>
+
+<!-- ── VGA STUDIO WIRE — deck listener (added 2026-07-24, visuals untouched) ── -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+  const _sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
+    'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
+  _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
+    if(c.type!=='countdown') return
+    const d=c.d||{}
+    const frames=document.querySelectorAll('.team-frame')
+    if(d.a && frames[0]) frames[0].textContent=d.a
+    if(d.b && frames[1]) frames[1].textContent=d.b
+    if(d.eventMain && document.getElementById('tbEventMain')) document.getElementById('tbEventMain').textContent=d.eventMain
+    if(d.eventSub  && document.getElementById('tbEventSub'))  document.getElementById('tbEventSub').textContent=d.eventSub
+    if(d.target){ CFG.target=new Date(d.target); tick() }
+  }).subscribe()
+})()
+</script>
+</body>
+</html>

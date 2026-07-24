@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<!-- ============================================================
+     EDIT EVERYTHING HERE — fill in all 8 fights ahead of time.
+     During the broadcast, click "Next Fight" on the card (or the
+     SHEATH button) to advance through them one at a time — no
+     typing needed live. Image filenames follow the pattern
+     "left1.png" / "right1.png" for fight 1, "left2.png" / "right2.png"
+     for fight 2, etc. — save your fighter cutouts in the same folder
+     as this HTML file using those exact names.
+============================================================= -->
+<script>
+const SPONSOR_NAME = "SHEATH"; // doesn't change per fight, set once
+
+const FIGHT_QUEUE = [
+  // PRELIMS
+  { boutTitle: "WELTERWEIGHT", boutSubtitle: "BOUT",
+    left:  { name: "DannyG", age: "18", height: "5'7\"", weight: "146", reach: "65\"", record: "0-1-0", odds: "-255", rank: "NR", image: "left.png" },
+    right: { name: "Dragon 5000", age: "15", height: "5'9\"", weight: "136", reach: "—", record: "3-7-1", odds: "+232", rank: "13", image: "dragon5000.png" } },
+
+  { boutTitle: "CATCHWEIGHT", boutSubtitle: "BOUT",
+    left:  { name: "Boiled One", age: "14", height: "5'11\"", weight: "145", reach: "75\"", record: "6-2-0", odds: "-259", rank: "NR", image: "boiled.png" },
+    right: { name: "Bluray \"Inferno\"", age: "16", height: "5'11\"", weight: "189", reach: "72\"", record: "3-1-0 2KOs", odds: "+236", rank: "NR", image: "right.png" } },
+
+  { boutTitle: "LIGHTWEIGHT", boutSubtitle: "BOUT",
+    left:  { name: "Rami", age: "—", height: "—", weight: "—", reach: "—", record: "3-3-1", odds: "—", rank: "11", image: "left.png" },
+    right: { name: "Killshot Kev", age: "—", height: "—", weight: "—", reach: "—", record: "—", odds: "—", rank: "—", image: "right.png" } },
+
+  // UNDERCARD
+  { boutTitle: "HEAVYWEIGHT", boutSubtitle: "BOUT",
+    left:  { name: "M4", age: "17", height: "6'0\"", weight: "152", reach: "—", record: "8-9-1", odds: "-119", rank: "10", image: "m4.png" },
+    right: { name: "Booberry", age: "16", height: "6'0\"", weight: "146", reach: "—", record: "—", odds: "—", rank: "—", image: "booserk.png" } },
+
+  { boutTitle: "LIGHTWEIGHT", boutSubtitle: "BOUT",
+    left:  { name: "Clint Steel", age: "—", height: "—", weight: "—", reach: "—", record: "2-0-0", odds: "+373", rank: "6", image: "left.png" },
+    right: { name: "Orchard", age: "16", height: "5'6\"", weight: "136-139", reach: "66-67\"", record: "2-1-0", odds: "-467", rank: "11", image: "orchard.png" } },
+
+  { boutTitle: "LIGHT HEAVYWEIGHT", boutSubtitle: "BOUT",
+    left:  { name: "Carbon Shield", age: "24", height: "5'11\"", weight: "159", reach: "5'11\"", record: "5-4-1", odds: "+230", rank: "3", image: "carbon.png" },
+    right: { name: "JaysWay", age: "19", height: "6'0\"", weight: "186", reach: "—", record: "7-3-0", odds: "-269", rank: "5", image: "right.png" } },
+
+  { boutTitle: "MIDDLEWEIGHT", boutSubtitle: "FEATURED BOUT",
+    left:  { name: "Bing Ling", age: "16", height: "5'9\"", weight: "165", reach: "—", record: "8-5-0", odds: "-131", rank: "3", image: "left.png" },
+    right: { name: "\"EF5\" Tynado", age: "15", height: "5'7\"", weight: "135", reach: "70\"", record: "6-2-0", odds: "+119", rank: "8", image: "right.png" } },
+
+  // MAIN CARD
+  { boutTitle: "LIGHTWEIGHT", boutSubtitle: "BOUT",
+    left:  { name: "Lama", age: "16", height: "5'6\"", weight: "140", reach: "—", record: "5-3-0 (4KOs)", odds: "+227", rank: "1", image: "left.png" },
+    right: { name: "The Pooper", age: "16", height: "5'6\"", weight: "125", reach: "68\"", record: "2-0-0", odds: "-266", rank: "7", image: "pooper.png" } },
+
+  { boutTitle: "MIDDLEWEIGHT", boutSubtitle: "TITLE FIGHT",
+    left:  { name: "Kam \"The Machine\"", age: "19", height: "5'10\"", weight: "166", reach: "74\"", record: "8-1-1", odds: "+156", rank: "C", image: "kam.png" },
+    right: { name: "\"Superior\" Excel", age: "14", height: "5'10\"", weight: "140", reach: "—", record: "16-5-0", odds: "-177", rank: "1", image: "excel.png" } },
+];
+
+// CONFIG points at whichever fight is currently active. Updated by
+// loadFightByIndex() below — don't edit CONFIG directly, edit the
+// FIGHT_QUEUE entries above instead.
+let CONFIG = {
+  boutTitle: FIGHT_QUEUE[0].boutTitle,
+  boutSubtitle: FIGHT_QUEUE[0].boutSubtitle,
+  sponsorName: SPONSOR_NAME,
+  left: FIGHT_QUEUE[0].left,
+  right: FIGHT_QUEUE[0].right,
+};
+</script>
+
+<style>
+*{margin:0;padding:0;}
+html,body{width:1920px;height:1080px;overflow:hidden;background:transparent;font-family:Arial,sans-serif;}
+canvas{position:fixed;top:0;left:0;pointer-events:none;}
+#tape{position:fixed;top:0;left:0;width:1920px;height:1080px;}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     TALE OF THE TAPE — center card
+     Layout matches UFC reference: fighters static on either side,
+     center column (logo tab + stat rows) animates in from the front
+     and settles into place.
+============================================================= -->
+<div id="tape">
+  <svg width="1920" height="1080" viewBox="0 0 1920 1080" style="position:absolute;top:0;left:0;">
+    <defs>
+      <!-- washed violet, matches flower overlay synth palette (hue ~270, desaturated, high lightness) -->
+      <linearGradient id="railGrad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="hsla(270,55%,72%,0.0)"/>
+        <stop offset="50%" stop-color="hsla(270,55%,72%,0.55)"/>
+        <stop offset="100%" stop-color="hsla(270,55%,72%,0.0)"/>
+      </linearGradient>
+      <linearGradient id="railGradV" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="hsla(270,50%,76%,0.05)"/>
+        <stop offset="15%" stop-color="hsla(270,50%,76%,0.30)"/>
+        <stop offset="85%" stop-color="hsla(270,50%,76%,0.30)"/>
+        <stop offset="100%" stop-color="hsla(270,50%,76%,0.05)"/>
+      </linearGradient>
+      <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="3" result="blur"/>
+        <feMerge>
+          <feMergeNode in="blur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- CENTER COLUMN — this whole block animates in -->
+  <div id="centerCol" style="
+    position:absolute;
+    top:70px; left:730px;
+    width:460px; height:auto;
+    display:flex; flex-direction:column; align-items:center;
+    opacity:0;
+  ">
+    <!-- glassy purple rails — sit on centerCol's own left/right edges,
+         OUTSIDE the dark panel below, so there's nothing dark behind
+         them (their transparency reveals real footage, not panel fill).
+         Now also clickable: left rail = PREV fight, right rail = NEXT
+         fight. Replaces the old bottom Next/Prev buttons entirely. -->
+    <div id="railWrapLeft" style="position:absolute; left:0; top:0; width:52px; height:500px; z-index:10; overflow:hidden; cursor:pointer;
+      border:2px solid hsla(272,80%,75%,0.5);">
+      <canvas id="railLeft" width="52" height="900" style="position:absolute; top:0; left:0; width:100%; height:100%;"></canvas>
+      <!-- subtle gradient tint — very low alpha, just enough to suggest
+           a glass surface without losing transparency -->
+      <div style="position:absolute; inset:0; z-index:1; pointer-events:none;
+        background:linear-gradient(180deg, hsla(272,40%,55%,0.08), hsla(272,30%,40%,0.04) 50%, hsla(272,40%,55%,0.08));"></div>
+      <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+        writing-mode:vertical-rl; font-size:12px; letter-spacing:3px; font-weight:800;
+        color:hsla(265,35%,96%,0.85); text-shadow:0 1px 3px rgba(0,0,0,0.6);
+        text-transform:uppercase; white-space:nowrap; z-index:2; pointer-events:none;">
+        UNIFIED BOXING ASSOCIATION
+      </div>
+    </div>
+
+    <div id="railWrapRight" style="position:absolute; right:0; top:0; width:52px; height:500px; z-index:10; overflow:hidden; cursor:pointer;
+      border:2px solid hsla(272,80%,75%,0.5);">
+      <canvas id="railRight" width="52" height="900" style="position:absolute; top:0; left:0; width:100%; height:100%;"></canvas>
+      <div style="position:absolute; inset:0; z-index:1; pointer-events:none;
+        background:linear-gradient(180deg, hsla(272,40%,55%,0.08), hsla(272,30%,40%,0.04) 50%, hsla(272,40%,55%,0.08));"></div>
+      <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+        writing-mode:vertical-rl; font-size:12px; letter-spacing:3px; font-weight:800;
+        color:hsla(265,35%,96%,0.85); text-shadow:0 1px 3px rgba(0,0,0,0.6);
+        text-transform:uppercase; white-space:nowrap; z-index:2; pointer-events:none;">
+        UNIFIED BOXING ASSOCIATION
+      </div>
+    </div>
+
+    <!-- INNER PANEL — now a normal-flow flex container, not absolutely
+         positioned. Its height is driven naturally by its real
+         children (logo, bout label, stats, sponsor bar) stacking
+         vertically — same fix as the canvas-height lesson earlier:
+         don't fight an auto-height parent with position:absolute +
+         top/bottom, just let content determine height naturally. -->
+    <div style="position:relative; width:356px; margin:0 52px;
+      display:flex; flex-direction:column; align-items:center;
+      background:
+        repeating-linear-gradient(135deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px),
+        radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.025), transparent 60%),
+        #2b2b30;
+      box-shadow:0 0 40px rgba(0,0,0,0.5);">
+      <!-- fine grain layer — SVG fractal noise, very low opacity -->
+      <svg style="position:absolute; inset:0; width:100%; height:100%; opacity:0.05; pointer-events:none; mix-blend-mode:overlay;">
+        <filter id="grainFilter">
+          <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"/>
+          <feColorMatrix type="saturate" values="0"/>
+        </filter>
+        <rect width="100%" height="100%" filter="url(#grainFilter)"/>
+      </svg>
+
+      <!-- LOGO MARK — flower mark + UBA wordmark -->
+      <div style="position:relative; width:220px; height:90px; margin:0 auto; z-index:2;
+        display:flex; align-items:center; justify-content:center;">
+        <canvas id="flowerTab" width="220" height="90" style="position:absolute;top:0;left:0;"></canvas>
+        <div style="position:relative; font-size:26px; font-weight:900; letter-spacing:1px;
+          color:#f3f1fa; text-shadow:0 0 16px hsla(265,40%,75%,0.5);">UBA</div>
+      </div>
+
+    <!-- BOUT TYPE LABEL -->
+    <div id="boutLabel" style="margin-top:22px; text-align:center; opacity:0; position:relative; z-index:2;">
+      <div id="boutTitleText" style="font-size:30px; font-weight:800; letter-spacing:1px; color:#f3f1fa; text-transform:uppercase;">HEAVYWEIGHT</div>
+      <div id="boutSubtitleText" style="font-size:14px; font-weight:500; letter-spacing:6px; color:hsla(265,25%,80%,0.55); text-transform:uppercase; margin-top:6px;">BOUT</div>
+    </div>
+
+    <!-- STAT ROWS -->
+    <div id="statRows" style="margin-top:24px; width:336px; display:flex; flex-direction:column; gap:8px; position:relative; z-index:2;">
+      <div class="stat-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 8px; border-top:1px solid hsla(265,20%,60%,0.15); border-bottom:1px solid hsla(265,20%,60%,0.15); opacity:0;">
+        <span class="stat-val left" id="ageLeft">31</span>
+        <span class="stat-label">AGE</span>
+        <span class="stat-val right" id="ageRight">28</span>
+      </div>
+      <div class="stat-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 8px; border-top:1px solid hsla(265,20%,60%,0.15); border-bottom:1px solid hsla(265,20%,60%,0.15); opacity:0;">
+        <span class="stat-val left" id="heightLeft">6'1"</span>
+        <span class="stat-label">HEIGHT</span>
+        <span class="stat-val right" id="heightRight">5'11"</span>
+      </div>
+      <div class="stat-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 8px; border-top:1px solid hsla(265,20%,60%,0.15); border-bottom:1px solid hsla(265,20%,60%,0.15); opacity:0;">
+        <span class="stat-val left" id="weightLeft">205</span>
+        <span class="stat-label">WEIGHT</span>
+        <span class="stat-val right" id="weightRight">198</span>
+      </div>
+      <div class="stat-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 8px; border-top:1px solid hsla(265,20%,60%,0.15); border-bottom:1px solid hsla(265,20%,60%,0.15); opacity:0;">
+        <span class="stat-val left" id="reachLeft">76"</span>
+        <span class="stat-label">REACH</span>
+        <span class="stat-val right" id="reachRight">73"</span>
+      </div>
+    </div>
+
+    <!-- SPONSOR BAR — sits at the very bottom of the black panel,
+         mirrors the reference's "MANSCAPED" strip. Click to open the
+         live edit panel for all stats/fighters. Only clickable via
+         OBS's "Interact" window, same as any other clickable overlay
+         element — won't trigger from the normal program feed. -->
+    <div id="sponsorBar" style="width:100%; padding:24px 0;
+      text-align:center; border-top:1px solid hsla(265,20%,60%,0.15); opacity:0; cursor:pointer; position:relative; z-index:2;">
+      <span style="font-size:24px; font-weight:900; letter-spacing:5px; color:hsla(265,25%,85%,0.85); text-transform:uppercase; -webkit-text-stroke: 0.5px hsla(265,25%,85%,0.85);" id="sponsorText">SHEATH</span>
+    </div>
+    </div>
+  </div>
+
+  <!-- FIGHT COUNTER — small readout only now. Navigation moved onto
+       the rails themselves: click the left rail for PREV, right rail
+       for NEXT. Only visible/clickable via OBS's Interact window. -->
+  <div style="position:absolute; left:50%; top:1040px; transform:translateX(-50%); z-index:50;">
+    <span id="fightCounter" style="font-size:12px; color:hsla(265,25%,80%,0.7); font-family:Arial,sans-serif; letter-spacing:1px;">FIGHT 1 / 9</span>
+  </div>
+
+  <!-- FIGHTER IMAGES — free-floating, no box/border. Image renders
+       directly in the scene, like a cutout PNG standing in the frame.
+       Placeholder state (no image set) shows only faint text. -->
+  <div id="fighterWrapLeft" style="position:absolute; left:40px; top:0; width:670px; height:1080px;
+    display:flex; align-items:flex-end; justify-content:center; opacity:0; background:transparent;">
+    <div id="imgBoxLeft" style="width:550px; height:1025px; background-color:transparent;
+      display:flex; align-items:center; justify-content:center;
+      color:hsla(270,25%,70%,0.35); font-size:14px; letter-spacing:2px;
+      background-size:contain; background-position:bottom center; background-repeat:no-repeat;">FIGHTER IMAGE — LEFT</div>
+  </div>
+  <div id="fighterWrapRight" style="position:absolute; right:40px; top:0; width:670px; height:1080px;
+    display:flex; align-items:flex-end; justify-content:center; opacity:0; background:transparent;">
+    <div id="imgBoxRight" style="width:550px; height:1025px; background-color:transparent;
+      display:flex; align-items:center; justify-content:center;
+      color:hsla(270,25%,70%,0.35); font-size:14px; letter-spacing:2px;
+      background-size:contain; background-position:bottom center; background-repeat:no-repeat;">FIGHTER IMAGE — RIGHT</div>
+  </div>
+
+  <!-- FIGHTER NAME PLATES -->
+  <div id="namePlateLeft" style="position:absolute; left:80px; bottom:60px; width:700px; opacity:0;">
+    <div id="nameLeft" style="font-size:46px; font-weight:900; color:#f3f1fa; letter-spacing:1px; text-transform:uppercase;">FIGHTER NAME</div>
+    <div style="height:2px; width:260px; background:linear-gradient(90deg, hsla(270,55%,70%,0.7), transparent); margin-top:10px;"></div>
+    <!-- RANK / RECORD / ODDS BAR — three-part dark bar: small rank
+         box, win-loss record, betting-odds tag. Bolder text and a
+         thicker bar than the old version, no flag/flower elements. -->
+    <div style="display:flex; align-items:stretch; margin-top:14px; height:46px; width:360px;">
+      <div id="rankLeft" style="width:42px; background:#3a3a40; display:flex; align-items:center; justify-content:center;
+        font-size:15px; font-weight:800; color:#f3f1fa;">—</div>
+      <div style="flex:1; background:#1c1c1f; display:flex; align-items:center; padding-left:16px; border-left:1px solid hsla(265,20%,40%,0.3);">
+        <span id="recordLeft" style="font-size:19px; font-weight:800; color:#f3f1fa; letter-spacing:0.5px;">0-0</span>
+      </div>
+      <div style="width:96px; background:#16161a; display:flex; align-items:center; justify-content:center; border-left:1px solid hsla(265,20%,40%,0.4);">
+        <span id="oddsLeft" style="font-size:16px; font-weight:800; color:hsla(265,30%,85%,0.9); letter-spacing:0.5px;">—</span>
+      </div>
+    </div>
+  </div>
+  <div id="namePlateRight" style="position:absolute; right:80px; bottom:60px; width:700px; text-align:right; opacity:0;">
+    <div id="nameRight" style="font-size:46px; font-weight:900; color:#f3f1fa; letter-spacing:1px; text-transform:uppercase;">FIGHTER NAME</div>
+    <div style="height:2px; width:260px; background:linear-gradient(90deg, transparent, hsla(270,55%,70%,0.7)); margin-top:10px; margin-left:auto;"></div>
+    <!-- RANK / RECORD / ODDS BAR — mirrored: odds, record, rank box -->
+    <div style="display:flex; align-items:stretch; justify-content:flex-end; margin-top:14px; height:46px; width:360px; margin-left:auto;">
+      <div style="width:96px; background:#16161a; display:flex; align-items:center; justify-content:center; border-right:1px solid hsla(265,20%,40%,0.4);">
+        <span id="oddsRight" style="font-size:16px; font-weight:800; color:hsla(265,30%,85%,0.9); letter-spacing:0.5px;">—</span>
+      </div>
+      <div style="flex:1; background:#1c1c1f; display:flex; align-items:center; justify-content:flex-end; padding-right:16px; border-right:1px solid hsla(265,20%,40%,0.3);">
+        <span id="recordRight" style="font-size:19px; font-weight:800; color:#f3f1fa; letter-spacing:0.5px;">0-0</span>
+      </div>
+      <div id="rankRight" style="width:42px; background:#3a3a40; display:flex; align-items:center; justify-content:center;
+        font-size:15px; font-weight:800; color:#f3f1fa;">—</div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .stat-val{font-size:30px; font-weight:700; color:#f3f1fa; width:90px;}
+  .stat-val.left{text-align:left;}
+  .stat-val.right{text-align:right;}
+  .stat-label{font-size:14px; font-weight:600; letter-spacing:2px; color:hsla(270,30%,75%,0.55); text-transform:uppercase;}
+</style>
+
+<!-- ============================================================
+     FLOWER MARK CANVAS — reused from VGA Vail flower overlay,
+     scaled down and repositioned to sit inside the top tab.
+     Same petal/spin/spark engine as the original, condensed.
+============================================================= -->
+<canvas id="flowerFull" width="1920" height="1080" style="position:fixed;top:0;left:0;display:none;"></canvas>
+
+<!-- ============================================================
+     LIVE EDIT PANEL — click SHEATH to open. Lets you change every
+     stat for both fighters without touching the file. Image fields
+     accept either a pasted URL or a direct file upload from your
+     computer (converted to a data URL in-browser, no file paths or
+     hosting needed). Only reachable via OBS's "Interact" window or a
+     normal browser — never visible on the actual broadcast output.
+============================================================= -->
+<div id="editOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:1000; align-items:center; justify-content:center; font-family:Arial,sans-serif;">
+  <div style="background:#1c1c1f; border:1px solid hsla(272,50%,60%,0.4); border-radius:8px; width:900px; max-height:90vh; overflow-y:auto; padding:32px; color:#f3f1fa;">
+    <h2 style="margin:0 0 4px 0; font-size:22px; letter-spacing:1px;">Edit Tale of the Tape</h2>
+    <p style="margin:0 0 24px 0; font-size:13px; color:hsla(270,25%,75%,0.6);">Changes apply instantly and reset when the page reloads (OBS scene switch) — re-enter for each new fight.</p>
+
+    <!-- PASTE BOX — fastest path. Prep all 8 fights as text blocks in
+         a notes doc beforehand, paste one in here, click "Fill From
+         Paste" and every field below auto-populates. Format is
+         label: value, one per line, order doesn't matter. -->
+    <div style="background:#16161a; border:1px solid hsla(272,40%,50%,0.3); border-radius:6px; padding:16px; margin-bottom:24px;">
+      <label style="font-size:12px; letter-spacing:2px; color:hsla(272,50%,75%,0.85); text-transform:uppercase; font-weight:600;">Quick Paste (fastest)</label>
+      <p style="margin:6px 0 8px 0; font-size:11px; color:hsla(270,25%,65%,0.6); line-height:1.5;">Paste a block like this, one field per line (order doesn't matter, skip any you don't have):<br>
+        <code style="color:hsla(272,40%,80%,0.8);">left: Kam | right: Excel | ageL: 31 | ageR: 28 | heightL: 6'1" | heightR: 5'11" | weightL: 205 | weightR: 198 | reachL: 76" | reachR: 73" | title: HEAVYWEIGHT | subtitle: TITLE</code></p>
+      <textarea id="pasteBox" rows="4" placeholder="left: Kam
+right: Excel
+ageL: 31
+ageR: 28
+..." style="width:100%; padding:8px; background:#2b2b30; border:1px solid hsla(270,30%,50%,0.3); color:#f3f1fa; border-radius:4px; font-size:13px; font-family:monospace; resize:vertical;"></textarea>
+      <button id="parsePasteBtn" style="margin-top:8px; padding:8px 16px; background:hsl(272,55%,48%); border:none; color:#fff; border-radius:4px; cursor:pointer; font-size:12px; font-weight:600;">Fill Fields From Paste ↓</button>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:20px;">
+      <div>
+        <label style="font-size:12px; letter-spacing:2px; color:hsla(270,25%,70%,0.6); text-transform:uppercase;">Bout Title</label>
+        <input id="editBoutTitle" type="text" style="width:100%; margin-top:4px; padding:8px; background:#2b2b30; border:1px solid hsla(270,30%,50%,0.3); color:#f3f1fa; border-radius:4px; font-size:14px;">
+      </div>
+      <div>
+        <label style="font-size:12px; letter-spacing:2px; color:hsla(270,25%,70%,0.6); text-transform:uppercase;">Subtitle</label>
+        <input id="editBoutSubtitle" type="text" style="width:100%; margin-top:4px; padding:8px; background:#2b2b30; border:1px solid hsla(270,30%,50%,0.3); color:#f3f1fa; border-radius:4px; font-size:14px;">
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:32px;">
+      <!-- LEFT FIGHTER -->
+      <div>
+        <h3 style="font-size:14px; letter-spacing:2px; color:hsla(272,50%,75%,0.9); margin-bottom:12px; text-transform:uppercase;">Left Fighter</h3>
+        <label style="font-size:11px; color:hsla(270,25%,65%,0.6);">Name</label>
+        <input id="editNameLeft" type="text" style="width:100%; margin:4px 0 10px 0; padding:7px; background:#2b2b30; border:1px solid hsla(270,30%,50%,0.3); color:#f3f1fa; border-radius:4px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <div><label style="font-size:11px; color:hsla(270,25%,65%,0.6);">Age</label>
+            <input id="editAgeLeft" type="text" style="width:100%; margin:4px 0 10px 0; padding:7px; background:#2b2b30; border:1px solid hsla(270,30%,50%,0.3); color:#f3f1fa; border-radius:4px;"></div>
+          <div><label style="font-size:11px; color:hsla(270,25%,65%,0.6);">Height</label>
+            <input id="editHeightLeft" type="text" style="width:100%; margin:4px 0 10px 0; padding:7px; background:#2b2b30; border:1px solid hsla(270,30%,50%,0.3); color:#f3f1fa; border-radius:4px;"></div>
+          <div><label style="font-size:11px; color:hsla(270,25%,65%,0.6);">Weight</label>
+            <input id="editWeightLeft" type="text" style="width:100%; margin:4px 0 10px 0; padding:7px; background:#2b2b30; border:1px solid hsla(270,30%,50%,0.3); color:#f3f1fa; border-radius:4px;"></div>
+          <div><label style="font-size:11px; color:hsla(270,25%,65%,0.6);">Reach</label>
+            <input id="editReachLeft" type="text" style="width:100%; margin:4px 0 10px 0; padding:7px; background:#2b2b30; border:1px solid hsla(270,30%,50%,0.3); color:#f3f1fa; border-radius:4px;"></div>
+        </div>
+        <label style="font-size:11px; color:hsla(270,25%,65%,0.6);">Photo</label>
+        <input id="editImageFileLeft" type="file" accept="image/*" style="width:100%; margin:4px 0 6px 0; font-size:12px; color:hsla(270,25%,75%,0.8);">
+        <input id="editImageUrlLeft" type="text" placeholder="...or paste an image URL" style="width:100%; padding:7px; background:#2b2b30; border:1px solid hsla(270,30%,50%,0.3); color:#f3f1fa; border-radius:4px; font-size:12px;">
+      </div>
+
+      <!-- RIGHT FIGHTER -->
+      <div>
+        <h3 style="font-size:14px; letter-spacing:2px; color:hsla(272,50%,75%,0.9); margin-bottom:12px; text-transform:uppercase;">Right Fighter</h3>
+        <label style="font-size:11px; color:hsla(270,25%,65%,0.6);">Name</label>
+        <input id="editNameRight" type="text" style="width:100%; margin:4px 0 10px 0; padding:7px; background:#2b2b30; border:1px solid hsla(270,30%,50%,0.3); color:#f3f1fa; border-radius:4px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <div><label style="font-size:11px; color:hsla(270,25%,65%,0.6);">Age</label>
+            <input id="editAgeRight" type="text" style="width:100%; margin:4px 0 10px 0; padding:7px; background:#2b2b30; border:1px solid hsla(270,30%,50%,0.3); color:#f3f1fa; border-radius:4px;"></div>
+          <div><label style="font-size:11px; color:hsla(270,25%,65%,0.6);">Height</label>
+            <input id="editHeightRight" type="text" style="width:100%; margin:4px 0 10px 0; padding:7px; background:#2b2b30; border:1px solid hsla(270,30%,50%,0.3); color:#f3f1fa; border-radius:4px;"></div>
+          <div><label style="font-size:11px; color:hsla(270,25%,65%,0.6);">Weight</label>
+            <input id="editWeightRight" type="text" style="width:100%; margin:4px 0 10px 0; padding:7px; background:#2b2b30; border:1px solid hsla(270,30%,50%,0.3); color:#f3f1fa; border-radius:4px;"></div>
+          <div><label style="font-size:11px; color:hsla(270,25%,65%,0.6);">Reach</label>
+            <input id="editReachRight" type="text" style="width:100%; margin:4px 0 10px 0; padding:7px; background:#2b2b30; border:1px solid hsla(270,30%,50%,0.3); color:#f3f1fa; border-radius:4px;"></div>
+        </div>
+        <label style="font-size:11px; color:hsla(270,25%,65%,0.6);">Photo</label>
+        <input id="editImageFileRight" type="file" accept="image/*" style="width:100%; margin:4px 0 6px 0; font-size:12px; color:hsla(270,25%,75%,0.8);">
+        <input id="editImageUrlRight" type="text" placeholder="...or paste an image URL" style="width:100%; padding:7px; background:#2b2b30; border:1px solid hsla(270,30%,50%,0.3); color:#f3f1fa; border-radius:4px; font-size:12px;">
+      </div>
+    </div>
+
+    <div style="margin-top:24px; display:flex; gap:10px; justify-content:flex-end;">
+      <button id="editCancelBtn" style="padding:10px 20px; background:transparent; border:1px solid hsla(270,25%,60%,0.4); color:hsla(270,25%,80%,0.8); border-radius:4px; cursor:pointer; font-size:13px;">Cancel</button>
+      <button id="editApplyBtn" style="padding:10px 24px; background:hsl(272,55%,48%); border:none; color:#fff; border-radius:4px; cursor:pointer; font-size:13px; font-weight:600;">Apply Changes</button>
+    </div>
+  </div>
+</div>
+<script>
+// ---------- FIGHT QUEUE NAVIGATION ----------
+// Tracks which fight (0-7) is currently active, saved to localStorage
+// so it survives OBS reloading the page on scene-switch. Without this,
+// clicking "Next Fight" would always reset back to fight 1 the moment
+// you cut away and back to this scene.
+const QUEUE_INDEX_KEY = 'uba_tape_fight_index';
+
+function getCurrentFightIndex() {
+  const saved = localStorage.getItem(QUEUE_INDEX_KEY);
+  const idx = saved !== null ? parseInt(saved, 10) : 0;
+  return Math.max(0, Math.min(FIGHT_QUEUE.length - 1, idx));
+}
+
+function setCurrentFightIndex(idx) {
+  const clamped = Math.max(0, Math.min(FIGHT_QUEUE.length - 1, idx));
+  localStorage.setItem(QUEUE_INDEX_KEY, clamped);
+  return clamped;
+}
+
+// Load whichever fight index was saved, and point CONFIG at it —
+// this runs immediately so the very first paint already shows the
+// correct fight, not always fight 1.
+let currentFightIndex = getCurrentFightIndex();
+function loadFightIntoConfig(idx) {
+  const f = FIGHT_QUEUE[idx];
+  CONFIG.boutTitle = f.boutTitle;
+  CONFIG.boutSubtitle = f.boutSubtitle;
+  CONFIG.left = f.left;
+  CONFIG.right = f.right;
+}
+loadFightIntoConfig(currentFightIndex);
+
+// ---------- POPULATE FROM CONFIG ----------
+// Pulls everything from the CONFIG block at the top of the file
+// and writes it into the page before the animation starts.
+document.getElementById('boutTitleText').textContent = CONFIG.boutTitle;
+document.getElementById('boutSubtitleText').textContent = CONFIG.boutSubtitle;
+document.getElementById('sponsorText').textContent = CONFIG.sponsorName;
+
+document.getElementById('nameLeft').textContent = CONFIG.left.name;
+document.getElementById('nameRight').textContent = CONFIG.right.name;
+
+document.getElementById('ageLeft').textContent = CONFIG.left.age;
+document.getElementById('heightLeft').textContent = CONFIG.left.height;
+document.getElementById('weightLeft').textContent = CONFIG.left.weight;
+document.getElementById('reachLeft').textContent = CONFIG.left.reach;
+
+document.getElementById('ageRight').textContent = CONFIG.right.age;
+document.getElementById('heightRight').textContent = CONFIG.right.height;
+document.getElementById('weightRight').textContent = CONFIG.right.weight;
+document.getElementById('reachRight').textContent = CONFIG.right.reach;
+
+document.getElementById('recordLeft').textContent = CONFIG.left.record;
+document.getElementById('oddsLeft').textContent = CONFIG.left.odds;
+document.getElementById('rankLeft').textContent = CONFIG.left.rank;
+document.getElementById('recordRight').textContent = CONFIG.right.record;
+document.getElementById('oddsRight').textContent = CONFIG.right.odds;
+document.getElementById('rankRight').textContent = CONFIG.right.rank;
+
+// Fighter images: if a path/URL is given, swap the placeholder box
+// for that image (cropped to fill). Otherwise leave the dashed
+// placeholder + label as-is.
+// Fighter images: free-floating, no box/border. IMPORTANT — for the
+// "fighter just stands in the scene" look to actually work, the image
+// should be a cutout PNG with a transparent background (fighter only,
+// no studio backdrop). A regular rectangular photo will still show its
+// own straight edges since there's no border to disguise that anymore.
+function applyFighterImage(boxId, imagePath) {
+  const box = document.getElementById(boxId);
+  if (imagePath && imagePath.trim() !== "") {
+    box.style.backgroundImage = `url("${imagePath}")`;
+    box.textContent = "";
+  }
+}
+applyFighterImage('imgBoxLeft', CONFIG.left.image);
+applyFighterImage('imgBoxRight', CONFIG.right.image);
+
+// ---------- CENTER CARD DROP-IN ANIMATION ----------
+// Animates the center column scaling/sliding forward from camera
+// then settling into place, plus a staggered reveal on bout label
+// and stat rows (mirrors the 3-state reference: empty -> mid-build -> settled).
+const centerCol = document.getElementById('centerCol');
+const boutLabel = document.getElementById('boutLabel');
+const statRows = document.querySelectorAll('.stat-row');
+
+centerCol.style.transform = 'translateY(-26px) translateZ(0) scale(1.35)';
+centerCol.style.transition = 'opacity 0.7s cubic-bezier(.16,.6,.25,1), transform 0.85s cubic-bezier(.16,.6,.25,1)';
+
+requestAnimationFrame(()=>{
+  requestAnimationFrame(()=>{
+    centerCol.style.opacity = '1';
+    centerCol.style.transform = 'translateY(0) scale(1)';
+  });
+});
+
+setTimeout(()=>{
+  boutLabel.style.transition = 'opacity 0.55s ease-out';
+  boutLabel.style.opacity = '1';
+}, 580);
+
+statRows.forEach((row, i)=>{
+  row.style.transition = 'opacity 0.5s ease-out, transform 0.55s cubic-bezier(.16,.6,.25,1)';
+  row.style.transform = 'translateY(-14px)';
+  setTimeout(()=>{
+    row.style.opacity = '1';
+    row.style.transform = 'translateY(0)';
+  }, 780 + i * 150);
+});
+
+const sponsorBar = document.getElementById('sponsorBar');
+setTimeout(()=>{
+  sponsorBar.style.transition = 'opacity 0.55s ease-out';
+  sponsorBar.style.opacity = '1';
+}, 780 + statRows.length * 150 + 160);
+
+// ---------- RAIL HEIGHT — match exactly to where SHEATH starts ----------
+// Rather than guess a fixed pixel height, measure sponsorBar's actual
+// position relative to centerCol and size both rails to stop exactly
+// there. Runs after layout settles so the measurement is accurate.
+function syncRailHeightToSponsorBar() {
+  const colRect = centerCol.getBoundingClientRect();
+  const sponsorRect = sponsorBar.getBoundingClientRect();
+  const stopHeight = sponsorRect.top - colRect.top;
+  if (stopHeight > 10) {
+    document.getElementById('railWrapLeft').style.height = stopHeight + 'px';
+    document.getElementById('railWrapRight').style.height = stopHeight + 'px';
+  }
+}
+// Run a few times as layout settles (fonts loading, animation frames),
+// then once more after everything's fully in place.
+requestAnimationFrame(syncRailHeightToSponsorBar);
+setTimeout(syncRailHeightToSponsorBar, 100);
+setTimeout(syncRailHeightToSponsorBar, 700);
+
+// ---------- FIGHTER ENTRANCE — same drop-in-from-front-and-settle
+// style as the center column (scale down + slide in, same easing),
+// mirrored so the left fighter comes in from the left and the right
+// fighter from the right, instead of straight down the middle.
+const fighterWrapLeft = document.getElementById('fighterWrapLeft');
+const fighterWrapRight = document.getElementById('fighterWrapRight');
+const namePlateLeft = document.getElementById('namePlateLeft');
+const namePlateRight = document.getElementById('namePlateRight');
+
+fighterWrapLeft.style.transform = 'translateX(-60px) scale(1.08)';
+fighterWrapLeft.style.transition = 'opacity 0.8s cubic-bezier(.16,.6,.25,1), transform 0.95s cubic-bezier(.16,.6,.25,1)';
+fighterWrapRight.style.transform = 'translateX(60px) scale(1.08)';
+fighterWrapRight.style.transition = 'opacity 0.8s cubic-bezier(.16,.6,.25,1), transform 0.95s cubic-bezier(.16,.6,.25,1)';
+
+requestAnimationFrame(()=>{
+  requestAnimationFrame(()=>{
+    fighterWrapLeft.style.opacity = '1';
+    fighterWrapLeft.style.transform = 'translateX(0) scale(1)';
+    fighterWrapRight.style.opacity = '1';
+    fighterWrapRight.style.transform = 'translateX(0) scale(1)';
+  });
+});
+
+// Name plates settle in slightly after the fighters, same as how
+// the bout label follows the center panel.
+namePlateLeft.style.transform = 'translateY(20px)';
+namePlateLeft.style.transition = 'opacity 0.6s ease-out, transform 0.65s cubic-bezier(.16,.6,.25,1)';
+namePlateRight.style.transform = 'translateY(20px)';
+namePlateRight.style.transition = 'opacity 0.6s ease-out, transform 0.65s cubic-bezier(.16,.6,.25,1)';
+
+setTimeout(()=>{
+  namePlateLeft.style.opacity = '1';
+  namePlateLeft.style.transform = 'translateY(0)';
+  namePlateRight.style.opacity = '1';
+  namePlateRight.style.transform = 'translateY(0)';
+}, 420);
+
+// ---------- RAIL SHIMMER — bright retro-synth, matching the flower's
+// actual palette and saturation, not a washed-out low-alpha fill.
+// Same synthCol formula as the flower (45-68% sat, 68-88% light) but
+// alpha is meaningfully higher here so the color itself reads clearly,
+// with a brighter moving highlight band layered on top for shimmer.
+// Now using the flower's FULL synth palette (greens/teals + violets,
+// not just purple) with multiple overlapping color bands at different
+// Purple-leaning iridescent palette, matching the flower's actual
+// violet range (270, 285 are both in the flower's own SYNTH_HUES),
+// but alpha kept low so it stays genuinely transparent — not a flat
+// tinted bar. The shimmer reads through color/hue movement, not
+// through being visibly "thick" with color at any one moment.
+const RAIL_SYNTH_HUES = [270, 285, 260, 295]; // flower-matched violet band
+
+function railSynthCol(hue, sat, light, alpha) {
+  const s = Math.min(65, Math.max(40, sat));
+  const l = Math.min(78, Math.max(55, light));
+  return `hsla(${hue},${s}%,${l}%,${alpha})`;
+}
+
+function setupRailCanvas(canvasId) {
+  const rc = document.getElementById(canvasId);
+  const rx = rc.getContext('2d');
+  let rt = 0;
+
+  function draw() {
+    rt += 1;
+    const w = rc.width, h = rc.height;
+    rx.clearRect(0, 0, w, h);
+
+    // LAYER 1 — base iridescent wash, cycling slowly through the
+    // violet band. Saturation/lightness pushed back up from the
+    // muted-grey version, alpha kept low (0.10) so it's still
+    // genuinely see-through, not a flat color fill.
+    const hueIdx = Math.floor((rt * 0.0035) % RAIL_SYNTH_HUES.length);
+    const hueNext = RAIL_SYNTH_HUES[(hueIdx + 1) % RAIL_SYNTH_HUES.length];
+    const hueBlend = RAIL_SYNTH_HUES[hueIdx] + (hueNext - RAIL_SYNTH_HUES[hueIdx]) * ((rt * 0.0035) % 1);
+    rx.fillStyle = railSynthCol(hueBlend, 50, 62, 0.16);
+    rx.fillRect(0, 0, w, h);
+
+    // LAYER 2 — single, slow-moving highlight band — purple-toned now
+    // instead of gold, matching the flower's own neon-edge color logic.
+    const bandPos = (rt * 0.22) % (h + 300) - 150;
+    const bandHue = RAIL_SYNTH_HUES[(hueIdx + 2) % RAIL_SYNTH_HUES.length];
+    const band = rx.createLinearGradient(0, bandPos - 110, 0, bandPos + 110);
+    band.addColorStop(0,   `hsla(${bandHue},65%,80%,0)`);
+    band.addColorStop(0.5, `hsla(${bandHue},70%,86%,0.26)`);
+    band.addColorStop(1,   `hsla(${bandHue},65%,80%,0)`);
+    rx.fillStyle = band;
+    rx.fillRect(0, bandPos - 110, w, 220);
+
+    // Thin, faint edge lines, purple-toned
+    rx.fillStyle = `hsla(${bandHue},60%,85%,0.22)`;
+    rx.fillRect(0, 0, 1, h);
+    rx.fillRect(w - 1, 0, 1, h);
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+setupRailCanvas('railLeft');
+setupRailCanvas('railRight');
+
+// ---------- FLOWER MARK — condensed version, sits in the top tab ----------
+// Same engine as vga_vail_flower_overlay: spinning 5-petal bloom,
+// synth-faded palette, idle spin only (no click/bloom trigger here).
+const cv = document.getElementById('flowerTab');
+const ctx = cv.getContext('2d');
+const W = 220, H = 90;
+const CX = 110, CY = 36;
+const R = 14;
+
+let T = 0, spinAccum = 0;
+let spinIntensity = 0.35; // gentle constant idle spin for the tab-sized mark
+
+const SYNTH_HUES = [145, 270, 160, 285, 175, 260, 130];
+function synthCol(hue, sat, light, alpha) {
+  const s = Math.min(68, Math.max(38, sat));
+  const l = Math.min(88, Math.max(68, light));
+  return `hsla(${hue},${s}%,${l}%,${alpha})`;
+}
+
+function frame() {
+  ctx.clearRect(0, 0, W, H);
+  T++;
+  spinAccum += 0.012;
+  const si = spinIntensity;
+
+  const hIdx = Math.floor((T * 0.018) % SYNTH_HUES.length);
+  const basePulse = 0.85 + Math.sin(T * 0.03) * 0.1;
+
+  const budEW = R * 0.48, budEH = R * 0.95, bloEW = R * 0.32, bloEH = R * 1.2;
+  const ew = budEW + (bloEW - budEW) * si;
+  const eh = budEH + (bloEH - budEH) * si;
+
+  for (let p2 = 0; p2 < 5; p2++) {
+    const a = (p2 / 5) * Math.PI * 2 + spinAccum;
+    const px = CX + Math.cos(a) * R * 0.88, py = CY + Math.sin(a) * R * 0.88;
+    const ph = SYNTH_HUES[(hIdx + p2) % SYNTH_HUES.length];
+    const tiltA = a + Math.PI;
+    const bp = basePulse;
+
+    const glowR = ew * (2.0 + si * 2);
+    const g2 = ctx.createRadialGradient(px, py, ew * 0.4, px, py, glowR);
+    g2.addColorStop(0, synthCol(ph, 48, 80, 0.10));
+    g2.addColorStop(0.4, synthCol(ph, 52, 76, 0.18));
+    g2.addColorStop(1, 'transparent');
+    ctx.beginPath(); ctx.arc(px, py, glowR, 0, Math.PI * 2); ctx.fillStyle = g2; ctx.fill();
+
+    ctx.save(); ctx.translate(px, py); ctx.rotate(tiltA);
+    ctx.beginPath();
+    ctx.moveTo(0, -eh);
+    ctx.bezierCurveTo(ew * 0.7, -eh * 0.55, ew * 0.95, eh * 0.1, 0, eh * 0.55);
+    ctx.bezierCurveTo(-ew * 0.95, eh * 0.1, -ew * 0.7, -eh * 0.55, 0, -eh);
+    ctx.closePath();
+
+    const pg = ctx.createLinearGradient(-ew, 0, ew, 0);
+    pg.addColorStop(0, synthCol(ph, 52, 70, bp * 0.75));
+    pg.addColorStop(0.5, synthCol(SYNTH_HUES[(hIdx + p2 + 1) % SYNTH_HUES.length], 48, 68, bp * 0.35));
+    pg.addColorStop(1, synthCol(ph, 52, 70, bp * 0.75));
+    ctx.fillStyle = pg; ctx.fill();
+
+    ctx.strokeStyle = synthCol(SYNTH_HUES[(hIdx + p2 + 2) % SYNTH_HUES.length], 62, 88, 0.7);
+    ctx.lineWidth = 0.9;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  const ch = SYNTH_HUES[(hIdx + 3) % SYNTH_HUES.length];
+  const centreR = R * 0.18;
+  ctx.beginPath(); ctx.arc(CX, CY, centreR, 0, Math.PI * 2);
+  ctx.strokeStyle = synthCol(ch, 62, 88, 0.95);
+  ctx.lineWidth = 1.1; ctx.stroke();
+
+  requestAnimationFrame(frame);
+}
+frame();
+
+// ---------- LIVE EDIT PANEL ----------
+// Click SHEATH to open. Pre-fills with current CONFIG values, lets
+// you change anything, and applies it straight to the live elements
+// on Apply — no file editing, no reload needed mid-broadcast.
+const editOverlay = document.getElementById('editOverlay');
+
+function openEditPanel() {
+  document.getElementById('editBoutTitle').value = CONFIG.boutTitle;
+  document.getElementById('editBoutSubtitle').value = CONFIG.boutSubtitle;
+  document.getElementById('editNameLeft').value = CONFIG.left.name;
+  document.getElementById('editAgeLeft').value = CONFIG.left.age;
+  document.getElementById('editHeightLeft').value = CONFIG.left.height;
+  document.getElementById('editWeightLeft').value = CONFIG.left.weight;
+  document.getElementById('editReachLeft').value = CONFIG.left.reach;
+  document.getElementById('editImageUrlLeft').value = CONFIG.left.image.startsWith('data:') ? '' : CONFIG.left.image;
+  document.getElementById('editNameRight').value = CONFIG.right.name;
+  document.getElementById('editAgeRight').value = CONFIG.right.age;
+  document.getElementById('editHeightRight').value = CONFIG.right.height;
+  document.getElementById('editWeightRight').value = CONFIG.right.weight;
+  document.getElementById('editReachRight').value = CONFIG.right.reach;
+  document.getElementById('editImageUrlRight').value = CONFIG.right.image.startsWith('data:') ? '' : CONFIG.right.image;
+  editOverlay.style.display = 'flex';
+}
+
+function closeEditPanel() {
+  editOverlay.style.display = 'none';
+}
+
+// Reads an uploaded file and converts it to a data URL (embedded
+// directly in the page, no separate file path or hosting needed).
+function fileToDataUrl(fileInput, callback) {
+  const file = fileInput.files[0];
+  if (!file) { callback(null); return; }
+  const reader = new FileReader();
+  reader.onload = (e) => callback(e.target.result);
+  reader.readAsDataURL(file);
+}
+
+function applyEdits() {
+  CONFIG.boutTitle = document.getElementById('editBoutTitle').value;
+  CONFIG.boutSubtitle = document.getElementById('editBoutSubtitle').value;
+
+  CONFIG.left.name = document.getElementById('editNameLeft').value;
+  CONFIG.left.age = document.getElementById('editAgeLeft').value;
+  CONFIG.left.height = document.getElementById('editHeightLeft').value;
+  CONFIG.left.weight = document.getElementById('editWeightLeft').value;
+  CONFIG.left.reach = document.getElementById('editReachLeft').value;
+
+  CONFIG.right.name = document.getElementById('editNameRight').value;
+  CONFIG.right.age = document.getElementById('editAgeRight').value;
+  CONFIG.right.height = document.getElementById('editHeightRight').value;
+  CONFIG.right.weight = document.getElementById('editWeightRight').value;
+  CONFIG.right.reach = document.getElementById('editReachRight').value;
+
+  // Images: uploaded file takes priority over a pasted URL if both given.
+  const urlLeft = document.getElementById('editImageUrlLeft').value.trim();
+  const urlRight = document.getElementById('editImageUrlRight').value.trim();
+
+  fileToDataUrl(document.getElementById('editImageFileLeft'), (dataUrl) => {
+    if (dataUrl) CONFIG.left.image = dataUrl;
+    else if (urlLeft) CONFIG.left.image = urlLeft;
+    pushToCard();
+  });
+  fileToDataUrl(document.getElementById('editImageFileRight'), (dataUrl) => {
+    if (dataUrl) CONFIG.right.image = dataUrl;
+    else if (urlRight) CONFIG.right.image = urlRight;
+    pushToCard();
+  });
+
+  // In case neither image input had anything, still push text changes immediately.
+  if (!document.getElementById('editImageFileLeft').files[0] && !urlLeft &&
+      !document.getElementById('editImageFileRight').files[0] && !urlRight) {
+    pushToCard();
+  }
+}
+
+// Writes the (possibly updated) CONFIG values into the live elements
+// on the card — same logic as the initial page-load population.
+function pushToCard() {
+  document.getElementById('boutTitleText').textContent = CONFIG.boutTitle;
+  document.getElementById('boutSubtitleText').textContent = CONFIG.boutSubtitle;
+
+  document.getElementById('nameLeft').textContent = CONFIG.left.name;
+  document.getElementById('ageLeft').textContent = CONFIG.left.age;
+  document.getElementById('heightLeft').textContent = CONFIG.left.height;
+  document.getElementById('weightLeft').textContent = CONFIG.left.weight;
+  document.getElementById('reachLeft').textContent = CONFIG.left.reach;
+
+  document.getElementById('nameRight').textContent = CONFIG.right.name;
+  document.getElementById('ageRight').textContent = CONFIG.right.age;
+  document.getElementById('heightRight').textContent = CONFIG.right.height;
+  document.getElementById('weightRight').textContent = CONFIG.right.weight;
+  document.getElementById('reachRight').textContent = CONFIG.right.reach;
+
+  document.getElementById('recordLeft').textContent = CONFIG.left.record;
+  document.getElementById('oddsLeft').textContent = CONFIG.left.odds;
+  document.getElementById('rankLeft').textContent = CONFIG.left.rank;
+  document.getElementById('recordRight').textContent = CONFIG.right.record;
+  document.getElementById('oddsRight').textContent = CONFIG.right.odds;
+  document.getElementById('rankRight').textContent = CONFIG.right.rank;
+
+  applyFighterImage('imgBoxLeft', CONFIG.left.image);
+  applyFighterImage('imgBoxRight', CONFIG.right.image);
+
+  closeEditPanel();
+}
+
+document.getElementById('sponsorBar').addEventListener('click', function(e) {
+  console.log('SHEATH clicked');
+  try {
+    openEditPanel();
+  } catch (err) {
+    console.error('openEditPanel failed:', err);
+    alert('Edit panel error: ' + err.message);
+  }
+});
+document.getElementById('editCancelBtn').addEventListener('click', closeEditPanel);
+document.getElementById('editApplyBtn').addEventListener('click', applyEdits);
+
+// ---------- PASTE PARSER ----------
+// Reads the paste box, splits into lines, matches "label: value" pairs
+// (case-insensitive, separator can be : or |), fills the corresponding
+// input field. Unrecognized labels are ignored silently — doesn't
+// break on extra/missing lines, so partial pastes still work fine.
+const PASTE_FIELD_MAP = {
+  left:     'editNameLeft',
+  right:    'editNameRight',
+  agel:     'editAgeLeft',
+  ager:     'editAgeRight',
+  heightl:  'editHeightLeft',
+  heightr:  'editHeightRight',
+  weightl:  'editWeightLeft',
+  weightr:  'editWeightRight',
+  reachl:   'editReachLeft',
+  reachr:   'editReachRight',
+  title:    'editBoutTitle',
+  subtitle: 'editBoutSubtitle',
+};
+
+function parsePasteBox() {
+  const raw = document.getElementById('pasteBox').value;
+  // Split on newlines OR pipes, so it works whether pasted as separate
+  // lines or as one long "label: value | label: value" string.
+  const chunks = raw.split(/\n|\|/).map(s => s.trim()).filter(Boolean);
+  let filledCount = 0;
+
+  chunks.forEach(chunk => {
+    const match = chunk.match(/^([a-zA-Z]+)\s*:\s*(.+)$/);
+    if (!match) return;
+    const label = match[1].toLowerCase();
+    const value = match[2].trim();
+    const fieldId = PASTE_FIELD_MAP[label];
+    if (fieldId) {
+      document.getElementById(fieldId).value = value;
+      filledCount++;
+    }
+  });
+
+  if (filledCount === 0) {
+    alert('No recognized fields found. Check the format example above the paste box.');
+  }
+}
+document.getElementById('parsePasteBtn').addEventListener('click', parsePasteBox);
+
+// ---------- NEXT / PREV FIGHT BUTTONS ----------
+// Advances the saved queue index, then reloads the page. Reloading
+// (rather than trying to swap content in place) is deliberate — it's
+// the same mechanism OBS already uses for the drop-in animation on
+// scene-switch, so clicking Next gives you the exact same clean
+// "new fight just loaded" entrance every time, with zero extra code
+// to keep the animation logic in sync.
+function updateFightCounter() {
+  const counter = document.getElementById('fightCounter');
+  if (counter) counter.textContent = `FIGHT ${currentFightIndex + 1} / ${FIGHT_QUEUE.length}`;
+}
+updateFightCounter();
+
+// Navigation now lives on the rails themselves, not separate buttons.
+// Left rail = PREV, right rail = NEXT. Same reload-based mechanism
+// as before — reloading re-triggers the drop-in animation cleanly.
+document.getElementById('railWrapRight').addEventListener('click', () => {
+  setCurrentFightIndex(currentFightIndex + 1);
+  location.reload();
+});
+document.getElementById('railWrapLeft').addEventListener('click', () => {
+  setCurrentFightIndex(currentFightIndex - 1);
+  location.reload();
+});
+
+
+// Click outside the panel (on the dark overlay) also closes it
+editOverlay.addEventListener('click', (e) => {
+  if (e.target === editOverlay) closeEditPanel();
+});
+</script>
+
+
+<!-- ── VGA STUDIO WIRE — deck listener (added 2026-07-24, visuals untouched) ── -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+  const _sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
+    'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
+  const set=(id,v)=>{ if(v!=null){ const e=document.getElementById(id); if(e) e.textContent=v } }
+  _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
+    if(c.type!=='tape') return
+    const d=c.d||{}
+    set('boutTitleText',d.title); set('boutSubtitleText',d.subtitle); set('sponsorText',d.sponsor)
+    const L=d.left||{}, R=d.right||{}
+    set('nameLeft',L.name); set('ageLeft',L.age); set('heightLeft',L.height); set('weightLeft',L.weight)
+    set('reachLeft',L.reach); set('recordLeft',L.record); set('oddsLeft',L.odds); set('rankLeft',L.rank)
+    set('nameRight',R.name); set('ageRight',R.age); set('heightRight',R.height); set('weightRight',R.weight)
+    set('reachRight',R.reach); set('recordRight',R.record); set('oddsRight',R.odds); set('rankRight',R.rank)
+  }).subscribe()
+})()
+</script>
+</body>
+</html>

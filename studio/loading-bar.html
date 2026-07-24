@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920">
+<title>UBAe Season 1 — Week 1</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#07000f; --panel:#0e0020; --border:#2a0f4a;
+    --amber:#e8a020; --amber-dim:#a06810;
+    --green:#1aff8c; --green-dim:#0a4a28;
+    --purple:#6a1fc2; --purple-hi:#9b4dff;
+    --white:#f0e8ff; --scanline:rgba(0,0,0,0.18);
+  }
+  body {
+    background:var(--bg); width:1920px; height:1080px;
+    font-family:'Press Start 2P',monospace; color:var(--white);
+    overflow:hidden; position:relative;
+  }
+  body::before {
+    content:''; position:fixed; inset:0;
+    background:repeating-linear-gradient(to bottom,transparent 0px,transparent 3px,var(--scanline) 3px,var(--scanline) 4px);
+    pointer-events:none; z-index:100;
+  }
+  body::after {
+    content:''; position:fixed; inset:0;
+    background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,0.8) 100%);
+    pointer-events:none; z-index:99;
+  }
+  .noise {
+    position:fixed; inset:0; opacity:0.025; pointer-events:none; z-index:98;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+    background-repeat:repeat; background-size:150px;
+  }
+  .bracket { position:absolute; width:24px; height:24px; border-color:var(--purple-hi); border-style:solid; }
+  .bracket.tl { top:12px; left:12px; border-width:2px 0 0 2px; }
+  .bracket.tr { top:12px; right:12px; border-width:2px 2px 0 0; }
+  .bracket.bl { bottom:12px; left:12px; border-width:0 0 2px 2px; }
+  .bracket.br { bottom:12px; right:12px; border-width:0 2px 2px 0; }
+
+  /* TOP BAR */
+  .top-bar {
+    position:absolute; top:0; left:0; right:0; height:56px;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 52px; border-bottom:1px solid var(--border); z-index:10;
+  }
+  .brand-left { display:flex; align-items:center; gap:20px; }
+  .brand-vga { font-size:10px; letter-spacing:0.35em; color:var(--amber-dim); }
+  .brand-sep { width:1px; height:18px; background:var(--border); }
+  .brand-ubae { font-size:16px; color:var(--amber); text-shadow:0 0 6px var(--amber),0 0 18px rgba(232,160,32,0.3); animation:flicker 6s infinite; }
+  .top-right { display:flex; align-items:center; gap:20px; }
+  .season-tag { font-size:10px; color:var(--purple-hi); border:1px solid var(--purple); padding:5px 10px; letter-spacing:0.15em; }
+  .live-pill { display:flex; align-items:center; gap:7px; font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--green-dim); }
+  .live-dot { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 5px var(--green); animation:blink 1s step-end infinite; }
+
+  /* GRAPHIC ZONE */
+  .graphic-zone { position:absolute; top:56px; left:0; right:0; bottom:340px; }
+
+  /* SCHEDULE STRIP — height driven by content, not a fixed guess */
+  .schedule-strip {
+    position:absolute; bottom:0; left:0; right:0; height:340px;
+    background:rgba(7,0,15,0.95); border-top:2px solid var(--purple);
+    display:flex; flex-direction:column;
+  }
+  .schedule-strip::before {
+    content:''; position:absolute; top:-1px; left:0; right:0; height:1px;
+    background:linear-gradient(to right,transparent 0%,var(--purple-hi) 30%,var(--purple-hi) 70%,transparent 100%);
+  }
+
+  .strip-inner { flex:1; display:grid; grid-template-columns:170px 1fr; min-height:0; }
+
+  /* WEEK LABEL */
+  .strip-label {
+    border-right:1px solid var(--border);
+    display:flex; flex-direction:column; justify-content:center;
+    align-items:flex-start; padding:24px 24px; gap:12px;
+  }
+  .week-eyebrow { font-size:9px; letter-spacing:0.3em; color:var(--purple-hi); }
+  .week-number { font-size:40px; color:var(--white); line-height:1.1; text-shadow:0 0 12px rgba(155,77,255,0.5); }
+  .week-dates { font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--amber-dim); letter-spacing:0.05em; line-height:2; }
+  .format-tag { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--border); line-height:2; }
+
+  /* MATCH CARDS */
+  .cards-area { display:grid; grid-template-columns:1fr 1px 1fr 1px 1fr 1px 1fr; }
+  .v-div { background:var(--border); }
+
+  .match-card {
+    display:flex; flex-direction:column;
+    padding:18px 22px 18px; position:relative;
+  }
+
+  .day-tag {
+    font-size:9px; letter-spacing:0.22em; color:var(--green);
+    text-shadow:0 0 5px rgba(26,255,140,0.4);
+    display:flex; align-items:center; gap:8px;
+    margin-bottom:14px; flex-shrink:0;
+  }
+  .day-tag.fri { color:var(--amber); text-shadow:0 0 5px rgba(232,160,32,0.4); }
+  .day-pip { width:7px; height:7px; background:var(--green); box-shadow:0 0 4px var(--green); animation:blink 1.4s step-end infinite; flex-shrink:0; }
+  .day-pip.fri { background:var(--amber); box-shadow:0 0 4px var(--amber); }
+
+  .matchup-body {
+    flex:1; display:grid; grid-template-columns:1fr 36px 1fr; align-items:stretch;
+  }
+
+  .team-side { display:flex; flex-direction:column; gap:0; }
+  .team-side.right { align-items:flex-end; }
+
+  .team-name {
+    font-size:16px; color:var(--white); line-height:1.7;
+    text-shadow:0 0 8px rgba(240,232,255,0.2);
+    margin-bottom:10px;
+  }
+  .team-side.right .team-name { text-align:right; }
+
+  /* divider under team name */
+  .name-rule { width:100%; height:1px; background:var(--border); margin-bottom:10px; }
+  .team-side.right .name-rule { align-self:stretch; }
+
+  .roster-list { display:flex; flex-direction:column; gap:7px; }
+  .roster-list.right { align-items:flex-end; }
+
+  .player {
+    font-family:'Share Tech Mono',monospace;
+    font-size:13.5px; color:var(--amber-dim); letter-spacing:0.04em; line-height:1;
+  }
+
+  .vs-col { display:flex; align-items:flex-start; justify-content:center; padding-top:4px; }
+  .vs-badge { font-size:14px; color:var(--purple-hi); text-shadow:0 0 10px var(--purple-hi); }
+
+  .match-id {
+    position:absolute; bottom:7px; right:9px;
+    font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--border);
+  }
+
+  /* FOOTER */
+  .strip-footer {
+    height:36px; border-top:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center; gap:40px; flex-shrink:0;
+  }
+  .footer-item { font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--amber); letter-spacing:0.07em; }
+  .footer-sep { font-size:12px; color:var(--border); }
+
+  @keyframes flicker { 0%,95%,100%{opacity:1}96%{opacity:0.85}97%{opacity:1}98%{opacity:0.9}99%{opacity:1} }
+  @keyframes blink { 0%,100%{opacity:1}50%{opacity:0} }
+</style>
+</head>
+<body>
+
+<div class="noise"></div>
+<div class="bracket tl"></div>
+<div class="bracket tr"></div>
+<div class="bracket bl"></div>
+<div class="bracket br"></div>
+
+<div class="top-bar">
+  <div class="brand-left">
+    <span class="brand-vga">VIRTUAL GLOBAL ALLIANCE</span>
+    <div class="brand-sep"></div>
+    <span class="brand-ubae">UBAe</span>
+  </div>
+  <div class="top-right">
+    <div class="live-pill">
+      <div class="live-dot"></div>
+      THRILL OF THE FIGHT 2 &nbsp;·&nbsp; 3v3 BEST OF FIVE &nbsp;·&nbsp; META QUEST
+    </div>
+    <span class="season-tag">SEASON 1</span>
+  </div>
+</div>
+
+<div class="graphic-zone"></div>
+
+<div class="schedule-strip">
+  <div class="strip-inner">
+
+    <div class="strip-label">
+      <span class="week-eyebrow">// SCHEDULE //</span>
+      <div class="week-number">WK<br>01</div>
+      <div class="week-dates">MAR 19<br>MAR 20<br>2026</div>
+      <div class="format-tag">3v3<br>BEST OF 5</div>
+    </div>
+
+    <div class="cards-area">
+
+      <div class="match-card">
+        <div class="day-tag"><div class="day-pip"></div>THU 19.03</div>
+        <div class="matchup-body">
+          <div class="team-side">
+            <span class="team-name">TEAM<br>MUDS</span>
+            <div class="name-rule"></div>
+            <div class="roster-list">
+              <span class="player">DirtiestJordan</span>
+              <span class="player">Galf</span>
+              <span class="player">Tynado</span>
+              <span class="player">Tomato</span>
+              <span class="player">Oavoid</span>
+            </div>
+          </div>
+          <div class="vs-col"><span class="vs-badge">VS</span></div>
+          <div class="team-side right">
+            <span class="team-name">5 GREAT<br>KAGE</span>
+            <div class="name-rule"></div>
+            <div class="roster-list right">
+              <span class="player">Jester</span>
+              <span class="player">Clint</span>
+              <span class="player">Steel</span>
+              <span class="player">Sage</span>
+              <span class="player">Contour</span>
+              <span class="player">Danny G</span>
+            </div>
+          </div>
+        </div>
+        <span class="match-id">W1-M01</span>
+      </div>
+
+      <div class="v-div"></div>
+
+      <div class="match-card">
+        <div class="day-tag"><div class="day-pip" style="animation-delay:.3s"></div>THU 19.03</div>
+        <div class="matchup-body">
+          <div class="team-side">
+            <span class="team-name">SHEATH<br>ELITE</span>
+            <div class="name-rule"></div>
+            <div class="roster-list">
+              <span class="player">Bloob</span>
+              <span class="player">Maki</span>
+              <span class="player">Rico</span>
+              <span class="player">Excel</span>
+              <span class="player">Smokinem</span>
+            </div>
+          </div>
+          <div class="vs-col"><span class="vs-badge">VS</span></div>
+          <div class="team-side right">
+            <span class="team-name">TEAM<br>RAG TAGS</span>
+            <div class="name-rule"></div>
+            <div class="roster-list right">
+              <span class="player">Boady</span>
+              <span class="player">Helloworld</span>
+              <span class="player">Xi</span>
+              <span class="player">Baz</span>
+              <span class="player">Pablo</span>
+            </div>
+          </div>
+        </div>
+        <span class="match-id">W1-M02</span>
+      </div>
+
+      <div class="v-div"></div>
+
+      <div class="match-card">
+        <div class="day-tag fri"><div class="day-pip fri" style="animation-delay:.7s"></div>FRI 20.03</div>
+        <div class="matchup-body">
+          <div class="team-side">
+            <span class="team-name">CHAMPS<br>UNITED</span>
+            <div class="name-rule"></div>
+            <div class="roster-list">
+              <span class="player">Nekota</span>
+              <span class="player">Kam</span>
+              <span class="player">IamAura</span>
+              <span class="player">Adonnis</span>
+            </div>
+          </div>
+          <div class="vs-col"><span class="vs-badge">VS</span></div>
+          <div class="team-side right">
+            <span class="team-name">RING<br>REAPERS</span>
+            <div class="name-rule"></div>
+            <div class="roster-list right">
+              <span class="player">Slove</span>
+              <span class="player">Warhog</span>
+              <span class="player">Carbonshield</span>
+              <span class="player">Yoboi</span>
+              <span class="player">Guts</span>
+            </div>
+          </div>
+        </div>
+        <span class="match-id">W1-M03</span>
+      </div>
+
+      <div class="v-div"></div>
+
+      <div class="match-card">
+        <div class="day-tag fri"><div class="day-pip fri" style="animation-delay:1s"></div>FRI 20.03</div>
+        <div class="matchup-body">
+          <div class="team-side">
+            <span class="team-name">UKFC<br>UNCS</span>
+            <div class="name-rule"></div>
+            <div class="roster-list">
+              <span class="player">ChickenShawarma</span>
+              <span class="player">Cube</span>
+              <span class="player">Xion</span>
+              <span class="player">Gold e</span>
+              <span class="player">Lockz</span>
+              <span class="player">Ashcoop</span>
+            </div>
+          </div>
+          <div class="vs-col"><span class="vs-badge">VS</span></div>
+          <div class="team-side right">
+            <span class="team-name">jUnC</span>
+            <div class="name-rule"></div>
+            <div class="roster-list right">
+              <span class="player">Asilagy</span>
+              <span class="player">Mao</span>
+              <span class="player">Napboi</span>
+              <span class="player">Ronin</span>
+              <span class="player">Tonyhunglow</span>
+            </div>
+          </div>
+        </div>
+        <span class="match-id">W1-M04</span>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="strip-footer">
+    <span class="footer-item">WATCH › ubaesports.com</span>
+    <span class="footer-sep">//</span>
+    <span class="footer-item">FOLLOW › @UBAeSports</span>
+    <span class="footer-sep">//</span>
+    <span class="footer-item">JOIN › discord.gg/vga</span>
+  </div>
+</div>
+
+
+<!-- ── VGA STUDIO WIRE — deck listener (added 2026-07-24, visuals untouched) ── -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+  const _sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
+    'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
+  const brName = s => (s||'').toUpperCase().replace(/ /g,'<br>')
+  _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
+    if(c.type!=='loadbar') return
+    const d=c.d||{}
+    if(d.week){ const w=document.querySelector('.week-number'); if(w) w.innerHTML='WK<br>'+d.week }
+    if(d.dates){ const dd=document.querySelector('.week-dates'); if(dd) dd.innerHTML=d.dates }
+    const cards=[...document.querySelectorAll('.match-card')]
+    const divs=[...document.querySelectorAll('.cards-area .v-div')]
+    ;(d.matches||[]).forEach((m,i)=>{
+      const card=cards[i]; if(!card) return
+      card.style.display=''
+      const day=card.querySelector('.day-tag')
+      if(day&&m.day){ const pip=day.querySelector('.day-pip'); day.innerHTML=''; if(pip) day.appendChild(pip); day.append(m.day) }
+      const sides=card.querySelectorAll('.team-side')
+      ;[m.a,m.b].forEach((t,si)=>{
+        const side=sides[si]; if(!side||!t) return
+        const nm=side.querySelector('.team-name'); if(nm) nm.innerHTML=brName(t.name)
+        const rl=side.querySelector('.roster-list')
+        if(rl&&t.roster) rl.innerHTML=t.roster.map(p=>'<span class="player">'+p+'</span>').join('')
+      })
+      const mid=card.querySelector('.match-id'); if(mid) mid.textContent=m.id||('W'+(d.week||'?')+'-M0'+(i+1))
+    })
+    for(let i=(d.matches||[]).length;i<cards.length;i++){ cards[i].style.display='none'; if(divs[i-1]) divs[i-1].style.display='none' }
+  }).subscribe()
+})()
+</script>
+</body>
+</html>

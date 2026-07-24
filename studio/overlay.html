@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VGA OBS Overlay</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap');
+  html,body{margin:0;height:100%;background:transparent;overflow:hidden;
+    font-family:'Barlow',system-ui,Arial,sans-serif;color:#fff;}
+  :root{ --red:#ff2e2e; --red2:#c00c0c; --gold:#ffce54; --green:#3fdd6a; --ink:#08080b; }
+  .cond{font-family:'Barlow Condensed',sans-serif;}
+
+  #status{position:fixed;top:8px;left:10px;font:11px monospace;color:#888;
+    background:rgba(0,0,0,.4);padding:3px 7px;border-radius:4px;letter-spacing:.05em;}
+  #status.on{color:var(--green);}
+
+  /* ── FLASH CARD (bet / message / fact / cta) ── */
+  #flash{position:fixed;left:50%;bottom:8%;transform:translate(-50%,160%);opacity:0;
+    width:min(960px,92%);will-change:transform,opacity;}
+  #flash.in{animation:fin .55s cubic-bezier(.16,1,.3,1) forwards;}
+  #flash.out{animation:fout .42s cubic-bezier(.7,0,.84,0) forwards;}
+  @keyframes fin{to{transform:translate(-50%,0);opacity:1;}}
+  @keyframes fout{to{transform:translate(-50%,160%);opacity:0;}}
+
+  .card{position:relative;display:flex;align-items:stretch;border-radius:10px;overflow:hidden;
+    background:linear-gradient(135deg,rgba(20,20,26,.97),rgba(8,8,11,.98));
+    box-shadow:0 22px 55px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.05);}
+  .card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
+    background:linear-gradient(90deg,var(--acc,var(--red)),transparent 70%);}
+  /* diagonal sheen that sweeps once on entrance */
+  .card::after{content:'';position:absolute;top:0;bottom:0;left:-60%;width:40%;
+    background:linear-gradient(105deg,transparent,rgba(255,255,255,.10),transparent);
+    transform:skewX(-18deg);}
+  #flash.in .card::after{animation:sheen 1.1s ease-out .35s;}
+  @keyframes sheen{from{left:-60%;}to{left:130%;}}
+
+  .accent{position:relative;width:14px;background:var(--acc,var(--red));
+    box-shadow:0 0 24px var(--acc,var(--red));}
+  .content{flex:1;display:flex;align-items:center;gap:26px;padding:18px 30px;}
+
+  .lead{min-width:0;flex:1;}
+  .kicker{display:flex;align-items:center;gap:9px;font:600 15px 'Barlow';
+    letter-spacing:.26em;text-transform:uppercase;color:var(--acc,var(--red));}
+  .kicker .dot{width:8px;height:8px;border-radius:50%;background:var(--acc,var(--red));
+    box-shadow:0 0 10px var(--acc,var(--red));animation:pulse 1.4s infinite;}
+  @keyframes pulse{50%{opacity:.35;}}
+  .title{font-weight:700;font-size:52px;line-height:.96;letter-spacing:.005em;color:#fff;
+    margin-top:3px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .subline{font:500 21px 'Barlow';color:#c6c6cf;margin-top:5px;}
+  .subline b{color:#fff;}
+
+  /* stats block — bets only */
+  .stats{display:none;align-items:center;gap:26px;}
+  .stats.show{display:flex;}
+  .divider{width:1px;align-self:stretch;margin:8px 0;
+    background:linear-gradient(180deg,transparent,rgba(255,255,255,.18),transparent);}
+  .stake{text-align:center;} .payout{text-align:right;}
+  .lbl{font:600 13px 'Barlow';letter-spacing:.2em;text-transform:uppercase;color:#7f7f89;margin-bottom:2px;}
+  .big{font-weight:700;font-size:52px;line-height:.9;}
+  .big small{font-size:22px;color:#b79a3a;}
+  .gold{color:var(--gold);text-shadow:0 0 22px rgba(255,206,84,.35);}
+  .green{color:var(--green);text-shadow:0 0 22px rgba(63,221,106,.3);}
+  .on{font:500 18px 'Barlow';color:#a9a9b2;margin-top:4px;text-transform:uppercase;letter-spacing:.08em;}
+  .on b{color:#fff;}
+  .oddspill{font:600 15px 'Barlow';color:#9aa0a6;margin-top:3px;}
+
+  /* draining timer bar */
+  #timer{position:absolute;left:0;bottom:0;height:4px;width:100%;
+    background:var(--acc,var(--red));transform-origin:left;transform:scaleX(0);}
+  #flash.in #timer{animation:drain 7.5s linear .55s forwards;}
+  @keyframes drain{from{transform:scaleX(1);}to{transform:scaleX(0);}}
+
+  /* ── FIGHTER LOWER-THIRD ── */
+  #fighter{position:fixed;left:4%;bottom:9%;transform:translateX(-135%);opacity:0;
+    display:flex;border-radius:10px;overflow:hidden;min-width:520px;
+    background:linear-gradient(135deg,rgba(20,20,26,.97),rgba(8,8,11,.98));
+    box-shadow:0 22px 55px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.05);}
+  #fighter.in{animation:lin .55s cubic-bezier(.16,1,.3,1) forwards;}
+  #fighter.out{animation:lout .42s cubic-bezier(.7,0,.84,0) forwards;}
+  @keyframes lin{to{transform:translateX(0);opacity:1;}}
+  @keyframes lout{to{transform:translateX(-135%);opacity:0;}}
+  #fighter .accent{width:14px;background:var(--red);box-shadow:0 0 24px var(--red);}
+  #fighter .fc{padding:16px 28px 16px 24px;}
+  #fname{font-family:'Barlow Condensed';font-weight:700;font-size:46px;line-height:.95;
+    text-transform:uppercase;color:#fff;}
+  #fnick{font:500 19px 'Barlow';color:var(--gold);margin-top:1px;font-style:italic;}
+  #fstatrow{display:flex;gap:20px;margin-top:9px;align-items:center;}
+  .chip{display:flex;flex-direction:column;}
+  .chip .l{font:600 11px 'Barlow';letter-spacing:.18em;text-transform:uppercase;color:#7f7f89;}
+  .chip .v{font-family:'Barlow Condensed';font-weight:700;font-size:26px;color:#fff;line-height:1;}
+  .chip .v.rk{color:var(--gold);}
+  .beltbadge{background:linear-gradient(90deg,#c9a11e,#ffe27a);color:#4a3600;
+    font:700 13px 'Barlow';letter-spacing:.1em;padding:4px 10px;border-radius:4px;text-transform:uppercase;}
+
+  /* ── ODDS BOARD ── */
+  #odds{position:fixed;left:50%;bottom:8%;transform:translate(-50%,160%);opacity:0;width:min(920px,92%);
+    border-radius:10px;overflow:hidden;
+    background:linear-gradient(135deg,rgba(20,20,26,.97),rgba(8,8,11,.98));
+    box-shadow:0 22px 55px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.05);
+    transition:transform .5s cubic-bezier(.16,1,.3,1),opacity .5s;}
+  #odds.show{transform:translate(-50%,0);opacity:1;}
+  .oh{display:flex;justify-content:space-between;align-items:center;padding:10px 22px;
+    font:600 13px 'Barlow';letter-spacing:.2em;text-transform:uppercase;color:#8a8a92;
+    border-bottom:1px solid rgba(255,255,255,.06);}
+  .oh b{color:var(--gold);}
+  .obody{display:flex;align-items:center;padding:16px 22px;gap:16px;}
+  .oside{flex:1;} .oside.r{text-align:right;}
+  .oname{font-family:'Barlow Condensed';font-weight:700;font-size:34px;text-transform:uppercase;color:#fff;line-height:1;}
+  .omult{font-family:'Barlow Condensed';font-weight:700;font-size:30px;margin-top:2px;}
+  .oside.l .omult{color:#ff5a4f;} .oside.r .omult{color:#4d9bff;}
+  .obar{flex:2;height:26px;border-radius:5px;overflow:hidden;display:flex;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);}
+  .obar .ba{background:linear-gradient(90deg,#c00c0c,#ff3b30);}
+  .obar .bb{background:linear-gradient(90deg,#2f6fd6,#4d9bff);}
+  .opct{font:700 13px 'Barlow';color:#fff;display:flex;align-items:center;padding:0 8px;}
+
+  /* ── PERSISTENT SCHEDULE PANEL ── */
+  #panel{position:fixed;top:6%;right:4%;width:330px;border-radius:12px;overflow:hidden;
+    transform:translateX(135%);transition:transform .5s cubic-bezier(.16,1,.3,1);
+    background:linear-gradient(160deg,rgba(20,20,26,.97),rgba(8,8,11,.98));
+    box-shadow:0 22px 55px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.05);}
+  #panel.show{transform:translateX(0);}
+  .ph{position:relative;background:linear-gradient(90deg,var(--red2),var(--red));
+    color:#fff;font-family:'Barlow Condensed';font-weight:700;font-size:22px;letter-spacing:.06em;
+    padding:12px 18px;text-transform:uppercase;}
+  .prow{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;
+    border-bottom:1px solid rgba(255,255,255,.06);}
+  .prow:nth-child(even){background:rgba(255,255,255,.02);}
+  .prow span:first-child{font:600 16px 'Barlow';color:#fff;}
+  .prow span:last-child{font:600 14px 'Barlow';color:var(--gold);letter-spacing:.03em;}
+
+  /* ── COIN ── */
+  #coin{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%) scale(0);
+    width:160px;height:160px;border-radius:50%;
+    background:radial-gradient(circle at 38% 32%,#fff2c0,#ffce54 45%,#c99a1e);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Barlow Condensed';font-weight:700;font-size:26px;color:#5a4200;text-align:center;
+    box-shadow:0 14px 40px rgba(0,0,0,.55),inset 0 0 0 6px rgba(255,255,255,.25),0 0 40px rgba(255,206,84,.4);}
+  #coin.flip{animation:flip 2.2s cubic-bezier(.2,.7,.2,1) forwards;}
+  @keyframes flip{0%{transform:translate(-50%,-50%) scale(.4) rotateX(0);}
+    15%{transform:translate(-50%,-72%) scale(1) rotateX(1440deg);}
+    100%{transform:translate(-50%,-50%) scale(1) rotateX(3600deg);}}
+</style>
+</head>
+<body>
+  <div id="status">connecting…</div>
+
+  <div id="flash"><div class="card">
+    <div class="accent"></div>
+    <div class="content">
+      <div class="lead">
+        <div class="kicker"><span class="dot"></span><span id="fkick">Placed a bet</span></div>
+        <div class="title cond" id="ftitle">—</div>
+        <div class="subline" id="fsub"></div>
+      </div>
+      <div class="divider" id="fdiv1"></div>
+      <div class="stats" id="fstats">
+        <div class="stake" id="fstake">
+          <div class="lbl">Stake</div>
+          <div class="big cond gold"><span id="famt">0</span> <small>VC</small></div>
+          <div class="on">on <b id="fpick">—</b></div>
+        </div>
+        <div class="divider"></div>
+        <div class="payout">
+          <div class="lbl">To win</div>
+          <div class="big cond green" id="ftowin">0</div>
+          <div class="oddspill" id="fodds">—</div>
+        </div>
+      </div>
+    </div>
+    <div id="timer"></div>
+  </div></div>
+
+  <div id="fighter">
+    <div class="accent"></div>
+    <div class="fc">
+      <div id="fname">—</div>
+      <div id="fnick"></div>
+      <div id="fstatrow"></div>
+    </div>
+  </div>
+
+  <div id="odds">
+    <div class="oh"><span id="ohl">Live betting</span> · <b id="ohpool">0 VC</b> pool · <span id="ohbets">0</span> bets</div>
+    <div class="obody">
+      <div class="oside l"><div class="oname" id="oa">—</div><div class="omult" id="oma">—</div></div>
+      <div class="obar"><div class="ba" id="oba"><span class="opct" id="opa"></span></div><div class="bb" id="obb"><span class="opct" id="opb" style="margin-left:auto"></span></div></div>
+      <div class="oside r"><div class="oname" id="ob">—</div><div class="omult" id="omb">—</div></div>
+    </div>
+  </div>
+
+  <div id="panel"><div class="ph" id="phh">Schedule</div><div id="prows"></div></div>
+  <div id="coin">?</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
+  'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
+
+const $=id=>document.getElementById(id)
+let hideTimer=null
+function setAcc(c){ $('flash').style.setProperty('--acc', c) }
+
+function showFlash(){ const f=$('flash'); f.classList.remove('out'); void f.offsetWidth; f.classList.add('in')
+  clearTimeout(hideTimer); hideTimer=setTimeout(()=>{ f.classList.remove('in'); f.classList.add('out') }, 8600) }
+
+function handle(c){
+  if(c.type==='flash'){
+    const isBet = c.w==='bet'
+    $('fstats').classList.toggle('show', isBet)
+    $('fdiv1').style.display = isBet ? '' : 'none'
+    if(isBet){
+      setAcc('var(--red)'); $('fkick').textContent='Bet placed'
+      $('fsub').textContent=''
+      if(c.d.who){                                  // named alert (endpoint path, optional)
+        $('fstake').style.display=''
+        $('ftitle').textContent=c.d.who
+        $('famt').textContent=c.d.amt.toLocaleString()
+        $('fpick').textContent=c.d.pick
+      } else {                                      // anonymous — the default
+        $('fstake').style.display='none'
+        $('ftitle').textContent=c.d.amt.toLocaleString()+' VC on '+c.d.pick
+      }
+      $('ftowin').textContent=Math.round(c.d.amt*c.d.odds).toLocaleString()
+      $('fodds').textContent=c.d.odds.toFixed(2)+'×'
+    } else if(c.w==='fact'){
+      setAcc('#3b82f6'); $('fkick').textContent='Fun fact'; $('ftitle').textContent='';
+      $('ftitle').classList.remove('cond'); $('fsub').innerHTML=`<span style="font-size:30px;color:#fff;line-height:1.15;display:block">${c.d}</span>`
+    } else if(c.w==='cta'){
+      setAcc('var(--green)'); $('fkick').textContent=c.d.k; $('ftitle').classList.add('cond')
+      $('ftitle').textContent=c.d.t; $('fsub').innerHTML=c.d.s
+    } else if(c.w==='msg'){
+      setAcc('var(--gold)'); $('fkick').textContent='VGA'; $('ftitle').classList.remove('cond')
+      $('ftitle').style.fontSize='36px'; $('ftitle').style.textTransform='none'; $('ftitle').textContent=c.d; $('fsub').textContent=''
+    }
+    if(isBet||c.w==='cta'){ $('ftitle').classList.add('cond'); $('ftitle').style.fontSize=''; $('ftitle').style.textTransform='' }
+    showFlash()
+  }
+  if(c.type==='panel'){
+    if(c.d){ $('phh').textContent=c.d.title||'Schedule'
+      $('prows').innerHTML=(c.d.rows||[]).map(r=>`<div class="prow"><span>${r[0]}</span><span>${r[1]}</span></div>`).join('') }
+    $('panel').classList.toggle('show', c.on)
+  }
+  if(c.type==='fighter'){
+    const d=c.d
+    $('fname').textContent=d.name
+    $('fnick').textContent=d.nickname?`"${d.nickname}"`:''
+    const chips=[]
+    chips.push(`<div class="chip"><span class="l">Record</span><span class="v">${d.record||'0-0-0'}</span></div>`)
+    if(d.ko>0) chips.push(`<div class="chip"><span class="l">KO</span><span class="v">${d.ko}</span></div>`)
+    if(d.rank) chips.push(`<div class="chip"><span class="l">Rank</span><span class="v rk">#${d.rank}</span></div>`)
+    if(d.weight) chips.push(`<div class="chip"><span class="l">Division</span><span class="v" style="font-size:20px">${d.weight}</span></div>`)
+    if(d.country) chips.push(`<div class="chip"><span class="l">From</span><span class="v" style="font-size:20px">${d.country}</span></div>`)
+    if(d.champion) chips.push(`<span class="beltbadge">🏆 Champion</span>`)
+    $('fstatrow').innerHTML=chips.join('')
+    const f=$('fighter'); f.classList.remove('out'); void f.offsetWidth; f.classList.add('in')
+    clearTimeout(hideTimer); hideTimer=setTimeout(()=>{ f.classList.remove('in'); f.classList.add('out') }, 9000)
+  }
+  if(c.type==='odds'){
+    if(c.on===false){ $('odds').classList.remove('show'); return }
+    const d=c.d, pool=d.total_a+d.total_b
+    const pa= pool? Math.round(d.total_a/pool*100):50, pb=100-pa
+    const oa= d.total_a? (pool/d.total_a):0, ob= d.total_b? (pool/d.total_b):0
+    $('ohl').textContent=d.label||'Live betting'; $('ohpool').textContent=pool.toLocaleString()+' VC'; $('ohbets').textContent=d.bets||0
+    $('oa').textContent=d.a; $('ob').textContent=d.b
+    $('oma').textContent= oa? oa.toFixed(2)+'×':'—'; $('omb').textContent= ob? ob.toFixed(2)+'×':'—'
+    $('oba').style.width=pa+'%'; $('obb').style.width=pb+'%'
+    $('opa').textContent=pa+'%'; $('opb').textContent=pb+'%'
+    $('odds').classList.add('show')
+  }
+  if(c.type==='coin'){
+    const el=$('coin'); el.textContent='VGA'; el.classList.remove('flip'); void el.offsetWidth; el.classList.add('flip')
+    setTimeout(()=>{ el.textContent=(c.result||'?') }, 2000)
+    setTimeout(()=>{ el.classList.remove('flip'); el.style.transform='translate(-50%,-50%) scale(0)' }, 5600)
+    setTimeout(()=>{ el.style.transform='' }, 6000)
+  }
+}
+
+const channel = sb.channel('vga-overlay')
+channel.on('broadcast', { event:'cmd' }, ({ payload }) => handle(payload))
+channel.subscribe(status=>{
+  const s=$('status')
+  if(status==='SUBSCRIBED'){ s.textContent='● live'; s.classList.add('on') }
+  else { s.textContent=status.toLowerCase(); s.classList.remove('on') }
+})
+</script>
+</body>
+</html>
