@@ -149,7 +149,8 @@
   <div class="sec">
     <h4>💬 CUSTOM MESSAGE — type anything, put it on screen (shoutouts, hype, etc.)</h4>
     <div class="row">
-      <input id="msgText" placeholder="MESSAGE TEXT…" style="width:420px" onkeydown="if(event.key==='Enter')fireMsg()">
+      <input id="msgFrom" placeholder="FROM (name, optional)…" style="width:200px">
+      <input id="msgText" placeholder="MESSAGE TEXT…" style="width:380px" onkeydown="if(event.key==='Enter')fireMsg()">
       <button onclick="fireMsg()">Fire message</button>
     </div>
   </div>
@@ -419,7 +420,8 @@ window.fireBug=()=>{
 
 window.fireMsg=()=>{
   const t=document.getElementById('msgText').value.trim(); if(!t) return
-  send({type:'flash', w:'msg', d:t })
+  const from=document.getElementById('msgFrom').value.trim()
+  send({type:'flash', w:'msg', d:{ text:t, from } })
 }
 
 window.standby=view=>send({type:'standby', view, on:view!=='off'})

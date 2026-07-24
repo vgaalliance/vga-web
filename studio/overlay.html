@@ -266,8 +266,10 @@ function handle(c){
       setAcc('var(--green)'); $('fkick').textContent=c.d.k; $('ftitle').classList.add('cond')
       $('ftitle').textContent=c.d.t; $('fsub').innerHTML=c.d.s
     } else if(c.w==='msg'){
-      setAcc('var(--gold)'); $('fkick').textContent='VGA'; $('ftitle').classList.remove('cond')
-      $('ftitle').style.fontSize='36px'; $('ftitle').style.textTransform='none'; $('ftitle').textContent=c.d; $('fsub').textContent=''
+      const md = (typeof c.d==='string') ? {text:c.d} : (c.d||{})
+      setAcc('var(--gold)'); $('fkick').textContent = md.from ? ('Message from '+md.from) : 'Message'
+      $('ftitle').classList.remove('cond')
+      $('ftitle').style.fontSize='36px'; $('ftitle').style.textTransform='none'; $('ftitle').textContent=md.text; $('fsub').textContent=''
     }
     if(isBet||c.w==='cta'){ $('ftitle').classList.add('cond'); $('ftitle').style.fontSize=''; $('ftitle').style.textTransform='' }
     showFlash()
