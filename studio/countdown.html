@@ -152,19 +152,21 @@ body::after { display:none; }
   font-size:118px; font-weight:900; font-style:italic;
   letter-spacing:-.01em; line-height:.88; text-transform:uppercase;
   white-space:nowrap;
+  background:linear-gradient(180deg,#e8c8ff 0%,#b565ff 44%,#8a2be2 100%);
+  -webkit-background-clip:text; background-clip:text;
+  -webkit-text-fill-color:transparent; color:transparent;
+  filter:drop-shadow(0 0 22px rgba(155,48,255,.6));
 }
-.tabbr.l {
-  color:#fff;
-  text-shadow:4px 0 0 rgba(255,34,68,.8),-2px 0 0 rgba(255,34,68,.3),
-    0 0 40px rgba(255,34,68,1),0 0 80px rgba(255,34,68,.35);
-  animation:lflicker 5s steps(1) infinite;
-}
-.tabbr.r {
-  color:#fff;
-  text-shadow:-4px 0 0 rgba(34,100,255,.8),2px 0 0 rgba(34,100,255,.3),
-    0 0 40px rgba(34,100,255,1),0 0 80px rgba(34,100,255,.35);
-  animation:rflicker 5s steps(1) infinite 2.5s;
-}
+/* name + its TEAM A/B tag share one shrink-to-fit box so the tag hugs the name's edge */
+.name-wrap{ display:inline-block; }
+.vs-slot.r .name-wrap{ text-align:right; }
+.tabbr.l { animation:lflicker 5s steps(1) infinite; }
+.tabbr.r { animation:rflicker 5s steps(1) infinite 2.5s; }
+/* bottom-right match countdown clock */
+#cdTimer{ position:fixed; bottom:34px; right:46px; z-index:400;
+  font-family:'Barlow Condensed',sans-serif; font-weight:900; font-style:italic;
+  font-size:70px; letter-spacing:.03em; color:#e8c8ff;
+  text-shadow:0 0 26px rgba(155,48,255,.75); }
 .vs-mid { display:flex; flex-direction:column; align-items:center; gap:8px; flex-shrink:0; padding:0 40px; margin-bottom:10px; }
 @keyframes vsGlitch {
     0%,92%,100% { transform:none; }
@@ -376,16 +378,20 @@ body::after { display:none; }
 <div class="left-panel">
   <div class="vs-row">
     <div class="vs-slot l">
-      <div class="team-frame">TEAM A</div>
-      <div class="tabbr l" id="cdBigL">TEAM A</div>
+      <div class="name-wrap">
+        <div class="tabbr l" id="cdBigL">TEAM A</div>
+        <div class="team-frame">TEAM A</div>
+      </div>
     </div>
     <div class="vs-mid">
       <div class="vs-word">VS</div>
       <div class="vs-bo">BEST OF 5</div>
     </div>
     <div class="vs-slot r">
-      <div class="team-frame">TEAM B</div>
-      <div class="tabbr r" id="cdBigR">TEAM B</div>
+      <div class="name-wrap">
+        <div class="tabbr r" id="cdBigR">TEAM B</div>
+        <div class="team-frame">TEAM B</div>
+      </div>
     </div>
   </div>
   <div class="game-menu" id="gameMenu">
@@ -433,6 +439,7 @@ function tick(){
   const hv = pad(Math.floor(tot/3600));
   const mv = pad(Math.floor((tot%3600)/60));
   const sv = pad(tot%60);
+  const t = el('cdTimer'); if(t) t.textContent = (parseInt(hv)>0? hv+':':'') + mv+':'+sv;
   if(diff > 0) setTimeout(tick, 1000);
 }
 tick();
@@ -793,6 +800,8 @@ tick();
 })();
 </script>
 
+<div id="cdTimer">00:00</div>
+
 <!-- ── VGA STUDIO WIRE — deck listener (added 2026-07-24, visuals untouched) ── -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
@@ -801,7 +810,7 @@ tick();
     'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
   // big team name: one line, shrinks to fit its slot so long names never overflow
   const fit=el=>{ el.style.whiteSpace='nowrap'; let fs=118; el.style.fontSize=fs+'px'
-    const max=(el.parentElement.clientWidth||600)-14
+    const slot=el.closest('.vs-slot'); const max=((slot&&slot.clientWidth)||600)-20
     while(el.scrollWidth>max && fs>26){ fs-=3; el.style.fontSize=fs+'px' } }
   _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
     if(c.type!=='countdown') return
