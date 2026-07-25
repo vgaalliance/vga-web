@@ -608,14 +608,11 @@ tick();
     const labels = document.querySelectorAll('.bo5-strip .team-label')
     if(labels[0] && d.teamA) labels[0].textContent = d.teamA
     if(labels[1] && d.teamB) labels[1].textContent = d.teamB
-    // BO5: bouts already scored + the one on now. Once a team reaches 3 the
-    // match is over, so hold on the bout just played instead of teasing a next one.
+    // Round is deck-owned (it has manual 1–5 buttons), so display what's sent.
+    // Falling back to deriving it from the score would let the next push
+    // silently undo a manual pick.
     const rn = document.querySelector('.rnd-num')
-    if(rn && d.scoreA != null && d.scoreB != null){
-      const done = d.scoreA + d.scoreB
-      const over = d.scoreA >= 3 || d.scoreB >= 3
-      rn.textContent = String(over ? done : Math.min(5, done + 1))
-    }
+    if(rn && d.round != null) rn.textContent = String(d.round)
   }
 
   _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{

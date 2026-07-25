@@ -257,7 +257,18 @@ const sfx = {
       _env(g,dt,.005,.5,.2); o.connect(g); g.connect(AC.destination); o.start(dt); o.stop(dt+.6) }) },
 }
 
-function showFlash(){ const f=$('flash'); f.classList.remove('out'); void f.offsetWidth; f.classList.add('in')
+// The title is nowrap+ellipsis, so a long line ("25,000 VC on Champions United")
+// got chopped mid-word. Step the size down until it fits rather than truncate.
+function fitTitle(){
+  const t=$('ftitle'); if(!t) return
+  // start from the size this card type asked for (msg sets 36px, bets clear to
+  // the stylesheet's 52px) — never from a previous card's shrunk value
+  let size=parseFloat(t.style.fontSize||getComputedStyle(t).fontSize)
+  t.style.fontSize=size+'px'
+  while(t.scrollWidth>t.clientWidth && size>22){ size-=2; t.style.fontSize=size+'px' }
+}
+
+function showFlash(){ const f=$('flash'); fitTitle(); f.classList.remove('out'); void f.offsetWidth; f.classList.add('in')
   clearTimeout(hideTimer); hideTimer=setTimeout(()=>{ f.classList.remove('in'); f.classList.add('out') }, 8600) }
 
 function handle(c){

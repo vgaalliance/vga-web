@@ -205,6 +205,8 @@
     <h4>MATCH — live fight</h4>
     <div class="row" style="margin-bottom:10px">
       <button id="clockTgl" onclick="clockToggle()">Fight clock: ON</button>
+      <span style="color:var(--gdim);font-size:17px;letter-spacing:.1em;margin-left:6px">ROUND</span>
+      <span id="roundBtns"></span>
     </div>
     <h5>💬 Message — fastest reach</h5>
     <div class="row">
@@ -219,6 +221,12 @@
       <button class="hide" onclick="send({type:'fighter',on:false})">Hide</button>
     </div>
     <div class="row" id="fresults" style="margin-top:10px"></div>
+    <h5>Rankings + league table</h5>
+    <div class="row">
+      <span id="rankBtnsWrap" style="display:contents"><span id="rankBtns" style="display:contents"></span></span>
+      <button class="only-ubae" onclick="loadStandings()">UBAe standings</button>
+      <button class="hide" onclick="send({type:'panel',on:false})">Hide panel</button>
+    </div>
     <!-- UBAe bets ride the documented workaround (BACKLOG): team-named placeholder
          `fighters` rows in `matches` under an event called "UBAe Week N", so the
          deck resolves the event from the loaded match's week. -->
@@ -233,12 +241,6 @@
       <div class="row" id="oddsFights">SCANNING MARKETS…</div>
       <h5>Bet alerts — click a bet (anonymous)</h5>
       <div class="row" id="betFeed">SCANNING WAGERS…</div>
-    </div>
-    <h5>Rankings + league table</h5>
-    <div class="row">
-      <span id="rankBtnsWrap" style="display:contents"><span id="rankBtns" style="display:contents"></span></span>
-      <button class="only-ubae" onclick="loadStandings()">UBAe standings</button>
-      <button class="hide" onclick="send({type:'panel',on:false})">Hide panel</button>
     </div>
   </div></div>
 
@@ -319,7 +321,7 @@ window.loadOdds=async()=>{
 }
 
 /* ── UBAe MATCH NIGHT tracker — deck state only, never writes the DB ── */
-const MN={ id:null, a:null, b:null, scoreA:0, scoreB:0, date:null, week:null, lineups:{},
+const MN={ id:null, a:null, b:null, scoreA:0, scoreB:0, round:1, date:null, week:null, lineups:{},
   pickA:null, pickB:null, usedA:[], usedB:[] }
 const DAY=['SUN','MON','TUE','WED','THU','FRI','SAT']
 const fmtDay=d=>{const x=new Date(d);return DAY[x.getDay()]+' '+String(x.getDate()).padStart(2,'0')+'.'+String(x.getMonth()+1).padStart(2,'0')}
@@ -361,7 +363,7 @@ async function lineupFor(matchId){
 window.mnPick=async(m,btn)=>{
   document.querySelectorAll('#mnMatches button').forEach(b=>b.classList.remove('active'))
   if(btn) btn.classList.add('active')
-  Object.assign(MN,{ id:m.id, a:m.team_a_name, b:m.team_b_name, scoreA:0, scoreB:0,
+  Object.assign(MN,{ id:m.id, a:m.team_a_name, b:m.team_b_name, scoreA:0, scoreB:0, round:1,
     date:m.match_date, week:m.week, pickA:null, pickB:null, usedA:[], usedB:[] })
   MN.lineups=await lineupFor(m.id)
   // one click = every scene updates: pick bar, countdown VS, week loading bar, wagers
@@ -372,13 +374,13 @@ function mnStateDraw(){
   document.getElementById('mnState').innerHTML = MN.id
     ? `LOADED: <b>${MN.a} ${MN.scoreA} — ${MN.scoreB} ${MN.b}</b> · WK${MN.week} · everything pushes live`
     : 'NO MATCH LOADED'
-  mnCockpitDraw()
+  mnCockpitDraw(); roundBtnsDraw()
 }
 
 function mnPush(){
   send({type:'pickbar', d:{ teamA:MN.a, teamB:MN.b,
     left:(MN.lineups[MN.a]||{}).starters||[], right:(MN.lineups[MN.b]||{}).starters||[],
-    scoreA:MN.scoreA, scoreB:MN.scoreB,
+    scoreA:MN.scoreA, scoreB:MN.scoreB, round:MN.round,
     pickL:MN.pickA, pickR:MN.pickB, usedL:MN.usedA, usedR:MN.usedB,
     won: MN.scoreA>=3?'L':(MN.scoreB>=3?'R':null) }})
 }
@@ -420,17 +422,29 @@ window.mnWin=side=>{
   MN.pickA=null; MN.pickB=null
   // format rule: picks reset after bout 3
   if(MN.scoreA+MN.scoreB===3){ MN.usedA=[]; MN.usedB=[] }
+  // a scored bout advances the round, unless that bout just decided the match
+  if(MN.scoreA<3 && MN.scoreB<3) MN.round=Math.min(5,MN.round+1)
   mnPush(); mnStateDraw()
 }
 
 window.mnReset=()=>{
   if(!MN.id) return
-  MN.scoreA=0; MN.scoreB=0; MN.pickA=null; MN.pickB=null; MN.usedA=[]; MN.usedB=[]
+  MN.scoreA=0; MN.scoreB=0; MN.round=1; MN.pickA=null; MN.pickB=null; MN.usedA=[]; MN.usedB=[]
   send({type:'pickbar', d:{ scoreA:0, scoreB:0, pickL:null, pickR:null, usedL:[], usedR:[], timer:null }})
   mnPush(); mnStateDraw()
 }
 
 window.mnTimer=()=>send({type:'pickbar', d:{ timer:120 }})
+
+/* ROUND — deck-owned so there is one source of truth. The clock used to derive
+   it from the score, which meant any manual pick would be overwritten by the
+   next push. Now the deck sends it and the clock just displays it. */
+window.mnRound=n=>{ MN.round=n; mnPush(); roundBtnsDraw() }
+function roundBtnsDraw(){
+  const box=document.getElementById('roundBtns'); if(!box) return
+  box.innerHTML=[1,2,3,4,5].map(n=>
+    `<button class="${MN.round===n?'active':''}" style="padding:4px 12px" onclick="mnRound(${n})">${n}</button>`).join(' ')
+}
 
 // slide the fight clock HUD in/out between bouts
 window._clockOn=true
@@ -523,8 +537,16 @@ window.loadBetFeed=async()=>{
       .order('amount',{ascending:false}).limit(24),
     sb.from('bet_pools_public').select('match_id,side_a,side_b,total_a,total_b'),
   ])
-  const rows=feed||[]
-  if(!rows.length){ box.textContent='NO WAGERS ON '+ev.toUpperCase(); return }
+  const all=feed||[]
+  if(!all.length){ box.textContent='NO WAGERS ON '+ev.toUpperCase(); return }
+  // Only the 3 biggest per side — the full feed overflowed the deck and the
+  // small bets are never the ones you put on stream anyway.
+  const perSide={}
+  const rows=all.filter(w=>{
+    const k=w.match_id+'|'+w.pick
+    perSide[k]=(perSide[k]||0)+1
+    return perSide[k]<=3
+  })
   const pByM=Object.fromEntries((pools||[]).map(p=>[p.match_id,p]))
   box.innerHTML=''
   rows.forEach(w=>{
@@ -614,6 +636,7 @@ window.loadUbaEvents=async()=>{
 }
 
 drawRail()
+roundBtnsDraw()
 mnLoad()
 loadCardEvents()
 loadOdds()
