@@ -22,6 +22,11 @@
   .view{display:none;width:100%;max-width:1640px;animation:vin .5s cubic-bezier(.16,1,.3,1);}
   .view.on{display:block;}
   @keyframes vin{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:none;}}
+  /* Leaving view: JS pins it in place first (see hideView) so lifting it out of
+     the flex flow can't make it jump, then it lifts away instead of blinking off. */
+  .view.out{display:block;animation:vout .42s cubic-bezier(.5,0,.75,.2) forwards;
+    pointer-events:none;z-index:1;}
+  @keyframes vout{from{opacity:1;transform:none;}to{opacity:0;transform:translateY(-22px);}}
 
   .eyebrow{font-family:'Press Start 2P',monospace;font-size:14px;letter-spacing:.35em;
     color:var(--hi);text-shadow:0 0 14px rgba(204,102,255,.6);margin-bottom:6px;}
@@ -355,13 +360,43 @@ function renderTvs(mt){
   setTvs(m.team_a_name, m.team_b_name, 'Week '+m.week+' · '+fdate(m.match_date))
 }
 
+// Retire the visible view with an animation instead of dropping it to
+// display:none. It's pinned at its measured position first, because .out takes
+// it out of the stage's flex flow and it would otherwise snap before fading.
+const VOUT_MS=440
+function hideView(el){
+  if(!el.classList.contains('on')) return
+  const r=el.getBoundingClientRect(), p=el.parentElement.getBoundingClientRect()
+  el.style.position='absolute'
+  el.style.top=(r.top-p.top)+'px'
+  el.style.left=(r.left-p.left)+'px'
+  el.style.width=r.width+'px'
+  el.classList.remove('on'); el.classList.add('out')
+  clearTimeout(el._voutT)
+  el._voutT=setTimeout(()=>{
+    el.classList.remove('out')
+    el.style.position=el.style.top=el.style.left=el.style.width=''
+  }, VOUT_MS)
+}
+const hideAll=()=>document.querySelectorAll('.view').forEach(hideView)
+
+// Re-showing a view mid-exit must clear the pin first, or it comes back
+// absolutely positioned at wherever it was left.
+function showView(el){
+  if(!el) return
+  clearTimeout(el._voutT)
+  el.classList.remove('out')
+  el.style.position=el.style.top=el.style.left=el.style.width=''
+  el.classList.add('on')
+}
+
 function show(view){
   clearInterval(cycle); cycle=null
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'))
+  hideAll()
   if(view==='off'||!view) return
-  if(view==='auto'){ let i=0; const step=()=>{ document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'))
-      const el=$('v-'+VIEWS[i%VIEWS.length]); if(el) el.classList.add('on'); i++ }; step(); cycle=setInterval(step,15000); return }
-  const el=$('v-'+view); if(el) el.classList.add('on')
+  if(view==='auto'){ let i=0; const step=()=>{ hideAll(); showView($('v-'+VIEWS[i%VIEWS.length])); i++ }
+    step(); cycle=setInterval(step,15000); return }
+  showView($('v-'+view))
 }
 
 /* ── schedule bar: fill + toggle (was the separate loading-bar file) ── */
