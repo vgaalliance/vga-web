@@ -106,6 +106,18 @@
     position:absolute; top:28px; right:36px;
     display:flex; flex-direction:column; align-items:flex-end; gap:6px; z-index:200;
   }
+  /* Opaque backing plate. The source video has a timer burned into this corner,
+     so this has to bleed past .info's offsets to the real screen edges (top/right
+     negatives cancel the 28px/36px) — a panel sized to the content would leave the
+     old timer showing around it. Grow left/bottom if any of it still peeks. */
+  .info::before {
+    content:''; position:absolute; z-index:-1;
+    top:-28px; right:-36px; left:-54px; bottom:-34px;
+    background:linear-gradient(150deg,#0b0119 0%,#04000c 62%);
+    border-left:3px solid var(--pur);
+    border-bottom:3px solid var(--pur);
+    box-shadow:-8px 8px 26px rgba(0,0,0,.75), 0 0 30px rgba(155,48,255,.22);
+  }
   .coach-lbl {
     font-family:'Press Start 2P',monospace;
     font-size:9px; letter-spacing:.35em;
