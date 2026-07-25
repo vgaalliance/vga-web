@@ -40,7 +40,9 @@
     box-shadow:inset 0 0 18px rgba(58,255,110,.06);}
   .sec h4{margin:0 0 10px;font-size:21px;font-weight:400;letter-spacing:.08em;color:var(--g);}
   .sec h4::before{content:'▸ ';}
+  .sec h5{margin:14px 0 8px;font-size:17px;font-weight:400;letter-spacing:.1em;color:var(--gdim);text-transform:uppercase;}
   .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+  .lbl{color:var(--gdim);font-size:17px;letter-spacing:.12em;margin:0 0 6px;}
 
   button{font-family:'VT323',monospace;font-size:19px;letter-spacing:.05em;cursor:pointer;
     background:transparent;color:var(--g);border:2px solid var(--g);border-radius:2px;
@@ -51,6 +53,7 @@
     box-shadow:0 0 18px rgba(58,255,110,.6);}
   button.hide{border-color:var(--gdim);color:var(--gdim);}
   button.hide:hover{background:var(--gdim);color:var(--bg);}
+  button.active{background:var(--g);color:var(--bg);text-shadow:none;border-color:var(--g);}
   button small{display:block;font-size:15px;text-transform:none;letter-spacing:.03em;
     color:inherit;opacity:.75;margin-top:1px;}
 
@@ -62,14 +65,30 @@
   input:focus{border-color:var(--g);box-shadow:0 0 12px rgba(58,255,110,.3);}
   ::placeholder{color:var(--gdark);}
 
+  /* ── EVENT + STAGE navigation ── */
+  #evRow button{font-size:22px;padding:10px 20px;}
+  .rail{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:2px 0 16px;}
+  .rail .arr{color:var(--gdim);font-size:22px;}
+  .rail button::before,.rail button::after{content:none;}
+  .rail button{border-color:var(--gdim);color:var(--gdim);}
+  .rail button:hover{background:transparent;color:var(--g);border-color:var(--g);
+    text-shadow:0 0 6px rgba(58,255,110,.45);}
+  .rail button.active{background:var(--g);color:var(--bg);text-shadow:none;border-color:var(--g);
+    box-shadow:0 0 18px rgba(58,255,110,.6);}
+  .panel{display:none;} .panel.on{display:block;}
+  body.ev-ubae .only-uba{display:none !important;}
+  body.ev-uba .only-ubae{display:none !important;}
+
   /* uniform tiles — every box the same size regardless of name length */
-  #oddsFights,#betFeed,#mnMatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;align-items:stretch;}
-  #oddsFights button,#betFeed button,#mnMatches button{width:100%;min-height:82px;display:flex;flex-direction:column;
+  #oddsFights,#betFeed,#mnMatches,#ubaEvents{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;align-items:stretch;}
+  #oddsFights button,#betFeed button,#mnMatches button,#ubaEvents button{width:100%;min-height:82px;display:flex;flex-direction:column;
     align-items:center;justify-content:center;text-align:center;padding:8px 10px;line-height:1.15;}
   #oddsFights button::before,#oddsFights button::after,
   #betFeed button::before,#betFeed button::after,
-  #mnMatches button::before,#mnMatches button::after{content:none;}
-  #mnMatches button.active{background:var(--g);color:var(--bg);text-shadow:none;}
+  #mnMatches button::before,#mnMatches button::after,
+  #ubaEvents button::before,#ubaEvents button::after{content:none;}
+  #ubaEvents button{min-height:56px;}
+  #mnMatches button.active,#ubaEvents button.active{background:var(--g);color:var(--bg);text-shadow:none;}
   #mnState{font-size:19px;color:var(--g);margin:8px 0 4px;}
   #mnState b{background:var(--g);color:var(--bg);padding:0 6px;text-shadow:none;}
 
@@ -95,47 +114,57 @@
   #log div::before{content:'> ';}
 </style>
 </head>
-<body>
+<body class="ev-ubae">
   <div id="crt"></div><div id="vig"></div>
   <div id="status">ESTABLISHING LINK…</div>
 
-  <div id="boot">VGA-TEC UNIFIED OPERATING SYSTEM<br>COPYRIGHT 2026 VGA ALLIANCE — BROADCAST DIVISION<br>LOADER V1.1 · EXEC ATTEMPT ► SUCCESS</div>
+  <div id="boot">VGA-TEC UNIFIED OPERATING SYSTEM<br>COPYRIGHT 2026 VGA ALLIANCE — BROADCAST DIVISION<br>LOADER V1.2 · EXEC ATTEMPT ► SUCCESS</div>
   <h1>█ VGA BROADCAST <b>TERMLINK</b></h1>
   <hr class="hr">
 
-  <div class="sec">
+  <p class="lbl">// 1 · EVENT //</p>
+  <div class="row" id="evRow" style="margin-bottom:14px">
+    <button data-ev="ubae" class="active" onclick="setEv('ubae')">UBAe · Team league<small>3v3 · battleroom pick'em · BO5</small></button>
+    <button data-ev="uba" onclick="setEv('uba')">UBA · Fight night<small>solo card · bout by bout</small></button>
+  </div>
+
+  <!-- UBAe spine: the match tracker — one click loads every scene -->
+  <div class="sec only-ubae">
     <h4>UBAE MATCH NIGHT — TRACKER</h4>
     <div class="row" id="mnWeekNav" style="margin-bottom:8px"></div>
     <div class="row" id="mnMatches">SCANNING SCHEDULE…</div>
     <div id="mnState">NO MATCH LOADED</div>
     <div id="mnCockpit"></div>
-    <div class="row">
-      <button onclick="mnTimer()">Start 2:00 pick clock</button>
-      <button onclick="fireCoin()">🪙 Coin toss</button>
-      <button onclick="mnCountdown()">Update countdown teams</button>
-      <button onclick="mnLoadbar()">Re-fire loading bar</button>
-      <button onclick="mnTape()">Tale of tape (bout)</button>
-      <button class="hide" onclick="mnReset()">Reset match</button>
-    </div>
-    <div class="row" style="margin-top:8px">
-      <input id="cdMins" placeholder="COUNTDOWN MINUTES (e.g. 10)" style="width:230px" onkeydown="if(event.key==='Enter')mnCountdownIn()">
-      <button onclick="mnCountdownIn()">▶ Start countdown clock</button>
-    </div>
-    <h4 style="margin-top:14px">TALE OF THE TAPE — type both fighters, fires the VS stat screen</h4>
-    <div class="row">
-      <input id="mnBoutA" placeholder="LEFT FIGHTER NAME…" style="width:200px">
-      <input id="mnBoutB" placeholder="RIGHT FIGHTER NAME…" style="width:200px">
-      <button onclick="mnTape()">Fire tale of the tape</button>
-    </div>
-    <h4 style="margin-top:14px">INFO BUG — small lower-third (e.g. "LIVE FROM…")</h4>
-    <div class="row">
-      <input id="bugText" placeholder="INFO BUG TEXT…" style="width:280px">
-      <button onclick="fireBug()">Fire info bug</button>
-    </div>
+    <div class="row"><button class="hide" onclick="mnReset()">Reset match</button></div>
   </div>
 
-  <div class="sec">
-    <h4>STANDBY SCREEN — waiting/promo views (one scene, toggle any)</h4>
+  <!-- UBA spine: pick the card — betting + graphics follow -->
+  <div class="sec only-uba">
+    <h4>FIGHT NIGHT — PICK THE CARD</h4>
+    <div class="row" id="ubaEvents">SCANNING EVENTS…</div>
+  </div>
+
+  <p class="lbl">// 2 · STAGE //</p>
+  <div class="rail" id="rail"></div>
+
+  <!-- ① COUNTDOWN -->
+  <div class="panel" data-panel="countdown"><div class="sec">
+    <h4>COUNTDOWN</h4>
+    <div class="row">
+      <input id="cdMins" placeholder="COUNTDOWN MINUTES (e.g. 10)" style="width:230px" onkeydown="if(event.key==='Enter')mnCountdownIn()">
+      <button onclick="mnCountdownIn()">▶ Start countdown clock</button>
+      <button class="only-ubae" onclick="mnCountdown()">Update countdown teams</button>
+    </div>
+  </div></div>
+
+  <!-- ② LOADING (doubles as between-matches home) -->
+  <div class="panel" data-panel="loading"><div class="sec">
+    <h4>LOADING — waiting screen + between matches</h4>
+    <div class="row only-ubae">
+      <button onclick="mnLoadbar()">Re-fire loading bar</button>
+      <button id="loadbarTgl" onclick="mnLoadbarToggle()">Schedule bar: ON</button>
+    </div>
+    <h5>Standby views — one scene, toggle any</h5>
     <div class="row">
       <button onclick="standby('standings')">Standings</button>
       <button onclick="standby('rosters')">Rosters</button>
@@ -147,55 +176,58 @@
       <button onclick="standby('auto')">▶ Auto-cycle</button>
       <button class="hide" onclick="standby('off')">Hide</button>
     </div>
-    <h4 style="margin-top:8px">🃏 Card reveal — pick which event's card to show</h4>
+    <h5>🃏 Card reveal — pick which event's card</h5>
     <div class="row" id="cardEvents">loading events…</div>
-  </div>
+  </div></div>
 
-  <div class="sec">
-    <h4>💬 CUSTOM MESSAGE — type anything, put it on screen (shoutouts, hype, etc.)</h4>
+  <!-- ③ BATTLEROOM (UBAe) / TALE OF THE TAPE (UBA) -->
+  <div class="panel" data-panel="room"><div class="sec">
+    <h4 class="only-ubae">BATTLEROOM — the pick'em</h4>
+    <h4 class="only-uba">TALE OF THE TAPE — bout intro</h4>
+    <div class="row only-ubae" style="margin-bottom:10px">
+      <button onclick="mnTimer()">Start 2:00 pick clock</button>
+      <button onclick="fireCoin()">🪙 Coin toss</button>
+    </div>
+    <div class="row">
+      <input id="mnBoutA" placeholder="LEFT FIGHTER NAME…" style="width:200px">
+      <input id="mnBoutB" placeholder="RIGHT FIGHTER NAME…" style="width:200px">
+      <button onclick="mnTape()">Fire tale of the tape</button>
+    </div>
+  </div></div>
+
+  <!-- ④ MATCH -->
+  <div class="panel" data-panel="match"><div class="sec">
+    <h4>MATCH — live fight</h4>
+    <h5>💬 Message — fastest reach</h5>
     <div class="row">
       <input id="msgFrom" placeholder="FROM (name, optional)…" style="width:200px">
       <input id="msgText" placeholder="MESSAGE TEXT…" style="width:380px" onkeydown="if(event.key==='Enter')fireMsg()">
       <button onclick="fireMsg()">Fire message</button>
     </div>
-  </div>
-
-  <div class="sec">
-    <h4>FIGHTER DOSSIER — LOWER THIRD</h4>
+    <h5>Wagers — auto-filtered to the loaded match / card</h5>
+    <select id="evFilter" style="display:none"><option value="">ALL EVENTS</option></select>
+    <div class="row" style="margin-bottom:10px">
+      <button onclick="loadOdds();loadBetFeed()">Reload</button>
+      <button class="hide" onclick="send({type:'odds',on:false})">Hide odds</button>
+    </div>
+    <h5>Odds board — click a fight</h5>
+    <div class="row" id="oddsFights">SCANNING MARKETS…</div>
+    <h5>Bet alerts — click a bet (anonymous)</h5>
+    <div class="row" id="betFeed">SCANNING WAGERS…</div>
+    <h5>Fighter dossier — lower third</h5>
     <div class="row">
       <input id="fq" placeholder="QUERY FIGHTER NAME…" onkeydown="if(event.key==='Enter')searchFighter()">
       <button onclick="searchFighter()">Search</button>
       <button class="hide" onclick="send({type:'fighter',on:false})">Hide</button>
     </div>
     <div class="row" id="fresults" style="margin-top:10px"></div>
-  </div>
-
-  <div class="sec">
-    <h4>WAGERS — pick an event, then fire odds board / bet alerts</h4>
-    <div class="row" style="margin-bottom:10px">
-      <select id="evFilter" onchange="loadOdds();loadBetFeed()"><option value="">ALL EVENTS</option></select>
-      <button onclick="loadOdds();loadBetFeed()">Reload</button>
-      <button class="hide" onclick="send({type:'odds',on:false})">Hide odds</button>
-    </div>
-    <h4 style="margin-top:6px">Odds board — click a fight</h4>
-    <div class="row" id="oddsFights">SCANNING MARKETS…</div>
-    <h4 style="margin-top:14px">Bet alerts — click a bet (anonymous)</h4>
-    <div class="row" id="betFeed">SCANNING WAGERS…</div>
-  </div>
-
-  <div class="sec">
-    <h4>RANKINGS ARCHIVE</h4>
-    <div class="row" id="rankBtns"></div>
-    <div class="row" style="margin-top:8px"><button class="hide" onclick="send({type:'panel',on:false})">Hide panel</button></div>
-  </div>
-
-  <div class="sec">
-    <h4>UBAE LEAGUE TABLE</h4>
+    <h5>Rankings + league table</h5>
     <div class="row">
-      <button onclick="loadStandings()">Show standings</button>
-      <button class="hide" onclick="send({type:'panel',on:false})">Hide</button>
+      <span id="rankBtnsWrap" style="display:contents"><span id="rankBtns" style="display:contents"></span></span>
+      <button class="only-ubae" onclick="loadStandings()">UBAe standings</button>
+      <button class="hide" onclick="send({type:'panel',on:false})">Hide panel</button>
     </div>
-  </div>
+  </div></div>
 
   <div id="log"></div>
 
@@ -243,23 +275,17 @@ window.searchFighter=async()=>{
 
 const evFilter=()=>document.getElementById('evFilter').value
 
+/* wagers auto-filter: UBAe = the loaded match's teams · UBA = the selected card */
 window.loadOdds=async()=>{
   let q=sb.from('bet_pools_public').select('*').order('event_status',{ascending:true}).order('bout_number')
-  if(evFilter()) q=q.eq('event_name',evFilter())
+  if(EV==='uba' && evFilter()) q=q.eq('event_name',evFilter())
   const { data } = await q
-  // populate the event dropdown once (all events with open markets)
-  const sel=document.getElementById('evFilter')
-  if(sel.options.length<=1 && data){
-    const evs=[...new Set(data.map(m=>m.event_name))]
-    // re-query unfiltered so the dropdown always lists every event, not just the filtered one
-    const { data:allEv }=await sb.from('bet_pools_public').select('event_name')
-    ;[...new Set((allEv||[]).map(m=>m.event_name))].forEach(e=>{
-      const o=document.createElement('option'); o.value=e; o.textContent=e; sel.appendChild(o) })
-  }
+  let rows=data||[]
+  if(EV==='ubae' && MN.id) rows=rows.filter(m=>[m.side_a,m.side_b].some(s=>s===MN.a||s===MN.b))
   const box=document.getElementById('oddsFights')
-  if(!data||!data.length){ box.textContent='NO OPEN MARKETS'; return }
+  if(!rows.length){ box.textContent=(EV==='ubae'&&MN.id)?'NO OPEN MARKET FOR THIS MATCH':'NO OPEN MARKETS'; return }
   box.innerHTML=''
-  data.forEach(m=>{
+  rows.forEach(m=>{
     const b=document.createElement('button')
     b.innerHTML=`${m.side_a} vs ${m.side_b}<small>${m.event_name} · ${m.pool.toLocaleString()} VC · ${m.bets} bets</small>`
     b.onclick=()=>send({type:'odds',on:true,d:{
@@ -315,8 +341,8 @@ window.mnPick=async(m,btn)=>{
   Object.assign(MN,{ id:m.id, a:m.team_a_name, b:m.team_b_name, scoreA:0, scoreB:0,
     date:m.match_date, week:m.week, pickA:null, pickB:null, usedA:[], usedB:[] })
   MN.lineups=await lineupFor(m.id)
-  // one click = every scene updates: pick bar, countdown VS, week loading bar
-  mnPush(); mnCountdown(); mnLoadbar(); mnStateDraw()
+  // one click = every scene updates: pick bar, countdown VS, week loading bar, wagers
+  mnPush(); mnCountdown(); mnLoadbar(); mnStateDraw(); loadOdds(); loadBetFeed()
 }
 
 function mnStateDraw(){
@@ -383,7 +409,7 @@ window.mnReset=()=>{
 
 window.mnTimer=()=>send({type:'pickbar', d:{ timer:120 }})
 
-// updates the countdown TEAMS only — the clock itself is set with the minutes input below
+// updates the countdown TEAMS only — the clock itself is set with the minutes input
 window.mnCountdown=()=>{
   if(!MN.id) return
   send({type:'countdown', d:{ a:MN.a, b:MN.b, eventMain:'SUMMER SPLIT', eventSub:'ubaesports.com' }})
@@ -404,7 +430,13 @@ window.mnLoadbar=async()=>{
   const MO=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
   const dates= ds.length? MO[ds[0].getMonth()]+' '+ds[0].getDate()+'<br>'+MO[ds[ds.length-1].getMonth()]+' '+ds[ds.length-1].getDate()+'<br>'+ds[0].getFullYear() : ''
   send({type:'loadbar', d:{ week:String(wk).padStart(2,'0'), dates, matches }})
+  window._loadbarOn=true; _loadbarBtn()
 }
+
+// slide the bottom schedule bar in/out — clean bg for info graphics vs. full schedule
+window._loadbarOn=true
+function _loadbarBtn(){ const b=document.getElementById('loadbarTgl'); if(b){ b.textContent='Schedule bar: '+(window._loadbarOn?'ON':'OFF'); b.classList.toggle('hide',!window._loadbarOn) } }
+window.mnLoadbarToggle=()=>{ window._loadbarOn=!window._loadbarOn; send({type:'loadbar', show:window._loadbarOn}); _loadbarBtn() }
 
 window.mnTape=async()=>{
   const an=document.getElementById('mnBoutA').value.trim(), bn=document.getElementById('mnBoutB').value.trim()
@@ -417,11 +449,6 @@ window.mnTape=async()=>{
     rank:x.rank?('#'+x.rank):'—', age:x.age??'—', height:x.height??'—', reach:x.reach??'—',
     weight:cap(x.weight_class), odds:'—' })
   send({type:'tape', d:{ title:(MN.a&&MN.b)?`${MN.a} vs ${MN.b}`:'UBAe', subtitle:MN.week?('SUMMER SPLIT · WEEK '+MN.week):'SUMMER SPLIT', left:F(A), right:F(B) }})
-}
-
-window.fireBug=()=>{
-  const t=document.getElementById('bugText').value.trim(); if(!t) return
-  send({type:'bug', d:{ text:t }})
 }
 
 window.fireMsg=()=>{
@@ -457,16 +484,18 @@ window.mnCountdownIn=()=>{
 window.loadBetFeed=async()=>{
   // bets (no names) + current pool odds for each pick side
   let fq=sb.from('bet_feed_public').select('*').order('amount',{ascending:false}).limit(24)
-  if(evFilter()) fq=fq.eq('event_name',evFilter())
+  if(EV==='uba' && evFilter()) fq=fq.eq('event_name',evFilter())
   const [{ data: feed }, { data: pools }] = await Promise.all([
     fq,
     sb.from('bet_pools_public').select('match_id,side_a,side_b,total_a,total_b'),
   ])
   const box=document.getElementById('betFeed')
-  if(!feed||!feed.length){ box.textContent='NO WAGERS ON RECORD'; return }
+  let rows=feed||[]
+  if(EV==='ubae' && MN.id) rows=rows.filter(w=>[w.side_a,w.side_b].some(s=>s===MN.a||s===MN.b))
+  if(!rows.length){ box.textContent=(EV==='ubae'&&MN.id)?'NO WAGERS ON THIS MATCH':'NO WAGERS ON RECORD'; return }
   const pByM=Object.fromEntries((pools||[]).map(p=>[p.match_id,p]))
   box.innerHTML=''
-  feed.forEach(w=>{
+  rows.forEach(w=>{
     const p=pByM[w.match_id]; if(!p) return
     const pool=p.total_a+p.total_b
     const side= w.pick===p.side_a ? p.total_a : p.total_b
@@ -497,10 +526,66 @@ window.loadStandings=async()=>{
   send({type:'panel',on:true,d:{title:'UBAe Standings',rows}})
 }
 
-loadOdds()
-loadBetFeed()
+/* ── EVENT + STAGE navigation ── */
+const STAGES={
+  ubae:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ BATTLEROOM'],['match','④ MATCH']],
+  uba:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ TALE OF TAPE'],['match','④ MATCH']]
+}
+let EV='ubae', STG='countdown'
+
+function drawRail(){
+  const rail=document.getElementById('rail')
+  rail.innerHTML=''
+  STAGES[EV].forEach(([k,label],i)=>{
+    if(i>0){ const a=document.createElement('span'); a.className='arr'; a.textContent='→'; rail.appendChild(a) }
+    const b=document.createElement('button'); b.textContent=label
+    if(k===STG) b.classList.add('active')
+    b.onclick=()=>{ STG=k; drawRail() }
+    rail.appendChild(b)
+  })
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on', p.dataset.panel===STG))
+}
+
+window.setEv=ev=>{
+  EV=ev; STG='countdown'
+  document.body.classList.toggle('ev-ubae', ev==='ubae')
+  document.body.classList.toggle('ev-uba', ev==='uba')
+  document.querySelectorAll('#evRow button').forEach(b=>b.classList.toggle('active', b.dataset.ev===ev))
+  drawRail()
+  if(ev==='uba') loadUbaEvents()
+  loadOdds(); loadBetFeed()
+}
+
+/* UBA spine: card picker — sets the wagers filter for the whole panel */
+window.loadUbaEvents=async()=>{
+  const box=document.getElementById('ubaEvents')
+  const [{ data: evs }, { data: pools }] = await Promise.all([
+    sb.from('events_public').select('name,event_date').eq('status','scheduled')
+      .gte('event_date',new Date(Date.now()-6*3600e3).toISOString()).order('event_date').limit(6),
+    sb.from('bet_pools_public').select('event_name'),
+  ])
+  const names=[...new Set([...(evs||[]).map(e=>e.name), ...(pools||[]).map(p=>p.event_name)])]
+  if(!names.length){ box.textContent='NO UPCOMING EVENTS'; return }
+  box.innerHTML=''
+  names.forEach(n=>{
+    const b=document.createElement('button')
+    b.textContent=n
+    b.onclick=()=>{
+      const sel=document.getElementById('evFilter')
+      if(![...sel.options].some(o=>o.value===n)){ const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o) }
+      sel.value=n
+      document.querySelectorAll('#ubaEvents button').forEach(x=>x.classList.toggle('active',x===b))
+      loadOdds(); loadBetFeed()
+    }
+    box.appendChild(b)
+  })
+}
+
+drawRail()
 mnLoad()
 loadCardEvents()
+loadOdds()
+loadBetFeed()
 </script>
 </body>
 </html>

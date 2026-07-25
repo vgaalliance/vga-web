@@ -16,12 +16,13 @@
   #status.on{color:var(--green);}
 
   /* ── FLASH CARD (bet / message / fact / cta) ── */
-  #flash{position:fixed;left:50%;bottom:8%;transform:translate(-50%,160%);opacity:0;
-    width:min(960px,92%);will-change:transform,opacity;}
+  /* left-zone lower-third — sits above the UBAe fight clock, no overlap (2026-07-25) */
+  #flash{position:fixed;left:48px;bottom:190px;transform:translateY(160%);opacity:0;
+    width:min(680px,44%);will-change:transform,opacity;}
   #flash.in{animation:fin .55s cubic-bezier(.16,1,.3,1) forwards;}
   #flash.out{animation:fout .42s cubic-bezier(.7,0,.84,0) forwards;}
-  @keyframes fin{to{transform:translate(-50%,0);opacity:1;}}
-  @keyframes fout{to{transform:translate(-50%,160%);opacity:0;}}
+  @keyframes fin{to{transform:translateY(0);opacity:1;}}
+  @keyframes fout{to{transform:translateY(160%);opacity:0;}}
 
   .card{position:relative;display:flex;align-items:stretch;border-radius:10px;overflow:hidden;
     background:linear-gradient(135deg,rgba(20,20,26,.97),rgba(8,8,11,.98));
@@ -72,7 +73,7 @@
   @keyframes drain{from{transform:scaleX(1);}to{transform:scaleX(0);}}
 
   /* ── FIGHTER LOWER-THIRD ── */
-  #fighter{position:fixed;left:4%;bottom:9%;transform:translateX(-135%);opacity:0;
+  #fighter{position:fixed;left:48px;bottom:190px;transform:translateX(-135%);opacity:0;
     display:flex;border-radius:10px;overflow:hidden;min-width:520px;
     background:linear-gradient(135deg,rgba(20,20,26,.97),rgba(8,8,11,.98));
     box-shadow:0 22px 55px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.05);}
@@ -98,12 +99,12 @@
     font:700 13px 'Barlow';letter-spacing:.1em;padding:4px 10px;border-radius:4px;text-transform:uppercase;}
 
   /* ── ODDS BOARD ── */
-  #odds{position:fixed;left:50%;bottom:8%;transform:translate(-50%,160%);opacity:0;width:min(920px,92%);
+  #odds{position:fixed;left:48px;bottom:190px;transform:translateY(160%);opacity:0;width:min(680px,44%);
     border-radius:10px;overflow:hidden;
     background:linear-gradient(135deg,rgba(20,20,26,.97),rgba(8,8,11,.98));
     box-shadow:0 22px 55px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.05);
     transition:transform .5s cubic-bezier(.16,1,.3,1),opacity .5s;}
-  #odds.show{transform:translate(-50%,0);opacity:1;}
+  #odds.show{transform:translateY(0);opacity:1;}
   .oh{display:flex;justify-content:space-between;align-items:center;padding:10px 22px;
     font:600 13px 'Barlow';letter-spacing:.2em;text-transform:uppercase;color:#8a8a92;
     border-bottom:1px solid rgba(255,255,255,.06);}
