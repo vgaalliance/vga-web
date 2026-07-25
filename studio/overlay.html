@@ -40,7 +40,10 @@
 
   .accent{position:relative;width:14px;background:var(--acc,var(--red));
     box-shadow:0 0 24px var(--acc,var(--red));}
-  .content{flex:1;display:flex;align-items:center;gap:26px;padding:18px 30px;}
+  /* min-width:0 is load-bearing: a flex item defaults to min-width:auto, so
+     without it .content grew to fit a long line and the text ran out past the
+     card (clipped by .card's overflow) instead of being constrained. */
+  .content{flex:1;min-width:0;display:flex;align-items:center;gap:26px;padding:18px 30px;}
 
   .lead{min-width:0;flex:1;}
   .kicker{display:flex;align-items:center;gap:9px;font:600 15px 'Barlow';
@@ -52,6 +55,10 @@
     margin-top:3px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .subline{font:500 21px 'Barlow';color:#c6c6cf;margin-top:5px;}
   .subline b{color:#fff;}
+  /* long message: the title clips and its inner span slides, so the card's
+     shape never changes. ellipsis is dropped while scrolling or you'd read "…" */
+  .title.scrolling{text-overflow:clip;}
+  .mscroll{display:inline-block;will-change:transform;}
 
   /* stats block — bets only */
   .stats{display:none;align-items:center;gap:26px;}
@@ -285,12 +292,47 @@ function fitTitle(){
   while(t.scrollWidth>t.clientWidth && size>22){ size-=2; t.style.fontSize=size+'px' }
 }
 
-function showFlash(){ const f=$('flash'); fitTitle(); f.classList.remove('out'); void f.offsetWidth; f.classList.add('in')
-  clearTimeout(hideTimer); hideTimer=setTimeout(()=>{ f.classList.remove('in'); f.classList.add('out') }, 8600) }
+/* A long message scrolls rather than shrinking or truncating: hold still so the
+   opening is readable, slide the overflow past at a steady reading pace, then
+   hold on the end before the card leaves. Returns how long the card must stay
+   up; 0 when the text already fits and nothing should move. */
+const FLASH_MS=8600, READ_LEAD=1900, SCROLL_PXPS=115, END_HOLD=1500, MAX_CARD_MS=24000
+let msgScrollT=null
+function msgMarquee(){
+  const t=$('ftitle'), sp=t.querySelector('.mscroll')
+  clearTimeout(msgScrollT)
+  t.classList.remove('scrolling')
+  if(sp){ sp.style.transition=''; sp.style.transform='' }
+  if(!sp) return 0
+  const over=Math.ceil(sp.scrollWidth - t.clientWidth)
+  if(over<=2) return 0
+  t.classList.add('scrolling')
+  // a very long message would otherwise squat on screen for half a minute, so
+  // the scroll speeds up past a point rather than the card overstaying
+  const dur=Math.min(Math.round(over/SCROLL_PXPS*1000), MAX_CARD_MS-READ_LEAD-END_HOLD)
+  msgScrollT=setTimeout(()=>{
+    sp.style.transition='transform '+dur+'ms linear'
+    sp.style.transform='translateX(-'+over+'px)'
+  }, READ_LEAD)
+  return READ_LEAD+dur+END_HOLD
+}
+
+function showFlash(){
+  const f=$('flash')
+  // messages scroll; every other card auto-fits its one line
+  let need=0
+  if(f.dataset.kind==='msg') need=msgMarquee()
+  else { clearTimeout(msgScrollT); $('ftitle').classList.remove('scrolling'); fitTitle() }
+  const hold = Math.max(FLASH_MS, need)
+  // keep the draining bar honest when a long message extends the card
+  $('timer').style.animationDuration = Math.max(1000, hold-550)+'ms'
+  f.classList.remove('out'); void f.offsetWidth; f.classList.add('in')
+  clearTimeout(hideTimer); hideTimer=setTimeout(()=>{ f.classList.remove('in'); f.classList.add('out') }, hold) }
 
 function handle(c){
   if(c.type==='flash'){
     const isBet = c.w==='bet'
+    $('flash').dataset.kind = c.w || ''   // showFlash sizes vs. scrolls on this
     $('fstats').classList.toggle('show', isBet)
     $('fdiv1').style.display = isBet ? '' : 'none'
     if(isBet){
@@ -317,7 +359,12 @@ function handle(c){
       const md = (typeof c.d==='string') ? {text:c.d} : (c.d||{})
       setAcc('var(--gold)'); $('fkick').textContent = md.from ? ('Message from '+md.from) : 'Message'
       $('ftitle').classList.remove('cond')
-      $('ftitle').style.fontSize='36px'; $('ftitle').style.textTransform='none'; $('ftitle').textContent=md.text; $('fsub').textContent=''
+      $('ftitle').style.fontSize='36px'; $('ftitle').style.textTransform='none'
+      // wrapped in a span so the span can slide inside the clipping title
+      $('ftitle').innerHTML=''
+      const sp=document.createElement('span'); sp.className='mscroll'; sp.textContent=md.text
+      $('ftitle').appendChild(sp)
+      $('fsub').textContent=''
     }
     if(isBet||c.w==='cta'){ $('ftitle').classList.add('cond'); $('ftitle').style.fontSize=''; $('ftitle').style.textTransform='' }
     showFlash()

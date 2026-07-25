@@ -67,14 +67,17 @@
 
   /* ── EVENT + STAGE navigation ── */
   #evRow button{font-size:22px;padding:10px 20px;}
+  /* stage rail reads white, not green — it's navigation, so it shouldn't
+     compete with the green action buttons for attention */
   .rail{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:2px 0 16px;}
-  .rail .arr{color:var(--gdim);font-size:22px;}
+  .rail .arr{color:rgba(226,232,240,.35);font-size:22px;}
   .rail button::before,.rail button::after{content:none;}
-  .rail button{border-color:var(--gdim);color:var(--gdim);}
-  .rail button:hover{background:transparent;color:var(--g);border-color:var(--g);
-    text-shadow:0 0 6px rgba(58,255,110,.45);}
-  .rail button.active{background:var(--g);color:var(--bg);text-shadow:none;border-color:var(--g);
-    box-shadow:0 0 18px rgba(58,255,110,.6);}
+  .rail button{border-color:rgba(226,232,240,.3);color:rgba(226,232,240,.6);
+    text-shadow:none;box-shadow:none;}
+  .rail button:hover{background:transparent;color:#f4f7fb;border-color:rgba(226,232,240,.75);
+    text-shadow:0 0 8px rgba(226,232,240,.4);}
+  .rail button.active{background:#eef2f7;color:#0a1410;border-color:#eef2f7;
+    text-shadow:none;box-shadow:0 0 18px rgba(226,232,240,.45);}
   .panel{display:none;} .panel.on{display:block;}
   body.ev-ubae .only-uba{display:none !important;}
   body.ev-uba .only-ubae{display:none !important;}
