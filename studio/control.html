@@ -219,10 +219,11 @@
       <button class="hide" onclick="send({type:'fighter',on:false})">Hide</button>
     </div>
     <div class="row" id="fresults" style="margin-top:10px"></div>
-    <!-- Wagers are fight-night only: bet markets hang off matches/events, and
-         UBAe runs on team_matches/ubae_bouts, which have no markets yet. -->
-    <div class="only-uba">
-      <h5>Wagers — the selected card only</h5>
+    <!-- UBAe bets ride the documented workaround (BACKLOG): team-named placeholder
+         `fighters` rows in `matches` under an event called "UBAe Week N", so the
+         deck resolves the event from the loaded match's week. -->
+    <div>
+      <h5>Wagers — this match / card only</h5>
       <select id="evFilter" style="display:none"><option value="">ALL EVENTS</option></select>
       <div class="row" style="margin-bottom:10px">
         <button onclick="loadOdds();loadBetFeed()">Reload</button>
@@ -287,18 +288,25 @@ window.searchFighter=async()=>{
 
 const evFilter=()=>document.getElementById('evFilter').value
 
-/* Wagers are fight-night only — bet_pools_public/bet_feed_public are built on
-   matches+events, and UBAe bouts live in team_matches/ubae_bouts with no
-   markets. Loading them under UBAe would put fight-night bets on a team
-   broadcast, so both loaders bail. */
+/* Which event's markets belong on screen right now.
+   UBA  → the card picked in the spine.
+   UBAe → bets ride the placeholder workaround (BACKLOG): team-named `fighters`
+          rows in `matches` under an event literally called "UBAe Week N", so the
+          loaded match's week resolves the event. Never fall back to "all events"
+          — that would put fight-night wagers on a team broadcast. */
+const betEvent=()=> EV==='ubae'
+  ? (MN.week!=null ? 'UBAe Week '+MN.week : null)
+  : (evFilter() || null)
+const betHint=()=> EV==='ubae' ? 'LOAD A MATCH ABOVE' : 'PICK A CARD ABOVE'
+
 window.loadOdds=async()=>{
-  if(EV!=='uba') return
-  let q=sb.from('bet_pools_public').select('*').order('event_status',{ascending:true}).order('bout_number')
-  if(evFilter()) q=q.eq('event_name',evFilter())
-  const { data } = await q
-  const rows=data||[]
+  const ev=betEvent()
   const box=document.getElementById('oddsFights')
-  if(!rows.length){ box.textContent=evFilter()?'NO OPEN MARKETS ON THIS CARD':'PICK A CARD ABOVE'; return }
+  if(!ev){ box.textContent=betHint(); return }
+  const { data } = await sb.from('bet_pools_public').select('*')
+    .eq('event_name',ev).order('bout_number')
+  const rows=data||[]
+  if(!rows.length){ box.textContent='NO MARKETS ON '+ev.toUpperCase(); return }
   box.innerHTML=''
   rows.forEach(m=>{
     const b=document.createElement('button')
@@ -506,17 +514,17 @@ window.mnCountdownIn=()=>{
 }
 
 window.loadBetFeed=async()=>{
-  if(EV!=='uba') return
+  const ev=betEvent()
+  const box=document.getElementById('betFeed')
+  if(!ev){ box.textContent=betHint(); return }
   // bets (no names) + current pool odds for each pick side
-  let fq=sb.from('bet_feed_public').select('*').order('amount',{ascending:false}).limit(24)
-  if(evFilter()) fq=fq.eq('event_name',evFilter())
   const [{ data: feed }, { data: pools }] = await Promise.all([
-    fq,
+    sb.from('bet_feed_public').select('*').eq('event_name',ev)
+      .order('amount',{ascending:false}).limit(24),
     sb.from('bet_pools_public').select('match_id,side_a,side_b,total_a,total_b'),
   ])
-  const box=document.getElementById('betFeed')
   const rows=feed||[]
-  if(!rows.length){ box.textContent=evFilter()?'NO WAGERS ON THIS CARD':'PICK A CARD ABOVE'; return }
+  if(!rows.length){ box.textContent='NO WAGERS ON '+ev.toUpperCase(); return }
   const pByM=Object.fromEntries((pools||[]).map(p=>[p.match_id,p]))
   box.innerHTML=''
   rows.forEach(w=>{
