@@ -203,6 +203,9 @@
   <!-- ④ MATCH -->
   <div class="panel" data-panel="match"><div class="sec">
     <h4>MATCH — live fight</h4>
+    <div class="row" style="margin-bottom:10px">
+      <button id="clockTgl" onclick="clockToggle()">Fight clock: ON</button>
+    </div>
     <h5>💬 Message — fastest reach</h5>
     <div class="row">
       <input id="msgFrom" placeholder="FROM (name, optional)…" style="width:200px">
@@ -413,6 +416,15 @@ window.mnReset=()=>{
 }
 
 window.mnTimer=()=>send({type:'pickbar', d:{ timer:120 }})
+
+// slide the fight clock HUD in/out between bouts
+window._clockOn=true
+window.clockToggle=()=>{
+  window._clockOn=!window._clockOn
+  send({type:'clock', show:window._clockOn})
+  const b=document.getElementById('clockTgl')
+  if(b){ b.textContent='Fight clock: '+(window._clockOn?'ON':'OFF'); b.classList.toggle('hide',!window._clockOn) }
+}
 
 // updates the countdown TEAMS only — the clock itself is set with the minutes input
 window.mnCountdown=()=>{

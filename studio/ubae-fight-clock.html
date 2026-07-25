@@ -14,6 +14,26 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   filter:drop-shadow(0 8px 32px rgba(0,0,0,.85));
 }
 
+/* ── SHOW / HIDE (broadcast lower-third move) ──
+   The main bar is the anchor. The BO5 strip and the round tab are stacked
+   BEHIND it, so on the way out they retract into it and only then does the
+   bar itself slide off to the left. Reverse on the way in. */
+.main-row{position:relative;z-index:3;}
+.bo5-strip,.round-float{position:relative;z-index:1;}
+.hud-root .main-row,
+.hud-root .bo5-strip,
+.hud-root .round-float{
+  transition:transform .5s cubic-bezier(.16,1,.3,1),opacity .38s ease;
+}
+/* strip tucks DOWN into the bar, round tab tucks UP into it */
+.hud-root.off .bo5-strip{transform:translateY(33px);opacity:0;transition-delay:0s;}
+.hud-root.off .round-float{transform:translateY(-36px);opacity:0;transition-delay:0s;}
+.hud-root.off .main-row{transform:translateX(-130%);opacity:0;transition-delay:.22s;}
+/* coming back: bar first, then the two wings unfold out of it */
+.hud-root .main-row{transition-delay:0s;}
+.hud-root .bo5-strip{transition-delay:.26s;}
+.hud-root .round-float{transition-delay:.32s;}
+
 /* BO5 STRIP */
 .bo5-strip{
   height:30px;
@@ -599,6 +619,12 @@ tick();
   }
 
   _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
+    // slide the whole HUD in/out — {type:'clock', show:false} tucks it away
+    if(c.type==='clock'){
+      const hud=document.querySelector('.hud-root')
+      if(hud) hud.classList.toggle('off', c.show===false)
+      return
+    }
     if(c.type!=='pickbar') return
     const d=c.d||{}
     paintScore(d)
