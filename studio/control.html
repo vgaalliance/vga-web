@@ -212,16 +212,6 @@
       <input id="msgText" placeholder="MESSAGE TEXT…" style="width:380px" onkeydown="if(event.key==='Enter')fireMsg()">
       <button onclick="fireMsg()">Fire message</button>
     </div>
-    <h5>Wagers — auto-filtered to the loaded match / card</h5>
-    <select id="evFilter" style="display:none"><option value="">ALL EVENTS</option></select>
-    <div class="row" style="margin-bottom:10px">
-      <button onclick="loadOdds();loadBetFeed()">Reload</button>
-      <button class="hide" onclick="send({type:'odds',on:false})">Hide odds</button>
-    </div>
-    <h5>Odds board — click a fight</h5>
-    <div class="row" id="oddsFights">SCANNING MARKETS…</div>
-    <h5>Bet alerts — click a bet (anonymous)</h5>
-    <div class="row" id="betFeed">SCANNING WAGERS…</div>
     <h5>Fighter dossier — lower third</h5>
     <div class="row">
       <input id="fq" placeholder="QUERY FIGHTER NAME…" onkeydown="if(event.key==='Enter')searchFighter()">
@@ -229,6 +219,20 @@
       <button class="hide" onclick="send({type:'fighter',on:false})">Hide</button>
     </div>
     <div class="row" id="fresults" style="margin-top:10px"></div>
+    <!-- Wagers are fight-night only: bet markets hang off matches/events, and
+         UBAe runs on team_matches/ubae_bouts, which have no markets yet. -->
+    <div class="only-uba">
+      <h5>Wagers — the selected card only</h5>
+      <select id="evFilter" style="display:none"><option value="">ALL EVENTS</option></select>
+      <div class="row" style="margin-bottom:10px">
+        <button onclick="loadOdds();loadBetFeed()">Reload</button>
+        <button class="hide" onclick="send({type:'odds',on:false})">Hide odds</button>
+      </div>
+      <h5>Odds board — click a fight</h5>
+      <div class="row" id="oddsFights">SCANNING MARKETS…</div>
+      <h5>Bet alerts — click a bet (anonymous)</h5>
+      <div class="row" id="betFeed">SCANNING WAGERS…</div>
+    </div>
     <h5>Rankings + league table</h5>
     <div class="row">
       <span id="rankBtnsWrap" style="display:contents"><span id="rankBtns" style="display:contents"></span></span>
@@ -283,15 +287,18 @@ window.searchFighter=async()=>{
 
 const evFilter=()=>document.getElementById('evFilter').value
 
-/* wagers auto-filter: UBAe = the loaded match's teams · UBA = the selected card */
+/* Wagers are fight-night only — bet_pools_public/bet_feed_public are built on
+   matches+events, and UBAe bouts live in team_matches/ubae_bouts with no
+   markets. Loading them under UBAe would put fight-night bets on a team
+   broadcast, so both loaders bail. */
 window.loadOdds=async()=>{
+  if(EV!=='uba') return
   let q=sb.from('bet_pools_public').select('*').order('event_status',{ascending:true}).order('bout_number')
-  if(EV==='uba' && evFilter()) q=q.eq('event_name',evFilter())
+  if(evFilter()) q=q.eq('event_name',evFilter())
   const { data } = await q
-  let rows=data||[]
-  if(EV==='ubae' && MN.id) rows=rows.filter(m=>[m.side_a,m.side_b].some(s=>s===MN.a||s===MN.b))
+  const rows=data||[]
   const box=document.getElementById('oddsFights')
-  if(!rows.length){ box.textContent=(EV==='ubae'&&MN.id)?'NO OPEN MARKET FOR THIS MATCH':'NO OPEN MARKETS'; return }
+  if(!rows.length){ box.textContent=evFilter()?'NO OPEN MARKETS ON THIS CARD':'PICK A CARD ABOVE'; return }
   box.innerHTML=''
   rows.forEach(m=>{
     const b=document.createElement('button')
@@ -499,17 +506,17 @@ window.mnCountdownIn=()=>{
 }
 
 window.loadBetFeed=async()=>{
+  if(EV!=='uba') return
   // bets (no names) + current pool odds for each pick side
   let fq=sb.from('bet_feed_public').select('*').order('amount',{ascending:false}).limit(24)
-  if(EV==='uba' && evFilter()) fq=fq.eq('event_name',evFilter())
+  if(evFilter()) fq=fq.eq('event_name',evFilter())
   const [{ data: feed }, { data: pools }] = await Promise.all([
     fq,
     sb.from('bet_pools_public').select('match_id,side_a,side_b,total_a,total_b'),
   ])
   const box=document.getElementById('betFeed')
-  let rows=feed||[]
-  if(EV==='ubae' && MN.id) rows=rows.filter(w=>[w.side_a,w.side_b].some(s=>s===MN.a||s===MN.b))
-  if(!rows.length){ box.textContent=(EV==='ubae'&&MN.id)?'NO WAGERS ON THIS MATCH':'NO WAGERS ON RECORD'; return }
+  const rows=feed||[]
+  if(!rows.length){ box.textContent=evFilter()?'NO WAGERS ON THIS CARD':'PICK A CARD ABOVE'; return }
   const pByM=Object.fromEntries((pools||[]).map(p=>[p.match_id,p]))
   box.innerHTML=''
   rows.forEach(w=>{

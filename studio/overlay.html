@@ -20,9 +20,11 @@
   #flash{position:fixed;left:48px;bottom:190px;transform:translateY(160%);opacity:0;
     width:min(680px,44%);will-change:transform,opacity;}
   #flash.in{animation:fin .55s cubic-bezier(.16,1,.3,1) forwards;}
-  #flash.out{animation:fout .42s cubic-bezier(.7,0,.84,0) forwards;}
+  #flash.out{animation:fout .58s cubic-bezier(.5,0,.75,.2) forwards;}
   @keyframes fin{to{transform:translateY(0);opacity:1;}}
-  @keyframes fout{to{transform:translateY(160%);opacity:0;}}
+  /* `from` is explicit: removing .in drops its forwards-fill, so without a
+     stated start the card snaps to its hidden base and "animates" hidden→hidden. */
+  @keyframes fout{from{transform:translateY(0);opacity:1;}to{transform:translateY(160%);opacity:0;}}
 
   .card{position:relative;display:flex;align-items:stretch;border-radius:10px;overflow:hidden;
     background:linear-gradient(135deg,rgba(20,20,26,.97),rgba(8,8,11,.98));
@@ -78,9 +80,9 @@
     background:linear-gradient(135deg,rgba(20,20,26,.97),rgba(8,8,11,.98));
     box-shadow:0 22px 55px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.05);}
   #fighter.in{animation:lin .55s cubic-bezier(.16,1,.3,1) forwards;}
-  #fighter.out{animation:lout .42s cubic-bezier(.7,0,.84,0) forwards;}
+  #fighter.out{animation:lout .58s cubic-bezier(.5,0,.75,.2) forwards;}
   @keyframes lin{to{transform:translateX(0);opacity:1;}}
-  @keyframes lout{to{transform:translateX(-135%);opacity:0;}}
+  @keyframes lout{from{transform:translateX(0);opacity:1;}to{transform:translateX(-135%);opacity:0;}}
   #fighter .accent{width:14px;background:var(--red);box-shadow:0 0 24px var(--red);}
   #fighter .fc{padding:16px 28px 16px 24px;}
   #fnext{font:600 15px 'Barlow';letter-spacing:.14em;text-transform:uppercase;
@@ -218,7 +220,9 @@ const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
   'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
 
 const $=id=>document.getElementById(id)
-let hideTimer=null, panelTimer=null, oddsTimer=null
+// one timer per widget — a shared handle let a bet alert cancel the dossier's
+// auto-hide, stranding the dossier on screen for the rest of the broadcast
+let hideTimer=null, fighterTimer=null, panelTimer=null, oddsTimer=null
 const AUTOHIDE=13000   // persistent widgets (odds board, standings/rankings panel) auto-clear after this
 function setAcc(c){ $('flash').style.setProperty('--acc', c) }
 
@@ -302,6 +306,14 @@ function handle(c){
     if(c.on) panelTimer=setTimeout(()=>$('panel').classList.remove('show'), AUTOHIDE)
   }
   if(c.type==='fighter'){
+    // the deck's Hide sends {on:false} with no payload — without this the next
+    // line read .next off undefined and the button threw instead of hiding
+    if(c.on===false || !c.d){
+      const f=$('fighter')
+      clearTimeout(fighterTimer)
+      if(f.classList.contains('in')){ f.classList.remove('in'); f.classList.add('out') }
+      return
+    }
     const d=c.d
     const nx=$('fnext')
     if(d.next){ nx.innerHTML='Next match: <b>'+d.next+'</b>'; nx.classList.add('on') }
@@ -317,7 +329,7 @@ function handle(c){
     if(d.champion) chips.push(`<span class="beltbadge">🏆 Champion</span>`)
     $('fstatrow').innerHTML=chips.join('')
     const f=$('fighter'); f.classList.remove('out'); void f.offsetWidth; f.classList.add('in')
-    clearTimeout(hideTimer); hideTimer=setTimeout(()=>{ f.classList.remove('in'); f.classList.add('out') }, 9000)
+    clearTimeout(fighterTimer); fighterTimer=setTimeout(()=>{ f.classList.remove('in'); f.classList.add('out') }, 9000)
     sfx.whoosh()
   }
   if(c.type==='odds'){
