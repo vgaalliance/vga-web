@@ -208,6 +208,12 @@
       <span style="color:var(--gdim);font-size:17px;letter-spacing:.1em;margin-left:6px">ROUND</span>
       <span id="roundBtns"></span>
     </div>
+    <div class="row" style="margin-bottom:10px">
+      <span style="color:var(--gdim);font-size:17px;letter-spacing:.1em">TIMER</span>
+      <button onclick="matchTimer(120)">▶ 2:00</button>
+      <button onclick="matchTimer(180)">▶ 3:00</button>
+      <button class="hide" onclick="send({type:'matchtimer',on:false})">Hide timer</button>
+    </div>
     <h5>💬 Message — fastest reach</h5>
     <div class="row">
       <input id="msgFrom" placeholder="FROM (name, optional)…" style="width:200px">
@@ -445,6 +451,9 @@ function roundBtnsDraw(){
   box.innerHTML=[1,2,3,4,5].map(n=>
     `<button class="${MN.round===n?'active':''}" style="padding:4px 12px" onclick="mnRound(${n})">${n}</button>`).join(' ')
 }
+
+// match timer — same click starts or resets it, so it's one button per length
+window.matchTimer=secs=>send({type:'matchtimer', secs})
 
 // slide the fight clock HUD in/out between bouts
 window._clockOn=true
