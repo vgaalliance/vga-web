@@ -421,6 +421,21 @@
     align-items:center; gap:5px;
   }
   .score-digit { display:none; }
+  /* the two teams read across the centre: NAME  [VS]  NAME */
+  .vs-row {
+    display:flex; align-items:center; justify-content:center;
+    gap:14px; width:100%; min-width:0;
+  }
+  .vs-team {
+    flex:1; min-width:0;
+    font-family:'Barlow Condensed',sans-serif; font-weight:900;
+    font-size:24px; line-height:1.05; letter-spacing:.04em;
+    text-transform:uppercase; color:#efd9ff;
+    text-shadow:0 0 12px var(--hi), 0 0 4px #000;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .vs-team.l { text-align:right; }
+  .vs-team.r { text-align:left; }
   .vs-wrap {
     position:relative; width:90px; height:90px; flex-shrink:0;
     display:flex; align-items:center; justify-content:center;
@@ -541,9 +556,13 @@
 
   <!-- CENTRE -->
   <div class="centre">
-    <div class="vs-wrap">
-      <canvas id="vsRing"></canvas>
-      <div class="vs">VS</div>
+    <div class="vs-row">
+      <span class="vs-team l" id="vsTeamL">TEAM A</span>
+      <div class="vs-wrap">
+        <canvas id="vsRing"></canvas>
+        <div class="vs">VS</div>
+      </div>
+      <span class="vs-team r" id="vsTeamR">TEAM B</span>
     </div>
     <div class="score-plate">
       <div class="bo-tag">BO5</div>
@@ -888,8 +907,11 @@ arcadeLoop();
   _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
     if(c.type!=='pickbar') return
     const d=c.d||{}
-    if(d.teamA){ const e=document.getElementById('teamLbl');  if(e) e.textContent=d.teamA }
-    if(d.teamB){ const e=document.getElementById('teamLblR'); if(e) e.textContent=d.teamB }
+    // both the vertical side rails and the centre VS row carry the team names
+    const setTeam=(ids,v)=>{ if(v==null) return
+      ids.forEach(id=>{ const e=document.getElementById(id); if(e) e.textContent=v }) }
+    setTeam(['teamLbl','vsTeamL'], d.teamA)
+    setTeam(['teamLblR','vsTeamR'], d.teamB)
     const fill=(sideId,names)=>{
       if(!names) return
       document.querySelectorAll('#'+sideId+' .card .c-name input').forEach((inp,i)=>{
