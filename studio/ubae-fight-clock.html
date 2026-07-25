@@ -27,7 +27,8 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   backdrop-filter:blur(4px);
 }
 .bo5-strip::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(216,180,254,.7),transparent);}
-.team-label{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:.35em;color:rgba(220,200,255,1);letter-spacing:.2em;min-width:90px;}
+.team-label{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:rgba(220,200,255,1);letter-spacing:.2em;min-width:90px;white-space:nowrap;text-transform:uppercase;}
+.bo5-strip .team-label:last-of-type{text-align:right;}
 .pips{display:flex;gap:4px;align-items:center;}
 .pip{width:12px;height:8px;clip-path:polygon(0 100%,50% 0%,100% 100%);background:rgba(155,48,255,.35);}
 .pip.on{background:#dd88ff;filter:drop-shadow(0 0 5px rgba(168,85,247,1));}
@@ -568,15 +569,39 @@ function tick(){
 tick();
 </script>
 
-<!-- ── VGA STUDIO WIRE — auto-fill the two picked fighters (2026-07-24) ── -->
+<!-- ── VGA STUDIO WIRE — fighters, team names, BO5 pips, round (2026-07-25) ── -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 (function(){
   const _sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
     'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
+
+  // the deck keeps the running score, so every pickbar push re-paints the strip
+  const paintScore = d => {
+    const groups = document.querySelectorAll('.bo5-strip .pips')
+    const scores = [d.scoreA, d.scoreB]
+    groups.forEach((g, i) => {
+      const n = scores[i]
+      if(n == null) return
+      g.querySelectorAll('.pip').forEach((p, j) => p.classList.toggle('on', j < n))
+    })
+    const labels = document.querySelectorAll('.bo5-strip .team-label')
+    if(labels[0] && d.teamA) labels[0].textContent = d.teamA
+    if(labels[1] && d.teamB) labels[1].textContent = d.teamB
+    // BO5: bouts already scored + the one on now. Once a team reaches 3 the
+    // match is over, so hold on the bout just played instead of teasing a next one.
+    const rn = document.querySelector('.rnd-num')
+    if(rn && d.scoreA != null && d.scoreB != null){
+      const done = d.scoreA + d.scoreB
+      const over = d.scoreA >= 3 || d.scoreB >= 3
+      rn.textContent = String(over ? done : Math.min(5, done + 1))
+    }
+  }
+
   _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
     if(c.type!=='pickbar') return
     const d=c.d||{}
+    paintScore(d)
     const f=document.querySelectorAll('.fighter')
     if(!f.length) return
     const nL = (d.pickL!=null && d.left)  ? d.left[d.pickL]  : d.teamA
