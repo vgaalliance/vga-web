@@ -403,6 +403,44 @@ body::after {
   border: 1px solid var(--border);
   background: var(--pg);
 }
+.stash-set-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin: 18px 0 10px;
+}
+.stash-set-name { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--fg); letter-spacing: 0.04em; }
+.stash-set-progress { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 0.15em; color: var(--muted); }
+.stash-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.scard {
+  border: 1px solid var(--border);
+  background: var(--pg);
+  padding: 10px 10px 8px;
+  position: relative;
+}
+.scard.r-legendary { border-color: rgba(245,200,66,0.55); }
+.scard.r-rare      { border-color: rgba(80,160,255,0.5); }
+.scard.r-uncommon  { border-color: rgba(80,200,140,0.45); }
+.scard.r-one_of_one{ border-color: rgba(240,120,180,0.6); }
+.scard-name { font-family: 'Bebas Neue', sans-serif; font-size: 16px; color: var(--fg); line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scard-rarity { font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 0.16em; text-transform: uppercase; margin-top: 2px; }
+.scard.r-legendary .scard-rarity { color: rgba(245,200,66,0.8); }
+.scard.r-rare      .scard-rarity { color: rgba(120,180,255,0.8); }
+.scard.r-uncommon  .scard-rarity { color: rgba(110,210,160,0.8); }
+.scard.r-common    .scard-rarity { color: var(--muted); }
+.scard.r-one_of_one .scard-rarity { color: rgba(240,140,190,0.9); }
+.scard-stats { display: flex; justify-content: space-between; margin-top: 8px; font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); }
+.scard-psa { color: var(--fg); }
+.scard-psa.g10 { color: var(--gold); text-shadow: var(--glow-gold); }
+.scard-dupes {
+  position: absolute; top: 6px; right: 8px;
+  font-family: 'Space Mono', monospace; font-size: 8px; color: var(--muted);
+}
+.stash-items-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.stash-item {
+  border: 1px solid var(--border); background: var(--pg);
+  padding: 6px 12px;
+  font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 0.08em; color: var(--fg);
+}
+.stash-item .qty { color: var(--muted); }
 
 .loading { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.15em; padding: 40px; text-align: center; }
 </style>
@@ -462,6 +500,52 @@ function fightRowHTML(m, showEvent) {
   </div>`;
 }
 
+// The card collection, grouped by set with "N of M" progress. Shows the BEST
+// copy of each card (grade beats print number — a PSA 10 #400 outranks a
+// PSA 4 #2) with a ×n badge for dupes. Mirrors the Discord /cards rules.
+function stashCardsHTML(prints, sets) {
+  if (!prints || !prints.length) return '';
+  const sizeByName = {};
+  (sets || []).forEach(x => { sizeByName[x.name] = x.set_size; });
+
+  const RANK = { one_of_one: 0, legendary: 1, rare: 2, uncommon: 3, common: 4 };
+  const bySet = {};
+  for (const p of prints) {
+    const set = p.set_name || 'Set';
+    if (!bySet[set]) bySet[set] = {};
+    const cur = bySet[set][p.card_fighter];
+    if (!cur) bySet[set][p.card_fighter] = { ...p, dupes: 1 };
+    else {
+      cur.dupes++;
+      const better = (p.grade ?? 0) > (cur.grade ?? 0)
+        || ((p.grade ?? 0) === (cur.grade ?? 0) && p.print_number < cur.print_number);
+      if (better) { cur.rarity = p.rarity; cur.print_number = p.print_number; cur.grade = p.grade; }
+    }
+  }
+
+  let html = '';
+  for (const [setName, cards] of Object.entries(bySet)) {
+    const owned = Object.keys(cards).length;
+    const size = sizeByName[setName];
+    const sealed = Object.values(cards)[0]?.set_status === 'sealed' ? ' 🔒' : '';
+    html += `<div class="stash-set-head">
+      <div class="stash-set-name">${esc(setName)}${sealed}</div>
+      <div class="stash-set-progress">${owned}${size ? ' OF ' + size : ''} COLLECTED</div>
+    </div>
+    <div class="stash-cards">` +
+      Object.values(cards)
+        .sort((a, b) => (RANK[a.rarity] ?? 9) - (RANK[b.rarity] ?? 9) || (b.grade ?? 0) - (a.grade ?? 0))
+        .map(c => `<div class="scard r-${c.rarity}">
+          ${c.dupes > 1 ? `<div class="scard-dupes">×${c.dupes}</div>` : ''}
+          <div class="scard-name">${esc(c.card_fighter)}</div>
+          <div class="scard-rarity">${c.rarity === 'one_of_one' ? '1 of 1' : esc(c.rarity)}</div>
+          <div class="scard-stats"><span>#${c.print_number}</span><span class="scard-psa${c.grade === 10 ? ' g10' : ''}">PSA ${c.grade ?? '—'}</span></div>
+        </div>`).join('') +
+    `</div>`;
+  }
+  return html;
+}
+
 function initTabs() {
   document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -510,6 +594,15 @@ async function load() {
 
     const titleFights = completed.filter(m => m.is_title_fight).length;
     const belts = completed.filter(m => m.is_title_fight && m.won).length;
+
+    // Stash: card collection + owned items. Fail-soft like the streak — a
+    // fighter with none simply keeps the placeholder look.
+    let stashPrints = [], stashSets = [], stashItems = [];
+    try {
+      stashPrints = await sb('card_collections_public', `owner_slug=eq.${encodeURIComponent(s)}&select=card_fighter,rarity,print_number,grade,set_name,set_status`);
+      if (stashPrints.length) stashSets = await sb('card_sets_public', `select=name,status,set_size`);
+      stashItems = await sb('stash_items_public', `owner_slug=eq.${encodeURIComponent(s)}&select=name,category,effect_kind,qty`);
+    } catch (e) {}
 
     const wcText = wcLabel(f.weight_class) || 'Unclassified';
     const levelText = (f.level || 'amateur').toUpperCase();
@@ -645,11 +738,15 @@ async function load() {
             <div class="stash-vc">${vcBalance.toLocaleString()}</div>
             <div class="stash-label">VC Balance</div>
           </div>
-          <div class="stash-items-title">Items</div>
-          <div class="stash-coming">Coming soon</div>
-          <div class="stash-placeholders">
-            <div class="stash-ph"></div><div class="stash-ph"></div><div class="stash-ph"></div><div class="stash-ph"></div><div class="stash-ph"></div>
-          </div>
+          ${stashCardsHTML(stashPrints, stashSets)}
+          <div class="stash-items-title" style="margin-top:18px;">Items</div>
+          ${stashItems.length
+            ? `<div class="stash-items-row">${stashItems.map(it =>
+                `<div class="stash-item">${esc(it.name)}${it.qty > 1 ? ` <span class="qty">×${it.qty}</span>` : ''}</div>`).join('')}</div>`
+            : `<div class="stash-coming">Nothing yet</div>
+               <div class="stash-placeholders">
+                 <div class="stash-ph"></div><div class="stash-ph"></div><div class="stash-ph"></div><div class="stash-ph"></div><div class="stash-ph"></div>
+               </div>`}
         </div>
       </div>`;
 

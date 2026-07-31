@@ -167,6 +167,19 @@ body::before {
 .stash-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 14px 14px; border-top: 1px solid var(--border); }
 .stash-lbl { font-family: 'Space Mono', monospace; font-size: 6px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
 .stash-val { font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: var(--pl); text-shadow: var(--glow-sm); }
+.mcard-strip { display: flex; gap: 8px; overflow-x: auto; padding: 4px 14px 14px; -webkit-overflow-scrolling: touch; }
+.mcard {
+  flex: 0 0 auto; min-width: 104px; position: relative;
+  border: 1px solid var(--border); background: rgba(255,255,255,0.02);
+  padding: 8px 10px;
+}
+.mcard.r-legendary { border-color: rgba(245,200,66,0.55); }
+.mcard.r-rare      { border-color: rgba(80,160,255,0.5); }
+.mcard.r-uncommon  { border-color: rgba(80,200,140,0.45); }
+.mcard.r-one_of_one{ border-color: rgba(240,120,180,0.6); }
+.mcard-name { font-family: 'Bebas Neue', sans-serif; font-size: 15px; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+.mcard-meta { font-family: 'Space Mono', monospace; font-size: 7px; letter-spacing: 0.08em; color: var(--muted); margin-top: 3px; }
+.mcard-dupes { position: absolute; top: 4px; right: 6px; font-family: 'Space Mono', monospace; font-size: 7px; color: var(--muted); }
 
 /* LOADING / ERROR */
 .loading-state { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); padding: 80px 0; text-align: center; }
@@ -279,7 +292,14 @@ async function load() {
       if (sr && sr.length) streakHTML = renderStreak(sr[0].streak, sr[0].played_today);
     } catch (e) {}
 
-    show(render(f, recent, upcoming, lastVod, beltCount, streakHTML));
+    // Card collection — fail-soft: no cards, no section.
+    let stashPrints = [], stashSets = [];
+    try {
+      stashPrints = await sb('card_collections_public', `owner_slug=eq.${encodeURIComponent(slug)}&select=card_fighter,rarity,print_number,grade,set_name`);
+      if (stashPrints.length) stashSets = await sb('card_sets_public', `select=name,set_size`);
+    } catch (e) {}
+
+    show(render(f, recent, upcoming, lastVod, beltCount, streakHTML, stashPrints, stashSets));
   } catch(e) {
     console.error(e);
     show('<div class="loading-state">Error loading fighter</div>');
@@ -298,7 +318,38 @@ function renderStreak(streak, playedToday) {
   return `<div class="daily-tracker" title="${tip}">${cells}</div>`;
 }
 
-function render(f, recent, upcoming, lastVod, beltCount, streakHTML) {
+// Compact card strip for phones: best copy per card (grade beats print, same
+// rule as Discord /cards), horizontal scroll, "N of M" in the section head.
+function cardsStripHTML(prints, sets) {
+  if (!prints || !prints.length) return '';
+  const sizeByName = {}; (sets || []).forEach(x => { sizeByName[x.name] = x.set_size; });
+  const RANK = { one_of_one: 0, legendary: 1, rare: 2, uncommon: 3, common: 4 };
+  const best = {};
+  for (const p of prints) {
+    const cur = best[p.card_fighter];
+    if (!cur) best[p.card_fighter] = { ...p, dupes: 1 };
+    else {
+      cur.dupes++;
+      if ((p.grade ?? 0) > (cur.grade ?? 0) || ((p.grade ?? 0) === (cur.grade ?? 0) && p.print_number < cur.print_number)) {
+        cur.rarity = p.rarity; cur.print_number = p.print_number; cur.grade = p.grade;
+      }
+    }
+  }
+  const setName = prints[0].set_name;
+  const size = sizeByName[setName];
+  const cells = Object.values(best)
+    .sort((a, b) => (RANK[a.rarity] ?? 9) - (RANK[b.rarity] ?? 9) || (b.grade ?? 0) - (a.grade ?? 0))
+    .map(c => `<div class="mcard r-${c.rarity}">
+      ${c.dupes > 1 ? `<span class="mcard-dupes">×${c.dupes}</span>` : ''}
+      <div class="mcard-name">${esc(c.card_fighter)}</div>
+      <div class="mcard-meta">#${c.print_number} · PSA ${c.grade ?? '—'}</div>
+    </div>`).join('');
+  return `
+    <div class="sec-head">Cards · ${Object.keys(best).length}${size ? ' of ' + size : ''}</div>
+    <div class="mcard-strip">${cells}</div>`;
+}
+
+function render(f, recent, upcoming, lastVod, beltCount, streakHTML, stashPrints, stashSets) {
   const countryFlag = FLAGS[f.country] ?? null;
   const vodEl = lastVod ? `<a class="vod-strip" href="${esc(lastVod)}" target="_blank" rel="noopener"><span>▶ VOD</span></a>` : '';
 
@@ -407,7 +458,8 @@ function render(f, recent, upcoming, lastVod, beltCount, streakHTML) {
     <div class="stash-row">
       <span class="stash-lbl">VC Stash</span>
       <span class="stash-val">${(f.vc_balance ?? 0).toLocaleString()}</span>
-    </div>`;
+    </div>
+    ${cardsStripHTML(stashPrints, stashSets)}`;
 }
 
 function show(html) { document.getElementById('root').innerHTML = html; }
