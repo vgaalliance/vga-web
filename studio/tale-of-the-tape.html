@@ -464,15 +464,12 @@ const SILHOUETTE = { imgBoxLeft: ASSETS+'avatar-blank-left.png',
 // this near-black stage. So it is used as a MASK and filled with the theme
 // violet rather than drawn as an image. Real photos are drawn normally --
 // masking those would flatten them to a shape.
+// Drawn as the plain black artwork, not masked and tinted. It sits over the
+// scene behind it in OBS rather than over a dark page, so black reads.
 function drawSilhouette(box){
-  const src = SILHOUETTE[box.id];
-  box.style.backgroundImage = 'none';
-  box.style.webkitMaskImage = `url("${src}")`;
-  box.style.maskImage = `url("${src}")`;
-  box.style.webkitMaskSize = box.style.maskSize = 'contain';
-  box.style.webkitMaskPosition = box.style.maskPosition = 'bottom center';
-  box.style.webkitMaskRepeat = box.style.maskRepeat = 'no-repeat';
-  box.style.backgroundColor = 'hsla(268,38%,56%,0.30)';
+  box.style.webkitMaskImage = box.style.maskImage = 'none';
+  box.style.backgroundColor = 'transparent';
+  box.style.backgroundImage = `url("${SILHOUETTE[box.id]}")`;
   box.textContent = '';
 }
 function drawPhoto(box, src){
@@ -510,10 +507,17 @@ const statRows = document.querySelectorAll('.stat-row');
 const sponsorBar = document.getElementById('sponsorBar');
 const tapeTimers = [];
 const tapeRoot = document.getElementById('tape');
-tapeRoot.style.transition = 'opacity .5s ease, transform .6s cubic-bezier(.5,0,.75,.2)';
+// Hidden until asked for. Cutting to the scene used to land on a fully
+// assembled tape -- the graphic had already played to itself off-air. Choosing
+// a matchup and putting it on screen are now two decisions.
+tapeRoot.style.opacity = '0';
+tapeRoot.style.willChange = 'opacity, transform';
+let tapeShown = false;
 
 function playTape(){
   tapeTimers.forEach(clearTimeout); tapeTimers.length = 0;
+  tapeShown = true;
+  tapeRoot.style.transition = 'opacity .28s ease';
   tapeRoot.style.opacity = '1';
   tapeRoot.style.transform = 'none';
 
@@ -560,10 +564,24 @@ function playTape(){
 // side rails and the record strips sitting on screen -- a half-dismissed
 // graphic. It takes the whole thing now, the way the fight clock does: one
 // element, one fade, everything goes together.
+// Broadcast exit: it leaves the way it arrived rather than dissolving in
+// place -- the wings pull back out to the sides, the card lifts, then the
+// whole thing goes. Fast, because an exit that lingers is an exit you cut over.
 function hideTape(){
   tapeTimers.forEach(clearTimeout); tapeTimers.length = 0;
+  tapeShown = false;
+  const wrapL = document.getElementById('fighterWrapLeft');
+  const wrapR = document.getElementById('fighterWrapRight');
+  [[wrapL,-70],[wrapR,70]].forEach(([el,dx])=>{
+    if(!el) return
+    el.style.transition = 'opacity .34s ease, transform .42s cubic-bezier(.55,0,.85,.35)';
+    el.style.opacity = '0'; el.style.transform = `translateX(${dx}px) scale(1.04)`;
+  });
+  centerCol.style.transition = 'opacity .3s ease .06s, transform .42s cubic-bezier(.55,0,.85,.35) .06s';
+  centerCol.style.opacity = '0';
+  centerCol.style.transform = 'translateY(-20px) scale(1.1)';
+  tapeRoot.style.transition = 'opacity .42s ease .1s';
   tapeRoot.style.opacity = '0';
-  tapeRoot.style.transform = 'scale(1.03)';
 }
 // "LIGHT HEAVYWEIGHT" ran past the card at the design size. Shrink to fit
 // instead of clipping, so every division renders on one line.
@@ -590,8 +608,6 @@ function fitBoutTitle(){
 }
 fitBoutTitle()
 window.__tape = playTape; window.__tapeHide = hideTape; window.__fitTitle = fitBoutTitle;
-
-playTape();
 
 // ---------- RAIL HEIGHT — match exactly to where SHEATH starts ----------
 // Rather than guess a fixed pixel height, measure sponsorBar's actual
@@ -640,7 +656,8 @@ window.__playWraps = function(){
     });
   });
 };
-window.__playWraps();
+// not called on load -- the whole graphic starts hidden and the wings are
+// part of the entrance, not the resting state
 
 // Name plates settle in slightly after the fighters, same as how
 // the bout label follows the center panel.
@@ -1001,6 +1018,7 @@ editOverlay.addEventListener('click', (e) => {
   _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
     if(c.type!=='tape') return
     if(c.on===false){ hideTape(); return }
+    if(c.show===true){ playTape(); return }      // reveal what's already loaded
     const d=c.d||{}
     set('boutTitleText',d.title); set('boutSubtitleText',d.subtitle); set('sponsorText',d.sponsor)
     fitBoutTitle()
@@ -1011,7 +1029,10 @@ editOverlay.addEventListener('click', (e) => {
     set('reachLeft',L.reach); set('recordLeft',L.record); set('oddsLeft',L.odds); set('rankLeft',L.rank)
     set('nameRight',R.name); set('ageRight',R.age); set('heightRight',R.height); set('weightRight',R.weight)
     set('reachRight',R.reach); set('recordRight',R.record); set('oddsRight',R.odds); set('rankRight',R.rank)
-    playTape()   // values first, THEN the entrance -- so it builds with this bout's numbers
+    // Loading a matchup does NOT reveal it. If it's already on screen the
+    // entrance replays so the change is visible; if it isn't, it waits to be
+    // shown.
+    if(tapeShown) playTape()
   }).subscribe()
 })()
 </script>
