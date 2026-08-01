@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920">
+<title>UBA — Segment Card</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;1,900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+/* Segment interstitial — "PRELIMS" / "UNDERCARD" / "MAIN CARD".
+   AUTO-HIDES after HOLD ms: a stranded full-screen title over a live fight is
+   the worst failure this scene could have (the overlay repo already learned
+   that lesson once), so the exit is built in and the deck can't forget it. */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{width:1920px;height:1080px;overflow:hidden;background:transparent;
+  font-family:'Barlow Condensed',sans-serif;}
+
+@keyframes holoA{0%{transform:translateX(-200%)}100%{transform:translateX(400%)}}
+@keyframes ubaGlow{
+  0%,100%{text-shadow:0 0 18px rgba(216,180,254,.6),0 0 44px rgba(155,48,255,.35);}
+  50%{text-shadow:0 0 34px rgba(216,180,254,1),0 0 90px rgba(155,48,255,.65);}
+}
+
+.root{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  opacity:0;transform:scale(.97);transition:opacity .5s ease,transform .5s cubic-bezier(.16,.8,.3,1);
+  filter:drop-shadow(0 12px 70px rgba(0,0,0,.95));
+}
+.root.on{opacity:1;transform:none;}
+
+.card{position:relative;padding:46px 110px;text-align:center;overflow:hidden;
+  background:rgba(4,0,16,.9);border:1px solid rgba(168,85,247,.55);
+  clip-path:polygon(26px 0,calc(100% - 26px) 0,100% 26px,100% calc(100% - 26px),calc(100% - 26px) 100%,26px 100%,0 calc(100% - 26px),0 26px);}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.9) 50%,transparent);}
+.card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(168,85,247,.5),transparent);}
+.holo{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.holo::after{content:'';position:absolute;top:0;bottom:0;width:55%;
+  background:linear-gradient(90deg,transparent,rgba(216,180,254,.15),rgba(168,85,247,.2),transparent);
+  animation:holoA 3.4s ease-in-out infinite;}
+
+.eyebrow{font-family:'Share Tech Mono',monospace;font-size:15px;letter-spacing:.55em;
+  color:rgba(216,180,254,.8);text-transform:uppercase;position:relative;z-index:2;}
+.label{font-size:150px;font-weight:900;font-style:italic;letter-spacing:.05em;line-height:1.02;
+  color:#fff;text-transform:uppercase;position:relative;z-index:2;margin:6px 0 4px;
+  animation:ubaGlow 3s ease-in-out infinite;}
+.sub{font-size:26px;font-weight:700;letter-spacing:.4em;color:#d8b4fe;
+  text-transform:uppercase;position:relative;z-index:2;}
+</style>
+</head>
+<body>
+
+<div class="root" id="root">
+  <div class="card">
+    <div class="holo"></div>
+    <div class="eyebrow">Up Next</div>
+    <div class="label" id="label">PRELIMS</div>
+    <div class="sub" id="sub">UBA Fight Night</div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+  const _sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
+    'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
+  const HOLD=7000
+  let timer=null
+  const root=document.getElementById('root')
+
+  function fire(c){
+    if(c.on===false){ root.classList.remove('on'); clearTimeout(timer); return }
+    document.getElementById('label').textContent=(c.label||'').toUpperCase()
+    if(c.sub) document.getElementById('sub').textContent=c.sub.toUpperCase()
+    root.classList.remove('on'); void root.offsetWidth      // restart the enter
+    root.classList.add('on')
+    clearTimeout(timer)
+    timer=setTimeout(()=>root.classList.remove('on'), HOLD)
+  }
+
+  _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
+    if(c.type==='segcard') fire(c)
+  }).subscribe()
+
+  window.__test=l=>fire({label:l||'MAIN CARD',sub:'Fight Night 29'})
+})()
+</script>
+</body>
+</html>

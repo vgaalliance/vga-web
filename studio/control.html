@@ -141,10 +141,41 @@
     <div class="row"><button class="hide" onclick="mnReset()">Reset match</button></div>
   </div>
 
-  <!-- UBA spine: pick the card — betting + graphics follow -->
+  <!-- UBA spine: the card runner — pick the card, arm bouts, score winners.
+       Deck state only, never writes the DB (same rule as the UBAe tracker):
+       real results are entered in the admin desk afterward. -->
   <div class="sec only-uba">
-    <h4>FIGHT NIGHT — PICK THE CARD</h4>
+    <h4>FIGHT NIGHT — CARD RUNNER</h4>
     <div class="row" id="ubaEvents">SCANNING EVENTS…</div>
+    <div id="ubaCardWrap" style="display:none">
+      <h5>The card — ARM a bout (tape + clock) · tap a name to score the win</h5>
+      <div class="row" style="margin-bottom:8px">
+        <span id="ubaFlt" style="display:contents">
+          <button data-f="all" class="active" onclick="ubaFilter('all')">All</button>
+          <button data-f="main_card" onclick="ubaFilter('main_card')">Main</button>
+          <button data-f="undercard" onclick="ubaFilter('undercard')">Under</button>
+          <button data-f="prelim" onclick="ubaFilter('prelim')">Prelims</button>
+        </span>
+        <button onclick="ubaPush()">▶ Push card to screen</button>
+        <button class="hide" onclick="send({type:'rundown',on:false})">Hide card</button>
+      </div>
+      <div id="ubaCard"></div>
+      <h5>Segment title card — auto-hides after 7s</h5>
+      <div class="row">
+        <button onclick="segCard('PRELIMS')">Prelims</button>
+        <button onclick="segCard('UNDERCARD')">Undercard</button>
+        <button onclick="segCard('MAIN CARD')">Main card</button>
+        <button class="hide" onclick="send({type:'segcard',on:false})">Hide now</button>
+      </div>
+      <h5>Corner colours — clock names + accents</h5>
+      <div class="row">
+        <span style="color:var(--gdim);font-size:16px">LEFT</span>
+        <input type="color" id="ubaColorL" value="#e8312a" style="width:64px;height:42px;padding:3px">
+        <span style="color:var(--gdim);font-size:16px">RIGHT</span>
+        <input type="color" id="ubaColorR" value="#2e6fe8" style="width:64px;height:42px;padding:3px">
+        <button onclick="fireCorners()">Apply · replay trunk reveal</button>
+      </div>
+    </div>
   </div>
 
   <p class="lbl">// 2 · STAGE //</p>
@@ -222,6 +253,12 @@
       <input id="msgFrom" placeholder="FROM (name, optional)…" style="width:200px">
       <input id="msgText" placeholder="MESSAGE TEXT…" style="width:380px" onkeydown="if(event.key==='Enter')fireMsg()">
       <button onclick="fireMsg()">Fire message</button>
+    </div>
+    <h5>📍 Info bug — lower-left graphic, auto-hides</h5>
+    <div class="row">
+      <input id="bugEyebrow" placeholder="EYEBROW (default: LIVE FROM)…" style="width:230px">
+      <input id="bugText" placeholder="BUG TEXT (venue, note…)…" style="width:280px" onkeydown="if(event.key==='Enter')fireBug()">
+      <button onclick="fireBug()">Fire bug</button>
     </div>
     <h5>Fighter dossier — lower third</h5>
     <div class="row">
@@ -448,7 +485,9 @@ window.mnTimer=()=>send({type:'pickbar', d:{ timer:120 }})
 /* ROUND — deck-owned so there is one source of truth. The clock used to derive
    it from the score, which meant any manual pick would be overwritten by the
    next push. Now the deck sends it and the clock just displays it. */
-window.mnRound=n=>{ MN.round=n; mnPush(); roundBtnsDraw() }
+window.mnRound=n=>{ MN.round=n; mnPush(); send({type:'round', n}); roundBtnsDraw() }
+// ^ the generic {type:'round'} rides alongside the UBAe pickbar push so the
+//   UBA fight clock (which never reads pickbar) gets the same round buttons.
 function roundBtnsDraw(){
   const box=document.getElementById('roundBtns'); if(!box) return
   box.innerHTML=[1,2,3,4,5].map(n=>
@@ -532,11 +571,17 @@ window.loadCardEvents=async()=>{
     box.appendChild(b) })
 }
 
-// countdown to N minutes from now (changeable, independent of match start)
+// countdown to N minutes from now (changeable, independent of match start).
+// UBA mode: the countdown headlines the MAIN EVENT fighters, not teams —
+// bout_number 1 IS the main event (the card counts down from it).
 window.mnCountdownIn=()=>{
   const m=parseFloat(document.getElementById('cdMins').value); if(!m||m<=0) return
   const target=new Date(Date.now()+m*60000).toISOString()
-  send({type:'countdown', d:{ a:MN.a||'TEAM A', b:MN.b||'TEAM B', target, eventMain:'SUMMER SPLIT', eventSub:'ubaesports.com' }})
+  const main = (EV==='uba' && UBA.bouts.length)
+    ? (UBA.bouts.find(b=>b.bout_number===1) || UBA.bouts[0]) : null
+  send({type:'countdown', d: main
+    ? { a:main.a, b:main.b, target, eventMain:(UBA.name||'FIGHT NIGHT').toUpperCase(), eventSub:'discord.gg/uba' }
+    : { a:MN.a||'TEAM A', b:MN.b||'TEAM B', target, eventMain:'SUMMER SPLIT', eventSub:'ubaesports.com' }})
 }
 
 window.loadBetFeed=async()=>{
@@ -622,14 +667,21 @@ window.setEv=ev=>{
   loadOdds(); loadBetFeed()
 }
 
-/* UBA spine: card picker — sets the wagers filter for the whole panel */
+/* ── UBA CARD RUNNER — deck state only, never writes the DB ─────────────────
+   Picking an event does three things at once: sets the wagers filter, loads
+   the full card into the runner, and re-arms the graphics for that card. */
+const UBA={ id:null, name:null, bouts:[], filter:'all', armed:null }
+const SEG_ORDER=['main_card','undercard','prelim']
+const SEG_SHORT={main_card:'MAIN',undercard:'UNDER',prelim:'PRELIM'}
+
 window.loadUbaEvents=async()=>{
   const box=document.getElementById('ubaEvents')
   const [{ data: evs }, { data: pools }] = await Promise.all([
-    sb.from('events_public').select('name,event_date').eq('status','scheduled')
+    sb.from('events_public').select('id,name,event_date').eq('status','scheduled')
       .gte('event_date',new Date(Date.now()-6*3600e3).toISOString()).order('event_date').limit(6),
     sb.from('bet_pools_public').select('event_name'),
   ])
+  const byName={} ;(evs||[]).forEach(e=>byName[e.name]=e)
   const names=[...new Set([...(evs||[]).map(e=>e.name), ...(pools||[]).map(p=>p.event_name)])]
   if(!names.length){ box.textContent='NO UPCOMING EVENTS'; return }
   box.innerHTML=''
@@ -642,9 +694,99 @@ window.loadUbaEvents=async()=>{
       sel.value=n
       document.querySelectorAll('#ubaEvents button').forEach(x=>x.classList.toggle('active',x===b))
       loadOdds(); loadBetFeed()
+      if(byName[n]) ubaLoadCard(byName[n])   // pool-only names have no card to load
     }
     box.appendChild(b)
   })
+}
+
+window.ubaLoadCard=async(ev)=>{
+  const { data } = await sb.from('event_matches')
+    .select('bout_number,card_segment,weight_class,is_title_fight,title_name,status,fighter_a_name,fighter_b_name,winner_corner')
+    .eq('event_id',ev.id).order('bout_number')
+  UBA.id=ev.id; UBA.name=ev.name; UBA.armed=null
+  // Results already in the DB pre-mark themselves — a mid-show deck reload
+  // comes back knowing which bouts are done instead of starting blank.
+  UBA.bouts=(data||[]).map(r=>({
+    bout_number:r.bout_number, seg:r.card_segment||'main_card',
+    a:r.fighter_a_name||'TBA', b:r.fighter_b_name||'TBA',
+    wc:cap(r.weight_class||''),
+    title:r.is_title_fight?(r.title_name||'TITLE FIGHT'):null,
+    winner: /^(a|fighter_a)$/i.test(r.winner_corner||'')?'a'
+          : /^(b|fighter_b)$/i.test(r.winner_corner||'')?'b':null }))
+  document.getElementById('ubaCardWrap').style.display=UBA.bouts.length?'block':'none'
+  ubaDraw()
+}
+
+function ubaDraw(){
+  const box=document.getElementById('ubaCard')
+  if(!UBA.bouts.length){ box.textContent='NO BOUTS BOOKED'; return }
+  let html=''
+  SEG_ORDER.forEach(seg=>{
+    const group=UBA.bouts.filter(b=>b.seg===seg)
+    if(!group.length) return
+    html+=`<p class="lbl" style="margin:10px 0 6px">// ${SEG_SHORT[seg]} //</p>`
+    group.forEach(b=>{
+      const i=UBA.bouts.indexOf(b)
+      const chip=(side,name)=>{
+        const st=b.winner===side?' picked':(b.winner?' used':'')
+        return `<span class="mnchip${st}" onclick="ubaWin(${i},'${side}')">${name}</span>`
+      }
+      html+=`<div class="row" style="margin-bottom:6px;align-items:center">
+        <button style="min-width:104px;padding:4px 10px${UBA.armed===i?';':''}" class="${UBA.armed===i?'active':''}"
+          onclick="ubaArm(${i})">${b.bout_number===1?'★ MAIN':'BOUT '+b.bout_number}</button>
+        ${chip('a',b.a)}<span style="color:var(--gdim)">vs</span>${chip('b',b.b)}
+        <span style="color:var(--gdim);font-size:16px">${b.wc}${b.title?' · 👑 '+b.title:''}${b.winner?' · ✔ DONE':''}</span>
+      </div>`
+    })
+  })
+  box.innerHTML=html
+}
+
+/* ARM = this bout is next on screen: names the fight clock, pre-fills the
+   tale-of-the-tape inputs so its button is one press, all in one click. */
+window.ubaArm=i=>{
+  const b=UBA.bouts[i]; if(!b) return
+  UBA.armed=i
+  document.getElementById('mnBoutA').value=b.a
+  document.getElementById('mnBoutB').value=b.b
+  send({type:'bout', d:{ a:b.a, b:b.b,
+    label: b.bout_number===1?'MAIN EVENT':'BOUT '+b.bout_number,
+    sub: b.title? '5 ROUNDS · TITLE' : b.wc,
+    colorL:document.getElementById('ubaColorL').value,
+    colorR:document.getElementById('ubaColorR').value }})
+  ubaDraw()
+}
+
+/* tap a name = that side won. Tap again to undo. Pushes the rundown live so
+   the on-screen card greys the bout out the moment it's scored. */
+window.ubaWin=(i,side)=>{
+  const b=UBA.bouts[i]; if(!b) return
+  b.winner = (b.winner===side)? null : side
+  ubaDraw(); ubaPush()
+}
+
+window.ubaFilter=f=>{
+  UBA.filter=f
+  document.querySelectorAll('#ubaFlt button').forEach(x=>x.classList.toggle('active',x.dataset.f===f))
+  ubaPush()
+}
+
+window.ubaPush=()=>{
+  if(!UBA.bouts.length) return
+  send({type:'rundown', on:true, d:{ event:UBA.name, filter:UBA.filter, bouts:UBA.bouts }})
+}
+
+window.segCard=label=>send({type:'segcard', label, sub:UBA.name||'UBA Fight Night'})
+
+window.fireCorners=()=>send({type:'corner', d:{
+  l:document.getElementById('ubaColorL').value,
+  r:document.getElementById('ubaColorR').value }})
+
+window.fireBug=()=>{
+  const text=document.getElementById('bugText').value.trim(); if(!text) return
+  const eyebrow=document.getElementById('bugEyebrow').value.trim()
+  send({type:'bug', d:{ text, ...(eyebrow?{eyebrow}:{}) }})
 }
 
 drawRail()

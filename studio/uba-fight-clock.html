@@ -151,7 +151,47 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   display:flex;flex-direction:column;align-items:center;gap:0;
   filter:drop-shadow(0 8px 48px rgba(0,0,0,.95));
   z-index:25;
+  transition:opacity .45s ease,transform .45s ease;
 }
+/* deck-driven slide-away between bouts — {type:'clock', show:false} */
+.hud-root.off{opacity:0;transform:translateX(-50%) translateY(140px);pointer-events:none;}
+
+/* corner colours live on the OUTER EDGES of the bar (the accents), plus
+   UFC-style trunk reveals: side panels that extend out from behind the bar,
+   announce "<COLOUR> TRUNKS", hold, and tuck back in. Fired on every bout arm
+   and every corner-colour change. */
+.bar-wrap{position:relative;}
+.bar-accent{width:9px;}
+.trunk-ext{position:absolute;top:14px;height:40px;width:230px;overflow:hidden;pointer-events:none;z-index:1;}
+.trunk-ext.left{right:calc(100% - 4px);}
+.trunk-ext.right{left:calc(100% - 4px);}
+.trunk-panel{
+  position:absolute;top:0;height:100%;display:flex;align-items:center;gap:12px;
+  padding:0 18px;background:rgba(4,0,16,.9);border:1px solid rgba(168,85,247,.42);
+  transition:transform .55s cubic-bezier(.16,.8,.3,1);white-space:nowrap;
+}
+.trunk-ext.left  .trunk-panel{right:0;justify-content:flex-end;transform:translateX(104%);
+  clip-path:polygon(12px 0,100% 0,100% 100%,0 100%,0 12px);}
+.trunk-ext.right .trunk-panel{left:0;transform:translateX(-104%);
+  clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,0 100%);}
+.trunk-ext .trunk-panel.show{transform:translateX(0);}
+.trunk-swatch{width:15px;height:15px;transform:skewX(-12deg);background:#e8312a;
+  box-shadow:0 0 12px currentColor;flex-shrink:0;}
+.trunk-label{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:.3em;
+  color:#d8b4fe;text-transform:uppercase;}
+
+/* deck-driven round + timer text (were blank slots for OBS text sources;
+   the deck now feeds them over the channel instead) */
+.round-text{width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:.32em;
+  color:#d8b4fe;text-transform:uppercase;position:relative;z-index:2;}
+#fightTimer{width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  font-family:'Share Tech Mono',monospace;font-size:30px;letter-spacing:.08em;
+  color:#fff;animation:clockGlow 3s ease-in-out infinite;}
+/* UFC-style corner strips under each name — colours come from the deck */
+.f-corner{width:64px;height:4px;margin-top:5px;background:#e8312a;
+  box-shadow:0 0 10px currentColor;transition:background .3s ease;}
+.fighter-slot.right .f-corner{align-self:flex-end;}
 
 /* ── EVENT STRIP — centred above badge (like Underground top badge) ── */
 .event-strip{
@@ -357,7 +397,15 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     <div class="event-strip-dot"></div>
   </div>
 
-  <!-- main bar -->
+  <!-- main bar (wrapped so the trunk reveals can extend past its edges —
+       the bar itself is clip-pathed + overflow:hidden, nothing can stick out of it) -->
+  <div class="bar-wrap">
+  <div class="trunk-ext left"><div class="trunk-panel" id="trunkL">
+    <span class="trunk-label" id="trunkLabelL">RED TRUNKS</span><span class="trunk-swatch" id="trunkSwatchL"></span>
+  </div></div>
+  <div class="trunk-ext right"><div class="trunk-panel" id="trunkR">
+    <span class="trunk-swatch" id="trunkSwatchR" style="background:#2e6fe8"></span><span class="trunk-label" id="trunkLabelR">BLUE TRUNKS</span>
+  </div></div>
   <div class="main-bar" id="mainBar">
     <canvas id="holoCanvas"></canvas>
     <canvas id="hudFlowers"></canvas>
@@ -365,35 +413,34 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     <!-- floaters -->
     <div class="match-float">
       <div class="float-label">Bout</div>
-      <div class="float-val">Main Event</div>
+      <div class="float-val" id="boutFloat">Main Event</div>
     </div>
     <div class="format-float">
       <div class="float-label">Format</div>
-      <div class="float-val">5 Rounds</div>
+      <div class="float-val" id="formatFloat">5 Rounds</div>
     </div>
 
-    <div class="bar-accent"></div>
+    <div class="bar-accent" id="accentL"></div>
 
-    <!-- left fighter — blank for OBS text source -->
+    <!-- left fighter — fed by the deck's card runner -->
     <div class="fighter-slot left">
       <div class="f-label">Fighter</div>
-      <div class="f-name">&nbsp;</div>
+      <div class="f-name" id="nameL">&nbsp;</div>
     </div>
 
-    <!-- centre — small round box on top, open timer zone below on bar -->
+    <!-- centre — round box on top, timer below, both deck-driven -->
     <div class="bar-centre">
-      <!-- small box above bar: add OBS text source for "ROUND 1" here -->
       <div class="round-count-box">
         <div class="round-count-box-holo"></div>
+        <div class="round-text" id="roundText">ROUND 1</div>
       </div>
-      <!-- open timer zone: add OBS text source for fight clock here -->
-      <div class="timer-zone"></div>
+      <div class="timer-zone"><div id="fightTimer"></div></div>
     </div>
 
-    <!-- right fighter — blank for OBS text source -->
+    <!-- right fighter — fed by the deck's card runner -->
     <div class="fighter-slot right">
       <div class="f-label">Fighter</div>
-      <div class="f-name">&nbsp;</div>
+      <div class="f-name" id="nameR">&nbsp;</div>
     </div>
 
     <div class="bar-accent right"></div>
@@ -411,6 +458,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
       </div>
     </div>
   </div>
+  </div><!-- /bar-wrap -->
 
   <!-- bottom strip -->
   <div class="bottom-strip">
@@ -501,6 +549,86 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   function frame(){T++;if(W){cx.clearRect(0,0,W,H);flowers.forEach(tick);}requestAnimationFrame(frame);}
   fill();frame();
 })();
+</script>
+
+<!-- ── VGA STUDIO WIRE — deck listener (added 2026-08-01, visuals untouched) ──
+     Renders only its own commands, ignores the rest of the channel:
+       {type:'clock', show}        slide the HUD in/out between bouts
+       {type:'bout',  d:{a,b,label,sub,colorL,colorR}}   arm a bout
+       {type:'corner',d:{l,r}}     recolour the corner strips mid-fight
+       {type:'round', n}           round box
+       {type:'matchtimer', secs | on:false}              the fight timer -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+  const _sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
+    'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
+  const $=id=>document.getElementById(id)
+
+  // hex → a colour NAME, so the reveal can say "RED TRUNKS" instead of a hex.
+  // Nearest-bin by hue; low-saturation collapses to white/black/grey.
+  function colorName(hex){
+    const n=parseInt(hex.slice(1),16), r=(n>>16)/255, g=((n>>8)&255)/255, b=(n&255)/255
+    const mx=Math.max(r,g,b), mn=Math.min(r,g,b), l=(mx+mn)/2
+    const s= mx===mn?0 : (mx-mn)/(1-Math.abs(2*l-1))
+    if(s<.18) return l>.78?'WHITE':l<.22?'BLACK':'GREY'
+    let h=0
+    if(mx===r) h=((g-b)/(mx-mn))%6; else if(mx===g) h=(b-r)/(mx-mn)+2; else h=(r-g)/(mx-mn)+4
+    h=(h*60+360)%360
+    return h<15?'RED':h<40?'ORANGE':h<65?'GOLD':h<150?'GREEN':h<200?'CYAN'
+          :h<255?'BLUE':h<290?'PURPLE':h<345?'PINK':'RED'
+  }
+
+  // Corner colours live on the bar's outer accents; every change also runs
+  // the trunk reveal — panels extend out from behind the bar, announce the
+  // colour, hold, tuck back in. Auto-retract, so it can never strand.
+  let trunkTimer=null
+  function corners(l,r){
+    if(l){ $('trunkSwatchL').style.background=l; $('trunkSwatchL').style.color=l
+           $('trunkLabelL').textContent=colorName(l)+' TRUNKS'
+           const a=$('accentL'); if(a) a.style.background=`linear-gradient(to bottom,${l},${l}66,transparent)` }
+    if(r){ $('trunkSwatchR').style.background=r; $('trunkSwatchR').style.color=r
+           $('trunkLabelR').textContent=colorName(r)+' TRUNKS'
+           const as=document.querySelectorAll('.bar-accent.right')
+           if(as[0]) as[0].style.background=`linear-gradient(to bottom,transparent,${r}66,${r})` }
+    if(l||r){
+      $('trunkL').classList.add('show'); $('trunkR').classList.add('show')
+      clearTimeout(trunkTimer)
+      trunkTimer=setTimeout(()=>{ $('trunkL').classList.remove('show'); $('trunkR').classList.remove('show') },4500)
+    }
+  }
+  window.__trunks=(l,r)=>corners(l||'#e8312a',r||'#2e6fe8')   // preview/testing
+
+  // fight timer — deck sends a length, this file counts it down. Re-sending
+  // the same length restarts it, matching the deck's one-button-per-length UX.
+  let tHandle=null
+  function timer(secs){
+    clearInterval(tHandle)
+    const el=$('fightTimer')
+    if(secs==null){ el.textContent=''; return }
+    let left=secs
+    const draw=()=>{ el.textContent=`${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}` }
+    draw()
+    tHandle=setInterval(()=>{ left=Math.max(0,left-1); draw(); if(left<=0) clearInterval(tHandle) },1000)
+  }
+
+  _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
+    if(c.type==='clock'){
+      document.querySelector('.hud-root').classList.toggle('off', c.show===false); return
+    }
+    if(c.type==='bout'){
+      const d=c.d||{}
+      if(d.a!=null) $('nameL').textContent=d.a
+      if(d.b!=null) $('nameR').textContent=d.b
+      if(d.label) $('boutFloat').textContent=d.label
+      if(d.sub)   $('formatFloat').textContent=d.sub
+      corners(d.colorL,d.colorR); return
+    }
+    if(c.type==='corner'){ const d=c.d||{}; corners(d.l,d.r); return }
+    if(c.type==='round'){ $('roundText').textContent='ROUND '+c.n; return }
+    if(c.type==='matchtimer'){ timer(c.on===false?null:c.secs); return }
+  }).subscribe()
+})()
 </script>
 </body>
 </html>

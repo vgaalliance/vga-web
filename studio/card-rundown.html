@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920">
+<title>UBA — Card Rundown</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,900;1,900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+/* One OBS browser source. Renders ONLY {type:'rundown'} commands and ignores
+   everything else on the channel — the scene-file contract of this studio.
+   The deck owns all state (bouts, winners, filter); this file just paints. */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{width:1920px;height:1080px;overflow:hidden;background:transparent;
+  font-family:'Barlow Condensed',sans-serif;}
+
+@keyframes holoA{0%{transform:translateX(-200%)}100%{transform:translateX(400%)}}
+@keyframes ubaGlow{
+  0%,100%{text-shadow:0 0 10px rgba(216,180,254,.6),0 0 20px rgba(155,48,255,.3);}
+  50%{text-shadow:0 0 22px rgba(216,180,254,1),0 0 44px rgba(155,48,255,.6);}
+}
+@keyframes rowIn{from{opacity:0;transform:translateX(-26px)}to{opacity:1;transform:none}}
+
+.root{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  opacity:0;transform:translateY(18px);transition:opacity .45s ease,transform .45s ease;
+  filter:drop-shadow(0 10px 60px rgba(0,0,0,.95));
+}
+.root.on{opacity:1;transform:none;}
+
+.panel{width:1060px;max-height:980px;display:flex;flex-direction:column;}
+
+/* header — mirrors the clock's badge language */
+.head{
+  position:relative;background:rgba(4,0,16,.92);
+  border:1px solid rgba(168,85,247,.55);
+  padding:14px 34px;display:flex;align-items:baseline;gap:22px;overflow:hidden;
+  clip-path:polygon(16px 0,100% 0,100% 100%,0 100%,0 16px);
+}
+.head::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.85) 50%,transparent);}
+.head-holo{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.head-holo::after{content:'';position:absolute;top:0;bottom:0;width:55%;
+  background:linear-gradient(90deg,transparent,rgba(216,180,254,.14),rgba(168,85,247,.18),transparent);
+  animation:holoA 3.6s ease-in-out infinite;}
+.head-title{font-size:44px;font-weight:900;font-style:italic;letter-spacing:.06em;
+  color:#fff;text-transform:uppercase;position:relative;z-index:2;animation:ubaGlow 3s ease-in-out infinite;}
+.head-sub{font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:.42em;
+  color:rgba(216,180,254,.85);text-transform:uppercase;position:relative;z-index:2;}
+
+.body{
+  background:rgba(4,0,16,.78);border:1px solid rgba(168,85,247,.3);border-top:none;
+  padding:10px 26px 20px;backdrop-filter:blur(8px);overflow:hidden;
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%);
+}
+
+.seg{margin-top:14px;}
+.seg-head{display:flex;align-items:center;gap:14px;margin-bottom:8px;}
+.seg-label{font-family:'Share Tech Mono',monospace;font-size:13px;letter-spacing:.42em;
+  color:rgba(216,180,254,.9);text-transform:uppercase;white-space:nowrap;}
+.seg-line{flex:1;height:1px;background:linear-gradient(90deg,rgba(168,85,247,.55),transparent);}
+
+.bout{
+  display:flex;align-items:center;gap:0;height:62px;margin-bottom:6px;
+  background:rgba(10,4,26,.6);border:1px solid rgba(168,85,247,.22);
+  clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));
+  position:relative;overflow:hidden;animation:rowIn .4s ease both;
+}
+.bout::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(216,180,254,.35),transparent);}
+.bout.done{opacity:.55;}
+.bout.main{border-color:rgba(216,180,254,.55);background:rgba(20,8,44,.72);height:74px;}
+.bout.main::before{background:linear-gradient(90deg,transparent,rgba(255,255,255,.8) 50%,transparent);}
+
+.bout-no{
+  width:64px;flex-shrink:0;height:100%;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:1px;
+  background:rgba(4,0,16,.6);border-right:1px solid rgba(168,85,247,.25);
+}
+.bout-no .n{font-size:26px;font-weight:900;font-style:italic;color:#d8b4fe;line-height:1;}
+.bout-no .t{font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:.3em;color:rgba(200,170,255,.45);text-transform:uppercase;}
+
+.fname{flex:1;display:flex;align-items:center;font-size:30px;font-weight:900;
+  font-style:italic;letter-spacing:.03em;color:#f0e8ff;text-transform:uppercase;
+  padding:0 22px;line-height:1;white-space:nowrap;overflow:hidden;}
+.fname.r{justify-content:flex-end;}
+.bout.main .fname{font-size:36px;}
+.fname.win{color:#ffd66e;text-shadow:0 0 18px rgba(255,200,80,.55);}
+.fname.lose{color:rgba(160,140,190,.4);text-decoration:line-through;text-decoration-thickness:2px;}
+.fname .tick{font-style:normal;font-size:20px;margin:0 10px;color:#ffd66e;}
+
+.vs{
+  flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;width:130px;height:100%;
+  border-left:1px solid rgba(168,85,247,.2);border-right:1px solid rgba(168,85,247,.2);
+  background:rgba(4,0,16,.45);
+}
+.vs .v{font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:.3em;color:rgba(216,180,254,.6);}
+.vs .wc{font-size:15px;font-weight:700;letter-spacing:.14em;color:#d8b4fe;text-transform:uppercase;white-space:nowrap;}
+.vs .belt{font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.24em;color:#ffd66e;text-transform:uppercase;white-space:nowrap;}
+
+.foot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:0 4px;}
+.foot-l{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:.32em;color:rgba(200,170,255,.4);text-transform:uppercase;}
+.foot-r{font-size:15px;font-weight:700;letter-spacing:.2em;color:#d8b4fe;text-transform:uppercase;}
+</style>
+</head>
+<body>
+
+<div class="root" id="root">
+  <div class="panel">
+    <div class="head">
+      <div class="head-holo"></div>
+      <div class="head-title" id="evName">FIGHT CARD</div>
+      <div class="head-sub" id="evSub">Unified Boxing Association</div>
+    </div>
+    <div class="body" id="body"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+  const _sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
+    'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
+
+  const SEGS=[['main_card','MAIN CARD'],['undercard','UNDERCARD'],['prelim','PRELIMS']]
+
+  function render(d){
+    document.getElementById('evName').textContent=(d.event||'FIGHT CARD').toUpperCase()
+    const body=document.getElementById('body')
+    const filter=d.filter&&d.filter!=='all'?d.filter:null
+    const bouts=(d.bouts||[]).filter(b=>!filter||b.seg===filter)
+      .sort((a,b)=>a.bout_number-b.bout_number)     // 1 = main event → top
+    let html='', delay=0
+    SEGS.forEach(([key,label])=>{
+      const group=bouts.filter(b=>b.seg===key)
+      if(!group.length) return
+      html+=`<div class="seg"><div class="seg-head"><div class="seg-label">${label}</div><div class="seg-line"></div></div>`
+      group.forEach(b=>{
+        const main=b.bout_number===1
+        const done=b.winner==='a'||b.winner==='b'
+        const cls=n=> b.winner? (b.winner===n?'win':'lose') : ''
+        html+=`<div class="bout${main?' main':''}${done?' done':''}" style="animation-delay:${delay}ms">
+          <div class="bout-no"><div class="n">${b.bout_number}</div><div class="t">${main?'MAIN':'BOUT'}</div></div>
+          <div class="fname l ${cls('a')}">${b.winner==='a'?'<span class="tick">✓</span>':''}${b.a||''}</div>
+          <div class="vs"><div class="v">VS</div><div class="wc">${b.wc||''}</div>${b.title?`<div class="belt">👑 ${b.title}</div>`:''}</div>
+          <div class="fname r ${cls('b')}">${b.b||''}${b.winner==='b'?'<span class="tick">✓</span>':''}</div>
+        </div>`
+        delay+=45
+      })
+      html+='</div>'
+    })
+    const doneN=bouts.filter(b=>b.winner).length
+    html+=`<div class="foot"><div class="foot-l">discord.gg/uba · ubaesports.com</div>
+      <div class="foot-r">${doneN} / ${bouts.length} COMPLETE</div></div>`
+    body.innerHTML=html
+  }
+
+  _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
+    if(c.type!=='rundown') return
+    const root=document.getElementById('root')
+    if(c.on===false){ root.classList.remove('on'); return }
+    render(c.d||{})
+    root.classList.add('on')
+  }).subscribe()
+
+  // expose for local preview/testing: window.__test(sampleData)
+  window.__test=d=>{ render(d); document.getElementById('root').classList.add('on') }
+})()
+</script>
+</body>
+</html>
