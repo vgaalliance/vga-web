@@ -175,13 +175,19 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 /* soft vertical sheen so even the resting slit feels lit, not painted */
 .corner-slit::after{content:'';position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(180deg,rgba(255,255,255,.22),transparent 40%,rgba(0,0,0,.28));}
-.corner-slit.expand{width:150px;}
-/* the label speaks the bar's own font — bold condensed caps, not tiny mono */
-.slit-label{opacity:0;transition:opacity .22s ease;white-space:nowrap;
-  font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:19px;
-  letter-spacing:.14em;color:#fff;text-transform:uppercase;
-  text-shadow:0 1px 4px rgba(0,0,0,.6);position:relative;z-index:2;}
-.corner-slit.expand .slit-label{opacity:1;transition-delay:.22s;}
+.corner-slit.expand{width:196px;}
+/* the label speaks the bar's own font — bold condensed caps, not tiny mono.
+   Two lines: an eyebrow (FAVOURITE / UNDERDOG / the corner) over the value,
+   so the number is never bare — "+130" means nothing without the word. */
+.slit-label{opacity:0;transform:translateY(6px);
+  transition:opacity .3s ease,transform .3s cubic-bezier(.16,.8,.3,1);
+  white-space:nowrap;position:relative;z-index:2;
+  display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1;}
+.slit-eyebrow{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:.28em;
+  text-transform:uppercase;opacity:.85;}
+.slit-value{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:26px;
+  letter-spacing:.08em;text-transform:uppercase;text-shadow:0 1px 5px rgba(0,0,0,.65);}
+.corner-slit.expand .slit-label{opacity:1;transform:none;transition-delay:.26s;}
 
 /* deck-driven round + timer text (were blank slots for OBS text sources;
    the deck now feeds them over the channel instead) */
@@ -439,7 +445,9 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     </div>
 
     <!-- UFC-style corner slit, left of the clock -->
-    <div class="corner-slit" id="slitL"><span class="slit-label" id="slitLabelL">RED TRUNKS</span></div>
+    <div class="corner-slit" id="slitL"><span class="slit-label" id="slitLabelL">
+      <span class="slit-eyebrow" id="slitEyeL">RED</span><span class="slit-value" id="slitValL">TRUNKS</span>
+    </span></div>
 
     <!-- centre — round box on top, timer below, both deck-driven -->
     <div class="bar-centre">
@@ -451,7 +459,9 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     </div>
 
     <!-- UFC-style corner slit, right of the clock -->
-    <div class="corner-slit rightside" id="slitR"><span class="slit-label" id="slitLabelR">BLUE TRUNKS</span></div>
+    <div class="corner-slit rightside" id="slitR"><span class="slit-label" id="slitLabelR">
+      <span class="slit-eyebrow" id="slitEyeR">BLUE</span><span class="slit-value" id="slitValR">TRUNKS</span>
+    </span></div>
 
     <!-- right fighter — fed by the deck's card runner -->
     <div class="fighter-slot right">
@@ -608,11 +618,18 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   // name, so the colour reads as lighting on the bar rather than a paint chip
   // sitting on top of it. Resting (7px wide) it's effectively solid; expanded
   // the fade has room to breathe.
+  // Every slit shows an EYEBROW over a VALUE. A bare number tells the audience
+  // nothing — "+130" only lands as "UNDERDOG +130".
+  function writeSlit(side, eyebrow, value){
+    const s = side==='left' ? 'L' : 'R'
+    $('slitEye'+s).textContent = eyebrow
+    $('slitVal'+s).textContent = value
+  }
   function corner1(hex, slit, label, side){
     const dir = side==='left' ? '270deg' : '90deg'   // solid nearest the clock
     slit.style.background=
       `linear-gradient(${dir}, ${hex} 0%, ${hex} 22%, ${hex}cc 46%, ${hex}66 72%, ${hex}1a 100%)`
-    label.textContent=colorName(hex)+' TRUNKS'
+    writeSlit(side, colorName(hex), 'TRUNKS')
     label.style.color = darkText(hex) ? '#0a0014' : '#fff'
     label.style.textShadow = darkText(hex) ? '0 1px 3px rgba(255,255,255,.35)' : '0 1px 5px rgba(0,0,0,.75)'
     const eb=document.querySelector(`.fighter-slot.${side} .f-label`)
@@ -629,9 +646,9 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   // The ONE reveal mechanism: widen the bar from its centre, open both slits,
   // show whatever text was handed in, hold, close. Trunks and odds both use
   // it — same motion, different words. Auto-closes so it can never strand.
-  function reveal(textL, textR, hold){
-    $('slitLabelL').textContent=textL
-    $('slitLabelR').textContent=textR
+  function reveal(L, R, hold){
+    if(L) writeSlit('left',  L.eyebrow, L.value)
+    if(R) writeSlit('right', R.eyebrow, R.value)
     $('mainBar').classList.add('wide')
     document.querySelector('.bottom-strip').classList.add('wide')
     $('slitL').classList.add('expand'); $('slitR').classList.add('expand')
@@ -647,7 +664,20 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 
   function corners(l,r){
     setCorners(l,r)
-    reveal(colorName(l||'#e8312a')+' TRUNKS', colorName(r||'#2e6fe8')+' TRUNKS')
+    reveal({eyebrow:colorName(l||'#e8312a'), value:'TRUNKS'},
+           {eyebrow:colorName(r||'#2e6fe8'), value:'TRUNKS'})
+  }
+
+  // Odds ride the same reveal. American odds carry their own meaning: negative
+  // = favourite, positive = underdog. The eyebrow says which so the number
+  // reads to someone who has never seen a betting line.
+  function oddsWord(v){
+    if(!v || v==='—') return 'EVEN'
+    return String(v).trim().startsWith('-') ? 'FAVOURITE' : 'UNDERDOG'
+  }
+  function oddsReveal(l,r){
+    reveal({eyebrow:oddsWord(l), value:l||'—'},
+           {eyebrow:oddsWord(r), value:r||'—'}, 6000)
   }
 
   // Long names shrink instead of wrapping — "iron Micheal Chandler" was
@@ -668,7 +698,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   $('mainBar').addEventListener('transitionend', e=>{ if(e.propertyName==='width') fitNames() })
 
   window.__trunks=(l,r)=>corners(l||'#e8312a',r||'#2e6fe8')   // preview/testing
-  window.__odds=(l,r)=>reveal(l||'-150', r||'+130', 6000)
+  window.__odds=(l,r)=>oddsReveal(l||'-150', r||'+130')
 
   // fight timer — deck sends a length, this file counts it down. Re-sending
   // the same length restarts it, matching the deck's one-button-per-length UX.
@@ -705,7 +735,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
       return
     }
     // odds ride the same reveal, different words
-    if(c.type==='clockodds'){ const d=c.d||{}; reveal(d.l||'—', d.r||'—', 6000); return }
+    if(c.type==='clockodds'){ const d=c.d||{}; oddsReveal(d.l,d.r); return }
     if(c.type==='round'){ $('roundText').textContent='ROUND '+c.n; return }
     // 'clocktimer' is THIS bar's own timer, deliberately a different type from
     // the overlay's top-right 'matchtimer' — otherwise one deck press ran both
