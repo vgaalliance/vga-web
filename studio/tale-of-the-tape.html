@@ -179,7 +179,7 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
       </div>
 
     <!-- BOUT TYPE LABEL -->
-    <div id="boutLabel" style="margin-top:22px; text-align:center; opacity:0; position:relative; z-index:2;">
+    <div id="boutLabel" style="margin-top:22px; text-align:center; opacity:0; position:relative; z-index:2; align-self:stretch; width:100%;">
       <div id="boutTitleText" style="font-size:30px; font-weight:800; letter-spacing:1px; color:#f3f1fa; text-transform:uppercase;">HEAVYWEIGHT</div>
       <div id="boutSubtitleText" style="font-size:14px; font-weight:500; letter-spacing:6px; color:hsla(265,25%,80%,0.55); text-transform:uppercase; margin-top:6px;">BOUT</div>
     </div>
@@ -473,9 +473,13 @@ const boutLabel = document.getElementById('boutLabel');
 const statRows = document.querySelectorAll('.stat-row');
 const sponsorBar = document.getElementById('sponsorBar');
 const tapeTimers = [];
+const tapeRoot = document.getElementById('tape');
+tapeRoot.style.transition = 'opacity .5s ease, transform .6s cubic-bezier(.5,0,.75,.2)';
 
 function playTape(){
   tapeTimers.forEach(clearTimeout); tapeTimers.length = 0;
+  tapeRoot.style.opacity = '1';
+  tapeRoot.style.transform = 'none';
 
   // back to the pre-entrance state, or a replay starts from wherever the last
   // one finished and nothing appears to move
@@ -515,16 +519,40 @@ function playTape(){
 
 // Retract. Every other scene file answers an off command; this one had no way
 // to be cleared, so it sat on screen from the moment OBS loaded the source.
+// Hiding used to clear only the centre column, leaving the fighter names, the
+// side rails and the record strips sitting on screen -- a half-dismissed
+// graphic. It takes the whole thing now, the way the fight clock does: one
+// element, one fade, everything goes together.
 function hideTape(){
   tapeTimers.forEach(clearTimeout); tapeTimers.length = 0;
-  const out = 'opacity 0.45s ease, transform 0.55s cubic-bezier(.5,0,.75,.2)';
-  centerCol.style.transition = out;
-  centerCol.style.opacity = '0';
-  centerCol.style.transform = 'translateY(-18px) scale(1.06)';
-  [boutLabel, sponsorBar].forEach(el=>{ el.style.transition='opacity .3s ease'; el.style.opacity='0'; });
-  statRows.forEach(r=>{ r.style.transition='opacity .3s ease'; r.style.opacity='0'; });
+  tapeRoot.style.opacity = '0';
+  tapeRoot.style.transform = 'scale(1.03)';
 }
-window.__tape = playTape; window.__tapeHide = hideTape;
+// "LIGHT HEAVYWEIGHT" ran past the card at the design size. Shrink to fit
+// instead of clipping, so every division renders on one line.
+function fitBoutTitle(){
+  const el = document.getElementById('boutTitleText'); if(!el) return
+  // scrollWidth is NOT usable here: with visible overflow Chrome reports it
+  // equal to clientWidth, so the text ran past the card while the fitter
+  // believed it fit. A Range around the text nodes measures what is actually
+  // drawn.
+  const measure = () => {
+    const r = document.createRange(); r.selectNodeContents(el)
+    return r.getBoundingClientRect().width
+  }
+  // NOT el.clientWidth -- this element is shrink-to-fit, so its own width
+  // tracks the text and the comparison is self-referential (room always came
+  // out ~10px under whatever the text already measured, so it never settled).
+  // The parent is the fixed box the text has to live inside.
+  // boutLabel is pinned to the card width (align-self:stretch) so this is a
+  // fixed box. Without that both the title AND its parent shrink-to-fit, and
+  // "room" chased the text instead of constraining it.
+  const room = el.parentElement.getBoundingClientRect().width - 14
+  let size = 30; el.style.whiteSpace='nowrap'; el.style.fontSize = size+'px'
+  while(size > 14 && measure() > room){ size -= 1; el.style.fontSize = size+'px' }
+}
+fitBoutTitle()
+window.__tape = playTape; window.__tapeHide = hideTape; window.__fitTitle = fitBoutTitle;
 
 playTape();
 
@@ -931,6 +959,7 @@ editOverlay.addEventListener('click', (e) => {
     if(c.on===false){ hideTape(); return }
     const d=c.d||{}
     set('boutTitleText',d.title); set('boutSubtitleText',d.subtitle); set('sponsorText',d.sponsor)
+    fitBoutTitle()
     const L=d.left||{}, R=d.right||{}
     set('nameLeft',L.name); set('ageLeft',L.age); set('heightLeft',L.height); set('weightLeft',L.weight)
     set('reachLeft',L.reach); set('recordLeft',L.record); set('oddsLeft',L.odds); set('rankLeft',L.rank)

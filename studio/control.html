@@ -709,7 +709,20 @@ window.mnTape=async()=>{
   const F=x=>({ name:x.display_name, record:`${x.wins}-${x.losses}-${x.draws}`,
     rank:x.rank?('#'+x.rank):'—', age:x.age??'—', height:x.height??'—', reach:x.reach??'—',
     weight:cap(x.weight_class), odds:'—' })
-  send({type:'tape', d:{ title:(MN.a&&MN.b)?`${MN.a} vs ${MN.b}`:'UBAe', subtitle:MN.week?('SUMMER SPLIT · WEEK '+MN.week):'SUMMER SPLIT', left:F(A), right:F(B) }})
+  // The title fell back to the literal string 'UBAe' whenever no UBAe match
+  // was loaded -- so on a fight night the tape announced the wrong league.
+  // On UBA it takes the bout's own division, which is what the card is
+  // actually showing, and the event name underneath.
+  const uba = EV==='uba'
+  const armed = armedBout()
+  const title = uba
+    ? ((armed && armed.title) ? String(armed.title).toUpperCase()
+       : (armed && armed.wc ? String(armed.wc).toUpperCase() : cap(A.weight_class||'')) )
+    : ((MN.a&&MN.b) ? `${MN.a} vs ${MN.b}` : 'UBAe')
+  const subtitle = uba
+    ? (UBA.name || 'BOUT')
+    : (MN.week ? ('SUMMER SPLIT · WEEK '+MN.week) : 'SUMMER SPLIT')
+  send({type:'tape', d:{ title, subtitle, left:F(A), right:F(B) }})
 }
 
 window.fireMsg=()=>{
