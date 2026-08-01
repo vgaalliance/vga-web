@@ -140,21 +140,37 @@
     color:var(--hi);text-transform:uppercase;}
   .fotm-rec{font-weight:700;font-size:32px;color:var(--dim);letter-spacing:.14em;}
 
-  /* card collection — one panel per set */
-  .setgrid{display:grid;grid-template-columns:1fr 1fr;gap:30px;}
-  .setcard{background:var(--panel);border-top:5px solid var(--pur);padding:0 0 16px;
-    box-shadow:0 0 22px rgba(60,0,110,.45);}
-  .setcard .sh{font-weight:900;font-size:34px;text-transform:uppercase;text-align:center;
-    padding:14px 8px 6px;background:linear-gradient(180deg,rgba(155,48,255,.35),transparent);line-height:1;}
-  .setcard .scode{font-family:'Press Start 2P',monospace;font-size:11px;text-align:center;
-    color:var(--dim);letter-spacing:.2em;padding-bottom:12px;}
-  .rrow{display:grid;grid-template-columns:1fr auto auto;gap:16px;align-items:center;
-    padding:9px 24px;border-top:1px solid var(--line);font-size:25px;}
-  .rrow .rl{font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
-  .rrow .rc{font-family:'Press Start 2P',monospace;font-size:14px;color:#fff;min-width:66px;text-align:right;}
-  .rrow .rd{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--dim);min-width:96px;text-align:right;}
-  .setfoot{padding:12px 24px 0;font-family:'Press Start 2P',monospace;font-size:11px;
-    letter-spacing:.16em;color:var(--dim);text-align:center;}
+  /* card collection — the website's stash grid, scaled for broadcast. It was
+     a rarity COUNT TABLE, which answers "how many uncommons exist" when the
+     thing worth showing is the set itself: every card laid out, with how many
+     of each are out there. Rarity palette lifted from fighter-profile.html
+     deliberately -- someone who has seen their own stash should recognise
+     this at a glance. */
+  .setgrid{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:start;}
+  .sethead{display:flex;justify-content:space-between;align-items:baseline;
+    border-bottom:2px solid var(--pur);padding-bottom:6px;margin-bottom:10px;}
+  .setname{font-weight:900;font-size:30px;text-transform:uppercase;line-height:1;}
+  .setprog{font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.16em;color:var(--dim);}
+  .scards{display:grid;grid-template-columns:repeat(auto-fill,minmax(146px,1fr));gap:7px;}
+  .scard{border:1px solid var(--line);background:var(--panel);padding:8px 9px 7px;position:relative;}
+  .scard-name{font-weight:700;font-size:19px;line-height:1.05;text-transform:uppercase;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#f0e8ff;padding-right:26px;}
+  .scard-rar{font-family:'Press Start 2P',monospace;font-size:7px;letter-spacing:.14em;
+    text-transform:uppercase;margin-top:4px;color:var(--dim);}
+  .scard-circ{font-family:'Press Start 2P',monospace;font-size:9px;color:#fff;
+    position:absolute;top:7px;right:8px;}
+  .scard.r-legendary{border-color:rgba(245,200,66,.6);}
+  .scard.r-legendary .scard-rar{color:rgba(245,200,66,.85);}
+  .scard.r-mystic{border-color:rgba(165,110,240,.6);}
+  .scard.r-mystic .scard-rar{color:rgba(190,145,250,.9);}
+  .scard.r-rare{border-color:rgba(80,160,255,.55);}
+  .scard.r-rare .scard-rar{color:rgba(120,180,255,.85);}
+  .scard.r-uncommon{border-color:rgba(80,200,140,.5);}
+  .scard.r-uncommon .scard-rar{color:rgba(110,210,160,.85);}
+  .scard.r-one_of_one{border-color:rgba(240,120,180,.65);}
+  .scard.r-one_of_one .scard-rar{color:rgba(240,140,190,.9);}
+  .setfoot{margin-top:9px;font-family:'Press Start 2P',monospace;font-size:9px;
+    letter-spacing:.14em;color:var(--dim);}
   .setfoot b{color:#ffce00;}
 
   /* schedule + next-events list */
@@ -570,26 +586,35 @@ const METHOD=raw=>{
   if(/DRAW/.test(t))         return 'DRAW'
   return t.slice(0,5)
 }
-const RARITY_ORDER=['legendary','mystic','rare','uncommon','common']
+// Rarest first, matching the website's stash ordering so the two views agree
+// about what "top of the set" means.
+const RANK={one_of_one:0,legendary:1,mystic:2,rare:3,uncommon:4,common:5}
 function renderCards(sets, coll){
-  document.getElementById('cardsContent').innerHTML = (sets||[]).map(s=>{
-    const mine=coll.filter(c=>c.set_code===s.code)
-    const byR=RARITY_ORDER.map(r=>{
-      const rows=mine.filter(c=>c.rarity===r)
-      return rows.length
-        ? {r, copies:rows.reduce((n,x)=>n+(x.copies||0),0), cards:rows.length}
-        : null
-    }).filter(Boolean)
-    // scarcest = the individual card with the fewest copies out there
-    const rarest=[...mine].sort((a,b)=>(a.copies||0)-(b.copies||0))[0]
-    return `<div class="setcard">
-      <div class="sh">${s.name}</div>
-      <div class="scode">${s.code} · ${(s.status||'').toUpperCase()} · ${s.set_size||byR.reduce((n,x)=>n+x.cards,0)} CARDS</div>
-      ${byR.map(x=>`<div class="rrow"><span class="rl">${x.r}</span>
-        <span class="rc">${x.copies}</span><span class="rd">${x.cards} CARD${x.cards===1?'':'S'}</span></div>`).join('')}
-      ${rarest?`<div class="setfoot">RAREST IN CIRCULATION · <b>${String(rarest.card_fighter).toUpperCase()}</b> · ${rarest.copies} COPIES</div>`:''}
-    </div>`
-  }).join('') || '<div class="setcard"><div class="sh">NO SETS</div></div>'
+  const meta={}; (sets||[]).forEach(x=>{ meta[x.code]={size:x.set_size,name:x.name} })
+  const byCode={}
+  ;(coll||[]).forEach(c=>{ (byCode[c.set_code]=byCode[c.set_code]||[]).push(c) })
+  const codes=Object.keys(byCode)
+  document.getElementById('cardsContent').innerHTML = codes.length ? codes.map(code=>{
+    const m=meta[code]||{}
+    const cards=byCode[code].slice().sort((a,b)=>
+      (RANK[a.rarity]??9)-(RANK[b.rarity]??9) || (b.copies||0)-(a.copies||0))
+    const total=cards.reduce((n,c)=>n+(c.copies||0),0)
+    const rarest=cards.slice().sort((a,b)=>(a.copies||0)-(b.copies||0))[0]
+    return '<div>'
+      + '<div class="sethead"><div class="setname">'+(m.name||code)+'</div>'
+      + '<div class="setprog">'+cards.length+(m.size?' OF '+m.size:'')+' CARDS</div></div>'
+      + '<div class="scards">' + cards.map(function(c){
+          // NB: the returned expression must start on THIS line -- `return`
+          // followed by a newline gets a semicolon inserted and yields undefined
+          return '<div class="scard r-'+c.rarity+'">'
+          + '<div class="scard-circ">'+c.copies+'</div>'
+          + '<div class="scard-name">'+c.card_fighter+'</div>'
+          + '<div class="scard-rar">'+(c.rarity==='one_of_one'?'1 of 1':c.rarity)+'</div></div>' }
+        ).join('') + '</div>'
+      + '<div class="setfoot">'+total+' IN CIRCULATION'
+      + (rarest ? ' &middot; RAREST <b>'+String(rarest.card_fighter).toUpperCase()+'</b> &times;'+rarest.copies : '')
+      + '</div></div>'
+  }).join('') : '<div class="setfoot">NO SETS RELEASED</div>'
 }
 
 function renderCta(count){
