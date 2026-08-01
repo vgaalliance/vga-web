@@ -167,13 +167,21 @@
         <button onclick="segCard('MAIN CARD')">Main card</button>
         <button class="hide" onclick="send({type:'segcard',on:false})">Hide now</button>
       </div>
-      <h5>Corner colours — clock names + accents</h5>
+      <h5>Trunk colours — click a swatch, it fires the reveal</h5>
+      <div class="row" style="margin-bottom:6px;align-items:center">
+        <span style="color:var(--gdim);font-size:16px;width:52px">LEFT</span>
+        <span id="swatchL" style="display:flex;gap:6px;flex-wrap:wrap"></span>
+      </div>
+      <div class="row" style="margin-bottom:8px;align-items:center">
+        <span style="color:var(--gdim);font-size:16px;width:52px">RIGHT</span>
+        <span id="swatchR" style="display:flex;gap:6px;flex-wrap:wrap"></span>
+      </div>
       <div class="row">
-        <span style="color:var(--gdim);font-size:16px">LEFT</span>
-        <input type="color" id="ubaColorL" value="#e8312a" style="width:64px;height:42px;padding:3px">
-        <span style="color:var(--gdim);font-size:16px">RIGHT</span>
-        <input type="color" id="ubaColorR" value="#2e6fe8" style="width:64px;height:42px;padding:3px">
-        <button onclick="fireCorners()">Apply · replay trunk reveal</button>
+        <button onclick="fireCorners()">↻ Replay reveal</button>
+        <button class="hide" onclick="ubaSwapCorners()">⇄ Swap corners</button>
+        <span style="color:var(--gdim);font-size:16px">custom</span>
+        <input type="color" id="ubaColorL" value="#e8312a" style="width:52px;height:38px;padding:3px" onchange="fireCorners()">
+        <input type="color" id="ubaColorR" value="#2e6fe8" style="width:52px;height:38px;padding:3px" onchange="fireCorners()">
       </div>
     </div>
   </div>
@@ -779,9 +787,44 @@ window.ubaPush=()=>{
 
 window.segCard=label=>send({type:'segcard', label, sub:UBA.name||'UBA Fight Night'})
 
+/* Preset trunk colours — the shorts fighters actually wear. One click sets
+   the side AND fires the reveal, so mid-show you never open a colour picker.
+   The custom pickers stay for the odd one out. */
+const TRUNKS=[
+  ['RED','#e8312a'],['BLUE','#2e6fe8'],['BLACK','#141018'],['WHITE','#f2f0f7'],
+  ['GOLD','#f0b429'],['GREEN','#22a95b'],['PURPLE','#8b5cf6'],['PINK','#ec4899'],
+]
+function drawSwatches(){
+  ;[['swatchL','ubaColorL'],['swatchR','ubaColorR']].forEach(([boxId,inputId])=>{
+    const box=document.getElementById(boxId); if(!box) return
+    box.innerHTML=''
+    TRUNKS.forEach(([name,hex])=>{
+      const b=document.createElement('button')
+      b.title=name
+      b.style.cssText=`background:${hex};width:44px;height:34px;padding:0;border:2px solid ${
+        document.getElementById(inputId).value.toLowerCase()===hex.toLowerCase()?'var(--g)':'rgba(255,255,255,.25)'};
+        box-shadow:none;`
+      b.onclick=()=>{ document.getElementById(inputId).value=hex; drawSwatches(); fireCorners() }
+      box.appendChild(b)
+    })
+  })
+}
+// the deck's global button rule adds [ ] brackets — strip them on swatches
+const _swStyle=document.createElement('style')
+_swStyle.textContent='#swatchL button::before,#swatchL button::after,#swatchR button::before,#swatchR button::after{content:none;}'
+document.head.appendChild(_swStyle)
+
+window.ubaSwapCorners=()=>{
+  const L=document.getElementById('ubaColorL'), R=document.getElementById('ubaColorR')
+  const t=L.value; L.value=R.value; R.value=t
+  drawSwatches(); fireCorners()
+}
+
 window.fireCorners=()=>send({type:'corner', d:{
   l:document.getElementById('ubaColorL').value,
   r:document.getElementById('ubaColorR').value }})
+
+drawSwatches()
 
 window.fireBug=()=>{
   const text=document.getElementById('bugText').value.trim(); if(!text) return
