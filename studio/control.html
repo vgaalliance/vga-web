@@ -144,11 +144,16 @@
   <!-- UBA spine: the card runner — pick the card, arm bouts, score winners.
        Deck state only, never writes the DB (same rule as the UBAe tracker):
        real results are entered in the admin desk afterward. -->
-  <div class="sec only-uba">
-    <h4>FIGHT NIGHT — CARD RUNNER</h4>
+  <!-- Visible in BOTH modes on purpose. A fight-night card is UBA's, but you
+       promote it DURING a UBAe week -- "here's FN29, coming up" -- so gating the
+       whole runner behind UBA mode put the promo out of reach exactly when it's
+       wanted. The clock-driving half below (arm / trunks / odds) stays UBA-only,
+       since it talks to a fight clock that isn't in a UBAe scene. -->
+  <div class="sec">
+    <h4>FIGHT NIGHT — CARD RUNNER <span class="only-ubae" style="color:var(--gdim);font-size:15px">· promo the UBA card during a UBAe week</span></h4>
     <div class="row" id="ubaEvents">SCANNING EVENTS…</div>
     <div id="ubaCardWrap" style="display:none">
-      <h5>The card — ARM a bout (tape + clock) · tap a name to score the win</h5>
+      <h5><span class="only-uba">The card — ARM a bout (tape + clock) · tap a name to score the win</span><span class="only-ubae">The card — push it to the standby screen as a promo</span></h5>
       <div class="row" style="margin-bottom:8px">
         <span id="ubaFlt" style="display:contents">
           <button data-f="all" class="active" onclick="ubaFilter('all')">All</button>
@@ -167,8 +172,8 @@
         <button onclick="segCard('MAIN CARD')">Main card</button>
         <button class="hide" onclick="send({type:'segcard',on:false})">Hide now</button>
       </div>
-      <h5>Trunk colours — click a swatch, it fires the reveal</h5>
-      <div class="row" style="margin-bottom:6px;align-items:center">
+      <h5 class="only-uba">Trunk colours — click a swatch, it fires the reveal</h5>
+      <div class="row only-uba" style="margin-bottom:6px;align-items:center">
         <span style="color:var(--gdim);font-size:16px;width:52px">LEFT</span>
         <span id="swatchL" style="display:flex;gap:6px;flex-wrap:wrap"></span>
       </div>
@@ -176,11 +181,11 @@
         <span style="color:var(--gdim);font-size:16px;width:52px">RIGHT</span>
         <span id="swatchR" style="display:flex;gap:6px;flex-wrap:wrap"></span>
       </div>
-      <div class="row" style="margin-bottom:8px">
+      <div class="row only-uba" style="margin-bottom:8px">
         <button onclick="fireClockOdds()">📊 Odds on the clock</button>
         <span id="clockOddsHint" style="color:var(--gdim);font-size:16px">arm a bout first</span>
       </div>
-      <div class="row">
+      <div class="row only-uba">
         <button onclick="fireCorners()">↻ Replay reveal</button>
         <button class="hide" onclick="ubaSwapCorners()">⇄ Swap corners</button>
         <span style="color:var(--gdim);font-size:16px">custom</span>
