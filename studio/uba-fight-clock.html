@@ -696,8 +696,14 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
       setCorners(d.colorL,d.colorR)   // set, don't perform
       fitNames(); return
     }
-    // an explicit corner push DOES perform — that's the deck's reveal button
-    if(c.type==='corner'){ const d=c.d||{}; corners(d.l,d.r); return }
+    // Corner colours: SET by default, only perform when asked. Picking a swatch
+    // shouldn't replay the animation every time you try a colour — that's the
+    // deck's explicit reveal button ({reveal:true}).
+    if(c.type==='corner'){
+      const d=c.d||{}
+      if(c.reveal) corners(d.l,d.r); else setCorners(d.l,d.r)
+      return
+    }
     // odds ride the same reveal, different words
     if(c.type==='clockodds'){ const d=c.d||{}; reveal(d.l||'—', d.r||'—', 6000); return }
     if(c.type==='round'){ $('roundText').textContent='ROUND '+c.n; return }

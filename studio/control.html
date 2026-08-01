@@ -184,8 +184,8 @@
         <button onclick="fireCorners()">↻ Replay reveal</button>
         <button class="hide" onclick="ubaSwapCorners()">⇄ Swap corners</button>
         <span style="color:var(--gdim);font-size:16px">custom</span>
-        <input type="color" id="ubaColorL" value="#e8312a" style="width:52px;height:38px;padding:3px" onchange="fireCorners()">
-        <input type="color" id="ubaColorR" value="#2e6fe8" style="width:52px;height:38px;padding:3px" onchange="fireCorners()">
+        <input type="color" id="ubaColorL" value="#e8312a" style="width:52px;height:38px;padding:3px" onchange="drawSwatches();setCornersQuiet()">
+        <input type="color" id="ubaColorR" value="#2e6fe8" style="width:52px;height:38px;padding:3px" onchange="drawSwatches();setCornersQuiet()">
       </div>
     </div>
   </div>
@@ -837,7 +837,8 @@ function drawSwatches(){
       b.style.cssText=`background:${hex};width:44px;height:34px;padding:0;border:2px solid ${
         document.getElementById(inputId).value.toLowerCase()===hex.toLowerCase()?'var(--g)':'rgba(255,255,255,.25)'};
         box-shadow:none;`
-      b.onclick=()=>{ document.getElementById(inputId).value=hex; drawSwatches(); fireCorners() }
+      // set only — the reveal is a deliberate press, not a side effect of browsing colours
+      b.onclick=()=>{ document.getElementById(inputId).value=hex; drawSwatches(); setCornersQuiet() }
       box.appendChild(b)
     })
   })
@@ -850,12 +851,16 @@ document.head.appendChild(_swStyle)
 window.ubaSwapCorners=()=>{
   const L=document.getElementById('ubaColorL'), R=document.getElementById('ubaColorR')
   const t=L.value; L.value=R.value; R.value=t
-  drawSwatches(); fireCorners()
+  drawSwatches(); setCornersQuiet()
 }
 
-window.fireCorners=()=>send({type:'corner', d:{
+/* setCorners = colours land silently (pick freely, nothing performs).
+   fireCorners = the explicit reveal. Same split as arming a bout. */
+const cornerPayload=()=>({
   l:document.getElementById('ubaColorL').value,
-  r:document.getElementById('ubaColorR').value }})
+  r:document.getElementById('ubaColorR').value })
+window.setCornersQuiet=()=>send({type:'corner', d:cornerPayload()})
+window.fireCorners=()=>send({type:'corner', reveal:true, d:cornerPayload()})
 
 /* Pari-mutuel pools → AMERICAN odds for the armed bout, shown in the clock's
    slits with the same expand-from-the-middle motion as the trunk reveal.
