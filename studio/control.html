@@ -186,13 +186,31 @@
   .railhead{position:sticky;top:-16px;background:rgba(10,5,0,.99);z-index:2;
     margin:-16px -18px 12px;padding:16px 18px 8px;}
 
-  /* the bout list condenses -- one per row in a 452px rail, not squeezed
-     into a grid that would clip the names */
-  #trackrail #ubaCard{display:flex;flex-direction:column;gap:6px;}
-  #trackrail #ubaCard button{width:100%;min-height:0;padding:8px 10px;font-size:18px;
-    text-align:left;justify-content:flex-start;line-height:1.2;}
+  /* One bout, ONE line. The previous rule forced width:100% on every button in
+     here, which blew the ARM chip to full width and pushed the two names onto a
+     second row -- hence a long bar over two small ones. The arm chip is fixed
+     and narrow, the names share what's left. */
+  #trackrail #ubaCard{display:flex;flex-direction:column;gap:4px;}
+  #trackrail #ubaCard .row{flex-wrap:nowrap;gap:5px;margin-bottom:0 !important;}
+  #trackrail #ubaCard button{width:auto;min-width:74px !important;flex:0 0 auto;
+    min-height:0;padding:4px 7px;font-size:15px;line-height:1.15;}
+  #trackrail #ubaCard .mnchip{flex:1 1 0;min-width:0;text-align:center;padding:4px 6px;
+    font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  /* weight class is already on the card graphic; in a 452px rail it costs a
+     whole line for something nobody reads off the control panel */
+  #trackrail .bmeta{display:none;}
+  #trackrail .bdone{color:var(--o);font-size:16px;flex:0 0 auto;}
+  #trackrail #ubaCard .lbl{margin:8px 0 4px !important;color:var(--odim);}
+  /* CORNERS was permanently below the fold: ten bouts is taller than the rail,
+     so the pickers could only be reached by scrolling inside it. The list gets
+     its own scroll and the block below stays put. */
+  #slotCard{max-height:calc(100vh - 430px);overflow-y:auto;}
   /* swatches breathe instead of wrapping into a ragged block */
-  #trackrail #swatchL,#trackrail #swatchR{gap:5px;}
+  /* all eight swatches on one row: 7+1 wrapping read as a mistake rather than
+     a palette. 8 x 40 + 7 gaps fits the 416px of usable rail width. */
+  #trackrail #swatchL,#trackrail #swatchR{gap:4px;flex-wrap:nowrap;}
+  #trackrail #swatchL button,#trackrail #swatchR button{
+    width:40px !important;height:32px !important;min-width:0 !important;flex:0 0 auto;}
   #trackrail input[type=color]{width:44px;height:32px;border-color:var(--odim);}
   #trackrail h5{color:var(--odim);margin:10px 0 6px;font-size:15px;}
   #trackrail h5:first-child{margin-top:0;}
@@ -910,7 +928,7 @@ function ubaDraw(){
         <button style="min-width:104px;padding:4px 10px${UBA.armed===i?';':''}" class="${UBA.armed===i?'active':''}"
           onclick="ubaArm(${i})">${b.bout_number===1?'★ MAIN':'BOUT '+b.bout_number}</button>
         ${chip('a',b.a)}<span style="color:var(--gdim)">vs</span>${chip('b',b.b)}
-        <span style="color:var(--gdim);font-size:16px">${b.wc}${b.title?' · 👑 '+b.title:''}${b.winner?' · ✔ DONE':''}</span>
+        <span class="bmeta">${b.wc}${b.title?' · 👑 '+b.title:''}</span>${b.winner?'<span class="bdone">✔</span>':''}
       </div>`
     })
   })
