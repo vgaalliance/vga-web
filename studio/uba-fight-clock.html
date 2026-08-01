@@ -642,7 +642,10 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     label.style.color = darkText(hex) ? '#0a0014' : '#fff'
     label.style.textShadow = darkText(hex) ? '0 1px 3px rgba(255,255,255,.35)' : '0 1px 5px rgba(0,0,0,.75)'
     const eb=document.querySelector(`.fighter-slot.${side} .f-label`)
-    if(eb){ eb.textContent=colorName(hex)+' CORNER'; eb.style.color=hex }
+    // The eyebrow stays "FIGHTER". Writing "RED CORNER" there said the same
+    // thing the coloured slit already says, in words, twice per bout — noise.
+    // The colour IS the label.
+    if(eb) eb.style.color=hex
   }
   // Set the corner colours WITHOUT animating. Arming a bout uses this — the
   // colours should just be correct, not perform. (Founder: arming a fight
