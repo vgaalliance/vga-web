@@ -160,7 +160,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     <div class="ubae-block">
       <div class="ubae-holo"></div>
       <div class="ubae-text">UBAe</div>
-      <div class="ubae-sub">SPRING SPLIT</div>
+      <div class="ubae-sub" id="ubaeSplit">SUMMER SPLIT</div>
     </div>
     <div class="main-bar">
       <canvas id="holoCanvas"></canvas>
@@ -625,6 +625,9 @@ tick();
     }
     if(c.type!=='pickbar') return
     const d=c.d||{}
+    // Split name was baked into the markup and said SPRING through the whole
+    // Summer split. Overridable so the next one is a payload change, not an edit.
+    if(d.split){ const el=document.getElementById('ubaeSplit'); if(el) el.textContent=String(d.split).toUpperCase() }
     paintScore(d)
     const f=document.querySelectorAll('.fighter')
     if(!f.length) return
