@@ -808,7 +808,13 @@ window.ubaFilter=f=>{
 }
 
 window.ubaPush=()=>{
-  if(!UBA.bouts.length) return
+  // Used to return silently when no card was loaded — the button did nothing
+  // and said nothing, which reads as "the scene is broken" mid-show.
+  if(!UBA.bouts.length){
+    const l=document.getElementById('log'); const d=document.createElement('div')
+    d.textContent='⚠ pick an event above first — no card loaded'; l.prepend(d)
+    return
+  }
   send({type:'rundown', on:true, d:{ event:UBA.name, filter:UBA.filter, bouts:UBA.bouts }})
 }
 
