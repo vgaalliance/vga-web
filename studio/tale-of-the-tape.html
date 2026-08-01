@@ -461,42 +461,72 @@ applyFighterImage('imgBoxLeft', CONFIG.left.image);
 applyFighterImage('imgBoxRight', CONFIG.right.image);
 
 // ---------- CENTER CARD DROP-IN ANIMATION ----------
-// Animates the center column scaling/sliding forward from camera
-// then settling into place, plus a staggered reveal on bout label
-// and stat rows (mirrors the 3-state reference: empty -> mid-build -> settled).
+// The centre column scales forward from camera and settles, then the bout
+// label, then the stat rows stagger, then the sponsor bar.
+//
+// This used to run ONCE, at page load. The deck's "Fire tale of the tape"
+// only rewrote the text, so bout 1 got the entrance and every bout after it
+// appeared already-assembled -- the animation existed and was unreachable.
+// It's a function now, and firing a tape replays it.
 const centerCol = document.getElementById('centerCol');
 const boutLabel = document.getElementById('boutLabel');
 const statRows = document.querySelectorAll('.stat-row');
-
-centerCol.style.transform = 'translateY(-26px) translateZ(0) scale(1.35)';
-centerCol.style.transition = 'opacity 0.7s cubic-bezier(.16,.6,.25,1), transform 0.85s cubic-bezier(.16,.6,.25,1)';
-
-requestAnimationFrame(()=>{
-  requestAnimationFrame(()=>{
-    centerCol.style.opacity = '1';
-    centerCol.style.transform = 'translateY(0) scale(1)';
-  });
-});
-
-setTimeout(()=>{
-  boutLabel.style.transition = 'opacity 0.55s ease-out';
-  boutLabel.style.opacity = '1';
-}, 580);
-
-statRows.forEach((row, i)=>{
-  row.style.transition = 'opacity 0.5s ease-out, transform 0.55s cubic-bezier(.16,.6,.25,1)';
-  row.style.transform = 'translateY(-14px)';
-  setTimeout(()=>{
-    row.style.opacity = '1';
-    row.style.transform = 'translateY(0)';
-  }, 780 + i * 150);
-});
-
 const sponsorBar = document.getElementById('sponsorBar');
-setTimeout(()=>{
-  sponsorBar.style.transition = 'opacity 0.55s ease-out';
-  sponsorBar.style.opacity = '1';
-}, 780 + statRows.length * 150 + 160);
+const tapeTimers = [];
+
+function playTape(){
+  tapeTimers.forEach(clearTimeout); tapeTimers.length = 0;
+
+  // back to the pre-entrance state, or a replay starts from wherever the last
+  // one finished and nothing appears to move
+  centerCol.style.transition = 'none';
+  centerCol.style.opacity = '0';
+  centerCol.style.transform = 'translateY(-26px) translateZ(0) scale(1.35)';
+  boutLabel.style.transition = 'none'; boutLabel.style.opacity = '0';
+  sponsorBar.style.transition = 'none'; sponsorBar.style.opacity = '0';
+  statRows.forEach(r=>{ r.style.transition='none'; r.style.opacity='0'; r.style.transform='translateY(-14px)'; });
+
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      centerCol.style.transition = 'opacity 0.7s cubic-bezier(.16,.6,.25,1), transform 0.85s cubic-bezier(.16,.6,.25,1)';
+      centerCol.style.opacity = '1';
+      centerCol.style.transform = 'translateY(0) scale(1)';
+    });
+  });
+
+  tapeTimers.push(setTimeout(()=>{
+    boutLabel.style.transition = 'opacity 0.55s ease-out';
+    boutLabel.style.opacity = '1';
+  }, 580));
+
+  statRows.forEach((row, i)=>{
+    tapeTimers.push(setTimeout(()=>{
+      row.style.transition = 'opacity 0.5s ease-out, transform 0.55s cubic-bezier(.16,.6,.25,1)';
+      row.style.opacity = '1';
+      row.style.transform = 'translateY(0)';
+    }, 780 + i * 150));
+  });
+
+  tapeTimers.push(setTimeout(()=>{
+    sponsorBar.style.transition = 'opacity 0.55s ease-out';
+    sponsorBar.style.opacity = '1';
+  }, 780 + statRows.length * 150 + 160));
+}
+
+// Retract. Every other scene file answers an off command; this one had no way
+// to be cleared, so it sat on screen from the moment OBS loaded the source.
+function hideTape(){
+  tapeTimers.forEach(clearTimeout); tapeTimers.length = 0;
+  const out = 'opacity 0.45s ease, transform 0.55s cubic-bezier(.5,0,.75,.2)';
+  centerCol.style.transition = out;
+  centerCol.style.opacity = '0';
+  centerCol.style.transform = 'translateY(-18px) scale(1.06)';
+  [boutLabel, sponsorBar].forEach(el=>{ el.style.transition='opacity .3s ease'; el.style.opacity='0'; });
+  statRows.forEach(r=>{ r.style.transition='opacity .3s ease'; r.style.opacity='0'; });
+}
+window.__tape = playTape; window.__tapeHide = hideTape;
+
+playTape();
 
 // ---------- RAIL HEIGHT — match exactly to where SHEATH starts ----------
 // Rather than guess a fixed pixel height, measure sponsorBar's actual
@@ -898,6 +928,7 @@ editOverlay.addEventListener('click', (e) => {
   const set=(id,v)=>{ if(v!=null){ const e=document.getElementById(id); if(e) e.textContent=v } }
   _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
     if(c.type!=='tape') return
+    if(c.on===false){ hideTape(); return }
     const d=c.d||{}
     set('boutTitleText',d.title); set('boutSubtitleText',d.subtitle); set('sponsorText',d.sponsor)
     const L=d.left||{}, R=d.right||{}
@@ -905,6 +936,7 @@ editOverlay.addEventListener('click', (e) => {
     set('reachLeft',L.reach); set('recordLeft',L.record); set('oddsLeft',L.odds); set('rankLeft',L.rank)
     set('nameRight',R.name); set('ageRight',R.age); set('heightRight',R.height); set('weightRight',R.weight)
     set('reachRight',R.reach); set('recordRight',R.record); set('oddsRight',R.odds); set('rankRight',R.rank)
+    playTape()   // values first, THEN the entrance -- so it builds with this bout's numbers
   }).subscribe()
 })()
 </script>
