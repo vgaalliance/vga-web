@@ -128,6 +128,57 @@
 
   #log{margin-top:6px;font-size:16px;color:var(--gdim);max-height:96px;overflow:auto;line-height:1.3;}
   #log div::before{content:'> ';}
+
+  /* ── TRACKER RAIL ──────────────────────────────────────────────────
+     The tracker is the one surface you touch all night -- score a win,
+     arm the next bout -- while everything else is a control you hit once
+     and scroll past. Sat inline, it kept scrolling off the top exactly
+     when a long section pushed it away. Fixed to the right edge it's
+     always there, and scrolls on its own.
+     ORANGE on purpose. Same CRT treatment, different instrument: green =
+     fire something at the stream, orange = keep score. A misfire between
+     those two is the expensive kind mid-broadcast. */
+  :root{ --o:#ffb23a; --odim:#a3600f; --odark:#3a2205; }
+  #status{right:478px;}          /* clear of the rail -- it sat underneath it */
+  #trackrail{position:fixed;top:0;right:0;bottom:0;width:452px;overflow-y:auto;z-index:12;
+    background:rgba(10,5,0,.97);border-left:2px solid var(--odim);
+    padding:16px 18px 40px;color:var(--o);text-shadow:0 0 6px rgba(255,178,58,.4);
+    box-shadow:-14px 0 34px rgba(0,0,0,.6);}
+  #trackrail::-webkit-scrollbar{width:9px}
+  #trackrail::-webkit-scrollbar-thumb{background:var(--odark);border:1px solid var(--odim)}
+  .railhead{font-size:19px;letter-spacing:.14em;color:var(--o);border-bottom:2px solid var(--odim);
+    padding-bottom:8px;margin-bottom:12px;}
+  .railhead::before{content:'▸ ';}
+  .railhead small{display:block;font-size:14px;color:var(--odim);letter-spacing:.08em;margin-top:3px;}
+  #railempty{color:var(--odim);font-size:17px;line-height:1.4;}
+  /* everything inside the rail speaks orange, without touching the green
+     rules the rest of the panel depends on */
+  #trackrail button{color:var(--o);border-color:var(--o);text-shadow:0 0 6px rgba(255,178,58,.45);
+    box-shadow:0 0 10px rgba(255,178,58,.15),inset 0 0 10px rgba(255,178,58,.05);}
+  #trackrail button:hover{background:var(--o);color:#0a0500;text-shadow:none;box-shadow:0 0 18px rgba(255,178,58,.6);}
+  #trackrail button.hide{border-color:var(--odim);color:var(--odim);}
+  #trackrail button.hide:hover{background:var(--odim);color:#0a0500;}
+  #trackrail button.active,#trackrail .mnchip.picked{background:var(--o);color:#0a0500;text-shadow:none;border-color:var(--o);}
+  #trackrail .mnchip{color:var(--o);border-color:var(--odim);}
+  #trackrail .mnchip:hover{border-color:var(--o);}
+  #trackrail .mnchip.used{color:var(--odark);border-color:var(--odark);}
+  #trackrail .mncol{border-color:var(--odim);box-shadow:inset 0 0 14px rgba(255,178,58,.05);
+    min-width:0;max-width:none;flex:1 1 100%;}
+  #trackrail #mnCockpit{flex-direction:column;gap:12px;}
+  #trackrail .mnpips,#rail .mnteam{color:var(--o);}
+  #trackrail #mnState{color:var(--o);font-size:18px;}
+  #trackrail #mnState b{background:var(--o);color:#0a0500;}
+  /* the bout list condenses -- one per row in a 452px rail, not squeezed
+     into a grid that would clip the names */
+  #trackrail #ubaCard{display:flex;flex-direction:column;gap:7px;}
+  #trackrail #ubaCard button{width:100%;min-height:0;padding:7px 10px;font-size:18px;}
+  /* reserve the rail's width so the centred column never slides under it */
+  body{padding-right:452px;max-width:1632px;}
+  @media (max-width:1180px){
+    #trackrail{position:static;width:auto;border-left:none;border-top:2px solid var(--odim);}
+    #status{right:26px;}
+    body{padding-right:30px;}
+  }
 </style>
 </head>
 <body class="ev-ubae">
@@ -958,6 +1009,39 @@ mnLoad()
 loadCardEvents()
 loadOdds()
 loadBetFeed()
+
+// Relocate the live tracking surfaces into the rail rather than duplicating
+// them. Same nodes, same ids, same handlers -- everything that already draws
+// into #mnCockpit / #ubaCard keeps working without knowing it moved.
+// deferred: the <aside> is markup-after-scripts, so at parse time #railbody
+// does not exist yet and this silently did nothing
+;window.addEventListener('DOMContentLoaded',function(){
+  const rail=document.getElementById('railbody'); if(!rail) return
+  const empty=document.getElementById('railempty')
+  ;['mnState','mnCockpit','ubaCard'].forEach(id=>{
+    const el=document.getElementById(id); if(el) rail.appendChild(el)
+  })
+  // The rail says what it's for when it has nothing in it -- an empty orange
+  // column with no explanation reads as broken.
+  const refresh=()=>{
+    const live = (document.getElementById('mnCockpit')?.children.length||0)
+               + (document.getElementById('ubaCard')?.children.length||0)
+    if(empty) empty.style.display = live ? 'none' : 'block'
+    const sub=document.getElementById('railSub')
+    if(sub) sub.textContent = document.body.classList.contains('ev-uba')
+      ? 'tap a name to score · arm a bout' : 'pick fighters · score the round'
+  }
+  new MutationObserver(refresh).observe(rail,{childList:true,subtree:true})
+  new MutationObserver(refresh).observe(document.body,{attributes:true,attributeFilter:['class']})
+  document.addEventListener('click',()=>setTimeout(refresh,60))
+  refresh()
+})
 </script>
+
+  <aside id="trackrail">
+    <div class="railhead">TRACKER<small id="railSub">keep score · arm the next bout</small></div>
+    <div id="railbody"><div id="railempty">Load a match or a card and the live
+      tracker moves here, so it stays put while you scroll the controls.</div></div>
+  </aside>
 </body>
 </html>
