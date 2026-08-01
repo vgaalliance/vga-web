@@ -721,12 +721,26 @@ function _loadbarBtn(){ const b=document.getElementById('loadbarTgl'); if(b){ b.
 window.mnLoadbarToggle=()=>{ window._loadbarOn=!window._loadbarOn; send({type:'loadbar', show:window._loadbarOn}); _loadbarBtn() }
 
 window.mnTape=async()=>{
-  const an=document.getElementById('mnBoutA').value.trim(), bn=document.getElementById('mnBoutB').value.trim()
-  if(!an||!bn) return
+  const warn=t=>{ const l=document.getElementById('log'); const d=document.createElement('div')
+    d.textContent=t; l.prepend(d) }
+  let an=document.getElementById('mnBoutA').value.trim()
+  let bn=document.getElementById('mnBoutB').value.trim()
+  // Fall back to the armed bout. Arming fills these inputs, but pressing Load
+  // before arming left them empty and this returned silently -- the tape sat on
+  // TBA and nothing anywhere said why.
+  if(!an||!bn){
+    const b=armedBout()
+    if(b){ an=b.a; bn=b.b
+      document.getElementById('mnBoutA').value=an
+      document.getElementById('mnBoutB').value=bn }
+  }
+  if(!an||!bn){ warn('⚠ tale of the tape: arm a bout first, or type both names'); return }
   const one=async n=>{ const {data}=await sb.from('fighter_cards')
     .select('display_name,slug,profile_photo_url,wins,losses,draws,rank,height,reach,age,country,weight_class').ilike('display_name','%'+n+'%').limit(1); return data&&data[0] }
   const [A,B]=await Promise.all([one(an),one(bn)])
-  if(!A||!B){ document.getElementById('mnState').innerHTML='TAPE: fighter not found'; return }
+  if(!A||!B){
+    warn('⚠ tale of the tape: no fighter matching "'+(A?bn:an)+'"')
+    document.getElementById('mnState').innerHTML='TAPE: fighter not found'; return }
   const F=x=>({ name:x.display_name, record:`${x.wins}-${x.losses}-${x.draws}`,
     rank:x.rank?('#'+x.rank):'—', age:x.age??'—', height:x.height??'—', reach:x.reach??'—',
     weight:cap(x.weight_class), odds:'—',
