@@ -161,33 +161,23 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
    announce "<COLOUR> TRUNKS", hold, and tuck back in. Fired on every bout arm
    and every corner-colour change. */
 .bar-wrap{position:relative;}
-/* corner colour is STRUCTURAL, not trim — the bar's outer ends are solid
-   colour end-caps with an angled inner edge, the way UFC/boxing packages
-   treat it (fans call the sides "the red and blue bar" for a reason).
-   A thin strip read as ornament; a 54px block reads as identity. */
-.main-bar .bar-accent{width:54px;position:relative;overflow:hidden;background:#e8312a;
-  clip-path:polygon(0 0,100% 0,calc(100% - 16px) 100%,0 100%);}
-.main-bar .bar-accent.right{background:#2e6fe8;
-  clip-path:polygon(16px 0,100% 0,100% 100%,0 100%);}
-.main-bar .bar-accent::after{content:'';position:absolute;inset:0;
-  background:linear-gradient(180deg,rgba(255,255,255,.28),transparent 30%,rgba(0,0,0,.35));}
-.trunk-ext{position:absolute;top:14px;height:40px;width:230px;overflow:hidden;pointer-events:none;z-index:1;}
-.trunk-ext.left{right:calc(100% - 4px);}
-.trunk-ext.right{left:calc(100% - 4px);}
-.trunk-panel{
-  position:absolute;top:0;height:100%;display:flex;align-items:center;gap:12px;
-  padding:0 18px;background:rgba(4,0,16,.9);border:1px solid rgba(168,85,247,.42);
-  transition:transform .55s cubic-bezier(.16,.8,.3,1);white-space:nowrap;
-}
-.trunk-ext.left  .trunk-panel{right:0;justify-content:flex-end;transform:translateX(104%);
-  clip-path:polygon(12px 0,100% 0,100% 100%,0 100%,0 12px);}
-.trunk-ext.right .trunk-panel{left:0;transform:translateX(-104%);
-  clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,0 100%);}
-.trunk-ext .trunk-panel.show{transform:translateX(0);}
-.trunk-swatch{width:15px;height:15px;transform:skewX(-12deg);background:#e8312a;
-  box-shadow:0 0 12px currentColor;flex-shrink:0;}
-.trunk-label{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:.3em;
-  color:#d8b4fe;text-transform:uppercase;}
+/* UFC-style corner slits — the colour lives in the CENTRE, flanking the
+   clock block, as two slim full-height slivers. The trunk reveal EXPANDS the
+   slit itself into a labeled colour block (the names compress to make room,
+   because the bar is fixed-width flex), holds, and collapses back to a slit.
+   The reveal grows out of the graphic instead of being bolted onto it. */
+.corner-slit{width:7px;flex-shrink:0;align-self:stretch;position:relative;
+  overflow:hidden;display:flex;align-items:center;justify-content:center;
+  background:#e8312a;z-index:7;
+  transition:width .5s cubic-bezier(.16,.8,.3,1);}
+.corner-slit.rightside{background:#2e6fe8;}
+.corner-slit::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.3),transparent 35%,rgba(0,0,0,.3));}
+.corner-slit.expand{width:150px;}
+.slit-label{opacity:0;transition:opacity .22s ease;white-space:nowrap;
+  font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:.26em;
+  color:#fff;text-transform:uppercase;text-shadow:0 1px 3px rgba(0,0,0,.55);}
+.corner-slit.expand .slit-label{opacity:1;transition-delay:.22s;}
 
 /* deck-driven round + timer text (were blank slots for OBS text sources;
    the deck now feeds them over the channel instead) */
@@ -409,12 +399,6 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   <!-- main bar (wrapped so the trunk reveals can extend past its edges —
        the bar itself is clip-pathed + overflow:hidden, nothing can stick out of it) -->
   <div class="bar-wrap">
-  <div class="trunk-ext left"><div class="trunk-panel" id="trunkL">
-    <span class="trunk-label" id="trunkLabelL">RED TRUNKS</span><span class="trunk-swatch" id="trunkSwatchL"></span>
-  </div></div>
-  <div class="trunk-ext right"><div class="trunk-panel" id="trunkR">
-    <span class="trunk-swatch" id="trunkSwatchR" style="background:#2e6fe8"></span><span class="trunk-label" id="trunkLabelR">BLUE TRUNKS</span>
-  </div></div>
   <div class="main-bar" id="mainBar">
     <canvas id="holoCanvas"></canvas>
     <canvas id="hudFlowers"></canvas>
@@ -437,6 +421,9 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
       <div class="f-name" id="nameL">&nbsp;</div>
     </div>
 
+    <!-- UFC-style corner slit, left of the clock -->
+    <div class="corner-slit" id="slitL"><span class="slit-label" id="slitLabelL">RED TRUNKS</span></div>
+
     <!-- centre — round box on top, timer below, both deck-driven -->
     <div class="bar-centre">
       <div class="round-count-box">
@@ -445,6 +432,9 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
       </div>
       <div class="timer-zone"><div id="fightTimer"></div></div>
     </div>
+
+    <!-- UFC-style corner slit, right of the clock -->
+    <div class="corner-slit rightside" id="slitR"><span class="slit-label" id="slitLabelR">BLUE TRUNKS</span></div>
 
     <!-- right fighter — fed by the deck's card runner -->
     <div class="fighter-slot right">
@@ -588,29 +578,29 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
           :h<255?'BLUE':h<290?'PURPLE':h<345?'PINK':'RED'
   }
 
-  // Corner colours live on the bar's outer accents; every change also runs
-  // the trunk reveal — panels extend out from behind the bar, announce the
-  // colour, hold, tuck back in. Auto-retract, so it can never strand.
+  // Corner colours are the CENTRE SLITS flanking the clock. Every change runs
+  // the UFC-style reveal: the slit expands into a labeled colour block (the
+  // fixed-width bar compresses the names to make room), holds, collapses back
+  // to a slit. Auto-collapse on a timer, so it can never strand mid-fight.
   let trunkTimer=null
+  const darkText=hex=>{ const n=parseInt(hex.slice(1),16)
+    return (0.299*(n>>16)+0.587*((n>>8)&255)+0.114*(n&255))/255 > .62 }
+  function corner1(hex, slit, label, side){
+    slit.style.background=hex
+    label.textContent=colorName(hex)+' TRUNKS'
+    label.style.color = darkText(hex) ? '#0a0014' : '#fff'
+    label.style.textShadow = darkText(hex) ? 'none' : '0 1px 3px rgba(0,0,0,.55)'
+    const eb=document.querySelector(`.fighter-slot.${side} .f-label`)
+    if(eb){ eb.textContent=colorName(hex)+' CORNER'; eb.style.color=hex }
+  }
   function corners(l,r){
-    if(l){ $('trunkSwatchL').style.background=l; $('trunkSwatchL').style.color=l
-           $('trunkLabelL').textContent=colorName(l)+' TRUNKS'
-           const a=$('accentL')
-           if(a){ a.style.background=l; a.style.boxShadow=`inset 0 0 18px rgba(0,0,0,.3), 0 0 22px ${l}55` }
-           const lb=document.querySelector('.fighter-slot.left .f-label')
-           if(lb){ lb.textContent=colorName(l)+' CORNER'; lb.style.color=l }
-    }
-    if(r){ $('trunkSwatchR').style.background=r; $('trunkSwatchR').style.color=r
-           $('trunkLabelR').textContent=colorName(r)+' TRUNKS'
-           const as=document.querySelectorAll('.bar-accent.right')
-           if(as[0]){ as[0].style.background=r; as[0].style.boxShadow=`inset 0 0 18px rgba(0,0,0,.3), 0 0 22px ${r}55` }
-           const rb=document.querySelector('.fighter-slot.right .f-label')
-           if(rb){ rb.textContent=colorName(r)+' CORNER'; rb.style.color=r }
-    }
+    if(l) corner1(l, $('slitL'), $('slitLabelL'), 'left')
+    if(r) corner1(r, $('slitR'), $('slitLabelR'), 'right')
     if(l||r){
-      $('trunkL').classList.add('show'); $('trunkR').classList.add('show')
+      $('slitL').classList.add('expand'); $('slitR').classList.add('expand')
       clearTimeout(trunkTimer)
-      trunkTimer=setTimeout(()=>{ $('trunkL').classList.remove('show'); $('trunkR').classList.remove('show') },4500)
+      trunkTimer=setTimeout(()=>{
+        $('slitL').classList.remove('expand'); $('slitR').classList.remove('expand') },4500)
     }
   }
   window.__trunks=(l,r)=>corners(l||'#e8312a',r||'#2e6fe8')   // preview/testing
