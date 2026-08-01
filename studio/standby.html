@@ -354,13 +354,13 @@
 
   <div id="stage">
     <div class="view" id="v-standings">
-      <div class="eyebrow">UBAe · Summer Split</div>
+      <div class="eyebrow splitlbl">UBAe · Summer Split</div>
       <div class="title">Standings</div>
       <div class="confs" id="standContent"></div>
     </div>
 
     <div class="view" id="v-rosters">
-      <div class="eyebrow">UBAe · Summer Split</div>
+      <div class="eyebrow splitlbl">UBAe · Summer Split</div>
       <div class="title">Team Rosters</div>
       <div class="rgrid" id="rosterContent"></div>
     </div>
@@ -372,7 +372,7 @@
     </div>
 
     <div class="view" id="v-schedule">
-      <div class="eyebrow">UBAe · Summer Split</div>
+      <div class="eyebrow splitlbl">UBAe · Summer Split</div>
       <div class="title sm">Upcoming Match Nights</div>
       <div class="list" id="schedContent"></div>
     </div>
@@ -840,6 +840,12 @@ sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
     if(c.show===true && !c.d){ barShow(true); return }
     if(c.d){ fillBar(c.d); barShow(true) }
     return
+  }
+  // The split name is displayed in three places and was baked into each. It
+  // is correct today and silently wrong the day the split rolls over -- the
+  // exact failure the UBAe clock had, announcing SPRING through all of Summer.
+  if(c.split){
+    document.querySelectorAll('.splitlbl').forEach(el=>{ el.textContent='UBAe · '+c.split })
   }
   if(c.type==='standby'){
     if(c.on===false){ show('off'); return }

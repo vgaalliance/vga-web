@@ -588,8 +588,14 @@ function mnStateDraw(){
   mnCockpitDraw(); roundBtnsDraw()
 }
 
+// SPLIT_NAME is the one place the split is written down for the whole studio.
+// It was baked separately into standby (3 places), the UBAe clock and the
+// countdown, which is how the clock ended up announcing SPRING for an entire
+// Summer split without anyone noticing.
+const SPLIT_NAME = 'Summer Split'
+
 function mnPush(){
-  send({type:'pickbar', d:{ teamA:MN.a, teamB:MN.b,
+  send({type:'pickbar', d:{ split:SPLIT_NAME, teamA:MN.a, teamB:MN.b,
     left:(MN.lineups[MN.a]||{}).starters||[], right:(MN.lineups[MN.b]||{}).starters||[],
     scoreA:MN.scoreA, scoreB:MN.scoreB, round:MN.round,
     pickL:MN.pickA, pickR:MN.pickB, usedL:MN.usedA, usedR:MN.usedB,
@@ -688,7 +694,7 @@ window.mnCountdown=()=>{
     return
   }
   if(!MN.id) return
-  send({type:'countdown', d:{ a:MN.a, b:MN.b, eventMain:'SUMMER SPLIT', eventSub:'ubaesports.com' }})
+  send({type:'countdown', d:{ a:MN.a, b:MN.b, eventMain:SPLIT_NAME.toUpperCase(), eventSub:'ubaesports.com' }})
 }
 
 window.mnLoadbar=async()=>{
@@ -739,7 +745,7 @@ window.mnTape=async()=>{
     : ((MN.a&&MN.b) ? `${MN.a} vs ${MN.b}` : 'UBAe')
   const subtitle = uba
     ? (UBA.name || 'BOUT')
-    : (MN.week ? ('SUMMER SPLIT · WEEK '+MN.week) : 'SUMMER SPLIT')
+    : (MN.week ? (SPLIT_NAME.toUpperCase()+' · WEEK '+MN.week) : SPLIT_NAME.toUpperCase())
   send({type:'tape', d:{ title, subtitle, left:F(A), right:F(B) }})
 }
 
@@ -751,7 +757,7 @@ window.fireMsg=()=>{
 
 // league rides along so 'auto' cycles the right set -- a UBA fight night
 // shouldn't parade team standings and rosters between bouts
-window.standby=view=>send({type:'standby', view, league:EV, on:view!=='off',
+window.standby=view=>send({type:'standby', view, league:EV, on:view!=='off', split:SPLIT_NAME,
   // 'next event' must skip the one you're running, or on a fight night it
   // resolves to tonight and shows the same card twice
   exclude: UBA.name || null})
