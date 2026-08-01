@@ -993,9 +993,14 @@ editOverlay.addEventListener('click', (e) => {
     const d=c.d||{}
     set('boutTitleText',d.title); set('boutSubtitleText',d.subtitle); set('sponsorText',d.sponsor)
     fitBoutTitle()
+    // L and R must be declared BEFORE the image calls. They weren't, and const
+    // is in a temporal dead zone until its declaration -- so the handler threw
+    // on the very first line that touched L and every set() below it never
+    // ran. The tape sat on TBA for every load, and because the throw happened
+    // inside a broadcast callback nothing surfaced it.
+    const L=d.left||{}, R=d.right||{}
     applyFighterImage('imgBoxLeft',  L.photo || slugPhoto(L.slug))
     applyFighterImage('imgBoxRight', R.photo || slugPhoto(R.slug))
-    const L=d.left||{}, R=d.right||{}
     set('nameLeft',L.name); set('ageLeft',L.age); set('heightLeft',L.height); set('weightLeft',L.weight)
     set('reachLeft',L.reach); set('recordLeft',L.record); set('oddsLeft',L.odds); set('rankLeft',L.rank)
     set('nameRight',R.name); set('ageRight',R.age); set('heightRight',R.height); set('weightRight',R.weight)
