@@ -192,6 +192,22 @@
   .cbouts.tight .cbout .fa,.cbouts.tight .cbout .fb{font-size:30px;}
   .cbouts.tight .cseg{margin:12px 0 6px;}
   .cbouts.tight .cwc{font-size:8px;margin-top:3px;}
+  /* A finished bout replaces VS with HOW it finished -- the method is already
+     stored, and "TKO" says more about the night than a struck-through name. */
+  .cbout .vs.fin{font-size:14px;letter-spacing:.14em;color:#ffce00;}
+  /* a stoppage gets a slow ember pulse; a decision stays flat, because the
+     whole point is that the two didn't end the same way */
+  .cbout .vs.ko{color:#ff7a3c;animation:koEmber 3.2s ease-in-out infinite;}
+  @keyframes koEmber{
+    0%,100%{text-shadow:0 0 10px rgba(255,122,60,.55);}
+    50%{text-shadow:0 0 20px rgba(255,122,60,1),0 0 40px rgba(255,60,0,.5);} }
+  .cbout.ko{border-left-color:#ff7a3c;}
+  /* the main event shouldn't look like every other row -- same sheen as a
+     held belt, so a title fight and a champion read as the same idea */
+  .cbout.title{position:relative;overflow:hidden;}
+  .cbout.title::after{content:'';position:absolute;top:0;bottom:0;width:34%;
+    background:linear-gradient(100deg,transparent,rgba(255,206,0,.1) 46%,rgba(255,240,190,.17) 56%,transparent);
+    animation:beltSheen 7s ease-in-out infinite;pointer-events:none;}
   .cbout{display:grid;grid-template-columns:1fr 120px 1fr;align-items:center;
     padding:12px 26px;background:var(--panel);border-left:4px solid var(--pur);
     box-shadow:0 0 18px rgba(60,0,110,.4);}
@@ -525,6 +541,17 @@ function renderNextEv(ev, bouts){
 
 // Circulation is counted from what people actually OWN, not from the set's
 // declared size — a card that exists but was never pulled isn't in circulation.
+const METHOD=raw=>{
+  const t=String(raw||'').trim().toUpperCase()
+  if(/^T?KO/.test(t))        return t.startsWith('T')?'TKO':'KO'
+  if(/^SUB/.test(t))         return 'SUB'
+  if(/SPLIT/.test(t))        return 'SPLIT'
+  if(/UNANIM/.test(t))       return 'UD'
+  if(/^DEC|DECIS/.test(t))   return 'DEC'
+  if(/^DQ|DISQ/.test(t))     return 'DQ'
+  if(/DRAW/.test(t))         return 'DRAW'
+  return t.slice(0,5)
+}
 const RARITY_ORDER=['legendary','mystic','rare','uncommon','common']
 function renderCards(sets, coll){
   document.getElementById('cardsContent').innerHTML = (sets||[]).map(s=>{
@@ -603,7 +630,10 @@ const winOf=b=> /^(a|fighter_a)$/i.test(b.winner_corner||b.winner||'') ? 'a'
 
 function renderCard(ev, bouts, filter){
   document.getElementById('cardTitle').textContent=ev.name
-  document.getElementById('cardDate').textContent=fdate(ev.event_date).toUpperCase()
+  // no date -> blank, not "WED DEC 31". The runner pushes rows without one and
+  // fdate(null) happily formats the epoch.
+  document.getElementById('cardDate').textContent =
+    ev.event_date ? fdate(ev.event_date).toUpperCase() : ''
   const box=document.getElementById('cardContent')
   let open=bouts.filter(b=>b.fighter_a_name && b.fighter_b_name)
   if(filter && filter!=='all') open=open.filter(b=>(b.card_segment||'main_card')===filter)
@@ -613,10 +643,17 @@ function renderCard(ev, bouts, filter){
   }
   const row=b=>{
     const w=winOf(b), cls=n=> w ? (w===n?' win':' lose') : ''
-    return `<div class="cbout${b.is_title_fight?' title':''}${w?' done':''}">
+    // A stoppage is the only method that earns its own treatment. KO/TKO/SUB
+    // are finishes; a decision or a DQ isn't, and giving those the same ember
+    // would say the night was more dramatic than it actually was.
+    // Abbreviated because the centre column is 120px: the full word "DECISION"
+    // rendered straight through the fighter names on either side of it.
+    const m=(w && b.method) ? METHOD(b.method) : ''
+    const ko=/^(KO|TKO|SUB)/.test(m)
+    return `<div class="cbout${b.is_title_fight?' title':''}${w?' done':''}${ko?' ko':''}">
       ${b.is_title_fight?`<div class="cbadge">★ ${b.title_name||'Title Fight'} ★</div>`:''}
       <span class="fa${cls('a')}">${b.fighter_a_name}</span>
-      <span class="vs">VS</span>
+      <span class="vs${m?' fin':''}${ko?' ko':''}">${m||'VS'}</span>
       <span class="fb${cls('b')}">${b.fighter_b_name}</span>
       ${b.weight_class?`<div class="cwc">${String(b.weight_class).replace(/_/g,' ').toUpperCase()}</div>`:''}
     </div>`

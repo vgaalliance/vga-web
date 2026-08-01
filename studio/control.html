@@ -680,9 +680,17 @@ window.loadBetFeed=async()=>{
 async function fireRanking(weight,label){
   let q=sb.from('rankings_public').select('rank,fighter_name,weight_class').order('rank').limit(30)
   q = weight==='p4p' ? q.eq('scope','overall') : q.eq('weight_class',weight).eq('scope','weight_class')
-  const { data } = await q
-  send({type:'panel',on:true,d:{title:label,
-    rows:(data||[]).map(r=>[`${r.rank}. ${r.fighter_name}`,''])}})
+  // A ranking without its champion is a list of contenders with the point of
+  // the division missing. Pinned on top, unnumbered -- they aren't ranked,
+  // they're who the ranking is chasing.
+  const [{ data }, { data:ch }] = await Promise.all([q,
+    sb.from('fighter_cards').select('display_name,weight_class').eq('is_champion',true)])
+  const champ = weight==='p4p' ? null : (ch||[]).find(c=>c.weight_class===weight)
+  const rows=(data||[])
+    .filter(r=>!champ || r.fighter_name!==champ.display_name)   // never twice
+    .map(r=>[`${r.rank}. ${r.fighter_name}`,''])
+  if(champ) rows.unshift([`👑 ${champ.display_name}`,'CHAMPION'])
+  send({type:'panel',on:true,d:{title:label, rows}})
 }
 const RANKS=[['lightweight','LW'],['middleweight','MW'],['light_heavyweight','LHW'],['heavyweight','HW'],['p4p','P4P']]
 const rb=document.getElementById('rankBtns')
@@ -729,7 +737,7 @@ window.setEv=ev=>{
 /* ── UBA CARD RUNNER — deck state only, never writes the DB ─────────────────
    Picking an event does three things at once: sets the wagers filter, loads
    the full card into the runner, and re-arms the graphics for that card. */
-const UBA={ id:null, name:null, bouts:[], filter:'all', armed:null }
+const UBA={ id:null, name:null, date:null, bouts:[], filter:'all', armed:null }
 const SEG_ORDER=['main_card','undercard','prelim']
 const SEG_SHORT={main_card:'MAIN',undercard:'UNDER',prelim:'PRELIM'}
 
@@ -761,9 +769,9 @@ window.loadUbaEvents=async()=>{
 
 window.ubaLoadCard=async(ev)=>{
   const { data } = await sb.from('event_matches')
-    .select('bout_number,card_segment,weight_class,is_title_fight,title_name,status,fighter_a_name,fighter_b_name,winner_corner')
+    .select('bout_number,card_segment,weight_class,is_title_fight,title_name,status,method,fighter_a_name,fighter_b_name,winner_corner')
     .eq('event_id',ev.id).order('bout_number')
-  UBA.id=ev.id; UBA.name=ev.name; UBA.armed=null
+  UBA.id=ev.id; UBA.name=ev.name; UBA.date=ev.event_date||null; UBA.armed=null
   // Results already in the DB pre-mark themselves — a mid-show deck reload
   // comes back knowing which bouts are done instead of starting blank.
   UBA.bouts=(data||[]).map(r=>({
@@ -771,6 +779,7 @@ window.ubaLoadCard=async(ev)=>{
     a:r.fighter_a_name||'TBA', b:r.fighter_b_name||'TBA',
     wc:cap(r.weight_class||''),
     title:r.is_title_fight?(r.title_name||'TITLE FIGHT'):null,
+    method:r.method||null,
     winner: /^(a|fighter_a)$/i.test(r.winner_corner||'')?'a'
           : /^(b|fighter_b)$/i.test(r.winner_corner||'')?'b':null }))
   document.getElementById('ubaCardWrap').style.display=UBA.bouts.length?'block':'none'
@@ -848,12 +857,12 @@ window.ubaPush=()=>{
   // shape the card already speaks; the runner's local wins ride along so a win
   // clicked here shows before it's committed to the database.
   send({type:'standby', view:'card', on:true, event:UBA.name, d:{
-    event:UBA.name, filter:UBA.filter,
+    event:UBA.name, date:UBA.date||null, filter:UBA.filter,
     bouts:UBA.bouts.map(b=>({
       bout_number:b.bout_number, card_segment:b.seg,
       fighter_a_name:b.a, fighter_b_name:b.b,
       weight_class:b.wc, is_title_fight:!!b.title, title_name:b.title,
-      winner_corner:b.winner }))
+      method:b.method, winner_corner:b.winner }))
   }})
 }
 
