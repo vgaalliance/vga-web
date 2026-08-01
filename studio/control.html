@@ -327,8 +327,12 @@
   <!-- ② LOADING (doubles as between-matches home) -->
   <div class="panel" data-panel="loading"><div class="sec">
     <h4>LOADING — waiting screen + between matches</h4>
-    <div class="row only-ubae">
-      <button onclick="mnLoadbar()">Re-fire loading bar</button>
+    <div class="row">
+      <button class="only-ubae" onclick="mnLoadbar()">Re-fire loading bar</button>
+      <!-- the toggle is NOT league-gated. Re-firing the bar builds it from
+           UBAe fixtures so that stays UBAe-only, but hiding something is
+           never league-specific -- gating the off switch is how the bar got
+           stranded on a fight night with no way to clear it. -->
       <button id="loadbarTgl" onclick="mnLoadbarToggle()">Schedule bar: ON</button>
     </div>
     <div class="row" style="margin-bottom:10px">
@@ -705,7 +709,7 @@ window.mnLoadbar=async()=>{
 }
 
 // slide the bottom schedule bar in/out — clean bg for info graphics vs. full schedule
-window._loadbarOn=true
+window._loadbarOn=false
 function _loadbarBtn(){ const b=document.getElementById('loadbarTgl'); if(b){ b.textContent='Schedule bar: '+(window._loadbarOn?'ON':'OFF'); b.classList.toggle('hide',!window._loadbarOn) } }
 window.mnLoadbarToggle=()=>{ window._loadbarOn=!window._loadbarOn; send({type:'loadbar', show:window._loadbarOn}); _loadbarBtn() }
 
@@ -893,6 +897,7 @@ window.setEv=ev=>{
   if(ev==='uba' && window._loadbarOn){
     window._loadbarOn=false; send({type:'loadbar', show:false}); _loadbarBtn()
   }
+  _loadbarBtn()
   if(ev==='uba') loadUbaEvents()
   loadOdds(); loadBetFeed()
 }
