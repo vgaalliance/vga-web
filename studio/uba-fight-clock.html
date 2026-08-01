@@ -176,6 +176,15 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 .corner-slit::after{content:'';position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(180deg,rgba(255,255,255,.22),transparent 40%,rgba(0,0,0,.28));}
 .corner-slit.expand{width:196px;}
+/* ODDS open narrower than trunks and in a NEUTRAL violet, not the corner
+   colour. A trunk reveal is a statement (who's in which corner); odds are
+   information. Sizing them the same left ~90% of a red block empty and read
+   as a broken trunk reveal. */
+.corner-slit.expand.odds{width:124px;}
+.main-bar.wide.odds{width:1046px;}
+.bottom-strip.wide.odds{width:1046px;}
+.corner-slit.odds .slit-eyebrow{color:rgba(216,180,254,.9);}
+.corner-slit.odds .slit-value{color:#fff;font-size:29px;}
 /* the label speaks the bar's own font — bold condensed caps, not tiny mono.
    Two lines: an eyebrow (FAVOURITE / UNDERDOG / the corner) over the value,
    so the number is never bare — "+130" means nothing without the word. */
@@ -638,27 +647,50 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   // Set the corner colours WITHOUT animating. Arming a bout uses this — the
   // colours should just be correct, not perform. (Founder: arming a fight
   // shouldn't auto-play the trunk reveal.)
+  // Remembered so an odds reveal can hand the slits back to the corner
+  // colours when it closes — odds are a moment, the trunks are the state.
+  const CUR={ l:'#e8312a', r:'#2e6fe8' }
   function setCorners(l,r){
-    if(l) corner1(l, $('slitL'), $('slitLabelL'), 'left')
-    if(r) corner1(r, $('slitR'), $('slitLabelR'), 'right')
+    if(l){ CUR.l=l; corner1(l, $('slitL'), $('slitLabelL'), 'left') }
+    if(r){ CUR.r=r; corner1(r, $('slitR'), $('slitLabelR'), 'right') }
   }
 
   // The ONE reveal mechanism: widen the bar from its centre, open both slits,
   // show whatever text was handed in, hold, close. Trunks and odds both use
   // it — same motion, different words. Auto-closes so it can never strand.
-  function reveal(L, R, hold){
+  // A neutral violet for odds — related to the bar, clearly not a corner
+  // colour. Same left/right fade direction as the trunk gradient so the two
+  // reveals feel like one family.
+  const ODDS_FILL = side =>
+    `linear-gradient(${side==='left'?'270deg':'90deg'},
+      #3a2f5e 0%, #3a2f5e 24%, #3a2f5ecc 50%, #3a2f5e66 76%, #3a2f5e1a 100%)`
+
+  function reveal(L, R, hold, mode){
     if(L) writeSlit('left',  L.eyebrow, L.value)
     if(R) writeSlit('right', R.eyebrow, R.value)
-    $('mainBar').classList.add('wide')
-    document.querySelector('.bottom-strip').classList.add('wide')
+    const odds = mode==='odds'
+    const bar=$('mainBar'), strip=document.querySelector('.bottom-strip')
+    bar.classList.toggle('odds', odds); strip.classList.toggle('odds', odds)
+    $('slitL').classList.toggle('odds', odds); $('slitR').classList.toggle('odds', odds)
+    if(odds){
+      $('slitL').style.background=ODDS_FILL('left')
+      $('slitR').style.background=ODDS_FILL('right')
+    }
+    bar.classList.add('wide'); strip.classList.add('wide')
     $('slitL').classList.add('expand'); $('slitR').classList.add('expand')
     fitNames()
     clearTimeout(trunkTimer)
     trunkTimer=setTimeout(()=>{
       $('slitL').classList.remove('expand'); $('slitR').classList.remove('expand')
-      $('mainBar').classList.remove('wide')
-      document.querySelector('.bottom-strip').classList.remove('wide')
-      setTimeout(fitNames,560)
+      bar.classList.remove('wide'); strip.classList.remove('wide')
+      // put the corner colours back once it has closed, so the resting slits
+      // are always the trunks — odds are a moment, not a state
+      setTimeout(()=>{
+        $('slitL').classList.remove('odds'); $('slitR').classList.remove('odds')
+        bar.classList.remove('odds'); strip.classList.remove('odds')
+        if(odds) setCorners(CUR.l, CUR.r)
+        fitNames()
+      },560)
     }, hold||4500)
   }
 
@@ -677,7 +709,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   }
   function oddsReveal(l,r){
     reveal({eyebrow:oddsWord(l), value:l||'—'},
-           {eyebrow:oddsWord(r), value:r||'—'}, 6000)
+           {eyebrow:oddsWord(r), value:r||'—'}, 6000, 'odds')
   }
 
   // Long names shrink instead of wrapping — "iron Micheal Chandler" was
