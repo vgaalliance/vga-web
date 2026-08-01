@@ -56,6 +56,19 @@
   button.active{background:var(--g);color:var(--bg);text-shadow:none;border-color:var(--g);}
   button small{display:block;font-size:15px;text-transform:none;letter-spacing:.03em;
     color:inherit;opacity:.75;margin-top:1px;}
+  /* Standby is shared, but half its screens belong to one league. On a UBA
+     fight night the UBAe screens are still REACHABLE -- you might want the
+     standings up -- they just stop looking like tonight's set. Grey, not
+     hidden and not disabled: hiding them would mean re-teaching the panel
+     every time you crossed leagues, and disabling them would take away a
+     choice that's occasionally right. Green = for tonight. */
+  body.ev-uba  button.lg-ubae,
+  body.ev-ubae button.lg-uba{
+    border-color:rgba(226,232,240,.28);color:rgba(226,232,240,.5);
+    text-shadow:none;box-shadow:none;}
+  body.ev-uba  button.lg-ubae:hover,
+  body.ev-ubae button.lg-uba:hover{
+    background:rgba(226,232,240,.75);color:var(--bg);box-shadow:none;}
 
   input,select{font-family:'VT323',monospace;font-size:20px;background:var(--bg);color:var(--g);
     border:2px solid var(--gdim);border-radius:2px;padding:7px 12px;width:240px;outline:none;
@@ -222,12 +235,15 @@
     </div>
     <h5>Standby views — one scene, toggle any</h5>
     <div class="row">
-      <button onclick="standby('standings')">Standings</button>
-      <button onclick="standby('rosters')">Rosters</button>
-      <button onclick="standby('ubarank')">UBA rankings</button>
-      <button onclick="standby('schedule')">Schedule</button>
+      <!-- lg-* marks which league a screen BELONGS to, so the panel can grey
+           the ones that aren't tonight's. Unmarked = shared (card, CTA, the
+           next-3 events strip, auto-cycle) and always reads as live. -->
+      <button class="lg-ubae" onclick="standby('standings')">Standings</button>
+      <button class="lg-ubae" onclick="standby('rosters')">Rosters</button>
+      <button class="lg-uba"  onclick="standby('ubarank')">UBA rankings</button>
+      <button class="lg-ubae" onclick="standby('schedule')">Schedule</button>
       <button onclick="standby('next3')">Next 3 events</button>
-      <button onclick="standby('teamvs')">Team vs team</button>
+      <button class="lg-ubae" onclick="standby('teamvs')">Team vs team</button>
       <button onclick="standby('cta')">📣 Call to action</button>
       <button onclick="standby('auto')">▶ Auto-cycle</button>
       <button class="hide" onclick="standby('off')">Hide</button>
