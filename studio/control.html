@@ -753,7 +753,10 @@ window.mnTape=async()=>{
     document.getElementById('mnState').innerHTML='TAPE: fighter not found'; return }
   const F=x=>({ name:x.display_name, record:`${x.wins}-${x.losses}-${x.draws}`,
     rank:x.rank?('#'+x.rank):'—', age:x.age??'—', height:x.height??'—', reach:x.reach??'—',
-    weight:cap(x.weight_class), odds:'—',
+    // NOT the weight class -- that's the bout title. This row is numeric
+    // ("146"), and no numeric weight exists in the data, so it reads as
+    // unknown rather than printing a word across a number column.
+    weight:'\u2014', odds:'\u2014',
     // slug drives the photo lookup by convention; photo_url wins if one
     // is actually set on the fighter
     slug:x.slug, photo:x.profile_photo_url||null })
