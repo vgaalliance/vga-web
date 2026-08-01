@@ -379,6 +379,16 @@
       <button onclick="send({type:'tape',show:true})">▶ Show tape</button>
       <button class="hide" onclick="send({type:'tape',on:false})">Hide tape</button>
     </div>
+    <!-- The venue bug belongs to this stage as much as to the match: the tape
+         is where "Live From London" sits longest. Buttons only, no second set
+         of inputs -- the venue text stays written down once, in the match
+         panel, so the two stages can never disagree about where you are. -->
+    <h5>📍 Venue bug</h5>
+    <div class="row">
+      <button onclick="fireBug(true)">📍 Show venue bug</button>
+      <button class="hide" onclick="send({type:'bug',d:{on:false}})">Hide venue bug</button>
+      <span id="bugEcho" style="color:var(--gdim);font-size:16px"></span>
+    </div>
   </div></div>
 
   <!-- ④ MATCH -->
@@ -1133,6 +1143,12 @@ window.fireClockOdds=async()=>{
 
 drawSwatches()
 
+function _bugEcho(){
+  const e=document.getElementById('bugEcho'); if(!e) return
+  const t=(document.getElementById('bugText')||{}).value||''
+  const y=(document.getElementById('bugEyebrow')||{}).value||''
+  e.textContent = t ? ('→ '+y+' · '+t) : '(set the text in MATCH)'
+}
 window.fireBug=(persist)=>{
   const text=document.getElementById('bugText').value.trim(); if(!text) return
   const eyebrow=document.getElementById('bugEyebrow').value.trim()
@@ -1140,6 +1156,8 @@ window.fireBug=(persist)=>{
 }
 
 drawRail()
+_bugEcho()
+;['bugText','bugEyebrow'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('input',_bugEcho) })
 roundBtnsDraw()
 mnLoad()
 loadCardEvents()
