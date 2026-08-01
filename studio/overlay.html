@@ -257,6 +257,61 @@
   }
 
 
+/* ══ POST-BOUT RESULT ════════════════════════════════════════════════
+   Text only, deliberately. It fires the moment a bout ends, over a live
+   scene, so it has to be readable in one glance and gone -- a portrait
+   layout would need art we don't have for every fighter and would sit on
+   screen long enough to be in the way.
+   The whole idea is the ASYMMETRY: winner rises and lights, loser settles
+   and greys. You should be able to read the result with the sound off and
+   without reading the words. */
+#resRoot{position:fixed;inset:0;z-index:75;display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .5s ease;background:rgba(4,0,12,.72);}
+#resRoot.on{opacity:1;}
+.res-wrap{display:flex;flex-direction:column;align-items:center;gap:26px;}
+.res-eyebrow{font-family:'Share Tech Mono',monospace;font-size:19px;letter-spacing:.5em;
+  color:rgba(216,180,254,.85);text-transform:uppercase;}
+.res-bout{display:grid;grid-template-columns:auto 110px auto;justify-content:center;
+  align-items:center;gap:18px;}
+.res-side{position:relative;padding:34px 56px;overflow:hidden;min-width:380px;text-align:center;
+  background:rgba(8,2,20,.86);border:1px solid rgba(168,85,247,.4);
+  transform:translateY(0);opacity:1;
+  transition:transform .9s cubic-bezier(.16,.8,.3,1),opacity .9s ease,
+             border-color .9s ease,background .9s ease;}
+.res-name{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-style:italic;
+  font-size:96px;line-height:1;text-transform:uppercase;color:#f0e8ff;white-space:nowrap;
+  transition:color .9s ease,text-shadow .9s ease;}
+
+.res-tag{font-family:'Share Tech Mono',monospace;font-size:13px;letter-spacing:.32em;
+  text-transform:uppercase;margin-top:10px;height:15px;opacity:0;
+  transition:opacity .5s ease .5s;color:rgba(216,180,254,.7);}
+.res-vs{font-family:'Share Tech Mono',monospace;font-size:26px;letter-spacing:.2em;
+  color:rgba(216,180,254,.6);text-align:center;transition:opacity .5s ease;}
+.res-method{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:44px;
+  letter-spacing:.14em;color:#ffce00;text-transform:uppercase;height:50px;opacity:0;
+  transition:opacity .6s ease .55s;text-shadow:0 0 24px rgba(255,206,0,.5);}
+
+/* WINNER — lifts, gold, and a sheen crosses once */
+.res-side.win{transform:translateY(-22px);border-color:rgba(255,206,0,.75);
+  background:rgba(26,16,0,.9);}
+.res-side.win .res-name{color:#ffce00;text-shadow:0 0 34px rgba(255,206,0,.75),0 0 76px rgba(255,170,0,.35);}
+.res-side.win .res-tag{opacity:1;color:#ffce00;}
+.res-side.win::after{content:'';position:absolute;top:0;bottom:0;width:46%;
+  background:linear-gradient(100deg,transparent,rgba(255,206,0,.16) 45%,rgba(255,245,200,.28) 55%,transparent);
+  animation:resSheen 1.5s cubic-bezier(.3,0,.2,1) .45s 2;}
+@keyframes resSheen{from{transform:translateX(-160%)}to{transform:translateX(320%)}}
+
+/* LOSER — settles, desaturates. Red is a thin edge, not a wash: the loser
+   should recede, and a big red panel pulls the eye instead. */
+.res-side.lose{transform:translateY(16px);opacity:.5;
+  border-color:rgba(220,60,60,.45);background:rgba(14,2,4,.8);}
+.res-side.lose .res-name{color:rgba(190,160,200,.75);text-shadow:none;}
+.res-side.lose .res-tag{opacity:1;color:rgba(220,90,90,.8);}
+.res-decided .res-vs{opacity:0;}
+/* the method had text written into it but nothing ever raised its opacity,
+   so "BY TKO" was set and invisible */
+.res-decided .res-method{opacity:1;}
+
 </style>
 </head>
 <body>
@@ -586,6 +641,75 @@ channel.subscribe(status=>{
       if(c.type==='bug') play(c.d||{})
     }).subscribe()
 })()
+
+/* ── POST-BOUT RESULT ──────────────────────────────────────────────────
+   Two beats on purpose. It comes up as a plain matchup first, holds a moment,
+   THEN the winner lifts -- so the reveal is an event rather than a card that
+   was already decided before the viewer's eye arrived.
+   Auto-hides, because a result stranded over the next walkout is the worst
+   failure this graphic has. */
+;window.addEventListener('DOMContentLoaded',function(){
+  const root=document.getElementById('resRoot'); if(!root) return
+  const $r=id=>document.getElementById(id)
+  let t1=null,t2=null
+  const clear=()=>{ clearTimeout(t1); clearTimeout(t2) }
+
+  function reset(){
+    root.classList.remove('res-decided')
+    ;['resL','resR'].forEach(id=>$r(id).classList.remove('win','lose'))
+    $r('resTagL').textContent=''; $r('resTagR').textContent=''
+    $r('resMethod').textContent=''; $r('resVs').textContent='VS'
+  }
+
+  function fire(d){
+    if(d.on===false){ root.classList.remove('on'); clear(); return }
+    clear(); reset()
+    $r('resNameL').textContent=(d.a||'').toUpperCase()
+    $r('resNameR').textContent=(d.b||'').toUpperCase()
+    $r('resEyebrow').textContent=(d.eyebrow||'Result').toUpperCase()
+    root.classList.add('on')
+
+    const w=d.winner   // 'a' | 'b' | null
+    if(w){
+      t1=setTimeout(()=>{
+        root.classList.add('res-decided')
+        $r(w==='a'?'resL':'resR').classList.add('win')
+        $r(w==='a'?'resR':'resL').classList.add('lose')
+        $r(w==='a'?'resTagL':'resTagR').textContent='WINNER'
+        $r(w==='a'?'resTagR':'resTagL').textContent='DEFEATED'
+        if(d.method) $r('resMethod').textContent='BY '+String(d.method).toUpperCase()
+      }, d.delay==null ? 1400 : d.delay)
+    }
+    t2=setTimeout(()=>root.classList.remove('on'), d.hold||9000)
+  }
+
+  supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
+    'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
+    .channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
+      if(c.type==='result') fire(c.d||c)
+    }).subscribe()
+
+  window.__result=(a,b,w,m)=>fire({a:a||'VINYL',b:b||'ROATAN',winner:w||'a',method:m||'TKO'})
+})
+
 </script>
+<div id="resRoot">
+  <div class="res-wrap">
+    <div class="res-eyebrow" id="resEyebrow">Result</div>
+    <div class="res-bout">
+      <div class="res-side left" id="resL">
+        <div class="res-name" id="resNameL">FIGHTER A</div>
+        <div class="res-tag" id="resTagL"></div>
+      </div>
+      <div class="res-vs" id="resVs">VS</div>
+      <div class="res-side right" id="resR">
+        <div class="res-name" id="resNameR">FIGHTER B</div>
+        <div class="res-tag" id="resTagR"></div>
+      </div>
+    </div>
+    <div class="res-method" id="resMethod"></div>
+  </div>
+</div>
+
 </body>
 </html>

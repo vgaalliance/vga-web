@@ -376,6 +376,7 @@
       <input id="bugEyebrow" placeholder="EYEBROW (default: LIVE FROM)…" style="width:230px">
       <input id="bugText" placeholder="BUG TEXT (venue, note…)…" style="width:280px" onkeydown="if(event.key==='Enter')fireBug()">
       <button onclick="fireBug()">Fire bug</button>
+      <button class="lg-uba" onclick="fireResult()">🏅 Fire result</button>
     </div>
     <h5>Fighter dossier — lower third</h5>
     <div class="row">
@@ -695,6 +696,23 @@ window.standby=view=>send({type:'standby', view, league:EV, on:view!=='off',
 
 // coin toss — heads or tails
 window.fireCoin=()=>send({type:'coin', result: Math.random()<.5?'HEADS':'TAILS' })
+
+// Post-bout result. Reads the ARMED bout and the win already clicked in the
+// tracker, so it's one button rather than re-entering who beat whom -- the
+// operator has typed it once already and the graphic should not ask again.
+window.fireResult=()=>{
+  const b=armedBout()
+  if(!b){
+    const l=document.getElementById('log'); const d=document.createElement('div')
+    d.textContent='⚠ arm a bout first — nothing to show a result for'; l.prepend(d); return
+  }
+  if(!b.winner){
+    const l=document.getElementById('log'); const d=document.createElement('div')
+    d.textContent='⚠ tap the winner in the tracker first'; l.prepend(d); return
+  }
+  send({type:'result', d:{ a:b.a, b:b.b, winner:b.winner, method:b.method||null,
+                           eyebrow: b.title ? 'Title Bout Result' : 'Result' }})
+}
 
 window.loadCardEvents=async()=>{
   const { data } = await sb.from('events_public').select('name,event_date')
