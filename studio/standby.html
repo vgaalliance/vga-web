@@ -100,6 +100,38 @@
   .cbout.title .vs{color:#ffce00;}
   .cbadge{grid-column:1/-1;text-align:center;font-family:'Press Start 2P',monospace;
     font-size:10px;letter-spacing:.2em;color:#ffce00;margin-bottom:4px;}
+  /* A UBA fight night has tiers and results; a UBAe card has neither, so all of
+     this stays invisible until the data carries it and the plain list is
+     untouched. Same rows, same CRT language — the card doesn't change identity
+     just because it gained a scoreboard. */
+  .cseg{font-family:'Press Start 2P',monospace;font-size:13px;letter-spacing:.24em;
+    color:var(--hi);margin:22px 0 10px;display:flex;align-items:center;gap:14px;}
+  .cseg::after{content:'';flex:1;height:2px;background:linear-gradient(90deg,var(--pur),transparent);}
+  .cseg:first-child{margin-top:0;}
+  .cbout.done{opacity:.62;}
+  .cbout .fa.win,.cbout .fb.win{color:#ffce00;text-shadow:0 0 18px rgba(255,206,0,.55);}
+  .cbout .fa.lose,.cbout .fb.lose{color:var(--dim);text-decoration:line-through;
+    text-decoration-thickness:3px;}
+  .cwc{grid-column:1/-1;text-align:center;font-family:'Press Start 2P',monospace;
+    font-size:9px;letter-spacing:.2em;color:var(--dim);margin-top:5px;}
+  .cprog{display:flex;justify-content:space-between;align-items:center;margin-top:20px;
+    font-family:'Press Start 2P',monospace;font-size:11px;letter-spacing:.18em;color:var(--dim);}
+  .cprog b{color:var(--hi);}
+  /* segment splash — the card's own type, scaled up. Was a separate file in a
+     different design language; there is no reason for the title announcing a
+     tier to look unrelated to the card listing it. */
+  #segsplash{position:fixed;inset:0;z-index:70;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:10px;opacity:0;pointer-events:none;
+    transition:opacity .5s ease;background:rgba(6,0,14,.82);}
+  #segsplash.on{opacity:1;}
+  .ss-eyebrow{font-family:'Press Start 2P',monospace;font-size:18px;letter-spacing:.42em;
+    color:var(--hi);text-shadow:0 0 16px rgba(204,102,255,.7);text-transform:uppercase;}
+  .ss-label{font-weight:900;font-size:150px;line-height:1;text-transform:uppercase;
+    background:linear-gradient(180deg,#e8c8ff,#b565ff 46%,#8a2be2);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 0 30px rgba(155,48,255,.65));}
+  .ss-sub{font-family:'Press Start 2P',monospace;font-size:14px;letter-spacing:.3em;
+    color:var(--dim);text-transform:uppercase;}
   /* call to action */
   #v-cta{text-align:center;}
   .ctarow{display:flex;flex-direction:column;align-items:center;gap:30px;margin:24px 0 40px;}
@@ -166,80 +198,6 @@
   /* stage gets out of the bar's way while it's up */
   #stage{transition:padding-bottom .55s cubic-bezier(.16,1,.3,1);}
   body.bar-on #stage{padding-bottom:340px;}
-
-/* ══ FIGHT CARD RUNDOWN + SEGMENT TITLE (was uba-card.html) ══
-   Grafted in whole and scoped under .uc. Standby and the card belong to the
-   same stage -- the waiting screen -- so they were two OBS sources for one
-   moment. Everything below is the card's own CSS with every selector prefixed,
-   because the card styles a bare `.vs` and standby styles `.cbout .vs`; without
-   the scope the card's 130px bordered column would land on standby's fight-card
-   rows. Nothing above this line was touched. */
-
-/* STAGE 2 in one OBS source: the card rundown AND the segment title card.
-   They belong to the same stage and never fight for the screen — the splash
-   is an interstitial ON the way into a tier, then the card returns. Merging
-   them halves the sources to wire and means one scene, not two.
-   Each still renders ONLY its own command type and ignores everything else on
-   the channel, which is the studio's scene-file contract. */
-@keyframes holoA{0%{transform:translateX(-200%)}100%{transform:translateX(400%)}}
-@keyframes ubaGlow{
-  0%,100%{text-shadow:0 0 10px rgba(216,180,254,.6),0 0 20px rgba(155,48,255,.3);}
-  50%{text-shadow:0 0 22px rgba(216,180,254,1),0 0 44px rgba(155,48,255,.6);}
-}
-@keyframes rowIn{from{opacity:0;transform:translateX(-26px)}to{opacity:1;transform:none}}.uc /* ══ CARD RUNDOWN ══ */
-.root{
-  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  opacity:0;transform:translateY(18px);transition:opacity .45s ease,transform .45s ease;
-  filter:drop-shadow(0 10px 60px rgba(0,0,0,.95));
-}.uc .root.on{opacity:1;transform:none;}.uc .panel{width:1060px;max-height:980px;display:flex;flex-direction:column;}.uc .head{
-  position:relative;background:rgba(4,0,16,.92);
-  border:1px solid rgba(168,85,247,.55);
-  padding:14px 34px;display:flex;align-items:baseline;gap:22px;overflow:hidden;
-  clip-path:polygon(16px 0,100% 0,100% 100%,0 100%,0 16px);
-}.uc .head::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.85) 50%,transparent);}.uc .head-holo{position:absolute;inset:0;pointer-events:none;overflow:hidden;}.uc .head-holo::after{content:'';position:absolute;top:0;bottom:0;width:55%;
-  background:linear-gradient(90deg,transparent,rgba(216,180,254,.14),rgba(168,85,247,.18),transparent);
-  animation:holoA 3.6s ease-in-out infinite;}.uc .head-title{font-size:44px;font-weight:900;font-style:italic;letter-spacing:.06em;
-  color:#fff;text-transform:uppercase;position:relative;z-index:2;animation:ubaGlow 3s ease-in-out infinite;}.uc .head-sub{font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:.42em;
-  color:rgba(216,180,254,.85);text-transform:uppercase;position:relative;z-index:2;}.uc .body{
-  background:rgba(4,0,16,.78);border:1px solid rgba(168,85,247,.3);border-top:none;
-  padding:10px 26px 20px;backdrop-filter:blur(8px);overflow:hidden;
-  clip-path:polygon(0 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%);
-}.uc .seg{margin-top:14px;}.uc .seg-head{display:flex;align-items:center;gap:14px;margin-bottom:8px;}.uc .seg-label{font-family:'Share Tech Mono',monospace;font-size:13px;letter-spacing:.42em;
-  color:rgba(216,180,254,.9);text-transform:uppercase;white-space:nowrap;}.uc .seg-line{flex:1;height:1px;background:linear-gradient(90deg,rgba(168,85,247,.55),transparent);}.uc .bout{
-  display:flex;align-items:center;gap:0;height:62px;margin-bottom:6px;
-  background:rgba(10,4,26,.6);border:1px solid rgba(168,85,247,.22);
-  clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));
-  position:relative;overflow:hidden;animation:rowIn .4s ease both;
-}.uc .bout::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(216,180,254,.35),transparent);}.uc .bout.done{opacity:.55;}.uc .bout.main{border-color:rgba(216,180,254,.55);background:rgba(20,8,44,.72);height:74px;}.uc .bout.main::before{background:linear-gradient(90deg,transparent,rgba(255,255,255,.8) 50%,transparent);}.uc .bout-no{
-  width:64px;flex-shrink:0;height:100%;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:1px;
-  background:rgba(4,0,16,.6);border-right:1px solid rgba(168,85,247,.25);
-}.uc .bout-no .n{font-size:26px;font-weight:900;font-style:italic;color:#d8b4fe;line-height:1;}.uc .bout-no .t{font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:.3em;color:rgba(200,170,255,.45);text-transform:uppercase;}.uc .fname{flex:1;min-width:0;display:flex;align-items:center;font-size:30px;font-weight:900;
-  font-style:italic;letter-spacing:.03em;color:#f0e8ff;text-transform:uppercase;
-  padding:0 22px;line-height:1;white-space:nowrap;overflow:hidden;}.uc .fname.r{justify-content:flex-end;}.uc .bout.main .fname{font-size:36px;}.uc .fname.win{color:#ffd66e;text-shadow:0 0 18px rgba(255,200,80,.55);}.uc .fname.lose{color:rgba(160,140,190,.4);text-decoration:line-through;text-decoration-thickness:2px;}.uc .fname .tick{font-style:normal;font-size:20px;margin:0 10px;color:#ffd66e;}.uc .vs{
-  flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:2px;width:130px;height:100%;
-  border-left:1px solid rgba(168,85,247,.2);border-right:1px solid rgba(168,85,247,.2);
-  background:rgba(4,0,16,.45);
-}.uc .vs .v{font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:.3em;color:rgba(216,180,254,.6);}.uc .vs .wc{font-size:15px;font-weight:700;letter-spacing:.14em;color:#d8b4fe;text-transform:uppercase;white-space:nowrap;}.uc .vs .belt{font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.24em;color:#ffd66e;text-transform:uppercase;white-space:nowrap;}.uc .foot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:0 4px;}.uc .foot-l{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:.32em;color:rgba(200,170,255,.4);text-transform:uppercase;}.uc .foot-r{font-size:15px;font-weight:700;letter-spacing:.2em;color:#d8b4fe;text-transform:uppercase;}.uc /* ══ SEGMENT TITLE CARD — sits above the rundown, .uc auto-hides ══ */
-.segRoot{
-  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  opacity:0;transform:scale(.97);transition:opacity .5s ease,transform .5s cubic-bezier(.16,.8,.3,1);
-  filter:drop-shadow(0 12px 70px rgba(0,0,0,.95));z-index:20;pointer-events:none;
-}.uc .segRoot.on{opacity:1;transform:none;}.uc .segCard{position:relative;padding:46px 110px;text-align:center;overflow:hidden;
-  background:rgba(4,0,16,.9);border:1px solid rgba(168,85,247,.55);
-  clip-path:polygon(26px 0,calc(100% - 26px) 0,100% 26px,100% calc(100% - 26px),calc(100% - 26px) 100%,26px 100%,0 calc(100% - 26px),0 26px);}.uc .segCard::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.9) 50%,transparent);}.uc .segCard::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(168,85,247,.5),transparent);}.uc .segHolo{position:absolute;inset:0;pointer-events:none;overflow:hidden;}.uc .segHolo::after{content:'';position:absolute;top:0;bottom:0;width:55%;
-  background:linear-gradient(90deg,transparent,rgba(216,180,254,.15),rgba(168,85,247,.2),transparent);
-  animation:holoA 3.4s ease-in-out infinite;}.uc .segEyebrow{font-family:'Share Tech Mono',monospace;font-size:15px;letter-spacing:.55em;
-  color:rgba(216,180,254,.8);text-transform:uppercase;position:relative;z-index:2;}.uc .segLabelTxt{font-size:150px;font-weight:900;font-style:italic;letter-spacing:.05em;line-height:1.02;
-  color:#fff;text-transform:uppercase;position:relative;z-index:2;margin:6px 0 4px;
-  animation:ubaGlow 3s ease-in-out infinite;}.uc .segSubTxt{font-size:26px;font-weight:700;letter-spacing:.4em;color:#d8b4fe;
-  text-transform:uppercase;position:relative;z-index:2;}
-
 </style>
 </head>
 <body>
@@ -248,6 +206,14 @@
     <div class="ct-eyebrow">Coin Toss</div>
     <div class="ct-coin" id="ctCoin">VGA</div>
     <div class="ct-result" id="ctResult"></div>
+  </div>
+  <!-- segment title — the interstitial on the way into a tier. Sits above the
+       card and auto-hides, because a stranded full-screen title over a live
+       fight is the worst thing this screen could do. -->
+  <div id="segsplash">
+    <div class="ss-eyebrow">Up Next</div>
+    <div class="ss-label" id="ssLabel">PRELIMS</div>
+    <div class="ss-sub" id="ssSub">UBA Fight Night</div>
   </div>
   <div id="status">standby: connecting…</div>
 
@@ -353,13 +319,21 @@ function renderCta(count){
 }
 
 // card reveal for a SPECIFIC event (by name) or the soonest upcoming one
-async function showCard(eventName){
+async function showCard(eventName, pushed){
+  // The deck sends its own rows when the operator is scoring live, because those
+  // wins are clicks that haven't reached the database yet — re-fetching here
+  // would quietly undo them on screen.
+  if(pushed && pushed.bouts && pushed.bouts.length){
+    renderCard({name:pushed.event||eventName||'THE CARD', event_date:pushed.date||null},
+               pushed.bouts, pushed.filter)
+    return
+  }
   let q=sb.from('events_public').select('id,name,event_date').eq('status','scheduled')
   q = eventName ? q.eq('name',eventName) : q.gte('event_date',FUTURE()).order('event_date')
   const { data:evs } = await q.limit(1)
   const ev0=evs&&evs[0]; if(!ev0) return
   const { data:em } = await sb.from('event_matches').select('*').eq('event_id',ev0.id).order('bout_number')
-  renderCard(ev0, em||[])
+  renderCard(ev0, em||[], pushed && pushed.filter)
 }
 
 const UBA_DIVS=[['lightweight','LIGHTWEIGHT'],['middleweight','MIDDLEWEIGHT'],['light_heavyweight','LIGHT HEAVY'],['heavyweight','HEAVYWEIGHT']]
@@ -371,18 +345,50 @@ function renderUbaRank(rk){
   }).join('')
 }
 
-function renderCard(ev, bouts){
+// THE card. One renderer, two ways in: the 🃏 buttons hand it rows straight from
+// event_matches, the fight-night runner hands it the deck's copy with the wins
+// the operator has clicked but not yet committed. Both arrive in this shape, so
+// there is one card on screen and one look to maintain.
+const SEGS=[['main_card','MAIN CARD'],['undercard','UNDERCARD'],['prelim','PRELIMS']]
+let segTimer=null
+const winOf=b=> /^(a|fighter_a)$/i.test(b.winner_corner||b.winner||'') ? 'a'
+              : /^(b|fighter_b)$/i.test(b.winner_corner||b.winner||'') ? 'b' : null
+
+function renderCard(ev, bouts, filter){
   document.getElementById('cardTitle').textContent=ev.name
   document.getElementById('cardDate').textContent=fdate(ev.event_date).toUpperCase()
   const box=document.getElementById('cardContent')
-  const open=bouts.filter(b=>b.fighter_a_name && b.fighter_b_name)
-  box.innerHTML = open.length ? open.map(b=>
-    `<div class="cbout${b.is_title_fight?' title':''}">
+  let open=bouts.filter(b=>b.fighter_a_name && b.fighter_b_name)
+  if(filter && filter!=='all') open=open.filter(b=>(b.card_segment||'main_card')===filter)
+  if(!open.length){
+    box.innerHTML='<div class="cbout"><span class="fa"></span><span class="vs">CARD SOON</span><span class="fb"></span></div>'
+    return
+  }
+  const row=b=>{
+    const w=winOf(b), cls=n=> w ? (w===n?' win':' lose') : ''
+    return `<div class="cbout${b.is_title_fight?' title':''}${w?' done':''}">
       ${b.is_title_fight?`<div class="cbadge">★ ${b.title_name||'Title Fight'} ★</div>`:''}
-      <span class="fa">${b.fighter_a_name}</span>
+      <span class="fa${cls('a')}">${b.fighter_a_name}</span>
       <span class="vs">VS</span>
-      <span class="fb">${b.fighter_b_name}</span></div>`).join('')
-    : '<div class="cbout"><span class="fa"></span><span class="vs">CARD SOON</span><span class="fb"></span></div>'
+      <span class="fb${cls('b')}">${b.fighter_b_name}</span>
+      ${b.weight_class?`<div class="cwc">${String(b.weight_class).replace(/_/g,' ').toUpperCase()}</div>`:''}
+    </div>`
+  }
+  // Group only when the card actually HAS tiers. A UBAe card is one flat list
+  // and a lone "MAIN CARD" header over it would be noise.
+  const tiers=[...new Set(open.map(b=>b.card_segment||'main_card'))]
+  let html
+  if(tiers.length>1){
+    html=SEGS.map(([key,label])=>{
+      const g=open.filter(b=>(b.card_segment||'main_card')===key)
+      return g.length ? `<div class="cseg">${label}</div>${g.map(row).join('')}` : ''
+    }).join('')
+  } else {
+    html=open.map(row).join('')
+  }
+  const done=open.filter(winOf).length
+  if(done) html+=`<div class="cprog"><span>DISCORD.GG/UBA</span><span><b>${done}</b> / ${open.length} COMPLETE</span></div>`
+  box.innerHTML=html
 }
 
 function renderStandings(st){
@@ -507,12 +513,22 @@ sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
   }
   if(c.type==='standby'){
     if(c.on===false){ show('off'); return }
-    if(c.view==='card'){ await showCard(c.event); show('card'); return }   // c.event picks FN29/FN30/…
+    if(c.view==='card'){ await showCard(c.event, c.d); show('card'); return }   // c.event picks FN29/FN30/… · c.d = live rows from the runner
     show(c.view); return
   }
   // when the deck loads a match in the tracker, mirror it on the team-vs-team screen
   if(c.type==='pickbar' && c.d && c.d.teamA && c.d.teamB) setTvs(c.d.teamA, c.d.teamB, 'Tonight')
   // coin toss — flips over the current standby view
+  if(c.type==='segcard'){
+    const ss=document.getElementById('segsplash')
+    if(c.on===false){ ss.classList.remove('on'); clearTimeout(segTimer); return }
+    document.getElementById('ssLabel').textContent=(c.label||'').toUpperCase()
+    if(c.sub) document.getElementById('ssSub').textContent=c.sub.toUpperCase()
+    ss.classList.add('on')
+    clearTimeout(segTimer)
+    segTimer=setTimeout(()=>ss.classList.remove('on'), 7000)   // never strands
+    return
+  }
   if(c.type==='coin'){
     const box=$('cointoss'), coin=$('ctCoin'), res=$('ctResult')
     res.classList.remove('show'); res.textContent=''; coin.textContent='VGA'
@@ -525,95 +541,6 @@ sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
 }).subscribe(s=>{ $('status').textContent='standby: '+(s==='SUBSCRIBED'?'● live':s.toLowerCase()) })
 
 loadAll()
-</script>
-<div class="uc">
-<!-- the card -->
-<div class="root" id="root">
-  <div class="panel">
-    <div class="head">
-      <div class="head-holo"></div>
-      <div class="head-title" id="evName">FIGHT CARD</div>
-      <div class="head-sub" id="evSub">Unified Boxing Association</div>
-    </div>
-    <div class="body" id="body"></div>
-  </div>
-</div>
-
-<!-- the segment splash, layered above it -->
-<div class="segRoot" id="segRoot">
-  <div class="segCard">
-    <div class="segHolo"></div>
-    <div class="segEyebrow">Up Next</div>
-    <div class="segLabelTxt" id="segLabel">PRELIMS</div>
-    <div class="segSubTxt" id="segSub">UBA Fight Night</div>
-  </div>
-</div>
-</div>
-
-<script>
-(function(){
-  const _sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
-    'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
-
-  const SEGS=[['main_card','MAIN CARD'],['undercard','UNDERCARD'],['prelim','PRELIMS']]
-
-  function render(d){
-    document.getElementById('evName').textContent=(d.event||'FIGHT CARD').toUpperCase()
-    const body=document.getElementById('body')
-    const filter=d.filter&&d.filter!=='all'?d.filter:null
-    const bouts=(d.bouts||[]).filter(b=>!filter||b.seg===filter)
-      .sort((a,b)=>a.bout_number-b.bout_number)     // 1 = main event → top
-    let html='', delay=0
-    SEGS.forEach(([key,label])=>{
-      const group=bouts.filter(b=>b.seg===key)
-      if(!group.length) return
-      html+=`<div class="seg"><div class="seg-head"><div class="seg-label">${label}</div><div class="seg-line"></div></div>`
-      group.forEach(b=>{
-        const main=b.bout_number===1
-        const done=b.winner==='a'||b.winner==='b'
-        const cls=n=> b.winner? (b.winner===n?'win':'lose') : ''
-        html+=`<div class="bout${main?' main':''}${done?' done':''}" style="animation-delay:${delay}ms">
-          <div class="bout-no"><div class="n">${b.bout_number}</div><div class="t">${main?'MAIN':'BOUT'}</div></div>
-          <div class="fname l ${cls('a')}">${b.winner==='a'?'<span class="tick">✓</span>':''}${b.a||''}</div>
-          <div class="vs"><div class="v">VS</div><div class="wc">${b.wc||''}</div>${b.title?`<div class="belt">👑 ${b.title}</div>`:''}</div>
-          <div class="fname r ${cls('b')}">${b.b||''}${b.winner==='b'?'<span class="tick">✓</span>':''}</div>
-        </div>`
-        delay+=45
-      })
-      html+='</div>'
-    })
-    const doneN=bouts.filter(b=>b.winner).length
-    html+=`<div class="foot"><div class="foot-l">discord.gg/uba · ubaesports.com</div>
-      <div class="foot-r">${doneN} / ${bouts.length} COMPLETE</div></div>`
-    body.innerHTML=html
-  }
-
-  // segment splash — auto-hides, so a full-screen title can never strand
-  const HOLD=7000
-  let segTimer=null
-  function segFire(c){
-    const segRoot=document.getElementById('segRoot')
-    if(c.on===false){ segRoot.classList.remove('on'); clearTimeout(segTimer); return }
-    document.getElementById('segLabel').textContent=(c.label||'').toUpperCase()
-    if(c.sub) document.getElementById('segSub').textContent=c.sub.toUpperCase()
-    segRoot.classList.remove('on'); void segRoot.offsetWidth
-    segRoot.classList.add('on')
-    clearTimeout(segTimer)
-    segTimer=setTimeout(()=>segRoot.classList.remove('on'), HOLD)
-  }
-
-  _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
-    if(c.type==='rundown'){
-      const root=document.getElementById('root')
-      if(c.on===false){ root.classList.remove('on'); return }
-      render(c.d||{}); root.classList.add('on'); return
-    }
-    if(c.type==='segcard'){ segFire(c); return }
-  }).subscribe()
-
-  window.__test=d=>{ render(d); document.getElementById('root').classList.add('on') }
-  window.__seg=l=>segFire({label:l||'MAIN CARD',sub:'Fight Night 29'})
-})()
 </script>
 </body>
 </html>

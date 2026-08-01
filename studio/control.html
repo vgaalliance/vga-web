@@ -162,7 +162,7 @@
           <button data-f="prelim" onclick="ubaFilter('prelim')">Prelims</button>
         </span>
         <button onclick="ubaPush()">▶ Push card to screen</button>
-        <button class="hide" onclick="send({type:'rundown',on:false})">Hide card</button>
+        <button class="hide" onclick="send({type:'standby',on:false})">Hide card</button>
       </div>
       <div id="ubaCard"></div>
       <h5>Segment title card — auto-hides after 7s</h5>
@@ -820,7 +820,18 @@ window.ubaPush=()=>{
     d.textContent='⚠ pick an event above first — no card loaded'; l.prepend(d)
     return
   }
-  send({type:'rundown', on:true, d:{ event:UBA.name, filter:UBA.filter, bouts:UBA.bouts }})
+  // Pushes the SAME standby card the 🃏 buttons drive — one card on screen, one
+  // look. The rows are remapped to event_matches' field names because that's the
+  // shape the card already speaks; the runner's local wins ride along so a win
+  // clicked here shows before it's committed to the database.
+  send({type:'standby', view:'card', on:true, event:UBA.name, d:{
+    event:UBA.name, filter:UBA.filter,
+    bouts:UBA.bouts.map(b=>({
+      bout_number:b.bout_number, card_segment:b.seg,
+      fighter_a_name:b.a, fighter_b_name:b.b,
+      weight_class:b.wc, is_title_fight:!!b.title, title_name:b.title,
+      winner_corner:b.winner }))
+  }})
 }
 
 window.segCard=label=>send({type:'segcard', label, sub:UBA.name||'UBA Fight Night'})
