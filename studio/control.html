@@ -671,7 +671,17 @@ window.clockToggle=()=>{
 }
 
 // updates the countdown TEAMS only — the clock itself is set with the minutes input
+// Guarded on MN.id -- the UBAe match -- so on a fight night it returned
+// immediately and sent nothing, leaving the countdown on whatever it last
+// showed. A UBA countdown headlines the MAIN EVENT (bout 1), not teams.
 window.mnCountdown=()=>{
+  if(EV==='uba'){
+    const main = UBA.bouts.find(b=>b.bout_number===1) || UBA.bouts[0]
+    if(!main) return
+    send({type:'countdown', d:{ a:main.a, b:main.b,
+      eventMain: UBA.name || 'FIGHT NIGHT', eventSub:'ubaesports.com' }})
+    return
+  }
   if(!MN.id) return
   send({type:'countdown', d:{ a:MN.a, b:MN.b, eventMain:'SUMMER SPLIT', eventSub:'ubaesports.com' }})
 }
@@ -937,6 +947,7 @@ window.ubaLoadCard=async(ev)=>{
           : /^(b|fighter_b)$/i.test(r.winner_corner||'')?'b':null }))
   document.getElementById('ubaCardWrap').style.display=UBA.bouts.length?'block':'none'
   ubaDraw()
+  mnCountdown()   // picking the event is when the main event becomes known
 }
 
 function ubaDraw(){
