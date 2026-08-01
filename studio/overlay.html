@@ -123,7 +123,14 @@
     border-bottom:1px solid rgba(255,255,255,.06);}
   .oh b{color:var(--gold);}
   .obody{display:flex;align-items:center;padding:11px 16px;gap:14px;}
-  .oside{flex:1;} .oside.r{text-align:right;}
+  /* min-width:0 is load-bearing. A flex item defaults to min-width:auto, so a
+     nowrap name REFUSES to shrink below its own text -- "iron Micheal
+     Chandler" then ate 223px of a 548px board and crushed the odds bar to a
+     sliver between two fat name blocks. With this the name ellipsises and the
+     bar keeps its share. */
+  .oside{flex:1 1 0;min-width:0;} .oside.r{text-align:right;}
+  /* and the bar has a floor, so no name can squeeze it out entirely */
+  .obarwrap{flex:0 0 190px;}
   .oname{font-family:'Barlow Condensed';font-weight:700;font-size:25px;text-transform:uppercase;color:#fff;line-height:1;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .omult{font-family:'Barlow Condensed';font-weight:700;font-size:21px;margin-top:1px;}
@@ -133,7 +140,7 @@
      the only element shouting, which is why it read as belonging to a different
      graphic. The percentages move ABOVE the bar so the bar itself can be a
      measure rather than a container. */
-  .obarwrap{flex:2;display:flex;flex-direction:column;gap:6px;}
+  .obarwrap{display:flex;flex-direction:column;gap:6px;}
   .obar{height:8px;border-radius:1px;overflow:hidden;display:flex;
     box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);}
   .obar .ba{background:#a259f7;} .obar .bb{background:#ff33cc;}
@@ -585,6 +592,20 @@ function handle(c){
     clearTimeout(fighterTimer); fighterTimer=setTimeout(()=>{ f.classList.remove('in'); f.classList.add('out') }, 12000)
     sfx.whoosh()
   }
+  // A clipped fighter name reads as a bug; a slightly smaller one reads as
+  // typesetting. Shrink to fit rather than ellipsis, measured with a Range
+  // because these are shrink-to-fit flex children -- scrollWidth and
+  // clientWidth both track the text here and can't constrain it.
+  function fitOddsNames(){
+    ;['oa','ob'].forEach(id=>{
+      const el=document.getElementById(id); if(!el) return
+      const room = el.parentElement.getBoundingClientRect().width
+      const wide = () => { const r=document.createRange(); r.selectNodeContents(el)
+        return r.getBoundingClientRect().width }
+      let size=25; el.style.fontSize=size+'px'
+      while(size>13 && wide() > room){ size-=1; el.style.fontSize=size+'px' }
+    })
+  }
   if(c.type==='odds'){
     if(c.on===false){ $('odds').classList.remove('show'); clearTimeout(oddsTimer); return }
     const d=c.d, pool=d.total_a+d.total_b
@@ -592,6 +613,7 @@ function handle(c){
     const oa= d.total_a? (pool/d.total_a):0, ob= d.total_b? (pool/d.total_b):0
     $('ohl').textContent=d.label||'Live betting'; $('ohpool').textContent=pool.toLocaleString()+' VC'; $('ohbets').textContent=d.bets||0
     $('oa').textContent=d.a; $('ob').textContent=d.b
+    fitOddsNames()
     $('oma').textContent= oa? oa.toFixed(2)+'×':'—'; $('omb').textContent= ob? ob.toFixed(2)+'×':'—'
     $('oba').style.width=pa+'%'; $('obb').style.width=pb+'%'
     $('opa').textContent=pa+'%'; $('opb').textContent=pb+'%'
