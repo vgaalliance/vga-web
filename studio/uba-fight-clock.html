@@ -248,6 +248,11 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 .main-bar{
   position:relative;display:flex;align-items:stretch;
   width:920px;height:68px;
+  /* the BAR itself grows for a reveal — it's centred, so it opens from the
+     middle outward and the name slots keep their room. Previously the slit
+     expanded INSIDE a fixed bar and squeezed the names, which read as a panel
+     landing on top of the graphic rather than the graphic opening up. */
+  transition:width .55s cubic-bezier(.16,.8,.3,1);
   background:rgba(4,0,16,.58);
   border:1px solid rgba(168,85,247,.28);
   clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px));
@@ -257,7 +262,10 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   content:'';position:absolute;top:0;left:0;right:0;height:1px;z-index:5;
   background:linear-gradient(90deg,transparent,rgba(216,180,254,.5) 25%,rgba(255,255,255,.8) 50%,rgba(216,180,254,.5) 75%,transparent);
 }
-#holoCanvas{position:absolute;top:0;left:0;height:100%;pointer-events:none;z-index:4;opacity:0;}
+#holoCanvas{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:4;opacity:0;}
+.main-bar.wide{width:1180px;}
+.bottom-strip{transition:width .55s cubic-bezier(.16,.8,.3,1);}
+.bottom-strip.wide{width:1180px;}
 #hudFlowers{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:2;opacity:.85;}
 
 /* bar accents */
@@ -265,10 +273,15 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 .bar-accent.right{background:linear-gradient(to bottom,transparent,rgba(168,85,247,.4),rgba(216,180,254,.85));}
 
 /* fighter slots */
-.fighter-slot{flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 30px;position:relative;z-index:6;gap:2px;}
-.fighter-slot.right{align-items:flex-end;text-align:right;}
+/* CENTRED in each half — the cleanest option when names vary wildly in length
+   ("M4" next to "iron Micheal Chandler"). Edge-aligned looked lopsided as the
+   bar widened; centred stays balanced at any width. */
+.fighter-slot{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;
+  align-items:center;text-align:center;padding:0 24px;position:relative;z-index:6;gap:2px;}
+.fighter-slot.right{align-items:center;text-align:center;}
 .f-label{font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.42em;color:rgba(200,170,255,.42);text-transform:uppercase;}
-.f-name{font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;font-style:italic;letter-spacing:.04em;color:#f0e8ff;text-transform:uppercase;line-height:1;animation:nameGlow 3.5s ease-in-out infinite;}
+/* nowrap + JS auto-fit: a long name shrinks instead of wrapping to two lines */
+.f-name{font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;font-style:italic;letter-spacing:.04em;color:#f0e8ff;text-transform:uppercase;line-height:1;animation:nameGlow 3.5s ease-in-out infinite;white-space:nowrap;max-width:100%;}
 .fighter-slot.left .f-name{animation-delay:0s;}
 .fighter-slot.right .f-name{animation-delay:.9s;}
 
@@ -605,17 +618,57 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     const eb=document.querySelector(`.fighter-slot.${side} .f-label`)
     if(eb){ eb.textContent=colorName(hex)+' CORNER'; eb.style.color=hex }
   }
-  function corners(l,r){
+  // Set the corner colours WITHOUT animating. Arming a bout uses this — the
+  // colours should just be correct, not perform. (Founder: arming a fight
+  // shouldn't auto-play the trunk reveal.)
+  function setCorners(l,r){
     if(l) corner1(l, $('slitL'), $('slitLabelL'), 'left')
     if(r) corner1(r, $('slitR'), $('slitLabelR'), 'right')
-    if(l||r){
-      $('slitL').classList.add('expand'); $('slitR').classList.add('expand')
-      clearTimeout(trunkTimer)
-      trunkTimer=setTimeout(()=>{
-        $('slitL').classList.remove('expand'); $('slitR').classList.remove('expand') },4500)
-    }
   }
+
+  // The ONE reveal mechanism: widen the bar from its centre, open both slits,
+  // show whatever text was handed in, hold, close. Trunks and odds both use
+  // it — same motion, different words. Auto-closes so it can never strand.
+  function reveal(textL, textR, hold){
+    $('slitLabelL').textContent=textL
+    $('slitLabelR').textContent=textR
+    $('mainBar').classList.add('wide')
+    document.querySelector('.bottom-strip').classList.add('wide')
+    $('slitL').classList.add('expand'); $('slitR').classList.add('expand')
+    fitNames()
+    clearTimeout(trunkTimer)
+    trunkTimer=setTimeout(()=>{
+      $('slitL').classList.remove('expand'); $('slitR').classList.remove('expand')
+      $('mainBar').classList.remove('wide')
+      document.querySelector('.bottom-strip').classList.remove('wide')
+      setTimeout(fitNames,560)
+    }, hold||4500)
+  }
+
+  function corners(l,r){
+    setCorners(l,r)
+    reveal(colorName(l||'#e8312a')+' TRUNKS', colorName(r||'#2e6fe8')+' TRUNKS')
+  }
+
+  // Long names shrink instead of wrapping — "iron Micheal Chandler" was
+  // taking two lines. Re-run whenever a name or the bar width changes.
+  function fitNames(){
+    ;['nameL','nameR'].forEach(id=>{
+      const el=$(id); if(!el) return
+      const slot=el.parentElement
+      // clientWidth INCLUDES padding — measuring against it overstated the room
+      // by 48px and let long names run past the bar's edge. Subtract it.
+      const cs=getComputedStyle(slot)
+      const avail=slot.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 4
+      let size=36; el.style.fontSize=size+'px'
+      while(size>14 && el.scrollWidth > avail){ size-=1; el.style.fontSize=size+'px' }
+    })
+  }
+  // the bar's width animates, so re-fit once it settles
+  $('mainBar').addEventListener('transitionend', e=>{ if(e.propertyName==='width') fitNames() })
+
   window.__trunks=(l,r)=>corners(l||'#e8312a',r||'#2e6fe8')   // preview/testing
+  window.__odds=(l,r)=>reveal(l||'-150', r||'+130', 6000)
 
   // fight timer — deck sends a length, this file counts it down. Re-sending
   // the same length restarts it, matching the deck's one-button-per-length UX.
@@ -640,9 +693,13 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
       if(d.b!=null) $('nameR').textContent=d.b
       if(d.label) $('boutFloat').textContent=d.label
       if(d.sub)   $('formatFloat').textContent=d.sub
-      corners(d.colorL,d.colorR); return
+      setCorners(d.colorL,d.colorR)   // set, don't perform
+      fitNames(); return
     }
+    // an explicit corner push DOES perform — that's the deck's reveal button
     if(c.type==='corner'){ const d=c.d||{}; corners(d.l,d.r); return }
+    // odds ride the same reveal, different words
+    if(c.type==='clockodds'){ const d=c.d||{}; reveal(d.l||'—', d.r||'—', 6000); return }
     if(c.type==='round'){ $('roundText').textContent='ROUND '+c.n; return }
     if(c.type==='matchtimer'){ timer(c.on===false?null:c.secs); return }
   }).subscribe()

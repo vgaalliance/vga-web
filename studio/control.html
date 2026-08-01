@@ -176,6 +176,10 @@
         <span style="color:var(--gdim);font-size:16px;width:52px">RIGHT</span>
         <span id="swatchR" style="display:flex;gap:6px;flex-wrap:wrap"></span>
       </div>
+      <div class="row" style="margin-bottom:8px">
+        <button onclick="fireClockOdds()">📊 Odds on the clock</button>
+        <span id="clockOddsHint" style="color:var(--gdim);font-size:16px">arm a bout first</span>
+      </div>
       <div class="row">
         <button onclick="fireCorners()">↻ Replay reveal</button>
         <button class="hide" onclick="ubaSwapCorners()">⇄ Swap corners</button>
@@ -823,6 +827,37 @@ window.ubaSwapCorners=()=>{
 window.fireCorners=()=>send({type:'corner', d:{
   l:document.getElementById('ubaColorL').value,
   r:document.getElementById('ubaColorR').value }})
+
+/* Pari-mutuel pools → AMERICAN odds for the armed bout, shown in the clock's
+   slits with the same expand-from-the-middle motion as the trunk reveal.
+   decimal = pool / that side's stake. >=2 shows +(d-1)*100, else -100/(d-1).
+   Reads bet_pools_public live, so locking bets is reflected the moment you
+   press it. A side with no money on it has no odds — shows "—", never NaN. */
+function americanOdds(pool, side){
+  if(!side || !pool) return '—'
+  const dec = pool/side
+  if(!isFinite(dec) || dec<=1) return '—'
+  return dec>=2 ? '+'+Math.round((dec-1)*100) : '-'+Math.round(100/(dec-1))
+}
+window.fireClockOdds=async()=>{
+  const hint=document.getElementById('clockOddsHint')
+  const b = UBA.armed!=null ? UBA.bouts[UBA.armed] : null
+  if(!b){ hint.textContent='arm a bout first'; return }
+  const ev=betEvent()
+  const { data } = await sb.from('bet_pools_public').select('*').eq('event_name',ev)
+  // match the armed bout by its fighters, so it works whichever way round the
+  // market stored them
+  const m=(data||[]).find(p=>
+    (p.side_a===b.a && p.side_b===b.b) || (p.side_a===b.b && p.side_b===b.a))
+  if(!m){ hint.textContent='no market on '+b.a+' vs '+b.b; return }
+  const pool=(m.total_a||0)+(m.total_b||0)
+  const flipped = m.side_a!==b.a
+  const stakeL = flipped ? m.total_b : m.total_a
+  const stakeR = flipped ? m.total_a : m.total_b
+  const l=americanOdds(pool,stakeL), r=americanOdds(pool,stakeR)
+  send({type:'clockodds', d:{ l, r }})
+  hint.textContent=`${b.a} ${l} · ${b.b} ${r} · ${pool.toLocaleString()} VC`
+}
 
 drawSwatches()
 
