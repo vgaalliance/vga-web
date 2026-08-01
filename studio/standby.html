@@ -62,6 +62,101 @@
   .conf-tag{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--dim);
     text-align:center;padding-top:8px;letter-spacing:.14em;}
 
+  /* ══ UBA screens ══════════════════════════════════════════════════
+     A fight night only had the card and the rankings; these are the rest.
+     They reuse .tcol / .plr / .panel so a UBA night looks like the same
+     broadcast as a UBAe night rather than a second design. */
+  /* the belt holder sits ABOVE rank 1, in gold, because a champion isn't
+     ranked -- they're who the ranking is chasing */
+  .plr.champ{color:#ffce00;font-weight:900;font-size:26px;
+    background:linear-gradient(180deg,rgba(255,206,0,.16),transparent);
+    text-shadow:0 0 16px rgba(255,206,0,.45);border-top:none;}
+  .plr.champ .cn{font-family:'Press Start 2P',monospace;font-size:9px;
+    letter-spacing:.2em;color:rgba(255,206,0,.75);display:block;margin-bottom:3px;}
+  .plr .rk{color:var(--hi);font-weight:900;margin-right:8px;}
+  .plr.vacant{color:var(--dim);font-style:italic;}
+  .tcol.gold{border-top-color:#ffce00;}
+  .tcol.gold .th{background:linear-gradient(180deg,rgba(255,206,0,.3),transparent);}
+
+  /* champions — one row per belt, not four tall columns. Without a fighter
+     photo the vertical panels were mostly empty space, so the belt reads
+     across instead: division, holder, record. */
+  .beltlist{display:flex;flex-direction:column;gap:16px;}
+  .beltrow{display:grid;grid-template-columns:290px 1fr auto;align-items:center;
+    gap:30px;padding:22px 34px;background:var(--panel);
+    border-left:6px solid #ffce00;box-shadow:0 0 22px rgba(60,0,110,.45);}
+  .beltrow .div{font-family:'Press Start 2P',monospace;font-size:15px;letter-spacing:.16em;
+    color:#ffce00;line-height:1.5;}
+  .beltrow .div small{display:block;font-size:9px;color:var(--dim);letter-spacing:.2em;margin-top:6px;}
+  /* both of these must stay on one line -- a wrapped "9-1-1" reads as three
+     separate numbers, and a wrapped name doubles the row height */
+  .beltrow .who{font-weight:900;font-size:62px;text-transform:uppercase;line-height:1;
+    color:#ffce00;text-shadow:0 0 28px rgba(255,206,0,.5);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .beltrow .rec{font-family:'Press Start 2P',monospace;font-size:22px;color:#fff;
+    letter-spacing:.12em;white-space:nowrap;min-width:160px;text-align:right;}
+  .beltrow.open{border-left-color:var(--line);}
+  .beltrow.open .div{color:var(--dim);}
+  .beltrow.open .who{color:var(--dim);font-size:40px;font-style:italic;text-shadow:none;}
+  /* a slow gold sheen crossing each held belt — staggered per row so they don't
+     pulse in unison, and skipped on a vacant title, which has nothing to shine
+     about. Long and low-contrast on purpose: it should read as light moving
+     over metal on a screen you sit on, not as a thing demanding attention. */
+  .beltrow{position:relative;overflow:hidden;}
+  .beltrow:not(.open)::after{content:'';position:absolute;top:0;bottom:0;width:38%;
+    background:linear-gradient(100deg,transparent,rgba(255,206,0,.13) 45%,rgba(255,240,190,.2) 55%,transparent);
+    animation:beltSheen 6.5s ease-in-out infinite;pointer-events:none;}
+  .beltrow:nth-child(2)::after{animation-delay:.8s}
+  .beltrow:nth-child(3)::after{animation-delay:1.6s}
+  .beltrow:nth-child(4)::after{animation-delay:2.4s}
+  @keyframes beltSheen{
+    0%{transform:translateX(-140%)} 55%,100%{transform:translateX(380%)} }
+  .beltrow:not(.open) .who{animation:beltGlow 6.5s ease-in-out infinite;}
+  @keyframes beltGlow{
+    0%,100%{text-shadow:0 0 28px rgba(255,206,0,.5);}
+    50%{text-shadow:0 0 40px rgba(255,206,0,.85),0 0 74px rgba(255,180,0,.35);} }
+
+  /* P4P — two columns of 8 so 16 fit without shrinking the type.
+     grid-auto-flow:column with 8 explicit rows, because the default row-wise
+     fill put 1,3,5,7 down the left and 2,4,6,8 down the right -- a top-10 you
+     have to read in a zigzag. */
+  .p4pgrid{display:grid;grid-template-rows:repeat(8,auto);grid-auto-flow:column;
+    grid-auto-columns:1fr;gap:14px 40px;}
+  .p4prow{display:flex;align-items:center;gap:18px;padding:10px 22px;background:var(--panel);
+    border-left:4px solid var(--pur);box-shadow:0 0 14px rgba(60,0,110,.35);}
+  .p4prow .n{font-family:'Press Start 2P',monospace;font-size:17px;color:var(--hi);min-width:44px;}
+  .p4prow .nm{font-weight:700;font-size:30px;text-transform:uppercase;}
+  .p4prow.champ{border-left-color:#ffce00;}
+  .p4prow.champ .nm{color:#ffce00;}
+  .p4prow .belt{margin-left:auto;font-size:22px;}
+
+  /* fighter of the month */
+  .fotm{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:30px;}
+  .fotm-name{font-weight:900;font-size:132px;line-height:.9;text-transform:uppercase;
+    background:linear-gradient(180deg,#ffe9a8,#ffce00 52%,#c98f00);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 0 34px rgba(255,206,0,.55));}
+  .fotm-tag{font-family:'Press Start 2P',monospace;font-size:18px;letter-spacing:.28em;
+    color:var(--hi);text-transform:uppercase;}
+  .fotm-rec{font-weight:700;font-size:32px;color:var(--dim);letter-spacing:.14em;}
+
+  /* card collection — one panel per set */
+  .setgrid{display:grid;grid-template-columns:1fr 1fr;gap:30px;}
+  .setcard{background:var(--panel);border-top:5px solid var(--pur);padding:0 0 16px;
+    box-shadow:0 0 22px rgba(60,0,110,.45);}
+  .setcard .sh{font-weight:900;font-size:34px;text-transform:uppercase;text-align:center;
+    padding:14px 8px 6px;background:linear-gradient(180deg,rgba(155,48,255,.35),transparent);line-height:1;}
+  .setcard .scode{font-family:'Press Start 2P',monospace;font-size:11px;text-align:center;
+    color:var(--dim);letter-spacing:.2em;padding-bottom:12px;}
+  .rrow{display:grid;grid-template-columns:1fr auto auto;gap:16px;align-items:center;
+    padding:9px 24px;border-top:1px solid var(--line);font-size:25px;}
+  .rrow .rl{font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
+  .rrow .rc{font-family:'Press Start 2P',monospace;font-size:14px;color:#fff;min-width:66px;text-align:right;}
+  .rrow .rd{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--dim);min-width:96px;text-align:right;}
+  .setfoot{padding:12px 24px 0;font-family:'Press Start 2P',monospace;font-size:11px;
+    letter-spacing:.16em;color:var(--dim);text-align:center;}
+  .setfoot b{color:#ffce00;}
+
   /* schedule + next-events list */
   .list{display:flex;flex-direction:column;gap:12px;}
   .lrow{display:flex;align-items:center;gap:22px;padding:16px 26px;background:var(--panel);
@@ -89,6 +184,14 @@
   .cdate{font-family:'Press Start 2P',monospace;font-size:15px;letter-spacing:.2em;
     color:var(--dim);margin:-14px 0 22px;}
   .cbouts{display:flex;flex-direction:column;gap:10px;}
+  /* A long card ran 6px past 1080 -- and on a broadcast that isn't "nearly
+     fits", it's the last prelim cut off. Past 8 bouts the rows tighten instead
+     of the card scrolling out of frame. */
+  .cbouts.tight{gap:6px;}
+  .cbouts.tight .cbout{padding:7px 26px;}
+  .cbouts.tight .cbout .fa,.cbouts.tight .cbout .fb{font-size:30px;}
+  .cbouts.tight .cseg{margin:12px 0 6px;}
+  .cbouts.tight .cwc{font-size:8px;margin-top:3px;}
   .cbout{display:grid;grid-template-columns:1fr 120px 1fr;align-items:center;
     padding:12px 26px;background:var(--panel);border-left:4px solid var(--pur);
     box-shadow:0 0 18px rgba(60,0,110,.4);}
@@ -242,6 +345,37 @@
       <div class="list" id="schedContent"></div>
     </div>
 
+    <div class="view" id="v-champs">
+      <div class="eyebrow">VGA · UBA</div>
+      <div class="title">Champions</div>
+      <div class="beltlist" id="champContent"></div>
+    </div>
+
+    <div class="view" id="v-p4p">
+      <div class="eyebrow">VGA · UBA</div>
+      <div class="title sm">Pound For Pound</div>
+      <div class="p4pgrid" id="p4pContent"></div>
+    </div>
+
+    <div class="view" id="v-fotm">
+      <div class="eyebrow">VGA · UBA</div>
+      <div class="title sm">Fighter Of The Month</div>
+      <div class="fotm" id="fotmContent"></div>
+    </div>
+
+    <div class="view" id="v-nextev">
+      <div class="eyebrow">VGA · UBA</div>
+      <div class="title sm" id="nextevTitle">Next Event</div>
+      <div class="cdate" id="nextevDate"></div>
+      <div class="cbouts" id="nextevContent"></div>
+    </div>
+
+    <div class="view" id="v-cards">
+      <div class="eyebrow">VGA · UBA</div>
+      <div class="title sm">Card Collection</div>
+      <div class="setgrid" id="cardsContent"></div>
+    </div>
+
     <div class="view" id="v-next3">
       <div class="eyebrow">VGA · UBA</div>
       <div class="title sm">Next 3 Events</div>
@@ -294,6 +428,10 @@ const fdate=d=>{const x=new Date(d);return DAY[x.getDay()]+' '+MO[x.getMonth()]+
 const ftime=d=>{const x=new Date(d);let h=x.getHours(),m=x.getMinutes();const ap=h>=12?'PM':'AM';h=h%12||12;return h+(m?':'+String(m).padStart(2,'0'):'')+ap+' ET'}
 
 let VIEWS=['standings','rosters','ubarank','schedule','next3','teamvs','card','cta'], cycle=null
+// Auto-cycle for a UBA fight night: only the screens that mean something on one.
+// The deck picks the rotation by mode, so 'auto' doesn't parade team standings
+// through a solo card.
+const VIEWS_UBA=['card','ubarank','champs','p4p','fotm','nextev','cards','cta']
 const FUTURE=()=>new Date(Date.now()-6*3600e3).toISOString()
 
 async function loadAll(){
@@ -304,10 +442,109 @@ async function loadAll(){
     sb.from('events_public').select('*').eq('status','scheduled').gte('event_date',FUTURE()).order('event_date').limit(3),
     sb.from('rankings_public').select('rank,fighter_name,weight_class').eq('scope','weight_class').order('rank'),
   ])
-  renderStandings(st||[]); renderRosters(st||[], rec||[]); renderSchedule(mt||[]); renderNext(ev||[]); renderTvs(mt||[]); renderUbaRank(rk||[])
+  renderStandings(st||[]); renderRosters(st||[], rec||[]); renderSchedule(mt||[]); renderNext(ev||[]); renderTvs(mt||[])
   showCard(null)   // preload soonest card
   const { count } = await sb.from('fighter_cards').select('id',{count:'exact',head:true})
   renderCta(count||0)
+  loadUba(rk||[])          // the UBA screens, in their own pass
+}
+
+// Every UBA screen either needs the champions or IS the champions, so they load
+// together and one failure can't take the rest of standby down with it.
+async function loadUba(rk){
+  try{
+    const [{data:ch},{data:p4},{data:fm},{data:sets},{data:coll},{data:nx}] = await Promise.all([
+      sb.from('fighter_cards').select('display_name,weight_class,wins,losses,draws,is_champion').eq('is_champion',true),
+      sb.from('rankings_public').select('rank,fighter_name').eq('scope','overall').order('rank').limit(16),
+      sb.from('fighter_of_month_public').select('name,tag').limit(1),
+      sb.from('card_sets_public').select('name,code,status,set_size'),
+      // pre-aggregated: card_collections_public is one row per COPY (2592 of
+      // them), and PostgREST caps a response at 1000, so reading it directly
+      // silently returned First Edition only and undercounted even that
+      sb.from('card_circulation_public').select('set_code,card_fighter,rarity,copies'),
+      sb.from('events_public').select('id,name,event_date').eq('status','scheduled')
+        .gte('event_date',FUTURE()).order('event_date').limit(1),
+    ])
+    const champs=ch||[]
+    renderUbaRank(rk, champs)
+    renderChamps(champs)
+    renderP4P(p4||[], champs)
+    renderFotm((fm||[])[0], champs)
+    renderCards(sets||[], coll||[])
+    const ev0=(nx||[])[0]
+    if(ev0){
+      const { data:em } = await sb.from('event_matches').select('*').eq('event_id',ev0.id).order('bout_number')
+      renderNextEv(ev0, em||[])
+    }
+  }catch(e){ console.warn('UBA screens failed to load', e) }
+}
+
+const cap1=s=>String(s||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())
+const recOf=f=> `${f.wins||0}-${f.losses||0}${f.draws?'-'+f.draws:''}`
+const champIn=(champs,wc)=> champs.find(c=>c.weight_class===wc)
+
+function renderChamps(champs){
+  document.getElementById('champContent').innerHTML = UBA_DIVS.map(([w,lbl])=>{
+    const c=champIn(champs,w)
+    return `<div class="beltrow${c?'':' open'}">
+      <div class="div">${lbl}<small>${c?'CHAMPION':'TITLE OPEN'}</small></div>
+      <div class="who">${c?c.display_name:'Vacant'}</div>
+      <div class="rec">${c?recOf(c):''}</div></div>`
+  }).join('')
+}
+
+function renderP4P(rows, champs){
+  const beltNames=new Set(champs.map(c=>c.display_name))
+  document.getElementById('p4pContent').innerHTML = rows.length ? rows.map(r=>{
+    const isC=beltNames.has(r.fighter_name)
+    return `<div class="p4prow${isC?' champ':''}"><span class="n">${r.rank}</span>
+      <span class="nm">${r.fighter_name}</span>${isC?'<span class="belt">CHAMP</span>':''}</div>`
+  }).join('') : '<div class="p4prow"><span class="nm">NO RANKINGS SET</span></div>'
+}
+
+function renderFotm(f, champs){
+  const box=document.getElementById('fotmContent')
+  if(!f){ box.innerHTML='<div class="fotm-tag">NOT SET THIS MONTH</div>'; return }
+  const c=champs.find(x=>x.display_name===f.name)
+  box.innerHTML=`<div class="fotm-name">${f.name}</div>
+    ${f.tag?`<div class="fotm-tag">${f.tag}</div>`:''}
+    ${c?`<div class="fotm-rec">${recOf(c)} · CHAMPION</div>`:''}`
+}
+
+function renderNextEv(ev, bouts){
+  document.getElementById('nextevTitle').textContent=ev.name
+  document.getElementById('nextevDate').textContent=fdate(ev.event_date).toUpperCase()
+  const open=(bouts||[]).filter(b=>b.fighter_a_name&&b.fighter_b_name)
+  document.getElementById('nextevContent').innerHTML = open.length ? open.map(b=>
+    `<div class="cbout${b.is_title_fight?' title':''}">
+      ${b.is_title_fight?`<div class="cbadge">★ ${b.title_name||'Title Fight'} ★</div>`:''}
+      <span class="fa">${b.fighter_a_name}</span><span class="vs">VS</span>
+      <span class="fb">${b.fighter_b_name}</span></div>`).join('')
+    : '<div class="cbout"><span class="fa"></span><span class="vs">BOUTS TBA</span><span class="fb"></span></div>'
+}
+
+// Circulation is counted from what people actually OWN, not from the set's
+// declared size — a card that exists but was never pulled isn't in circulation.
+const RARITY_ORDER=['legendary','mystic','rare','uncommon','common']
+function renderCards(sets, coll){
+  document.getElementById('cardsContent').innerHTML = (sets||[]).map(s=>{
+    const mine=coll.filter(c=>c.set_code===s.code)
+    const byR=RARITY_ORDER.map(r=>{
+      const rows=mine.filter(c=>c.rarity===r)
+      return rows.length
+        ? {r, copies:rows.reduce((n,x)=>n+(x.copies||0),0), cards:rows.length}
+        : null
+    }).filter(Boolean)
+    // scarcest = the individual card with the fewest copies out there
+    const rarest=[...mine].sort((a,b)=>(a.copies||0)-(b.copies||0))[0]
+    return `<div class="setcard">
+      <div class="sh">${s.name}</div>
+      <div class="scode">${s.code} · ${(s.status||'').toUpperCase()} · ${s.set_size||byR.reduce((n,x)=>n+x.cards,0)} CARDS</div>
+      ${byR.map(x=>`<div class="rrow"><span class="rl">${x.r}</span>
+        <span class="rc">${x.copies}</span><span class="rd">${x.cards} CARD${x.cards===1?'':'S'}</span></div>`).join('')}
+      ${rarest?`<div class="setfoot">RAREST IN CIRCULATION · <b>${String(rarest.card_fighter).toUpperCase()}</b> · ${rarest.copies} COPIES</div>`:''}
+    </div>`
+  }).join('') || '<div class="setcard"><div class="sh">NO SETS</div></div>'
 }
 
 function renderCta(count){
@@ -337,11 +574,21 @@ async function showCard(eventName, pushed){
 }
 
 const UBA_DIVS=[['lightweight','LIGHTWEIGHT'],['middleweight','MIDDLEWEIGHT'],['light_heavyweight','LIGHT HEAVY'],['heavyweight','HEAVYWEIGHT']]
-function renderUbaRank(rk){
+// A ranking without its champion is a list of contenders with the point of the
+// division missing. The belt holder is pinned above rank 1 and isn't given a
+// number, because they aren't ranked -- they're who the ranking is chasing.
+// (The UBAe rankings screen has the same gap; same fix applies there.)
+function renderUbaRank(rk, champs){
+  champs=champs||[]
   document.getElementById('ubarankContent').innerHTML = UBA_DIVS.map(([w,lbl])=>{
-    const rows=rk.filter(r=>r.weight_class===w).sort((a,b)=>a.rank-b.rank).slice(0,8)
-    return `<div class="tcol"><div class="th" style="font-size:24px">${lbl}</div>
-      ${rows.map(r=>`<div class="plr"><b style="color:var(--hi)">${r.rank}</b> ${r.fighter_name}</div>`).join('')||'<div class="plr">—</div>'}</div>`
+    const c=champIn(champs,w)
+    const rows=rk.filter(r=>r.weight_class===w).sort((a,b)=>a.rank-b.rank)
+      .filter(r=>!c || r.fighter_name!==c.display_name)     // never list them twice
+      .slice(0,16)
+    return `<div class="tcol${c?' gold':''}"><div class="th" style="font-size:24px">${lbl}</div>
+      ${c?`<div class="plr champ"><span class="cn">CHAMPION</span>${c.display_name}</div>`:''}
+      ${rows.map(r=>`<div class="plr"><b class="rk">${r.rank}</b>${r.fighter_name}</div>`).join('')
+        || (c?'':'<div class="plr vacant">—</div>')}</div>`
   }).join('')
 }
 
@@ -388,6 +635,7 @@ function renderCard(ev, bouts, filter){
   }
   const done=open.filter(winOf).length
   if(done) html+=`<div class="cprog"><span>DISCORD.GG/UBA</span><span><b>${done}</b> / ${open.length} COMPLETE</span></div>`
+  box.classList.toggle('tight', open.length>8)
   box.innerHTML=html
 }
 
@@ -470,11 +718,13 @@ function showView(el){
   el.classList.add('on')
 }
 
-function show(view){
+function show(view, league){
   clearInterval(cycle); cycle=null
   hideAll()
   if(view==='off'||!view) return
-  if(view==='auto'){ let i=0; const step=()=>{ hideAll(); showView($('v-'+VIEWS[i%VIEWS.length])); i++ }
+  if(view==='auto'){
+    const list = league==='uba' ? VIEWS_UBA : VIEWS
+    let i=0; const step=()=>{ hideAll(); showView($('v-'+list[i%list.length])); i++ }
     step(); cycle=setInterval(step,15000); return }
   showView($('v-'+view))
 }
@@ -514,7 +764,7 @@ sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
   if(c.type==='standby'){
     if(c.on===false){ show('off'); return }
     if(c.view==='card'){ await showCard(c.event, c.d); show('card'); return }   // c.event picks FN29/FN30/… · c.d = live rows from the runner
-    show(c.view); return
+    show(c.view, c.league); return   // league only matters to 'auto' — it picks the rotation
   }
   // when the deck loads a match in the tracker, mirror it on the team-vs-team screen
   if(c.type==='pickbar' && c.d && c.d.teamA && c.d.teamB) setTvs(c.d.teamA, c.d.teamB, 'Tonight')

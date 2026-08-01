@@ -244,6 +244,11 @@
       <button class="lg-ubae" onclick="standby('schedule')">Schedule</button>
       <button onclick="standby('next3')">Next 3 events</button>
       <button class="lg-ubae" onclick="standby('teamvs')">Team vs team</button>
+      <button class="lg-uba" onclick="standby('champs')">Champions</button>
+      <button class="lg-uba" onclick="standby('p4p')">P4P top 16</button>
+      <button class="lg-uba" onclick="standby('fotm')">Fighter of the month</button>
+      <button class="lg-uba" onclick="standby('nextev')">Next event</button>
+      <button class="lg-uba" onclick="standby('cards')">Card collection</button>
       <button onclick="standby('cta')">📣 Call to action</button>
       <button onclick="standby('auto')">▶ Auto-cycle</button>
       <button class="hide" onclick="standby('off')">Hide</button>
@@ -602,7 +607,9 @@ window.fireMsg=()=>{
   send({type:'flash', w:'msg', d:{ text:t, from } })
 }
 
-window.standby=view=>send({type:'standby', view, on:view!=='off'})
+// league rides along so 'auto' cycles the right set -- a UBA fight night
+// shouldn't parade team standings and rosters between bouts
+window.standby=view=>send({type:'standby', view, league:EV, on:view!=='off'})
 
 // coin toss — heads or tails
 window.fireCoin=()=>send({type:'coin', result: Math.random()<.5?'HEADS':'TAILS' })
