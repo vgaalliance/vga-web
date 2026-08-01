@@ -258,7 +258,7 @@
       <span style="color:var(--gdim);font-size:17px;letter-spacing:.1em">TIMER</span>
       <button onclick="matchTimer(120)">▶ 2:00</button>
       <button onclick="matchTimer(180)">▶ 3:00</button>
-      <button class="hide" onclick="send({type:'matchtimer',on:false})">Hide timer</button>
+      <button class="hide" onclick="hideTimer()">Hide timer</button>
     </div>
     <h5>💬 Message — fastest reach</h5>
     <div class="row">
@@ -359,14 +359,25 @@ const betEvent=()=> EV==='ubae'
   : (evFilter() || null)
 const betHint=()=> EV==='ubae' ? 'LOAD A MATCH ABOVE' : 'PICK A CARD ABOVE'
 
+/* When a bout is ARMED in UBA mode, the wagers section narrows to THAT fight
+   only — during a bout you never want the other eight markets on screen, and
+   scrolling past them to find the live one is how you fire the wrong graphic.
+   Nothing armed = the whole card, as before. */
+const armedBout=()=> (EV==='uba' && UBA.armed!=null) ? UBA.bouts[UBA.armed] : null
+const isArmedMarket=(m,b)=> !b ||
+  (m.side_a===b.a && m.side_b===b.b) || (m.side_a===b.b && m.side_b===b.a)
+
 window.loadOdds=async()=>{
   const ev=betEvent()
   const box=document.getElementById('oddsFights')
   if(!ev){ box.textContent=betHint(); return }
   const { data } = await sb.from('bet_pools_public').select('*')
     .eq('event_name',ev).order('bout_number')
-  const rows=data||[]
-  if(!rows.length){ box.textContent='NO MARKETS ON '+ev.toUpperCase(); return }
+  const b=armedBout()
+  const rows=(data||[]).filter(m=>isArmedMarket(m,b))
+  if(!rows.length){ box.textContent= b
+    ? 'NO MARKET ON '+(b.a+' VS '+b.b).toUpperCase()
+    : 'NO MARKETS ON '+ev.toUpperCase(); return }
   box.innerHTML=''
   rows.forEach(m=>{
     const b=document.createElement('button')
@@ -506,8 +517,12 @@ function roundBtnsDraw(){
     `<button class="${MN.round===n?'active':''}" style="padding:4px 12px" onclick="mnRound(${n})">${n}</button>`).join(' ')
 }
 
-// match timer — same click starts or resets it, so it's one button per length
-window.matchTimer=secs=>send({type:'matchtimer', secs})
+// Match timer — same click starts or resets it, so it's one button per length.
+// Routed by mode: UBA drives the fight clock's OWN centre timer ('clocktimer'),
+// UBAe drives the overlay's top-right badge ('matchtimer'). One press used to
+// fire both at once because the clock and the overlay shared a command type.
+window.matchTimer=secs=>send({type: EV==='uba'?'clocktimer':'matchtimer', secs})
+window.hideTimer=()=>send({type: EV==='uba'?'clocktimer':'matchtimer', on:false})
 
 // slide the fight clock HUD in/out between bouts
 window._clockOn=true
@@ -606,8 +621,12 @@ window.loadBetFeed=async()=>{
       .order('amount',{ascending:false}).limit(24),
     sb.from('bet_pools_public').select('match_id,side_a,side_b,total_a,total_b'),
   ])
-  const all=feed||[]
-  if(!all.length){ box.textContent='NO WAGERS ON '+ev.toUpperCase(); return }
+  // same narrowing as the odds board — armed bout only, when one is armed
+  const b=armedBout()
+  const all=(feed||[]).filter(w=>isArmedMarket({side_a:w.side_a,side_b:w.side_b},b))
+  if(!all.length){ box.textContent= b
+    ? 'NO WAGERS ON '+(b.a+' VS '+b.b).toUpperCase()
+    : 'NO WAGERS ON '+ev.toUpperCase(); return }
   // Only the 3 biggest per side — the full feed overflowed the deck and the
   // small bets are never the ones you put on stream anyway.
   const perSide={}
@@ -768,6 +787,10 @@ window.ubaArm=i=>{
     colorL:document.getElementById('ubaColorL').value,
     colorR:document.getElementById('ubaColorR').value }})
   ubaDraw()
+  // the wagers section follows the armed fight — stage 4 now shows only this
+  // bout's market and bets instead of all nine
+  loadOdds(); loadBetFeed()
+  const h=document.getElementById('clockOddsHint'); if(h) h.textContent='ready — '+b.a+' vs '+b.b
 }
 
 /* tap a name = that side won. Tap again to undo. Pushes the rundown live so

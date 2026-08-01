@@ -701,7 +701,10 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     // odds ride the same reveal, different words
     if(c.type==='clockodds'){ const d=c.d||{}; reveal(d.l||'—', d.r||'—', 6000); return }
     if(c.type==='round'){ $('roundText').textContent='ROUND '+c.n; return }
-    if(c.type==='matchtimer'){ timer(c.on===false?null:c.secs); return }
+    // 'clocktimer' is THIS bar's own timer, deliberately a different type from
+    // the overlay's top-right 'matchtimer' — otherwise one deck press ran both
+    // clocks at once. UBA mode sends clocktimer; UBAe mode sends matchtimer.
+    if(c.type==='clocktimer'){ timer(c.on===false?null:c.secs); return }
   }).subscribe()
 })()
 </script>
