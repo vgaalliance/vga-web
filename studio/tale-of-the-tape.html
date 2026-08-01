@@ -450,15 +450,51 @@ document.getElementById('rankRight').textContent = CONFIG.right.rank;
 // should be a cutout PNG with a transparent background (fighter only,
 // no studio backdrop). A regular rectangular photo will still show its
 // own straight edges since there's no border to disguise that anymore.
+// Photos work by CONVENTION, not configuration: the tape tries
+// assets/fighters/<slug>.png and falls back to a silhouette. Adding a real
+// photo is dropping a file in and pushing -- no database write, no admin step.
+// That matters at this scale: 0 of 266 fighters have a photo today, and
+// anything needing a row edited per fighter would never get done for all of
+// them.
+const ASSETS = 'assets/';
+const SILHOUETTE = { imgBoxLeft: ASSETS+'avatar-blank-left.png',
+                     imgBoxRight: ASSETS+'avatar-blank-right.png' };
+
+// The silhouette is solid black on transparent, which is invisible against
+// this near-black stage. So it is used as a MASK and filled with the theme
+// violet rather than drawn as an image. Real photos are drawn normally --
+// masking those would flatten them to a shape.
+function drawSilhouette(box){
+  const src = SILHOUETTE[box.id];
+  box.style.backgroundImage = 'none';
+  box.style.webkitMaskImage = `url("${src}")`;
+  box.style.maskImage = `url("${src}")`;
+  box.style.webkitMaskSize = box.style.maskSize = 'contain';
+  box.style.webkitMaskPosition = box.style.maskPosition = 'bottom center';
+  box.style.webkitMaskRepeat = box.style.maskRepeat = 'no-repeat';
+  box.style.backgroundColor = 'hsla(268,38%,56%,0.30)';
+  box.textContent = '';
+}
+function drawPhoto(box, src){
+  box.style.webkitMaskImage = box.style.maskImage = 'none';
+  box.style.backgroundColor = 'transparent';
+  box.style.backgroundImage = `url("${src}")`;
+  box.textContent = '';
+}
 function applyFighterImage(boxId, imagePath) {
   const box = document.getElementById(boxId);
-  if (imagePath && imagePath.trim() !== "") {
-    box.style.backgroundImage = `url("${imagePath}")`;
-    box.textContent = "";
-  }
+  if (!box) return;
+  if (!imagePath || !String(imagePath).trim()) { drawSilhouette(box); return; }
+  // probe before committing: a missing photo must fall back, not leave an
+  // empty panel where a fighter should be
+  const probe = new Image();
+  probe.onload  = () => drawPhoto(box, imagePath);
+  probe.onerror = () => drawSilhouette(box);
+  probe.src = imagePath;
 }
-applyFighterImage('imgBoxLeft', CONFIG.left.image);
-applyFighterImage('imgBoxRight', CONFIG.right.image);
+const slugPhoto = slug => slug ? ASSETS+'fighters/'+String(slug).toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.png' : '';
+applyFighterImage('imgBoxLeft', '');    // silhouette until a bout is fired
+applyFighterImage('imgBoxRight', '');
 
 // ---------- CENTER CARD DROP-IN ANIMATION ----------
 // The centre column scales forward from camera and settles, then the bout
@@ -490,6 +526,7 @@ function playTape(){
   sponsorBar.style.transition = 'none'; sponsorBar.style.opacity = '0';
   statRows.forEach(r=>{ r.style.transition='none'; r.style.opacity='0'; r.style.transform='translateY(-14px)'; });
 
+  if(window.__playWraps) window.__playWraps();
   requestAnimationFrame(()=>{
     requestAnimationFrame(()=>{
       centerCol.style.transition = 'opacity 0.7s cubic-bezier(.16,.6,.25,1), transform 0.85s cubic-bezier(.16,.6,.25,1)';
@@ -584,19 +621,26 @@ const fighterWrapRight = document.getElementById('fighterWrapRight');
 const namePlateLeft = document.getElementById('namePlateLeft');
 const namePlateRight = document.getElementById('namePlateRight');
 
-fighterWrapLeft.style.transform = 'translateX(-60px) scale(1.08)';
-fighterWrapLeft.style.transition = 'opacity 0.8s cubic-bezier(.16,.6,.25,1), transform 0.95s cubic-bezier(.16,.6,.25,1)';
-fighterWrapRight.style.transform = 'translateX(60px) scale(1.08)';
-fighterWrapRight.style.transition = 'opacity 0.8s cubic-bezier(.16,.6,.25,1), transform 0.95s cubic-bezier(.16,.6,.25,1)';
-
-requestAnimationFrame(()=>{
-  requestAnimationFrame(()=>{
-    fighterWrapLeft.style.opacity = '1';
-    fighterWrapLeft.style.transform = 'translateX(0) scale(1)';
-    fighterWrapRight.style.opacity = '1';
-    fighterWrapRight.style.transform = 'translateX(0) scale(1)';
+// Exposed so playTape() can replay it. It used to be a one-shot at page load,
+// like the centre column was -- meaning the fighters slid in for bout 1 and
+// were simply already there for every bout after.
+window.__playWraps = function(){
+  [[fighterWrapLeft,-60],[fighterWrapRight,60]].forEach(([el,dx])=>{
+    el.style.transition = 'none';
+    el.style.opacity = '0';
+    el.style.transform = `translateX(${dx}px) scale(1.08)`;
   });
-});
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      [fighterWrapLeft,fighterWrapRight].forEach(el=>{
+        el.style.transition = 'opacity 0.8s cubic-bezier(.16,.6,.25,1), transform 0.95s cubic-bezier(.16,.6,.25,1)';
+        el.style.opacity = '1';
+        el.style.transform = 'translateX(0) scale(1)';
+      });
+    });
+  });
+};
+window.__playWraps();
 
 // Name plates settle in slightly after the fighters, same as how
 // the bout label follows the center panel.
@@ -960,6 +1004,8 @@ editOverlay.addEventListener('click', (e) => {
     const d=c.d||{}
     set('boutTitleText',d.title); set('boutSubtitleText',d.subtitle); set('sponsorText',d.sponsor)
     fitBoutTitle()
+    applyFighterImage('imgBoxLeft',  L.photo || slugPhoto(L.slug))
+    applyFighterImage('imgBoxRight', R.photo || slugPhoto(R.slug))
     const L=d.left||{}, R=d.right||{}
     set('nameLeft',L.name); set('ageLeft',L.age); set('heightLeft',L.height); set('weightLeft',L.weight)
     set('reachLeft',L.reach); set('recordLeft',L.record); set('oddsLeft',L.odds); set('rankLeft',L.rank)

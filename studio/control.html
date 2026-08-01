@@ -703,12 +703,15 @@ window.mnTape=async()=>{
   const an=document.getElementById('mnBoutA').value.trim(), bn=document.getElementById('mnBoutB').value.trim()
   if(!an||!bn) return
   const one=async n=>{ const {data}=await sb.from('fighter_cards')
-    .select('display_name,wins,losses,draws,rank,height,reach,age,country,weight_class').ilike('display_name','%'+n+'%').limit(1); return data&&data[0] }
+    .select('display_name,slug,profile_photo_url,wins,losses,draws,rank,height,reach,age,country,weight_class').ilike('display_name','%'+n+'%').limit(1); return data&&data[0] }
   const [A,B]=await Promise.all([one(an),one(bn)])
   if(!A||!B){ document.getElementById('mnState').innerHTML='TAPE: fighter not found'; return }
   const F=x=>({ name:x.display_name, record:`${x.wins}-${x.losses}-${x.draws}`,
     rank:x.rank?('#'+x.rank):'—', age:x.age??'—', height:x.height??'—', reach:x.reach??'—',
-    weight:cap(x.weight_class), odds:'—' })
+    weight:cap(x.weight_class), odds:'—',
+    // slug drives the photo lookup by convention; photo_url wins if one
+    // is actually set on the fighter
+    slug:x.slug, photo:x.profile_photo_url||null })
   // The title fell back to the literal string 'UBAe' whenever no UBAe match
   // was loaded -- so on a fight night the tape announced the wrong league.
   // On UBA it takes the bout's own division, which is what the card is
