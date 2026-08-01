@@ -636,7 +636,7 @@ channel.subscribe(status=>{
 <div class="venue-bug" id="venueBug">
     <div class="bug-accent"></div>
     <div class="bug-body" style="position:relative;">
-      <div class="bug-eyebrow">Live From</div>
+      <div class="bug-eyebrow">Live From London</div>
       <div class="bug-venue" id="venueName">Memorial Hall</div>
       <div class="bug-progress-track">
         <div class="bug-progress-fill" id="progressFill"></div>
@@ -658,6 +658,7 @@ channel.subscribe(status=>{
   const fill=document.getElementById('progressFill')
   if(!bug||!fill) return
   function play(d){
+    if(d.on===false){ bug.style.transition=`opacity ${EXIT}ms ease`; bug.style.opacity='0'; return }
     const eb=document.querySelector('.bug-eyebrow')
     if(d.eyebrow&&eb) eb.textContent=d.eyebrow
     if(d.text) document.getElementById('venueName').textContent=d.text
@@ -668,7 +669,9 @@ channel.subscribe(status=>{
       bug.style.opacity='1'; bug.style.transform='translateY(0)'
       fill.style.transition=`width ${HOLD}ms linear`
       requestAnimationFrame(()=>{ fill.style.width='100%' })
-      setTimeout(()=>{
+      // persist:true leaves it up until it's explicitly hidden -- the venue
+      // belongs on screen for a whole tale-of-the-tape segment, not 4.5s
+      if(!d.persist) setTimeout(()=>{
         bug.style.transition=`opacity ${EXIT}ms cubic-bezier(.4,0,.6,1), transform ${EXIT}ms cubic-bezier(.4,0,.6,1)`
         bug.style.opacity='0'; bug.style.transform='translateY(-10px)'
       }, ENTER+HOLD)

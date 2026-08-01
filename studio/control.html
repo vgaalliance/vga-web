@@ -402,9 +402,11 @@
     </div>
     <h5>📍 Info bug — lower-left graphic, auto-hides</h5>
     <div class="row">
-      <input id="bugEyebrow" placeholder="EYEBROW (default: LIVE FROM)…" style="width:230px">
-      <input id="bugText" placeholder="BUG TEXT (venue, note…)…" style="width:280px" onkeydown="if(event.key==='Enter')fireBug()">
+      <input id="bugEyebrow" value="Live From London" style="width:230px">
+      <input id="bugText" value="Memorial Hall" style="width:280px" onkeydown="if(event.key==='Enter')fireBug()">
       <button onclick="fireBug()">Fire bug</button>
+      <button onclick="fireBug(true)">📍 Keep bug up</button>
+      <button class="hide" onclick="send({type:'bug',d:{on:false}})">Hide bug</button>
       <button class="lg-uba" onclick="fireResult()">🏅 Fire result</button>
     </div>
     <h5>Fighter dossier — lower third</h5>
@@ -1078,10 +1080,10 @@ window.fireClockOdds=async()=>{
 
 drawSwatches()
 
-window.fireBug=()=>{
+window.fireBug=(persist)=>{
   const text=document.getElementById('bugText').value.trim(); if(!text) return
   const eyebrow=document.getElementById('bugEyebrow').value.trim()
-  send({type:'bug', d:{ text, ...(eyebrow?{eyebrow}:{}) }})
+  send({type:'bug', d:{ text, ...(eyebrow?{eyebrow}:{}), ...(persist?{persist:true}:{}) }})
 }
 
 drawRail()
