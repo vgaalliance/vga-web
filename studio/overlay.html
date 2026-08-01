@@ -123,11 +123,21 @@
   .oname{font-family:'Barlow Condensed';font-weight:700;font-size:34px;text-transform:uppercase;color:#fff;line-height:1;}
   .omult{font-family:'Barlow Condensed';font-weight:700;font-size:30px;margin-top:2px;}
   .oside.l .omult{color:#c98bff;} .oside.r .omult{color:#ff5ad8;}
-  .obar{flex:2;height:26px;border-radius:5px;overflow:hidden;display:flex;
-    box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);}
-  .obar .ba{background:linear-gradient(90deg,#6a1fb0,#b565ff);}
-  .obar .bb{background:linear-gradient(90deg,#a3187f,#ff33cc);}
-  .opct{font:700 13px 'Barlow';color:#fff;display:flex;align-items:center;padding:0 8px;}
+  /* Slimmed from 26px. Everything else in this overlay speaks in hairlines and
+     restrained fills; a fat gradient slab with the numbers buried inside it was
+     the only element shouting, which is why it read as belonging to a different
+     graphic. The percentages move ABOVE the bar so the bar itself can be a
+     measure rather than a container. */
+  .obarwrap{flex:2;display:flex;flex-direction:column;gap:6px;}
+  .obar{height:8px;border-radius:1px;overflow:hidden;display:flex;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);}
+  .obar .ba{background:#a259f7;} .obar .bb{background:#ff33cc;}
+  /* one hairline where the two meet -- the split is the whole point of the bar */
+  .obar .bb{box-shadow:inset 1px 0 0 rgba(255,255,255,.5);}
+  .opcts{display:flex;justify-content:space-between;
+    font:600 12px 'Barlow';letter-spacing:.16em;}
+  .opcts .l{color:#c98bff;} .opcts .r{color:#ff5ad8;}
+  .obar .ba,.obar .bb{transition:width .55s cubic-bezier(.16,.8,.3,1);}
 
   /* ── MATCH TIMER (top-right) ── */
   #mtimer{position:fixed;top:26px;right:48px;opacity:0;transform:translateY(-24px);
@@ -156,6 +166,19 @@
   .prow{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;
     border-bottom:1px solid rgba(255,255,255,.06);}
   .prow:nth-child(even){background:rgba(255,255,255,.02);}
+  /* Rows arrive one after another rather than as a block -- the panel slides in
+     over .5s and a fully-populated list appearing at once made the slide look
+     like a still image moving. Delay is set inline per row so it scales to
+     however many rows arrive. */
+  .prow{opacity:0;transform:translateX(14px);animation:prowIn .38s cubic-bezier(.16,1,.3,1) forwards;}
+  @keyframes prowIn{to{opacity:1;transform:none;}}
+  /* Changing division used to swap the rows instantly under a panel that was
+     already open -- one ranking became another with no moment between them.
+     The list clears first, then the new one arrives. */
+  #prows.swap{opacity:0;transform:translateX(-10px);
+    transition:opacity .2s ease,transform .2s ease;}
+  #prows{transition:opacity .26s ease,transform .26s ease;}
+  .ph{transition:background .3s ease;}
   .prow span:first-child{font:600 16px 'Barlow';color:#fff;}
   .prow span:last-child{font:600 14px 'Barlow';color:var(--gold);letter-spacing:.03em;}
 
@@ -357,7 +380,10 @@
     <div class="oh"><span id="ohl">Live betting</span> · <b id="ohpool">0 VC</b> pool · <span id="ohbets">0</span> bets</div>
     <div class="obody">
       <div class="oside l"><div class="oname" id="oa">—</div><div class="omult" id="oma">—</div></div>
-      <div class="obar"><div class="ba" id="oba"><span class="opct" id="opa"></span></div><div class="bb" id="obb"><span class="opct" id="opb" style="margin-left:auto"></span></div></div>
+      <div class="obarwrap">
+        <div class="opcts"><span class="l" id="opa"></span><span class="r" id="opb"></span></div>
+        <div class="obar"><div class="ba" id="oba"></div><div class="bb" id="obb"></div></div>
+      </div>
       <div class="oside r"><div class="oname" id="ob">—</div><div class="omult" id="omb">—</div></div>
     </div>
   </div>
@@ -507,8 +533,22 @@ function handle(c){
     else { sfx.blip() }
   }
   if(c.type==='panel'){
-    if(c.d){ $('phh').textContent=c.d.title||'Schedule'
-      $('prows').innerHTML=(c.d.rows||[]).map(r=>`<div class="prow"><span>${r[0]}</span><span>${r[1]}</span></div>`).join('') }
+    const draw=()=>{
+      $('phh').textContent=c.d.title||'Schedule'
+      // stagger: each row waits a little longer than the one above it
+      $('prows').innerHTML=(c.d.rows||[]).map((r,i)=>
+        `<div class="prow" style="animation-delay:${40+i*38}ms"><span>${r[0]}</span><span>${r[1]}</span></div>`).join('')
+      $('prows').classList.remove('swap')
+    }
+    if(c.d){
+      const alreadyUp = $('panel').classList.contains('show') && $('prows').children.length
+      if(alreadyUp){
+        // panel stays put, the CONTENT changes -- clear, then bring the new
+        // division in, so switching rankings reads as a change and not a jump
+        $('prows').classList.add('swap')
+        setTimeout(draw, 210)
+      } else draw()
+    }
     $('panel').classList.toggle('show', c.on)
     clearTimeout(panelTimer)
     if(c.on) panelTimer=setTimeout(()=>$('panel').classList.remove('show'), AUTOHIDE)
