@@ -528,7 +528,7 @@ window.hideTimer=()=>send({type: EV==='uba'?'clocktimer':'matchtimer', on:false}
 window._clockOn=true
 window.clockToggle=()=>{
   window._clockOn=!window._clockOn
-  send({type:'clock', show:window._clockOn})
+  send({type:'clock', league:EV, show:window._clockOn})   // tag it — both league clocks answer 'clock'
   const b=document.getElementById('clockTgl')
   if(b){ b.textContent='Fight clock: '+(window._clockOn?'ON':'OFF'); b.classList.toggle('hide',!window._clockOn) }
 }

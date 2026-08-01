@@ -618,6 +618,7 @@ tick();
   _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
     // slide the whole HUD in/out — {type:'clock', show:false} tucks it away
     if(c.type==='clock'){
+      if(c.league && c.league!=='ubae') return   // the UBA clock answers this too
       const hud=document.querySelector('.hud-root')
       if(hud) hud.classList.toggle('off', c.show===false)
       return

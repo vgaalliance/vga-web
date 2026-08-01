@@ -686,33 +686,62 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     `linear-gradient(${side==='left'?'270deg':'90deg'},
       #3a2f5e 0%, #3a2f5e 24%, #3a2f5ecc 50%, #3a2f5e66 76%, #3a2f5e1a 100%)`
 
-  function reveal(L, R, hold, mode){
-    if(L) writeSlit('left',  L.eyebrow, L.value)
-    if(R) writeSlit('right', R.eyebrow, R.value)
-    const odds = mode==='odds'
+  // What's currently open, so a second reveal knows whether it's a repeat or a
+  // change of subject. null = closed.
+  let openMode=null
+
+  function collapse(restore){
+    const bar=$('mainBar'), strip=document.querySelector('.bottom-strip')
+    $('slitL').classList.remove('expand'); $('slitR').classList.remove('expand')
+    bar.classList.remove('wide'); strip.classList.remove('wide')
+    openMode=null
+    fitDuring(700)
+    // put the corner colours back once it has closed, so the resting slits
+    // are always the trunks — odds are a moment, not a state
+    setTimeout(()=>{
+      $('slitL').classList.remove('odds'); $('slitR').classList.remove('odds')
+      bar.classList.remove('odds'); strip.classList.remove('odds')
+      if(restore) setCorners(CUR.l, CUR.r)
+      fitNames()
+    },560)
+  }
+
+  function open1(L, R, hold, m){
+    const odds = m==='odds'
     const bar=$('mainBar'), strip=document.querySelector('.bottom-strip')
     bar.classList.toggle('odds', odds); strip.classList.toggle('odds', odds)
     $('slitL').classList.toggle('odds', odds); $('slitR').classList.toggle('odds', odds)
+    // repaint the fills FIRST — setCorners rewrites the slit text, so writing
+    // our own labels after it is the only order that survives
     if(odds){
       $('slitL').style.background=ODDS_FILL('left')
       $('slitR').style.background=ODDS_FILL('right')
+    } else {
+      setCorners(CUR.l, CUR.r)          // odds may have left the violet fill in place
     }
+    if(L) writeSlit('left',  L.eyebrow, L.value)
+    if(R) writeSlit('right', R.eyebrow, R.value)
     bar.classList.add('wide'); strip.classList.add('wide')
     $('slitL').classList.add('expand'); $('slitR').classList.add('expand')
-    fitNames()
+    openMode=m
+    fitDuring(700)
     clearTimeout(trunkTimer)
-    trunkTimer=setTimeout(()=>{
-      $('slitL').classList.remove('expand'); $('slitR').classList.remove('expand')
-      bar.classList.remove('wide'); strip.classList.remove('wide')
-      // put the corner colours back once it has closed, so the resting slits
-      // are always the trunks — odds are a moment, not a state
-      setTimeout(()=>{
-        $('slitL').classList.remove('odds'); $('slitR').classList.remove('odds')
-        bar.classList.remove('odds'); strip.classList.remove('odds')
-        if(odds) setCorners(CUR.l, CUR.r)
-        fitNames()
-      },560)
-    }, hold||4500)
+    trunkTimer=setTimeout(()=>collapse(odds), hold||4500)
+  }
+
+  function reveal(L, R, hold, mode){
+    const m = mode==='odds' ? 'odds' : 'trunks'
+    clearTimeout(trunkTimer)
+    // Changing subject while open (trunks → odds) used to swap the fill and the
+    // words in place, mid-animation, with no transition on either — a hard cut.
+    // Broadcast graphics don't cross-fade two different states in one panel:
+    // they retract and re-extend. Same panel, one idea at a time.
+    if(openMode && openMode!==m){
+      collapse(openMode==='odds')
+      trunkTimer=setTimeout(()=>open1(L,R,hold,m), 640)
+      return
+    }
+    open1(L,R,hold,m)
   }
 
   function corners(l,r){
@@ -735,6 +764,20 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 
   // Long names shrink instead of wrapping — "iron Micheal Chandler" was
   // taking two lines. Re-run whenever a name or the bar width changes.
+  // A name's width at 36px is a property of the NAME, so measure it once and
+  // cache it. The old shrink-by-1-until-it-fits loop cost up to 22 forced
+  // reflows per name, which is fine once but not on every animation frame.
+  const NAT={}
+  function natWidth(el){
+    const c=NAT[el.id]
+    if(c && c.key===el.textContent) return c.w
+    const prev=el.style.fontSize
+    el.style.fontSize='36px'
+    const w=el.scrollWidth
+    el.style.fontSize=prev
+    NAT[el.id]={key:el.textContent, w}
+    return w
+  }
   function fitNames(){
     ;['nameL','nameR'].forEach(id=>{
       const el=$(id); if(!el) return
@@ -743,12 +786,21 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
       // by 48px and let long names run past the bar's edge. Subtract it.
       const cs=getComputedStyle(slot)
       const avail=slot.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 4
-      let size=36; el.style.fontSize=size+'px'
-      while(size>14 && el.scrollWidth > avail){ size-=1; el.style.fontSize=size+'px' }
+      const nat=Math.max(natWidth(el), 1)
+      el.style.fontSize=Math.max(14, Math.min(36, Math.floor(36*avail/nat)))+'px'
     })
   }
-  // the bar's width animates, so re-fit once it settles
-  $('mainBar').addEventListener('transitionend', e=>{ if(e.propertyName==='width') fitNames() })
+  // The bar's width animates over ~550ms, but the fit only ran when it SETTLED
+  // — so the names held their squeezed size for the whole slide and then jumped
+  // to their new size in one frame. That jump was the jolt. Re-fit every frame
+  // for the length of the transition instead, so the type scales WITH the bar.
+  let fitRAF=null
+  function fitDuring(ms){
+    cancelAnimationFrame(fitRAF)
+    const end=performance.now()+ms
+    const step=()=>{ fitNames(); if(performance.now()<end) fitRAF=requestAnimationFrame(step) }
+    step()
+  }
 
   window.__trunks=(l,r)=>corners(l||'#e8312a',r||'#2e6fe8')   // preview/testing
   window.__odds=(l,r)=>oddsReveal(l||'-150', r||'+130')
@@ -767,7 +819,11 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   }
 
   _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
+    // Both league clocks answer 'clock'. Without a league tag, hiding one hides
+    // the other. An UNTAGGED clock still works on both, so an older deck keeps
+    // functioning — only a tagged one is filtered.
     if(c.type==='clock'){
+      if(c.league && c.league!=='uba') return
       document.querySelector('.hud-root').classList.toggle('off', c.show===false); return
     }
     if(c.type==='bout'){
