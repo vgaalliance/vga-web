@@ -161,7 +161,16 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
    announce "<COLOUR> TRUNKS", hold, and tuck back in. Fired on every bout arm
    and every corner-colour change. */
 .bar-wrap{position:relative;}
-.bar-accent{width:9px;}
+/* corner colour is STRUCTURAL, not trim — the bar's outer ends are solid
+   colour end-caps with an angled inner edge, the way UFC/boxing packages
+   treat it (fans call the sides "the red and blue bar" for a reason).
+   A thin strip read as ornament; a 54px block reads as identity. */
+.main-bar .bar-accent{width:54px;position:relative;overflow:hidden;background:#e8312a;
+  clip-path:polygon(0 0,100% 0,calc(100% - 16px) 100%,0 100%);}
+.main-bar .bar-accent.right{background:#2e6fe8;
+  clip-path:polygon(16px 0,100% 0,100% 100%,0 100%);}
+.main-bar .bar-accent::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(255,255,255,.28),transparent 30%,rgba(0,0,0,.35));}
 .trunk-ext{position:absolute;top:14px;height:40px;width:230px;overflow:hidden;pointer-events:none;z-index:1;}
 .trunk-ext.left{right:calc(100% - 4px);}
 .trunk-ext.right{left:calc(100% - 4px);}
@@ -586,11 +595,18 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   function corners(l,r){
     if(l){ $('trunkSwatchL').style.background=l; $('trunkSwatchL').style.color=l
            $('trunkLabelL').textContent=colorName(l)+' TRUNKS'
-           const a=$('accentL'); if(a) a.style.background=`linear-gradient(to bottom,${l},${l}66,transparent)` }
+           const a=$('accentL')
+           if(a){ a.style.background=l; a.style.boxShadow=`inset 0 0 18px rgba(0,0,0,.3), 0 0 22px ${l}55` }
+           const lb=document.querySelector('.fighter-slot.left .f-label')
+           if(lb){ lb.textContent=colorName(l)+' CORNER'; lb.style.color=l }
+    }
     if(r){ $('trunkSwatchR').style.background=r; $('trunkSwatchR').style.color=r
            $('trunkLabelR').textContent=colorName(r)+' TRUNKS'
            const as=document.querySelectorAll('.bar-accent.right')
-           if(as[0]) as[0].style.background=`linear-gradient(to bottom,transparent,${r}66,${r})` }
+           if(as[0]){ as[0].style.background=r; as[0].style.boxShadow=`inset 0 0 18px rgba(0,0,0,.3), 0 0 22px ${r}55` }
+           const rb=document.querySelector('.fighter-slot.right .f-label')
+           if(rb){ rb.textContent=colorName(r)+' CORNER'; rb.style.color=r }
+    }
     if(l||r){
       $('trunkL').classList.add('show'); $('trunkR').classList.add('show')
       clearTimeout(trunkTimer)
