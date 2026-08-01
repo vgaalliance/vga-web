@@ -168,16 +168,42 @@
   #trackrail .mnpips,#rail .mnteam{color:var(--o);}
   #trackrail #mnState{color:var(--o);font-size:18px;}
   #trackrail #mnState b{background:var(--o);color:#0a0500;}
+  /* ── rail interior ────────────────────────────────────────────────
+     Was a flat unbroken column: every control the same weight, nothing
+     telling you where one job ended and the next began. It's now blocks
+     with their own headers and frames, so at a glance you can see the
+     three things you actually do here -- read the card, pick a bout, set
+     its corners. */
+  .rblock{border:1px solid var(--odim);background:rgba(255,178,58,.035);
+    margin-bottom:14px;border-radius:2px;}
+  .rblock > h6{margin:0;font-size:15px;font-weight:400;letter-spacing:.18em;
+    text-transform:uppercase;color:#0a0500;background:var(--odim);
+    padding:5px 12px;display:flex;justify-content:space-between;align-items:center;}
+  .rblock > h6 em{font-style:normal;font-size:13px;opacity:.8;letter-spacing:.06em;}
+  .rbody{padding:11px 12px;}
+  .rblock.empty{opacity:.4;}
+  /* the header stays put while the block below it scrolls */
+  .railhead{position:sticky;top:-16px;background:rgba(10,5,0,.99);z-index:2;
+    margin:-16px -18px 12px;padding:16px 18px 8px;}
+
   /* the bout list condenses -- one per row in a 452px rail, not squeezed
      into a grid that would clip the names */
-  #trackrail #ubaCard{display:flex;flex-direction:column;gap:7px;}
-  #trackrail #ubaCard button{width:100%;min-height:0;padding:7px 10px;font-size:18px;}
+  #trackrail #ubaCard{display:flex;flex-direction:column;gap:6px;}
+  #trackrail #ubaCard button{width:100%;min-height:0;padding:8px 10px;font-size:18px;
+    text-align:left;justify-content:flex-start;line-height:1.2;}
+  /* swatches breathe instead of wrapping into a ragged block */
+  #trackrail #swatchL,#trackrail #swatchR{gap:5px;}
+  #trackrail input[type=color]{width:44px;height:32px;border-color:var(--odim);}
+  #trackrail h5{color:var(--odim);margin:10px 0 6px;font-size:15px;}
+  #trackrail h5:first-child{margin-top:0;}
+  #trackrail .row{gap:7px;}
   /* reserve the rail's width so the centred column never slides under it */
   body{padding-right:452px;max-width:1632px;}
   @media (max-width:1180px){
     #trackrail{position:static;width:auto;border-left:none;border-top:2px solid var(--odim);}
     #status{right:26px;}
     body{padding-right:30px;}
+    .railhead{position:static;}
   }
 </style>
 </head>
@@ -236,6 +262,7 @@
         <button onclick="segCard('MAIN CARD')">Main card</button>
         <button class="hide" onclick="send({type:'segcard',on:false})">Hide now</button>
       </div>
+      <div id="cornerKit">
       <h5 class="only-uba">Trunk colours — click a swatch, it fires the reveal</h5>
       <div class="row only-uba" style="margin-bottom:6px;align-items:center">
         <span style="color:var(--gdim);font-size:16px;width:52px">LEFT</span>
@@ -256,6 +283,7 @@
         <input type="color" id="ubaColorL" value="#e8312a" style="width:52px;height:38px;padding:3px" onchange="drawSwatches();setCornersQuiet()">
         <input type="color" id="ubaColorR" value="#2e6fe8" style="width:52px;height:38px;padding:3px" onchange="drawSwatches();setCornersQuiet()">
       </div>
+      </div><!-- /cornerKit -->
     </div>
   </div>
 
@@ -1022,22 +1050,54 @@ loadBetFeed()
 // deferred: the <aside> is markup-after-scripts, so at parse time #railbody
 // does not exist yet and this silently did nothing
 ;window.addEventListener('DOMContentLoaded',function(){
-  const rail=document.getElementById('railbody'); if(!rail) return
-  const empty=document.getElementById('railempty')
-  ;['mnState','mnCockpit','ubaCard'].forEach(id=>{
-    const el=document.getElementById(id); if(el) rail.appendChild(el)
+  // Each live surface moves into its own block. Same nodes, same ids, so the
+  // code that already draws into them never learns it happened.
+  const SLOTS=[['mnState','slotState'],['mnCockpit','slotState'],
+               ['ubaCard','slotCard'],['cornerKit','slotCorner']]
+  SLOTS.forEach(([from,to])=>{
+    const el=document.getElementById(from), slot=document.getElementById(to)
+    if(el&&slot) slot.appendChild(el)
   })
-  // The rail says what it's for when it has nothing in it -- an empty orange
-  // column with no explanation reads as broken.
-  const refresh=()=>{
-    const live = (document.getElementById('mnCockpit')?.children.length||0)
-               + (document.getElementById('ubaCard')?.children.length||0)
-    if(empty) empty.style.display = live ? 'none' : 'block'
-    const sub=document.getElementById('railSub')
-    if(sub) sub.textContent = document.body.classList.contains('ev-uba')
-      ? 'tap a name to score · arm a bout' : 'pick fighters · score the round'
+
+  const has=id=>{ const el=document.getElementById(id); return !!el && el.children.length>0 }
+  // A block with nothing in it is noise, so it dims and its header says why.
+  function refresh(){
+    const uba=document.body.classList.contains('ev-uba')
+    const live={ rbState: has('mnCockpit')||has('mnState'), rbCard: has('ubaCard'),
+                 rbCorner: uba && document.getElementById('ubaCardWrap')?.style.display!=='none' }
+    let any=false
+    Object.entries(live).forEach(([id,on])=>{
+      const el=document.getElementById(id); if(!el) return
+      el.classList.toggle('empty', !on)
+      // corners are a fight-night idea; hide the block entirely in UBAe rather
+      // than showing a permanently dead frame
+      el.style.display = (id==='rbCorner' && !uba) ? 'none' : ''
+      if(on) any=true
+    })
+    const empty=document.getElementById('railempty')
+    if(empty) empty.style.display = any ? 'none' : 'block'
+    // Only write when the value actually changes. Assigning identical text
+    // still counts as a DOM mutation, which is what kept re-arming the
+    // observer below.
+    const set=(el,v)=>{ if(el && el.textContent!==v) el.textContent=v }
+    set(document.getElementById('rbStateTag'), uba ? 'fight night' : 'match night')
+    set(document.getElementById('railSub'), uba ? 'tap a name to score · arm a bout'
+                                                : 'pick fighters · score the round')
   }
-  new MutationObserver(refresh).observe(rail,{childList:true,subtree:true})
+  // childList ONLY. Watching attributes here deadlocks the page: refresh()
+  // writes .style.display onto blocks inside the rail, which fires the
+  // observer, which calls refresh again -- the renderer never gets a frame
+  // back and the tab hangs before it finishes loading.
+  // ...and watch only the slots the moved controls land in, never the whole
+  // rail, so nothing refresh() writes is inside the observed subtree
+  ;['slotState','slotCard','slotCorner'].forEach(id=>{
+    const el=document.getElementById(id)
+    if(el) new MutationObserver(refresh).observe(el,{childList:true,subtree:true})
+  })
+  // the thing that actually needed watching lives in the MAIN column, so
+  // observing it can't feed back into anything refresh() writes
+  const wrap=document.getElementById('ubaCardWrap')
+  if(wrap) new MutationObserver(refresh).observe(wrap,{attributes:true,attributeFilter:['style']})
   new MutationObserver(refresh).observe(document.body,{attributes:true,attributeFilter:['class']})
   document.addEventListener('click',()=>setTimeout(refresh,60))
   refresh()
@@ -1046,8 +1106,14 @@ loadBetFeed()
 
   <aside id="trackrail">
     <div class="railhead">TRACKER<small id="railSub">keep score · arm the next bout</small></div>
-    <div id="railbody"><div id="railempty">Load a match or a card and the live
-      tracker moves here, so it stays put while you scroll the controls.</div></div>
+    <div id="railempty">Load a match or a card and the live tracker moves here,
+      so it stays put while you scroll the controls.</div>
+    <div class="rblock" id="rbState"><h6>Now on <em id="rbStateTag"></em></h6>
+      <div class="rbody" id="slotState"></div></div>
+    <div class="rblock" id="rbCard"><h6>The card <em>tap a name to score</em></h6>
+      <div class="rbody" id="slotCard"></div></div>
+    <div class="rblock" id="rbCorner"><h6>Corners <em>trunks &amp; reveal</em></h6>
+      <div class="rbody" id="slotCorner"></div></div>
   </aside>
 </body>
 </html>
