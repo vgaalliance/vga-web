@@ -784,6 +784,12 @@ window.setEv=ev=>{
   document.body.classList.toggle('ev-uba', ev==='uba')
   document.querySelectorAll('#evRow button').forEach(b=>b.classList.toggle('active', b.dataset.ev===ev))
   drawRail()
+  // The weekly schedule bar is UBAe furniture, and its toggle is UBAe-only --
+  // so switching to a fight night left it stranded on screen with no button
+  // anywhere to clear it. Switching leagues retires it.
+  if(ev==='uba' && window._loadbarOn){
+    window._loadbarOn=false; send({type:'loadbar', show:false}); _loadbarBtn()
+  }
   if(ev==='uba') loadUbaEvents()
   loadOdds(); loadBetFeed()
 }

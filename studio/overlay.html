@@ -183,10 +183,12 @@
 /* ══ VENUE BUG (merged from venue-bug.html) ══ */
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, /* ============================================================
-     EDIT HERE — venue name, hold duration, position
-     ============================================================= */
-
+  /* NOTE: the original file styled `html, body` together and the merge
+     stripped only the body half, leaving `html,` dangling onto the next
+     selector -- so <html> inherited .venue-bug's position:absolute,
+     transform AND opacity:0. The whole overlay rendered invisible, and a
+     transformed <html> also became the containing block for every fixed
+     element in the file. Selector restored to the bug alone. */
   .venue-bug {
     position: absolute;
     left: 60px;
