@@ -609,7 +609,10 @@ window.fireMsg=()=>{
 
 // league rides along so 'auto' cycles the right set -- a UBA fight night
 // shouldn't parade team standings and rosters between bouts
-window.standby=view=>send({type:'standby', view, league:EV, on:view!=='off'})
+window.standby=view=>send({type:'standby', view, league:EV, on:view!=='off',
+  // 'next event' must skip the one you're running, or on a fight night it
+  // resolves to tonight and shows the same card twice
+  exclude: UBA.name || null})
 
 // coin toss — heads or tails
 window.fireCoin=()=>send({type:'coin', result: Math.random()<.5?'HEADS':'TAILS' })

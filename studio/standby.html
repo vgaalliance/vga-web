@@ -487,11 +487,9 @@ async function loadUba(rk){
     renderP4P(p4||[], champs)
     renderFotm((fm||[])[0], champs)
     renderCards(sets||[], coll||[])
-    const ev0=(nx||[])[0]
-    if(ev0){
-      const { data:em } = await sb.from('event_matches').select('*').eq('event_id',ev0.id).order('bout_number')
-      renderNextEv(ev0, em||[])
-    }
+    // 'next event' is resolved when it's SHOWN, not at boot -- see showNextEv.
+    // Which event is "next" depends on which one you're currently running.
+    void nx
   }catch(e){ console.warn('UBA screens failed to load', e) }
 }
 
@@ -525,6 +523,26 @@ function renderFotm(f, champs){
   box.innerHTML=`<div class="fotm-name">${f.name}</div>
     ${f.tag?`<div class="fotm-tag">${f.tag}</div>`:''}
     ${c?`<div class="fotm-rec">${recOf(c)} · CHAMPION</div>`:''}`
+}
+
+// The soonest scheduled event during a fight night IS that fight night, so
+// this screen was showing tonight's card a second time under the heading
+// "Next Event". It now skips whatever the deck currently has loaded and lands
+// on the one after it -- which is the only thing "next" can honestly mean on
+// a night you are mid-broadcast.
+async function showNextEv(exclude){
+  const { data:evs } = await sb.from('events_public').select('id,name,event_date')
+    .eq('status','scheduled').gte('event_date',FUTURE()).order('event_date').limit(4)
+  const ev0=(evs||[]).find(e=>!exclude || e.name!==exclude)
+  if(!ev0){
+    document.getElementById('nextevTitle').textContent='Nothing Announced Yet'
+    document.getElementById('nextevDate').textContent=''
+    document.getElementById('nextevContent').innerHTML=
+      '<div class="cbout"><span class="fa"></span><span class="vs">WATCH THIS SPACE</span><span class="fb"></span></div>'
+    return
+  }
+  const { data:em } = await sb.from('event_matches').select('*').eq('event_id',ev0.id).order('bout_number')
+  renderNextEv(ev0, em||[])
 }
 
 function renderNextEv(ev, bouts){
@@ -801,6 +819,7 @@ sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
   if(c.type==='standby'){
     if(c.on===false){ show('off'); return }
     if(c.view==='card'){ await showCard(c.event, c.d); show('card'); return }   // c.event picks FN29/FN30/… · c.d = live rows from the runner
+    if(c.view==='nextev'){ await showNextEv(c.exclude); show('nextev'); return }  // c.exclude = the event you're running tonight
     show(c.view, c.league); return   // league only matters to 'auto' — it picks the rotation
   }
   // when the deck loads a match in the tracker, mirror it on the team-vs-team screen
