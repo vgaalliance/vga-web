@@ -473,6 +473,22 @@ async function sb(table, params) {
   return r.json();
 }
 
+// PostgREST caps EVERY response at 1,000 rows, with no error and no flag. Maki
+// holds 1,260 prints, so his stash rendered 1,000 and silently omitted 260 --
+// the same wall that hid his legendary Killer Kams from the bot's /my-cards.
+// Paged, with an explicit order: offset paging on an unordered query can repeat
+// some rows and drop others, so the sort is load-bearing, not cosmetic.
+async function sbAll(table, params, order) {
+  const out = [];
+  for (let offset = 0; ; offset += 1000) {
+    const page = await sb(table, `${params}&order=${order}&limit=1000&offset=${offset}`);
+    if (!Array.isArray(page) || !page.length) break;
+    out.push(...page);
+    if (page.length < 1000) break;
+  }
+  return out;
+}
+
 function renderStreak(streak, playedToday) {
   const filled = Math.min(streak || 0, 7);
   let cells = '';
@@ -601,7 +617,7 @@ async function load() {
     // fighter with none simply keeps the placeholder look.
     let stashPrints = [], stashSets = [], stashItems = [];
     try {
-      stashPrints = await sb('card_collections_public', `owner_slug=eq.${encodeURIComponent(s)}&select=card_fighter,rarity,print_number,grade,set_name,set_status`);
+      stashPrints = await sbAll('card_collections_public', `owner_slug=eq.${encodeURIComponent(s)}&select=card_fighter,rarity,print_number,grade,set_name,set_status,set_code`, 'set_code,card_fighter,print_number');
       if (stashPrints.length) stashSets = await sb('card_sets_public', `select=name,status,set_size`);
       stashItems = await sb('stash_items_public', `owner_slug=eq.${encodeURIComponent(s)}&select=name,category,effect_kind,qty`);
     } catch (e) {}
