@@ -131,6 +131,25 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 .uslit-value{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:22px;
   letter-spacing:.08em;text-transform:uppercase;text-shadow:0 1px 5px rgba(0,0,0,.65);}
 
+/* ── FOCUS MODE — the branding gets out of the way for a reveal ────────────
+   When a colour or odds panel opens, the emblem and the UBAe block retract to
+   the left and the bar becomes just the matchup plus the panels. Two reasons:
+   the reveal is the thing being watched and the branding is not, and the width
+   the panels add is almost exactly the width the branding gives back -- so the
+   bar's right edge barely moves instead of marching across the frame.
+     emblem 52 + block ~166 = 218 out, two panels at 124 = 236 in.
+   overflow:hidden is already on .ubae-block, so its text clips rather than
+   squashing as it closes. */
+.emblem,.ubae-block{
+  transition:width .52s cubic-bezier(.16,.8,.3,1),
+             padding .52s cubic-bezier(.16,.8,.3,1),
+             margin .52s cubic-bezier(.16,.8,.3,1),
+             opacity .3s ease .12s;}
+.main-row.focus .emblem{width:0;margin-right:0;opacity:0;border-width:0;
+  transition:width .52s cubic-bezier(.16,.8,.3,1),margin .52s cubic-bezier(.16,.8,.3,1),opacity .2s ease;}
+.main-row.focus .ubae-block{width:0;padding:0;opacity:0;border-left-width:0;
+  transition:width .52s cubic-bezier(.16,.8,.3,1),padding .52s cubic-bezier(.16,.8,.3,1),opacity .2s ease;}
+
 /* MAIN BAR */
 .main-bar{
   display:flex;align-items:center;height:52px;
@@ -275,6 +294,8 @@ function uOpen(L,R,hold,m){
   if(L) uWrite('left', L.eyebrow, L.value)
   if(R) uWrite('right', R.eyebrow, R.value)
   sL.classList.add('expand'); sR.classList.add('expand')
+  // branding steps aside so the panel is the subject
+  const row=document.querySelector('.main-row'); if(row) row.classList.add('focus')
   uOpenMode=m
   clearTimeout(uTimer)
   uTimer=setTimeout(()=>uCollapse(odds), hold||U_HOLD_TRUNKS)
@@ -283,6 +304,7 @@ function uOpen(L,R,hold,m){
 function uCollapse(restore){
   const sL=uQ('uslitL'), sR=uQ('uslitR'); if(!sL||!sR) return
   sL.classList.remove('expand'); sR.classList.remove('expand')
+  const row=document.querySelector('.main-row'); if(row) row.classList.remove('focus')
   uOpenMode=null
   setTimeout(()=>{
     sL.classList.remove('odds'); sR.classList.remove('odds')
