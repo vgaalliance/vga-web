@@ -287,8 +287,11 @@
         <button class="hide" onclick="send({type:'segcard',on:false})">Hide now</button>
       </div>
       <div id="cornerKit">
-      <h5 class="only-uba">Trunk colours — click a swatch, it fires the reveal</h5>
-      <div class="row only-uba" style="margin-bottom:6px;align-items:center">
+      <!-- Both leagues now: the UBAe clock got the same slit reveal, so hiding
+           this kit in UBAe mode left a built feature unreachable. Only the
+           WORDS differ -- UBA fighters wear trunks, UBAe teams wear colours. -->
+      <h5><span class="only-uba">Trunk colours — click a swatch, it fires the reveal</span><span class="only-ubae">Team colours — click a swatch, it fires the reveal</span></h5>
+      <div class="row" style="margin-bottom:6px;align-items:center">
         <span style="color:var(--gdim);font-size:16px;width:52px">LEFT</span>
         <span id="swatchL" style="display:flex;gap:6px;flex-wrap:wrap"></span>
       </div>
@@ -296,11 +299,11 @@
         <span style="color:var(--gdim);font-size:16px;width:52px">RIGHT</span>
         <span id="swatchR" style="display:flex;gap:6px;flex-wrap:wrap"></span>
       </div>
-      <div class="row only-uba" style="margin-bottom:8px">
+      <div class="row" style="margin-bottom:8px">
         <button onclick="fireClockOdds()">📊 Odds on the clock</button>
         <span id="clockOddsHint" style="color:var(--gdim);font-size:16px">arm a bout first</span>
       </div>
-      <div class="row only-uba">
+      <div class="row">
         <button onclick="fireCorners()">↻ Replay reveal</button>
         <button class="hide" onclick="ubaSwapCorners()">⇄ Swap corners</button>
         <span style="color:var(--gdim);font-size:16px">custom</span>

@@ -94,6 +94,38 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 .ubae-text{animation:ubaGlow 3s ease-in-out infinite;}
 .ubae-sub{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.35em;color:rgba(216,180,254,1);position:relative;z-index:2;margin-top:3px;text-shadow:0 0 10px rgba(216,180,254,.9),0 0 20px rgba(155,48,255,.6);text-transform:uppercase;}
 
+/* ── TRUNK / ODDS REVEAL ──────────────────────────────────────────────────
+   The UBA clock's mechanism, adapted. Two slim colour slivers flank the VS
+   block; a reveal EXPANDS the sliver itself into a labelled colour panel,
+   holds, and collapses back.
+   The difference is which way it grows. UBA is centred, so it opens both ways
+   from the middle and the bar has to be widened to make room. This bar is
+   anchored at left:48px and sized by its contents, so expanding a slit pushes
+   everything to its right outward on its own -- no width juggling, and the
+   left edge never moves, which is the whole reason the bar sits in a corner. */
+.uslit{width:6px;flex-shrink:0;align-self:stretch;position:relative;
+  overflow:hidden;display:flex;align-items:center;justify-content:center;
+  background:#e8312a;z-index:7;
+  border-top:1px solid rgba(255,255,255,.22);
+  transition:width .5s cubic-bezier(.16,.8,.3,1);}
+.uslit.rightside{background:#2e6fe8;}
+.uslit::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.22),transparent 40%,rgba(0,0,0,.28));}
+.uslit.expand{width:168px;}
+/* odds open narrower and in neutral violet -- a trunk reveal is a statement,
+   odds are information. Same reasoning as the UBA bar. */
+.uslit.expand.odds{width:132px;}
+.uslit.odds .uslit-eyebrow{color:rgba(216,180,254,.9);}
+.uslit.odds .uslit-value{font-size:24px;}
+.uslit-label{opacity:0;transform:translateY(6px);
+  transition:opacity .3s ease,transform .3s cubic-bezier(.16,.8,.3,1);
+  white-space:nowrap;position:relative;z-index:2;
+  display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1;}
+.uslit.expand .uslit-label{opacity:1;transform:none;transition-delay:.26s;}
+.uslit-eyebrow{font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;}
+.uslit-value{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:22px;
+  letter-spacing:.08em;text-transform:uppercase;text-shadow:0 1px 5px rgba(0,0,0,.65);}
+
 /* MAIN BAR */
 .main-bar{
   display:flex;align-items:center;height:52px;
@@ -167,7 +199,13 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
       <div class="fighter">
         
       </div>
+      <div class="uslit" id="uslitL"><span class="uslit-label" id="uslitLabelL">
+        <span class="uslit-eyebrow" id="uslitEyeL">RED</span><span class="uslit-value" id="uslitValL">TRUNKS</span>
+      </span></div>
       <div class="vs-section"><div class="vs-text" id="vsText">VS</div></div>
+      <div class="uslit rightside" id="uslitR"><span class="uslit-label" id="uslitLabelR">
+        <span class="uslit-eyebrow" id="uslitEyeR">BLUE</span><span class="uslit-value" id="uslitValR">TRUNKS</span>
+      </span></div>
       <div class="fighter">
         
         
@@ -183,6 +221,97 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 </div>
 
 <script>
+
+// ── TRUNK / ODDS REVEAL ─────────────────────────────────────────────────────
+// Ported from the UBA clock deliberately rather than shared: the two bars have
+// different geometry and different resting sizes, and a shared module would
+// have to know about both. The BEHAVIOUR is what matters and it is identical --
+// same curve, same hold, same retract-before-re-extend rule.
+const uQ = id => document.getElementById(id)
+const U_CUR = { l:'#e8312a', r:'#2e6fe8' }
+let uOpenMode = null, uTimer = null
+const U_HOLD_TRUNKS = 7500
+const U_HOLD_ODDS   = 9000
+const U_ODDS_FILL   = 'linear-gradient(180deg,#6d28d9,#4c1d95)'
+
+// Nearest named colour, so the eyebrow reads "CRIMSON" not "#e8312a".
+function uColorName(hex){
+  const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex||'')
+  if(!m) return 'CORNER'
+  const r=parseInt(m[1],16), g=parseInt(m[2],16), b=parseInt(m[3],16)
+  const names=[['RED',232,49,42],['CRIMSON',180,30,50],['BLUE',46,111,232],['NAVY',20,40,120],
+    ['GOLD',230,180,40],['GREEN',40,180,90],['PURPLE',140,60,220],['ORANGE',240,130,40],
+    ['PINK',235,90,170],['WHITE',245,245,245],['BLACK',20,20,20],['SILVER',170,170,180]]
+  let best=names[0], bd=Infinity
+  for(const n of names){ const d=(r-n[1])**2+(g-n[2])**2+(b-n[3])**2; if(d<bd){bd=d;best=n} }
+  return best[0]
+}
+
+function uSetCorners(l,r){
+  if(l) U_CUR.l=l; if(r) U_CUR.r=r
+  const L=uQ('uslitL'), R=uQ('uslitR')
+  if(L && !L.classList.contains('odds')) L.style.background=U_CUR.l
+  if(R && !R.classList.contains('odds')) R.style.background=U_CUR.r
+}
+function uWrite(side, eyebrow, value){
+  const e=uQ(side==='left'?'uslitEyeL':'uslitEyeR')
+  const v=uQ(side==='left'?'uslitValL':'uslitValR')
+  if(e) e.textContent=eyebrow; if(v) v.textContent=value
+}
+
+function uOpen(L,R,hold,m){
+  const odds = m==='odds'
+  const sL=uQ('uslitL'), sR=uQ('uslitR'); if(!sL||!sR) return
+  sL.classList.toggle('odds',odds); sR.classList.toggle('odds',odds)
+  // fills FIRST -- uSetCorners rewrites nothing here, but keeping the order
+  // identical to the UBA bar means one fix lands in both when it is needed
+  if(odds){ sL.style.background=U_ODDS_FILL; sR.style.background=U_ODDS_FILL }
+  else uSetCorners(U_CUR.l, U_CUR.r)
+  if(L) uWrite('left', L.eyebrow, L.value)
+  if(R) uWrite('right', R.eyebrow, R.value)
+  sL.classList.add('expand'); sR.classList.add('expand')
+  uOpenMode=m
+  clearTimeout(uTimer)
+  uTimer=setTimeout(()=>uCollapse(odds), hold||U_HOLD_TRUNKS)
+}
+
+function uCollapse(restore){
+  const sL=uQ('uslitL'), sR=uQ('uslitR'); if(!sL||!sR) return
+  sL.classList.remove('expand'); sR.classList.remove('expand')
+  uOpenMode=null
+  setTimeout(()=>{
+    sL.classList.remove('odds'); sR.classList.remove('odds')
+    if(restore) uSetCorners(U_CUR.l, U_CUR.r)
+  }, 520)
+}
+
+// Changing subject while open retracts first and re-extends. One panel, one
+// idea at a time -- swapping the fill and the words in place is a hard cut.
+function uReveal(L,R,hold,mode){
+  const m = mode==='odds' ? 'odds' : 'trunks'
+  clearTimeout(uTimer)
+  if(uOpenMode && uOpenMode!==m){
+    uCollapse(uOpenMode==='odds')
+    uTimer=setTimeout(()=>uOpen(L,R,hold,m), 640)
+    return
+  }
+  uOpen(L,R,hold,m)
+}
+
+function uCorners(l,r){
+  uSetCorners(l,r)
+  uReveal({eyebrow:uColorName(l||'#e8312a'), value:'TRUNKS'},
+          {eyebrow:uColorName(r||'#2e6fe8'), value:'TRUNKS'})
+}
+function uOddsWord(v){
+  if(!v || v==='\u2014') return 'EVEN'
+  return String(v).trim().startsWith('-') ? 'FAVOURITE' : 'UNDERDOG'
+}
+function uOddsReveal(l,r){
+  uReveal({eyebrow:uOddsWord(l), value:l||'\u2014'},
+          {eyebrow:uOddsWord(r), value:r||'\u2014'}, U_HOLD_ODDS, 'odds')
+}
+
 const cv=document.getElementById('flowerCanvas');
 const ctx=cv.getContext('2d');
 const W=52,H=52,CX=W/2,CY=H/2;
@@ -623,6 +752,14 @@ tick();
       if(hud) hud.classList.toggle('off', c.show===false)
       return
     }
+    // Trunk colours and odds, same contract as the UBA clock so one deck press
+    // drives whichever bar is on screen.
+    if(c.type==='corner'){
+      const d=c.d||{}
+      if(c.reveal) uCorners(d.l,d.r); else uSetCorners(d.l,d.r)
+      return
+    }
+    if(c.type==='clockodds'){ const d=c.d||{}; uOddsReveal(d.l,d.r); return }
     if(c.type!=='pickbar') return
     const d=c.d||{}
     // Split name was baked into the markup and said SPRING through the whole
