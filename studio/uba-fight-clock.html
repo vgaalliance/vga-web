@@ -422,7 +422,11 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
    orthographic and reads as a squash rather than a turn.
    Same exit curve as the bar's own close, so it belongs to this graphic. */
 .round-count-box{perspective:460px;}
-.round-text{display:inline-block;backface-visibility:hidden;
+/* NO display change here. The first version set display:inline-block, which
+   overrode the flex centring these elements rely on -- the number jumped out of
+   the middle of its box the moment the rule loaded. transform applies to a flex
+   element perfectly well; the display property was never needed. */
+.round-text{backface-visibility:hidden;
   transition:transform .26s cubic-bezier(.55,0,.25,1), opacity .18s ease;}
 .round-text.flip-out{transform:rotateX(-92deg);opacity:0;}
 .round-text.flip-in{transform:rotateX(92deg);opacity:0;}

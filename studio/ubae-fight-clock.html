@@ -160,7 +160,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
    ring itself. Runs behind the bar (z-index under .main-bar) so the tail reads
    as passing beneath the graphic rather than lying on top of it. */
 .track-wrap{position:absolute;top:50%;left:0;transform:translateY(-50%);
-  width:520px;height:70px;pointer-events:none;z-index:0;opacity:0;
+  width:520px;height:70px;pointer-events:none;z-index:6;opacity:0;
   transition:opacity .45s ease;}
 .track-wrap.on{opacity:1;}
 .track-line{fill:none;stroke:rgba(168,85,247,.16);stroke-width:6;stroke-linecap:round;}
@@ -229,7 +229,11 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
    orthographic and reads as a squash rather than a turn.
    Same exit curve as the bar's own close, so it belongs to this graphic. */
 .round-float{perspective:460px;}
-.rnd-num{display:inline-block;backface-visibility:hidden;
+/* NO display change here. The first version set display:inline-block, which
+   overrode the flex centring these elements rely on -- the number jumped out of
+   the middle of its box the moment the rule loaded. transform applies to a flex
+   element perfectly well; the display property was never needed. */
+.rnd-num{backface-visibility:hidden;
   transition:transform .26s cubic-bezier(.55,0,.25,1), opacity .18s ease;}
 .rnd-num.flip-out{transform:rotateX(-92deg);opacity:0;}
 .rnd-num.flip-in{transform:rotateX(92deg);opacity:0;}
@@ -254,14 +258,17 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     <!-- TIMER TRACK — remove this block and set TIMER_RING=false to revert.
          One path: 270deg around the bloom, then straight out to the right. -->
     <div class="track-wrap" id="trackWrap">
-      <!-- emblem is 52px wide from x=0, so its centre is (26,35); the ring is
-           r=31 so it clears the 26px emblem edge by 5px. 270deg of arc, then
-           straight out to x=452. Change 452 to lengthen or shorten the tail --
-           the drain measures the path, so nothing else needs updating. -->
+      <!-- Emblem centre is (26,35); ring r=31 clears its 26px edge by 5px.
+           The tail leaves the ring at y=61 -- the BAR'S BOTTOM EDGE -- and runs
+           right along it. It used to exit at y=35, straight through the middle
+           of the fighter names, which is unreadable however far back you push
+           the z-index. Underlining the bar keeps the gauge legible and keeps
+           the names clean. Exit x=42.9 is where the circle actually meets
+           y=61; move the tail's y and that number has to move with it. -->
       <svg viewBox="0 0 520 70">
-        <path class="track-line"  id="trackLine"  d="M 26 4 A 31 31 0 1 0 57 35 L 452 35"></path>
-        <path class="track-prog"  id="trackProg"  d="M 26 4 A 31 31 0 1 0 57 35 L 452 35"></path>
-        <path class="track-ticks" id="trackTicks" d="M 26 4 A 31 31 0 1 0 57 35 L 452 35"></path>
+        <path class="track-line"  id="trackLine"  d="M 26 4 A 31 31 0 1 0 42.9 61 L 452 61"></path>
+        <path class="track-prog"  id="trackProg"  d="M 26 4 A 31 31 0 1 0 42.9 61 L 452 61"></path>
+        <path class="track-ticks" id="trackTicks" d="M 26 4 A 31 31 0 1 0 42.9 61 L 452 61"></path>
       </svg>
     </div>
     <div class="emblem" id="emblemEl">
