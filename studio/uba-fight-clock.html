@@ -165,7 +165,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
    in -- so it disappears at a point instead of dissolving while it moves. That
    single delay is what separates "switched off" from "faded out"; a broadcast
    bar cuts, it does not evaporate. */
-.hud-root.off{opacity:0;pointer-events:none;transition:opacity .2s ease .62s;}
+.hud-root.off{opacity:0;pointer-events:none;transition:opacity .22s ease .88s;}
 .hud-root .main-bar,.hud-root .bottom-strip{
   transition:width .78s cubic-bezier(.16,.8,.3,1);}
 /* !important because .main-bar.wide.odds is the same specificity and is
@@ -176,7 +176,27 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
    accents (5+5). That IS the bar's intrinsic minimum, since every one of
    those is flex-shrink:0 -- asking for less just clamped here silently.
    Stated exactly so the closed state is a decision, not a leftover. */
-.hud-root.off .main-bar,.hud-root.off .bottom-strip{width:224px !important;}
+/* Delayed by 200ms so everything inside has already cleared. Simultaneous was
+   the mistake: the bar was narrowing THROUGH content that had not finished
+   leaving. UBAe's order -- parts retract, then the frame goes -- is what makes
+   a close read as deliberate. */
+.hud-root.off .main-bar,.hud-root.off .bottom-strip{
+  width:224px !important;
+  transition:width .7s cubic-bezier(.16,.8,.3,1) .2s;}
+
+/* The bout/format floats sit ABOVE the bar at left:0 and right:0, so as it
+   contracts to 224px the two boxes converge and collide with each other --
+   that was the overlap still visible at the end of the close. Borrowed from
+   the UBAe clock, whose round tab and BO5 strip retract INTO the main row
+   before the row itself leaves: they tuck down into the bar and are gone
+   before it starts narrowing, so there is never a frame where they share
+   space. Opacity outruns the movement because they are z-index:15, above the
+   bar -- they must be invisible by the time they pass over it. */
+.hud-root .match-float,.hud-root .format-float{
+  transition:transform .52s cubic-bezier(.16,1,.3,1) .34s, opacity .3s ease .38s;}
+.hud-root.off .match-float,.hud-root.off .format-float{
+  opacity:0;transform:translateY(34px) scale(.94);
+  transition:transform .4s cubic-bezier(.55,0,.25,1), opacity .17s ease;}
 
 /* The name panels TUCK BEHIND the centre block rather than merely narrowing.
    .bar-centre is already z-index:8 against the slots' z-index:6, so the
