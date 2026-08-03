@@ -150,6 +150,35 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 .main-row.focus .ubae-block{width:0;padding:0;opacity:0;border-left-width:0;
   transition:width .52s cubic-bezier(.16,.8,.3,1),padding .52s cubic-bezier(.16,.8,.3,1),opacity .2s ease;}
 
+/* ═══ TIMER RING (revertable — set TIMER_RING false below) ═════════════════
+   Drains around the bloom, same as the UBA bar. This clock does NOT own the
+   numeric timer -- in UBAe the deck sends 'matchtimer' to the overlay's
+   top-right clock -- so the ring listens to that message purely to draw, and
+   never prints digits of its own. One source of truth, two places it shows. */
+.ring-wrap{position:absolute;top:50%;left:26px;transform:translate(-50%,-50%);
+  width:70px;height:70px;pointer-events:none;z-index:11;opacity:0;
+  transition:opacity .45s ease;}
+.ring-wrap.on{opacity:1;}
+.ring-wrap svg{width:70px;height:70px;transform:rotate(-90deg);}
+.ring-track{fill:none;stroke:rgba(168,85,247,.22);stroke-width:3;}
+.ring-prog{fill:none;stroke:#d8b4fe;stroke-width:3;stroke-linecap:round;
+  filter:drop-shadow(0 0 5px rgba(216,180,254,.9));
+  /* The per-second drain stays LINEAR on purpose. An eased tick reads as a
+     stutter -- it would speed up and slow down inside every single second,
+     which is exactly what a clock must not do. The easing belongs on the two
+     moments that are not ticks: the initial fill when a round starts, and any
+     jump if the deck re-sends a different time. Those get a bezier via the
+     .seek class, applied for one frame and removed. */
+  transition:stroke-dashoffset 1s linear, stroke .5s ease;}
+.ring-prog.seek{transition:stroke-dashoffset .85s cubic-bezier(.16,.8,.3,1), stroke .5s ease;}
+.ring-wrap.low .ring-prog{stroke:#ff5470;filter:drop-shadow(0 0 7px rgba(255,84,112,.95));}
+.ring-wrap.low{animation:ringPulse 1s ease-in-out infinite;}
+@keyframes ringPulse{0%,100%{opacity:1}50%{opacity:.62}}
+/* it retracts WITH the emblem during a reveal -- the panel is the subject for
+   those few seconds, and the overlay is still showing the digits regardless */
+.ring-wrap{transition:opacity .45s ease, width .52s cubic-bezier(.16,.8,.3,1);}
+.main-row.focus .ring-wrap{opacity:0;}
+
 /* MAIN BAR */
 .main-bar{
   display:flex;align-items:center;height:52px;
@@ -210,6 +239,13 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   </div>
 
   <div class="main-row">
+    <!-- TIMER RING — remove this block and set TIMER_RING=false to revert -->
+    <div class="ring-wrap" id="ringWrap">
+      <svg viewBox="0 0 70 70">
+        <circle class="ring-track" cx="35" cy="35" r="31"></circle>
+        <circle class="ring-prog" id="ringProg" cx="35" cy="35" r="31"></circle>
+      </svg>
+    </div>
     <div class="emblem" id="emblemEl">
       <canvas id="flowerCanvas" width="52" height="52"></canvas>
     </div>
@@ -245,6 +281,37 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 </div>
 
 <script>
+
+// ═══ TIMER RING ════════════════════════════════════════════════════════════
+// false = never renders, and nothing else reads it.
+const TIMER_RING = true
+const RING_R = 31, RING_C = 2 * Math.PI * RING_R
+let ringHandle = null
+function ringSet(frac, low){
+  if(!TIMER_RING) return
+  const w=document.getElementById('ringWrap'), c=document.getElementById('ringProg')
+  if(!w||!c) return
+  if(frac==null){ w.classList.remove('on','low'); return }
+  c.style.strokeDasharray = RING_C
+  c.style.strokeDashoffset = RING_C * (1 - Math.max(0, Math.min(1, frac)))
+  w.classList.add('on'); w.classList.toggle('low', low)
+}
+// Counts down locally off the same seconds the overlay clock got, so the two
+// can never disagree by more than the message latency.
+function ringTimer(secs){
+  clearInterval(ringHandle)
+  if(secs==null){ ringSet(null); return }
+  let left=secs; const total=Math.max(1,secs)
+  const c=document.getElementById('ringProg')
+  // suppress the first frame or the arc sweeps up from empty instead of
+  // starting full
+  if(c){ c.classList.add('seek'); setTimeout(()=>c.classList.remove('seek'), 900) }
+  ringSet(left/total, left<=10)
+  ringHandle=setInterval(()=>{
+    left=Math.max(0,left-1); ringSet(left/total, left<=10)
+    if(left<=0) clearInterval(ringHandle)
+  },1000)
+}
 
 // ── TRUNK / ODDS REVEAL ─────────────────────────────────────────────────────
 // Ported from the UBA clock deliberately rather than shared: the two bars have
@@ -789,6 +856,8 @@ tick();
       return
     }
     if(c.type==='clockodds'){ const d=c.d||{}; uOddsReveal(d.l,d.r); return }
+    // the overlay owns the digits; this only drives the ring
+    if(c.type==='matchtimer'){ ringTimer(c.on===false?null:c.secs); return }
     if(c.type!=='pickbar') return
     const d=c.d||{}
     // Split name was baked into the markup and said SPRING through the whole
