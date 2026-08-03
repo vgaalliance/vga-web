@@ -299,7 +299,7 @@
         <span style="color:var(--gdim);font-size:16px;width:52px">RIGHT</span>
         <span id="swatchR" style="display:flex;gap:6px;flex-wrap:wrap"></span>
       </div>
-      <div class="row" style="margin-bottom:8px">
+      <div class="row only-uba" style="margin-bottom:8px">
         <button onclick="fireClockOdds()">📊 Odds on the clock</button>
         <span id="clockOddsHint" style="color:var(--gdim);font-size:16px">arm a bout first</span>
       </div>
@@ -1162,6 +1162,11 @@ function americanOdds(pool, side){
 }
 window.fireClockOdds=async()=>{
   const hint=document.getElementById('clockOddsHint')
+  // UBA only, deliberately. UBAe wagers live in ubae_bets, which anon has no
+  // SELECT on and which has no public pool view -- the deck could not compute a
+  // team price if it wanted to. A button that always answers "no market" is
+  // worse than no button, so the odds row stays UBA-gated until that view
+  // exists. The trunk/colour reveal above is not affected and works in both.
   const b = UBA.armed!=null ? UBA.bouts[UBA.armed] : null
   if(!b){ hint.textContent='arm a bout first'; return }
   const ev=betEvent()
