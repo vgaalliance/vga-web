@@ -79,35 +79,6 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   display:flex;align-items:center;gap:0;
   z-index:30;filter:drop-shadow(0 4px 20px rgba(0,0,0,.9));
 }
-/* ═══ TIMER RING (revertable) ══════════════════════════════════════════════
-   A Kingdom-Hearts-style arc that drains around the brand bloom. Set
-   TIMER_RING to false in the script below and every trace of this switches
-   off -- the ring hides, the numeric timer behaves exactly as it did, and no
-   other rule in this file depends on it.
-   It sits OUTSIDE .brand-emblem on purpose: that element is overflow:hidden so
-   the flower canvas cannot spill, which would have clipped a ring drawn
-   inside it. Pointer-events off so it can never eat an Interact click. */
-.ring-wrap{position:absolute;top:50%;left:32px;transform:translate(-50%,-50%);
-  width:82px;height:82px;pointer-events:none;z-index:3;opacity:0;
-  transition:opacity .45s ease;}
-.ring-wrap.on{opacity:1;}
-.ring-wrap svg{width:82px;height:82px;transform:rotate(-90deg);}
-.ring-track{fill:none;stroke:rgba(168,85,247,.22);stroke-width:3;}
-.ring-prog{fill:none;stroke:#d8b4fe;stroke-width:3;stroke-linecap:round;
-  filter:drop-shadow(0 0 5px rgba(216,180,254,.9));
-  /* The per-second drain stays LINEAR on purpose. An eased tick reads as a
-     stutter -- it would speed up and slow down inside every single second,
-     which is exactly what a clock must not do. The easing belongs on the two
-     moments that are not ticks: the initial fill when a round starts, and any
-     jump if the deck re-sends a different time. Those get a bezier via the
-     .seek class, applied for one frame and removed. */
-  transition:stroke-dashoffset 1s linear, stroke .5s ease;}
-.ring-prog.seek{transition:stroke-dashoffset .85s cubic-bezier(.16,.8,.3,1), stroke .5s ease;}
-/* last ten seconds: the arc turns and breathes, so the clock reads from across
-   a room without anyone looking at the digits */
-.ring-wrap.low .ring-prog{stroke:#ff5470;filter:drop-shadow(0 0 7px rgba(255,84,112,.95));}
-.ring-wrap.low{animation:ringPulse 1s ease-in-out infinite;}
-@keyframes ringPulse{0%,100%{opacity:1}50%{opacity:.62}}
 
 .brand-emblem{
   width:64px;height:64px;border-radius:50%;
@@ -546,14 +517,6 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   <div class="brand-emblem" id="brandEmblemEl">
     <canvas id="brandFlower" width="64" height="64"></canvas>
   </div>
-  <!-- TIMER RING — drains around the bloom. Remove this block and set
-       TIMER_RING=false to revert; nothing else references it. -->
-  <div class="ring-wrap" id="ringWrap">
-    <svg viewBox="0 0 82 82">
-      <circle class="ring-track" cx="41" cy="41" r="37"></circle>
-      <circle class="ring-prog" id="ringProg" cx="41" cy="41" r="37"></circle>
-    </svg>
-  </div>
   <div class="brand-block">
     <div class="brand-holo"></div>
     <div class="brand-name">UBA</div>
@@ -960,41 +923,12 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   // fight timer — deck sends a length, this file counts it down. Re-sending
   // the same length restarts it, matching the deck's one-button-per-length UX.
   let tHandle=null
-  // ═══ TIMER RING — one switch ═══════════════════════════════════════════
-  // false = the ring never shows and timer() behaves exactly as it did before
-  // it existed. Nothing else in this file reads it.
-  const TIMER_RING = true
-
-  const RING_R = 37
-  const RING_C = 2 * Math.PI * RING_R
-  function ringSet(frac, low){
-    if(!TIMER_RING) return
-    const w=$('ringWrap'), c=$('ringProg'); if(!w||!c) return
-    if(frac==null){ w.classList.remove('on','low'); return }
-    c.style.strokeDasharray = RING_C
-    // drains clockwise from full; the svg is rotated -90deg so it starts at 12
-    c.style.strokeDashoffset = RING_C * (1 - Math.max(0, Math.min(1, frac)))
-    w.classList.add('on')
-    w.classList.toggle('low', low)
-  }
-
   function timer(secs){
     clearInterval(tHandle)
     const el=$('fightTimer')
-    if(secs==null){ el.textContent=''; ringSet(null); return }
+    if(secs==null){ el.textContent=''; return }
     let left=secs
-    // The ring needs the STARTING value to know what a full arc means. Rounds
-    // are not all the same length, so this cannot be a constant.
-    const total=Math.max(1, secs)
-    const draw=()=>{
-      el.textContent=`${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`
-      ringSet(left/total, left<=10)
-    }
-    // no transition on the first frame, or the arc sweeps up from empty
-    // fill in with an ease rather than snapping: the arc grows to full on the
-    // bezier, then every tick after it is linear
-    const c=$('ringProg')
-    if(c){ c.classList.add('seek'); setTimeout(()=>c.classList.remove('seek'), 900) }
+    const draw=()=>{ el.textContent=`${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}` }
     draw()
     tHandle=setInterval(()=>{ left=Math.max(0,left-1); draw(); if(left<=0) clearInterval(tHandle) },1000)
   }
