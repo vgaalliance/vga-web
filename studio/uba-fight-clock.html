@@ -169,7 +169,36 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
    declared later -- hiding the clock while a trunk or odds panel is still
    expanded would otherwise leave it parked at 1102px and pop out at full
    width on the next reveal. */
-.hud-root.off .main-bar,.hud-root.off .bottom-strip{width:206px !important;}
+/* 224px = the centre block (200) + both corner slits (7+7) + both edge
+   accents (5+5). That IS the bar's intrinsic minimum, since every one of
+   those is flex-shrink:0 -- asking for less just clamped here silently.
+   Stated exactly so the closed state is a decision, not a leftover. */
+.hud-root.off .main-bar,.hud-root.off .bottom-strip{width:224px !important;}
+
+/* The name panels TUCK BEHIND the centre block rather than merely narrowing.
+   .bar-centre is already z-index:8 against the slots' z-index:6, so the
+   layering was right -- nothing was sliding under it. They now translate
+   inward on the trunk curve while the bar itself contracts, which is the
+   same read as a corner slit disappearing back behind the bar.
+   They also fade, because .bar-centre's background is only 42% opaque: a
+   fully-lit name would ghost through the glass instead of vanishing behind
+   it. The fade is fast and front-loaded so the movement is what you see. */
+.hud-root .fighter-slot{
+  transition:transform .5s cubic-bezier(.16,.8,.3,1), opacity .28s ease .2s;}
+.hud-root.off .fighter-slot{
+  opacity:0;transition:transform .5s cubic-bezier(.16,.8,.3,1), opacity .17s ease;}
+.hud-root.off .fighter-slot.left{transform:translateX(54%);}
+.hud-root.off .fighter-slot.right{transform:translateX(-54%);}
+
+/* The bottom strip's wings do the same, toward the centre badge. Without this
+   they popped in at full width the instant the strip resized, which was the
+   one part still reading as a cut rather than a move. */
+.hud-root .wing{
+  transition:transform .5s cubic-bezier(.16,.8,.3,1), opacity .28s ease .24s;}
+.hud-root.off .wing{
+  opacity:0;transition:transform .5s cubic-bezier(.16,.8,.3,1), opacity .16s ease;}
+.hud-root.off .wing.left{transform:translateX(76px);}
+.hud-root.off .wing.right{transform:translateX(-76px);}
 
 /* The event strip above the bar has nothing to collapse into, so it gets the
    one move that is not a width: it drops back into the bar on the way out and
