@@ -151,38 +151,34 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   display:flex;flex-direction:column;align-items:center;gap:0;
   filter:drop-shadow(0 8px 48px rgba(0,0,0,.95));
   z-index:25;
-  /* The shell WIPES open from its centre line rather than scaling. scaleX
-     stretched the type along with the box -- letters squashed flat and then
-     sprang out, which is the tell of a stock transition. clip-path moves the
-     same edges the trunk slits move, on the SAME curve
-     (cubic-bezier(.16,.8,.3,1)), so the bar arriving and a trunk panel
-     expanding read as one mechanism instead of two.
-     Opacity is quick and early so the wipe is what you watch, not a fade. */
-  /* NEGATIVE inset when open: the box is clipped OUTSIDE its own bounds so the
-     drop-shadow and the edge glows are never cut off. inset(0) would have
-     shaved them the moment the property was set, and a bar that loses its
-     shadow on reveal looks flat. Both states use percentages horizontally so
-     the browser interpolates them cleanly. */
-  clip-path:inset(-140px -8% -140px -8%);
-  transition:opacity .22s ease, clip-path .52s cubic-bezier(.16,.8,.3,1);
+  /* It ASSEMBLES. The bar is a flex row whose name panels are flex:1 with
+     min-width:0 and whose clock block is flex-shrink:0 -- so animating the
+     bar's WIDTH collapses the panels into the clock and leaves the centre
+     standing. That is the trunk reveal running backwards: the exact mechanism
+     that expands a corner slit into a colour block, on the exact same curve.
+     Nothing scales, so no type ever distorts; the panels are physically
+     narrower, and the names inside are clipped by the bar's own overflow. */
+  transition:opacity .2s ease;
 }
-/* Closing MIRRORS the reveal instead of sliding away. The trunk and odds
-   panels open along the horizontal centre axis, so the clock leaves along the
-   same one: the text clears first, then the shell draws itself in to a sliver
-   and goes. Sliding it off the bottom read as the graphic being moved; this
-   reads as the graphic switching off, which is what a broadcast bar does. */
-/* Closed = pinched to the centre line. Same shape the trunk slit rests at. */
-.hud-root.off{opacity:0;clip-path:inset(-140px 49.6% -140px 49.6%);pointer-events:none;}
-
-/* The type is STAGGERED behind the shell, which is what makes it feel built
-   rather than faded: on the way in the bar opens first and the names arrive
-   into a box that already exists; on the way out they clear immediately so
-   nothing smears while the shell closes. Width keeps the trunk-reveal curve so
-   an expand mid-show still matches. */
+/* Closed = just the clock block. Opacity is held back until the contraction
+   has almost finished, so you watch it draw in rather than watch it fade. */
+.hud-root.off{opacity:0;pointer-events:none;transition:opacity .24s ease .34s;}
 .hud-root .main-bar,.hud-root .bottom-strip{
-  transition:opacity .26s ease .2s, width .55s cubic-bezier(.16,.8,.3,1);}
-.hud-root.off .main-bar,.hud-root.off .bottom-strip{
-  opacity:0; transition:opacity .13s ease 0s, width .55s cubic-bezier(.16,.8,.3,1);}
+  transition:width .55s cubic-bezier(.16,.8,.3,1);}
+/* !important because .main-bar.wide.odds is the same specificity and is
+   declared later -- hiding the clock while a trunk or odds panel is still
+   expanded would otherwise leave it parked at 1102px and pop out at full
+   width on the next reveal. */
+.hud-root.off .main-bar,.hud-root.off .bottom-strip{width:206px !important;}
+
+/* The event strip above the bar has nothing to collapse into, so it gets the
+   one move that is not a width: it drops back into the bar on the way out and
+   lifts out of it on the way in, timed to land AFTER the bar has opened. */
+.hud-root .event-strip{
+  transition:opacity .3s ease .26s, transform .42s cubic-bezier(.16,.8,.3,1) .22s;}
+.hud-root.off .event-strip{
+  opacity:0;transform:translateY(10px) scaleX(.35);
+  transition:opacity .14s ease, transform .34s cubic-bezier(.55,0,.25,1);}
 
 /* corner colours live on the OUTER EDGES of the bar (the accents), plus
    UFC-style trunk reveals: side panels that extend out from behind the bar,
