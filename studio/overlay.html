@@ -11,6 +11,17 @@
   :root{ --red:#b565ff; --red2:#8a2be2; --gold:#ffce54; --green:#3fdd6a; --ink:#08080b; }
   .cond{font-family:'Barlow Condensed',sans-serif;}
 
+
+  /* ── LEAGUE-AWARE LOWER-LEFT STACK ───────────────────────────────────────
+     One number moves all three widgets. The UBAe fight clock occupies the
+     bottom-left corner (bottom:24px, ~140px tall before its glow); the UBA one
+     is centred, so nothing is in the way there. Tune --ll-lift if the clock
+     ever changes height -- nothing else needs touching. */
+  :root{ --ll-lift:0px; }
+  :root[data-league="ubae"]{ --ll-lift:150px; }
+  #flash  { bottom:calc(190px + var(--ll-lift)) !important; }
+  #fighter{ bottom:calc(190px + var(--ll-lift)) !important; }
+  #odds   { bottom:calc(268px + var(--ll-lift)) !important; }
   #status{position:fixed;top:8px;left:10px;font:11px monospace;color:#888;
     background:rgba(0,0,0,.4);padding:3px 7px;border-radius:4px;letter-spacing:.05em;}
   #status.on{color:var(--green);}
@@ -501,6 +512,12 @@ function showFlash(){
   clearTimeout(hideTimer); hideTimer=setTimeout(()=>{ f.classList.remove('in'); f.classList.add('out') }, hold) }
 
 function handle(c){
+  // Which show is running decides where the lower-left widgets sit. The UBA
+  // fight clock is CENTRED at the bottom, so that corner is free; the UBAe one
+  // is pinned bottom-left and the dossier, flash and odds land on top of it.
+  // The deck stamps league on every command, so this stays correct even if the
+  // operator switches shows mid-session.
+  if(c.league) document.documentElement.dataset.league = c.league
   if(c.type==='flash'){
     const isBet = c.w==='bet'
     $('flash').dataset.kind = c.w || ''   // showFlash sizes vs. scrolls on this

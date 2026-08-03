@@ -168,9 +168,9 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
         <span class="stat-val right" id="heightRight">5'11"</span>
       </div>
       <div class="stat-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 8px; border-top:1px solid hsla(265,20%,60%,0.15); border-bottom:1px solid hsla(265,20%,60%,0.15); opacity:0;">
-        <span class="stat-val left" id="weightLeft">205</span>
-        <span class="stat-label">WEIGHT</span>
-        <span class="stat-val right" id="weightRight">198</span>
+        <span class="stat-val left" id="weightLeft">Heavyweight</span>
+        <span class="stat-label">DIVISION</span>
+        <span class="stat-val right" id="weightRight">Heavyweight</span>
       </div>
       <div class="stat-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 8px; border-top:1px solid hsla(265,20%,60%,0.15); border-bottom:1px solid hsla(265,20%,60%,0.15); opacity:0;">
         <span class="stat-val left" id="reachLeft">76"</span>
@@ -988,11 +988,16 @@ editOverlay.addEventListener('click', (e) => {
   const _sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
     'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
   const set=(id,v)=>{ if(v!=null){ const e=document.getElementById(id); if(e) e.textContent=v } }
-  _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
-    if(c.type!=='tape') return
-    if(c.on===false){ hideTape(); return }
-    if(c.show===true){ playTape(); return }      // reveal what's already loaded
-    const d=c.d||{}
+  // Kept in localStorage so an OBS browser-source refresh -- which fires every
+  // time its scene becomes active -- cannot wipe a tape that is on air. Written
+  // on every load and on every show/hide; an explicit Hide is what clears it,
+  // never a reload.
+  const remember=(d,on)=>{ try{
+    const prev = JSON.parse(localStorage.getItem('vga.tape')||'null') || {}
+    localStorage.setItem('vga.tape', JSON.stringify({ d: d || prev.d || null, on }))
+  }catch{} }
+
+  function apply(d){
     set('boutTitleText',d.title); set('boutSubtitleText',d.subtitle); set('sponsorText',d.sponsor)
     fitBoutTitle()
     // L and R must be declared BEFORE the image calls. They weren't, and const
@@ -1007,12 +1012,44 @@ editOverlay.addEventListener('click', (e) => {
     set('reachLeft',L.reach); set('recordLeft',L.record); set('oddsLeft',L.odds); set('rankLeft',L.rank)
     set('nameRight',R.name); set('ageRight',R.age); set('heightRight',R.height); set('weightRight',R.weight)
     set('reachRight',R.reach); set('recordRight',R.record); set('oddsRight',R.odds); set('rankRight',R.rank)
+    // A row where NEITHER fighter has the stat is noise: reach is missing for
+    // 186 of 276 fighters and age for 143, so a typical bout rendered one real
+    // number under three em-dashes and read as broken data rather than absent
+    // data. Collapse those rows instead, re-run every load.
+    hideEmptyRows()
+  }
+
+  _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
+    if(c.type!=='tape') return
+    if(c.on===false){ remember(null,false); hideTape(); return }
+    if(c.show===true){ remember(null,true); playTape(); return }   // reveal what's loaded
+    const d=c.d||{}
+    apply(d)
+    remember(d, tapeShown)
     // Loading a matchup does NOT reveal it. If it's already on screen the
-    // entrance replays so the change is visible; if it isn't, it waits to be
-    // shown.
+    // entrance replays so the change is visible; if it isn't, it waits.
     if(tapeShown) playTape()
   }).subscribe()
+
+  try{
+    const saved = JSON.parse(localStorage.getItem('vga.tape')||'null')
+    if(saved && saved.on && saved.d){ apply(saved.d); playTape() }
+  }catch{}
 })()
+// Empty on BOTH sides -> the row is removed for this matchup. One side blank
+// still renders, so a fighter with no listed reach shows the em-dash against
+// an opponent who has one -- that comparison is the point of the tape.
+function hideEmptyRows(){
+  const blank=v=>{ const t=(v||'').trim(); return t===''||t==='\u2014'||t==='-'||t==='TBA' }
+  for(const [l,r] of [['ageLeft','ageRight'],['heightLeft','heightRight'],
+                      ['weightLeft','weightRight'],['reachLeft','reachRight']]){
+    const el=document.getElementById(l); if(!el) continue
+    const row=el.closest('.stat-row'); if(!row) continue
+    const empty = blank(el.textContent) && blank(document.getElementById(r)?.textContent)
+    row.dataset.empty = empty ? '1' : ''
+    row.style.display = empty ? 'none' : 'flex'
+  }
+}
 </script>
 </body>
 </html>

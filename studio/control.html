@@ -375,9 +375,7 @@
     <div class="row">
       <input id="mnBoutA" placeholder="LEFT FIGHTER NAME…" style="width:200px">
       <input id="mnBoutB" placeholder="RIGHT FIGHTER NAME…" style="width:200px">
-      <button onclick="mnTape()">Load tale of the tape</button>
-      <button onclick="send({type:'tape',show:true})">▶ Show tape</button>
-      <button class="hide" onclick="send({type:'tape',on:false})">Hide tape</button>
+      <button id="tapeBtn" onclick="tapeToggle()">▶ Show tale of the tape</button>
     </div>
     <!-- The venue bug belongs to this stage as much as to the match: the tape
          is where "Live From London" sits longest. Buttons only, no second set
@@ -465,7 +463,12 @@ const channel = sb.channel('vga-overlay')
 channel.subscribe(s=>{ const el=document.getElementById('status')
   if(s==='SUBSCRIBED'){ el.textContent='LINK ONLINE'; el.classList.add('on') }
   else { el.textContent='LINK: '+s; el.classList.remove('on') } })
-window.send=cmd=>{ channel.send({type:'broadcast',event:'cmd',payload:cmd})
+// Every command carries the current league. The overlay's lower-left widgets
+// (dossier, flash, odds) share that corner with the UBAe fight clock but not
+// the UBA one, which is centred -- so where they sit depends on which show is
+// running, and the overlay cannot know unless we tell it on every message.
+window.send=cmd=>{ if(cmd && cmd.league==null) cmd.league = EV
+  channel.send({type:'broadcast',event:'cmd',payload:cmd})
   const l=document.getElementById('log'); const d=document.createElement('div')
   d.textContent=`TX ${cmd.type}${cmd.on===false?' HIDE':''}`; l.prepend(d) }
 
@@ -744,19 +747,30 @@ window.mnTape=async()=>{
       document.getElementById('mnBoutA').value=an
       document.getElementById('mnBoutB').value=bn }
   }
-  if(!an||!bn){ warn('⚠ tale of the tape: arm a bout first, or type both names'); return }
+  if(!an||!bn){ warn('⚠ tale of the tape: arm a bout first, or type both names'); return false }
   const one=async n=>{ const {data}=await sb.from('fighter_cards')
     .select('display_name,slug,profile_photo_url,wins,losses,draws,rank,height,reach,age,country,weight_class').ilike('display_name','%'+n+'%').limit(1); return data&&data[0] }
   const [A,B]=await Promise.all([one(an),one(bn)])
   if(!A||!B){
     warn('⚠ tale of the tape: no fighter matching "'+(A?bn:an)+'"')
-    document.getElementById('mnState').innerHTML='TAPE: fighter not found'; return }
+    document.getElementById('mnState').innerHTML='TAPE: fighter not found'; return false }
+  // Height and reach are stored as BARE INCHES ("73"), so sending them raw put
+  // an unlabelled number on a broadcast graphic -- nobody can tell 73 from
+  // inches, centimetres or anything else. Formatted here, at the one place
+  // that reads the column.
+  const inchesToFt=v=>{ const n=parseInt(v,10); if(!Number.isFinite(n)||n<=0) return null
+    return Math.floor(n/12)+"'"+(n%12)+'"' }
+  const inches=v=>{ const n=parseInt(v,10); return Number.isFinite(n)&&n>0 ? n+'"' : null }
+  const DASH='\u2014'
   const F=x=>({ name:x.display_name, record:`${x.wins}-${x.losses}-${x.draws}`,
-    rank:x.rank?('#'+x.rank):'—', age:x.age??'—', height:x.height??'—', reach:x.reach??'—',
-    // NOT the weight class -- that's the bout title. This row is numeric
-    // ("146"), and no numeric weight exists in the data, so it reads as
-    // unknown rather than printing a word across a number column.
-    weight:'\u2014', odds:'\u2014',
+    rank:x.rank?('#'+x.rank):DASH, age:x.age??DASH,
+    height:inchesToFt(x.height)??DASH, reach:inches(x.reach)??DASH,
+    // The WEIGHT row carries the DIVISION. No numeric weight exists in the data
+    // and never will, so the row was a permanent em-dash on every bout -- and a
+    // graphic that always shows nothing is worse than one row fewer. Division
+    // is real, present for all 276 fighters, and is what a weight row is
+    // standing in for anyway.
+    weight:cap((x.weight_class||'').replace(/_/g,' '))||DASH, odds:DASH,
     // slug drives the photo lookup by convention; photo_url wins if one
     // is actually set on the fighter
     slug:x.slug, photo:x.profile_photo_url||null })
@@ -774,6 +788,25 @@ window.mnTape=async()=>{
     ? (UBA.name || 'BOUT')
     : (MN.week ? (SPLIT_NAME.toUpperCase()+' · WEEK '+MN.week) : SPLIT_NAME.toUpperCase())
   send({type:'tape', d:{ title, subtitle, left:F(A), right:F(B) }})
+}
+
+// ONE button. Load-then-show was three presses for one intention, and the
+// order mattered invisibly: Show before Load revealed the PREVIOUS matchup, so
+// the tape confidently displayed the wrong two fighters. Showing now always
+// loads the armed bout first, so what appears is always current.
+let tapeOn = false
+window.tapeToggle = async ()=>{
+  const b = document.getElementById('tapeBtn')
+  if(tapeOn){
+    send({type:'tape', on:false}); tapeOn = false
+  } else {
+    // mnTape warns and returns if no bout is armed -- don't claim it is showing
+    const ok = await mnTape()
+    if(ok === false) return
+    send({type:'tape', show:true}); tapeOn = true
+  }
+  b.textContent = tapeOn ? '■ Hide tale of the tape' : '▶ Show tale of the tape'
+  b.className = tapeOn ? 'hide' : ''
 }
 
 window.fireMsg=()=>{
