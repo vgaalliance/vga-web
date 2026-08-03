@@ -158,13 +158,16 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
      that expands a corner slit into a colour block, on the exact same curve.
      Nothing scales, so no type ever distorts; the panels are physically
      narrower, and the names inside are clipped by the bar's own overflow. */
-  transition:opacity .2s ease;
+  transition:opacity .18s ease;
 }
-/* Closed = just the clock block. Opacity is held back until the contraction
-   has almost finished, so you watch it draw in rather than watch it fade. */
-.hud-root.off{opacity:0;pointer-events:none;transition:opacity .24s ease .34s;}
+/* Closed = just the clock block. The whole graphic holds full opacity for the
+   ENTIRE contraction and only goes at 620ms, once the bar has finished drawing
+   in -- so it disappears at a point instead of dissolving while it moves. That
+   single delay is what separates "switched off" from "faded out"; a broadcast
+   bar cuts, it does not evaporate. */
+.hud-root.off{opacity:0;pointer-events:none;transition:opacity .2s ease .62s;}
 .hud-root .main-bar,.hud-root .bottom-strip{
-  transition:width .55s cubic-bezier(.16,.8,.3,1);}
+  transition:width .78s cubic-bezier(.16,.8,.3,1);}
 /* !important because .main-bar.wide.odds is the same specificity and is
    declared later -- hiding the clock while a trunk or odds panel is still
    expanded would otherwise leave it parked at 1102px and pop out at full
@@ -184,30 +187,29 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
    fully-lit name would ghost through the glass instead of vanishing behind
    it. The fade is fast and front-loaded so the movement is what you see. */
 .hud-root .fighter-slot{
-  transition:transform .5s cubic-bezier(.16,.8,.3,1), opacity .28s ease .2s;}
+  transition:transform .72s cubic-bezier(.16,.8,.3,1), opacity .3s ease .4s;}
 .hud-root.off .fighter-slot{
-  opacity:0;transition:transform .5s cubic-bezier(.16,.8,.3,1), opacity .17s ease;}
+  opacity:0;transition:transform .72s cubic-bezier(.16,.8,.3,1), opacity .16s ease;}
 .hud-root.off .fighter-slot.left{transform:translateX(54%);}
 .hud-root.off .fighter-slot.right{transform:translateX(-54%);}
 
-/* The bottom strip's wings do the same, toward the centre badge. Without this
-   they popped in at full width the instant the strip resized, which was the
-   one part still reading as a cut rather than a move. */
-.hud-root .wing{
-  transition:transform .5s cubic-bezier(.16,.8,.3,1), opacity .28s ease .24s;}
-.hud-root.off .wing{
-  opacity:0;transition:transform .5s cubic-bezier(.16,.8,.3,1), opacity .16s ease;}
-.hud-root.off .wing.left{transform:translateX(76px);}
-.hud-root.off .wing.right{transform:translateX(-76px);}
+/* The strip's text has nowhere to tuck, so it simply clears -- fast on the way
+   out, and on the way in it waits until the bar is nearly full width. Arriving
+   early is what made it look cramped and doubled-up mid-move. */
+.hud-root .strip-l,.hud-root .strip-c,.hud-root .strip-r{
+  transition:opacity .3s ease .42s;}
+.hud-root.off .strip-l,.hud-root.off .strip-c,.hud-root.off .strip-r{
+  opacity:0;transition:opacity .15s ease;}
+
 
 /* The event strip above the bar has nothing to collapse into, so it gets the
    one move that is not a width: it drops back into the bar on the way out and
    lifts out of it on the way in, timed to land AFTER the bar has opened. */
 .hud-root .event-strip{
-  transition:opacity .3s ease .26s, transform .42s cubic-bezier(.16,.8,.3,1) .22s;}
+  transition:opacity .32s ease .46s, transform .6s cubic-bezier(.16,.8,.3,1) .4s;}
 .hud-root.off .event-strip{
   opacity:0;transform:translateY(10px) scaleX(.35);
-  transition:opacity .14s ease, transform .34s cubic-bezier(.55,0,.25,1);}
+  transition:opacity .16s ease, transform .46s cubic-bezier(.55,0,.25,1);}
 
 /* corner colours live on the OUTER EDGES of the bar (the accents), plus
    UFC-style trunk reveals: side panels that extend out from behind the bar,
@@ -435,6 +437,11 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   clip-path:polygon(0 0,100% 0,calc(100% - 10px) 100%,10px 100%);
 }
 .bottom-strip::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(168,85,247,.42) 25%,rgba(216,180,254,.62) 50%,rgba(168,85,247,.42) 75%,transparent);}
+/* min-width:0 + overflow:hidden or these do not clip. Each is flex:1, so at
+   the bar's 224px closed width every section is ~60px while 'discord.gg/uba'
+   needs ~110 -- the text simply spilled out of its box and the three sections
+   printed on top of each other. That was the overlap. */
+.strip-l,.strip-c,.strip-r{min-width:0;overflow:hidden;white-space:nowrap;}
 .strip-l{display:flex;align-items:center;gap:9px;flex:1;}
 .strip-lbl{font-family:'Share Tech Mono',monospace;font-size:14px;letter-spacing:.2em;color:rgba(215,195,245,.8);text-transform:uppercase;}
 .strip-val{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:900;letter-spacing:.16em;color:#e4ceff;text-transform:uppercase;text-shadow:0 0 10px rgba(168,85,247,.5);}
