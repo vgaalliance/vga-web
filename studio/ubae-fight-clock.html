@@ -222,6 +222,20 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   clip-path:polygon(0 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%);
 }
 .round-float::before{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(168,85,247,.6),transparent);}
+/* ── ROUND SWITCH — a card flipping over ──────────────────────────────────
+   The number used to be replaced by assignment, which on a broadcast graphic
+   is a hard cut in the one place the eye is already looking. It now rotates
+   away on X, swaps while edge-on so the change is never visible, and rotates
+   back -- the mechanical flip-board read, which is what a round counter is
+   imitating anyway. Perspective lives on the PARENT or the rotation is
+   orthographic and reads as a squash rather than a turn.
+   Same exit curve as the bar's own close, so it belongs to this graphic. */
+.round-float{perspective:460px;}
+.rnd-num{display:inline-block;backface-visibility:hidden;
+  transition:transform .26s cubic-bezier(.55,0,.25,1), opacity .18s ease;}
+.rnd-num.flip-out{transform:rotateX(-92deg);opacity:0;}
+.rnd-num.flip-in{transform:rotateX(92deg);opacity:0;}
+
 .rnd-label{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.3em;color:rgba(200,170,255,.95);text-transform:uppercase;}
 .rnd-num{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:#d8b4fe;}
 </style>
@@ -281,6 +295,25 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 </div>
 
 <script>
+
+// Swap text at the edge-on point of a 90deg turn, so the old value is never
+// seen becoming the new one. Returns early when the value has not changed --
+// re-sending the same round should not perform.
+function flipSwap(el, text){
+  if(!el || el.textContent === String(text)) return
+  el.classList.add('flip-out')
+  setTimeout(()=>{
+    el.textContent = String(text)
+    // the incoming pose must be applied WITHOUT a transition, or it animates
+    // from one rotated state to the other and the flip reads as a wobble
+    el.style.transition = 'none'
+    el.classList.remove('flip-out'); el.classList.add('flip-in')
+    requestAnimationFrame(()=>{
+      el.style.transition = ''
+      el.classList.remove('flip-in')
+    })
+  }, 260)
+}
 
 // ═══ TIMER RING ════════════════════════════════════════════════════════════
 // false = never renders, and nothing else reads it.
@@ -858,6 +891,9 @@ tick();
     if(c.type==='clockodds'){ const d=c.d||{}; uOddsReveal(d.l,d.r); return }
     // the overlay owns the digits; this only drives the ring
     if(c.type==='matchtimer'){ ringTimer(c.on===false?null:c.secs); return }
+    // The deck has always sent {type:'round'} alongside the pickbar push, but
+    // this clock never listened -- its round number simply never moved.
+    if(c.type==='round'){ flipSwap(document.querySelector('.rnd-num'), c.n); return }
     if(c.type!=='pickbar') return
     const d=c.d||{}
     // Split name was baked into the markup and said SPRING through the whole
