@@ -165,24 +165,44 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
    in -- so it disappears at a point instead of dissolving while it moves. That
    single delay is what separates "switched off" from "faded out"; a broadcast
    bar cuts, it does not evaporate. */
-.hud-root.off{opacity:0;pointer-events:none;transition:opacity .22s ease .88s;}
+.hud-root.off{opacity:0;pointer-events:none;transition:opacity .26s ease 1.02s;}
 .hud-root .main-bar,.hud-root .bottom-strip{
-  transition:width .78s cubic-bezier(.16,.8,.3,1);}
+  transition:width .88s cubic-bezier(.16,.8,.3,1);}
 /* !important because .main-bar.wide.odds is the same specificity and is
    declared later -- hiding the clock while a trunk or odds panel is still
    expanded would otherwise leave it parked at 1102px and pop out at full
    width on the next reveal. */
-/* 224px = the centre block (200) + both corner slits (7+7) + both edge
-   accents (5+5). That IS the bar's intrinsic minimum, since every one of
-   those is flex-shrink:0 -- asking for less just clamped here silently.
-   Stated exactly so the closed state is a decision, not a leftover. */
+/* 112px = the collapsed centre (88) + both corner slits (7+7) + both edge
+   accents (5+5). While the centre was a fixed 200 this could not go below 224,
+   which is why it still looked like a chunk of bar rather than a vanishing
+   point.
+   Stated exactly so the closed state is a decision, not a leftover.
+   NOW 112px: the centre collapses to 88 as well, so the old 224 floor is gone
+   and the bar shuts to little more than a token. */
 /* Delayed by 200ms so everything inside has already cleared. Simultaneous was
    the mistake: the bar was narrowing THROUGH content that had not finished
    leaving. UBAe's order -- parts retract, then the frame goes -- is what makes
    a close read as deliberate. */
 .hud-root.off .main-bar,.hud-root.off .bottom-strip{
-  width:224px !important;
-  transition:width .7s cubic-bezier(.16,.8,.3,1) .2s;}
+  width:112px !important;
+  transition:width .8s cubic-bezier(.16,.8,.3,1) .22s;}
+
+/* The centre block was the floor: 200px and flex-shrink:0, so the bar could
+   never close past 224 and the round box + timer sat there at full size right
+   up to the cut. It now collapses too -- the round box and timer scale down
+   into the middle and clear FIRST, then the block itself narrows, letting the
+   whole bar shut to 112px. transform-origin is the centre on both so they
+   converge on the clock's own axis rather than drifting to one side. */
+.hud-root .bar-centre{
+  transition:width .74s cubic-bezier(.16,.8,.3,1) .22s;}
+.hud-root.off .bar-centre{width:88px;overflow:hidden;
+  transition:width .62s cubic-bezier(.16,.8,.3,1) .16s;}
+.hud-root .round-count-box,.hud-root .timer-zone{
+  transform-origin:50% 50%;
+  transition:transform .5s cubic-bezier(.16,1,.3,1) .42s, opacity .32s ease .46s;}
+.hud-root.off .round-count-box,.hud-root.off .timer-zone{
+  opacity:0;transform:scale(.62);
+  transition:transform .34s cubic-bezier(.55,0,.25,1), opacity .19s ease;}
 
 /* The bout/format floats sit ABOVE the bar at left:0 and right:0, so as it
    contracts to 224px the two boxes converge and collide with each other --
@@ -207,7 +227,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
    fully-lit name would ghost through the glass instead of vanishing behind
    it. The fade is fast and front-loaded so the movement is what you see. */
 .hud-root .fighter-slot{
-  transition:transform .72s cubic-bezier(.16,.8,.3,1), opacity .3s ease .4s;}
+  transition:transform .82s cubic-bezier(.16,.8,.3,1), opacity .34s ease .46s;}
 .hud-root.off .fighter-slot{
   opacity:0;transition:transform .72s cubic-bezier(.16,.8,.3,1), opacity .16s ease;}
 .hud-root.off .fighter-slot.left{transform:translateX(54%);}
@@ -225,11 +245,18 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 /* The event strip above the bar has nothing to collapse into, so it gets the
    one move that is not a width: it drops back into the bar on the way out and
    lifts out of it on the way in, timed to land AFTER the bar has opened. */
+/* It was popping, not retracting. Two reasons: scaleX with no transform-origin
+   pinched it toward its own left edge instead of its centre, and the opacity
+   ran in 160ms against a 460ms move -- so it was invisible for two-thirds of a
+   journey nobody could see. Now it collapses along its own centre line, on the
+   trunk curve, with the fade trailing the movement rather than outrunning it,
+   and it sinks INTO the bar rather than nudging 10px. */
 .hud-root .event-strip{
-  transition:opacity .32s ease .46s, transform .6s cubic-bezier(.16,.8,.3,1) .4s;}
+  transform-origin:50% 100%;
+  transition:opacity .38s ease .58s, transform .7s cubic-bezier(.16,.8,.3,1) .5s;}
 .hud-root.off .event-strip{
-  opacity:0;transform:translateY(10px) scaleX(.35);
-  transition:opacity .16s ease, transform .46s cubic-bezier(.55,0,.25,1);}
+  opacity:0;transform:translateY(16px) scaleX(.18);
+  transition:opacity .3s ease .06s, transform .5s cubic-bezier(.16,.8,.3,1);}
 
 /* corner colours live on the OUTER EDGES of the bar (the accents), plus
    UFC-style trunk reveals: side panels that extend out from behind the bar,
