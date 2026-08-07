@@ -176,6 +176,51 @@
   #mtimer.done{color:#ff5a5a;animation:mtpulse 1s ease-in-out infinite;}
   @keyframes mtpulse{50%{opacity:.45;}}
 
+  /* ── CALL TO ACTION (bottom-right) ─────────────────────────────────────────
+     Where: bottom-right, the one corner free in BOTH shows. The UBA fight clock
+     is centred and 920 wide, so it ends around x=1420; the UBAe one is pinned
+     bottom-left and reaches ~1370 with its colour panels open. A 360-wide box
+     at right:48 starts at 1512, so it clears each of them with room over -- and
+     unlike the lower-left stack it needs no --ll-lift, because there is nothing
+     under it to dodge in either league.
+
+     Deliberately NOT the flash card. A flash is an event -- a bet landed, a
+     fact -- and it takes the lower third for six seconds. The CTA is standing
+     information that wants to sit quietly through a round, so it is its own
+     small box, borrowing the card's material (same gradient, same 3px accent
+     rail, same shadow) rather than its footprint. It is furniture, not an
+     interruption: no sheen sweep, no pulse on the whole box, nothing that
+     pulls the eye off the fight. */
+  #cta{position:fixed;right:48px;bottom:40px;width:360px;border-radius:10px;
+    overflow:hidden;opacity:0;transform:translateX(118%);
+    transition:opacity .4s ease,transform .55s cubic-bezier(.16,1,.3,1);
+    background:linear-gradient(135deg,rgba(20,20,26,.97),rgba(8,8,11,.98));
+    box-shadow:0 22px 55px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.05);}
+  #cta.show{opacity:1;transform:translateX(0);}
+  #cta::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
+    background:linear-gradient(90deg,var(--red),transparent 70%);}
+  /* the league mark, and the only thing that changes between shows */
+  .cta-head{display:flex;align-items:center;gap:9px;padding:13px 18px 0;}
+  .cta-mark{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:19px;
+    letter-spacing:.06em;color:#fff;line-height:1;}
+  .cta-mark span{color:var(--red);}
+  .cta-tag{font:600 10px 'Barlow';letter-spacing:.24em;text-transform:uppercase;
+    color:#8b8b96;margin-left:auto;}
+  .cta-rows{padding:11px 18px 15px;display:flex;flex-direction:column;gap:9px;}
+  .cta-row{display:flex;align-items:center;gap:11px;}
+  /* the glyph is a drawn box, not an icon font -- one less thing to load, and
+     an icon that fails to load leaves a tofu square on the broadcast */
+  .cta-ico{width:26px;height:26px;flex-shrink:0;border-radius:6px;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(181,101,255,.14);border:1px solid rgba(181,101,255,.3);}
+  .cta-ico svg{width:14px;height:14px;fill:none;stroke:var(--red);stroke-width:1.8;
+    stroke-linecap:round;stroke-linejoin:round;}
+  .cta-txt{min-width:0;}
+  .cta-url{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:22px;
+    line-height:1;color:#fff;letter-spacing:.01em;white-space:nowrap;}
+  .cta-sub{font:500 12px 'Barlow';color:#9a9aa6;margin-top:2px;letter-spacing:.02em;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
   /* ── PERSISTENT SCHEDULE PANEL ── */
   /* sits below the timer so the two can never collide top-right */
   #panel{position:fixed;top:132px;right:4%;width:330px;border-radius:12px;overflow:hidden;
@@ -413,6 +458,33 @@
 
   <div id="mtimer">2:00</div>
 
+  <!-- CALL TO ACTION. Both lines are always shown: the site and the Discord
+       answer different questions ("where do I read more" / "how do I get in"),
+       and rotating them would mean whichever one a viewer needed was the one
+       off screen. -->
+  <div id="cta">
+    <div class="cta-head">
+      <div class="cta-mark" id="ctaMark">UBA</div>
+      <div class="cta-tag" id="ctaTag">VR BOXING</div>
+    </div>
+    <div class="cta-rows">
+      <div class="cta-row">
+        <div class="cta-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18"/></svg></div>
+        <div class="cta-txt">
+          <div class="cta-url" id="ctaSite">ubaesports.com</div>
+          <div class="cta-sub" id="ctaSiteSub">Full rankings, records &amp; fight cards</div>
+        </div>
+      </div>
+      <div class="cta-row">
+        <div class="cta-ico"><svg viewBox="0 0 24 24"><path d="M8.5 5.5a14 14 0 0 1 7 0M6 7c-1.6 3-2 6-1.6 9.4A15 15 0 0 0 8.6 18l.9-1.5M18 7c1.6 3 2 6 1.6 9.4A15 15 0 0 1 15.4 18l-.9-1.5"/><path d="M9.5 13.2h.01M14.5 13.2h.01"/></svg></div>
+        <div class="cta-txt">
+          <div class="cta-url" id="ctaJoin">discord.gg/uba</div>
+          <div class="cta-sub" id="ctaJoinSub">Sign up to fight &amp; place free bets</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="panel"><div class="ph" id="phh">Schedule</div><div id="prows"></div></div>
   <div id="cointoss">
     <div class="ct-eyebrow">Coin Toss</div>
@@ -511,6 +583,52 @@ function showFlash(){
   f.classList.remove('out'); void f.offsetWidth; f.classList.add('in')
   clearTimeout(hideTimer); hideTimer=setTimeout(()=>{ f.classList.remove('in'); f.classList.add('out') }, hold) }
 
+// ── CALL TO ACTION ──────────────────────────────────────────────────────────
+// The wording is keyed to the league because the two shows sell different
+// things. UBA is the solo league -- a viewer wants the pound-for-pound and the
+// title picture. UBAe is teams, so the same viewer wants standings and rosters.
+// One domain either way; only what you are promised on the other end changes.
+//
+// It reads c.league rather than the <html> attribute so a command that names a
+// league is authoritative even out of order, and falls back to whatever the
+// last command set, which is what the rest of the overlay already keys off.
+const CTA_COPY = {
+  uba: {
+    mark: 'UBA<span>.</span>', tag: 'VR BOXING',
+    siteSub: 'Full rankings, records &amp; fight cards',
+    joinSub: 'Sign up to fight &amp; place free bets',
+  },
+  ubae: {
+    mark: 'UBA<span>e</span>', tag: 'TEAM LEAGUE',
+    siteSub: 'Standings, rosters &amp; every result',
+    joinSub: 'Join a team &amp; place free bets',
+  },
+}
+const CTA_HOLD = 14000     // long enough to read twice without becoming decor
+let ctaTimer = null
+
+function ctaCmd(c){
+  const box = $('cta'); if(!box) return
+  clearTimeout(ctaTimer)
+  if(c.show === false){ box.classList.remove('show'); return }
+
+  const cp = CTA_COPY[c.league] || CTA_COPY[document.documentElement.dataset.league] || CTA_COPY.uba
+  $('ctaMark').innerHTML = cp.mark
+  $('ctaTag').textContent = cp.tag
+  $('ctaSiteSub').innerHTML = cp.siteSub
+  $('ctaJoinSub').innerHTML = cp.joinSub
+  // overridable from the deck without a redeploy -- a changed invite or a
+  // campaign URL should not need this file edited on a fight night
+  if(c.d && c.d.site) $('ctaSite').textContent = c.d.site
+  if(c.d && c.d.join) $('ctaJoin').textContent = c.d.join
+
+  box.classList.add('show')
+  // hold:0 pins it up until it is hidden by hand; anything else auto-retracts,
+  // because a CTA nobody took down becomes wallpaper by the third round
+  const hold = c.hold === 0 ? 0 : (c.hold ? c.hold * 1000 : CTA_HOLD)
+  if(hold) ctaTimer = setTimeout(()=>box.classList.remove('show'), hold)
+}
+
 function handle(c){
   // Which show is running decides where the lower-left widgets sit. The UBA
   // fight clock is CENTRED at the bottom, so that corner is free; the UBAe one
@@ -518,6 +636,7 @@ function handle(c){
   // The deck stamps league on every command, so this stays correct even if the
   // operator switches shows mid-session.
   if(c.league) document.documentElement.dataset.league = c.league
+  if(c.type==='cta'){ ctaCmd(c); return }
   if(c.type==='flash'){
     const isBet = c.w==='bet'
     $('flash').dataset.kind = c.w || ''   // showFlash sizes vs. scrolls on this
