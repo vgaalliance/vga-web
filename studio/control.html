@@ -1250,15 +1250,21 @@ loadBetFeed()
   // A block with nothing in it is noise, so it dims and its header says why.
   function refresh(){
     const uba=document.body.classList.contains('ev-uba')
+    // rbCorner used to require `uba`, which dimmed the colour kit on every UBAe
+    // night and hid the block entirely -- so the trunk/colour reveal and the
+    // odds button were unreachable even after the kit itself was un-gated.
+    // The kit works in BOTH leagues (UBA trunks, UBAe team colours), so the
+    // block is live whenever the kit has anything in it.
     const live={ rbState: has('mnCockpit')||has('mnState'), rbClock: has('clockKit'), rbCard: has('ubaCard'),
-                 rbCorner: uba && document.getElementById('ubaCardWrap')?.style.display!=='none' }
+                 rbCorner: has('cornerKit') }
     let any=false
     Object.entries(live).forEach(([id,on])=>{
       const el=document.getElementById(id); if(!el) return
       el.classList.toggle('empty', !on)
-      // corners are a fight-night idea; hide the block entirely in UBAe rather
-      // than showing a permanently dead frame
-      el.style.display = (id==='rbCorner' && !uba) ? 'none' : ''
+      // Corner colours are BOTH leagues -- UBA fighters wear trunks, UBAe teams
+      // wear colours -- so the block is never hidden by league any more. It was,
+      // and that is why the reveal looked missing on match nights.
+      el.style.display = ''
       if(on) any=true
     })
     const empty=document.getElementById('railempty')
@@ -1268,6 +1274,7 @@ loadBetFeed()
     // observer below.
     const set=(el,v)=>{ if(el && el.textContent!==v) el.textContent=v }
     set(document.getElementById('rbStateTag'), uba ? 'fight night' : 'match night')
+    set(document.getElementById('rbCornerTag'), uba ? 'trunks' : 'team colours')
     set(document.getElementById('railSub'), uba ? 'tap a name to score · arm a bout'
                                                 : 'pick fighters · score the round')
   }
@@ -1301,7 +1308,7 @@ loadBetFeed()
       <div class="rbody" id="slotClock"></div></div>
     <div class="rblock" id="rbCard"><h6>The card <em>tap a name to score</em></h6>
       <div class="rbody" id="slotCard"></div></div>
-    <div class="rblock" id="rbCorner"><h6>Corners <em>trunks &amp; reveal</em></h6>
+    <div class="rblock" id="rbCorner"><h6>Corners <em id="rbCornerTag">trunks</em></h6>
       <div class="rbody" id="slotCorner"></div></div>
   </aside>
 </body>
