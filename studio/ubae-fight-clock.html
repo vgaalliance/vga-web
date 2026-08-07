@@ -171,6 +171,12 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
    the curve into the straight without any second set of coordinates */
 .track-ticks{fill:none;stroke:rgba(4,0,16,.85);stroke-width:7;
   stroke-dasharray:2 26;}
+/* MINUTE NOTCHES — the same idea as the ticks, but a real break rather than a
+   hairline: wider than the track on purpose so it reads as the gauge being cut
+   into segments, not as another tick. Dark, so it works identically over the
+   dim track and the lit progress -- one notch, one look, whichever side of it
+   the time is on. */
+.track-mark{fill:none;stroke:rgba(4,0,16,.92);stroke-width:18;stroke-linecap:butt;}
 .track-wrap.low .track-prog{stroke:#ff5470;filter:drop-shadow(0 0 8px rgba(255,84,112,.95));}
 .track-wrap.low{animation:ringPulse 1s ease-in-out infinite;}
 @keyframes ringPulse{0%,100%{opacity:1}50%{opacity:.6}}
@@ -274,6 +280,11 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
         <path class="track-line"  id="trackLine"  d="M 26 4 A 31 31 0 1 0 42.9 61 L 753 61"></path>
         <path class="track-prog"  id="trackProg"  d="M 26 4 A 31 31 0 1 0 42.9 61 L 753 61"></path>
         <path class="track-ticks" id="trackTicks" d="M 26 4 A 31 31 0 1 0 42.9 61 L 753 61"></path>
+        <!-- The minute notches. Same path three times over; each one draws a
+             single short dash, positioned in JS by measured length. Drawn last
+             so they cut through both the dim track and the lit progress. -->
+        <path class="track-mark" d="M 26 4 A 31 31 0 1 0 42.9 61 L 753 61"></path>
+        <path class="track-mark" d="M 26 4 A 31 31 0 1 0 42.9 61 L 753 61"></path>
       </svg>
     </div>
     <div class="emblem" id="emblemEl">
@@ -348,6 +359,34 @@ function trackSet(frac, low){
   c.style.strokeDashoffset = TRACK_LEN * (1 - Math.max(0, Math.min(1, frac)))
   w.classList.add('on'); w.classList.toggle('low', low)
 }
+// ── MINUTE NOTCHES ─────────────────────────────────────────────────────────
+// UBAe rounds are 3:00, always -- the 2:00 round is gone -- so a minute mark is
+// just a third of the gauge and needs no clock of its own. 2:00 remaining sits
+// two thirds along the path, 1:00 sits one third.
+//
+// Positioned by MEASURING the path, not by working out where the arc ends and
+// the straight begins: move the tail in the markup and the notches move with
+// it. Each mark is the whole path drawn with a dash pattern of one short dash
+// and a gap longer than the path, shifted to the right offset.
+//
+// No 0:30 mark on purpose. Measured, the path is 825 units and the arc around
+// the flower is 146 of them -- so the ring IS the final 32 seconds. When the
+// gauge is down to the flower, you are inside the last half-minute. The
+// geometry already says it and a notch there would only repeat it.
+const ROUND_SECS = 180
+const MARK_AT = [120, 60]
+function layoutMarks(){
+  const p = document.getElementById('trackProg'); if(!p) return
+  if(!TRACK_LEN) TRACK_LEN = p.getTotalLength()
+  document.querySelectorAll('.track-mark').forEach((m, i) => {
+    const secs = MARK_AT[i]; if(secs == null) return
+    const at = TRACK_LEN * (secs / ROUND_SECS)
+    m.style.strokeDasharray  = `5 ${TRACK_LEN}`
+    m.style.strokeDashoffset = -(at - 2.5)
+  })
+}
+layoutMarks()
+
 // Counts down locally off the same seconds the overlay clock got, so the two
 // can never disagree by more than the message latency.
 function ringTimer(secs){
