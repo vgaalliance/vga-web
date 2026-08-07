@@ -179,10 +179,16 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
    It empties from the TAIL back toward the bloom, so the last thing left is the
    ring itself. Runs behind the bar (z-index under .main-bar) so the tail reads
    as passing beneath the graphic rather than lying on top of it. */
-/* 760 wide, matching the svg viewBox, so the drawing stays 1:1 -- the ring's
-   geometry is in raw pixels and any scaling would deform it. */
-.track-wrap{position:absolute;top:50%;left:0;transform:translateY(-50%);
-  width:760px;height:70px;pointer-events:none;z-index:6;opacity:0;
+/* Matches the svg viewBox exactly, so the drawing stays 1:1 -- the ring's
+   geometry is in raw pixels and any scaling would deform it.
+   left:-10 and a viewBox starting at -10 because the ring is centred at x=26
+   with r=31 and a 6px stroke, so its leftmost ink is at x=-8. The viewBox used
+   to start at 0, which cropped 8px clean off the left of the curve -- the ring
+   looked sliced flat where it should have been round. Shifting both by the
+   same 10 gives the curve its margin back and leaves every other coordinate,
+   including the tail's end at 753, exactly where it was on screen. */
+.track-wrap{position:absolute;top:50%;left:-10px;transform:translateY(-50%);
+  width:770px;height:70px;pointer-events:none;z-index:6;opacity:0;
   transition:opacity .45s ease;}
 .track-wrap.on{opacity:1;}
 .track-line{fill:none;stroke:rgba(168,85,247,.16);stroke-width:6;stroke-linecap:round;}
@@ -190,6 +196,10 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   filter:drop-shadow(0 0 6px rgba(192,132,252,.85));
   transition:stroke-dashoffset 1s linear, stroke .5s ease;}
 .track-prog.seek{transition:stroke-dashoffset .85s cubic-bezier(.16,.8,.3,1), stroke .5s ease;}
+/* the mask's stroke drains on the SAME curve as the progress it masks -- a
+   different easing here and the notches would lag behind the bar edge */
+.mask-prog{transition:stroke-dashoffset 1s linear;}
+.mask-prog.seek{transition:stroke-dashoffset .85s cubic-bezier(.16,.8,.3,1);}
 /* the notches: a dashed overlay ON the same path, so the segment marks follow
    the curve into the straight without any second set of coordinates */
 .track-ticks{fill:none;stroke:rgba(4,0,16,.85);stroke-width:7;
@@ -299,15 +309,28 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
            used to end at 452, which is roughly under the VS block.
            If the ROUND tab's width or the bar's resting width changes, this
            number moves with them. -->
-      <svg viewBox="0 0 760 70">
+      <svg viewBox="-10 0 770 70">
+        <defs>
+          <!-- The notches are cut into the LIT bar only. Same path, same dash
+               numbers as the progress stroke, applied as a mask: where the
+               gauge has drained the mask is empty, so the ticks and the minute
+               notches vanish with it instead of hanging on over the dim track
+               like a ruler nobody is using. Kept in step by trackSet(), which
+               writes the identical dash values to both. -->
+          <mask id="progMask" maskUnits="userSpaceOnUse" x="-10" y="0" width="770" height="70">
+            <path class="mask-prog" id="maskProg" fill="none" stroke="#fff" stroke-width="26"
+                  d="M 26 4 A 31 31 0 1 0 42.9 61 L 753 61"></path>
+          </mask>
+        </defs>
         <path class="track-line"  id="trackLine"  d="M 26 4 A 31 31 0 1 0 42.9 61 L 753 61"></path>
         <path class="track-prog"  id="trackProg"  d="M 26 4 A 31 31 0 1 0 42.9 61 L 753 61"></path>
-        <path class="track-ticks" id="trackTicks" d="M 26 4 A 31 31 0 1 0 42.9 61 L 753 61"></path>
-        <!-- The minute notches. Same path three times over; each one draws a
-             single short dash, positioned in JS by measured length. Drawn last
-             so they cut through both the dim track and the lit progress. -->
-        <path class="track-mark" d="M 26 4 A 31 31 0 1 0 42.9 61 L 753 61"></path>
-        <path class="track-mark" d="M 26 4 A 31 31 0 1 0 42.9 61 L 753 61"></path>
+        <g mask="url(#progMask)">
+          <path class="track-ticks" id="trackTicks" d="M 26 4 A 31 31 0 1 0 42.9 61 L 753 61"></path>
+          <!-- The minute notches. The same path once each; every one draws a
+               single short dash, positioned in JS by measured length. -->
+          <path class="track-mark" d="M 26 4 A 31 31 0 1 0 42.9 61 L 753 61"></path>
+          <path class="track-mark" d="M 26 4 A 31 31 0 1 0 42.9 61 L 753 61"></path>
+        </g>
       </svg>
     </div>
     <div class="emblem" id="emblemEl">
@@ -382,7 +405,12 @@ function trackSet(frac, low){
   if(frac==null){ w.classList.remove('on','low'); return }
   c.style.strokeDasharray = TRACK_LEN
   // offset grows -> the stroke retreats from the TAIL, leaving the ring last
-  c.style.strokeDashoffset = TRACK_LEN * (1 - Math.max(0, Math.min(1, frac)))
+  const off = TRACK_LEN * (1 - Math.max(0, Math.min(1, frac)))
+  c.style.strokeDashoffset = off
+  // the mask gets the IDENTICAL numbers, so the notches end exactly where the
+  // lit bar ends rather than a frame either side of it
+  const m = document.getElementById('maskProg')
+  if(m){ m.style.strokeDasharray = TRACK_LEN; m.style.strokeDashoffset = off }
   w.classList.add('on'); w.classList.toggle('low', low)
 }
 // ── MINUTE NOTCHES ─────────────────────────────────────────────────────────
@@ -401,9 +429,26 @@ function trackSet(frac, low){
 // geometry already says it and a notch there would only repeat it.
 const ROUND_SECS = 180
 const MARK_AT = [120, 60]
+
+// The mini ticks are TEN SECONDS each, derived from the same measured length as
+// the minute notches instead of being a hand-picked "2 26" pattern.
+//
+// That pattern was the imbalance: 28 units a tick over an 825-unit path is
+// 6.1 seconds, which divides into a minute 9.8 times -- so the ticks drifted
+// against the minute notches and every segment came out a different size. At
+// ten seconds a tick there are exactly six per minute and eighteen per round,
+// a tick lands precisely on each minute notch, and the notch reads as a bigger
+// version of the mark already there rather than something cutting across them.
+const TICK_SECS = 10
+
 function layoutMarks(){
   const p = document.getElementById('trackProg'); if(!p) return
   if(!TRACK_LEN) TRACK_LEN = p.getTotalLength()
+
+  const tickPeriod = TRACK_LEN * (TICK_SECS / ROUND_SECS)
+  const ticks = document.getElementById('trackTicks')
+  if(ticks) ticks.style.strokeDasharray = `2 ${tickPeriod - 2}`
+
   document.querySelectorAll('.track-mark').forEach((m, i) => {
     const secs = MARK_AT[i]; if(secs == null) return
     const at = TRACK_LEN * (secs / ROUND_SECS)
@@ -432,8 +477,11 @@ function ringTimer(secs){
   clearInterval(ringHandle)
   if(secs==null){ trackSet(null); emblemSet(null); return }
   let left=secs; const total=Math.max(1,secs)
-  const c=document.getElementById('trackProg')
-  if(c){ c.classList.add('seek'); setTimeout(()=>c.classList.remove('seek'), 900) }
+  // the mask seeks with it, or the notches would slide into place a beat later
+  const c=document.getElementById('trackProg'), mk=document.getElementById('maskProg')
+  for(const el of [c, mk]){
+    if(el){ el.classList.add('seek'); setTimeout(()=>el.classList.remove('seek'), 900) }
+  }
   trackSet(left/total, left<=10); emblemSet(left)
   ringHandle=setInterval(()=>{
     left=Math.max(0,left-1); trackSet(left/total, left<=10); emblemSet(left)
