@@ -208,6 +208,8 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
    would silently drop it. */
 .track-line{fill:none;stroke:rgba(168,85,247,.16);stroke-width:6;stroke-linecap:round;
   transition:d .5s cubic-bezier(.16,.8,.3,1);}
+/* the dim track draws itself on at the top of a round -- see drawIn() */
+.track-line.seek{transition:stroke-dashoffset .85s cubic-bezier(.16,.8,.3,1), d .5s cubic-bezier(.16,.8,.3,1);}
 .track-prog{fill:none;stroke:#c084fc;stroke-width:6;stroke-linecap:round;
   filter:drop-shadow(0 0 6px rgba(192,132,252,.85));
   transition:stroke-dashoffset 1s linear, stroke .5s ease, d .5s cubic-bezier(.16,.8,.3,1);}
@@ -216,20 +218,44 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
    different easing here and the notches would lag behind the bar edge */
 .mask-prog{transition:stroke-dashoffset 1s linear, d .5s cubic-bezier(.16,.8,.3,1);}
 .mask-prog.seek{transition:stroke-dashoffset .85s cubic-bezier(.16,.8,.3,1), d .5s cubic-bezier(.16,.8,.3,1);}
-/* the notches: a dashed overlay ON the same path, so the segment marks follow
-   the curve into the straight without any second set of coordinates */
-.track-ticks{fill:none;stroke:rgba(4,0,16,.85);stroke-width:7;
+/* The ten-second ticks: a dashed overlay ON the same path, so the segment marks
+   follow the curve into the straight without any second set of coordinates.
+   Toned down from .85 alpha at 7px wide. At that strength they were black
+   holes punched through a glowing bar -- the eye reads a hard dark break on a
+   lit surface as damage, not as a scale, and eighteen of them made the gauge
+   look chewed. .45 and a width matching the track exactly (6, so nothing
+   overhangs) gives a joint between segments instead of a hole in one. */
+.track-ticks{fill:none;stroke:rgba(4,0,16,.45);stroke-width:6;
   stroke-dasharray:2 26;transition:d .5s cubic-bezier(.16,.8,.3,1);}
-/* MINUTE NOTCHES — the same idea as the ticks, but a real break rather than a
-   hairline: wider than the track on purpose so it reads as the gauge being cut
-   into segments, not as another tick. Dark, so it works identically over the
-   dim track and the lit progress -- one notch, one look, whichever side of it
-   the time is on. */
-.track-mark{fill:none;stroke:rgba(4,0,16,.92);stroke-width:18;stroke-linecap:butt;
+/* MINUTE NOTCHES — bright, not dark. A minute is the thing worth seeing, and
+   the way to make something stand out on a lit bar is to light it more, not to
+   cut a bigger hole in it. 12px against the track's 6 leaves a small nub
+   proud of the bar's underside (the top half sits behind the bar itself), so
+   the mark reads without interrupting the run of the gauge.
+   It only ever draws over the LIT part -- the mask sees to that -- so it never
+   has to work against the dim track. */
+.track-mark{fill:none;stroke:rgba(248,240,255,.95);stroke-width:12;stroke-linecap:butt;
+  filter:drop-shadow(0 0 5px rgba(216,180,254,.9));
   transition:d .5s cubic-bezier(.16,.8,.3,1);}
+.track-wrap.low .track-mark{filter:drop-shadow(0 0 5px rgba(255,120,145,.95));}
 .track-wrap.low .track-prog{stroke:#ff5470;filter:drop-shadow(0 0 8px rgba(255,84,112,.95));}
-.track-wrap.low{animation:ringPulse 1s ease-in-out infinite;}
-@keyframes ringPulse{0%,100%{opacity:1}50%{opacity:.6}}
+/* The whole-gauge opacity pulse that used to live here is gone. It dimmed the
+   graphic to 60% twice a second, which reads as a rendering fault rather than
+   urgency, and it fought the shimmer for the same job. Colour says "nearly
+   out"; the shimmer's SPEED says how nearly. */
+
+/* ── SHIMMER ───────────────────────────────────────────────────────────────
+   A short bright segment travelling the gauge toward the flower -- one dash on
+   a copy of the same path, moved by shifting its dashoffset. Doing it with a
+   dash rather than a gradient is what lets it follow the arc: a linear
+   gradient would run flat across the ring and break the moment the path bends.
+   Its SPEED carries the urgency (see shineStart) -- roughly one lap per 3.2s
+   at the top of the round, tightening to one per 0.65s as it empties. */
+.track-shine{fill:none;stroke:#f3e8ff;stroke-width:6;stroke-linecap:round;
+  opacity:0;filter:drop-shadow(0 0 7px rgba(243,232,255,.95));
+  transition:opacity .45s ease, d .5s cubic-bezier(.16,.8,.3,1);}
+.track-wrap.on .track-shine{opacity:.9;}
+.track-wrap.low .track-shine{stroke:#ffd6dd;filter:drop-shadow(0 0 9px rgba(255,120,145,1));}
 
 /* MAIN BAR */
 .main-bar{
@@ -342,6 +368,11 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
         <path class="track-line"  id="trackLine"  d="M 26 4 A 31 31 0 1 0 42.9 61 L 753 61"></path>
         <path class="track-prog"  id="trackProg"  d="M 26 4 A 31 31 0 1 0 42.9 61 L 753 61"></path>
         <g mask="url(#progMask)">
+          <!-- The shimmer. Runs first so the notches cut through it, and lives
+               inside the mask so it only ever travels the LIT part of the
+               gauge -- it dies at the burning edge instead of carrying on into
+               the dead track. -->
+          <path class="track-shine" id="trackShine" d="M 26 4 A 31 31 0 1 0 42.9 61 L 753 61"></path>
           <path class="track-ticks" id="trackTicks" d="M 26 4 A 31 31 0 1 0 42.9 61 L 753 61"></path>
           <!-- The minute notches. The same path once each; every one draws a
                single short dash, positioned in JS by measured length. -->
@@ -423,7 +454,8 @@ function trackSet(frac, low){
   // one call, so the tail can be moved in the markup without touching maths
   if(!TRACK_LEN) TRACK_LEN = c.getTotalLength()
   CUR_FRAC = frac; CUR_LOW = !!low
-  if(frac==null){ w.classList.remove('on','low'); return }
+  if(frac==null){ w.classList.remove('on','low'); shineStop(); return }
+  shineStart()
   c.style.strokeDasharray = TRACK_LEN
   // offset grows -> the stroke retreats from the TAIL, leaving the ring last
   const off = TRACK_LEN * (1 - Math.max(0, Math.min(1, frac)))
@@ -432,8 +464,81 @@ function trackSet(frac, low){
   // lit bar ends rather than a frame either side of it
   const m = document.getElementById('maskProg')
   if(m){ m.style.strokeDasharray = TRACK_LEN; m.style.strokeDashoffset = off }
+  // The dim track is dashed to its own full length with no offset, i.e. drawn
+  // solid. It is written here rather than left in CSS so that drawIn() has
+  // something to animate FROM, and so a re-pointed tail re-solidifies it
+  // instead of leaving the old length behind as a gap.
+  const ln = document.getElementById('trackLine')
+  if(ln){ ln.style.strokeDasharray = TRACK_LEN; ln.style.strokeDashoffset = 0 }
   w.classList.add('on'); w.classList.toggle('low', low)
 }
+
+// ── DRAW-IN ────────────────────────────────────────────────────────────────
+// The gauge used to just fade up at full length, which gives away nothing: a
+// bar that is already there tells you the round has been running. Priming both
+// strokes to fully-retracted and letting the next trackSet pull them to their
+// real values makes the gauge SWEEP out of the flower and run down the bar, so
+// the start of the round has a moment.
+//
+// The transition is killed and the layout flushed before priming, or the
+// browser coalesces "hide it" and "show it" into one frame and animates
+// nothing at all -- the classic reason a from-state silently does not apply.
+function drawIn(){
+  const p = document.getElementById('trackProg'); if(!p) return
+  if(!TRACK_LEN) TRACK_LEN = p.getTotalLength()
+  const els = [document.getElementById('trackLine'), p, document.getElementById('maskProg')].filter(Boolean)
+  for(const el of els){
+    el.classList.remove('seek')
+    el.style.transition = 'none'
+    el.style.strokeDasharray  = TRACK_LEN
+    el.style.strokeDashoffset = TRACK_LEN
+  }
+  void p.getBoundingClientRect()
+  for(const el of els){ el.style.transition = ''; el.classList.add('seek') }
+  setTimeout(() => { for(const el of els) el.classList.remove('seek') }, 900)
+}
+// ── SHIMMER ────────────────────────────────────────────────────────────────
+// One short bright dash travelling the gauge toward the flower. The SPEED is
+// the point, not the sparkle: a lap every 3.2s at the top of the round winding
+// down to one every 0.65s as it empties, so the graphic gets visibly more
+// agitated without changing size, colour or anything you have to read.
+//
+// Driven off CUR_FRAC each frame rather than restarted at thresholds, so it
+// accelerates continuously instead of stepping at 1:00 and 0:30 -- and a
+// re-point of the tail mid-round just changes TRACK_LEN under it.
+const SHINE_LEN  = 34      // how long the travelling segment is
+const SHINE_SLOW = 3200    // ms per lap with a full gauge
+const SHINE_FAST = 650     // ms per lap at zero
+let shineRAF = null, shinePos = 0, shineLast = 0
+
+function shineStart(){
+  if(shineRAF || !TIMER_RING) return
+  shineLast = 0
+  const step = ts => {
+    const el = document.getElementById('trackShine')
+    if(CUR_FRAC == null || !el){ shineRAF = null; return }
+    if(!shineLast) shineLast = ts
+    // clamped, so a dropped frame or a tabbed-out source does not teleport it
+    const dt = Math.min(64, ts - shineLast); shineLast = ts
+    const f = Math.max(0, Math.min(1, CUR_FRAC))
+    const period = SHINE_FAST + (SHINE_SLOW - SHINE_FAST) * f
+    const span = TRACK_LEN + SHINE_LEN
+    shinePos = (shinePos + span * dt / period) % span
+    el.style.strokeDasharray  = `${SHINE_LEN} ${TRACK_LEN}`
+    // a POSITIVE offset walks the dash back toward the path's start, which is
+    // the ring -- so the shimmer runs inward, the way the gauge drains
+    el.style.strokeDashoffset = shinePos
+    shineRAF = requestAnimationFrame(step)
+  }
+  shineRAF = requestAnimationFrame(step)
+}
+function shineStop(){
+  if(shineRAF) cancelAnimationFrame(shineRAF)
+  shineRAF = null; shinePos = 0
+  const el = document.getElementById('trackShine')
+  if(el) el.style.strokeDasharray = '0 99999'
+}
+
 // ── MINUTE NOTCHES ─────────────────────────────────────────────────────────
 // UBAe rounds are 3:00, always -- the 2:00 round is gone -- so a minute mark is
 // just a third of the gauge and needs no clock of its own. 2:00 remaining sits
@@ -508,7 +613,7 @@ function setTail(x){
   if(!ARC_LEN)   ARC_LEN   = TRACK_LEN - (TAIL_X0 - TAIL_FROM_X)
 
   const d = trackD(x)
-  for(const el of document.querySelectorAll('.track-line,.track-prog,.track-ticks,.track-mark,.mask-prog')){
+  for(const el of document.querySelectorAll('.track-line,.track-prog,.track-ticks,.track-mark,.mask-prog,.track-shine')){
     el.setAttribute('d', d)
   }
   TRACK_LEN = ARC_LEN + (x - TAIL_FROM_X)
@@ -544,11 +649,10 @@ function ringTimer(secs){
   clearInterval(ringHandle)
   if(secs==null){ trackSet(null); emblemSet(null); return }
   let left=secs; const total=Math.max(1,secs)
-  // the mask seeks with it, or the notches would slide into place a beat later
-  const c=document.getElementById('trackProg'), mk=document.getElementById('maskProg')
-  for(const el of [c, mk]){
-    if(el){ el.classList.add('seek'); setTimeout(()=>el.classList.remove('seek'), 900) }
-  }
+  // primes both strokes retracted; the trackSet on the next line is what pulls
+  // them out, so the gauge sweeps on instead of appearing whole. The mask is
+  // primed with them or the notches would arrive a beat late.
+  drawIn()
   trackSet(left/total, left<=10); emblemSet(left)
   ringHandle=setInterval(()=>{
     left=Math.max(0,left-1); trackSet(left/total, left<=10); emblemSet(left)
