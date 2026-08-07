@@ -156,8 +156,10 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
    It empties from the TAIL back toward the bloom, so the last thing left is the
    ring itself. Runs behind the bar (z-index under .main-bar) so the tail reads
    as passing beneath the graphic rather than lying on top of it. */
+/* 760 wide, matching the svg viewBox, so the drawing stays 1:1 -- the ring's
+   geometry is in raw pixels and any scaling would deform it. */
 .track-wrap{position:absolute;top:50%;left:0;transform:translateY(-50%);
-  width:520px;height:70px;pointer-events:none;z-index:6;opacity:0;
+  width:760px;height:70px;pointer-events:none;z-index:6;opacity:0;
   transition:opacity .45s ease;}
 .track-wrap.on{opacity:1;}
 .track-line{fill:none;stroke:rgba(168,85,247,.16);stroke-width:6;stroke-linecap:round;}
@@ -261,10 +263,17 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
            the z-index. Underlining the bar keeps the gauge legible and keeps
            the names clean. Exit x=42.9 is where the circle actually meets
            y=61; move the tail's y and that number has to move with it. -->
-      <svg viewBox="0 0 520 70">
-        <path class="track-line"  id="trackLine"  d="M 26 4 A 31 31 0 1 0 42.9 61 L 452 61"></path>
-        <path class="track-prog"  id="trackProg"  d="M 26 4 A 31 31 0 1 0 42.9 61 L 452 61"></path>
-        <path class="track-ticks" id="trackTicks" d="M 26 4 A 31 31 0 1 0 42.9 61 L 452 61"></path>
+      <!-- Tail ends at x=753. The wrap starts at the row's left edge (48), and
+           the ROUND tab's left edge sits at 794 with the bar at its resting
+           width -- so 794-48 = 746 is where the gauge meets the tab instead of
+           stopping halfway along the bar with nothing to arrive at. The tail
+           used to end at 452, which is roughly under the VS block.
+           If the ROUND tab's width or the bar's resting width changes, this
+           number moves with them. -->
+      <svg viewBox="0 0 760 70">
+        <path class="track-line"  id="trackLine"  d="M 26 4 A 31 31 0 1 0 42.9 61 L 753 61"></path>
+        <path class="track-prog"  id="trackProg"  d="M 26 4 A 31 31 0 1 0 42.9 61 L 753 61"></path>
+        <path class="track-ticks" id="trackTicks" d="M 26 4 A 31 31 0 1 0 42.9 61 L 753 61"></path>
       </svg>
     </div>
     <div class="emblem" id="emblemEl">
