@@ -131,24 +131,21 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 .uslit-value{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:22px;
   letter-spacing:.08em;text-transform:uppercase;text-shadow:0 1px 5px rgba(0,0,0,.65);}
 
-/* ── FOCUS MODE — the branding gets out of the way for a reveal ────────────
-   When a colour or odds panel opens, the emblem and the UBAe block retract to
-   the left and the bar becomes just the matchup plus the panels. Two reasons:
-   the reveal is the thing being watched and the branding is not, and the width
-   the panels add is almost exactly the width the branding gives back -- so the
-   bar's right edge barely moves instead of marching across the frame.
-     emblem 52 + block ~166 = 218 out, two panels at 124 = 236 in.
-   overflow:hidden is already on .ubae-block, so its text clips rather than
-   squashing as it closes. */
-.emblem,.ubae-block{
-  transition:width .52s cubic-bezier(.16,.8,.3,1),
-             padding .52s cubic-bezier(.16,.8,.3,1),
-             margin .52s cubic-bezier(.16,.8,.3,1),
-             opacity .3s ease .12s;}
-.main-row.focus .emblem{width:0;margin-right:0;opacity:0;border-width:0;
-  transition:width .52s cubic-bezier(.16,.8,.3,1),margin .52s cubic-bezier(.16,.8,.3,1),opacity .2s ease;}
-.main-row.focus .ubae-block{width:0;padding:0;opacity:0;border-left-width:0;
-  transition:width .52s cubic-bezier(.16,.8,.3,1),padding .52s cubic-bezier(.16,.8,.3,1),opacity .2s ease;}
+/* ── FOCUS MODE — REMOVED (2026-08-07) ────────────────────────────────────
+   It used to retract the emblem and the UBAe block on every reveal, on the
+   theory that the width the panels add is the width the branding gives back,
+   so the right edge would not march across the frame.
+   It did not work, for two reasons:
+     1. .ubae-block has no width of its own -- it is sized by its text. A
+        transition from width:auto to width:0 is not animatable, so the
+        retract was an INSTANT snap, measured complete inside 120ms against
+        a .52s curve. That snap is the jerk.
+     2. Retracting the LEFT of the row drags the matchup 87px sideways. The
+        fighter names are the one thing on this bar a viewer is reading, and
+        they moved every single time a panel opened.
+   The bar is anchored bottom-left with the whole right of the frame empty, so
+   the panels now just push outward the way the slit comment above describes:
+   left edge frozen, names never move, one motion instead of two. */
 
 /* ═══ TIMER TRACK (revertable — set TIMER_RING false below) ════════════════
    Kingdom Hearts' health gauge: ONE continuous stroke that wraps the portrait
@@ -175,7 +172,6 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 .track-wrap.low .track-prog{stroke:#ff5470;filter:drop-shadow(0 0 8px rgba(255,84,112,.95));}
 .track-wrap.low{animation:ringPulse 1s ease-in-out infinite;}
 @keyframes ringPulse{0%,100%{opacity:1}50%{opacity:.6}}
-.main-row.focus .track-wrap{opacity:0;}
 
 /* MAIN BAR */
 .main-bar{
@@ -364,6 +360,37 @@ function ringTimer(secs){
 // have to know about both. The BEHAVIOUR is what matters and it is identical --
 // same curve, same hold, same retract-before-re-extend rule.
 const uQ = id => document.getElementById(id)
+
+// ── NAME FIT ────────────────────────────────────────────────────────────────
+// A .fighter cell is a fixed 300px with 20px padding each side and
+// overflow:hidden, so 260px is all a name ever gets. At the resting 34px,
+// "IRON MICHEAL CHANDLER" wants ~330px -- and the cell simply clipped it, so
+// the last letters vanished mid-broadcast with nothing to say they had.
+// The bar's geometry is locked by the layout, so the TEXT gives way instead.
+// Measured with a Range over the real text node rather than estimated from
+// character count: this face is condensed and italic, and 'IIII' and 'WWWW'
+// are not remotely the same width.
+const U_NAME_MAX = 34   // the resting size in .fighter
+// 16 is the floor because it is where a 32-character name -- longer than any
+// real stage name -- finally fits. Anything under that stops being legible on
+// a stream, and a name that small is a different problem to solve.
+const U_NAME_MIN = 16
+function uFitName(el){
+  if(!el || !el.firstChild) return
+  const cs = getComputedStyle(el)
+  const room = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
+  if(room <= 0) return
+  const width = () => {
+    const r = document.createRange(); r.selectNodeContents(el)
+    return r.getBoundingClientRect().width
+  }
+  let size = U_NAME_MAX
+  el.style.fontSize = size + 'px'
+  while(size > U_NAME_MIN && width() > room){
+    size -= 1
+    el.style.fontSize = size + 'px'
+  }
+}
 const U_CUR = { l:'#e8312a', r:'#2e6fe8' }
 let uOpenMode = null, uTimer = null
 const U_HOLD_TRUNKS = 7500
@@ -406,8 +433,6 @@ function uOpen(L,R,hold,m){
   if(L) uWrite('left', L.eyebrow, L.value)
   if(R) uWrite('right', R.eyebrow, R.value)
   sL.classList.add('expand'); sR.classList.add('expand')
-  // branding steps aside so the panel is the subject
-  const row=document.querySelector('.main-row'); if(row) row.classList.add('focus')
   uOpenMode=m
   clearTimeout(uTimer)
   uTimer=setTimeout(()=>uCollapse(odds), hold||U_HOLD_TRUNKS)
@@ -416,7 +441,6 @@ function uOpen(L,R,hold,m){
 function uCollapse(restore){
   const sL=uQ('uslitL'), sR=uQ('uslitR'); if(!sL||!sR) return
   sL.classList.remove('expand'); sR.classList.remove('expand')
-  const row=document.querySelector('.main-row'); if(row) row.classList.remove('focus')
   uOpenMode=null
   setTimeout(()=>{
     sL.classList.remove('odds'); sR.classList.remove('odds')
@@ -916,8 +940,8 @@ tick();
     if(!f.length) return
     const nL = (d.pickL!=null && d.left)  ? d.left[d.pickL]  : d.teamA
     const nR = (d.pickR!=null && d.right) ? d.right[d.pickR] : d.teamB
-    if(f[0] && nL!=null) f[0].textContent=nL
-    if(f[1] && nR!=null) f[1].textContent=nR
+    if(f[0] && nL!=null){ f[0].textContent=nL; uFitName(f[0]) }
+    if(f[1] && nR!=null){ f[1].textContent=nR; uFitName(f[1]) }
   }).subscribe()
 })()
 </script>
