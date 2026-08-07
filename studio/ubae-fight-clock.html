@@ -186,30 +186,47 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
    to start at 0, which cropped 8px clean off the left of the curve -- the ring
    looked sliced flat where it should have been round. Shifting both by the
    same 10 gives the curve its margin back and leaves every other coordinate,
-   including the tail's end at 753, exactly where it was on screen. */
+   including the tail's end at 753, exactly where it was on screen.
+
+   The width covers the WIDEST the gauge ever gets, not its resting size: a
+   colour reveal stretches the tail to 753 + (124-6)x2 = 989, and anything past
+   the viewBox is clipped, so a box sized to the resting bar would lop the end
+   off every time a panel opened. 1006 = 989 + the 10 of left margin + a few
+   px for the stroke's round cap. It is transparent and pointer-events:none, so
+   the spare width costs nothing. */
 .track-wrap{position:absolute;top:50%;left:-10px;transform:translateY(-50%);
-  width:770px;height:70px;pointer-events:none;z-index:6;opacity:0;
+  width:1006px;height:70px;pointer-events:none;z-index:6;opacity:0;
   transition:opacity .45s ease;}
 .track-wrap.on{opacity:1;}
-.track-line{fill:none;stroke:rgba(168,85,247,.16);stroke-width:6;stroke-linecap:round;}
+/* Every path in the gauge eases its `d` on the SAME curve and duration as
+   .uslit's width, so when a panel pushes the bar wider the tail travels with
+   it as one movement rather than snapping to the new length. Only the
+   straight's end x ever changes, so the two shapes have identical commands and
+   stay interpolable.
+   `d` is written into each rule's own transition rather than a shared one: the
+   shorthand replaces the whole list, so a later rule setting stroke-dashoffset
+   would silently drop it. */
+.track-line{fill:none;stroke:rgba(168,85,247,.16);stroke-width:6;stroke-linecap:round;
+  transition:d .5s cubic-bezier(.16,.8,.3,1);}
 .track-prog{fill:none;stroke:#c084fc;stroke-width:6;stroke-linecap:round;
   filter:drop-shadow(0 0 6px rgba(192,132,252,.85));
-  transition:stroke-dashoffset 1s linear, stroke .5s ease;}
-.track-prog.seek{transition:stroke-dashoffset .85s cubic-bezier(.16,.8,.3,1), stroke .5s ease;}
+  transition:stroke-dashoffset 1s linear, stroke .5s ease, d .5s cubic-bezier(.16,.8,.3,1);}
+.track-prog.seek{transition:stroke-dashoffset .85s cubic-bezier(.16,.8,.3,1), stroke .5s ease, d .5s cubic-bezier(.16,.8,.3,1);}
 /* the mask's stroke drains on the SAME curve as the progress it masks -- a
    different easing here and the notches would lag behind the bar edge */
-.mask-prog{transition:stroke-dashoffset 1s linear;}
-.mask-prog.seek{transition:stroke-dashoffset .85s cubic-bezier(.16,.8,.3,1);}
+.mask-prog{transition:stroke-dashoffset 1s linear, d .5s cubic-bezier(.16,.8,.3,1);}
+.mask-prog.seek{transition:stroke-dashoffset .85s cubic-bezier(.16,.8,.3,1), d .5s cubic-bezier(.16,.8,.3,1);}
 /* the notches: a dashed overlay ON the same path, so the segment marks follow
    the curve into the straight without any second set of coordinates */
 .track-ticks{fill:none;stroke:rgba(4,0,16,.85);stroke-width:7;
-  stroke-dasharray:2 26;}
+  stroke-dasharray:2 26;transition:d .5s cubic-bezier(.16,.8,.3,1);}
 /* MINUTE NOTCHES — the same idea as the ticks, but a real break rather than a
    hairline: wider than the track on purpose so it reads as the gauge being cut
    into segments, not as another tick. Dark, so it works identically over the
    dim track and the lit progress -- one notch, one look, whichever side of it
    the time is on. */
-.track-mark{fill:none;stroke:rgba(4,0,16,.92);stroke-width:18;stroke-linecap:butt;}
+.track-mark{fill:none;stroke:rgba(4,0,16,.92);stroke-width:18;stroke-linecap:butt;
+  transition:d .5s cubic-bezier(.16,.8,.3,1);}
 .track-wrap.low .track-prog{stroke:#ff5470;filter:drop-shadow(0 0 8px rgba(255,84,112,.95));}
 .track-wrap.low{animation:ringPulse 1s ease-in-out infinite;}
 @keyframes ringPulse{0%,100%{opacity:1}50%{opacity:.6}}
@@ -309,7 +326,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
            used to end at 452, which is roughly under the VS block.
            If the ROUND tab's width or the bar's resting width changes, this
            number moves with them. -->
-      <svg viewBox="-10 0 770 70">
+      <svg viewBox="-10 0 1006 70">
         <defs>
           <!-- The notches are cut into the LIT bar only. Same path, same dash
                numbers as the progress stroke, applied as a mask: where the
@@ -317,7 +334,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
                notches vanish with it instead of hanging on over the dim track
                like a ruler nobody is using. Kept in step by trackSet(), which
                writes the identical dash values to both. -->
-          <mask id="progMask" maskUnits="userSpaceOnUse" x="-10" y="0" width="770" height="70">
+          <mask id="progMask" maskUnits="userSpaceOnUse" x="-10" y="0" width="1006" height="70">
             <path class="mask-prog" id="maskProg" fill="none" stroke="#fff" stroke-width="26"
                   d="M 26 4 A 31 31 0 1 0 42.9 61 L 753 61"></path>
           </mask>
@@ -395,6 +412,9 @@ function flipSwap(el, text){
 // false = never renders, and nothing else reads it.
 const TIMER_RING = true
 let ringHandle = null, TRACK_LEN = 0
+// remembered so a resize can put the gauge back exactly where it was -- see
+// setTail(). Without this, stretching the track would reset the drain.
+let CUR_FRAC = null, CUR_LOW = false
 function trackSet(frac, low){
   if(!TIMER_RING) return
   const w=document.getElementById('trackWrap'), c=document.getElementById('trackProg')
@@ -402,6 +422,7 @@ function trackSet(frac, low){
   // measured, not calculated: getTotalLength covers the arc AND the straight in
   // one call, so the tail can be moved in the markup without touching maths
   if(!TRACK_LEN) TRACK_LEN = c.getTotalLength()
+  CUR_FRAC = frac; CUR_LOW = !!low
   if(frac==null){ w.classList.remove('on','low'); return }
   c.style.strokeDasharray = TRACK_LEN
   // offset grows -> the stroke retreats from the TAIL, leaving the ring last
@@ -423,10 +444,12 @@ function trackSet(frac, low){
 // it. Each mark is the whole path drawn with a dash pattern of one short dash
 // and a gap longer than the path, shifted to the right offset.
 //
-// No 0:30 mark on purpose. Measured, the path is 825 units and the arc around
-// the flower is 146 of them -- so the ring IS the final 32 seconds. When the
-// gauge is down to the flower, you are inside the last half-minute. The
-// geometry already says it and a notch there would only repeat it.
+// No 0:30 mark on purpose. Measured at the resting size, the path is 825 units
+// and the arc around the flower is 115 of them -- so the ring is the final ~25
+// seconds. (146 was an earlier guess from a full 270 degrees of r=31; the arc
+// this path actually sweeps is shorter, and getTotalLength says so.) Once the
+// gauge is down to the flower you are inside the last half-minute, which is
+// what a 0:30 notch would have said, so it would only say it twice.
 const ROUND_SECS = 180
 const MARK_AT = [120, 60]
 
@@ -457,6 +480,50 @@ function layoutMarks(){
   })
 }
 layoutMarks()
+
+// ── THE GAUGE FOLLOWS THE BAR ──────────────────────────────────────────────
+// A colour or odds reveal widens the bar by (panel - 6) x 2 and the ROUND tab
+// slides right with it. The tail was a hard-coded 753, so for the seven seconds
+// a panel was open the gauge stopped short of the tab it is supposed to run
+// into -- the one moment of the round anybody is looking at the bar.
+//
+// So the tail is re-pointed instead. Only the straight's end x changes, which
+// keeps the path interpolable (same commands, same count) and lets CSS ease
+// `d` on the panels' own curve, so the two move as one thing.
+//
+// The lengths are COMPUTED, not re-measured: getTotalLength() during a `d`
+// transition returns whatever the path is mid-flight, so re-measuring here
+// would feed the drain a different total every frame. Arc length is fixed and
+// the straight is just (x - 42.9), so the total is exact arithmetic.
+const TAIL_X0  = 753                       // the resting end, at the ROUND tab
+const TAIL_FROM_X = 42.9                   // where the arc hands over
+let   ARC_LEN = 0                          // measured once, at the resting size
+
+function trackD(x){ return `M 26 4 A 31 31 0 1 0 42.9 61 L ${x} 61` }
+
+function setTail(x){
+  if(!TIMER_RING) return
+  const p = document.getElementById('trackProg'); if(!p) return
+  if(!TRACK_LEN) TRACK_LEN = p.getTotalLength()
+  if(!ARC_LEN)   ARC_LEN   = TRACK_LEN - (TAIL_X0 - TAIL_FROM_X)
+
+  const d = trackD(x)
+  for(const el of document.querySelectorAll('.track-line,.track-prog,.track-ticks,.track-mark,.mask-prog')){
+    el.setAttribute('d', d)
+  }
+  TRACK_LEN = ARC_LEN + (x - TAIL_FROM_X)
+  // notches are fractions of the whole, so a longer gauge stretches them with
+  // it -- 1:00 stays a third along however wide the bar currently is
+  layoutMarks()
+  if(CUR_FRAC != null) trackSet(CUR_FRAC, CUR_LOW)
+}
+
+// Called by the reveal. 6 is the slit's resting width, so a 124px panel adds
+// 118 on each side. Passing the panel width rather than the delta keeps this
+// honest if the panel sizes are ever retuned in the stylesheet.
+function tailForPanels(panelW){
+  setTail(TAIL_X0 + (panelW ? (panelW - 6) * 2 : 0))
+}
 
 // The digits in the bloom. Driven from the SAME `left` as the gauge on every
 // tick rather than from a second interval of its own -- two timers started a
@@ -530,6 +597,11 @@ const U_CUR = { l:'#e8312a', r:'#2e6fe8' }
 let uOpenMode = null, uTimer = null
 const U_HOLD_TRUNKS = 7500
 const U_HOLD_ODDS   = 9000
+// The open panel widths, mirroring .uslit.expand / .uslit.expand.odds. The
+// timer gauge has to know how much wider the bar just got, and reading it back
+// off a transitioning element would give whatever it is mid-flight.
+const U_PANEL_TRUNKS = 124
+const U_PANEL_ODDS   = 100
 const U_ODDS_FILL   = 'linear-gradient(180deg,#6d28d9,#4c1d95)'
 
 // Nearest named colour, so the eyebrow reads "CRIMSON" not "#e8312a".
@@ -568,6 +640,9 @@ function uOpen(L,R,hold,m){
   if(L) uWrite('left', L.eyebrow, L.value)
   if(R) uWrite('right', R.eyebrow, R.value)
   sL.classList.add('expand'); sR.classList.add('expand')
+  // the timer gauge stretches with the bar, on the same curve, so it still
+  // runs into the ROUND tab while a panel is open
+  tailForPanels(odds ? U_PANEL_ODDS : U_PANEL_TRUNKS)
   uOpenMode=m
   clearTimeout(uTimer)
   uTimer=setTimeout(()=>uCollapse(odds), hold||U_HOLD_TRUNKS)
@@ -576,6 +651,7 @@ function uOpen(L,R,hold,m){
 function uCollapse(restore){
   const sL=uQ('uslitL'), sR=uQ('uslitR'); if(!sL||!sR) return
   sL.classList.remove('expand'); sR.classList.remove('expand')
+  tailForPanels(0)
   uOpenMode=null
   setTimeout(()=>{
     sL.classList.remove('odds'); sR.classList.remove('odds')
