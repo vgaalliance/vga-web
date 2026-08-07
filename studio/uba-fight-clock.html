@@ -972,11 +972,20 @@ function flipSwap(el, text){
   }
 
   _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
-    // Both league clocks answer 'clock'. Without a league tag, hiding one hides
-    // the other. An UNTAGGED clock still works on both, so an older deck keeps
-    // functioning — only a tagged one is filtered.
+    // LEAGUE GATE — every command, not just 'clock'.
+    //
+    // It used to sit inside the 'clock' branch alone, so show/hide was filtered
+    // and nothing else was. The deck stamps league on EVERY message (see
+    // send() in control.html), so 'corner', 'clockodds' and 'round' carried the
+    // tag and both clocks ignored it: one press of Colours, Odds or a round
+    // button animated the UBA bar and the UBAe bar at once whenever both
+    // sources were live. Names and timers were never at risk -- those use
+    // different command names per league ('bout'/'clocktimer' here,
+    // 'pickbar'/'matchtimer' there) -- which is exactly why it went unnoticed.
+    //
+    // An UNTAGGED command still passes, so an older cached deck keeps working.
+    if(c.league && c.league!=='uba') return
     if(c.type==='clock'){
-      if(c.league && c.league!=='uba') return
       document.querySelector('.hud-root').classList.toggle('off', c.show===false); return
     }
     if(c.type==='bout'){
