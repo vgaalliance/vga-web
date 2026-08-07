@@ -245,17 +245,30 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
    out"; the shimmer's SPEED says how nearly. */
 
 /* ── SHIMMER ───────────────────────────────────────────────────────────────
-   A short bright segment travelling the gauge toward the flower -- one dash on
-   a copy of the same path, moved by shifting its dashoffset. Doing it with a
-   dash rather than a gradient is what lets it follow the arc: a linear
-   gradient would run flat across the ring and break the moment the path bends.
-   Its SPEED carries the urgency (see shineStart) -- roughly one lap per 3.2s
-   at the top of the round, tightening to one per 0.65s as it empties. */
-.track-shine{fill:none;stroke:#f3e8ff;stroke-width:6;stroke-linecap:round;
-  opacity:0;filter:drop-shadow(0 0 7px rgba(243,232,255,.95));
-  transition:opacity .45s ease, d .5s cubic-bezier(.16,.8,.3,1);}
-.track-wrap.on .track-shine{opacity:.9;}
-.track-wrap.low .track-shine{stroke:#ffd6dd;filter:drop-shadow(0 0 9px rgba(255,120,145,1));}
+   A soft brightening that drifts along the gauge, not a bar sliding down it.
+
+   The first version was a 34-unit dash at .9 opacity with a hard drop-shadow,
+   and it read as exactly what it was: a solid white block travelling a line.
+   Two things fix that and both matter.
+
+   BLUR. The dash is longer (92) and much fainter (.34), then blurred. A blur
+   is what turns a segment with two hard ends into a smear with no edges at
+   all -- you stop seeing an object move and start seeing the bar glow more in
+   one place. Cheap, too: one filter on one path, no extra elements.
+
+   It is still a DASH rather than a gradient, because a dash follows the path.
+   A linear gradient runs flat across the box and would break the instant the
+   stroke bends into the ring.
+
+   SPEED. See shineStart -- it is what carries the urgency, and it is eased so
+   the first minute is barely moving. */
+.track-shine{fill:none;stroke:#f7f0ff;stroke-width:7;stroke-linecap:round;
+  opacity:0;filter:blur(4.5px);
+  transition:opacity .6s ease, d .5s cubic-bezier(.16,.8,.3,1);}
+.track-wrap.on .track-shine{opacity:.34;}
+/* in the last ten seconds it warms toward the red the gauge has gone, and
+   comes up a little -- still no hard edge, just more of it */
+.track-wrap.low .track-shine{stroke:#ffdde3;opacity:.5;}
 
 /* MAIN BAR */
 .main-bar{
@@ -506,9 +519,15 @@ function drawIn(){
 // Driven off CUR_FRAC each frame rather than restarted at thresholds, so it
 // accelerates continuously instead of stepping at 1:00 and 0:30 -- and a
 // re-point of the tail mid-round just changes TRACK_LEN under it.
-const SHINE_LEN  = 34      // how long the travelling segment is
-const SHINE_SLOW = 3200    // ms per lap with a full gauge
-const SHINE_FAST = 650     // ms per lap at zero
+const SHINE_LEN  = 92      // long and blurred, so it is a smear not a block
+const SHINE_SLOW = 6000    // ms per lap with a full gauge -- barely drifting
+const SHINE_FAST = 620     // ms per lap at zero
+// The ramp. A straight line from slow to fast spends the whole round visibly
+// speeding up, which is motion competing with the fight for no information.
+// Raising the fraction to a power >1 keeps it near the slow end for most of
+// the first minute and then lets it climb, so it is scenery early and a signal
+// late. At 3:00 a lap takes 6.0s, at 2:15 4.1s, at 1:30 2.4s, at 0:45 1.1s.
+const SHINE_RAMP = 1.6
 let shineRAF = null, shinePos = 0, shineLast = 0
 
 function shineStart(){
@@ -521,7 +540,7 @@ function shineStart(){
     // clamped, so a dropped frame or a tabbed-out source does not teleport it
     const dt = Math.min(64, ts - shineLast); shineLast = ts
     const f = Math.max(0, Math.min(1, CUR_FRAC))
-    const period = SHINE_FAST + (SHINE_SLOW - SHINE_FAST) * f
+    const period = SHINE_FAST + (SHINE_SLOW - SHINE_FAST) * Math.pow(f, SHINE_RAMP)
     const span = TRACK_LEN + SHINE_LEN
     shinePos = (shinePos + span * dt / period) % span
     el.style.strokeDasharray  = `${SHINE_LEN} ${TRACK_LEN}`
@@ -721,11 +740,34 @@ function uColorName(hex){
   return best[0]
 }
 
+// A shorts colour is the only thing telling you which fighter is which once
+// they are moving, so the NAME wears it too rather than leaving the pairing to
+// a 6px sliver at the far end of the cell. Lifted toward white first: real
+// trunk colours include navy and black, and a name in those on a near-black
+// bar is unreadable. Mixing 62% of the way to white keeps the hue obvious --
+// a blue name still reads blue next to a red one -- while guaranteeing the
+// contrast the raw colour cannot.
+function uTint(hex){
+  const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex||'')
+  if(!m) return '#f0e8ff'
+  const mix = (c, k=0.62) => Math.round(parseInt(c,16) + (255 - parseInt(c,16)) * k)
+  return `rgb(${mix(m[1])},${mix(m[2])},${mix(m[3])})`
+}
+
+function uPaintNames(){
+  const f=document.querySelectorAll('.fighter')
+  if(f[0]) f[0].style.color = uTint(U_CUR.l)
+  if(f[1]) f[1].style.color = uTint(U_CUR.r)
+}
+
 function uSetCorners(l,r){
   if(l) U_CUR.l=l; if(r) U_CUR.r=r
   const L=uQ('uslitL'), R=uQ('uslitR')
   if(L && !L.classList.contains('odds')) L.style.background=U_CUR.l
   if(R && !R.classList.contains('odds')) R.style.background=U_CUR.r
+  // names follow the corners even when the reveal is skipped -- the deck can
+  // set colours quietly, and the pairing has to hold either way
+  uPaintNames()
 }
 function uWrite(side, eyebrow, value){
   const e=uQ(side==='left'?'uslitEyeL':'uslitEyeR')
@@ -1259,6 +1301,9 @@ tick();
     if(!f.length) return
     const nL = (d.pickL!=null && d.left)  ? d.left[d.pickL]  : d.teamA
     const nR = (d.pickR!=null && d.right) ? d.right[d.pickR] : d.teamB
+    // repaint after a name swap: a pick can land before the corners are set,
+    // or after, and either order has to end with the names wearing the colours
+    uPaintNames()
     if(f[0] && nL!=null){ f[0].textContent=nL; uFitName(f[0]) }
     if(f[1] && nR!=null){ f[1].textContent=nR; uFitName(f[1]) }
   }).subscribe()
