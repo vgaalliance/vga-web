@@ -299,7 +299,7 @@
         <span style="color:var(--gdim);font-size:16px;width:52px">RIGHT</span>
         <span id="swatchR" style="display:flex;gap:6px;flex-wrap:wrap"></span>
       </div>
-      <div class="row only-uba" style="margin-bottom:8px">
+      <div class="row" style="margin-bottom:8px">
         <button onclick="fireClockOdds()">📊 Odds on the clock</button>
         <span id="clockOddsHint" style="color:var(--gdim);font-size:16px">arm a bout first</span>
       </div>
@@ -1154,19 +1154,41 @@ window.fireCorners=()=>send({type:'corner', reveal:true, d:cornerPayload()})
    decimal = pool / that side's stake. >=2 shows +(d-1)*100, else -100/(d-1).
    Reads bet_pools_public live, so locking bets is reflected the moment you
    press it. A side with no money on it has no odds — shows "—", never NaN. */
+const isUbae=()=>document.body.classList.contains('ev-ubae')
+
 function americanOdds(pool, side){
   if(!side || !pool) return '—'
   const dec = pool/side
   if(!isFinite(dec) || dec<=1) return '—'
   return dec>=2 ? '+'+Math.round((dec-1)*100) : '-'+Math.round(100/(dec-1))
 }
+// The UBAe half. Prices the ARMED MATCH the same way the UBA one prices the
+// armed bout -- pari-mutuel, so the price is just the pool split, and the two
+// leagues therefore share americanOdds() rather than each inventing a formula.
+//
+// Matched by team_match_id rather than by team names: MN.id is already the
+// match the deck has armed, and names go stale the moment a team is renamed.
+async function fireUbaeClockOdds(hint){
+  if(!MN.id){ hint.textContent='load a match first'; return }
+  const { data, error } = await sb.from('ubae_bet_pools_public')
+    .select('*').eq('team_match_id', MN.id).maybeSingle()
+  if(error){ hint.textContent='could not read the pool'; return }
+  if(!data){ hint.textContent='no market on '+(MN.a||'A')+' vs '+(MN.b||'B'); return }
+  const pool=(data.total_a||0)+(data.total_b||0)
+  if(!pool){ hint.textContent='market is open but nobody has bet yet'; return }
+  const l=americanOdds(pool,data.total_a), r=americanOdds(pool,data.total_b)
+  send({type:'clockodds', d:{ l, r }})
+  hint.textContent=`${data.side_a} ${l} · ${data.side_b} ${r} · ${pool.toLocaleString()} VC`
+}
+
 window.fireClockOdds=async()=>{
   const hint=document.getElementById('clockOddsHint')
-  // UBA only, deliberately. UBAe wagers live in ubae_bets, which anon has no
-  // SELECT on and which has no public pool view -- the deck could not compute a
-  // team price if it wanted to. A button that always answers "no market" is
-  // worse than no button, so the odds row stays UBA-gated until that view
-  // exists. The trunk/colour reveal above is not affected and works in both.
+  // Both leagues now. This was UBA-only because UBAe wagers had no public pool
+  // view, so the deck could not price a team match if it wanted to -- and a
+  // button that always answers "no market" is worse than no button. The view
+  // exists (ubae_bet_pools_public, 2026-08-07), so the row is un-gated.
+  if(isUbae()) return fireUbaeClockOdds(hint)
+
   const b = UBA.armed!=null ? UBA.bouts[UBA.armed] : null
   if(!b){ hint.textContent='arm a bout first'; return }
   const ev=betEvent()
