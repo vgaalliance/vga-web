@@ -98,11 +98,42 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
    The UBA clock's mechanism, adapted. Two slim colour slivers flank the VS
    block; a reveal EXPANDS the sliver itself into a labelled colour panel,
    holds, and collapses back.
-   The difference is which way it grows. UBA is centred, so it opens both ways
-   from the middle and the bar has to be widened to make room. This bar is
-   anchored at left:48px and sized by its contents, so expanding a slit pushes
-   everything to its right outward on its own -- no width juggling, and the
-   left edge never moves, which is the whole reason the bar sits in a corner. */
+
+   ── THE SLOT, and why the bar's width is now frozen ───────────────────────
+   This went through two wrong answers before the right one, so the reasoning
+   is worth keeping.
+
+   The bar is anchored bottom-left at left:48px and sized by its contents. So
+   for as long as the slits took their width out of the LAYOUT, every reveal
+   resized the bar -- 236px of it -- and something had to absorb that:
+
+     v1  the bar grew rightward. Measured: the right fighter's name slid 236px
+         across the frame on open and rushed 236px back on close, and the round
+         tab went with it. The left edge held, but three things moved.
+     v2  "focus mode" retracted the emblem and the UBAe block so the right edge
+         would not travel. That made it worse: .ubae-block is sized by its text
+         and width:auto -> 0 is not animatable, so the retract SNAPPED, and it
+         dragged the whole matchup 87px leftward off the emblem. Both names
+         moved on every single reveal.
+
+   Neither is fixable by choosing a nicer direction, because the premise is
+   wrong: a panel that opens cannot take its space from a bar that is sized by
+   its contents without moving the contents.
+
+   So the space is RESERVED. Each slit sits in a .uslot that is already the
+   full 124px at rest, wearing the VS block's own background so the three read
+   as one centre panel with a thin colour sliver at each of its edges. The bar
+   measures the same open or shut. The emblem is the anchor and nothing on the
+   bar moves, ever -- the panel just fills a hole that was always there. */
+.uslot{width:124px;flex-shrink:0;align-self:stretch;
+  display:flex;align-items:stretch;position:relative;z-index:4;
+  background:rgba(50,8,100,.38);}
+/* The sliver rests on the NAME side of its slot and grows inward toward VS.
+   That keeps the resting look the bar has always had -- a colour line marking
+   where each fighter's half ends -- and it means the sliver is touching the
+   fighter it belongs to, which is the whole point of a corner colour. */
+.uslot.left{justify-content:flex-start;border-left:1px solid rgba(168,85,247,.25);}
+.uslot.right{justify-content:flex-end;border-right:1px solid rgba(168,85,247,.25);}
 .uslit{width:6px;flex-shrink:0;align-self:stretch;position:relative;
   overflow:hidden;display:flex;align-items:center;justify-content:center;
   background:#e8312a;z-index:7;
@@ -175,7 +206,10 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 
 /* MAIN BAR */
 .main-bar{
-  display:flex;align-items:center;height:52px;
+  /* never squeezed by the row: its children are all flex-shrink:0, so letting
+     the bar shrink only makes them overflow and clip under overflow:hidden --
+     which looks exactly like the graphic falling apart */
+  display:flex;align-items:center;height:52px;flex-shrink:0;
   background:rgba(4,0,16,.45);
   border:1px solid rgba(168,85,247,.28);
   border-left:none;
@@ -198,7 +232,11 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 @keyframes ng{0%,100%{text-shadow:0 0 10px rgba(155,48,255,.22);}50%{text-shadow:0 0 20px rgba(155,48,255,.6);}}
 .f-name{animation:ng 3.2s ease-in-out infinite;}
 
-.vs-section{display:flex;align-items:center;justify-content:center;padding:0 24px;height:100%;flex-shrink:0;z-index:4;border-left:1px solid rgba(168,85,247,.25);border-right:1px solid rgba(168,85,247,.25);background:rgba(50,8,100,.38);}
+/* No side borders any more: the .uslot on each side carries the outer edge of
+   the centre panel, and a border here as well would draw a second line right
+   next to the resting sliver. Same background as .uslot on purpose -- slot, VS,
+   slot read as one block. */
+.vs-section{display:flex;align-items:center;justify-content:center;padding:0 24px;height:100%;flex-shrink:0;z-index:4;background:rgba(50,8,100,.38);}
 .vs-text{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;font-style:italic;color:#d8b4fe;letter-spacing:.3em;text-shadow:0 0 14px rgba(168,85,247,.9);}
 @keyframes vp{0%,100%{opacity:.82}50%{opacity:1}}
 .vs-text{animation:vp 1.8s ease-in-out infinite;}
@@ -280,13 +318,16 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
       <div class="fighter">
         
       </div>
-      <div class="uslit" id="uslitL"><span class="uslit-label" id="uslitLabelL">
+      <!-- Each slit lives in a SLOT that is already 124px wide at rest. The
+           slot is what holds the bar's width still; the slit grows inside it.
+           See the .uslot comment in the stylesheet. -->
+      <div class="uslot left"><div class="uslit" id="uslitL"><span class="uslit-label" id="uslitLabelL">
         <span class="uslit-eyebrow" id="uslitEyeL">RED</span><span class="uslit-value" id="uslitValL">COLOURS</span>
-      </span></div>
+      </span></div></div>
       <div class="vs-section"><div class="vs-text" id="vsText">VS</div></div>
-      <div class="uslit rightside" id="uslitR"><span class="uslit-label" id="uslitLabelR">
+      <div class="uslot right"><div class="uslit rightside" id="uslitR"><span class="uslit-label" id="uslitLabelR">
         <span class="uslit-eyebrow" id="uslitEyeR">BLUE</span><span class="uslit-value" id="uslitValR">COLOURS</span>
-      </span></div>
+      </span></div></div>
       <div class="fighter">
         
         
