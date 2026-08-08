@@ -472,7 +472,7 @@ async function loadAll(){
     sb.from('ubae_fighter_records').select('stage_name,current_team'),
     sb.from('team_matches_public').select('*').eq('status','scheduled').order('match_date').limit(8),
     sb.from('events_public').select('*').eq('status','scheduled').gte('event_date',FUTURE()).order('event_date').limit(3),
-    sb.from('rankings_public').select('rank,fighter_name,weight_class').eq('scope','weight_class').order('rank'),
+    sb.from('rankings_public').select('rank,fighter_name,weight_class,level').eq('scope','weight_class').order('rank'),
   ])
   renderStandings(st||[]); renderRosters(st||[], rec||[]); renderSchedule(mt||[]); renderNext(ev||[]); renderTvs(mt||[])
   showCard(null)   // preload soonest card
@@ -498,7 +498,9 @@ async function loadUba(rk){
         .gte('event_date',FUTURE()).order('event_date').limit(1),
     ])
     const champs=ch||[]
-    renderUbaRank(rk, champs)
+    // pro only — the amateur ladder is real data now (seeded 2026-08-08) and
+    // without this filter it interleaves into the UBA board: two #1s per division
+    renderUbaRank((rk||[]).filter(r => r.level !== 'amateur'), champs)
     renderChamps(champs)
     renderP4P(p4||[], champs)
     renderFotm((fm||[])[0], champs)

@@ -194,7 +194,7 @@ const portrait=(name,photo)=>`<div class="por">${photo?`<img src="${esc(photo)}"
 /* ── ① champion banners + ② P4P + ③ divisions ── */
 (async()=>{
   const [ranks,cards]=await Promise.all([
-    get('rankings_public?select=weight_class,rank,fighter_name,fighter_slug,as_of_date&league=eq.UBA&order=rank.asc'),
+    get('rankings_public?select=weight_class,rank,fighter_name,fighter_slug,as_of_date&league=eq.UBA&level=eq.pro&order=rank.asc'),
     get('fighter_cards?select=display_name,slug,weight_class,wins:headline_wins,losses:headline_losses,draws:headline_draws,is_champion,profile_photo_url'),
   ]);
   const byslug={}; cards.forEach(c=>byslug[c.slug]=c);
