@@ -724,35 +724,44 @@ window.fireNextEvent=async()=>{
   const hint=document.getElementById('nextevHint')
   const fmt=iso=>new Date(iso).toLocaleString('en-US',{weekday:'long',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZone:'America/New_York'})+' ET'
   try{
-    if(EV==='ubae'){
-      const { data: ms } = await sb.from('team_matches_public').select('*')
-        .eq('status','scheduled').gte('match_date',new Date(Date.now()-6*3600e3).toISOString())
-        .order('match_date').limit(2)
-      if(!ms?.length){ if(hint)hint.textContent='no scheduled team matches'; return }
+    const blocks=[]
+
+    // The next UBAe match night, if one is scheduled.
+    const { data: ms } = await sb.from('team_matches_public').select('*')
+      .eq('status','scheduled').gte('match_date',new Date(Date.now()-6*3600e3).toISOString())
+      .order('match_date').limit(2)
+    if(ms?.length){
       const sameNight = ms[1] && new Date(ms[1].match_date).toDateString()===new Date(ms[0].match_date).toDateString()
-      send({type:'nextev', d:{
-        kick:'NEXT WEEK', title:'UBAe MATCH NIGHT', dateText:fmt(ms[0].match_date),
+      blocks.push({ when:ms[0].match_date, kick:'NEXT WEEK', title:'UBAe MATCH NIGHT',
+        dateText:fmt(ms[0].match_date),
         main:{a:ms[0].team_a_name,b:ms[0].team_b_name},
-        co: sameNight ? {a:ms[1].team_a_name,b:ms[1].team_b_name} : null,
-      }})
-      if(hint)hint.textContent=ms[0].team_a_name+' vs '+ms[0].team_b_name+(sameNight?' +1':'')
-    } else {
-      const { data: evs } = await sb.from('events_public').select('id,name,event_date')
-        .eq('status','scheduled').gte('event_date',new Date(Date.now()-6*3600e3).toISOString())
-        .order('event_date').limit(1)
-      const ev=evs?.[0]
-      if(!ev){ if(hint)hint.textContent='no scheduled events'; return }
+        co: sameNight ? {a:ms[1].team_a_name,b:ms[1].team_b_name} : null })
+    }
+
+    // The next UNLOCKED solo event. events_public does not expose the lock, but
+    // event_matches is the publish gate itself -- a locked card returns no rows
+    // -- so "has bouts in event_matches" IS "unlocked", checked soonest-first.
+    // Amateur cards are skipped: this is the UBA slot of the promo.
+    const { data: evs } = await sb.from('events_public').select('id,name,type,event_date')
+      .eq('status','scheduled').neq('type','ama')
+      .gte('event_date',new Date(Date.now()-6*3600e3).toISOString())
+      .order('event_date').limit(4)
+    for(const ev of (evs||[])){
       const { data: bouts } = await sb.from('event_matches')
         .select('bout_number,fighter_a_name,fighter_b_name').eq('event_id',ev.id)
         .in('bout_number',[1,2]).order('bout_number')
-      const m=bouts?.find(b=>b.bout_number===1), co=bouts?.find(b=>b.bout_number===2)
-      send({type:'nextev', d:{
-        kick:'NEXT EVENT', title:ev.name, dateText:fmt(ev.event_date),
+      if(!bouts?.length) continue   // locked — try the next one
+      const m=bouts.find(b=>b.bout_number===1), co=bouts.find(b=>b.bout_number===2)
+      blocks.push({ when:ev.event_date, kick:'NEXT EVENT', title:ev.name, dateText:fmt(ev.event_date),
         main: m ? {a:m.fighter_a_name,b:m.fighter_b_name} : null,
-        co:   co ? {a:co.fighter_a_name,b:co.fighter_b_name} : null,
-      }})
-      if(hint)hint.textContent=ev.name+(m?'':' (card locked — no matchups shown)')
+        co:   co ? {a:co.fighter_a_name,b:co.fighter_b_name} : null })
+      break
     }
+
+    if(!blocks.length){ if(hint)hint.textContent='nothing to promote — no team matches, no unlocked cards'; return }
+    blocks.sort((a,b)=>new Date(a.when)-new Date(b.when))
+    send({type:'nextev', d:{ blocks }})
+    if(hint)hint.textContent=blocks.map(b=>b.title).join('  +  ')
   }catch(e){ if(hint)hint.textContent='failed: '+e.message }
 }
 window.hideNextEvent=()=>send({type:'nextev', show:false})

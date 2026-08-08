@@ -287,13 +287,15 @@
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   #nextev .nx-date{font:500 16px 'Barlow';color:#b9b9c4;margin-top:5px;}
   #nextev .nx-rows{padding:2px 22px 16px;display:flex;flex-direction:column;gap:8px;}
-  /* the cascade: each row arrives after the plate, main first, co-main next */
+  /* the cascade: rows arrive after the plate, in document order across every
+     block -- delays are set inline by the handler, since the row count varies
+     with how many events are being promoted */
   #nextev .nx-row{display:flex;align-items:baseline;gap:12px;
     opacity:0;transform:translateX(-24px);
     transition:opacity .45s ease,transform .5s cubic-bezier(.16,1,.3,1);}
-  #nextev.show .nx-row:nth-child(1){transition-delay:.45s;}
-  #nextev.show .nx-row:nth-child(2){transition-delay:.7s;}
   #nextev.show .nx-row{opacity:1;transform:translateX(0);}
+  /* a second promoted event separates with the kit's hairline, not a new box */
+  #nextev .nx-block + .nx-block{border-top:1px solid rgba(168,85,247,.22);margin-top:4px;}
   #nextev .nx-tag{font:600 11px 'Barlow';letter-spacing:.2em;color:#8b8b96;
     text-transform:uppercase;min-width:74px;}
   #nextev .nx-bout{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:27px;
@@ -537,17 +539,7 @@
 
   <div id="mtimer">2:00</div>
 
-  <div id="nextev">
-    <div class="nx-head">
-      <div class="nx-kick" id="nxKick">NEXT EVENT</div>
-      <div class="nx-title" id="nxTitle">—</div>
-      <div class="nx-date" id="nxDate"></div>
-    </div>
-    <div class="nx-rows">
-      <div class="nx-row"><span class="nx-tag">MAIN</span><span class="nx-bout" id="nxMain">—</span></div>
-      <div class="nx-row" id="nxCoRow"><span class="nx-tag">CO-MAIN</span><span class="nx-bout" id="nxCo">—</span></div>
-    </div>
-  </div>
+  <div id="nextev"><div id="nxBlocks"></div></div>
 
   <!-- CALL TO ACTION. Both lines are always shown: the site and the Discord
        answer different questions ("where do I read more" / "how do I get in"),
@@ -737,17 +729,23 @@ function handle(c){
     const el=$('nextev')
     clearTimeout(nxTimer)
     if(c.show===false){ el.classList.remove('show'); return }
-    const d=c.d||{}
-    $('nxKick').textContent = d.kick || 'NEXT EVENT'
-    $('nxTitle').textContent = d.title || '—'
-    const ts = d.when ? Math.floor(new Date(d.when).getTime()/1000) : null
-    $('nxDate').textContent = d.dateText || ''
-    const setBout = (id, b) => { const n=$(id);
-      if (!b){ n.parentElement.style.display='none'; return }
-      n.parentElement.style.display='flex'
-      n.innerHTML = `${esc(b.a)}<i>vs</i>${esc(b.b)}` }
-    setBout('nxMain', d.main); setBout('nxCo', d.co)
-    // re-stage the cascade on every fire, or a second press shows rows already in
+    // one card, one or many events: the deck sends d.blocks (soonest first) and
+    // each block is a kicker + title + date + its bouts. The single-event shape
+    // (d.title at the top level) still renders, as a one-block card.
+    const blocks = (c.d?.blocks?.length ? c.d.blocks : [c.d||{}])
+    const bout = (tag,b) => b ? `<div class="nx-row"><span class="nx-tag">${tag}</span>
+        <span class="nx-bout">${esc(b.a)}<i>vs</i>${esc(b.b)}</span></div>` : ''
+    $('nxBlocks').innerHTML = blocks.map(d=>`
+      <div class="nx-block">
+        <div class="nx-head">
+          <div class="nx-kick">${esc(d.kick||'NEXT EVENT')}</div>
+          <div class="nx-title">${esc(d.title||'—')}</div>
+          <div class="nx-date">${esc(d.dateText||'')}</div>
+        </div>
+        <div class="nx-rows">${bout('MAIN',d.main)}${bout('CO-MAIN',d.co)}</div>
+      </div>`).join('')
+    // stagger every row in document order, whatever the count came to
+    ;[...el.querySelectorAll('.nx-row')].forEach((r,i)=>r.style.transitionDelay=(0.45+i*0.25)+'s')
     el.classList.remove('show'); void el.offsetWidth; el.classList.add('show')
     nxTimer=setTimeout(()=>el.classList.remove('show'), (c.hold ?? 14)*1000)
     return
