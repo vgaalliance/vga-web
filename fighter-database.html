@@ -275,6 +275,15 @@
       </svg>
       <input class="search-input" id="search" type="text" placeholder="Search fighter...">
     </div>
+    <!-- Level and weight class are SEPARATE groups on purpose: they answer
+         different questions and combine ("amateur heavyweights"). Folding
+         Amateur in as a sixth weight pill would have made the two mutually
+         exclusive, which is the one thing you actually want to do here. -->
+    <div class="pills" id="levels">
+      <button class="pill active" data-l="all">All</button>
+      <button class="pill" data-l="pro">Pro</button>
+      <button class="pill" data-l="amateur">Amateur</button>
+    </div>
     <div class="pills" id="filters">
       <button class="pill active" data-f="all">All</button>
       <button class="pill" data-f="lightweight">LW</button>
@@ -308,7 +317,7 @@ const H   = { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY };
 const BASE = 'https://www.ubaesports.com/fighter?f=';
 const PER_PAGE = 48;
 
-let all=[], filtered=[], filt='all', sort='rank', q='', page=0;
+let all=[], filtered=[], filt='all', lvl='all', sort='rank', q='', page=0;
 const dir = { rank:1, wins:-1 };
 
 // Card look + badge run off DIVISION rank (champ = belt flag). P4P is a
@@ -360,6 +369,7 @@ const card = f => {
 
 function getFiltered() {
   let list = filt === 'all' ? [...all] : all.filter(f => f.weight_class === filt);
+  if (lvl !== 'all') list = list.filter(f => f.level === lvl);
   if (q) list = list.filter(f => f.display_name.toLowerCase().includes(q));
   list.sort((a, b) => {
     const aAma = a.level === 'amateur' ? 1 : 0;
@@ -406,10 +416,19 @@ function draw() {
 function changePage(d) { page = Math.max(0, Math.min(Math.ceil(filtered.length / PER_PAGE) - 1, page + d)); draw(); }
 function goPage(p) { page = p; draw(); }
 
+// Each group clears only ITS OWN pills. The old handler cleared every .pill on
+// the page, which with two groups would have deselected the level the moment
+// you touched a weight class -- the two filters have to be able to hold at once.
 document.getElementById('filters').addEventListener('click', e => {
   const b = e.target.closest('.pill'); if (!b) return;
-  document.querySelectorAll('.pill').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('#filters .pill').forEach(x => x.classList.remove('active'));
   b.classList.add('active'); filt = b.dataset.f; render();
+});
+
+document.getElementById('levels').addEventListener('click', e => {
+  const b = e.target.closest('.pill'); if (!b) return;
+  document.querySelectorAll('#levels .pill').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); lvl = b.dataset.l; render();
 });
 
 document.querySelectorAll('.sort-btn').forEach(b => {
@@ -427,12 +446,17 @@ document.getElementById('search').addEventListener('input', e => {
 
 Promise.all([
   fetch(`${SB}/rest/v1/fighter_cards?select=display_name,weight_class,wins,losses,draws,level,is_champion,slug,profile_photo_url`, { headers: H }).then(r => r.json()),
-  fetch(`${SB}/rest/v1/rankings_public?scope=eq.weight_class&level=eq.pro&select=fighter_slug,rank`, { headers: H }).then(r => r.json()),
+  // Both ladders, not just pro. The amateur one is empty today (0 rows), but
+  // hardcoding level=eq.pro meant every amateur would read as unranked forever
+  // even after the rankings were entered -- a filter that can never come good.
+  // Keyed by slug AND level so the two ladders cannot overwrite each other,
+  // which is the same reason they are stored separately in the first place.
+  fetch(`${SB}/rest/v1/rankings_public?scope=eq.weight_class&select=fighter_slug,rank,level`, { headers: H }).then(r => r.json()),
 ])
   .then(([cards, ranks]) => {
     const divRank = {};
-    (Array.isArray(ranks) ? ranks : []).forEach(r => { divRank[r.fighter_slug] = r.rank; });
-    all = (Array.isArray(cards) ? cards : []).map(f => ({ ...f, div_rank: divRank[f.slug] ?? null }));
+    (Array.isArray(ranks) ? ranks : []).forEach(r => { divRank[r.level + '|' + r.fighter_slug] = r.rank; });
+    all = (Array.isArray(cards) ? cards : []).map(f => ({ ...f, div_rank: divRank[f.level + '|' + f.slug] ?? null }));
     render();
   })
   .catch(() => { document.getElementById('grid').innerHTML = '<div class="no-data">error loading</div>'; });
