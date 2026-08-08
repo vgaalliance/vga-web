@@ -38,9 +38,19 @@ let CONFIG = {
 };
 </script>
 
+<!-- Broadcast type. Arial is a system default, not a decision, and it reads
+     like a spreadsheet next to real sports graphics. Barlow Condensed is the
+     condensed grotesque every fight broadcast uses a cousin of: it carries
+     weight at 46px and, being condensed, fits long names and divisions in the
+     same box that clipped them before. Preconnect so OBS's first paint isn't
+     waiting on DNS. Arial stays as the fallback — a missed font load must
+     degrade, never blank the graphic. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Barlow:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;}
-html,body{width:1920px;height:1080px;overflow:hidden;background:transparent;font-family:Arial,sans-serif;}
+html,body{width:1920px;height:1080px;overflow:hidden;background:transparent;font-family:'Barlow Condensed',Arial,sans-serif;}
 canvas{position:fixed;top:0;left:0;pointer-events:none;}
 #tape{position:fixed;top:0;left:0;width:1920px;height:1080px;}
 </style>
@@ -220,6 +230,14 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
 
   <!-- FIGHTER NAME PLATES -->
   <div id="namePlateLeft" style="position:absolute; left:80px; bottom:60px; width:700px; opacity:0;">
+    <!-- Flag sits ABOVE the name, not inline: inline would compete with the
+         name fitter for the same row and shrink the name to make room. Hidden
+         until a country is actually set (only 168 of 332 fighters have one),
+         so an unknown country leaves no gap. -->
+    <div id="flagRowLeft" style="display:none; align-items:center; gap:10px; margin-bottom:8px;">
+      <img id="flagImgLeft" alt="" style="height:26px; width:auto; display:block; box-shadow:0 1px 4px rgba(0,0,0,0.6);">
+      <span id="flagTextLeft" style="font-size:15px; font-weight:700; letter-spacing:3px; color:hsla(265,25%,85%,0.75); text-transform:uppercase;"></span>
+    </div>
     <div id="nameLeft" style="font-size:46px; font-weight:900; color:#f3f1fa; letter-spacing:1px; text-transform:uppercase;">FIGHTER NAME</div>
     <div style="height:2px; width:260px; background:linear-gradient(90deg, hsla(270,55%,70%,0.7), transparent); margin-top:10px;"></div>
     <!-- RANK / RECORD / ODDS BAR — three-part dark bar: small rank
@@ -237,6 +255,10 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
     </div>
   </div>
   <div id="namePlateRight" style="position:absolute; right:80px; bottom:60px; width:700px; text-align:right; opacity:0;">
+    <div id="flagRowRight" style="display:none; align-items:center; justify-content:flex-end; gap:10px; margin-bottom:8px;">
+      <span id="flagTextRight" style="font-size:15px; font-weight:700; letter-spacing:3px; color:hsla(265,25%,85%,0.75); text-transform:uppercase;"></span>
+      <img id="flagImgRight" alt="" style="height:26px; width:auto; display:block; box-shadow:0 1px 4px rgba(0,0,0,0.6);">
+    </div>
     <div id="nameRight" style="font-size:46px; font-weight:900; color:#f3f1fa; letter-spacing:1px; text-transform:uppercase;">FIGHTER NAME</div>
     <div style="height:2px; width:260px; background:linear-gradient(90deg, transparent, hsla(270,55%,70%,0.7)); margin-top:10px; margin-left:auto;"></div>
     <!-- RANK / RECORD / ODDS BAR — mirrored: odds, record, rank box -->
@@ -254,10 +276,16 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
 </div>
 
 <style>
-  .stat-val{font-size:30px; font-weight:700; color:#f3f1fa; width:90px;}
+  /* width was a fixed 90px, so any value wider than that -- every division
+     name -- overflowed its box and ran straight through the centre label.
+     flex:1 + min-width:0 makes each side a real column that cannot push past
+     the label, and fitStatRows() below shrinks the type to fit inside it. */
+  .stat-val{font-size:30px; font-weight:700; color:#f3f1fa; flex:1 1 0; min-width:0; white-space:nowrap;}
   .stat-val.left{text-align:left;}
   .stat-val.right{text-align:right;}
-  .stat-label{font-size:14px; font-weight:600; letter-spacing:2px; color:hsla(270,30%,75%,0.55); text-transform:uppercase;}
+  /* The label owns the middle and never yields it, so the two values are
+     measured against what is actually left over. */
+  .stat-label{font-size:14px; font-weight:600; letter-spacing:2px; color:hsla(270,30%,75%,0.55); text-transform:uppercase; flex:0 0 auto; padding:0 10px;}
 </style>
 
 <!-- ============================================================
@@ -579,8 +607,43 @@ function fitBoutTitle(){
   let size = 30; el.style.whiteSpace='nowrap'; el.style.fontSize = size+'px'
   while(size > 14 && measure() > room){ size -= 1; el.style.fontSize = size+'px' }
 }
-fitBoutTitle()
+// Same problem one row down: "Lightweight" at 30px is wider than its column,
+// and a fixed width just let it run through the centre label. Shrink each
+// value to its own column instead -- per element, so a short value beside a
+// long one keeps full size rather than both dropping to the worst case.
+function fitStatVals(){
+  for(const el of document.querySelectorAll('.stat-val')){
+    // Range, not scrollWidth: the same measurement lesson as fitBoutTitle --
+    // with overflow visible, scrollWidth reports the clamped width and the
+    // fitter believes oversized text fits.
+    const measure = () => { const r=document.createRange(); r.selectNodeContents(el)
+      return r.getBoundingClientRect().width }
+    const room = el.getBoundingClientRect().width - 2
+    let size = 30; el.style.fontSize = size+'px'
+    while(size > 15 && measure() > room){ size -= 1; el.style.fontSize = size+'px' }
+  }
+}
+// A 46px name plate has the same failure at a bigger size -- long stage names
+// ran off the plate entirely.
+function fitNames(){
+  for(const id of ['nameLeft','nameRight']){
+    const el = document.getElementById(id); if(!el) continue
+    const measure = () => { const r=document.createRange(); r.selectNodeContents(el)
+      return r.getBoundingClientRect().width }
+    el.style.whiteSpace='nowrap'
+    let size = 46; el.style.fontSize = size+'px'
+    const room = el.parentElement.getBoundingClientRect().width - 10
+    while(size > 24 && measure() > room){ size -= 1; el.style.fontSize = size+'px' }
+  }
+}
+function fitAll(){ fitBoutTitle(); fitStatVals(); fitNames() }
+fitAll()
+// Webfonts land AFTER first paint, and every fitter above measures text --
+// measured against Arial, each one settles on the wrong size and the graphic
+// goes to air mis-sized. Re-run once the real font is in.
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(fitAll)
 window.__tape = playTape; window.__tapeHide = hideTape; window.__fitTitle = fitBoutTitle;
+window.__fitAll = fitAll;
 
 // ---------- RAIL HEIGHT — match exactly to where SHEATH starts ----------
 // Rather than guess a fixed pixel height, measure sponsorBar's actual
@@ -988,6 +1051,58 @@ editOverlay.addEventListener('click', (e) => {
   const _sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
     'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
   const set=(id,v)=>{ if(v!=null){ const e=document.getElementById(id); if(e) e.textContent=v } }
+
+  // COUNTRY FLAGS. Rendered as images, not emoji: regional-indicator flag
+  // emoji do not render on Windows at all -- Chrome there draws the two
+  // letters instead, so an emoji flag would have shown "US" on the stream
+  // machine while looking perfect here. Every code below was verified against
+  // flagcdn before shipping.
+  const FLAG_CODES = Object.fromEntries((
+    'Afghanistan:af|Albania:al|Algeria:dz|Andorra:ad|Angola:ao|Antigua and Barbuda:ag|Argentina:ar|'+
+    'Armenia:am|Australia:au|Austria:at|Azerbaijan:az|Bahamas:bs|Bahrain:bh|Bangladesh:bd|Barbados:'+
+    'bb|Belarus:by|Belgium:be|Belize:bz|Benin:bj|Bhutan:bt|Bolivia:bo|Bosnia and Herzegovina:ba|Bot'+
+    'swana:bw|Brazil:br|Brunei:bn|Bulgaria:bg|Burkina Faso:bf|Burundi:bi|Cambodia:kh|Cameroon:cm|Ca'+
+    'nada:ca|Cape Verde:cv|Central African Republic:cf|Chad:td|Chile:cl|China:cn|Colombia:co|Comoro'+
+    's:km|Congo:cg|Costa Rica:cr|Croatia:hr|Cuba:cu|Cyprus:cy|Czechia:cz|Denmark:dk|Djibouti:dj|Dom'+
+    'inica:dm|Dominican Republic:do|Ecuador:ec|Egypt:eg|El Salvador:sv|Equatorial Guinea:gq|Eritrea'+
+    ':er|Estonia:ee|Eswatini:sz|Ethiopia:et|Fiji:fj|Finland:fi|France:fr|Gabon:ga|Gambia:gm|Georgia'+
+    ':ge|Germany:de|Ghana:gh|Greece:gr|Grenada:gd|Guatemala:gt|Guinea:gn|Guinea-Bissau:gw|Guyana:gy'+
+    '|Haiti:ht|Honduras:hn|Hungary:hu|Iceland:is|India:in|Indonesia:id|Iran:ir|Iraq:iq|Ireland:ie|I'+
+    'srael:il|Italy:it|Ivory Coast:ci|Jamaica:jm|Japan:jp|Jordan:jo|Kazakhstan:kz|Kenya:ke|Kiribati'+
+    ':ki|Kosovo:xk|Kuwait:kw|Kyrgyzstan:kg|Laos:la|Latvia:lv|Lebanon:lb|Lesotho:ls|Liberia:lr|Libya'+
+    ':ly|Liechtenstein:li|Lithuania:lt|Luxembourg:lu|Madagascar:mg|Malawi:mw|Malaysia:my|Maldives:m'+
+    'v|Mali:ml|Malta:mt|Marshall Islands:mh|Mauritania:mr|Mauritius:mu|Mexico:mx|Micronesia:fm|Mold'+
+    'ova:md|Monaco:mc|Mongolia:mn|Montenegro:me|Morocco:ma|Mozambique:mz|Myanmar:mm|Namibia:na|Naur'+
+    'u:nr|Nepal:np|Netherlands:nl|New Zealand:nz|Nicaragua:ni|Niger:ne|Nigeria:ng|North Korea:kp|No'+
+    'rth Macedonia:mk|Norway:no|Oman:om|Pakistan:pk|Palau:pw|Palestine:ps|Panama:pa|Papua New Guine'+
+    'a:pg|Paraguay:py|Peru:pe|Philippines:ph|Poland:pl|Portugal:pt|Qatar:qa|Romania:ro|Russia:ru|Rw'+
+    'anda:rw|Saint Kitts and Nevis:kn|Saint Lucia:lc|Saint Vincent and the Grenadines:vc|Samoa:ws|S'+
+    'an Marino:sm|Sao Tome and Principe:st|Saudi Arabia:sa|Senegal:sn|Serbia:rs|Seychelles:sc|Sierr'+
+    'a Leone:sl|Singapore:sg|Slovakia:sk|Slovenia:si|Solomon Islands:sb|Somalia:so|South Africa:za|'+
+    'South Korea:kr|South Sudan:ss|Spain:es|Sri Lanka:lk|Sudan:sd|Suriname:sr|Sweden:se|Switzerland'+
+    ':ch|Syria:sy|Taiwan:tw|Tajikistan:tj|Tanzania:tz|Thailand:th|Timor-Leste:tl|Togo:tg|Tonga:to|T'+
+    'rinidad and Tobago:tt|Tunisia:tn|Turkey:tr|Turkmenistan:tm|Tuvalu:tv|Uganda:ug|Ukraine:ua|Unit'+
+    'ed Arab Emirates:ae|United Kingdom:gb|United States:us|Uruguay:uy|Uzbekistan:uz|Vanuatu:vu|Vat'+
+    'ican City:va|Venezuela:ve|Vietnam:vn|Yemen:ye|Zambia:zm|Zimbabwe:zw'
+  ).split('|').map(p => p.split(':')))
+  // Only 168 of 332 fighters have a country. No country -> the whole row is
+  // hidden, so the plate closes up rather than leaving a hole where a flag
+  // would be.
+  function applyFlag(side, country){
+    const row = document.getElementById('flagRow'+side)
+    const img = document.getElementById('flagImg'+side)
+    const txt = document.getElementById('flagText'+side)
+    if(!row) return
+    const code = country && FLAG_CODES[country]
+    if(!code){ row.style.display='none'; return }
+    // 3x for a 26px-tall flag on a 1080p canvas -- w160 keeps the edges crisp
+    // when OBS scales the scene.
+    img.src = 'https://flagcdn.com/w160/'+code+'.png'
+    img.onerror = () => { img.style.display='none' }
+    img.style.display='block'
+    txt.textContent = country
+    row.style.display='flex'
+  }
   // Kept in localStorage so an OBS browser-source refresh -- which fires every
   // time its scene becomes active -- cannot wipe a tape that is on air. Written
   // on every load and on every show/hide; an explicit Hide is what clears it,
@@ -1017,6 +1132,10 @@ editOverlay.addEventListener('click', (e) => {
     // number under three em-dashes and read as broken data rather than absent
     // data. Collapse those rows instead, re-run every load.
     hideEmptyRows()
+    applyFlag('Left', L.country); applyFlag('Right', R.country)
+    // Every bout brings different-length names and divisions, so the fitters
+    // have to run per matchup -- not once at load.
+    fitAll()
   }
 
   _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{

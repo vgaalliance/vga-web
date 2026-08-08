@@ -846,6 +846,9 @@ window.mnTape=async()=>{
     // is real, present for all 276 fighters, and is what a weight row is
     // standing in for anyway.
     weight:cap((x.weight_class||'').replace(/_/g,' '))||DASH, odds:DASH,
+    // country was already being SELECTed and then thrown away. The tape turns
+    // it into a flag; null just hides the row.
+    country:x.country||null,
     // slug drives the photo lookup by convention; photo_url wins if one
     // is actually set on the fighter
     slug:x.slug, photo:x.profile_photo_url||null })
