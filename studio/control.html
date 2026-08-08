@@ -423,7 +423,9 @@
     </div>
     <div class="row" style="margin-bottom:10px">
       <span class="kitlbl">PROMO</span>
-      <button onclick="fireNextEvent()">📅 Next event (14s)</button>
+      <button onclick="fireNextEvent('ubae')">📅 UBAe night</button>
+      <button onclick="fireNextEvent('uba')">📅 UBA card</button>
+      <button onclick="fireNextEvent('both')">📅 Both</button>
       <button class="hide" onclick="hideNextEvent()">Hide</button>
       <span id="nextevHint" style="color:var(--gdim);font-size:16px"></span>
     </div>
@@ -720,13 +722,17 @@ window.overlayCta=(hold)=>{
 //         with no matchups rather than leaking the card early.
 //   UBAe: the next two scheduled team matches; the second only rides along
 //         when it is the same night.
-window.fireNextEvent=async()=>{
+// scope: 'ubae' = the match night only, 'uba' = the next unlocked card only,
+// 'both' = the combined plate. Three buttons, because two events at once is a
+// choice the operator should make, not the default they cannot avoid.
+window.fireNextEvent=async(scope='both')=>{
   const hint=document.getElementById('nextevHint')
   const fmt=iso=>new Date(iso).toLocaleString('en-US',{weekday:'long',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZone:'America/New_York'})+' ET'
   try{
     const blocks=[]
 
     // The next UBAe match night, if one is scheduled.
+    if(scope!=='uba'){
     const { data: ms } = await sb.from('team_matches_public').select('*')
       .eq('status','scheduled').gte('match_date',new Date(Date.now()-6*3600e3).toISOString())
       .order('match_date').limit(2)
@@ -737,11 +743,13 @@ window.fireNextEvent=async()=>{
         main:{a:ms[0].team_a_name,b:ms[0].team_b_name},
         co: sameNight ? {a:ms[1].team_a_name,b:ms[1].team_b_name} : null })
     }
+    }
 
     // The next UNLOCKED solo event. events_public does not expose the lock, but
     // event_matches is the publish gate itself -- a locked card returns no rows
     // -- so "has bouts in event_matches" IS "unlocked", checked soonest-first.
     // Amateur cards are skipped: this is the UBA slot of the promo.
+    if(scope!=='ubae'){
     const { data: evs } = await sb.from('events_public').select('id,name,type,event_date')
       .eq('status','scheduled').neq('type','ama')
       .gte('event_date',new Date(Date.now()-6*3600e3).toISOString())
@@ -756,6 +764,7 @@ window.fireNextEvent=async()=>{
         main: m ? {a:m.fighter_a_name,b:m.fighter_b_name} : null,
         co:   co ? {a:co.fighter_a_name,b:co.fighter_b_name} : null })
       break
+    }
     }
 
     if(!blocks.length){ if(hint)hint.textContent='nothing to promote — no team matches, no unlocked cards'; return }
