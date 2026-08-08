@@ -63,15 +63,12 @@
      hidden and not disabled: hiding them would mean re-teaching the panel
      every time you crossed leagues, and disabling them would take away a
      choice that's occasionally right. Green = for tonight. */
-  /* Gated on MODE, not on league. GBL runs a solo card exactly like UBA, so
-     both wear mode-solo and the fifteen .lg-uba / .lg-ubae buttons need no
-     per-league rules -- adding a fourth league is one entry in setEv(). */
-  body.mode-solo button.lg-ubae,
-  body.mode-team button.lg-uba{
+  body.ev-uba  button.lg-ubae,
+  body.ev-ubae button.lg-uba{
     border-color:rgba(226,232,240,.28);color:rgba(226,232,240,.5);
     text-shadow:none;box-shadow:none;}
-  body.mode-solo button.lg-ubae:hover,
-  body.mode-team button.lg-uba:hover{
+  body.ev-uba  button.lg-ubae:hover,
+  body.ev-ubae button.lg-uba:hover{
     background:rgba(226,232,240,.75);color:var(--bg);box-shadow:none;}
 
   input,select{font-family:'VT323',monospace;font-size:20px;background:var(--bg);color:var(--g);
@@ -96,8 +93,8 @@
   .rail button.active{background:#eef2f7;color:#0a1410;border-color:#eef2f7;
     text-shadow:none;box-shadow:0 0 18px rgba(226,232,240,.45);}
   .panel{display:none;} .panel.on{display:block;}
-  body.mode-team .only-uba{display:none !important;}
-  body.mode-solo .only-ubae{display:none !important;}
+  body.ev-ubae .only-uba{display:none !important;}
+  body.ev-uba .only-ubae{display:none !important;}
 
   /* uniform tiles — every box the same size regardless of name length */
   #oddsFights,#betFeed,#mnMatches,#ubaEvents{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;align-items:stretch;}
@@ -234,7 +231,7 @@
   }
 </style>
 </head>
-<body class="ev-ubae mode-team">
+<body class="ev-ubae">
   <div id="crt"></div><div id="vig"></div>
   <div id="status">ESTABLISHING LINK…</div>
 
@@ -246,7 +243,6 @@
   <div class="row" id="evRow" style="margin-bottom:14px">
     <button data-ev="ubae" class="active" onclick="setEv('ubae')">UBAe · Team league<small>3v3 · battleroom pick'em · BO5</small></button>
     <button data-ev="uba" onclick="setEv('uba')">UBA · Fight night<small>solo card · bout by bout</small></button>
-    <button data-ev="gbl" onclick="setEv('gbl')">GBL · Feeder card<small>solo card · same run of show</small></button>
   </div>
 
   <!-- UBAe spine: the match tracker — one click loads every scene -->
@@ -363,7 +359,6 @@
       <button class="lg-ubae" onclick="standby('standings')">Standings</button>
       <button class="lg-ubae" onclick="standby('rosters')">Rosters</button>
       <button class="lg-uba"  onclick="standby('ubarank')">UBA rankings</button>
-      <button class="lg-uba"  onclick="standby('gblrank')">GBL rankings</button>
       <button class="lg-ubae" onclick="standby('schedule')">Schedule</button>
       <button onclick="standby('next3')">Next 3 events</button>
       <button class="lg-ubae" onclick="standby('teamvs')">Team vs team</button>
@@ -534,7 +529,7 @@ const betHint=()=> EV==='ubae' ? 'LOAD A MATCH ABOVE' : 'PICK A CARD ABOVE'
    only — during a bout you never want the other eight markets on screen, and
    scrolling past them to find the live one is how you fire the wrong graphic.
    Nothing armed = the whole card, as before. */
-const armedBout=()=> (isSolo() && UBA.armed!=null) ? UBA.bouts[UBA.armed] : null
+const armedBout=()=> (EV==='uba' && UBA.armed!=null) ? UBA.bouts[UBA.armed] : null
 const isArmedMarket=(m,b)=> !b ||
   (m.side_a===b.a && m.side_b===b.b) || (m.side_a===b.b && m.side_b===b.a)
 
@@ -709,8 +704,8 @@ window.overlayCta=(hold)=>{
   send({type:'cta', show:true, hold: hold===0 ? 0 : undefined})
 }
 
-window.matchTimer=secs=>send({type: isSolo()?'clocktimer':'matchtimer', secs})
-window.hideTimer=()=>send({type: isSolo()?'clocktimer':'matchtimer', on:false})
+window.matchTimer=secs=>send({type: EV==='uba'?'clocktimer':'matchtimer', secs})
+window.hideTimer=()=>send({type: EV==='uba'?'clocktimer':'matchtimer', on:false})
 
 // slide the fight clock HUD in/out between bouts
 window._clockOn=true
@@ -726,7 +721,7 @@ window.clockToggle=()=>{
 // immediately and sent nothing, leaving the countdown on whatever it last
 // showed. A UBA countdown headlines the MAIN EVENT (bout 1), not teams.
 window.mnCountdown=()=>{
-  if(isSolo()){
+  if(EV==='uba'){
     const main = UBA.bouts.find(b=>b.bout_number===1) || UBA.bouts[0]
     if(!main) return
     send({type:'countdown', d:{ a:main.a, b:main.b,
@@ -805,7 +800,7 @@ window.mnTape=async()=>{
   // was loaded -- so on a fight night the tape announced the wrong league.
   // On UBA it takes the bout's own division, which is what the card is
   // actually showing, and the event name underneath.
-  const uba = isSolo()
+  const uba = EV==='uba'
   const armed = armedBout()
   const title = uba
     ? ((armed && armed.title) ? String(armed.title).toUpperCase()
@@ -887,7 +882,7 @@ window.loadCardEvents=async()=>{
 window.mnCountdownIn=()=>{
   const m=parseFloat(document.getElementById('cdMins').value); if(!m||m<=0) return
   const target=new Date(Date.now()+m*60000).toISOString()
-  const main = (isSolo() && UBA.bouts.length)
+  const main = (EV==='uba' && UBA.bouts.length)
     ? (UBA.bouts.find(b=>b.bout_number===1) || UBA.bouts[0]) : null
   send({type:'countdown', d: main
     ? { a:main.a, b:main.b, target, eventMain:(UBA.name||'FIGHT NIGHT').toUpperCase(), eventSub:'discord.gg/uba' }
@@ -962,15 +957,9 @@ window.loadStandings=async()=>{
 /* ── EVENT + STAGE navigation ── */
 const STAGES={
   ubae:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ BATTLEROOM'],['match','④ MATCH']],
-  uba:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ TALE OF TAPE'],['match','④ MATCH']],
-  gbl:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ TALE OF TAPE'],['match','④ MATCH']]
+  uba:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ TALE OF TAPE'],['match','④ MATCH']]
 }
 let EV='ubae', STG='countdown'
-// SOLO = one card, bout by bout: UBA and GBL. TEAM = UBAe. Everything on this
-// deck that used to ask "is this UBA?" is really asking "is this a solo card?",
-// and answering it here instead of at seven call sites is what stops a fourth
-// league needing seven more edits.
-const isSolo = () => EV !== 'ubae'
 
 function drawRail(){
   const rail=document.getElementById('rail')
@@ -989,9 +978,6 @@ window.setEv=ev=>{
   EV=ev; STG='countdown'
   document.body.classList.toggle('ev-ubae', ev==='ubae')
   document.body.classList.toggle('ev-uba', ev==='uba')
-  document.body.classList.toggle('ev-gbl', ev==='gbl')
-  document.body.classList.toggle('mode-solo', isSolo())
-  document.body.classList.toggle('mode-team', !isSolo())
   document.querySelectorAll('#evRow button').forEach(b=>b.classList.toggle('active', b.dataset.ev===ev))
   drawRail()
   // The weekly schedule bar is UBAe furniture, and its toggle is UBAe-only --
@@ -1001,7 +987,7 @@ window.setEv=ev=>{
     window._loadbarOn=false; send({type:'loadbar', show:false}); _loadbarBtn()
   }
   _loadbarBtn()
-  if(isSolo()) loadUbaEvents()
+  if(ev==='uba') loadUbaEvents()
   loadOdds(); loadBetFeed()
 }
 

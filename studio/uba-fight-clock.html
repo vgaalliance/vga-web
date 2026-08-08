@@ -984,10 +984,7 @@ function flipSwap(el, text){
     // 'pickbar'/'matchtimer' there) -- which is exactly why it went unnoticed.
     //
     // An UNTAGGED command still passes, so an older cached deck keeps working.
-    // 'gbl' too: a GBL card is a solo fight night and runs on THIS clock, so
-    // gating on 'uba' alone would have made the deck's GBL mode look dead --
-    // every press accepted by the deck and silently dropped here.
-    if(c.league && c.league!=='uba' && c.league!=='gbl') return
+    if(c.league && c.league!=='uba') return
     if(c.type==='clock'){
       document.querySelector('.hud-root').classList.toggle('off', c.show===false); return
     }

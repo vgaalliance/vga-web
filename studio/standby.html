@@ -371,12 +371,6 @@
       <div class="rgrid" id="ubarankContent"></div>
     </div>
 
-    <div class="view" id="v-gblrank">
-      <div class="eyebrow">VGA · GBL</div>
-      <div class="title">Division Rankings</div>
-      <div class="rgrid" id="gblrankContent"></div>
-    </div>
-
     <div class="view" id="v-schedule">
       <div class="eyebrow splitlbl">UBAe · Summer Split</div>
       <div class="title sm">Upcoming Match Nights</div>
@@ -470,10 +464,6 @@ let VIEWS=['standings','rosters','ubarank','schedule','next3','teamvs','card','c
 // The deck picks the rotation by mode, so 'auto' doesn't parade team standings
 // through a solo card.
 const VIEWS_UBA=['card','ubarank','champs','p4p','fotm','nextev','cards','cta']
-// GBL has no champions crowned and no P4P board yet, so its rotation is the
-// views that actually have something in them. Listing empty screens would put
-// a blank panel on air every 15 seconds.
-const VIEWS_GBL=['card','gblrank','nextev','cta']
 const FUTURE=()=>new Date(Date.now()-6*3600e3).toISOString()
 
 async function loadAll(){
@@ -482,7 +472,7 @@ async function loadAll(){
     sb.from('ubae_fighter_records').select('stage_name,current_team'),
     sb.from('team_matches_public').select('*').eq('status','scheduled').order('match_date').limit(8),
     sb.from('events_public').select('*').eq('status','scheduled').gte('event_date',FUTURE()).order('event_date').limit(3),
-    sb.from('rankings_public').select('rank,fighter_name,weight_class,level').eq('scope','weight_class').order('rank'),
+    sb.from('rankings_public').select('rank,fighter_name,weight_class').eq('scope','weight_class').order('rank'),
   ])
   renderStandings(st||[]); renderRosters(st||[], rec||[]); renderSchedule(mt||[]); renderNext(ev||[]); renderTvs(mt||[])
   showCard(null)   // preload soonest card
@@ -508,9 +498,7 @@ async function loadUba(rk){
         .gte('event_date',FUTURE()).order('event_date').limit(1),
     ])
     const champs=ch||[]
-    // split by level -- pro to the UBA board, amateur to the GBL board
-    renderRankBoard('ubarankContent', (rk||[]).filter(r=>r.level!=='amateur'), champs)
-    renderRankBoard('gblrankContent', (rk||[]).filter(r=>r.level==='amateur'), [])
+    renderUbaRank(rk, champs)
     renderChamps(champs)
     renderP4P(p4||[], champs)
     renderFotm((fm||[])[0], champs)
@@ -660,10 +648,9 @@ const UBA_DIVS=[['lightweight','LIGHTWEIGHT'],['middleweight','MIDDLEWEIGHT'],['
 // division missing. The belt holder is pinned above rank 1 and isn't given a
 // number, because they aren't ranked -- they're who the ranking is chasing.
 // (The UBAe rankings screen has the same gap; same fix applies there.)
-function renderRankBoard(containerId, rk, champs){
+function renderUbaRank(rk, champs){
   champs=champs||[]
-  const el = document.getElementById(containerId); if(!el) return
-  el.innerHTML = UBA_DIVS.map(([w,lbl])=>{
+  document.getElementById('ubarankContent').innerHTML = UBA_DIVS.map(([w,lbl])=>{
     const c=champIn(champs,w)
     const rows=rk.filter(r=>r.weight_class===w).sort((a,b)=>a.rank-b.rank)
       .filter(r=>!c || r.fighter_name!==c.display_name)     // never list them twice
@@ -816,7 +803,7 @@ function show(view, league){
   hideAll()
   if(view==='off'||!view) return
   if(view==='auto'){
-    const list = league==='gbl' ? VIEWS_GBL : league==='uba' ? VIEWS_UBA : VIEWS
+    const list = league==='uba' ? VIEWS_UBA : VIEWS
     let i=0; const step=()=>{ hideAll(); showView($('v-'+list[i%list.length])); i++ }
     step(); cycle=setInterval(step,15000); return }
   showView($('v-'+view))
