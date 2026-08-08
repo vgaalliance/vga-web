@@ -797,6 +797,13 @@ function handle(c){
   if(c.type==='matchtimer'){
     const el=$('mtimer')
     clearInterval(mtInt)
+    // UBAe carries its own time now -- in the clock's flower, with the gauge
+    // running the length of the bar -- so the big top-right badge is a second
+    // clock saying the same thing, and two clocks a frame apart read as a
+    // mistake. Ignored AND hidden, so a badge already on screen retracts the
+    // moment the next UBAe timer fires rather than freezing at a stale time.
+    // (UBA drives its centred clock via 'clocktimer' and never lands here.)
+    if(c.league==='ubae'){ el.classList.remove('on'); return }
     if(c.on===false){ el.classList.remove('on'); return }
     // count against a fixed end time, not a tick counter — setInterval drifts,
     // and a broadcast clock that loses a second a minute is worse than none
