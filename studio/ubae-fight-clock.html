@@ -144,15 +144,19 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
    odds are information. Same reasoning as the UBA bar. */
 .uslit.expand.odds{width:100px;}
 .uslit.odds .uslit-eyebrow{color:rgba(216,180,254,.9);}
-.uslit.odds .uslit-value{font-size:24px;}
+.uslit.odds .uslit-value{font-size:24px;color:#fff;}
 .uslit-label{opacity:0;transform:translateY(6px);
   transition:opacity .3s ease,transform .3s cubic-bezier(.16,.8,.3,1);
   white-space:nowrap;position:relative;z-index:2;
   display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1;}
 .uslit.expand .uslit-label{opacity:1;transform:none;transition-delay:.26s;}
-.uslit-eyebrow{font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;}
+/* White by DEFAULT. Neither span ever set a colour, so both inherited the
+   page's default black -- which happened to survive on red and blue fills and
+   vanished entirely on black trunks. JS overrides per side for LIGHT fills
+   (white trunks need near-black text); everything dark gets this white. */
+.uslit-eyebrow{font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#fff;}
 .uslit-value{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:22px;
-  letter-spacing:.08em;text-transform:uppercase;text-shadow:0 1px 5px rgba(0,0,0,.65);}
+  letter-spacing:.08em;text-transform:uppercase;color:#fff;text-shadow:0 1px 5px rgba(0,0,0,.65);}
 
 /* ── FOCUS MODE — REMOVED (2026-08-07) ────────────────────────────────────
    It used to retract the emblem and the UBAe block on every reveal, on the
@@ -760,11 +764,32 @@ function uPaintNames(){
   if(f[1]) f[1].style.color = uTint(U_CUR.r)
 }
 
+// Text colour follows the FILL's brightness, not a hardcoded choice: black
+// trunks need white text, WHITE trunks need near-black, and both are real
+// picks on a colour wheel. Relative luminance, threshold at the point where
+// white text stops winning. Inline styles, so they must be CLEARED for odds
+// mode -- an inline colour would beat the .odds CSS.
+function uLabelContrast(hex){
+  const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex||'')
+  if(!m) return '#fff'
+  const [r,g,b]=[m[1],m[2],m[3]].map(c=>parseInt(c,16)/255)
+  return (0.2126*r+0.7152*g+0.0722*b) > 0.55 ? '#16060a' : '#fff'
+}
+function uPaintLabels(odds){
+  for (const [side, hex] of [['L',U_CUR.l],['R',U_CUR.r]]){
+    const col = odds ? '' : uLabelContrast(hex)
+    for (const id of ['uslitEye'+side,'uslitVal'+side]){
+      const el=uQ(id); if(el) el.style.color=col
+    }
+  }
+}
+
 function uSetCorners(l,r){
   if(l) U_CUR.l=l; if(r) U_CUR.r=r
   const L=uQ('uslitL'), R=uQ('uslitR')
   if(L && !L.classList.contains('odds')) L.style.background=U_CUR.l
   if(R && !R.classList.contains('odds')) R.style.background=U_CUR.r
+  uPaintLabels(L && L.classList.contains('odds'))
   // names follow the corners even when the reveal is skipped -- the deck can
   // set colours quietly, and the pairing has to hold either way
   uPaintNames()
@@ -781,7 +806,7 @@ function uOpen(L,R,hold,m){
   sL.classList.toggle('odds',odds); sR.classList.toggle('odds',odds)
   // fills FIRST -- uSetCorners rewrites nothing here, but keeping the order
   // identical to the UBA bar means one fix lands in both when it is needed
-  if(odds){ sL.style.background=U_ODDS_FILL; sR.style.background=U_ODDS_FILL }
+  if(odds){ sL.style.background=U_ODDS_FILL; sR.style.background=U_ODDS_FILL; uPaintLabels(true) }
   else uSetCorners(U_CUR.l, U_CUR.r)
   if(L) uWrite('left', L.eyebrow, L.value)
   if(R) uWrite('right', R.eyebrow, R.value)
