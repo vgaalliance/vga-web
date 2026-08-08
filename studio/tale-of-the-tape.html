@@ -134,18 +134,18 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
     <div style="position:relative; width:356px; margin:0 52px;
       display:flex; flex-direction:column; align-items:center;
       background:
-        repeating-linear-gradient(135deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px),
-        radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.025), transparent 60%),
-        #15111c;
+        repeating-linear-gradient(135deg, hsla(276,60%,70%,0.022) 0px, hsla(276,60%,70%,0.022) 1px, transparent 1px, transparent 3px),
+        radial-gradient(ellipse at 50% 0%, hsla(276,80%,55%,0.16), transparent 62%),
+        linear-gradient(180deg, #1b1426 0%, #120d1a 55%, #0c0812 100%);
       box-shadow:0 0 40px rgba(0,0,0,0.6);">
       <!-- CORNER BLOOM — the website's ambient flower field (home.html), which
            is the house look, brought onto the card. Sits UNDER the content
            (z-index 0, content is z-index 2) and is deliberately dimmer and
            sparser than the web version: on a broadcast the card has to stay
            readable over live footage, so this is atmosphere, never pattern. -->
-      <canvas id="panelBloom" style="position:absolute; inset:0; width:100%; height:100%; z-index:0; pointer-events:none; opacity:0.5;"></canvas>
+      <canvas id="panelBloom" style="position:absolute; inset:0; width:100%; height:100%; z-index:0; pointer-events:none; opacity:0.75;"></canvas>
       <!-- fine grain layer — SVG fractal noise, very low opacity -->
-      <svg style="position:absolute; inset:0; width:100%; height:100%; opacity:0.05; pointer-events:none; mix-blend-mode:overlay;">
+      <svg style="position:absolute; inset:0; width:100%; height:100%; opacity:0.03; pointer-events:none; mix-blend-mode:soft-light;">
         <filter id="grainFilter">
           <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"/>
           <feColorMatrix type="saturate" values="0"/>
@@ -154,11 +154,11 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
       </svg>
 
       <!-- LOGO MARK — flower mark + UBA wordmark -->
-      <div style="position:relative; width:220px; height:90px; margin:0 auto; z-index:2;
+      <div style="position:relative; width:330px; height:140px; margin:0 auto; z-index:2;
         display:flex; align-items:center; justify-content:center;">
-        <canvas id="flowerTab" width="220" height="90" style="position:absolute;top:0;left:0;"></canvas>
-        <div style="position:relative; font-size:26px; font-weight:900; letter-spacing:1px;
-          color:#f3f1fa; text-shadow:0 0 18px hsla(276,95%,58%,0.55);">UBA</div>
+        <canvas id="flowerTab" width="330" height="140" style="position:absolute;top:0;left:0;"></canvas>
+        <div style="position:relative; font-size:46px; font-weight:900; letter-spacing:2px;
+          color:#f3f1fa; text-shadow:0 0 26px hsla(276,95%,58%,0.6);">UBA</div>
       </div>
 
     <!-- BOUT TYPE LABEL -->
@@ -872,7 +872,7 @@ setupRailCanvas('railRight');
 //   2. FEWER and SMALLER -- the site fills a page; this fills a 356px card.
 //   3. DIMMER -- everything scales by BLOOM_DIM, because anything bright enough
 //      to notice behind a stat line is bright enough to hurt reading it.
-const BLOOM_DIM = 0.42
+const BLOOM_DIM = 0.62
 function startPanelBloom(){
   const cv = document.getElementById('panelBloom'); if(!cv) return
   const cx = cv.getContext('2d')
@@ -899,15 +899,15 @@ function startPanelBloom(){
     const p = mkPos()
     const ds = [Math.hypot(p.xf,p.yf), Math.hypot(1-p.xf,p.yf), Math.hypot(p.xf,1-p.yf), Math.hypot(1-p.xf,1-p.yf)]
     const sf = Math.pow(1 - Math.min(Math.min(...ds)/0.35, 1), 1.2)
-    return { xf:p.xf, yf:p.yf, r:4+sf*8, hue:pickHue(), ph:rnd(0,Math.PI*2),
+    return { xf:p.xf, yf:p.yf, r:11+sf*20, hue:pickHue(), ph:rnd(0,Math.PI*2),
       spin:(Math.random()<.5?1:-1)*rnd(0.001,0.003), spinSpd:0, st:0, lf:0,
       spd:rnd(0.0012,0.0022), pd:Math.floor(rnd(2200,4800)), pt:0,
       delay:Math.floor(rnd(0,90)), seed:Math.random()*100 }
   }
-  const tooClose = (xf,yf) => flowers.some(f => Math.hypot((f.xf-xf)*W,(f.yf-yf)*H) < 46)
+  const tooClose = (xf,yf) => flowers.some(f => Math.hypot((f.xf-xf)*W,(f.yf-yf)*H) < 78)
   let seeded = false
   function fill(){
-    const need = Math.min(9, Math.max(4, Math.floor(W*H/26000)))
+    const need = Math.min(7, Math.max(3, Math.floor(W*H/30000)))
     let tries = 0
     while(flowers.length < need && tries < 200){ tries++
       const f = mkFlower(); if(tooClose(f.xf,f.yf)) continue; flowers.push(f) }
@@ -1000,9 +1000,11 @@ setTimeout(refillRailTickers, 750);
 // synth-faded palette, idle spin only (no click/bloom trigger here).
 const cv = document.getElementById('flowerTab');
 const ctx = cv.getContext('2d');
-const W = 220, H = 90;
-const CX = 110, CY = 36;
-const R = 14;
+// Sized with the canvas above -- the mark is drawn from these, so bumping the
+// canvas alone would have left a small flower in a big empty box.
+const W = 330, H = 140;
+const CX = 165, CY = 56;
+const R = 26;
 
 let T = 0, spinAccum = 0;
 let spinIntensity = 0.35; // gentle constant idle spin for the tab-sized mark
