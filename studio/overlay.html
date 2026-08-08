@@ -229,7 +229,12 @@
      flash card's top-right cut (the box sits in the opposite corner of the
      frame), and the purple top rail matches every other plate in the CRT kit.
      A rounded rectangle here was the one soft shape on an angular broadcast. */
-  #cta{position:fixed;right:48px;bottom:40px;width:360px;
+  /* bottom:24 = the UBAe fight clock's own anchor (its hud sits at bottom:24,
+     left:48). The two are the frame's bottom corners and read as a pair, so
+     they sit on the SAME baseline -- the CTA was floating 16px higher, which
+     is exactly the kind of almost-aligned that looks accidental. Right offset
+     48 already mirrors the clock's left 48. */
+  #cta{position:fixed;right:48px;bottom:24px;width:360px;
     clip-path:polygon(14px 0,100% 0,100% 100%,0 100%,0 14px);
     overflow:hidden;opacity:0;transform:translateX(118%);
     transition:opacity .4s ease,transform .55s cubic-bezier(.16,1,.3,1);
