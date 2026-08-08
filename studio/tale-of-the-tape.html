@@ -156,9 +156,9 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
       </svg>
 
       <!-- LOGO MARK — flower mark + UBA wordmark -->
-      <div style="position:relative; width:372px; height:164px; margin:0 auto; z-index:2;
+      <div style="position:relative; width:372px; height:196px; margin:0 auto; z-index:2;
         display:flex; align-items:center; justify-content:center;">
-        <canvas id="flowerTab" width="372" height="164" style="position:absolute;top:0;left:0;"></canvas>
+        <canvas id="flowerTab" width="372" height="196" style="position:absolute;top:0;left:0;"></canvas>
         <div style="position:relative; font-size:58px; font-weight:900; letter-spacing:3px;
           color:#f6f2fb; text-shadow:
             0 0 22px rgba(8,4,14,0.92),
@@ -1108,9 +1108,9 @@ const cv = document.getElementById('flowerTab');
 const ctx = cv.getContext('2d');
 // Sized with the canvas above -- the mark is drawn from these, so bumping the
 // canvas alone would have left a small flower in a big empty box.
-const W = 372, H = 164;
-const CX = 186, CY = 66;
-const R = 33;
+const W = 372, H = 196;
+const CX = 186, CY = 84;
+const R = 44;
 
 let T = 0, spinAccum = 0;
 // ── THE BLOOM HEARTBEAT ──────────────────────────────────────────────────
@@ -1182,16 +1182,29 @@ function synthCol(hue, sat, light, alpha) {
 // which fought the card the moment it stopped being neutral grey.
 const PETAL_HUES = [268, 285, 258, 292, 276];
 
-function softPetal(cx, cy, ang, ew, eh, hue, a, discs) {
-  for (let d = 0; d < discs; d++) {
-    const t = 0.18 + (d / (discs - 1)) * 0.92;
-    const x = cx + Math.cos(ang) * eh * t;
-    const y = cy + Math.sin(ang) * eh * t;
-    const r = ew * (1.55 - t * 0.72);
-    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fillStyle = `hsla(${hue},100%,${68 + t * 12}%,${(a * (1 - t * 0.42)).toFixed(3)})`;
-    ctx.fill();
-  }
+// SMEAR v2 -- a hybrid, after v1 came out pure white in the middle.
+//
+// THE WHITE WAS THE BLENDING, not the core. v1 stacked every petal's discs
+// through the flower's centre with 'lighter' (additive) compositing: additive
+// blending SUMS channels, so wherever five petals overlapped, R, G and B all
+// climbed to 255 and the middle blew out to white no matter what hue went in.
+// Two fixes, together:
+//   1. Petals sit on a RING at 0.72R and point outward -- the current mark's
+//      geometry -- so nothing overlaps at the centre and the middle stays open
+//      for the wordmark. This is also what brings back the structure the old
+//      mark had; a blur with no arrangement read as a smudge.
+//   2. Compositing is 'source-over'. Alpha blending cannot exceed the colour
+//      being painted, so violet stays violet however many layers land.
+// The softness survives because there is still NO outline -- each petal is a
+// filled bezier with a gradient that fades to nothing at its edges, plus a
+// blurred shadow, which is what the six-way comparison was actually testing.
+function petalShape(cx, cy, ang, ew, eh) {
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang + Math.PI / 2);
+  ctx.beginPath();
+  ctx.moveTo(0, -eh);
+  ctx.bezierCurveTo(ew * 0.72, -eh * 0.52, ew * 0.98, eh * 0.12, 0, eh * 0.58);
+  ctx.bezierCurveTo(-ew * 0.98, eh * 0.12, -ew * 0.72, -eh * 0.52, 0, -eh);
+  ctx.closePath();
 }
 
 function frame() {
@@ -1202,35 +1215,55 @@ function frame() {
   spinAccum += 0.012 + spinIntensity * 0.03;
   const si = spinIntensity;
 
-  // The trail. 0.11/frame leaves roughly half a second of history at 60fps --
-  // enough to read as motion, short enough that a still frame is not a blur.
+  // The trail. destination-out lowers the alpha of what is already drawn --
+  // this canvas is transparent over the card, so fading with a dark fill would
+  // paint a visible box around the mark.
   ctx.globalCompositeOperation = 'destination-out';
-  ctx.fillStyle = 'rgba(0,0,0,0.11)';
+  ctx.fillStyle = 'rgba(0,0,0,0.13)';
   ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'source-over';
 
-  ctx.globalCompositeOperation = 'lighter';
-  const ew = R * (0.30 + si * 0.10), eh = R * (0.55 + si * 0.62);
+  const ringR = R * 0.72;
+  const ew = R * (0.34 + si * 0.06), eh = R * (0.42 + si * 0.46);
+
   for (let p2 = 0; p2 < 5; p2++) {
     const ang = (p2 / 5) * Math.PI * 2 + spinAccum;
-    const hue = (PETAL_HUES[p2 % PETAL_HUES.length] + si * 10) % 360;
-    softPetal(CX, CY, ang, ew, eh, hue, 0.13, 4);
-    softPetal(CX, CY, ang, ew * 0.55, eh * 0.9, hue, 0.10, 3);
+    const px = CX + Math.cos(ang) * ringR, py = CY + Math.sin(ang) * ringR;
+    const hue = (PETAL_HUES[p2 % PETAL_HUES.length] + si * 8) % 360;
+
+    // Outer haze: the petal again, much bigger and barely there. Does the job
+    // the hairline stroke used to do -- telling you where the petal ends --
+    // without ever landing on a hard edge.
+    ctx.save();
+    ctx.shadowBlur = 14 + si * 16;
+    ctx.shadowColor = `hsla(${hue},100%,72%,0.5)`;
+    petalShape(px, py, ang, ew * 1.22, eh * 1.12);
+    ctx.fillStyle = `hsla(${hue},95%,66%,${(0.10 + si * 0.05).toFixed(3)})`;
+    ctx.fill();
+    ctx.restore();
+
+    // Body: brightest along the spine, gone at the edges, so the petal has
+    // shape without an outline.
+    ctx.save();
+    petalShape(px, py, ang, ew, eh);
+    const grad = ctx.createLinearGradient(px - Math.cos(ang) * eh, py - Math.sin(ang) * eh,
+                                          px + Math.cos(ang) * eh, py + Math.sin(ang) * eh);
+    grad.addColorStop(0,    `hsla(${hue},100%,86%,${(0.42 + si * 0.20).toFixed(3)})`);
+    grad.addColorStop(0.55, `hsla(${hue},100%,72%,${(0.26 + si * 0.14).toFixed(3)})`);
+    grad.addColorStop(1,    `hsla(${(hue + 12) % 360},100%,62%,0.04)`);
+    ctx.fillStyle = grad; ctx.fill();
+    ctx.restore();
   }
 
-  // Core, as a RING. A filled centre put a white-hot point exactly where the
-  // letters go; the gradient now starts out at 0.42 of the radius, so the
-  // middle stays clear and the wordmark sits in the hole. Violet, not white:
-  // white is what made it glare.
-  const coreR = R * (0.60 + si * 0.22);
-  const g = ctx.createRadialGradient(CX, CY, coreR * 0.42, CX, CY, coreR);
-  g.addColorStop(0,    'transparent');
-  g.addColorStop(0.42, 'hsla(280,100%,78%,' + (0.16 + si * 0.10).toFixed(3) + ')');
-  g.addColorStop(0.72, 'hsla(276,100%,72%,' + (0.10 + si * 0.07).toFixed(3) + ')');
-  g.addColorStop(1,    'transparent');
-  ctx.beginPath(); ctx.arc(CX, CY, coreR, 0, Math.PI * 2);
-  ctx.fillStyle = g; ctx.fill();
-
-  ctx.globalCompositeOperation = 'source-over';
+  // Centre: a thin ring only, so the middle stays dark and UBA reads against
+  // it. v1 filled this and that is what sat white behind the letters.
+  ctx.save();
+  ctx.beginPath(); ctx.arc(CX, CY, R * 0.20, 0, Math.PI * 2);
+  ctx.strokeStyle = `hsla(280,100%,86%,${(0.35 + si * 0.25).toFixed(3)})`;
+  ctx.lineWidth = 1.2 + si * 0.8;
+  ctx.shadowBlur = 10; ctx.shadowColor = 'hsla(280,100%,80%,0.7)';
+  ctx.stroke();
+  ctx.restore();
 
   requestAnimationFrame(frame);
 }
