@@ -160,7 +160,10 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
         display:flex; align-items:center; justify-content:center;">
         <canvas id="flowerTab" width="372" height="164" style="position:absolute;top:0;left:0;"></canvas>
         <div style="position:relative; font-size:58px; font-weight:900; letter-spacing:3px;
-          color:#f3f1fa; text-shadow:0 0 30px hsla(276,95%,58%,0.62);">UBA</div>
+          color:#f6f2fb; text-shadow:
+            0 0 22px rgba(8,4,14,0.92),
+            0 2px 10px rgba(8,4,14,0.85),
+            0 0 34px hsla(276,95%,60%,0.5);">UBA</div>
       </div>
 
     <!-- BOUT TYPE LABEL -->
@@ -1159,59 +1162,75 @@ function synthCol(hue, sat, light, alpha) {
   return `hsla(${hue},${s}%,${l}%,${alpha})`;
 }
 
+// SMEAR (chosen from the six-way comparison, 2026-08-08). Two changes from the
+// mark it replaces:
+//
+// 1. NO OUTLINE. Each petal was a filled bezier with a 0.9px hairline stroke,
+//    and that stroke is what made it read as drawn rather than lit -- it lands
+//    on a hard pixel boundary at every size. A petal is now four stacked
+//    translucent discs, so no edge is ever fully opaque. Same technique as the
+//    website's corner blooms, which is why those look lit from inside.
+//
+// 2. THE CANVAS NEVER FULLY CLEARS, so rotation leaves a trail. The fade uses
+//    'destination-out' rather than painting a dark rectangle over the frame:
+//    this canvas is TRANSPARENT over the card, so a dark fade -- what the demo
+//    could get away with on an opaque background -- would have drawn a visible
+//    black box around the mark. destination-out lowers the alpha of what is
+//    already there and leaves the panel showing through.
+//
+// Hues are the violet band only. The old table ran through greens (145/160/175)
+// which fought the card the moment it stopped being neutral grey.
+const PETAL_HUES = [268, 285, 258, 292, 276];
+
+function softPetal(cx, cy, ang, ew, eh, hue, a, discs) {
+  for (let d = 0; d < discs; d++) {
+    const t = 0.18 + (d / (discs - 1)) * 0.92;
+    const x = cx + Math.cos(ang) * eh * t;
+    const y = cy + Math.sin(ang) * eh * t;
+    const r = ew * (1.55 - t * 0.72);
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = `hsla(${hue},100%,${68 + t * 12}%,${(a * (1 - t * 0.42)).toFixed(3)})`;
+    ctx.fill();
+  }
+}
+
 function frame() {
-  ctx.clearRect(0, 0, W, H);
   T++;
   driveBloom();
-  // Spin speed rides the bloom: the mark turns faster while it is open.
+  // Spin speed rides the bloom: the mark turns faster while it is open, which
+  // is what lengthens the trail exactly when the flower is most open.
   spinAccum += 0.012 + spinIntensity * 0.03;
   const si = spinIntensity;
 
-  const hIdx = Math.floor((T * 0.018) % SYNTH_HUES.length);
-  const basePulse = 0.85 + Math.sin(T * 0.03) * 0.1;
+  // The trail. 0.11/frame leaves roughly half a second of history at 60fps --
+  // enough to read as motion, short enough that a still frame is not a blur.
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.fillStyle = 'rgba(0,0,0,0.11)';
+  ctx.fillRect(0, 0, W, H);
 
-  const budEW = R * 0.48, budEH = R * 0.95, bloEW = R * 0.32, bloEH = R * 1.2;
-  const ew = budEW + (bloEW - budEW) * si;
-  const eh = budEH + (bloEH - budEH) * si;
-
+  ctx.globalCompositeOperation = 'lighter';
+  const ew = R * (0.30 + si * 0.10), eh = R * (0.55 + si * 0.62);
   for (let p2 = 0; p2 < 5; p2++) {
-    const a = (p2 / 5) * Math.PI * 2 + spinAccum;
-    const px = CX + Math.cos(a) * R * 0.88, py = CY + Math.sin(a) * R * 0.88;
-    const ph = SYNTH_HUES[(hIdx + p2) % SYNTH_HUES.length];
-    const tiltA = a + Math.PI;
-    const bp = basePulse;
-
-    const glowR = ew * (2.0 + si * 2);
-    const g2 = ctx.createRadialGradient(px, py, ew * 0.4, px, py, glowR);
-    g2.addColorStop(0, synthCol(ph, 48, 80, 0.10));
-    g2.addColorStop(0.4, synthCol(ph, 52, 76, 0.18));
-    g2.addColorStop(1, 'transparent');
-    ctx.beginPath(); ctx.arc(px, py, glowR, 0, Math.PI * 2); ctx.fillStyle = g2; ctx.fill();
-
-    ctx.save(); ctx.translate(px, py); ctx.rotate(tiltA);
-    ctx.beginPath();
-    ctx.moveTo(0, -eh);
-    ctx.bezierCurveTo(ew * 0.7, -eh * 0.55, ew * 0.95, eh * 0.1, 0, eh * 0.55);
-    ctx.bezierCurveTo(-ew * 0.95, eh * 0.1, -ew * 0.7, -eh * 0.55, 0, -eh);
-    ctx.closePath();
-
-    const pg = ctx.createLinearGradient(-ew, 0, ew, 0);
-    pg.addColorStop(0, synthCol(ph, 52, 70, bp * 0.75));
-    pg.addColorStop(0.5, synthCol(SYNTH_HUES[(hIdx + p2 + 1) % SYNTH_HUES.length], 48, 68, bp * 0.35));
-    pg.addColorStop(1, synthCol(ph, 52, 70, bp * 0.75));
-    ctx.fillStyle = pg; ctx.fill();
-
-    ctx.strokeStyle = synthCol(SYNTH_HUES[(hIdx + p2 + 2) % SYNTH_HUES.length], 62, 88, 0.7);
-    ctx.lineWidth = 0.9;
-    ctx.stroke();
-    ctx.restore();
+    const ang = (p2 / 5) * Math.PI * 2 + spinAccum;
+    const hue = (PETAL_HUES[p2 % PETAL_HUES.length] + si * 10) % 360;
+    softPetal(CX, CY, ang, ew, eh, hue, 0.13, 4);
+    softPetal(CX, CY, ang, ew * 0.55, eh * 0.9, hue, 0.10, 3);
   }
 
-  const ch = SYNTH_HUES[(hIdx + 3) % SYNTH_HUES.length];
-  const centreR = R * 0.18;
-  ctx.beginPath(); ctx.arc(CX, CY, centreR, 0, Math.PI * 2);
-  ctx.strokeStyle = synthCol(ch, 62, 88, 0.95);
-  ctx.lineWidth = 1.1; ctx.stroke();
+  // Core, as a RING. A filled centre put a white-hot point exactly where the
+  // letters go; the gradient now starts out at 0.42 of the radius, so the
+  // middle stays clear and the wordmark sits in the hole. Violet, not white:
+  // white is what made it glare.
+  const coreR = R * (0.60 + si * 0.22);
+  const g = ctx.createRadialGradient(CX, CY, coreR * 0.42, CX, CY, coreR);
+  g.addColorStop(0,    'transparent');
+  g.addColorStop(0.42, 'hsla(280,100%,78%,' + (0.16 + si * 0.10).toFixed(3) + ')');
+  g.addColorStop(0.72, 'hsla(276,100%,72%,' + (0.10 + si * 0.07).toFixed(3) + ')');
+  g.addColorStop(1,    'transparent');
+  ctx.beginPath(); ctx.arc(CX, CY, coreR, 0, Math.PI * 2);
+  ctx.fillStyle = g; ctx.fill();
+
+  ctx.globalCompositeOperation = 'source-over';
 
   requestAnimationFrame(frame);
 }
