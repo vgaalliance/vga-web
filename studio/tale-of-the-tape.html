@@ -187,6 +187,21 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
         <span class="stat-label">REACH</span>
         <span class="stat-val right" id="reachRight">73"</span>
       </div>
+      <div class="stat-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 8px; border-top:1px solid hsla(265,20%,60%,0.15); border-bottom:1px solid hsla(265,20%,60%,0.15); opacity:0;">
+        <span class="stat-val left" id="stanceLeft">Orthodox</span>
+        <span class="stat-label">STANCE</span>
+        <span class="stat-val right" id="stanceRight">Southpaw</span>
+      </div>
+      <!-- TEAM is the UBAe side, not the gym: gym is free text 76 fighters
+           filled in, the team is league data the draft maintains. On a UBA
+           card most fighters have neither, and hideEmptyRows() drops the row
+           when NEITHER corner has one -- so it appears on the bouts where it
+           means something and is invisible everywhere else. -->
+      <div class="stat-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 8px; border-top:1px solid hsla(265,20%,60%,0.15); border-bottom:1px solid hsla(265,20%,60%,0.15); opacity:0;">
+        <span class="stat-val left" id="teamLeft">—</span>
+        <span class="stat-label">TEAM</span>
+        <span class="stat-val right" id="teamRight">—</span>
+      </div>
     </div>
 
     <!-- SPONSOR BAR — sits at the very bottom of the black panel,
@@ -1051,6 +1066,7 @@ editOverlay.addEventListener('click', (e) => {
   const _sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
     'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
   const set=(id,v)=>{ if(v!=null){ const e=document.getElementById(id); if(e) e.textContent=v } }
+  const DASH='\u2014'   // em-dash: what hideEmptyRows() treats as "absent"
 
   // COUNTRY FLAGS. Rendered as images, not emoji: regional-indicator flag
   // emoji do not render on Windows at all -- Chrome there draws the two
@@ -1127,6 +1143,11 @@ editOverlay.addEventListener('click', (e) => {
     set('reachLeft',L.reach); set('recordLeft',L.record); set('oddsLeft',L.odds); set('rankLeft',L.rank)
     set('nameRight',R.name); set('ageRight',R.age); set('heightRight',R.height); set('weightRight',R.weight)
     set('reachRight',R.reach); set('recordRight',R.record); set('oddsRight',R.odds); set('rankRight',R.rank)
+    // Written even when absent, as the em-dash: a stale value from the PREVIOUS
+    // matchup left standing is worse than an obvious blank, and hideEmptyRows
+    // only collapses a row when BOTH sides are the dash.
+    set('stanceLeft',L.stance||DASH); set('stanceRight',R.stance||DASH)
+    set('teamLeft',L.team||DASH);     set('teamRight',R.team||DASH)
     // A row where NEITHER fighter has the stat is noise: reach is missing for
     // 186 of 276 fighters and age for 143, so a typical bout rendered one real
     // number under three em-dashes and read as broken data rather than absent
@@ -1161,7 +1182,8 @@ editOverlay.addEventListener('click', (e) => {
 function hideEmptyRows(){
   const blank=v=>{ const t=(v||'').trim(); return t===''||t==='\u2014'||t==='-'||t==='TBA' }
   for(const [l,r] of [['ageLeft','ageRight'],['heightLeft','heightRight'],
-                      ['weightLeft','weightRight'],['reachLeft','reachRight']]){
+                      ['weightLeft','weightRight'],['reachLeft','reachRight'],
+                      ['stanceLeft','stanceRight'],['teamLeft','teamRight']]){
     const el=document.getElementById(l); if(!el) continue
     const row=el.closest('.stat-row'); if(!row) continue
     const empty = blank(el.textContent) && blank(document.getElementById(r)?.textContent)
