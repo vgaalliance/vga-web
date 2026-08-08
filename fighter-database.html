@@ -161,6 +161,19 @@
     background: #09090f;
   }
 
+  /* ── Retired — neutral grey. Deliberately not a colour used by a live tier:
+        the card still shows a final record and still opens the profile, but it
+        should never look like somebody you could book. ── */
+  .card.is-retired {
+    border-top: 2px solid rgba(140,140,160,0.45);
+    border-color: rgba(140,140,160,0.14);
+    background: #0a0a0d;
+  }
+  .card.is-retired::after { content: none; }
+  .card.is-retired .card-name { color: #8b8b9c; }
+  .card.is-retired:hover { background: #131318; }
+  .card.is-retired::before { background: #8b8b9c; }
+
   /* ── Amateur — bronze/brown ── */
   .card.is-ama {
     border-top: 2px solid rgba(139,94,60,0.6);
@@ -283,6 +296,7 @@
       <button class="pill active" data-l="all">All</button>
       <button class="pill" data-l="pro">Pro</button>
       <button class="pill" data-l="amateur">Amateur</button>
+      <button class="pill" data-l="retired">Retired</button>
     </div>
     <div class="pills" id="filters">
       <button class="pill active" data-f="all">All</button>
@@ -343,12 +357,16 @@ const WC = { lightweight:'Lightweight', middleweight:'Middleweight', light_heavy
 function wcLabel(w) { return WC[w] || (w ? w.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase()) : ''); }
 
 const card = f => {
-  const cls = tierClass(f);
+  // Retired overrides the tier styling entirely -- a retired fighter has no
+  // live rank, and carrying his old champion 'C' or division number would read
+  // as a current standing.
+  const retired = f.status === 'retired';
+  const cls = retired ? 'is-retired' : tierClass(f);
   const d = f.draws > 0 ? ` <em>/</em> ${f.draws}<em>D</em>` : '';
   const img = f.profile_photo_url ? `<img src="${f.profile_photo_url}" alt="${f.display_name}">` : '';
-  const rankLabel = f.is_champion ? 'C' : (f.div_rank ? `#${f.div_rank}` : '');
+  const rankLabel = retired ? '' : (f.is_champion ? 'C' : (f.div_rank ? `#${f.div_rank}` : ''));
   const name = toTitleCase(f.display_name);
-  const statusLabel = f.level === 'amateur' ? 'Amateur' : '';
+  const statusLabel = retired ? 'Retired' : (f.level === 'amateur' ? 'Amateur' : '');
   const slug = f.slug || f.display_name.toLowerCase().replace(/\s+/g, '-');
 
   return `<a class="card ${cls}" href="${BASE}${slug}" target="_parent">
@@ -369,7 +387,13 @@ const card = f => {
 
 function getFiltered() {
   let list = filt === 'all' ? [...all] : all.filter(f => f.weight_class === filt);
-  if (lvl !== 'all') list = list.filter(f => f.level === lvl);
+  // 'retired' is a STATUS while pro/amateur are LEVELS, so they live in the same
+  // pill group but read different columns. Retired is deliberately its own
+  // bucket rather than an extra flag on pro: a retired fighter should not pad
+  // the pro roster count, and "how many pros do we have" has to stay a live
+  // number. All still means all -- a retired fighter is part of the database.
+  if (lvl === 'retired')      list = list.filter(f => f.status === 'retired');
+  else if (lvl !== 'all')     list = list.filter(f => f.level === lvl && f.status !== 'retired');
   if (q) list = list.filter(f => f.display_name.toLowerCase().includes(q));
   list.sort((a, b) => {
     const aAma = a.level === 'amateur' ? 1 : 0;
@@ -445,7 +469,7 @@ document.getElementById('search').addEventListener('input', e => {
 });
 
 Promise.all([
-  fetch(`${SB}/rest/v1/fighter_cards?select=display_name,weight_class,headline_wins,headline_losses,headline_draws,level,is_champion,slug,profile_photo_url`, { headers: H }).then(r => r.json()),
+  fetch(`${SB}/rest/v1/fighter_cards_roster?select=display_name,weight_class,headline_wins,headline_losses,headline_draws,level,status,is_champion,slug,profile_photo_url`, { headers: H }).then(r => r.json()),
   // Both ladders, not just pro. The amateur one is empty today (0 rows), but
   // hardcoding level=eq.pro meant every amateur would read as unranked forever
   // even after the rankings were entered -- a filter that can never come good.

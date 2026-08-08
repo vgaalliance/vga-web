@@ -580,7 +580,7 @@ async function load() {
   if (!s) { document.getElementById('root').innerHTML = '<div class="loading">fighter not found</div>'; return; }
 
   try {
-    const cards = await sb('fighter_cards', `slug=eq.${encodeURIComponent(s)}&select=id,display_name,weight_class,level,profile_photo_url,wins,losses,draws,ko_wins,rank,nickname,height,reach,stance,country,age,gym,vc_balance,contract_tier,is_champion`);
+    const cards = await sb('fighter_cards_roster', `slug=eq.${encodeURIComponent(s)}&select=id,display_name,weight_class,level,profile_photo_url,wins,losses,draws,ko_wins,rank,nickname,height,reach,stance,country,age,gym,vc_balance,contract_tier,is_champion`);
     if (!cards.length) { document.getElementById('root').innerHTML = '<div class="loading">fighter not found</div>'; return; }
     const f = cards[0];
 
