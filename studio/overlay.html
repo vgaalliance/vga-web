@@ -265,6 +265,41 @@
   .cta-sub{font:500 12px 'Barlow';color:#9a9aa6;margin-top:2px;letter-spacing:.02em;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
+  /* ── NEXT EVENT PROMO (left, staged) ──────────────────────────────────────
+     A three-beat reveal: the plate slides in with the date, then MAIN, then
+     CO-MAIN cascade in on transition delays. Left side because the right is
+     the CTA's corner, and the same 48px edge every left-zone widget shares.
+     Same kit language as everything else: chamfered top-right, purple rail. */
+  #nextev{position:fixed;left:48px;bottom:190px;width:520px;
+    clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,0 100%);
+    transform:translateX(-130%);opacity:0;
+    transition:transform .6s cubic-bezier(.16,1,.3,1),opacity .4s ease;
+    background:linear-gradient(135deg,rgba(20,20,26,.97),rgba(8,8,11,.98));
+    box-shadow:0 22px 55px rgba(0,0,0,.6),0 0 0 1px rgba(168,85,247,.22);}
+  #nextev::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
+    background:linear-gradient(90deg,var(--red),transparent 70%);}
+  #nextev.show{transform:translateX(0);opacity:1;}
+  #nextev .nx-head{padding:16px 22px 12px;}
+  #nextev .nx-kick{font:600 12px 'Barlow';letter-spacing:.24em;text-transform:uppercase;
+    color:var(--red);opacity:.8;}
+  #nextev .nx-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:44px;
+    line-height:.95;color:#fff;text-transform:uppercase;margin-top:4px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #nextev .nx-date{font:500 16px 'Barlow';color:#b9b9c4;margin-top:5px;}
+  #nextev .nx-rows{padding:2px 22px 16px;display:flex;flex-direction:column;gap:8px;}
+  /* the cascade: each row arrives after the plate, main first, co-main next */
+  #nextev .nx-row{display:flex;align-items:baseline;gap:12px;
+    opacity:0;transform:translateX(-24px);
+    transition:opacity .45s ease,transform .5s cubic-bezier(.16,1,.3,1);}
+  #nextev.show .nx-row:nth-child(1){transition-delay:.45s;}
+  #nextev.show .nx-row:nth-child(2){transition-delay:.7s;}
+  #nextev.show .nx-row{opacity:1;transform:translateX(0);}
+  #nextev .nx-tag{font:600 11px 'Barlow';letter-spacing:.2em;color:#8b8b96;
+    text-transform:uppercase;min-width:74px;}
+  #nextev .nx-bout{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:27px;
+    color:#f0e8ff;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #nextev .nx-bout i{font-style:normal;color:var(--red);font-size:20px;padding:0 4px;}
+
   /* ── PERSISTENT SCHEDULE PANEL ── */
   /* sits below the timer so the two can never collide top-right */
   #panel{position:fixed;top:132px;right:4%;width:330px;border-radius:12px;overflow:hidden;
@@ -502,6 +537,18 @@
 
   <div id="mtimer">2:00</div>
 
+  <div id="nextev">
+    <div class="nx-head">
+      <div class="nx-kick" id="nxKick">NEXT EVENT</div>
+      <div class="nx-title" id="nxTitle">—</div>
+      <div class="nx-date" id="nxDate"></div>
+    </div>
+    <div class="nx-rows">
+      <div class="nx-row"><span class="nx-tag">MAIN</span><span class="nx-bout" id="nxMain">—</span></div>
+      <div class="nx-row" id="nxCoRow"><span class="nx-tag">CO-MAIN</span><span class="nx-bout" id="nxCo">—</span></div>
+    </div>
+  </div>
+
   <!-- CALL TO ACTION. Both lines are always shown: the site and the Discord
        answer different questions ("where do I read more" / "how do I get in"),
        and rotating them would mean whichever one a viewer needed was the one
@@ -542,6 +589,8 @@ const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
   'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
 
 const $=id=>document.getElementById(id)
+let nxTimer=null
+const esc=t=>String(t??'').replace(/[<>&]/g,ch=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[ch]))
 // one timer per widget — a shared handle let a bet alert cancel the dossier's
 // auto-hide, stranding the dossier on screen for the rest of the broadcast
 let hideTimer=null, fighterTimer=null, panelTimer=null, oddsTimer=null, mtInt=null
@@ -681,6 +730,28 @@ function handle(c){
   // operator switches shows mid-session.
   if(c.league) document.documentElement.dataset.league = c.league
   if(c.type==='cta'){ ctaCmd(c); return }
+  // Next-event promo. The deck sends everything rendered here -- the overlay
+  // does no lookups, so the card can never disagree with what the deck showed
+  // the operator before firing.
+  if(c.type==='nextev'){
+    const el=$('nextev')
+    clearTimeout(nxTimer)
+    if(c.show===false){ el.classList.remove('show'); return }
+    const d=c.d||{}
+    $('nxKick').textContent = d.kick || 'NEXT EVENT'
+    $('nxTitle').textContent = d.title || '—'
+    const ts = d.when ? Math.floor(new Date(d.when).getTime()/1000) : null
+    $('nxDate').textContent = d.dateText || ''
+    const setBout = (id, b) => { const n=$(id);
+      if (!b){ n.parentElement.style.display='none'; return }
+      n.parentElement.style.display='flex'
+      n.innerHTML = `${esc(b.a)}<i>vs</i>${esc(b.b)}` }
+    setBout('nxMain', d.main); setBout('nxCo', d.co)
+    // re-stage the cascade on every fire, or a second press shows rows already in
+    el.classList.remove('show'); void el.offsetWidth; el.classList.add('show')
+    nxTimer=setTimeout(()=>el.classList.remove('show'), (c.hold ?? 14)*1000)
+    return
+  }
   if(c.type==='flash'){
     const isBet = c.w==='bet'
     $('flash').dataset.kind = c.w || ''   // showFlash sizes vs. scrolls on this
