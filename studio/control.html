@@ -303,14 +303,6 @@
         <button onclick="fireClockOdds()">📊 Odds on the clock</button>
         <span id="clockOddsHint" style="color:var(--gdim);font-size:16px">arm a bout first</span>
       </div>
-      <!-- Overlay CTA. Distinct from the standby one lower down: that fills a
-           holding screen between segments, this is the small bottom-right box
-           that runs DURING a match. -->
-      <div class="row" style="margin-bottom:8px">
-        <button onclick="overlayCta()">📣 CTA box (14s)</button>
-        <button onclick="overlayCta(0)">📌 CTA box — pin</button>
-        <button class="hide" onclick="overlayCta('off')">Hide CTA</button>
-      </div>
       <div class="row">
         <button onclick="fireCorners()">↻ Replay reveal</button>
         <button class="hide" onclick="ubaSwapCorners()">⇄ Swap corners</button>
@@ -416,6 +408,17 @@
         <button onclick="matchTimer(120)">▶ 2:00</button>
         <button onclick="matchTimer(180)">▶ 3:00</button>
         <button class="hide" onclick="hideTimer()">Hide timer</button>
+      </div>
+      <!-- The CTA box runs DURING the match, so its buttons live with the rest
+           of the live-fight kit -- it was parked in the corner-colour section,
+           which is not where an operator's hands are mid-round. (The standby
+           screen's own CTA further down is a different thing: it fills a
+           holding screen between segments.) -->
+      <div class="row" style="margin-bottom:10px">
+        <span class="kitlbl">CTA</span>
+        <button onclick="overlayCta()">📣 Show (14s)</button>
+        <button onclick="overlayCta(0)">📌 Pin</button>
+        <button class="hide" onclick="overlayCta('off')">Hide</button>
       </div>
     </div>
     <h5>💬 Message — fastest reach</h5>
