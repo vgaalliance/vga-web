@@ -290,7 +290,7 @@ async function load() {
 
   try {
     const cards = await sb('fighter_cards_roster',
-      `slug=eq.${encodeURIComponent(slug)}&select=id,display_name,nickname,weight_class,level,wins,losses,draws,ko_wins,rank,contract_tier,height,reach,stance,country,vc_balance`);
+      `slug=eq.${encodeURIComponent(slug)}&select=id,display_name,nickname,weight_class,level,wins:headline_wins,losses:headline_losses,draws:headline_draws,ko_wins:headline_ko_wins,rank,contract_tier,height,reach,stance,country,vc_balance`);
     if (!cards.length) { show('<div class="loading-state">Fighter not found</div>'); return; }
     const f = cards[0];
 

@@ -127,7 +127,7 @@ document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () =>
   try {
     const [rk, cards] = await Promise.all([
       sb('rankings_public', 'select=scope,weight_class,rank,fighter_name,fighter_slug,level'),
-      sb('fighter_cards', 'select=slug,wins,losses,draws')
+      sb('fighter_cards', 'select=slug,wins:headline_wins,losses:headline_losses,draws:headline_draws')
     ]);
     ranks = Array.isArray(rk) ? rk : [];
     (Array.isArray(cards) ? cards : []).forEach(c => { recBySlug[c.slug] = c; });

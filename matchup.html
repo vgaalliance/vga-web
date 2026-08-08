@@ -112,7 +112,7 @@ async function uba(eventId) {
   const slugs = [...new Set(bouts.flatMap(b => [b.fighter_a_slug, b.fighter_b_slug]).filter(Boolean))];
   const recs = {};
   if (slugs.length) {
-    (await get(`fighter_cards?select=slug,wins,losses,draws,is_champion&slug=in.(${slugs.map(encodeURIComponent).join(',')})`))
+    (await get(`fighter_cards?select=slug,wins:headline_wins,losses:headline_losses,draws:headline_draws,is_champion&slug=in.(${slugs.map(encodeURIComponent).join(',')})`))
       .forEach(f => recs[f.slug] = f);
   }
   const rec = s => { const f = recs[s]; return f ? `${f.wins}-${f.losses}${f.draws ? '-' + f.draws : ''}${f.is_champion ? ' · C' : ''}` : ''; };

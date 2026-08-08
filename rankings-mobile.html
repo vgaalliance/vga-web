@@ -324,7 +324,7 @@ document.querySelectorAll('.sort-btn').forEach(b => {
 document.getElementById('search').addEventListener('input', e => { q = e.target.value.toLowerCase().trim(); render(); });
 
 // Load UBA fighters
-fetch(`${SB_U}/rest/v1/fighter_cards?select=slug,display_name,weight_class,level,wins,losses,draws,rank,is_champion`, { headers: HU })
+fetch(`${SB_U}/rest/v1/fighter_cards?select=slug,display_name,weight_class,level,wins:headline_wins,losses:headline_losses,draws:headline_draws,rank,is_champion`, { headers: HU })
   .then(r => r.json())
   .then(d => { all = Array.isArray(d) ? d : []; render(); })
   .catch(() => { document.getElementById('fighter-list').innerHTML = '<div class="load-msg">Error loading fighters</div>'; });

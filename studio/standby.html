@@ -486,7 +486,7 @@ async function loadAll(){
 async function loadUba(rk){
   try{
     const [{data:ch},{data:p4},{data:fm},{data:sets},{data:coll},{data:nx}] = await Promise.all([
-      sb.from('fighter_cards').select('display_name,weight_class,wins,losses,draws,is_champion').eq('is_champion',true),
+      sb.from('fighter_cards').select('display_name,weight_class,wins:headline_wins,losses:headline_losses,draws:headline_draws,is_champion').eq('is_champion',true),
       sb.from('rankings_public').select('rank,fighter_name').eq('scope','overall').order('rank').limit(16),
       sb.from('fighter_of_month_public').select('name,tag').limit(1),
       sb.from('card_sets_public').select('name,code,status,set_size'),

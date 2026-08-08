@@ -488,7 +488,7 @@ const cap = s => (s||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())
 window.searchFighter=async()=>{
   const q=document.getElementById('fq').value.trim(); if(!q) return
   const { data } = await sb.from('fighter_cards')
-    .select('id,display_name,nickname,wins,losses,draws,ko_wins,rank,rank_weight_class,weight_class,country,is_champion')
+    .select('id,display_name,nickname,wins:headline_wins,losses:headline_losses,draws:headline_draws,ko_wins:headline_ko_wins,rank,rank_weight_class,weight_class,country,is_champion')
     .ilike('display_name','%'+q+'%').limit(6)
   const box=document.getElementById('fresults')
   if(!data||!data.length){ box.textContent='NO RECORD FOUND'; return }
@@ -771,7 +771,7 @@ window.mnTape=async()=>{
   }
   if(!an||!bn){ warn('⚠ tale of the tape: arm a bout first, or type both names'); return false }
   const one=async n=>{ const {data}=await sb.from('fighter_cards')
-    .select('display_name,slug,profile_photo_url,wins,losses,draws,rank,height,reach,age,country,weight_class').ilike('display_name','%'+n+'%').limit(1); return data&&data[0] }
+    .select('display_name,slug,profile_photo_url,wins:headline_wins,losses:headline_losses,draws:headline_draws,rank,height,reach,age,country,weight_class').ilike('display_name','%'+n+'%').limit(1); return data&&data[0] }
   const [A,B]=await Promise.all([one(an),one(bn)])
   if(!A||!B){
     warn('⚠ tale of the tape: no fighter matching "'+(A?bn:an)+'"')

@@ -248,7 +248,7 @@
   async function boot() {
     const [ranks, cards] = await Promise.all([
       fetch(`${SB}/rest/v1/rankings_public?level=eq.pro&scope=eq.weight_class&select=weight_class,rank,fighter_name,fighter_slug&order=weight_class.asc,rank.asc`, { headers: H }).then(r => r.json()),
-      fetch(`${SB}/rest/v1/fighter_cards?select=slug,display_name,weight_class,wins,losses,draws,is_champion`, { headers: H }).then(r => r.json())
+      fetch(`${SB}/rest/v1/fighter_cards?select=slug,display_name,weight_class,wins:headline_wins,losses:headline_losses,draws:headline_draws,is_champion`, { headers: H }).then(r => r.json())
     ]);
 
     const recBySlug = {};

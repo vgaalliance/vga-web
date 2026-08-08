@@ -433,7 +433,7 @@
 
     const [ranks, cards] = await Promise.all([
       sb('rankings_public?select=scope,weight_class,rank,fighter_name,fighter_slug,level'),
-      sb('fighter_cards?select=slug,display_name,weight_class,wins,losses,draws,is_champion')
+      sb('fighter_cards?select=slug,display_name,weight_class,wins:headline_wins,losses:headline_losses,draws:headline_draws,is_champion')
     ]);
 
     allRanks = Array.isArray(ranks) ? ranks : [];

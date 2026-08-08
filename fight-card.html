@@ -359,7 +359,7 @@
 
     const [matches, cards] = await Promise.all([
       sb(`event_matches?event_id=eq.${eventId}&select=bout_number,weight_class,is_title_fight,title_name,fighter_a_name,fighter_a_slug,fighter_b_name,fighter_b_slug,winner_corner`),
-      sb('fighter_cards?select=slug,wins,losses,draws')
+      sb('fighter_cards?select=slug,wins:headline_wins,losses:headline_losses,draws:headline_draws')
     ]);
 
     const recBySlug = {};
