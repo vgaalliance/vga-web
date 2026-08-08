@@ -112,6 +112,7 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
            slowly it reads as a live broadcast, which is the whole point of a
            rail. Copies are injected by railTicker() so the loop is seamless at
            whatever height the rail syncs to. -->
+      <div class="rail-shimmer"></div>
       <div class="rail-ticker"><div class="rail-track up"></div></div>
     </div>
 
@@ -122,6 +123,7 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
         background:linear-gradient(180deg, hsla(274,60%,18%,0.55), hsla(274,55%,10%,0.35) 50%, hsla(274,60%,18%,0.55));"></div>
       <!-- Mirrored: this one crawls the other way, so the two rails read as
            a pair rather than two copies of the same loop. -->
+      <div class="rail-shimmer"></div>
       <div class="rail-ticker"><div class="rail-track down"></div></div>
     </div>
 
@@ -154,11 +156,11 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
       </svg>
 
       <!-- LOGO MARK — flower mark + UBA wordmark -->
-      <div style="position:relative; width:330px; height:140px; margin:0 auto; z-index:2;
+      <div style="position:relative; width:372px; height:164px; margin:0 auto; z-index:2;
         display:flex; align-items:center; justify-content:center;">
-        <canvas id="flowerTab" width="330" height="140" style="position:absolute;top:0;left:0;"></canvas>
-        <div style="position:relative; font-size:46px; font-weight:900; letter-spacing:2px;
-          color:#f3f1fa; text-shadow:0 0 26px hsla(276,95%,58%,0.6);">UBA</div>
+        <canvas id="flowerTab" width="372" height="164" style="position:absolute;top:0;left:0;"></canvas>
+        <div style="position:relative; font-size:58px; font-weight:900; letter-spacing:3px;
+          color:#f3f1fa; text-shadow:0 0 30px hsla(276,95%,58%,0.62);">UBA</div>
       </div>
 
     <!-- BOUT TYPE LABEL -->
@@ -212,8 +214,16 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
          OBS's "Interact" window, same as any other clickable overlay
          element — won't trigger from the normal program feed. -->
     <div id="sponsorBar" style="width:100%; padding:24px 0;
-      text-align:center; border-top:1px solid hsla(276,25%,70%,0.13); opacity:0; cursor:pointer; position:relative; z-index:2;">
-      <span style="font-size:24px; font-weight:900; letter-spacing:5px; color:hsla(265,25%,85%,0.85); text-transform:uppercase; -webkit-text-stroke: 0.5px hsla(265,25%,85%,0.85);" id="sponsorText">SHEATH</span>
+      text-align:center; border-top:1px solid hsla(276,25%,70%,0.13); opacity:0; cursor:pointer; position:relative; z-index:2; overflow:hidden;">
+      <!-- The glimmer sweeps the BAR, not the text: a sheen crossing the whole
+           strip reads as a lit sponsor panel, while one clipped to the letters
+           reads as a text effect. Behind the text (z-index 0) and screen-blended
+           so it lifts the surface instead of washing the type. -->
+      <div class="spon-glimmer"></div>
+      <!-- The flip needs a fixed-height stage: the three faces are different
+           lengths, and without a set height the panel would resize on every
+           rotation and drag the rails' height sync with it. -->
+      <div class="spon-stage"><span id="sponsorText" class="spon-face">SHEATH</span></div>
     </div>
     </div>
   </div>
@@ -324,6 +334,50 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
   /* A separator gives the eye something to track the motion by -- without it
      a repeating phrase can look static at a glance. */
   .rail-dot{width:3px; height:3px; border-radius:50%; background:hsla(276,95%,70%,0.9); flex:0 0 auto;}
+
+  /* ── SPONSOR BAR ──────────────────────────────────────────────────────
+     A slow sheen every 9s. Long gap, quick pass: a glimmer that runs
+     constantly stops reading as a highlight and starts reading as a loading
+     bar. skewX gives it the diagonal a real reflection has. */
+  .spon-glimmer{position:absolute; top:0; bottom:0; left:0; width:45%; z-index:0; pointer-events:none;
+    background:linear-gradient(100deg, transparent, hsla(276,90%,80%,0.16) 45%, hsla(0,0%,100%,0.10) 50%, hsla(276,90%,80%,0.16) 55%, transparent);
+    transform:skewX(-18deg); mix-blend-mode:screen; animation:sponSheen 9s ease-in-out infinite;}
+  @keyframes sponSheen{
+    0%   {transform:translateX(-160%) skewX(-18deg);}
+    22%  {transform:translateX(340%)  skewX(-18deg);}
+    100% {transform:translateX(340%)  skewX(-18deg);}   /* holds off-screen for the rest of the cycle */
+  }
+  .spon-stage{position:relative; z-index:1; height:30px; perspective:600px;}
+  /* The face flips about its own horizontal axis -- a card turning over, not a
+     crossfade. backface-visibility keeps the mirrored text from ghosting
+     through at the halfway point. */
+  .spon-face{position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:24px; font-weight:900; letter-spacing:5px; color:hsla(276,20%,88%,0.9);
+    text-transform:uppercase; -webkit-text-stroke:0.5px hsla(276,20%,88%,0.9);
+    backface-visibility:hidden; transform-origin:50% 50%;
+    transition:transform .34s cubic-bezier(.5,0,.2,1), opacity .34s ease;}
+  .spon-face.out{transform:rotateX(90deg); opacity:0;}
+  .spon-face.in {transform:rotateX(-90deg); opacity:0;}
+  /* The promo code is the one face that has to be READ and typed, so it gets
+     its own tighter, brighter treatment rather than the wordmark's spacing. */
+  .spon-face.code{font-size:20px; letter-spacing:2px; color:hsla(276,95%,86%,0.95);
+    -webkit-text-stroke:0.5px hsla(276,95%,86%,0.95);}
+
+  /* ── RAIL SHIMMER — travels the rail when the mark blooms ──────────────
+     Vertical, because the rail is vertical: a light running DOWN the bar reads
+     as the same energy leaving the flower, where a horizontal sweep would read
+     as an unrelated screen effect. z-index 3 puts it over the wordmark, so the
+     letters catch the light instead of sitting outside it. */
+  .rail-shimmer{position:absolute; left:0; right:0; height:38%; top:0; z-index:3; pointer-events:none;
+    background:linear-gradient(180deg, transparent, hsla(276,100%,88%,0.45) 45%, hsla(0,0%,100%,0.30) 50%, hsla(276,100%,88%,0.45) 55%, transparent);
+    mix-blend-mode:screen; opacity:0; will-change:transform;}
+  .rail-shimmer.go{animation:railShimmer 1.15s cubic-bezier(.35,0,.3,1);}
+  @keyframes railShimmer{
+    0%  {transform:translateY(-120%); opacity:0;}
+    12% {opacity:1;}
+    88% {opacity:1;}
+    100%{transform:translateY(320%);  opacity:0;}
+  }
 </style>
 
 <!-- ============================================================
@@ -877,6 +931,11 @@ function startPanelBloom(){
   const cv = document.getElementById('panelBloom'); if(!cv) return
   const cx = cv.getContext('2d')
   let W = 0, H = 0, T = 0, flowers = []
+  // Lifted by the mark's bloom, decayed every frame. The field is ambient on
+  // its own; this is what makes it part of the same pulse rather than wallpaper
+  // running beside it.
+  let boost = 0
+  document.addEventListener('uba-bloom', ()=>{ boost = 1 })
   const rnd = (a,b) => a + Math.random()*(b-a)
   // The site picks across the spectrum; here it is the rails' own violet band.
   const pickHue = () => rnd(262, 292)
@@ -918,7 +977,8 @@ function startPanelBloom(){
   // shape exactly, with every alpha multiplied by BLOOM_DIM.
   function df(x,y,r,h,a,ph){
     if(a < 0.005) return
-    const A = v => a*v*BLOOM_DIM
+    // +80% at the peak of a bloom, back to ambient within a couple of seconds.
+    const A = v => a*v*BLOOM_DIM*(1 + boost*0.8)
     for(let p=0;p<5;p++){
       const ang=(p/5)*Math.PI*2+ph, px=x+Math.cos(ang)*r*0.8, py=y+Math.sin(ang)*r*0.8
       const h2=(h+p*6)%360, pr=r*0.34
@@ -955,7 +1015,7 @@ function startPanelBloom(){
     }
     if(a > 0.005) df(f.xf*W, f.yf*H, f.r, f.hue, a, f.ph)
   }
-  function frame(){ T++; cx.clearRect(0,0,W,H); flowers.forEach(tick); requestAnimationFrame(frame) }
+  function frame(){ T++; boost *= 0.978; cx.clearRect(0,0,W,H); flowers.forEach(tick); requestAnimationFrame(frame) }
   resize(); fill(); frame()
   // The panel grows and shrinks with collapsed rows, so the field tracks it --
   // otherwise the blooms sit in corners the card no longer has.
@@ -991,6 +1051,18 @@ function railTicker(trackSelector){
   track.appendChild(half);   // the second, identical half -- what -50% lands on
 }
 function refillRailTickers(){ railTicker('.rail-track.up'); railTicker('.rail-track.down') }
+
+// The rails answer the mark. Restarting a CSS animation needs the class off,
+// a reflow, then on -- without the reflow the browser coalesces both changes
+// and the animation never replays, so a second bloom would do nothing.
+document.addEventListener('uba-bloom', ()=>{
+  document.querySelectorAll('.rail-shimmer').forEach((el, i)=>{
+    el.classList.remove('go'); void el.offsetWidth
+    // The right rail lags slightly, so the light reads as crossing the card
+    // rather than two identical flashes.
+    setTimeout(()=>el.classList.add('go'), i * 110)
+  })
+})
 // After layout settles, for the same reason syncRailHeightToSponsorBar does.
 requestAnimationFrame(refillRailTickers);
 setTimeout(refillRailTickers, 750);
@@ -1002,12 +1074,51 @@ const cv = document.getElementById('flowerTab');
 const ctx = cv.getContext('2d');
 // Sized with the canvas above -- the mark is drawn from these, so bumping the
 // canvas alone would have left a small flower in a big empty box.
-const W = 330, H = 140;
-const CX = 165, CY = 56;
-const R = 26;
+const W = 372, H = 164;
+const CX = 186, CY = 66;
+const R = 33;
 
 let T = 0, spinAccum = 0;
-let spinIntensity = 0.35; // gentle constant idle spin for the tab-sized mark
+// ── THE BLOOM HEARTBEAT ──────────────────────────────────────────────────
+// The mark BLOOMS on a cycle rather than idling at one openness, using the
+// UBAe fight clock's burst-and-spring shape so both graphics breathe the same
+// way: slow build, brief hold, fast first release, long tail.
+//
+// This is the card's clock. At the peak it fires ONE event, and the rails'
+// shimmer and the corner flowers both hang off it -- so the card pulses as a
+// single object instead of three effects on unrelated timers.
+let spinIntensity = 0.28, siTarget = 0.28, siVel = 0;
+let cycleT = 0, cycleLen = 640, inBurst = false, firedThisBurst = false;
+const IDLE_SI = 0.28;
+const easeInCubic  = t => t*t*t;
+const easeOutQuint = t => 1 - Math.pow(1-t, 5);
+
+function driveBloom(){
+  cycleT++;
+  const p = Math.min(1, cycleT / cycleLen);
+  if(inBurst){
+    if(p < 0.22)      siTarget = IDLE_SI + (1-IDLE_SI)*easeInCubic(p/0.22);
+    else if(p < 0.48) siTarget = 1.0 - Math.sin(((p-0.22)/0.26)*Math.PI)*0.03;   // hold, with a breath in it
+    else if(p < 0.72) siTarget = IDLE_SI + (1-IDLE_SI)*easeOutQuint(1-(p-0.48)/0.24)*0.6;
+    else              siTarget = IDLE_SI + (1-IDLE_SI)*Math.pow(1-(p-0.72)/0.28, 2.5)*0.45;
+    // Fire at the top of the build, where the mark visibly opens -- firing at
+    // the start would put the rails' shimmer ahead of the bloom that causes it.
+    if(!firedThisBurst && p >= 0.20){
+      firedThisBurst = true
+      document.dispatchEvent(new CustomEvent('uba-bloom'))
+    }
+    if(p >= 1){ inBurst = false; cycleT = 0; siTarget = IDLE_SI }
+  } else {
+    siTarget = IDLE_SI
+    if(p >= 1){ inBurst = true; firedThisBurst = false; cycleT = 0 }
+  }
+  // Spring, not a lerp: softer coming down than going up, so it opens with
+  // intent and closes lazily. Same asymmetry the clock uses.
+  const stiff = spinIntensity < siTarget ? 0.016 : 0.005;
+  const damp  = spinIntensity < siTarget ? 0.68  : 0.60;
+  siVel = (siVel + (siTarget - spinIntensity) * stiff) * damp;
+  spinIntensity = Math.max(0, Math.min(1, spinIntensity + siVel));
+}
 
 const SYNTH_HUES = [145, 270, 160, 285, 175, 260, 130];
 function synthCol(hue, sat, light, alpha) {
@@ -1019,7 +1130,9 @@ function synthCol(hue, sat, light, alpha) {
 function frame() {
   ctx.clearRect(0, 0, W, H);
   T++;
-  spinAccum += 0.012;
+  driveBloom();
+  // Spin speed rides the bloom: the mark turns faster while it is open.
+  spinAccum += 0.012 + spinIntensity * 0.03;
   const si = spinIntensity;
 
   const hIdx = Math.floor((T * 0.018) % SYNTH_HUES.length);
@@ -1314,6 +1427,53 @@ editOverlay.addEventListener('click', (e) => {
   // Only 168 of 332 fighters have a country. No country -> the whole row is
   // hidden, so the plate closes up rather than leaving a hole where a flag
   // would be.
+  // ── SPONSOR ROTATOR ─────────────────────────────────────────────────────
+  // Three faces, flipped on a timer: who the sponsor is, where to go, what to
+  // type. One static wordmark said none of that.
+  //
+  // The url and code are DERIVED from the sponsor name unless the deck sends
+  // them, so an unknown sponsor still rotates something sensible instead of
+  // showing a made-up address -- and a sponsor whose site isn't name.com can be
+  // corrected from the deck without touching this file.
+  let sponTimer = null
+  function startSponsorRotator(name, url, code){
+    const stage = document.querySelector('.spon-stage')
+    const face  = document.getElementById('sponsorText')
+    if(!stage || !face || !name) return
+    if(sponTimer){ clearInterval(sponTimer); sponTimer = null }
+
+    const clean = String(name).trim()
+    const site  = (url  || clean.toLowerCase().replace(/[^a-z0-9]/g,'') + '.com').toUpperCase()
+    const promo = (code || clean.toUpperCase().replace(/[^A-Z0-9]/g,'') + 'UBA30').toUpperCase()
+    const faces = [
+      { text: clean.toUpperCase(), code:false },
+      { text: 'OUR SPONSOR',       code:false },
+      { text: site,                code:false },
+      { text: promo + ' AT ' + site, code:true },
+    ]
+    let i = 0
+    face.textContent = faces[0].text
+    face.classList.remove('code')
+
+    // Flip = out, swap at the halfway point where the face is edge-on, then in.
+    // Swapping any earlier and the text visibly changes before it turns.
+    function flip(){
+      const next = faces[(++i) % faces.length]
+      face.classList.add('out')
+      setTimeout(()=>{
+        face.textContent = next.text
+        face.classList.toggle('code', next.code)
+        face.classList.remove('out'); face.classList.add('in')
+        // Force a reflow so the browser sees the 'in' start state before the
+        // class comes off -- without it the flip-in never renders and the face
+        // just appears.
+        void face.offsetWidth
+        face.classList.remove('in')
+      }, 340)
+    }
+    sponTimer = setInterval(flip, 4200)
+  }
+
   function applyFlag(side, country){
     const row = document.getElementById('flagRow'+side)
     const img = document.getElementById('flagImg'+side)
@@ -1364,6 +1524,7 @@ editOverlay.addEventListener('click', (e) => {
     // data. Collapse those rows instead, re-run every load.
     hideEmptyRows()
     applyFlag('Left', L.country); applyFlag('Right', R.country)
+    startSponsorRotator(d.sponsor || 'SHEATH', d.sponsorUrl, d.sponsorCode)
     // Every bout brings different-length names and divisions, so the fitters
     // have to run per matchup -- not once at load.
     fitAll()
@@ -1385,6 +1546,9 @@ editOverlay.addEventListener('click', (e) => {
     const saved = JSON.parse(localStorage.getItem('vga.tape')||'null')
     if(saved && saved.on && saved.d){ apply(saved.d); playTape() }
   }catch{}
+  // The bar rotates even before a matchup is loaded -- an OBS source that has
+  // just been added shows a live sponsor strip rather than one dead word.
+  startSponsorRotator(document.getElementById('sponsorText').textContent)
 })()
 // Empty on BOTH sides -> the row is removed for this matchup. One side blank
 // still renders, so a fighter with no listed reach shows the em-dash against
