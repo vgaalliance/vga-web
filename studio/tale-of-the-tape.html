@@ -112,7 +112,7 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
            slowly it reads as a live broadcast, which is the whole point of a
            rail. Copies are injected by railTicker() so the loop is seamless at
            whatever height the rail syncs to. -->
-      <div class="rail-shimmer"></div>
+      <div class="rail-scanlines"></div>
       <div class="rail-ticker"><div class="rail-track up"></div></div>
     </div>
 
@@ -123,7 +123,7 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
         background:linear-gradient(180deg, hsla(274,60%,18%,0.55), hsla(274,55%,10%,0.35) 50%, hsla(274,60%,18%,0.55));"></div>
       <!-- Mirrored: this one crawls the other way, so the two rails read as
            a pair rather than two copies of the same loop. -->
-      <div class="rail-shimmer"></div>
+      <div class="rail-scanlines"></div>
       <div class="rail-ticker"><div class="rail-track down"></div></div>
     </div>
 
@@ -213,17 +213,17 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
          live edit panel for all stats/fighters. Only clickable via
          OBS's "Interact" window, same as any other clickable overlay
          element — won't trigger from the normal program feed. -->
-    <div id="sponsorBar" style="width:100%; padding:24px 0;
-      text-align:center; border-top:1px solid hsla(276,25%,70%,0.13); opacity:0; cursor:pointer; position:relative; z-index:2; overflow:hidden;">
+    <div id="sponsorBar" style="width:100%; padding:18px 0 22px;
+      text-align:center; border-top:1px solid hsla(276,25%,70%,0.13); opacity:0; cursor:pointer; position:relative; z-index:2;">
       <!-- The glimmer sweeps the BAR, not the text: a sheen crossing the whole
            strip reads as a lit sponsor panel, while one clipped to the letters
            reads as a text effect. Behind the text (z-index 0) and screen-blended
            so it lifts the surface instead of washing the type. -->
-      <div class="spon-glimmer"></div>
+      <div class="spon-glimwrap"><div class="spon-glimmer"></div></div>
       <!-- The flip needs a fixed-height stage: the three faces are different
            lengths, and without a set height the panel would resize on every
            rotation and drag the rails' height sync with it. -->
-      <div class="spon-stage"><span id="sponsorText" class="spon-face">SHEATH</span></div>
+      <div class="spon-stage"><div class="spon-plate"><span id="sponsorText">SHEATH</span></div></div>
     </div>
     </div>
   </div>
@@ -322,6 +322,8 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
      second half sits precisely where the first began. translateX(-50%) is
      baked into every keyframe because a transform is all-or-nothing: naming
      only translateY would drop the centring for the whole animation. */
+  .rail-scanlines{position:absolute; inset:0; z-index:1; pointer-events:none; opacity:0.55;
+    background:repeating-linear-gradient(180deg, hsla(276,60%,80%,0.055) 0px, hsla(276,60%,80%,0.055) 1px, transparent 1px, transparent 3px);}
   .rail-ticker{position:absolute; inset:0; overflow:hidden; z-index:2; pointer-events:none;}
   .rail-track{position:absolute; top:0; left:50%; display:flex; flex-direction:column; align-items:center; will-change:transform;}
   .rail-track.up  {animation:railUp   26s linear infinite;}
@@ -339,6 +341,7 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
      A slow sheen every 9s. Long gap, quick pass: a glimmer that runs
      constantly stops reading as a highlight and starts reading as a loading
      bar. skewX gives it the diagonal a real reflection has. */
+  .spon-glimwrap{position:absolute; inset:18px 26px 22px; overflow:hidden; border-radius:4px; z-index:2; pointer-events:none;}
   .spon-glimmer{position:absolute; top:0; bottom:0; left:0; width:45%; z-index:0; pointer-events:none;
     background:linear-gradient(100deg, transparent, hsla(276,90%,80%,0.16) 45%, hsla(0,0%,100%,0.10) 50%, hsla(276,90%,80%,0.16) 55%, transparent);
     transform:skewX(-18deg); mix-blend-mode:screen; animation:sponSheen 9s ease-in-out infinite;}
@@ -347,37 +350,29 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
     22%  {transform:translateX(340%)  skewX(-18deg);}
     100% {transform:translateX(340%)  skewX(-18deg);}   /* holds off-screen for the rest of the cycle */
   }
-  .spon-stage{position:relative; z-index:1; height:30px; perspective:600px;}
-  /* The face flips about its own horizontal axis -- a card turning over, not a
-     crossfade. backface-visibility keeps the mirrored text from ghosting
-     through at the halfway point. */
-  .spon-face{position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-    font-size:24px; font-weight:900; letter-spacing:5px; color:hsla(276,20%,88%,0.9);
-    text-transform:uppercase; -webkit-text-stroke:0.5px hsla(276,20%,88%,0.9);
-    backface-visibility:hidden; transform-origin:50% 50%;
-    transition:transform .34s cubic-bezier(.5,0,.2,1), opacity .34s ease;}
-  .spon-face.out{transform:rotateX(90deg); opacity:0;}
-  .spon-face.in {transform:rotateX(-90deg); opacity:0;}
+  /* Deeper perspective than a UI flip wants: at 900px the fold reads as a
+     panel turning in space rather than a card trick. */
+  .spon-stage{position:relative; z-index:1; height:56px; perspective:900px; padding:0 26px;}
+  /* THE PLATE is the sponsor slot: its own surface, lifted off the card so the
+     bar stops looking like a hole in the panel. Violet, not black -- the strip
+     sat on a near-black card and disappeared into it. */
+  .spon-plate{position:absolute; inset:0 26px; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(180deg, hsla(276,45%,26%,0.95), hsla(276,55%,16%,0.95));
+    border:1px solid hsla(276,80%,66%,0.42); border-radius:4px;
+    box-shadow:0 2px 14px rgba(0,0,0,0.45), inset 0 1px 0 hsla(276,90%,80%,0.18);
+    font-size:24px; font-weight:900; letter-spacing:5px; color:hsla(276,25%,95%,0.95);
+    text-transform:uppercase; -webkit-text-stroke:0.5px hsla(276,25%,95%,0.95);
+    transform-origin:50% 50%; backface-visibility:hidden;
+    transition:transform .36s cubic-bezier(.5,0,.2,1), opacity .36s ease, filter .36s ease;}
+  /* Out goes away from the viewer and dims; in arrives from the other side. A
+     fold has a lit face and a dark one, which is what the brightness does. */
+  .spon-plate.out{transform:rotateX(88deg) scale(0.97); opacity:0; filter:brightness(0.35);}
+  .spon-plate.in {transform:rotateX(-88deg) scale(0.97); opacity:0; filter:brightness(0.35);}
   /* The promo code is the one face that has to be READ and typed, so it gets
-     its own tighter, brighter treatment rather than the wordmark's spacing. */
-  .spon-face.code{font-size:20px; letter-spacing:2px; color:hsla(276,95%,86%,0.95);
-    -webkit-text-stroke:0.5px hsla(276,95%,86%,0.95);}
+     tighter spacing rather than the wordmark's. */
+  .spon-plate.code{font-size:19px; letter-spacing:1.5px;}
 
-  /* ── RAIL SHIMMER — travels the rail when the mark blooms ──────────────
-     Vertical, because the rail is vertical: a light running DOWN the bar reads
-     as the same energy leaving the flower, where a horizontal sweep would read
-     as an unrelated screen effect. z-index 3 puts it over the wordmark, so the
-     letters catch the light instead of sitting outside it. */
-  .rail-shimmer{position:absolute; left:0; right:0; height:38%; top:0; z-index:3; pointer-events:none;
-    background:linear-gradient(180deg, transparent, hsla(276,100%,88%,0.45) 45%, hsla(0,0%,100%,0.30) 50%, hsla(276,100%,88%,0.45) 55%, transparent);
-    mix-blend-mode:screen; opacity:0; will-change:transform;}
-  .rail-shimmer.go{animation:railShimmer 1.15s cubic-bezier(.35,0,.3,1);}
-  @keyframes railShimmer{
-    0%  {transform:translateY(-120%); opacity:0;}
-    12% {opacity:1;}
-    88% {opacity:1;}
-    100%{transform:translateY(320%);  opacity:0;}
-  }
+
 </style>
 
 <!-- ============================================================
@@ -875,10 +870,55 @@ function railSynthCol(hue, sat, light, alpha) {
   return `hsla(${hue},${s}%,${l}%,${alpha})`;
 }
 
-function setupRailCanvas(canvasId) {
+function setupRailCanvas(canvasId, scanDelay) {
   const rc = document.getElementById(canvasId);
   const rx = rc.getContext('2d');
   let rt = 0;
+
+  // ── CRT ROW SCAN — the same blocky sweep the CTA card uses, so the house
+  // has one CRT look rather than a different one per scene. Drawn per row on
+  // the canvas: variable row heights, a hue that wanders across the violet
+  // band, and an occasional bright 1px line. A CSS gradient cannot do any of
+  // that -- it can only wipe, which is why the first attempt read as a wipe.
+  const scan = { on:false, pos:0, delay:0 }
+  document.addEventListener('uba-bloom', ()=>{
+    // The second rail starts late, so the light crosses the card instead of
+    // both sides flashing together.
+    scan.delay = scanDelay || 0
+    scan.on = true; scan.pos = -1.2
+  })
+  function drawScan(w, h){
+    if(!scan.on) return
+    if(scan.delay > 0){ scan.delay--; return }
+    // ~0.0032/frame over a 2.7-unit journey ≈ 3.5s at 60fps. The old CSS sweep
+    // was 1.15s, which crossed before the eye could follow it.
+    const prog = Math.max(0, Math.min(1, (scan.pos + 1.2) / 2.7))
+    scan.pos += 0.0026 + Math.sin(prog * Math.PI) * 0.006
+    const cy = prog * h * 1.25 - h * 0.12, bandH = h * 0.85
+    const masterA = Math.pow(Math.sin(prog * Math.PI), 0.55)   // plateaus through the middle instead of peaking for one frame
+    if(masterA > 0.01){
+      let y = Math.max(0, (cy - bandH * 0.5) | 0)
+      const yEnd = Math.min(h, cy + bandH * 0.5)
+      while(y < yEnd){
+        const t = (y - (cy - bandH * 0.5)) / bandH, edge = Math.sin(Math.max(0, Math.min(1, t)) * Math.PI)
+        const f1 = Math.sin(y*0.022 + rt*0.028)*0.5 + 0.5
+        const f2 = Math.sin(y*0.015 - rt*0.018 + 1.8)*0.5 + 0.5
+        const f3 = Math.sin(y*0.031 + rt*0.012 + 3.1)*0.5 + 0.5
+        const f4 = Math.sin(y*0.009 - rt*0.022 + 5.2)*0.5 + 0.5
+        const rowH = f4 > 0.7 ? 4 : f4 > 0.45 ? 3 : f4 > 0.2 ? 2 : 1
+        const bHue = (268 + (f1*34 + f2*22 + f3*16 - 26)) % 360
+        rx.fillStyle = `hsla(${bHue},${68+f2*24}%,${38+f1*40}%,${edge*masterA*(0.30+f3*0.30)})`
+        rx.fillRect(0, y, w, rowH)
+        // Occasional hot line -- the scanline that catches the eye.
+        if(f1*f2*f3 > 0.6){
+          rx.fillStyle = `hsla(${(bHue+12)%360},95%,90%,${edge*masterA*0.62})`
+          rx.fillRect(0, y, w, 1)
+        }
+        y += rowH
+      }
+    }
+    if(prog >= 1){ scan.on = false }
+  }
 
   function draw() {
     rt += 1;
@@ -911,12 +951,15 @@ function setupRailCanvas(canvasId) {
     rx.fillRect(0, 0, 1, h);
     rx.fillRect(w - 1, 0, 1, h);
 
+    // Last, so the scan sits ON the rail rather than under its wash.
+    drawScan(w, h);
+
     requestAnimationFrame(draw);
   }
   draw();
 }
 setupRailCanvas('railLeft');
-setupRailCanvas('railRight');
+setupRailCanvas('railRight', 14);   // ~0.23s behind, so the light crosses the card
 
 // ---------- CORNER BLOOM — the website's flower field, dimmed for broadcast ----------
 // Ported from home.html's ambient flowers rather than reinvented, so the card
@@ -1052,17 +1095,7 @@ function railTicker(trackSelector){
 }
 function refillRailTickers(){ railTicker('.rail-track.up'); railTicker('.rail-track.down') }
 
-// The rails answer the mark. Restarting a CSS animation needs the class off,
-// a reflow, then on -- without the reflow the browser coalesces both changes
-// and the animation never replays, so a second bloom would do nothing.
-document.addEventListener('uba-bloom', ()=>{
-  document.querySelectorAll('.rail-shimmer').forEach((el, i)=>{
-    el.classList.remove('go'); void el.offsetWidth
-    // The right rail lags slightly, so the light reads as crossing the card
-    // rather than two identical flashes.
-    setTimeout(()=>el.classList.add('go'), i * 110)
-  })
-})
+
 // After layout settles, for the same reason syncRailHeightToSponsorBar does.
 requestAnimationFrame(refillRailTickers);
 setTimeout(refillRailTickers, 750);
@@ -1088,22 +1121,23 @@ let T = 0, spinAccum = 0;
 // shimmer and the corner flowers both hang off it -- so the card pulses as a
 // single object instead of three effects on unrelated timers.
 let spinIntensity = 0.28, siTarget = 0.28, siVel = 0;
-let cycleT = 0, cycleLen = 640, inBurst = false, firedThisBurst = false;
+let cycleT = 0, inBurst = false, firedThisBurst = false;
+const IDLE_LEN = 260, BURST_LEN = 1180;   // ~4.3s rest, ~20s bloom at 60fps
 const IDLE_SI = 0.28;
 const easeInCubic  = t => t*t*t;
 const easeOutQuint = t => 1 - Math.pow(1-t, 5);
 
 function driveBloom(){
   cycleT++;
-  const p = Math.min(1, cycleT / cycleLen);
+  const p = Math.min(1, cycleT / (inBurst ? BURST_LEN : IDLE_LEN));
   if(inBurst){
-    if(p < 0.22)      siTarget = IDLE_SI + (1-IDLE_SI)*easeInCubic(p/0.22);
-    else if(p < 0.48) siTarget = 1.0 - Math.sin(((p-0.22)/0.26)*Math.PI)*0.03;   // hold, with a breath in it
-    else if(p < 0.72) siTarget = IDLE_SI + (1-IDLE_SI)*easeOutQuint(1-(p-0.48)/0.24)*0.6;
-    else              siTarget = IDLE_SI + (1-IDLE_SI)*Math.pow(1-(p-0.72)/0.28, 2.5)*0.45;
+    if(p < 0.26)      siTarget = IDLE_SI + (1-IDLE_SI)*easeInCubic(p/0.26);
+    else if(p < 0.58) siTarget = 1.0 - Math.sin(((p-0.26)/0.32)*Math.PI)*0.03;   // long hold, with a breath in it
+    else if(p < 0.80) siTarget = IDLE_SI + (1-IDLE_SI)*easeOutQuint(1-(p-0.58)/0.22)*0.6;
+    else              siTarget = IDLE_SI + (1-IDLE_SI)*Math.pow(1-(p-0.80)/0.20, 2.5)*0.45;
     // Fire at the top of the build, where the mark visibly opens -- firing at
     // the start would put the rails' shimmer ahead of the bloom that causes it.
-    if(!firedThisBurst && p >= 0.20){
+    if(!firedThisBurst && p >= 0.24){
       firedThisBurst = true
       document.dispatchEvent(new CustomEvent('uba-bloom'))
     }
@@ -1438,8 +1472,9 @@ editOverlay.addEventListener('click', (e) => {
   let sponTimer = null
   function startSponsorRotator(name, url, code){
     const stage = document.querySelector('.spon-stage')
+    const plate = document.querySelector('.spon-plate')
     const face  = document.getElementById('sponsorText')
-    if(!stage || !face || !name) return
+    if(!stage || !plate || !face || !name) return
     if(sponTimer){ clearInterval(sponTimer); sponTimer = null }
 
     const clean = String(name).trim()
@@ -1453,23 +1488,23 @@ editOverlay.addEventListener('click', (e) => {
     ]
     let i = 0
     face.textContent = faces[0].text
-    face.classList.remove('code')
+    plate.classList.remove('code')
 
     // Flip = out, swap at the halfway point where the face is edge-on, then in.
     // Swapping any earlier and the text visibly changes before it turns.
     function flip(){
       const next = faces[(++i) % faces.length]
-      face.classList.add('out')
+      plate.classList.add('out')
       setTimeout(()=>{
         face.textContent = next.text
-        face.classList.toggle('code', next.code)
-        face.classList.remove('out'); face.classList.add('in')
+        plate.classList.toggle('code', next.code)
+        plate.classList.remove('out'); plate.classList.add('in')
         // Force a reflow so the browser sees the 'in' start state before the
-        // class comes off -- without it the flip-in never renders and the face
+        // class comes off -- without it the fold-in never renders and the plate
         // just appears.
-        void face.offsetWidth
-        face.classList.remove('in')
-      }, 340)
+        void plate.offsetWidth
+        plate.classList.remove('in')
+      }, 360)
     }
     sponTimer = setInterval(flip, 4200)
   }
