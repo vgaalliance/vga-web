@@ -102,31 +102,27 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
          Now also clickable: left rail = PREV fight, right rail = NEXT
          fight. Replaces the old bottom Next/Prev buttons entirely. -->
     <div id="railWrapLeft" style="position:absolute; left:0; top:0; width:52px; height:500px; z-index:10; overflow:hidden; cursor:pointer;
-      border:2px solid hsla(272,80%,75%,0.5);">
+      border:1px solid hsla(276,95%,66%,0.85);">
       <canvas id="railLeft" width="52" height="900" style="position:absolute; top:0; left:0; width:100%; height:100%;"></canvas>
       <!-- subtle gradient tint — very low alpha, just enough to suggest
            a glass surface without losing transparency -->
       <div style="position:absolute; inset:0; z-index:1; pointer-events:none;
-        background:linear-gradient(180deg, hsla(272,40%,55%,0.08), hsla(272,30%,40%,0.04) 50%, hsla(272,40%,55%,0.08));"></div>
-      <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-        writing-mode:vertical-rl; font-size:12px; letter-spacing:3px; font-weight:800;
-        color:hsla(265,35%,96%,0.85); text-shadow:0 1px 3px rgba(0,0,0,0.6);
-        text-transform:uppercase; white-space:nowrap; z-index:2; pointer-events:none;">
-        UNIFIED BOXING ASSOCIATION
-      </div>
+        background:linear-gradient(180deg, hsla(274,60%,18%,0.55), hsla(274,55%,10%,0.35) 50%, hsla(274,60%,18%,0.55));"></div>
+      <!-- The wordmark CRAWLS. Sitting still it read as wallpaper; moving
+           slowly it reads as a live broadcast, which is the whole point of a
+           rail. Copies are injected by railTicker() so the loop is seamless at
+           whatever height the rail syncs to. -->
+      <div class="rail-ticker"><div class="rail-track up"></div></div>
     </div>
 
     <div id="railWrapRight" style="position:absolute; right:0; top:0; width:52px; height:500px; z-index:10; overflow:hidden; cursor:pointer;
-      border:2px solid hsla(272,80%,75%,0.5);">
+      border:1px solid hsla(276,95%,66%,0.85);">
       <canvas id="railRight" width="52" height="900" style="position:absolute; top:0; left:0; width:100%; height:100%;"></canvas>
       <div style="position:absolute; inset:0; z-index:1; pointer-events:none;
-        background:linear-gradient(180deg, hsla(272,40%,55%,0.08), hsla(272,30%,40%,0.04) 50%, hsla(272,40%,55%,0.08));"></div>
-      <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-        writing-mode:vertical-rl; font-size:12px; letter-spacing:3px; font-weight:800;
-        color:hsla(265,35%,96%,0.85); text-shadow:0 1px 3px rgba(0,0,0,0.6);
-        text-transform:uppercase; white-space:nowrap; z-index:2; pointer-events:none;">
-        UNIFIED BOXING ASSOCIATION
-      </div>
+        background:linear-gradient(180deg, hsla(274,60%,18%,0.55), hsla(274,55%,10%,0.35) 50%, hsla(274,60%,18%,0.55));"></div>
+      <!-- Mirrored: this one crawls the other way, so the two rails read as
+           a pair rather than two copies of the same loop. -->
+      <div class="rail-ticker"><div class="rail-track down"></div></div>
     </div>
 
     <!-- INNER PANEL — now a normal-flow flex container, not absolutely
@@ -140,8 +136,14 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
       background:
         repeating-linear-gradient(135deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px),
         radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.025), transparent 60%),
-        #2b2b30;
-      box-shadow:0 0 40px rgba(0,0,0,0.5);">
+        #15111c;
+      box-shadow:0 0 40px rgba(0,0,0,0.6);">
+      <!-- CORNER BLOOM — the website's ambient flower field (home.html), which
+           is the house look, brought onto the card. Sits UNDER the content
+           (z-index 0, content is z-index 2) and is deliberately dimmer and
+           sparser than the web version: on a broadcast the card has to stay
+           readable over live footage, so this is atmosphere, never pattern. -->
+      <canvas id="panelBloom" style="position:absolute; inset:0; width:100%; height:100%; z-index:0; pointer-events:none; opacity:0.5;"></canvas>
       <!-- fine grain layer — SVG fractal noise, very low opacity -->
       <svg style="position:absolute; inset:0; width:100%; height:100%; opacity:0.05; pointer-events:none; mix-blend-mode:overlay;">
         <filter id="grainFilter">
@@ -156,38 +158,38 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
         display:flex; align-items:center; justify-content:center;">
         <canvas id="flowerTab" width="220" height="90" style="position:absolute;top:0;left:0;"></canvas>
         <div style="position:relative; font-size:26px; font-weight:900; letter-spacing:1px;
-          color:#f3f1fa; text-shadow:0 0 16px hsla(265,40%,75%,0.5);">UBA</div>
+          color:#f3f1fa; text-shadow:0 0 18px hsla(276,95%,58%,0.55);">UBA</div>
       </div>
 
     <!-- BOUT TYPE LABEL -->
     <div id="boutLabel" style="margin-top:22px; text-align:center; opacity:0; position:relative; z-index:2; align-self:stretch; width:100%;">
       <div id="boutTitleText" style="font-size:30px; font-weight:800; letter-spacing:1px; color:#f3f1fa; text-transform:uppercase;">HEAVYWEIGHT</div>
-      <div id="boutSubtitleText" style="font-size:14px; font-weight:500; letter-spacing:6px; color:hsla(265,25%,80%,0.55); text-transform:uppercase; margin-top:6px;">BOUT</div>
+      <div id="boutSubtitleText" style="font-size:14px; font-weight:500; letter-spacing:6px; color:hsla(275,8%,80%,0.5); text-transform:uppercase; margin-top:6px;">BOUT</div>
     </div>
 
     <!-- STAT ROWS -->
     <div id="statRows" style="margin-top:24px; width:336px; display:flex; flex-direction:column; gap:8px; position:relative; z-index:2;">
-      <div class="stat-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 8px; border-top:1px solid hsla(265,20%,60%,0.15); border-bottom:1px solid hsla(265,20%,60%,0.15); opacity:0;">
+      <div class="stat-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 8px; border-top:1px solid hsla(276,25%,70%,0.13); border-bottom:1px solid hsla(276,25%,70%,0.13); opacity:0;">
         <span class="stat-val left" id="ageLeft">31</span>
         <span class="stat-label">AGE</span>
         <span class="stat-val right" id="ageRight">28</span>
       </div>
-      <div class="stat-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 8px; border-top:1px solid hsla(265,20%,60%,0.15); border-bottom:1px solid hsla(265,20%,60%,0.15); opacity:0;">
+      <div class="stat-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 8px; border-top:1px solid hsla(276,25%,70%,0.13); border-bottom:1px solid hsla(276,25%,70%,0.13); opacity:0;">
         <span class="stat-val left" id="heightLeft">6'1"</span>
         <span class="stat-label">HEIGHT</span>
         <span class="stat-val right" id="heightRight">5'11"</span>
       </div>
-      <div class="stat-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 8px; border-top:1px solid hsla(265,20%,60%,0.15); border-bottom:1px solid hsla(265,20%,60%,0.15); opacity:0;">
+      <div class="stat-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 8px; border-top:1px solid hsla(276,25%,70%,0.13); border-bottom:1px solid hsla(276,25%,70%,0.13); opacity:0;">
         <span class="stat-val left" id="weightLeft">Heavyweight</span>
         <span class="stat-label">DIVISION</span>
         <span class="stat-val right" id="weightRight">Heavyweight</span>
       </div>
-      <div class="stat-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 8px; border-top:1px solid hsla(265,20%,60%,0.15); border-bottom:1px solid hsla(265,20%,60%,0.15); opacity:0;">
+      <div class="stat-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 8px; border-top:1px solid hsla(276,25%,70%,0.13); border-bottom:1px solid hsla(276,25%,70%,0.13); opacity:0;">
         <span class="stat-val left" id="reachLeft">76"</span>
         <span class="stat-label">REACH</span>
         <span class="stat-val right" id="reachRight">73"</span>
       </div>
-      <div class="stat-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 8px; border-top:1px solid hsla(265,20%,60%,0.15); border-bottom:1px solid hsla(265,20%,60%,0.15); opacity:0;">
+      <div class="stat-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 8px; border-top:1px solid hsla(276,25%,70%,0.13); border-bottom:1px solid hsla(276,25%,70%,0.13); opacity:0;">
         <span class="stat-val left" id="stanceLeft">Orthodox</span>
         <span class="stat-label">STANCE</span>
         <span class="stat-val right" id="stanceRight">Southpaw</span>
@@ -197,7 +199,7 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
            card most fighters have neither, and hideEmptyRows() drops the row
            when NEITHER corner has one -- so it appears on the bouts where it
            means something and is invisible everywhere else. -->
-      <div class="stat-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 8px; border-top:1px solid hsla(265,20%,60%,0.15); border-bottom:1px solid hsla(265,20%,60%,0.15); opacity:0;">
+      <div class="stat-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 8px; border-top:1px solid hsla(276,25%,70%,0.13); border-bottom:1px solid hsla(276,25%,70%,0.13); opacity:0;">
         <span class="stat-val left" id="teamLeft">—</span>
         <span class="stat-label">TEAM</span>
         <span class="stat-val right" id="teamRight">—</span>
@@ -210,7 +212,7 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
          OBS's "Interact" window, same as any other clickable overlay
          element — won't trigger from the normal program feed. -->
     <div id="sponsorBar" style="width:100%; padding:24px 0;
-      text-align:center; border-top:1px solid hsla(265,20%,60%,0.15); opacity:0; cursor:pointer; position:relative; z-index:2;">
+      text-align:center; border-top:1px solid hsla(276,25%,70%,0.13); opacity:0; cursor:pointer; position:relative; z-index:2;">
       <span style="font-size:24px; font-weight:900; letter-spacing:5px; color:hsla(265,25%,85%,0.85); text-transform:uppercase; -webkit-text-stroke: 0.5px hsla(265,25%,85%,0.85);" id="sponsorText">SHEATH</span>
     </div>
     </div>
@@ -254,17 +256,17 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
       <span id="flagTextLeft" style="font-size:15px; font-weight:700; letter-spacing:3px; color:hsla(265,25%,85%,0.75); text-transform:uppercase;"></span>
     </div>
     <div id="nameLeft" style="font-size:46px; font-weight:900; color:#f3f1fa; letter-spacing:1px; text-transform:uppercase;">FIGHTER NAME</div>
-    <div style="height:2px; width:260px; background:linear-gradient(90deg, hsla(270,55%,70%,0.7), transparent); margin-top:10px;"></div>
+    <div style="height:2px; width:260px; background:linear-gradient(90deg, hsla(276,95%,66%,0.95), transparent); margin-top:10px;"></div>
     <!-- RANK / RECORD / ODDS BAR — three-part dark bar: small rank
          box, win-loss record, betting-odds tag. Bolder text and a
          thicker bar than the old version, no flag/flower elements. -->
     <div style="display:flex; align-items:stretch; margin-top:14px; height:46px; width:360px;">
-      <div id="rankLeft" style="width:42px; background:#3a3a40; display:flex; align-items:center; justify-content:center;
+      <div id="rankLeft" style="width:42px; background:hsl(276,60%,32%); display:flex; align-items:center; justify-content:center;
         font-size:15px; font-weight:800; color:#f3f1fa;">—</div>
-      <div style="flex:1; background:#1c1c1f; display:flex; align-items:center; padding-left:16px; border-left:1px solid hsla(265,20%,40%,0.3);">
+      <div style="flex:1; background:#15111c; display:flex; align-items:center; padding-left:16px; border-left:1px solid hsla(265,20%,40%,0.3);">
         <span id="recordLeft" style="font-size:19px; font-weight:800; color:#f3f1fa; letter-spacing:0.5px;">0-0</span>
       </div>
-      <div style="width:96px; background:#16161a; display:flex; align-items:center; justify-content:center; border-left:1px solid hsla(265,20%,40%,0.4);">
+      <div style="width:96px; background:#0e0b13; display:flex; align-items:center; justify-content:center; border-left:1px solid hsla(265,20%,40%,0.4);">
         <span id="oddsLeft" style="font-size:16px; font-weight:800; color:hsla(265,30%,85%,0.9); letter-spacing:0.5px;">—</span>
       </div>
     </div>
@@ -275,16 +277,16 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
       <img id="flagImgRight" alt="" style="height:26px; width:auto; display:block; box-shadow:0 1px 4px rgba(0,0,0,0.6);">
     </div>
     <div id="nameRight" style="font-size:46px; font-weight:900; color:#f3f1fa; letter-spacing:1px; text-transform:uppercase;">FIGHTER NAME</div>
-    <div style="height:2px; width:260px; background:linear-gradient(90deg, transparent, hsla(270,55%,70%,0.7)); margin-top:10px; margin-left:auto;"></div>
+    <div style="height:2px; width:260px; background:linear-gradient(90deg, transparent, hsla(276,95%,66%,0.95)); margin-top:10px; margin-left:auto;"></div>
     <!-- RANK / RECORD / ODDS BAR — mirrored: odds, record, rank box -->
     <div style="display:flex; align-items:stretch; justify-content:flex-end; margin-top:14px; height:46px; width:360px; margin-left:auto;">
-      <div style="width:96px; background:#16161a; display:flex; align-items:center; justify-content:center; border-right:1px solid hsla(265,20%,40%,0.4);">
+      <div style="width:96px; background:#0e0b13; display:flex; align-items:center; justify-content:center; border-right:1px solid hsla(265,20%,40%,0.4);">
         <span id="oddsRight" style="font-size:16px; font-weight:800; color:hsla(265,30%,85%,0.9); letter-spacing:0.5px;">—</span>
       </div>
-      <div style="flex:1; background:#1c1c1f; display:flex; align-items:center; justify-content:flex-end; padding-right:16px; border-right:1px solid hsla(265,20%,40%,0.3);">
+      <div style="flex:1; background:#15111c; display:flex; align-items:center; justify-content:flex-end; padding-right:16px; border-right:1px solid hsla(265,20%,40%,0.3);">
         <span id="recordRight" style="font-size:19px; font-weight:800; color:#f3f1fa; letter-spacing:0.5px;">0-0</span>
       </div>
-      <div id="rankRight" style="width:42px; background:#3a3a40; display:flex; align-items:center; justify-content:center;
+      <div id="rankRight" style="width:42px; background:hsl(276,60%,32%); display:flex; align-items:center; justify-content:center;
         font-size:15px; font-weight:800; color:#f3f1fa;">—</div>
     </div>
   </div>
@@ -300,7 +302,28 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
   .stat-val.right{text-align:right;}
   /* The label owns the middle and never yields it, so the two values are
      measured against what is actually left over. */
-  .stat-label{font-size:14px; font-weight:600; letter-spacing:2px; color:hsla(270,30%,75%,0.55); text-transform:uppercase; flex:0 0 auto; padding:0 10px;}
+  /* Neutral, not lavender. With the accent now carried by one hot violet, a
+     second washed-out purple on the labels just muddied it. */
+  .stat-label{font-size:14px; font-weight:600; letter-spacing:2px; color:hsla(275,8%,78%,0.5); text-transform:uppercase; flex:0 0 auto; padding:0 10px;}
+
+  /* ── RAIL TICKER ──────────────────────────────────────────────────────
+     The track holds TWO identical halves; the animation travels exactly one
+     half and restarts, which is what makes the loop seamless -- at -50% the
+     second half sits precisely where the first began. translateX(-50%) is
+     baked into every keyframe because a transform is all-or-nothing: naming
+     only translateY would drop the centring for the whole animation. */
+  .rail-ticker{position:absolute; inset:0; overflow:hidden; z-index:2; pointer-events:none;}
+  .rail-track{position:absolute; top:0; left:50%; display:flex; flex-direction:column; align-items:center; will-change:transform;}
+  .rail-track.up  {animation:railUp   26s linear infinite;}
+  .rail-track.down{animation:railDown 26s linear infinite;}
+  @keyframes railUp   {from{transform:translate(-50%,0);}    to{transform:translate(-50%,-50%);}}
+  @keyframes railDown {from{transform:translate(-50%,-50%);} to{transform:translate(-50%,0);}}
+  .rail-word{writing-mode:vertical-rl; font-size:12px; letter-spacing:3px; font-weight:800;
+    color:hsla(275,20%,97%,0.9); text-shadow:0 1px 3px rgba(0,0,0,0.6);
+    text-transform:uppercase; white-space:nowrap; padding:18px 0;}
+  /* A separator gives the eye something to track the motion by -- without it
+     a repeating phrase can look static at a glance. */
+  .rail-dot{width:3px; height:3px; border-radius:50%; background:hsla(276,95%,70%,0.9); flex:0 0 auto;}
 </style>
 
 <!-- ============================================================
@@ -542,8 +565,10 @@ function playTape(){
   centerCol.style.transition = 'none';
   centerCol.style.opacity = '0';
   centerCol.style.transform = 'translateY(-26px) translateZ(0) scale(1.35)';
-  boutLabel.style.transition = 'none'; boutLabel.style.opacity = '0';
-  sponsorBar.style.transition = 'none'; sponsorBar.style.opacity = '0';
+  // transform reset too, not just opacity: the exit now MOVES these, so a
+  // replay after a hide would start them 10px off and never come back.
+  boutLabel.style.transition = 'none'; boutLabel.style.opacity = '0'; boutLabel.style.transform = 'none';
+  sponsorBar.style.transition = 'none'; sponsorBar.style.opacity = '0'; sponsorBar.style.transform = 'none';
   statRows.forEach(r=>{ r.style.transition='none'; r.style.opacity='0'; r.style.transform='translateY(-14px)'; });
 
   if(window.__playWraps) window.__playWraps();
@@ -583,21 +608,59 @@ function playTape(){
 // Broadcast exit: it leaves the way it arrived rather than dissolving in
 // place -- the wings pull back out to the sides, the card lifts, then the
 // whole thing goes. Fast, because an exit that lingers is an exit you cut over.
+// Exit: the rows COLLAPSE INTO A STACK, then the stack leaves. A plain fade
+// dissolved a graphic that had just been assembled row by row, which read as
+// the feed dropping rather than a deliberate cut. Reversing the build -- last
+// row first, each sliding up onto the one above until they are a single deck --
+// is what makes it read as an ending.
+//
+// Rows travel to a MEASURED offset, not a guessed one: the stack has to land on
+// the first row wherever it actually sits, and the card's height changes with
+// every collapsed row.
 function hideTape(){
   tapeTimers.forEach(clearTimeout); tapeTimers.length = 0;
   tapeShown = false;
   const wrapL = document.getElementById('fighterWrapLeft');
   const wrapR = document.getElementById('fighterWrapRight');
-  [[wrapL,-70],[wrapR,70]].forEach(([el,dx])=>{
-    if(!el) return
-    el.style.transition = 'opacity .34s ease, transform .42s cubic-bezier(.55,0,.85,.35)';
-    el.style.opacity = '0'; el.style.transform = `translateX(${dx}px) scale(1.04)`;
+
+  // statRows is a NodeList, which has forEach but NOT filter.
+  const live = [...statRows].filter(r => r.style.display !== 'none');
+  const topY = live.length ? live[0].getBoundingClientRect().top : 0;
+  // Bottom row moves first and travels furthest; by the time the top row moves
+  // they have all arrived, so the deck closes rather than smearing.
+  [...live].reverse().forEach((row, i)=>{
+    const dy = topY - row.getBoundingClientRect().top;
+    tapeTimers.push(setTimeout(()=>{
+      row.style.transition = 'transform .34s cubic-bezier(.5,0,.2,1), opacity .3s ease .12s';
+      row.style.transform  = `translateY(${dy}px) scale(0.985)`;
+      row.style.opacity    = i === live.length - 1 ? '1' : '0.55';
+    }, i * 55));
   });
-  centerCol.style.transition = 'opacity .3s ease .06s, transform .42s cubic-bezier(.55,0,.85,.35) .06s';
-  centerCol.style.opacity = '0';
-  centerCol.style.transform = 'translateY(-20px) scale(1.1)';
-  tapeRoot.style.transition = 'opacity .42s ease .1s';
-  tapeRoot.style.opacity = '0';
+
+  // The label and sponsor bar are not part of the deck -- they close inward so
+  // the card reads as shutting, not as pieces leaving separately.
+  const collapse = live.length * 55 + 120;
+  tapeTimers.push(setTimeout(()=>{
+    boutLabel.style.transition = 'opacity .22s ease, transform .3s cubic-bezier(.5,0,.2,1)';
+    boutLabel.style.opacity = '0'; boutLabel.style.transform = 'translateY(10px)';
+    sponsorBar.style.transition = 'opacity .22s ease, transform .3s cubic-bezier(.5,0,.2,1)';
+    sponsorBar.style.opacity = '0'; sponsorBar.style.transform = 'translateY(-10px)';
+  }, collapse - 90));
+
+  // Only once the deck is closed does the card itself go -- pulling back and
+  // away, the reverse of the entrance's drop-in.
+  tapeTimers.push(setTimeout(()=>{
+    [[wrapL,-70],[wrapR,70]].forEach(([el,dx])=>{
+      if(!el) return
+      el.style.transition = 'opacity .34s ease, transform .42s cubic-bezier(.55,0,.85,.35)';
+      el.style.opacity = '0'; el.style.transform = `translateX(${dx}px) scale(1.04)`;
+    });
+    centerCol.style.transition = 'opacity .26s ease, transform .38s cubic-bezier(.55,0,.85,.35)';
+    centerCol.style.opacity = '0';
+    centerCol.style.transform = 'translateY(-14px) scale(0.94)';
+    tapeRoot.style.transition = 'opacity .4s ease .08s';
+    tapeRoot.style.opacity = '0';
+  }, collapse));
 }
 // "LIGHT HEAVYWEIGHT" ran past the card at the design size. Shrink to fit
 // instead of clipping, so every division renders on one line.
@@ -664,10 +727,15 @@ window.__fitAll = fitAll;
 // Rather than guess a fixed pixel height, measure sponsorBar's actual
 // position relative to centerCol and size both rails to stop exactly
 // there. Runs after layout settles so the measurement is accurate.
+// 🔴 Measured with offsetTop, NOT getBoundingClientRect. centerCol is SCALED
+// during its entrance (and lands on scale(1) only when the transition ends), so
+// a rect-based distance is in scaled pixels while the height being assigned is
+// unscaled -- the rail came out short by exactly the scale factor, and a second
+// call made it worse instead of converging. The offsetTop chain is layout
+// geometry: unaffected by any transform, correct even mid-animation.
 function syncRailHeightToSponsorBar() {
-  const colRect = centerCol.getBoundingClientRect();
-  const sponsorRect = sponsorBar.getBoundingClientRect();
-  const stopHeight = sponsorRect.top - colRect.top;
+  let stopHeight = 0
+  for (let n = sponsorBar; n && n !== centerCol; n = n.offsetParent) stopHeight += n.offsetTop
   if (stopHeight > 10) {
     document.getElementById('railWrapLeft').style.height = stopHeight + 'px';
     document.getElementById('railWrapRight').style.height = stopHeight + 'px';
@@ -678,6 +746,15 @@ function syncRailHeightToSponsorBar() {
 requestAnimationFrame(syncRailHeightToSponsorBar);
 setTimeout(syncRailHeightToSponsorBar, 100);
 setTimeout(syncRailHeightToSponsorBar, 700);
+// ...and then WHENEVER the panel changes height, which the timeouts above
+// cannot cover: adding the stance and team rows made the card taller than the
+// rails, and every collapsed row on a bout with missing data changes it again
+// at load time. A ResizeObserver is the only thing that tracks a height nobody
+// can predict -- same approach the website's flower field uses for the page.
+if(window.ResizeObserver){
+  new ResizeObserver(()=>{ syncRailHeightToSponsorBar(); refillRailTickers() })
+    .observe(document.getElementById('statRows').parentElement)
+}
 
 // ---------- FIGHTER ENTRANCE — same drop-in-from-front-and-settle
 // style as the center column (scale down + slide in, same easing),
@@ -786,6 +863,137 @@ function setupRailCanvas(canvasId) {
 }
 setupRailCanvas('railLeft');
 setupRailCanvas('railRight');
+
+// ---------- CORNER BLOOM — the website's flower field, dimmed for broadcast ----------
+// Ported from home.html's ambient flowers rather than reinvented, so the card
+// and the site share one look. Three deliberate changes for a broadcast:
+//   1. HUES locked to the tape's violet band -- the site cycles green through
+//      violet, which would fight the accent.
+//   2. FEWER and SMALLER -- the site fills a page; this fills a 356px card.
+//   3. DIMMER -- everything scales by BLOOM_DIM, because anything bright enough
+//      to notice behind a stat line is bright enough to hurt reading it.
+const BLOOM_DIM = 0.42
+function startPanelBloom(){
+  const cv = document.getElementById('panelBloom'); if(!cv) return
+  const cx = cv.getContext('2d')
+  let W = 0, H = 0, T = 0, flowers = []
+  const rnd = (a,b) => a + Math.random()*(b-a)
+  // The site picks across the spectrum; here it is the rails' own violet band.
+  const pickHue = () => rnd(262, 292)
+
+  function resize(){
+    const r = cv.getBoundingClientRect()
+    W = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height))
+    cv.width = W; cv.height = H
+  }
+  // Corner-weighted, exactly like the site: blooms hug the corners and leave
+  // the middle -- where every stat value sits -- alone.
+  function mkPos(){
+    const c = Math.floor(Math.random()*4), d = Math.pow(Math.random(),1.8)*0.34, j = rnd(-0.55,0.55)
+    const ba = [Math.PI*0.25, Math.PI*0.75, -Math.PI*0.25, -Math.PI*0.75][c], a = ba + j
+    const cx2 = [0.02,0.98,0.02,0.98][c], cy2 = [0.02,0.02,0.98,0.98][c]
+    return { xf: Math.max(0.02,Math.min(0.98, cx2+Math.cos(a)*d)),
+             yf: Math.max(0.02,Math.min(0.98, cy2+Math.sin(a)*d)) }
+  }
+  function mkFlower(){
+    const p = mkPos()
+    const ds = [Math.hypot(p.xf,p.yf), Math.hypot(1-p.xf,p.yf), Math.hypot(p.xf,1-p.yf), Math.hypot(1-p.xf,1-p.yf)]
+    const sf = Math.pow(1 - Math.min(Math.min(...ds)/0.35, 1), 1.2)
+    return { xf:p.xf, yf:p.yf, r:4+sf*8, hue:pickHue(), ph:rnd(0,Math.PI*2),
+      spin:(Math.random()<.5?1:-1)*rnd(0.001,0.003), spinSpd:0, st:0, lf:0,
+      spd:rnd(0.0012,0.0022), pd:Math.floor(rnd(2200,4800)), pt:0,
+      delay:Math.floor(rnd(0,90)), seed:Math.random()*100 }
+  }
+  const tooClose = (xf,yf) => flowers.some(f => Math.hypot((f.xf-xf)*W,(f.yf-yf)*H) < 46)
+  let seeded = false
+  function fill(){
+    const need = Math.min(9, Math.max(4, Math.floor(W*H/26000)))
+    let tries = 0
+    while(flowers.length < need && tries < 200){ tries++
+      const f = mkFlower(); if(tooClose(f.xf,f.yf)) continue; flowers.push(f) }
+    if(!seeded && flowers.length){
+      flowers.forEach(f => { f.st=1; f.lf=1; f.delay=0; f.pt=Math.floor(rnd(0,f.pd)) }); seeded = true }
+  }
+  // Five petals, each a soft stack of three discs, plus a core -- the site's
+  // shape exactly, with every alpha multiplied by BLOOM_DIM.
+  function df(x,y,r,h,a,ph){
+    if(a < 0.005) return
+    const A = v => a*v*BLOOM_DIM
+    for(let p=0;p<5;p++){
+      const ang=(p/5)*Math.PI*2+ph, px=x+Math.cos(ang)*r*0.8, py=y+Math.sin(ang)*r*0.8
+      const h2=(h+p*6)%360, pr=r*0.34
+      cx.beginPath(); cx.arc(px,py,pr*2.4,0,Math.PI*2); cx.fillStyle=`hsla(${h2},100%,65%,${A(0.10)})`; cx.fill()
+      cx.beginPath(); cx.arc(px,py,pr*1.5,0,Math.PI*2); cx.fillStyle=`hsla(${h2},100%,74%,${A(0.25)})`; cx.fill()
+      cx.beginPath(); cx.arc(px,py,pr,0,Math.PI*2);     cx.fillStyle=`hsla(${h2},100%,80%,${A(0.48)})`; cx.fill()
+    }
+    cx.beginPath(); cx.arc(x,y,r*0.38,0,Math.PI*2); cx.fillStyle=`hsla(${(h+160)%360},80%,80%,${A(0.42)})`; cx.fill()
+    if(a > 0.10){ cx.beginPath(); cx.arc(x,y,r*0.15,0,Math.PI*2)
+      cx.fillStyle=`hsla(${h},70%,92%,${((a-0.10)/0.90)*BLOOM_DIM})`; cx.fill() }
+  }
+  // Three-state life: opening, holding, closing -- then it respawns somewhere
+  // else. That slow turnover is what stops it reading as a static texture.
+  function tick(f){
+    const ts = f.st===0 ? Math.abs(f.spin)*0.15 : f.st===1 ? Math.abs(f.spin) : Math.abs(f.spin)*1.5
+    f.spinSpd += (ts-f.spinSpd)*0.018
+    f.ph += f.spinSpd*(f.spin<0?-1:1)
+    let a = 0
+    if(f.st===0){
+      if(f.delay>0){ f.delay--; return }
+      f.lf += f.spd*0.35; a = Math.pow(f.lf,1.8)*0.52
+      if(f.lf>=1){ f.st=1; f.pt=0 }
+    } else if(f.st===1){
+      a = 0.35 + 0.06*Math.sin(T*0.028 + f.seed*1.3)
+      f.pt++; if(f.pt>=f.pd) f.st=2
+    } else {
+      f.lf -= f.spd*1.5
+      a = Math.pow(Math.max(0,f.lf),1)*0.5*(0.88+0.12*Math.sin(T*0.16+f.seed*2.1))
+      if(f.lf<=0){
+        let nf, att=0; do { nf = mkFlower(); att++ } while(tooClose(nf.xf,nf.yf) && att<20)
+        Object.assign(f, nf, { spinSpd:0, st:0, lf:0, pt:0, delay:Math.floor(rnd(400,1200)) })
+        return
+      }
+    }
+    if(a > 0.005) df(f.xf*W, f.yf*H, f.r, f.hue, a, f.ph)
+  }
+  function frame(){ T++; cx.clearRect(0,0,W,H); flowers.forEach(tick); requestAnimationFrame(frame) }
+  resize(); fill(); frame()
+  // The panel grows and shrinks with collapsed rows, so the field tracks it --
+  // otherwise the blooms sit in corners the card no longer has.
+  if(window.ResizeObserver) new ResizeObserver(()=>{ resize(); fill() }).observe(cv)
+}
+requestAnimationFrame(startPanelBloom)
+
+// ---------- RAIL TICKER — fill each track with enough copies to loop ----------
+// The count is COMPUTED, not guessed: the rail's height is synced to the
+// sponsor bar at runtime, so a hardcoded number would leave a visible gap on a
+// taller card. Each half must be at least as tall as the rail, or the seam
+// scrolls into view.
+function railTicker(trackSelector){
+  const track = document.querySelector(trackSelector); if(!track) return
+  track.textContent = ''            // re-runnable: a resize refills it
+  const rail  = track.closest('[id^=railWrap]');
+  const railH = rail ? rail.getBoundingClientRect().height : 500;
+  const WORD  = 'UNIFIED BOXING ASSOCIATION';
+  // ~215px per copy at 12px vertical type with the padding above. Measured
+  // once below rather than trusted -- fonts change the number.
+  const half = document.createDocumentFragment();
+  const probe = document.createElement('span'); probe.className='rail-word'; probe.textContent=WORD;
+  track.appendChild(probe);
+  const wordH = probe.getBoundingClientRect().height || 215;
+  track.removeChild(probe);
+  const perHalf = Math.max(2, Math.ceil((railH + 40) / (wordH + 12)));
+  for(let i=0;i<perHalf;i++){
+    const w = document.createElement('span'); w.className='rail-word'; w.textContent=WORD;
+    const d = document.createElement('i'); d.className='rail-dot';
+    half.appendChild(w); half.appendChild(d);
+  }
+  track.appendChild(half.cloneNode(true));
+  track.appendChild(half);   // the second, identical half -- what -50% lands on
+}
+function refillRailTickers(){ railTicker('.rail-track.up'); railTicker('.rail-track.down') }
+// After layout settles, for the same reason syncRailHeightToSponsorBar does.
+requestAnimationFrame(refillRailTickers);
+setTimeout(refillRailTickers, 750);
 
 // ---------- FLOWER MARK — condensed version, sits in the top tab ----------
 // Same engine as vga_vail_flower_overlay: spinning 5-petal bloom,
