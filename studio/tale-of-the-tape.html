@@ -802,13 +802,15 @@ window.__fitAll = fitAll;
 // call made it worse instead of converging. The offsetTop chain is layout
 // geometry: unaffected by any transform, correct even mid-animation.
 const TOP_STRIP = 11;    // the sliver; the rails hang off it and run nearly the whole card
-const RAIL_FOOT = 34;    // how far short of the card's bottom the rails stop -- about
-                         // halfway into the sponsor strip, so the frame runs long
-                         // without reaching the base
+// The rails stop at the sponsor strip's top edge -- the strip is the card's
+// last row and reads as its own band, so the frame ends where that band begins.
+// Tried halfway into the strip and level with the base; both closed the frame
+// off at the bottom. Set to 0 to run them to the card's bottom instead.
+const RAIL_FOOT = 0;
 function syncRailHeightToSponsorBar() {
   let stopHeight = 0
   for (let n = sponsorBar; n && n !== centerCol; n = n.offsetParent) stopHeight += n.offsetTop
-  stopHeight += sponsorBar.offsetHeight - RAIL_FOOT
+  stopHeight += RAIL_FOOT   // 0 = stop at the strip's top edge
   if (stopHeight > TOP_STRIP + 10) {
     for (const id of ['railWrapLeft','railWrapRight']) {
       const el = document.getElementById(id)
