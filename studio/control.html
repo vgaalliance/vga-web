@@ -501,9 +501,17 @@ channel.subscribe(s=>{ const el=document.getElementById('status')
 // the UBA one, which is centred -- so where they sit depends on which show is
 // running, and the overlay cannot know unless we tell it on every message.
 window.send=cmd=>{ if(cmd && cmd.league==null) cmd.league = EV
-  channel.send({type:'broadcast',event:'cmd',payload:cmd})
   const l=document.getElementById('log'); const d=document.createElement('div')
-  d.textContent=`TX ${cmd.type}${cmd.on===false?' HIDE':''}`; l.prepend(d) }
+  const label=`${cmd.type}${cmd.on===false?' HIDE':''}`
+  d.textContent=`TX ${label}…`; l.prepend(d)
+  // Report what the socket actually did. Silent failure here means pressing a
+  // button, seeing TX, and watching nothing happen on air.
+  Promise.resolve(channel.send({type:'broadcast',event:'cmd',payload:cmd}))
+    .then(r=>{ const ok = r==='ok' || r===undefined
+      d.textContent = ok ? `TX ${label}` : `✗ TX ${label} — ${r} (NOT SENT)`
+      if(!ok) d.style.color = '#ff6b6b' })
+    .catch(e=>{ d.textContent = `✗ TX ${label} — ${e&&e.message||'failed'}`; d.style.color = '#ff6b6b' })
+}
 
 const cap = s => (s||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())
 
@@ -864,8 +872,17 @@ window.mnTape=async()=>{
       document.getElementById('mnBoutB').value=bn }
   }
   if(!an||!bn){ warn('⚠ tale of the tape: arm a bout first, or type both names'); return false }
-  const one=async n=>{ const {data}=await sb.from('fighter_cards')
-    .select('display_name,slug,profile_photo_url,wins:headline_wins,losses:headline_losses,draws:headline_draws,rank,height,reach,age,country,weight_class,stance,team').ilike('display_name','%'+n+'%').limit(1); return data&&data[0] }
+  const COLS='display_name,slug,profile_photo_url,wins:headline_wins,losses:headline_losses,draws:headline_draws,rank,height,reach,age,country,weight_class,stance,team'
+  const one=async n=>{
+    // Exact first -- ilike with no wildcards is a case-insensitive equality.
+    const {data:exact}=await sb.from('fighter_cards_roster').select(COLS).ilike('display_name',n).limit(2)
+    if(exact&&exact.length) return exact[0]
+    // Fall back to contains, and take the SHORTEST match: 'Ghost' should win
+    // over 'Scouser King Ghost', which is what limit(1) got wrong at random.
+    const {data:like}=await sb.from('fighter_cards_roster').select(COLS).ilike('display_name','%'+n+'%').limit(10)
+    if(!like||!like.length) return null
+    return like.sort((a,b)=>a.display_name.length-b.display_name.length)[0]
+  }
   const [A,B]=await Promise.all([one(an),one(bn)])
   if(!A||!B){
     warn('⚠ tale of the tape: no fighter matching "'+(A?bn:an)+'"')
@@ -902,6 +919,11 @@ window.mnTape=async()=>{
   // was loaded -- so on a fight night the tape announced the wrong league.
   // On UBA it takes the bout's own division, which is what the card is
   // actually showing, and the event name underneath.
+  // Name what it actually found. The lookup is fuzzy, so the operator has to be
+  // able to see 'Ghost' and not 'Scouser King Ghost' BEFORE pressing Show.
+  if(A.display_name.toLowerCase()!==an.trim().toLowerCase() ||
+     B.display_name.toLowerCase()!==bn.trim().toLowerCase())
+    warn('tale of the tape → '+A.display_name+' vs '+B.display_name)
   const uba = EV==='uba'
   const armed = armedBout()
   const title = uba

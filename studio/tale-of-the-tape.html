@@ -1534,7 +1534,13 @@ editOverlay.addEventListener('click', (e) => {
 (function(){
   const _sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
     'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
-  const set=(id,v)=>{ if(v!=null){ const e=document.getElementById(id); if(e) e.textContent=v } }
+  // 🔴 A missing value now BLANKS the field instead of leaving the last bout's
+  // number in place. set() used to skip null, so any field a payload omitted
+  // kept the previous fighter's stat -- and the Quick Paste panel omits every
+  // field it isn't given, so one paste could pair fighter A's name with fighter
+  // B's reach and nothing would look wrong.
+  const set=(id,v)=>{ const e=document.getElementById(id); if(!e) return
+    e.textContent = (v==null || v==='') ? '\u2014' : v }
   const DASH='\u2014'   // em-dash: what hideEmptyRows() treats as "absent"
   // hideTape lives outside this scope but has to clear the saved state when the
   // auto-hide fires, so it reaches in through here.
