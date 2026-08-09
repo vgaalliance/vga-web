@@ -101,9 +101,10 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
          as they are, not the card's fill: this is a sheet over sheets, so the
          crossings read denser and the video still comes through. -->
     <div id="topSheet" style="position:absolute; left:0; right:0; top:0; height:9px; z-index:3;
-      overflow:hidden; border:1px solid hsla(276,95%,66%,0.85); border-bottom:0;
-      background:linear-gradient(180deg, hsla(274,60%,18%,0.55), hsla(274,55%,10%,0.35));">
-      <canvas id="headerWash" width="496" height="9" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>
+      overflow:hidden; border:1px solid hsla(276,95%,66%,0.85); border-bottom:0;">
+      <canvas id="headerWash" width="496" height="900" style="position:absolute; top:0; left:0; width:100%; height:900px;"></canvas>
+      <div id="headerTint" style="position:absolute; top:0; left:0; right:0; height:900px; z-index:1; pointer-events:none;
+        background:linear-gradient(180deg, hsla(274,60%,18%,0.55), hsla(274,55%,10%,0.35) 50%, hsla(274,60%,18%,0.55));"></div>
       <div class="rail-scanlines"></div>
     </div>
 
@@ -818,14 +819,21 @@ function syncRailHeightToSponsorBar() {
   cardBottom += sponsorBar.offsetHeight
   const stopHeight = Math.round(cardBottom * RAIL_SPAN)
   if (stopHeight > TOP_STRIP + 10) {
+    const railH = stopHeight - TOP_STRIP
     for (const id of ['railWrapLeft','railWrapRight']) {
       const el = document.getElementById(id)
       el.style.top    = TOP_STRIP + 'px'
-      el.style.height = (stopHeight - TOP_STRIP) + 'px'
+      el.style.height = railH + 'px'
       // No top border: the strip's own bottom edge is the line there, and two
       // borders meeting would draw it twice.
       el.style.borderTop = '0'
     }
+    // The sliver's wash and tint match the RAIL's display height, so the shared
+    // 900px source squashes by the same factor in both and the strip shows the
+    // rails' own top slice rather than a differently-scaled copy of it.
+    const hw = document.getElementById('headerWash'), ht = document.getElementById('headerTint')
+    if (hw) hw.style.height = railH + 'px'
+    if (ht) ht.style.height = railH + 'px'
   }
 }
 // Run a few times as layout settles (fonts loading, animation frames),
@@ -908,10 +916,14 @@ function railSynthCol(hue, sat, light, alpha) {
   return `hsla(${hue},${s}%,${l}%,${alpha})`;
 }
 
+let RAIL_T = 0;                 // one clock, shared by every rail surface
+const RAIL_DRAWS = [];          // every registered draw, called once per frame
+function railFrame(){ RAIL_T += 1; for (const d of RAIL_DRAWS) d(); requestAnimationFrame(railFrame) }
+let railLoopStarted = false;
+
 function setupRailCanvas(canvasId, scanDelay) {
   const rc = document.getElementById(canvasId);
   const rx = rc.getContext('2d');
-  let rt = 0;
 
   // ── CRT ROW SCAN — the same blocky sweep the CTA card uses, so the house
   // has one CRT look rather than a different one per scene. Drawn per row on
@@ -939,10 +951,10 @@ function setupRailCanvas(canvasId, scanDelay) {
       const yEnd = Math.min(h, cy + bandH * 0.5)
       while(y < yEnd){
         const t = (y - (cy - bandH * 0.5)) / bandH, edge = Math.sin(Math.max(0, Math.min(1, t)) * Math.PI)
-        const f1 = Math.sin(y*0.022 + rt*0.028)*0.5 + 0.5
-        const f2 = Math.sin(y*0.015 - rt*0.018 + 1.8)*0.5 + 0.5
-        const f3 = Math.sin(y*0.031 + rt*0.012 + 3.1)*0.5 + 0.5
-        const f4 = Math.sin(y*0.009 - rt*0.022 + 5.2)*0.5 + 0.5
+        const f1 = Math.sin(y*0.022 + RAIL_T*0.028)*0.5 + 0.5
+        const f2 = Math.sin(y*0.015 - RAIL_T*0.018 + 1.8)*0.5 + 0.5
+        const f3 = Math.sin(y*0.031 + RAIL_T*0.012 + 3.1)*0.5 + 0.5
+        const f4 = Math.sin(y*0.009 - RAIL_T*0.022 + 5.2)*0.5 + 0.5
         const rowH = f4 > 0.7 ? 4 : f4 > 0.45 ? 3 : f4 > 0.2 ? 2 : 1
         const bHue = (268 + (f1*34 + f2*22 + f3*16 - 26)) % 360
         rx.fillStyle = `hsla(${bHue},${68+f2*24}%,${38+f1*40}%,${edge*masterA*(0.30+f3*0.30)})`
@@ -959,7 +971,6 @@ function setupRailCanvas(canvasId, scanDelay) {
   }
 
   function draw() {
-    rt += 1;
     const w = rc.width, h = rc.height;
     rx.clearRect(0, 0, w, h);
 
@@ -967,15 +978,15 @@ function setupRailCanvas(canvasId, scanDelay) {
     // violet band. Saturation/lightness pushed back up from the
     // muted-grey version, alpha kept low (0.10) so it's still
     // genuinely see-through, not a flat color fill.
-    const hueIdx = Math.floor((rt * 0.0035) % RAIL_SYNTH_HUES.length);
+    const hueIdx = Math.floor((RAIL_T * 0.0035) % RAIL_SYNTH_HUES.length);
     const hueNext = RAIL_SYNTH_HUES[(hueIdx + 1) % RAIL_SYNTH_HUES.length];
-    const hueBlend = RAIL_SYNTH_HUES[hueIdx] + (hueNext - RAIL_SYNTH_HUES[hueIdx]) * ((rt * 0.0035) % 1);
+    const hueBlend = RAIL_SYNTH_HUES[hueIdx] + (hueNext - RAIL_SYNTH_HUES[hueIdx]) * ((RAIL_T * 0.0035) % 1);
     rx.fillStyle = railSynthCol(hueBlend, 50, 62, 0.16);
     rx.fillRect(0, 0, w, h);
 
     // LAYER 2 — single, slow-moving highlight band — purple-toned now
     // instead of gold, matching the flower's own neon-edge color logic.
-    const bandPos = (rt * 0.22) % (h + 300) - 150;
+    const bandPos = (RAIL_T * 0.22) % (h + 300) - 150;
     const bandHue = RAIL_SYNTH_HUES[(hueIdx + 2) % RAIL_SYNTH_HUES.length];
     const band = rx.createLinearGradient(0, bandPos - 110, 0, bandPos + 110);
     band.addColorStop(0,   `hsla(${bandHue},65%,80%,0)`);
@@ -992,9 +1003,9 @@ function setupRailCanvas(canvasId, scanDelay) {
     // Last, so the scan sits ON the rail rather than under its wash.
     drawScan(w, h);
 
-    requestAnimationFrame(draw);
   }
-  draw();
+  RAIL_DRAWS.push(draw);
+  if (!railLoopStarted) { railLoopStarted = true; requestAnimationFrame(railFrame) }
 }
 setupRailCanvas('railLeft');
 setupRailCanvas('headerWash', 7);   // same surface as the rails, scan lands between them
