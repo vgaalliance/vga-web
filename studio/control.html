@@ -673,7 +673,19 @@ window.mnChip=(side,i)=>{
   if(used.includes(i)) return
   if(side==='A') MN.pickA=(MN.pickA===i?null:i)
   else MN.pickB=(MN.pickB===i?null:i)
-  mnPush(); mnCockpitDraw()
+  mnPush(); mnCockpitDraw(); tapeFromPicks()
+}
+
+// The battleroom picks ARE the tape's two fighters, so the inputs follow them.
+// Deliberately does not re-fire a tape that is already up: the operator picks
+// during the pick clock, and a graphic that reshuffled itself mid-reveal would
+// be worse than one that waits to be shown.
+function tapeFromPicks(){
+  const nameOf = (team, i) => i==null ? '' : (((MN.lineups[team]||{}).starters||[])[i] || '')
+  const a = nameOf(MN.a, MN.pickA), b = nameOf(MN.b, MN.pickB)
+  const iA = document.getElementById('mnBoutA'), iB = document.getElementById('mnBoutB')
+  if(iA) iA.value = a
+  if(iB) iB.value = b
 }
 
 window.mnWin=side=>{
