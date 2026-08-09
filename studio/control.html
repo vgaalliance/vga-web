@@ -918,6 +918,15 @@ window.tapeToggle = async ()=>{
   }
   b.textContent = tapeOn ? '■ Hide tale of the tape' : '▶ Show tale of the tape'
   b.className = tapeOn ? 'hide' : ''
+
+  // The tape retires itself after two minutes. Mirror that here or the button
+  // keeps saying "Hide" for a graphic that already left, and the next press
+  // does nothing visible.
+  clearTimeout(window._tapeAutoBtn)
+  if(tapeOn) window._tapeAutoBtn = setTimeout(()=>{
+    tapeOn = false
+    b.textContent = '▶ Show tale of the tape'; b.className = ''
+  }, 120000)
 }
 
 window.fireMsg=()=>{

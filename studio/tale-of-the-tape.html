@@ -622,9 +622,16 @@ tapeRoot.style.opacity = '0';
 tapeRoot.style.willChange = 'opacity, transform';
 let tapeShown = false;
 
+const TAPE_AUTO_HIDE_MS = 120000;   // 2 minutes on screen, then it retires itself
+let autoHideTimer = null;
+
 function playTape(){
   tapeTimers.forEach(clearTimeout); tapeTimers.length = 0;
   tapeShown = true;
+  // Restarted on every show, so re-arming a matchup gives it a fresh two
+  // minutes rather than inheriting what was left of the last one.
+  clearTimeout(autoHideTimer);
+  autoHideTimer = setTimeout(() => { if (tapeShown) hideTape() }, TAPE_AUTO_HIDE_MS);
   tapeRoot.style.transition = 'opacity .28s ease';
   tapeRoot.style.opacity = '1';
   tapeRoot.style.transform = 'none';
@@ -688,7 +695,11 @@ function playTape(){
 // every collapsed row.
 function hideTape(){
   tapeTimers.forEach(clearTimeout); tapeTimers.length = 0;
+  clearTimeout(autoHideTimer); autoHideTimer = null;
   tapeShown = false;
+  // Forget the saved on-state too, or an OBS source refresh after the auto-hide
+  // would put the tape straight back on air.
+  if (window.__tapeForget) window.__tapeForget();
   const wrapL = document.getElementById('fighterWrapLeft');
   const wrapR = document.getElementById('fighterWrapRight');
 
@@ -1523,6 +1534,9 @@ editOverlay.addEventListener('click', (e) => {
     'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
   const set=(id,v)=>{ if(v!=null){ const e=document.getElementById(id); if(e) e.textContent=v } }
   const DASH='\u2014'   // em-dash: what hideEmptyRows() treats as "absent"
+  // hideTape lives outside this scope but has to clear the saved state when the
+  // auto-hide fires, so it reaches in through here.
+  window.__tapeForget = () => remember(null, false)
 
   // COUNTRY FLAGS. Rendered as images, not emoji: regional-indicator flag
   // emoji do not render on Windows at all -- Chrome there draws the two
