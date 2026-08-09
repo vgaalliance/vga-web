@@ -140,9 +140,10 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
         radial-gradient(ellipse at 50% 0%, hsla(276,80%,55%,0.16), transparent 62%),
         linear-gradient(180deg, #1b1426 0%, #120d1a 55%, #0c0812 100%);
       z-index:5;
-      box-shadow:0 0 40px rgba(0,0,0,0.6),
-                 -18px 0 30px -10px rgba(0,0,0,0.85),
-                  18px 0 30px -10px rgba(0,0,0,0.85);">
+      box-shadow:0 0 0 1px rgba(0,0,0,0.55),
+                 0 10px 34px -6px rgba(0,0,0,0.7),
+                 -7px 0 14px -8px rgba(0,0,0,0.9),
+                  7px 0 14px -8px rgba(0,0,0,0.9);">
       <!-- CORNER BLOOM — the website's ambient flower field (home.html), which
            is the house look, brought onto the card. Sits UNDER the content
            (z-index 0, content is z-index 2) and is deliberately dimmer and
@@ -159,9 +160,9 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
       </svg>
 
       <!-- LOGO MARK — flower mark + UBA wordmark -->
-      <div style="position:relative; width:372px; height:196px; margin:0 auto; z-index:2;
+      <div style="position:relative; width:372px; height:168px; margin:0 auto; z-index:2;
         display:flex; align-items:center; justify-content:center;">
-        <canvas id="flowerTab" width="372" height="196" style="position:absolute;top:0;left:0;"></canvas>
+        <canvas id="flowerTab" width="372" height="168" style="position:absolute;top:0;left:0;"></canvas>
         <div style="position:relative; font-size:58px; font-weight:900; letter-spacing:3px;
           color:#f6f2fb; text-shadow:
             0 0 22px rgba(8,4,14,0.92),
@@ -170,13 +171,13 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
       </div>
 
     <!-- BOUT TYPE LABEL -->
-    <div id="boutLabel" style="margin-top:22px; text-align:center; opacity:0; position:relative; z-index:2; align-self:stretch; width:100%;">
+    <div id="boutLabel" style="margin-top:2px; text-align:center; opacity:0; position:relative; z-index:2; align-self:stretch; width:100%;">
       <div id="boutTitleText" style="font-size:30px; font-weight:800; letter-spacing:1px; color:#f3f1fa; text-transform:uppercase;">HEAVYWEIGHT</div>
       <div id="boutSubtitleText" style="font-size:14px; font-weight:500; letter-spacing:6px; color:hsla(275,8%,80%,0.5); text-transform:uppercase; margin-top:6px;">BOUT</div>
     </div>
 
     <!-- STAT ROWS -->
-    <div id="statRows" style="margin-top:24px; width:372px; display:flex; flex-direction:column; gap:8px; position:relative; z-index:2;">
+    <div id="statRows" style="margin-top:18px; width:372px; display:flex; flex-direction:column; gap:8px; position:relative; z-index:2;">
       <div class="stat-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 8px; border-top:1px solid hsla(276,25%,70%,0.13); border-bottom:1px solid hsla(276,25%,70%,0.13); opacity:0;">
         <span class="stat-val left" id="ageLeft">31</span>
         <span class="stat-label">AGE</span>
@@ -786,13 +787,16 @@ window.__fitAll = fitAll;
 // unscaled -- the rail came out short by exactly the scale factor, and a second
 // call made it worse instead of converging. The offsetTop chain is layout
 // geometry: unaffected by any transform, correct even mid-animation.
+const RAIL_OVERHANG = 38;   // how far the rails rise above the card's top edge
 function syncRailHeightToSponsorBar() {
   let stopHeight = 0
   for (let n = sponsorBar; n && n !== centerCol; n = n.offsetParent) stopHeight += n.offsetTop
-  stopHeight += sponsorBar.offsetHeight    // ...to the BOTTOM of the sponsor strip, not its top
   if (stopHeight > 10) {
-    document.getElementById('railWrapLeft').style.height = stopHeight + 'px';
-    document.getElementById('railWrapRight').style.height = stopHeight + 'px';
+    for (const id of ['railWrapLeft','railWrapRight']) {
+      const el = document.getElementById(id)
+      el.style.top    = -RAIL_OVERHANG + 'px'
+      el.style.height = (stopHeight + RAIL_OVERHANG) + 'px'
+    }
   }
 }
 // Run a few times as layout settles (fonts loading, animation frames),
@@ -1112,8 +1116,8 @@ const cv = document.getElementById('flowerTab');
 const ctx = cv.getContext('2d');
 // Sized with the canvas above -- the mark is drawn from these, so bumping the
 // canvas alone would have left a small flower in a big empty box.
-const W = 372, H = 196;
-const CX = 186, CY = 84;
+const W = 372, H = 168;
+const CX = 186, CY = 78;
 const R = 44;
 
 let T = 0, spinAccum = 0;
@@ -1533,7 +1537,7 @@ editOverlay.addEventListener('click', (e) => {
   // them, so an unknown sponsor still rotates something sensible instead of
   // showing a made-up address -- and a sponsor whose site isn't name.com can be
   // corrected from the deck without touching this file.
-  let sponTimer = null
+  let sponTimer = null, sponGen = 0
   // full: the sponsor's full name for the middle face ("SHEATH UNDERWEAR").
   // Optional -- without it the face shows the plain name, which is still right,
   // just less specific.
@@ -1543,6 +1547,7 @@ editOverlay.addEventListener('click', (e) => {
     const face  = document.getElementById('sponsorText')
     if(!stage || !plate || !face || !name) return
     if(sponTimer){ clearTimeout(sponTimer); sponTimer = null }
+    const gen = ++sponGen        // anything still pending from a previous start is now stale
 
     const clean = String(name).trim()
     const site  = (url  || clean.toLowerCase().replace(/[^a-z0-9]/g,'') + '.com').toUpperCase()
@@ -1553,8 +1558,8 @@ editOverlay.addEventListener('click', (e) => {
     // Equal intervals gave the label the same airtime as the code, which is why
     // it felt slow.
     const faces = [
-      { text: 'OUR SPONSOR',         code:false, ms: 1100 },
       { text: (full || clean).toUpperCase(), code:false, ms: 3000 },
+      { text: 'OUR SPONSOR',         code:false, ms: 1100 },
       { text: promo + ' AT ' + site, code:true,  ms: 4600 },
     ]
     let i = 0
@@ -1564,9 +1569,11 @@ editOverlay.addEventListener('click', (e) => {
     // Flip = out, swap at the halfway point where the face is edge-on, then in.
     // Swapping any earlier and the text visibly changes before it turns.
     function flip(){
+      if(gen !== sponGen) return
       const next = faces[(++i) % faces.length]
       plate.classList.add('out')
       setTimeout(()=>{
+        if(gen !== sponGen) return
         face.textContent = next.text
         plate.classList.toggle('code', next.code)
         plate.classList.remove('out'); plate.classList.add('in')
@@ -1657,7 +1664,7 @@ editOverlay.addEventListener('click', (e) => {
   }catch{}
   // The bar rotates even before a matchup is loaded -- an OBS source that has
   // just been added shows a live sponsor strip rather than one dead word.
-  startSponsorRotator(document.getElementById('sponsorText').textContent)
+  if(sponGen === 0) startSponsorRotator(CONFIG.sponsorName || 'SHEATH')
 })()
 // Empty on BOTH sides -> the row is removed for this matchup. One side blank
 // still renders, so a fighter with no listed reach shows the em-dash against

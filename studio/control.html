@@ -888,7 +888,17 @@ window.mnTape=async()=>{
   const subtitle = uba
     ? (UBA.name || 'BOUT')
     : (MN.week ? (SPLIT_NAME.toUpperCase()+' · WEEK '+MN.week) : SPLIT_NAME.toUpperCase())
-  send({type:'tape', d:{ title, subtitle, left:F(A), right:F(B) }})
+  // THE SPONSOR. The deck never sent one, so the tape fell back to a hardcoded
+  // wordmark and could only ever say "SHEATH". Four fields, edited here when the
+  // sponsor changes -- name is the wordmark, full is what the middle face reads
+  // out, and url/code drive the promo line. Leave url/code empty and the tape
+  // derives them from the name (sheath.com / SHEATHUBA30).
+  const SPONSOR      = 'SHEATH'
+  const SPONSOR_FULL = 'Sheath Underwear'
+  const SPONSOR_URL  = ''      // e.g. 'sheath.com' -- only needed if it is not name.com
+  const SPONSOR_CODE = ''      // e.g. 'SHEATHUBA30' -- only needed if it is not nameUBA30
+  send({type:'tape', d:{ title, subtitle, left:F(A), right:F(B),
+    sponsor:SPONSOR, sponsorFull:SPONSOR_FULL, sponsorUrl:SPONSOR_URL, sponsorCode:SPONSOR_CODE }})
 }
 
 // ONE button. Load-then-show was three presses for one intention, and the
