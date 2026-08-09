@@ -96,6 +96,24 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
     display:flex; flex-direction:column; align-items:center;
     opacity:0;
   ">
+    <!-- TOP SHEET — spans the whole frame, outer edge of the left rail to outer
+         edge of the right, and lays ACROSS both rails. Same translucent glass
+         as they are, not the card's fill: this is a sheet over sheets, so the
+         crossings read denser and the video still comes through. -->
+    <div id="topSheet" style="position:absolute; left:0; right:0; top:-38px; height:128px; z-index:3;
+      overflow:hidden; display:flex; align-items:center; justify-content:center;
+      border:1px solid hsla(276,95%,66%,0.85);
+      background:linear-gradient(180deg, hsla(274,60%,18%,0.55), hsla(274,55%,10%,0.35) 55%, hsla(274,60%,18%,0.55));">
+      <canvas id="headerWash" width="496" height="128" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>
+      <div class="rail-scanlines"></div>
+      <canvas id="flowerTab" width="496" height="128" style="position:absolute; top:0; left:50%; transform:translateX(-50%); z-index:2;"></canvas>
+      <div style="position:relative; z-index:3; font-size:50px; font-weight:900; letter-spacing:3px;
+        color:#f6f2fb; text-shadow:
+          0 0 22px rgba(8,4,14,0.92),
+          0 2px 10px rgba(8,4,14,0.85),
+          0 0 34px hsla(276,95%,60%,0.5);">UBA</div>
+    </div>
+
     <!-- glassy purple rails — sit on centerCol's own left/right edges,
          OUTSIDE the dark panel below, so there's nothing dark behind
          them (their transparency reveals real footage, not panel fill).
@@ -133,7 +151,7 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
          vertically — same fix as the canvas-height lesson earlier:
          don't fight an auto-height parent with position:absolute +
          top/bottom, just let content determine height naturally. -->
-    <div style="position:relative; width:392px; margin:0 52px;
+    <div style="position:relative; width:392px; margin:92px 52px 0;
       display:flex; flex-direction:column; align-items:center;
       background:
         repeating-linear-gradient(135deg, hsla(276,60%,70%,0.022) 0px, hsla(276,60%,70%,0.022) 1px, transparent 1px, transparent 3px),
@@ -158,20 +176,6 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
         <rect width="100%" height="100%" filter="url(#grainFilter)"/>
       </svg>
 
-      <!-- LOGO MARK — flower mark + UBA wordmark, on the rails' own surface -->
-      <div style="position:relative; width:100%; margin:-38px auto 0; z-index:2; overflow:hidden;
-        display:flex; align-items:center; justify-content:center; height:128px;
-        border-bottom:1px solid hsla(276,90%,70%,0.55);
-        background:linear-gradient(180deg, hsla(274,58%,13%,0.92), hsla(274,52%,8%,0.92) 60%, hsla(274,58%,12%,0.92));">
-        <canvas id="headerWash" width="392" height="128" style="position:absolute; inset:0; width:100%; height:100%; opacity:0.72;"></canvas>
-        <div class="rail-scanlines"></div>
-        <canvas id="flowerTab" width="392" height="128" style="position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:2;"></canvas>
-        <div style="position:relative; z-index:3; font-size:50px; font-weight:900; letter-spacing:3px;
-          color:#f6f2fb; text-shadow:
-            0 0 22px rgba(8,4,14,0.92),
-            0 2px 10px rgba(8,4,14,0.85),
-            0 0 34px hsla(276,95%,60%,0.5);">UBA</div>
-      </div>
 
     <!-- BOUT TYPE LABEL -->
     <div id="boutLabel" style="margin-top:2px; text-align:center; opacity:0; position:relative; z-index:2; align-self:stretch; width:100%;">
@@ -793,7 +797,7 @@ window.__fitAll = fitAll;
 // unscaled -- the rail came out short by exactly the scale factor, and a second
 // call made it worse instead of converging. The offsetTop chain is layout
 // geometry: unaffected by any transform, correct even mid-animation.
-const RAIL_OVERHANG = 38;   // how far the rails rise above the card's top edge
+const RAIL_OVERHANG = 38;   // rails start level with the top sheet and run under it
 function syncRailHeightToSponsorBar() {
   let stopHeight = 0
   for (let n = sponsorBar; n && n !== centerCol; n = n.offsetParent) stopHeight += n.offsetTop
@@ -1123,8 +1127,8 @@ const cv = document.getElementById('flowerTab');
 const ctx = cv.getContext('2d');
 // Sized with the canvas above -- the mark is drawn from these, so bumping the
 // canvas alone would have left a small flower in a big empty box.
-const W = 392, H = 128;
-const CX = 196, CY = 62;
+const W = 496, H = 128;
+const CX = 248, CY = 62;
 const R = 38;
 
 let T = 0, spinAccum = 0;
