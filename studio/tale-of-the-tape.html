@@ -100,11 +100,10 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
          edge of the right, and lays ACROSS both rails. Same translucent glass
          as they are, not the card's fill: this is a sheet over sheets, so the
          crossings read denser and the video still comes through. -->
-    <div id="topSheet" style="position:absolute; left:0; right:0; top:0; height:12px; z-index:3;
+    <div id="topSheet" style="position:absolute; left:0; right:0; top:0; height:9px; z-index:3;
       overflow:hidden; border:1px solid hsla(276,95%,66%,0.85); border-bottom:0;
-      background:linear-gradient(180deg, hsla(274,62%,20%,0.62) 0%, hsla(274,58%,14%,0.34) 55%, hsla(274,55%,10%,0) 100%);">
-      <canvas id="headerWash" width="496" height="12" style="position:absolute; inset:0; width:100%; height:100%;
-        -webkit-mask-image:linear-gradient(180deg,#000 40%,transparent); mask-image:linear-gradient(180deg,#000 40%,transparent);"></canvas>
+      background:linear-gradient(180deg, hsla(274,60%,18%,0.55), hsla(274,55%,10%,0.35));">
+      <canvas id="headerWash" width="496" height="9" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>
       <div class="rail-scanlines"></div>
     </div>
 
@@ -145,7 +144,7 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
          vertically — same fix as the canvas-height lesson earlier:
          don't fight an auto-height parent with position:absolute +
          top/bottom, just let content determine height naturally. -->
-    <div style="position:relative; width:392px; margin:0 52px 0;
+    <div style="position:relative; width:392px; margin:9px 52px 0;
       display:flex; flex-direction:column; align-items:center;
       background:
         repeating-linear-gradient(135deg, hsla(276,60%,70%,0.022) 0px, hsla(276,60%,70%,0.022) 1px, transparent 1px, transparent 3px),
@@ -802,9 +801,9 @@ window.__fitAll = fitAll;
 // unscaled -- the rail came out short by exactly the scale factor, and a second
 // call made it worse instead of converging. The offsetTop chain is layout
 // geometry: unaffected by any transform, correct even mid-animation.
-const TOP_STRIP = 0;     // the sliver LIES OVER the card and rails rather than
-                         // sitting above them -- that shared backing is what stops
-                         // its bottom edge reading as a line
+const TOP_STRIP = 9;     // the sliver sits ABOVE the card and rails, and they
+                         // begin under it -- if they start level with it there is
+                         // no purple showing, which is what went wrong last time
 // How far down the card the rails run. A FRACTION, not a pixel inset: the
 // card's height changes with every collapsed row, so a fixed number would put
 // the rails' feet somewhere different on every bout. Tried the sponsor strip's
