@@ -232,6 +232,57 @@
 </style>
 </head>
 <body class="ev-ubae">
+<!-- ── DOOR ────────────────────────────────────────────────────────────────
+     ⚠ READ THIS BEFORE TRUSTING IT. This is a DETERRENT, not security. The
+     deck is a static page on GitHub Pages, so every check it runs ships to the
+     browser: anyone who opens devtools can delete this overlay, and the
+     Supabase key sitting in this file lets them broadcast to the overlay
+     channel without loading the page at all. What it stops is someone finding
+     the URL and idly driving your graphics. What it does not stop is anyone who
+     looks.
+     The real fix is Realtime authorization policies on the 'vga-overlay'
+     channel -- that is enforced server-side and cannot be bypassed from a page.
+     The password is stored as a SHA-256 of "user:pass" so the plaintext is not
+     sitting in a public repo; that only slows a reader down, it does not stop
+     one. Unlocking is remembered for the browser session, so an OBS or deck
+     refresh mid-show does not lock the operator out. -->
+<div id="door" style="position:fixed;inset:0;z-index:9999;background:#0b0710;
+  display:flex;align-items:center;justify-content:center;font-family:inherit">
+  <form id="doorForm" style="text-align:center;max-width:340px;width:90%">
+    <div style="font-size:22px;letter-spacing:3px;color:#c9a8e8;margin-bottom:6px">VGA BROADCAST</div>
+    <div style="font-size:14px;color:#7a6b8a;margin-bottom:22px">TERMLINK — sign in</div>
+    <input id="doorUser" placeholder="user" autocomplete="username"
+      style="width:100%;margin-bottom:10px;padding:10px;font-size:16px">
+    <input id="doorPass" type="password" placeholder="password" autocomplete="current-password"
+      style="width:100%;margin-bottom:14px;padding:10px;font-size:16px">
+    <button type="submit" style="width:100%;padding:10px;font-size:16px">UNLOCK</button>
+    <div id="doorMsg" style="height:20px;margin-top:10px;font-size:14px;color:#ff6b6b"></div>
+  </form>
+</div>
+<script>
+(()=>{
+  // sha256("admin:vga2024") -- change both together if the credential changes.
+  const HASH='84b660b47a87829105332cd13dfc28ff98b231afe4913ab6b6bf1175fcdf7746'
+  const KEY='vga.deck.open'
+  const door=document.getElementById('door')
+  const open=()=>{ door.remove(); try{ sessionStorage.setItem(KEY,'1') }catch{} }
+  try{ if(sessionStorage.getItem(KEY)==='1'){ open(); return } }catch{}
+  const sha=async t=>{ const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t))
+    return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('') }
+  document.getElementById('doorForm').addEventListener('submit',async e=>{
+    e.preventDefault()
+    const u=document.getElementById('doorUser').value.trim()
+    const p=document.getElementById('doorPass').value
+    // crypto.subtle needs a secure context; over plain http it is undefined and
+    // the form would fail silently, which on a show night is the worst outcome.
+    if(!window.crypto||!crypto.subtle){ document.getElementById('doorMsg').textContent='needs https'; return }
+    if(await sha(u+':'+p)===HASH) open()
+    else { document.getElementById('doorMsg').textContent='wrong user or password'
+      document.getElementById('doorPass').value='' }
+  })
+  document.getElementById('doorUser').focus()
+})()
+</script>
   <div id="crt"></div><div id="vig"></div>
   <div id="status">ESTABLISHING LINK…</div>
 
