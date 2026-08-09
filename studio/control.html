@@ -482,6 +482,13 @@ const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
   'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
 
 const channel = sb.channel('vga-overlay')
+// The tape reports whenever it shows or hides -- including its own two-minute
+// auto-hide, an OBS refresh, or another deck driving it. The button follows
+// that, so it can never be out of step with what is on air.
+channel.on('broadcast',{event:'cmd'},({payload:p})=>{
+  if(!p || p.type!=='tape-state') return
+  if(window.setTapeBtn) window.setTapeBtn(p.on)
+})
 channel.subscribe(s=>{ const el=document.getElementById('status')
   if(s==='SUBSCRIBED'){ el.textContent='LINK ONLINE'; el.classList.add('on') }
   else { el.textContent='LINK: '+s; el.classList.remove('on') } })
@@ -906,27 +913,24 @@ window.mnTape=async()=>{
 // the tape confidently displayed the wrong two fighters. Showing now always
 // loads the armed bout first, so what appears is always current.
 let tapeOn = false
+// One place sets the button, so its label and its state can never disagree.
+window.setTapeBtn = on => {
+  tapeOn = !!on
+  const b = document.getElementById('tapeBtn'); if(!b) return
+  b.textContent = tapeOn ? '■ Hide tale of the tape' : '▶ Show tale of the tape'
+  b.className = tapeOn ? 'hide' : ''
+}
 window.tapeToggle = async ()=>{
-  const b = document.getElementById('tapeBtn')
   if(tapeOn){
-    send({type:'tape', on:false}); tapeOn = false
+    send({type:'tape', on:false})
+    setTapeBtn(false)            // the tape's report confirms it; this is just instant feedback
   } else {
     // mnTape warns and returns if no bout is armed -- don't claim it is showing
     const ok = await mnTape()
     if(ok === false) return
-    send({type:'tape', show:true}); tapeOn = true
+    send({type:'tape', show:true})
+    setTapeBtn(true)
   }
-  b.textContent = tapeOn ? '■ Hide tale of the tape' : '▶ Show tale of the tape'
-  b.className = tapeOn ? 'hide' : ''
-
-  // The tape retires itself after two minutes. Mirror that here or the button
-  // keeps saying "Hide" for a graphic that already left, and the next press
-  // does nothing visible.
-  clearTimeout(window._tapeAutoBtn)
-  if(tapeOn) window._tapeAutoBtn = setTimeout(()=>{
-    tapeOn = false
-    b.textContent = '▶ Show tale of the tape'; b.className = ''
-  }, 120000)
 }
 
 window.fireMsg=()=>{

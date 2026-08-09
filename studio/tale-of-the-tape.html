@@ -632,6 +632,7 @@ function playTape(){
   // minutes rather than inheriting what was left of the last one.
   clearTimeout(autoHideTimer);
   autoHideTimer = setTimeout(() => { if (tapeShown) hideTape() }, TAPE_AUTO_HIDE_MS);
+  if (window.__tapeReport) window.__tapeReport(true);
   tapeRoot.style.transition = 'opacity .28s ease';
   tapeRoot.style.opacity = '1';
   tapeRoot.style.transform = 'none';
@@ -700,6 +701,7 @@ function hideTape(){
   // Forget the saved on-state too, or an OBS source refresh after the auto-hide
   // would put the tape straight back on air.
   if (window.__tapeForget) window.__tapeForget();
+  if (window.__tapeReport) window.__tapeReport(false);
   const wrapL = document.getElementById('fighterWrapLeft');
   const wrapR = document.getElementById('fighterWrapRight');
 
@@ -1701,8 +1703,13 @@ editOverlay.addEventListener('click', (e) => {
     fitAll()
   }
 
-  _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
-    if(c.type!=='tape') return
+  const _ch = _sb.channel('vga-overlay')
+  // Fire-and-forget: if the deck is not open, nobody is listening and that is
+  // fine. It must never be something playTape waits on.
+  window.__tapeReport = on => { try { _ch.send({ type:'broadcast', event:'cmd',
+    payload:{ type:'tape-state', on: !!on } }) } catch {} }
+  _ch.on('broadcast',{event:'cmd'},({payload:c})=>{
+    if(c.type!=='tape') return   // tape-state is our own report; ignore it here
     if(c.on===false){ remember(null,false); hideTape(); return }
     if(c.show===true){ remember(null,true); playTape(); return }   // reveal what's loaded
     const d=c.d||{}
