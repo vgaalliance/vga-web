@@ -101,7 +101,7 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
          them (their transparency reveals real footage, not panel fill).
          Now also clickable: left rail = PREV fight, right rail = NEXT
          fight. Replaces the old bottom Next/Prev buttons entirely. -->
-    <div id="railWrapLeft" style="position:absolute; left:0; top:0; width:52px; height:500px; z-index:10; overflow:hidden; cursor:pointer;
+    <div id="railWrapLeft" style="position:absolute; left:0; top:0; width:52px; height:500px; z-index:1; overflow:hidden; cursor:pointer;
       border:1px solid hsla(276,95%,66%,0.85);">
       <canvas id="railLeft" width="52" height="900" style="position:absolute; top:0; left:0; width:100%; height:100%;"></canvas>
       <!-- subtle gradient tint — very low alpha, just enough to suggest
@@ -116,7 +116,7 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
       <div class="rail-ticker"><div class="rail-track up"></div></div>
     </div>
 
-    <div id="railWrapRight" style="position:absolute; right:0; top:0; width:52px; height:500px; z-index:10; overflow:hidden; cursor:pointer;
+    <div id="railWrapRight" style="position:absolute; right:0; top:0; width:52px; height:500px; z-index:1; overflow:hidden; cursor:pointer;
       border:1px solid hsla(276,95%,66%,0.85);">
       <canvas id="railRight" width="52" height="900" style="position:absolute; top:0; left:0; width:100%; height:100%;"></canvas>
       <div style="position:absolute; inset:0; z-index:1; pointer-events:none;
@@ -139,7 +139,10 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
         repeating-linear-gradient(135deg, hsla(276,60%,70%,0.022) 0px, hsla(276,60%,70%,0.022) 1px, transparent 1px, transparent 3px),
         radial-gradient(ellipse at 50% 0%, hsla(276,80%,55%,0.16), transparent 62%),
         linear-gradient(180deg, #1b1426 0%, #120d1a 55%, #0c0812 100%);
-      box-shadow:0 0 40px rgba(0,0,0,0.6);">
+      z-index:5;
+      box-shadow:0 0 40px rgba(0,0,0,0.6),
+                 -18px 0 30px -10px rgba(0,0,0,0.85),
+                  18px 0 30px -10px rgba(0,0,0,0.85);">
       <!-- CORNER BLOOM — the website's ambient flower field (home.html), which
            is the house look, brought onto the card. Sits UNDER the content
            (z-index 0, content is z-index 2) and is deliberately dimmer and
@@ -786,6 +789,7 @@ window.__fitAll = fitAll;
 function syncRailHeightToSponsorBar() {
   let stopHeight = 0
   for (let n = sponsorBar; n && n !== centerCol; n = n.offsetParent) stopHeight += n.offsetTop
+  stopHeight += sponsorBar.offsetHeight    // ...to the BOTTOM of the sponsor strip, not its top
   if (stopHeight > 10) {
     document.getElementById('railWrapLeft').style.height = stopHeight + 'px';
     document.getElementById('railWrapRight').style.height = stopHeight + 'px';
@@ -1530,21 +1534,28 @@ editOverlay.addEventListener('click', (e) => {
   // showing a made-up address -- and a sponsor whose site isn't name.com can be
   // corrected from the deck without touching this file.
   let sponTimer = null
-  function startSponsorRotator(name, url, code){
+  // full: the sponsor's full name for the middle face ("SHEATH UNDERWEAR").
+  // Optional -- without it the face shows the plain name, which is still right,
+  // just less specific.
+  function startSponsorRotator(name, url, code, full){
     const stage = document.querySelector('.spon-stage')
     const plate = document.querySelector('.spon-plate')
     const face  = document.getElementById('sponsorText')
     if(!stage || !plate || !face || !name) return
-    if(sponTimer){ clearInterval(sponTimer); sponTimer = null }
+    if(sponTimer){ clearTimeout(sponTimer); sponTimer = null }
 
     const clean = String(name).trim()
     const site  = (url  || clean.toLowerCase().replace(/[^a-z0-9]/g,'') + '.com').toUpperCase()
     const promo = (code || clean.toUpperCase().replace(/[^A-Z0-9]/g,'') + 'UBA30').toUpperCase()
+    // Each face holds for as long as it is worth reading, not an equal share.
+    // OUR SPONSOR is a label -- it lands and gets out of the way; the promo
+    // code has to be read and typed off a screen, so it gets the longest hold.
+    // Equal intervals gave the label the same airtime as the code, which is why
+    // it felt slow.
     const faces = [
-      { text: clean.toUpperCase(), code:false },
-      { text: 'OUR SPONSOR',       code:false },
-      { text: site,                code:false },
-      { text: promo + ' AT ' + site, code:true },
+      { text: 'OUR SPONSOR',         code:false, ms: 1100 },
+      { text: (full || clean).toUpperCase(), code:false, ms: 3000 },
+      { text: promo + ' AT ' + site, code:true,  ms: 4600 },
     ]
     let i = 0
     face.textContent = faces[0].text
@@ -1565,8 +1576,11 @@ editOverlay.addEventListener('click', (e) => {
         void plate.offsetWidth
         plate.classList.remove('in')
       }, 360)
+      // Chained timeouts, not an interval: the gap has to change per face, and
+      // an interval can only hold one number.
+      sponTimer = setTimeout(flip, next.ms)
     }
-    sponTimer = setInterval(flip, 4200)
+    sponTimer = setTimeout(flip, faces[0].ms)
   }
 
   function applyFlag(side, country){
@@ -1619,7 +1633,7 @@ editOverlay.addEventListener('click', (e) => {
     // data. Collapse those rows instead, re-run every load.
     hideEmptyRows()
     applyFlag('Left', L.country); applyFlag('Right', R.country)
-    startSponsorRotator(d.sponsor || 'SHEATH', d.sponsorUrl, d.sponsorCode)
+    startSponsorRotator(d.sponsor || 'SHEATH', d.sponsorUrl, d.sponsorCode, d.sponsorFull)
     // Every bout brings different-length names and divisions, so the fitters
     // have to run per matchup -- not once at load.
     fitAll()
