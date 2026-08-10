@@ -353,7 +353,7 @@ body::after { display:none; }
 <!-- TOP -->
 <div class="top-bar">
   <div class="tb-left">
-    <div class="logo-ubae">VGA</div>
+    <div class="logo-ubae" id="tbLeague">UBAE</div>
     <div class="logo-s1">ESPORTS</div>
   </div>
   <div style="flex:1"></div>
@@ -825,6 +825,7 @@ tick();
     if(d.a){ const e=document.getElementById('cdBigL'); if(e) e.textContent=d.a }
     if(d.b){ const e=document.getElementById('cdBigR'); if(e) e.textContent=d.b }
     if(d.a||d.b) fitPair()
+    if(d.league    && document.getElementById('tbLeague'))    document.getElementById('tbLeague').textContent=d.league
     if(d.eventMain && document.getElementById('tbEventMain')) document.getElementById('tbEventMain').textContent=d.eventMain
     if(d.eventSub  && document.getElementById('tbEventSub'))  document.getElementById('tbEventSub').textContent=d.eventSub
     if(d.target){ CFG.target=new Date(d.target); tick() }

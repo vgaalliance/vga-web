@@ -702,6 +702,10 @@ function mnStateDraw(){
 // Summer split without anyone noticing.
 const SPLIT_NAME = 'Summer Split'
 
+// Countdown left badge = the league the toggled event belongs to, read off the
+// event's own name so GFL/AMA cards brand themselves without a deck edit.
+const leagueOf = name => /^GFL/i.test(name||'') ? 'GFL' : /^AMA/i.test(name||'') ? 'AMA' : 'UBA'
+
 function mnPush(){
   send({type:'pickbar', d:{ split:SPLIT_NAME, teamA:MN.a, teamB:MN.b,
     left:(MN.lineups[MN.a]||{}).starters||[], right:(MN.lineups[MN.b]||{}).starters||[],
@@ -881,11 +885,11 @@ window.mnCountdown=()=>{
     const main = UBA.bouts.find(b=>b.bout_number===1) || UBA.bouts[0]
     if(!main) return
     send({type:'countdown', d:{ a:main.a, b:main.b,
-      eventMain: UBA.name || 'FIGHT NIGHT', eventSub:'ubaesports.com' }})
+      league:leagueOf(UBA.name), eventMain: (UBA.name || 'FIGHT NIGHT').toUpperCase(), eventSub:'ubaesports.com' }})
     return
   }
   if(!MN.id) return
-  send({type:'countdown', d:{ a:MN.a, b:MN.b, eventMain:SPLIT_NAME.toUpperCase(), eventSub:'ubaesports.com' }})
+  send({type:'countdown', d:{ a:MN.a, b:MN.b, league:'UBAE', eventMain:SPLIT_NAME.toUpperCase(), eventSub:'ubaesports.com' }})
 }
 
 window.mnLoadbar=async()=>{
@@ -1079,8 +1083,8 @@ window.mnCountdownIn=()=>{
   const main = (EV==='uba' && UBA.bouts.length)
     ? (UBA.bouts.find(b=>b.bout_number===1) || UBA.bouts[0]) : null
   send({type:'countdown', d: main
-    ? { a:main.a, b:main.b, target, eventMain:(UBA.name||'FIGHT NIGHT').toUpperCase(), eventSub:'discord.gg/uba' }
-    : { a:MN.a||'TEAM A', b:MN.b||'TEAM B', target, eventMain:'SUMMER SPLIT', eventSub:'ubaesports.com' }})
+    ? { a:main.a, b:main.b, target, league:leagueOf(UBA.name), eventMain:(UBA.name||'FIGHT NIGHT').toUpperCase(), eventSub:'discord.gg/uba' }
+    : { a:MN.a||'TEAM A', b:MN.b||'TEAM B', target, league:'UBAE', eventMain:SPLIT_NAME.toUpperCase(), eventSub:'ubaesports.com' }})
 }
 
 window.loadBetFeed=async()=>{
