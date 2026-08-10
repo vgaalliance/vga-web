@@ -88,22 +88,46 @@
   .vsrbox.starter{border-color:var(--hi);box-shadow:0 0 18px rgba(155,48,255,.5),
     inset 0 0 16px rgba(155,48,255,.14);}
   .vsrbox.res{opacity:.4;filter:saturate(.6);}
-  /* P1/P2/P3 select frames — dull cyan, steady slow breathing, like three
-     player cursors resting on their picks. A revealed lineup PINS them to the
-     starters (backups get the same frame, duller); before the reveal the
-     three frames drift between tiles at a browse pace. */
-  .vsrbox.selp{border-color:rgba(0,229,255,.55);animation:vsrsel 2.4s ease-in-out infinite;}
-  @keyframes vsrsel{
-    0%,100%{box-shadow:0 0 8px rgba(0,229,255,.22),inset 0 0 8px rgba(0,229,255,.07);}
-    50%{box-shadow:0 0 18px rgba(0,229,255,.42),inset 0 0 12px rgba(0,229,255,.13);}}
-  .vsrbox.selp::before,.vsrbox.selp::after{border-color:rgba(0,229,255,.7);opacity:1;}
+  /* P1/P2/P3 select frames.
+     BEFORE the reveal: three translucent cyan frames GLIDE between tiles,
+     each on its own clock a few seconds apart — three teammates browsing,
+     not a whole team hopping at once. Soft breathing + a very slow shimmer.
+     AFTER the reveal: the frames are gone and the chosen tiles LOCK IN GOLD
+     (same metal as the battleroom bar) — steady breathing, slow sheen. */
+  .vsrrow{position:relative;}
+  .vsr-glide{position:absolute;z-index:6;pointer-events:none;overflow:hidden;
+    border:2px solid rgba(0,229,255,.4);
+    transition:left 1s cubic-bezier(.45,0,.2,1), top 1s cubic-bezier(.45,0,.2,1);
+    animation:vsrbreathe 3.4s ease-in-out infinite;}
+  @keyframes vsrbreathe{
+    0%,100%{box-shadow:0 0 7px rgba(0,229,255,.16),inset 0 0 7px rgba(0,229,255,.05);}
+    50%{box-shadow:0 0 15px rgba(0,229,255,.32),inset 0 0 11px rgba(0,229,255,.1);}}
+  .vsr-glide::after{content:'';position:absolute;top:0;bottom:0;width:45%;left:-65%;
+    transform:skewX(-18deg);
+    background:linear-gradient(105deg,transparent,rgba(160,240,255,.10),transparent);
+    animation:vsrsheen 8s ease-in-out infinite;}
+  @keyframes vsrsheen{0%{left:-65%}55%,100%{left:135%}}
   .vsr-pl{position:absolute;top:5px;left:7px;z-index:5;
     font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.08em;
-    color:rgba(0,229,255,.75);text-shadow:1px 1px 0 #000,0 0 8px rgba(0,229,255,.4);}
-  /* backups: picked but not starting — same frame, turned down */
-  .vsrbox.backup{border-color:rgba(0,229,255,.26);opacity:.8;}
-  .vsrbox.backup::before,.vsrbox.backup::after{border-color:rgba(0,229,255,.32);opacity:.8;}
-  .vsrbox.backup .vsr-pl{color:rgba(0,229,255,.4);text-shadow:1px 1px 0 #000;}
+    color:rgba(0,229,255,.65);text-shadow:1px 1px 0 #000,0 0 8px rgba(0,229,255,.35);}
+  /* the lock-in: rosters chosen, cards down — gold frames, pinned */
+  .vsrbox.lockd{border-color:rgba(255,206,0,.75);animation:vsrgold 3.2s ease-in-out infinite;}
+  @keyframes vsrgold{
+    0%,100%{box-shadow:0 0 9px rgba(255,206,0,.22),inset 0 0 9px rgba(255,206,0,.07);}
+    50%{box-shadow:0 0 20px rgba(255,206,0,.45),inset 0 0 13px rgba(255,206,0,.12);}}
+  .vsrbox.lockd::before,.vsrbox.lockd::after{border-color:rgba(255,206,0,.8);opacity:1;}
+  .vsrbox.lockd .vsr-pl{color:rgba(255,214,64,.9);text-shadow:1px 1px 0 #000,0 0 8px rgba(255,206,0,.4);}
+  .vsrbox.lockd .stag{color:#ffd740;text-shadow:0 0 10px rgba(255,206,0,.45);}
+  .vsr-sheen{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden;}
+  .vsr-sheen::after{content:'';position:absolute;top:0;bottom:0;width:42%;left:-62%;
+    transform:skewX(-18deg);
+    background:linear-gradient(105deg,transparent,rgba(255,224,130,.12),transparent);
+    animation:vsrsheen 7s ease-in-out infinite;}
+  /* backups: locked too, turned down */
+  .vsrbox.backup{border-color:rgba(255,206,0,.28);opacity:.82;}
+  .vsrbox.backup::before,.vsrbox.backup::after{border-color:rgba(255,206,0,.35);opacity:.8;}
+  .vsrbox.backup .vsr-pl{color:rgba(255,206,0,.45);text-shadow:1px 1px 0 #000;}
+  .vsrbox.backup .stag{color:rgba(255,206,0,.5);}
   .vsrava{height:150px;background-size:cover;background-position:top center;background-repeat:no-repeat;}
   /* The blank silhouette is a MASK filled near-black — the character-select
      "empty slot" look — on a tile gradient light enough for black to read.
@@ -845,40 +869,56 @@ function renderVsRosters(){
         const ava=f.photo_thumb_url
           ? `<div class="vsrava" style="background-image:url('${f.photo_thumb_url}')"></div>`
           : `<div class="vsrava sil ${side}"></div>`
-        // starters carry pinned P1/P2/P3 frames; backups the same frame, duller
+        // a revealed lineup locks its picks in gold; backups same, duller
         const badge=st?`<span class="vsr-pl">P${i+1}</span>`:bk?`<span class="vsr-pl">B${i+1-starters.length}</span>`:''
-        return `<div class="vsrbox${lit?(st?' starter selp':bk?' backup':' res'):''}">
-          ${badge}<span class="vsr-num">${String(i+1).padStart(2,'0')}</span>${ava}
+        const sheen=(st||bk)?'<div class="vsr-sheen"></div>':''
+        return `<div class="vsrbox${lit?(st?' starter lockd':bk?' backup':' res'):''}">
+          ${badge}${sheen}<span class="vsr-num">${String(i+1).padStart(2,'0')}</span>${ava}
           <div class="nm">${f.stage_name}</div>${st?'<div class="stag">STARTER</div>':bk?'<div class="stag">BACKUP</div>':''}</div>`
       }).join('')}</div></div>`
   }).join('')
   vsrCursor()
 }
 
-// Before a lineup reveals there is nothing to pin, so the three P-frames
-// browse the row instead — slow, one hop every few seconds, like players
-// hovering the character screen. A revealed row is skipped: its frames are
-// rendered pinned and must not move.
-let _vsrCur=null
+// Before a lineup reveals there is nothing to lock, so three cyan frames
+// GLIDE around the row instead — each on its own randomized clock (4–8s),
+// so it reads as three teammates browsing at their own pace, never the
+// whole team hopping in unison. A revealed row renders locked gold tiles
+// and gets no frames at all.
+let _vsrTimers=[]
 function vsrCursor(){
-  clearInterval(_vsrCur)
-  const step=()=>{
-    document.querySelectorAll('#vsrContent .vsrrow').forEach(row=>{
-      if(row.querySelector('.starter')) return
-      const all=[...row.querySelectorAll('.vsrbox')]
-      if(!all.length) return
-      all.forEach(b=>{ b.classList.remove('selp'); const t=b.querySelector('.vsr-pl'); if(t) t.remove() })
-      const picks=[]
-      while(picks.length<Math.min(3,all.length)){
-        const c=all[Math.floor(Math.random()*all.length)]
-        if(!picks.includes(c)) picks.push(c)
-      }
-      picks.forEach((b,i)=>{ b.classList.add('selp')
-        const t=document.createElement('span'); t.className='vsr-pl'; t.textContent='P'+(i+1); b.appendChild(t) })
-    })
-  }
-  step()
-  _vsrCur=setInterval(step,3000)
+  _vsrTimers.forEach(clearTimeout); _vsrTimers=[]
+  document.querySelectorAll('#vsrContent .vsr-glide').forEach(g=>g.remove())
+  // rendered while the view is display:none → every offset reads 0 and the
+  // frames pile in the corner. Wait for the view to actually be on screen.
+  const cont=$('vsrContent')
+  if(!cont) return
+  if(cont.offsetParent===null){ _vsrTimers.push(setTimeout(vsrCursor,800)); return }
+  document.querySelectorAll('#vsrContent .vsrrow').forEach(row=>{
+    if(row.querySelector('.lockd')) return
+    const tiles=[...row.querySelectorAll('.vsrbox')]
+    if(!tiles.length) return
+    const n=Math.min(3,tiles.length)
+    const occ=new Array(n).fill(-1)   // which tile each frame sits on
+    const freeIdx=()=>{
+      let k; do{ k=Math.floor(Math.random()*tiles.length) }while(occ.includes(k))
+      return k
+    }
+    for(let i=0;i<n;i++){
+      const g=document.createElement('div'); g.className='vsr-glide'
+      g.innerHTML='<span class="vsr-pl">P'+(i+1)+'</span>'
+      row.appendChild(g)
+      const moveTo=k=>{ occ[i]=k; const t=tiles[k]
+        g.style.left=t.offsetLeft+'px'; g.style.top=t.offsetTop+'px'
+        g.style.width=t.offsetWidth+'px'; g.style.height=t.offsetHeight+'px' }
+      // first placement snaps (no glide-in from the corner), then it drifts
+      g.style.transition='none'; moveTo(freeIdx())
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{ g.style.transition='' }))
+      const hop=()=>{ moveTo(freeIdx())
+        _vsrTimers.push(setTimeout(hop, 4000+Math.random()*4000)) }
+      _vsrTimers.push(setTimeout(hop, 1500+i*1700+Math.random()*1500))
+    }
+  })
 }
 
 function renderSchedule(mt){

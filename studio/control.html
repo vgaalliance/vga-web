@@ -468,17 +468,18 @@
         <button onclick="matchTimer(180)">▶ 3:00</button>
         <button class="hide" onclick="hideTimer()">Hide timer</button>
       </div>
-      <!-- The CTA box runs DURING the match, so its buttons live with the rest
-           of the live-fight kit -- it was parked in the corner-colour section,
-           which is not where an operator's hands are mid-round. (The standby
-           screen's own CTA further down is a different thing: it fills a
-           holding screen between segments.) -->
-      <div class="row" style="margin-bottom:10px">
-        <span class="kitlbl">CTA</span>
-        <button onclick="overlayCta()">📣 Show (14s)</button>
-        <button onclick="overlayCta(0)">📌 Pin</button>
-        <button class="hide" onclick="overlayCta('off')">Hide</button>
-      </div>
+    </div>
+    <!-- The CTA box runs DURING the match, so its buttons live in the MATCH
+         panel with everything else. Deliberately OUTSIDE #clockKit: that div
+         relocates into the tracker rail at load, and the CTA rode along --
+         which parked it in the clock/timer bar where nobody looked for it.
+         (The standby screen's own CTA further down is a different thing: it
+         fills a holding screen between segments.) -->
+    <div class="row" style="margin-bottom:10px">
+      <span class="kitlbl">CTA</span>
+      <button onclick="overlayCta()">📣 Show (14s)</button>
+      <button onclick="overlayCta(0)">📌 Pin</button>
+      <button class="hide" onclick="overlayCta('off')">Hide</button>
     </div>
     <div class="row" style="margin-bottom:10px">
       <span class="kitlbl">PROMO</span>
