@@ -176,44 +176,33 @@
      a 55px drop shadow it bled onto the bar underneath -- technically no
      overlap, visually collided. Also narrower and shorter: at 680x141 it was
      the heaviest thing on screen for a panel that carries four numbers. */
-  #odds{position:fixed;left:48px;bottom:268px;transform:translateY(160%);opacity:0;width:min(548px,32%);
-    border-radius:6px;overflow:hidden;
-    background:linear-gradient(135deg,rgba(18,18,24,.96),rgba(8,8,11,.98));
-    box-shadow:0 10px 26px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.05);
+  /* THE PILL. One line: name · payout · pool-split dots · payout · name ·
+     pool. The pill slides up like every other lower-third; the dots then
+     bounce in left-to-right, and once settled they hold a slow wave that
+     runs inward from both ends — balanced, barely-there, professional. */
+  #odds{position:fixed;left:48px;bottom:268px;transform:translateY(160%);opacity:0;
+    display:inline-flex;align-items:center;gap:13px;width:max-content;max-width:44%;
+    background:rgba(4,0,12,.93);border:1px solid rgba(155,77,255,.45);
+    border-radius:999px;padding:10px 24px;
+    box-shadow:0 10px 26px rgba(0,0,0,.5),0 0 22px rgba(155,48,255,.14);
     transition:transform .5s cubic-bezier(.16,1,.3,1),opacity .5s;}
   #odds.show{transform:translateY(0);opacity:1;}
-  .oh{display:flex;justify-content:space-between;align-items:center;padding:7px 16px;
-    font:600 11px 'Barlow';letter-spacing:.18em;text-transform:uppercase;color:#8a8a92;
-    border-bottom:1px solid rgba(255,255,255,.06);}
-  .oh b{color:var(--gold);}
-  .obody{display:flex;align-items:center;padding:11px 16px;gap:14px;}
-  /* min-width:0 is load-bearing. A flex item defaults to min-width:auto, so a
-     nowrap name REFUSES to shrink below its own text -- "iron Micheal
-     Chandler" then ate 223px of a 548px board and crushed the odds bar to a
-     sliver between two fat name blocks. With this the name ellipsises and the
-     bar keeps its share. */
-  .oside{flex:1 1 0;min-width:0;} .oside.r{text-align:right;}
-  /* and the bar has a floor, so no name can squeeze it out entirely */
-  .obarwrap{flex:0 0 190px;}
-  .oname{font-family:'Barlow Condensed';font-weight:700;font-size:25px;text-transform:uppercase;color:#fff;line-height:1;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .omult{font-family:'Barlow Condensed';font-weight:700;font-size:21px;margin-top:1px;}
-  .oside.l .omult{color:#c98bff;} .oside.r .omult{color:#ff5ad8;}
-  /* Slimmed from 26px. Everything else in this overlay speaks in hairlines and
-     restrained fills; a fat gradient slab with the numbers buried inside it was
-     the only element shouting, which is why it read as belonging to a different
-     graphic. The percentages move ABOVE the bar so the bar itself can be a
-     measure rather than a container. */
-  .obarwrap{display:flex;flex-direction:column;gap:6px;}
-  .obar{height:8px;border-radius:1px;overflow:hidden;display:flex;
-    box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);}
-  .obar .ba{background:#a259f7;} .obar .bb{background:#ff33cc;}
-  /* one hairline where the two meet -- the split is the whole point of the bar */
-  .obar .bb{box-shadow:inset 1px 0 0 rgba(255,255,255,.5);}
-  .opcts{display:flex;justify-content:space-between;
-    font:600 12px 'Barlow';letter-spacing:.16em;}
-  .opcts .l{color:#c98bff;} .opcts .r{color:#ff5ad8;}
-  .obar .ba,.obar .bb{transition:width .55s cubic-bezier(.16,.8,.3,1);}
+  #odds .oname{font-family:'Barlow Condensed';font-weight:900;font-size:25px;text-transform:uppercase;
+    color:#fff;line-height:1;white-space:nowrap;}
+  #odds .omult{font-family:'Barlow Condensed';font-weight:900;font-size:25px;line-height:1;}
+  #odds .omult.ml{color:#b06CFF;} #odds .omult.mr{color:#ff5ad8;}
+  #odots{display:flex;gap:3px;align-items:center;}
+  #odots i{width:9px;height:18px;border-radius:1.5px;background:#2a2a34;transform-origin:center;
+    animation:odotin .5s cubic-bezier(.34,1.56,.64,1) both, odotwave 3.2s ease-in-out infinite;}
+  #odots i.on {background:#b06CFF;box-shadow:0 0 8px rgba(176,108,255,.4);}
+  #odots i.on2{background:#ff33cc;box-shadow:0 0 8px rgba(255,51,204,.4);}
+  /* bounce-in: from nothing, past full, settle */
+  @keyframes odotin{0%{transform:scaleY(.1);opacity:0}60%{transform:scaleY(1.35);opacity:1}
+    80%{transform:scaleY(.9)}100%{transform:scaleY(1)}}
+  /* the resting wave — small enough to feel like breathing, not dancing */
+  @keyframes odotwave{0%,86%,100%{transform:scaleY(1)}93%{transform:scaleY(1.22)}}
+  #odds .opool{font:600 13px 'Barlow';color:#8f8fa0;letter-spacing:.12em;white-space:nowrap;}
+  #odds .opool b{color:var(--gold);font-size:15px;}
 
   /* ── MATCH TIMER (top-right) ── */
   #mtimer{position:fixed;top:26px;right:48px;opacity:0;transform:translateY(-24px);
@@ -552,16 +541,14 @@
     </div>
   </div>
 
+  <!-- odds pill — one glanceable strip: name · payout · pool-split dots ·
+       payout · name · pool. The dots bounce in after the pill slides up,
+       then hold a slow balanced wave from both ends. -->
   <div id="odds">
-    <div class="oh"><span id="ohl">Live betting</span> · <b id="ohpool">0 VC</b> pool · <span id="ohbets">0</span> bets</div>
-    <div class="obody">
-      <div class="oside l"><div class="oname" id="oa">—</div><div class="omult" id="oma">—</div></div>
-      <div class="obarwrap">
-        <div class="opcts"><span class="l" id="opa"></span><span class="r" id="opb"></span></div>
-        <div class="obar"><div class="ba" id="oba"></div><div class="bb" id="obb"></div></div>
-      </div>
-      <div class="oside r"><div class="oname" id="ob">—</div><div class="omult" id="omb">—</div></div>
-    </div>
+    <span class="oname" id="oa">—</span><span class="omult ml" id="oma">—</span>
+    <span id="odots"></span>
+    <span class="omult mr" id="omb">—</span><span class="oname" id="ob">—</span>
+    <span class="opool"><b id="ohpool">0</b> VC · <span id="ohbets">0</span> BETS</span>
   </div>
 
   <div id="mtimer">2:00</div>
@@ -889,7 +876,9 @@ function handle(c){
   function fitOddsNames(){
     ;['oa','ob'].forEach(id=>{
       const el=document.getElementById(id); if(!el) return
-      const room = el.parentElement.getBoundingClientRect().width
+      // the pill hugs its content, so the cap is absolute: no name gets more
+      // than ~240px before it shrinks
+      const room = 240
       const wide = () => { const r=document.createRange(); r.selectNodeContents(el)
         return r.getBoundingClientRect().width }
       let size=25; el.style.fontSize=size+'px'
@@ -899,14 +888,19 @@ function handle(c){
   if(c.type==='odds'){
     if(c.on===false){ $('odds').classList.remove('show'); clearTimeout(oddsTimer); return }
     const d=c.d, pool=d.total_a+d.total_b
-    const pa= pool? Math.round(d.total_a/pool*100):50, pb=100-pa
+    const pa= pool? Math.round(d.total_a/pool*100):50
     const oa= d.total_a? (pool/d.total_a):0, ob= d.total_b? (pool/d.total_b):0
-    $('ohl').textContent=d.label||'Live betting'; $('ohpool').textContent=pool.toLocaleString()+' VC'; $('ohbets').textContent=d.bets||0
+    $('ohpool').textContent=pool.toLocaleString(); $('ohbets').textContent=d.bets||0
     $('oa').textContent=d.a; $('ob').textContent=d.b
     fitOddsNames()
     $('oma').textContent= oa? oa.toFixed(2)+'×':'—'; $('omb').textContent= ob? ob.toFixed(2)+'×':'—'
-    $('oba').style.width=pa+'%'; $('obb').style.width=pb+'%'
-    $('opa').textContent=pa+'%'; $('opb').textContent=pb+'%'
+    // pool-split dots, rebuilt on every push so the bounce-in replays.
+    // Entrance delays run left→right after the pill's own slide (~.45s);
+    // wave delays run INWARD from both ends so the idle motion stays balanced.
+    const N=12, onA=pool? Math.max(1,Math.min(N-1,Math.round(pa/100*N))) : N/2
+    $('odots').innerHTML=Array.from({length:N},(_,i)=>
+      `<i class="${i<onA?'on':'on2'}" style="animation-delay:${(.45+i*.05).toFixed(2)}s,${(1.6+Math.min(i,N-1-i)*.14).toFixed(2)}s"></i>`
+    ).join('')
     $('odds').classList.add('show')
     clearTimeout(oddsTimer); oddsTimer=setTimeout(()=>$('odds').classList.remove('show'), AUTOHIDE)
     sfx.riser()
