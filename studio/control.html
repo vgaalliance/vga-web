@@ -481,6 +481,15 @@
       <button onclick="overlayCta(0)">📌 Pin</button>
       <button class="hide" onclick="overlayCta('off')">Hide</button>
     </div>
+    <!-- Ringside reporter of the day — every league, every event type.
+         Type the name once; the tag stays up until hidden. -->
+    <div class="row" style="margin-bottom:10px">
+      <span class="kitlbl">REPORTER</span>
+      <input id="rrWho" placeholder="RINGSIDE REPORTER NAME…" style="width:250px"
+        onkeydown="if(event.key==='Enter')rrShow()">
+      <button onclick="rrShow()">🎤 Show</button>
+      <button class="hide" onclick="send({type:'rr',on:false})">Hide</button>
+    </div>
     <div class="row" style="margin-bottom:10px">
       <span class="kitlbl">PROMO</span>
       <button onclick="fireNextEvent('ubae')">📅 UBAe night</button>
@@ -805,6 +814,14 @@ function roundBtnsDraw(){
 window.overlayCta=(hold)=>{
   if(hold==='off') return send({type:'cta', show:false})
   send({type:'cta', show:true, hold: hold===0 ? 0 : undefined})
+}
+
+// Ringside reporter of the day — league-agnostic on purpose: the tag is the
+// same furniture on a UBA card, a UBAe match night, or anything else.
+window.rrShow=()=>{
+  const n=(document.getElementById('rrWho').value||'').trim()
+  if(!n) return
+  send({type:'rr', d:{name:n}})
 }
 
 // Next-event promo. One button, both leagues; the deck looks up the data and

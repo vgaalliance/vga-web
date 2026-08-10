@@ -242,23 +242,36 @@
      they sit on the SAME baseline -- the CTA was floating 16px higher, which
      is exactly the kind of almost-aligned that looks accidental. Right offset
      48 already mirrors the clock's left 48. */
+  /* Arcade prompt with the strap's accent band: corner brackets, pixel
+     kicker, a solid purple band down the left — and no light strip on top.
+     It rises from below now; the sideways pop read as an ad. */
   #cta{position:fixed;right:48px;bottom:24px;width:360px;
-    clip-path:polygon(14px 0,100% 0,100% 100%,0 100%,0 14px);
-    overflow:hidden;opacity:0;transform:translateX(118%);
+    overflow:hidden;opacity:0;transform:translateY(140%);
     transition:opacity .4s ease,transform .55s cubic-bezier(.16,1,.3,1);
-    background:linear-gradient(135deg,rgba(20,20,26,.97),rgba(8,8,11,.98));
-    box-shadow:0 22px 55px rgba(0,0,0,.6),0 0 0 1px rgba(168,85,247,.22);}
-  #cta.show{opacity:1;transform:translateX(0);}
-  #cta::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
-    background:linear-gradient(90deg,transparent,var(--red) 40%,var(--red));}
+    background:rgba(4,0,12,.95);border:2px solid rgba(155,48,255,.45);
+    border-left:none;
+    box-shadow:0 22px 55px rgba(0,0,0,.6),0 0 22px rgba(155,48,255,.14);}
+  #cta.show{opacity:1;transform:translateY(0);}
+  /* the band */
+  #cta::before{content:'';position:absolute;top:0;left:0;bottom:0;width:12px;
+    background:var(--red);box-shadow:0 0 20px var(--red);}
+  /* corner brackets, pick-bar kit */
+  .cta-tl,.cta-br{position:absolute;width:14px;height:14px;border:3px solid var(--hi,#cc66ff);z-index:3;}
+  .cta-tl{top:0;left:12px;border-right:none;border-bottom:none;}
+  .cta-br{bottom:0;right:0;border-left:none;border-top:none;}
+  .cta-kick{display:flex;align-items:center;gap:10px;padding:14px 18px 0 30px;
+    font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.28em;
+    color:var(--hi,#cc66ff);text-shadow:0 0 10px rgba(204,102,255,.5);}
+  .cta-kick .blink{animation:ctablink .9s steps(1) infinite;}
+  @keyframes ctablink{0%,49%{opacity:1}50%,100%{opacity:0}}
   /* the league mark, and the only thing that changes between shows */
-  .cta-head{display:flex;align-items:center;gap:9px;padding:13px 18px 0;}
+  .cta-head{display:flex;align-items:center;gap:9px;padding:13px 18px 0 30px;display:none;}
   .cta-mark{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:19px;
     letter-spacing:.06em;color:#fff;line-height:1;}
   .cta-mark span{color:var(--red);}
   .cta-tag{font:600 10px 'Barlow';letter-spacing:.24em;text-transform:uppercase;
     color:#8b8b96;margin-left:auto;}
-  .cta-rows{padding:11px 18px 15px;display:flex;flex-direction:column;gap:9px;}
+  .cta-rows{padding:11px 18px 15px 30px;display:flex;flex-direction:column;gap:9px;}
   .cta-row{display:flex;align-items:center;gap:11px;}
   /* the glyph is a drawn box, not an icon font -- one less thing to load, and
      an icon that fails to load leaves a tofu square on the broadcast */
@@ -272,6 +285,32 @@
     line-height:1;color:#fff;letter-spacing:.01em;white-space:nowrap;}
   .cta-sub{font:500 12px 'Barlow';color:#9a9aa6;margin-top:2px;letter-spacing:.02em;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+  /* ── RINGSIDE REPORTER — right edge, balance height, every league ──
+     Arcade tag wearing the strap's band: pixel kicker, holo name, solid
+     purple band down its left, no light strip. Anchored flush to the right
+     edge at mid height — deliberately NOT the bottom corner, which belongs
+     to the CTA. Named from the deck; stays up until hidden. */
+  #rrtag{position:fixed;right:0;top:36%;opacity:0;transform:translateX(110%);
+    transition:opacity .4s ease,transform .55s cubic-bezier(.16,1,.3,1);
+    background:rgba(4,0,12,.95);border:2px solid rgba(155,48,255,.45);border-right:none;
+    padding:14px 34px 16px 32px;
+    box-shadow:0 16px 40px rgba(0,0,0,.55),0 0 22px rgba(155,48,255,.14);}
+  #rrtag.show{opacity:1;transform:translateX(0);}
+  #rrtag::before{content:'';position:absolute;top:0;left:0;bottom:0;width:12px;
+    background:var(--red);box-shadow:0 0 20px var(--red);}
+  .rr-tl{position:absolute;top:0;left:12px;width:13px;height:13px;
+    border:3px solid #cc66ff;border-right:none;border-bottom:none;}
+  .rr-br{position:absolute;bottom:0;right:0;width:13px;height:13px;
+    border:3px solid #cc66ff;border-left:none;border-top:none;}
+  .rr-kick{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.28em;
+    color:rgba(204,102,255,.75);margin-bottom:8px;}
+  .rr-name{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:42px;
+    line-height:1;text-transform:uppercase;letter-spacing:.04em;
+    background:linear-gradient(180deg,#d8b4fe 0%,#a78bfa 20%,#818cf8 40%,#8b5cf6 60%,#a855f7 80%,#c084fc 100%);
+    background-size:100% 300%;-webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;animation:holoslide 4s linear infinite;
+    filter:drop-shadow(0 0 14px rgba(155,48,255,.5));}
 
   /* ── NEXT EVENT PROMO (left, staged) ──────────────────────────────────────
      A three-beat reveal: the plate slides in with the date, then MAIN, then
@@ -560,6 +599,8 @@
        and rotating them would mean whichever one a viewer needed was the one
        off screen. -->
   <div id="cta">
+    <div class="cta-tl"></div><div class="cta-br"></div>
+    <div class="cta-kick"><span class="blink">▶</span> JOIN THE LEAGUE</div>
     <div class="cta-head">
       <div class="cta-mark" id="ctaMark">UBA</div>
       <div class="cta-tag" id="ctaTag">VR BOXING</div>
@@ -580,6 +621,13 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- RINGSIDE REPORTER — named from the deck, any league, any event -->
+  <div id="rrtag">
+    <div class="rr-tl"></div><div class="rr-br"></div>
+    <div class="rr-kick">RINGSIDE REPORTER</div>
+    <div class="rr-name" id="rrName">—</div>
   </div>
 
   <div id="panel"><div class="ph" id="phh">Schedule</div><div id="prows"></div></div>
@@ -744,6 +792,12 @@ function handle(c){
     if(d.eventSub)  $('ehSub').textContent    = d.eventSub
     return }
   if(c.type==='cta'){ ctaCmd(c); return }
+  // ringside reporter tag — every league, stays up until hidden by hand
+  if(c.type==='rr'){
+    if(c.on===false){ $('rrtag').classList.remove('show'); return }
+    if(c.d&&c.d.name) $('rrName').textContent=c.d.name
+    $('rrtag').classList.add('show')
+    return }
   // Next-event promo. The deck sends everything rendered here -- the overlay
   // does no lookups, so the card can never disagree with what the deck showed
   // the operator before firing.
