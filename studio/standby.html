@@ -63,35 +63,53 @@
     text-align:center;padding-top:8px;letter-spacing:.14em;}
 
   /* ── roster 2.0 — the two clicked teams, whole roster, starters lit ──
-     One stacked panel per team, fighters centered so a 5-man Sheath row and a
-     9-man Rag Tags row both read as a full shelf. Starter boxes carry the
-     purple edge + glow; reserves dim to 45% so the 3 who fight tonight pop. */
-  .vsrteam{background:var(--panel);border-left:6px solid var(--pur);
-    box-shadow:0 0 22px rgba(60,0,110,.45);padding:20px 30px 24px;margin-bottom:30px;}
-  .vsrhead{display:flex;align-items:baseline;gap:20px;margin-bottom:16px;}
+     Styled as a retro CHOOSE-YOUR-CHARACTER screen: uniform tiles with corner
+     brackets and slot numbers, a black silhouette character in each until the
+     photo pipeline fills it, and a roaming select cursor per team (same trick
+     as the countdown's menu). Starters get the lit edge; reserves dim so the
+     3 who fight tonight pop. */
+  .vsrteam{background:var(--panel);border:2px solid var(--line);border-left:6px solid var(--pur);
+    box-shadow:0 0 22px rgba(60,0,110,.45);padding:16px 26px 20px;margin-bottom:26px;}
+  .vsrhead{display:flex;align-items:baseline;gap:20px;margin-bottom:14px;}
   .vsrname{font-weight:900;font-size:42px;text-transform:uppercase;line-height:1;}
   .vsrtag{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--dim);letter-spacing:.2em;}
-  .vsrrow{display:flex;justify-content:center;gap:16px;}
-  .vsrbox{flex:0 0 148px;width:148px;padding:10px 8px 12px;background:rgba(20,0,44,.5);
-    border:1px solid var(--line);text-align:center;}
-  .vsrbox.starter{border-color:var(--hi);box-shadow:0 0 18px rgba(155,48,255,.45),
-    inset 0 0 14px rgba(155,48,255,.12);}
-  .vsrbox.res{opacity:.45;}
-  .vsrava{height:132px;margin-bottom:8px;
-    background-size:cover;background-position:top center;background-repeat:no-repeat;}
-  /* The blank silhouette is solid black on transparent — invisible on this
-     near-black stage — so it is used as a MASK and filled with the theme
-     violet, the tale-of-the-tape trick. Real photos draw normally. */
-  .vsrava.sil{background:rgba(155,77,255,.30);
+  .vsrrow{display:flex;justify-content:center;gap:14px;}
+  .vsrbox{flex:0 0 158px;width:158px;position:relative;text-align:center;
+    background:linear-gradient(180deg,rgba(120,40,220,.22),rgba(8,0,22,.9));
+    border:2px solid rgba(155,48,255,.35);}
+  /* arcade corner brackets, top-left + bottom-right like the pick bar */
+  .vsrbox::before,.vsrbox::after{content:'';position:absolute;width:13px;height:13px;
+    border:3px solid var(--hi);opacity:.65;z-index:4;}
+  .vsrbox::before{top:0;left:0;border-right:none;border-bottom:none;}
+  .vsrbox::after{bottom:0;right:0;border-left:none;border-top:none;}
+  .vsr-num{position:absolute;top:5px;right:7px;z-index:4;
+    font-family:'Press Start 2P',monospace;font-size:8px;letter-spacing:.1em;
+    color:rgba(204,102,255,.5);text-shadow:1px 1px 0 #000;}
+  .vsrbox.starter{border-color:var(--hi);box-shadow:0 0 18px rgba(155,48,255,.5),
+    inset 0 0 16px rgba(155,48,255,.14);}
+  .vsrbox.res{opacity:.4;filter:saturate(.6);}
+  /* the roaming select cursor — cyan ring + blinking pick arrow on the name */
+  .vsrbox.cursor{border-color:#00e5ff;
+    box-shadow:0 0 18px rgba(0,229,255,.55),inset 0 0 14px rgba(0,229,255,.16);}
+  .vsrbox.cursor::before,.vsrbox.cursor::after{border-color:#00e5ff;opacity:1;}
+  @keyframes vsrblink{0%,49%{opacity:1}50%,100%{opacity:0}}
+  .vsrbox.cursor .nm::before{content:'▶ ';color:#00e5ff;animation:vsrblink .7s steps(1) infinite;}
+  .vsrava{height:150px;background-size:cover;background-position:top center;background-repeat:no-repeat;}
+  /* The blank silhouette is a MASK filled near-black — the character-select
+     "empty slot" look — on a tile gradient light enough for black to read.
+     Real photos draw normally. */
+  .vsrava.sil{background:#08020f;
     -webkit-mask-size:contain;mask-size:contain;
     -webkit-mask-position:bottom center;mask-position:bottom center;
     -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;}
   .vsrava.sil.l{-webkit-mask-image:url('assets/avatar-blank-left.png');mask-image:url('assets/avatar-blank-left.png');}
   .vsrava.sil.r{-webkit-mask-image:url('assets/avatar-blank-right.png');mask-image:url('assets/avatar-blank-right.png');}
-  .vsrbox .nm{font-weight:700;font-size:21px;line-height:1;text-transform:uppercase;
+  .vsrbox .nm{font-weight:700;font-size:20px;line-height:1;text-transform:uppercase;
+    padding:8px 6px;border-top:2px solid rgba(155,48,255,.25);background:rgba(4,0,12,.85);
     color:#f0e0ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .vsrbox .stag{font-family:'Press Start 2P',monospace;font-size:8px;letter-spacing:.18em;
-    color:var(--hi);margin-top:6px;text-shadow:0 0 10px rgba(204,102,255,.5);}
+    color:var(--hi);padding:0 0 8px;background:rgba(4,0,12,.85);
+    text-shadow:0 0 10px rgba(204,102,255,.5);}
 
   /* ══ UBA screens ══════════════════════════════════════════════════
      A fight night only had the card and the rankings; these are the rest.
@@ -799,23 +817,44 @@ function renderVsRosters(){
   if(!VSR.a||!VSR.b){ box.innerHTML='<div class="lrow"><span class="mt">Load a match on the deck</span></div>'; return }
   box.innerHTML=[[VSR.a,VSR.sa,'l'],[VSR.b,VSR.sb,'r']].map(([team,starters,side])=>{
     const roster=REC.filter(f=>f.current_team===team)
-    const sset=new Set(starters)
+    // case-insensitive on purpose: the DB has fighters like "baz", and a
+    // case drift anywhere upstream must dim a fighter, never double him
+    const sset=new Set(starters.map(n=>n.toLowerCase()))
     // starters first in lineup order (even if a name is missing from REC —
     // a just-signed fighter still gets a box), then the rest alphabetical
-    const rows=[...starters.map(n=>roster.find(f=>f.stage_name===n)||{stage_name:n}),
-                ...roster.filter(f=>!sset.has(f.stage_name)).sort((x,y)=>x.stage_name.localeCompare(y.stage_name))]
+    const rows=[...starters.map(n=>roster.find(f=>f.stage_name.toLowerCase()===n.toLowerCase())||{stage_name:n}),
+                ...roster.filter(f=>!sset.has(f.stage_name.toLowerCase())).sort((x,y)=>x.stage_name.localeCompare(y.stage_name))]
     const lit=sset.size>0
     return `<div class="vsrteam"><div class="vsrhead"><span class="vsrname">${team}</span>
         <span class="vsrtag">${lit?'STARTING 3 LIT':'FULL ROSTER'}</span></div>
-      <div class="vsrrow">${rows.map(f=>{
-        const st=sset.has(f.stage_name)
+      <div class="vsrrow">${rows.map((f,i)=>{
+        const st=sset.has(f.stage_name.toLowerCase())
         const ava=f.photo_thumb_url
           ? `<div class="vsrava" style="background-image:url('${f.photo_thumb_url}')"></div>`
           : `<div class="vsrava sil ${side}"></div>`
-        return `<div class="vsrbox${lit?(st?' starter':' res'):''}">${ava}
+        return `<div class="vsrbox${lit?(st?' starter':' res'):''}">
+          <span class="vsr-num">${String(i+1).padStart(2,'0')}</span>${ava}
           <div class="nm">${f.stage_name}</div>${st?'<div class="stag">STARTER</div>':''}</div>`
       }).join('')}</div></div>`
   }).join('')
+  vsrCursor()
+}
+
+// the choose-your-character cursor: one per team, hopping tiles like someone
+// is hovering the pick. Prefers lit starters when a lineup is revealed.
+let _vsrCur=null
+function vsrCursor(){
+  clearInterval(_vsrCur)
+  _vsrCur=setInterval(()=>{
+    document.querySelectorAll('#vsrContent .vsrrow').forEach(row=>{
+      const all=[...row.querySelectorAll('.vsrbox')]
+      if(!all.length) return
+      const pool=all.filter(b=>b.classList.contains('starter'))
+      const pick=(pool.length?pool:all)
+      all.forEach(b=>b.classList.remove('cursor'))
+      pick[Math.floor(Math.random()*pick.length)].classList.add('cursor')
+    })
+  },1100)
 }
 
 function renderSchedule(mt){
