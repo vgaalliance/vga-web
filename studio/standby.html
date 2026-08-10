@@ -62,6 +62,37 @@
   .conf-tag{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--dim);
     text-align:center;padding-top:8px;letter-spacing:.14em;}
 
+  /* ── roster 2.0 — the two clicked teams, whole roster, starters lit ──
+     One stacked panel per team, fighters centered so a 5-man Sheath row and a
+     9-man Rag Tags row both read as a full shelf. Starter boxes carry the
+     purple edge + glow; reserves dim to 45% so the 3 who fight tonight pop. */
+  .vsrteam{background:var(--panel);border-left:6px solid var(--pur);
+    box-shadow:0 0 22px rgba(60,0,110,.45);padding:20px 30px 24px;margin-bottom:30px;}
+  .vsrhead{display:flex;align-items:baseline;gap:20px;margin-bottom:16px;}
+  .vsrname{font-weight:900;font-size:42px;text-transform:uppercase;line-height:1;}
+  .vsrtag{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--dim);letter-spacing:.2em;}
+  .vsrrow{display:flex;justify-content:center;gap:16px;}
+  .vsrbox{flex:0 0 148px;width:148px;padding:10px 8px 12px;background:rgba(20,0,44,.5);
+    border:1px solid var(--line);text-align:center;}
+  .vsrbox.starter{border-color:var(--hi);box-shadow:0 0 18px rgba(155,48,255,.45),
+    inset 0 0 14px rgba(155,48,255,.12);}
+  .vsrbox.res{opacity:.45;}
+  .vsrava{height:132px;margin-bottom:8px;
+    background-size:cover;background-position:top center;background-repeat:no-repeat;}
+  /* The blank silhouette is solid black on transparent — invisible on this
+     near-black stage — so it is used as a MASK and filled with the theme
+     violet, the tale-of-the-tape trick. Real photos draw normally. */
+  .vsrava.sil{background:rgba(155,77,255,.30);
+    -webkit-mask-size:contain;mask-size:contain;
+    -webkit-mask-position:bottom center;mask-position:bottom center;
+    -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;}
+  .vsrava.sil.l{-webkit-mask-image:url('assets/avatar-blank-left.png');mask-image:url('assets/avatar-blank-left.png');}
+  .vsrava.sil.r{-webkit-mask-image:url('assets/avatar-blank-right.png');mask-image:url('assets/avatar-blank-right.png');}
+  .vsrbox .nm{font-weight:700;font-size:21px;line-height:1;text-transform:uppercase;
+    color:#f0e0ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .vsrbox .stag{font-family:'Press Start 2P',monospace;font-size:8px;letter-spacing:.18em;
+    color:var(--hi);margin-top:6px;text-shadow:0 0 10px rgba(204,102,255,.5);}
+
   /* ══ UBA screens ══════════════════════════════════════════════════
      A fight night only had the card and the rankings; these are the rest.
      They reuse .tcol / .plr / .panel so a UBA night looks like the same
@@ -365,6 +396,14 @@
       <div class="rgrid" id="rosterContent"></div>
     </div>
 
+    <!-- roster 2.0 — tonight's two teams, full rosters, starters lit.
+         Fed by the deck's pickbar push (same click that loads a match). -->
+    <div class="view" id="v-vsrosters">
+      <div class="eyebrow splitlbl">UBAe · Summer Split</div>
+      <div class="title sm" id="vsrTitle">Tonight's Rosters</div>
+      <div id="vsrContent"></div>
+    </div>
+
     <div class="view" id="v-ubarank">
       <div class="eyebrow">VGA · UBA</div>
       <div class="title">Division Rankings</div>
@@ -459,7 +498,7 @@ const DAY=['SUN','MON','TUE','WED','THU','FRI','SAT']
 const fdate=d=>{const x=new Date(d);return DAY[x.getDay()]+' '+MO[x.getMonth()]+' '+x.getDate()}
 const ftime=d=>{const x=new Date(d);let h=x.getHours(),m=x.getMinutes();const ap=h>=12?'PM':'AM';h=h%12||12;return h+(m?':'+String(m).padStart(2,'0'):'')+ap+' ET'}
 
-let VIEWS=['standings','rosters','ubarank','schedule','next3','teamvs','card','cta'], cycle=null
+let VIEWS=['standings','rosters','vsrosters','ubarank','schedule','next3','teamvs','card','cta'], cycle=null
 // Auto-cycle for a UBA fight night: only the screens that mean something on one.
 // The deck picks the rotation by mode, so 'auto' doesn't parade team standings
 // through a solo card.
@@ -469,12 +508,17 @@ const FUTURE=()=>new Date(Date.now()-6*3600e3).toISOString()
 async function loadAll(){
   const [{data:st},{data:rec},{data:mt},{data:ev},{data:rk}] = await Promise.all([
     sb.from('team_standings').select('*'),
-    sb.from('ubae_fighter_records').select('stage_name,current_team'),
+    sb.from('ubae_fighter_records').select('stage_name,current_team,photo_thumb_url'),
     sb.from('team_matches_public').select('*').eq('status','scheduled').order('match_date').limit(8),
     sb.from('events_public').select('*').eq('status','scheduled').gte('event_date',FUTURE()).order('event_date').limit(3),
     sb.from('rankings_public').select('rank,fighter_name,weight_class,level').eq('scope','weight_class').order('rank'),
   ])
   renderStandings(st||[]); renderRosters(st||[], rec||[]); renderSchedule(mt||[]); renderNext(ev||[]); renderTvs(mt||[])
+  // roster 2.0 keeps the full records list (photos included); before the deck
+  // loads a match it defaults to the nearest scheduled one, starters unknown
+  REC=rec||[]
+  if(!VSR.a && mt && mt[0]) VSR={a:mt[0].team_a_name, b:mt[0].team_b_name, sa:[], sb:[]}
+  renderVsRosters()
   showCard(null)   // preload soonest card
   const { count } = await sb.from('fighter_cards').select('id',{count:'exact',head:true})
   renderCta(count||0)
@@ -745,6 +789,35 @@ function renderRosters(st, rec){
       <div class="conf-tag">Conf ${confOf[t]||'—'}</div></div>`).join('')
 }
 
+/* ── roster 2.0 — tonight's two teams, whole roster, starters lit ──
+   REC = every active fighter (name, team, photo). VSR = the matchup: set by
+   the deck's pickbar push (teams + revealed starters), defaulted in loadAll
+   to the nearest scheduled match with no starters lit. */
+let REC=[], VSR={a:null, b:null, sa:[], sb:[]}
+function renderVsRosters(){
+  const box=$('vsrContent'); if(!box) return
+  if(!VSR.a||!VSR.b){ box.innerHTML='<div class="lrow"><span class="mt">Load a match on the deck</span></div>'; return }
+  box.innerHTML=[[VSR.a,VSR.sa,'l'],[VSR.b,VSR.sb,'r']].map(([team,starters,side])=>{
+    const roster=REC.filter(f=>f.current_team===team)
+    const sset=new Set(starters)
+    // starters first in lineup order (even if a name is missing from REC —
+    // a just-signed fighter still gets a box), then the rest alphabetical
+    const rows=[...starters.map(n=>roster.find(f=>f.stage_name===n)||{stage_name:n}),
+                ...roster.filter(f=>!sset.has(f.stage_name)).sort((x,y)=>x.stage_name.localeCompare(y.stage_name))]
+    const lit=sset.size>0
+    return `<div class="vsrteam"><div class="vsrhead"><span class="vsrname">${team}</span>
+        <span class="vsrtag">${lit?'STARTING 3 LIT':'FULL ROSTER'}</span></div>
+      <div class="vsrrow">${rows.map(f=>{
+        const st=sset.has(f.stage_name)
+        const ava=f.photo_thumb_url
+          ? `<div class="vsrava" style="background-image:url('${f.photo_thumb_url}')"></div>`
+          : `<div class="vsrava sil ${side}"></div>`
+        return `<div class="vsrbox${lit?(st?' starter':' res'):''}">${ava}
+          <div class="nm">${f.stage_name}</div>${st?'<div class="stag">STARTER</div>':''}</div>`
+      }).join('')}</div></div>`
+  }).join('')
+}
+
 function renderSchedule(mt){
   $('schedContent').innerHTML=mt.map(m=>
     `<div class="lrow"><span class="wk">WK ${m.week}</span>
@@ -855,8 +928,13 @@ sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
     if(c.view==='nextev'){ await showNextEv(c.exclude); show('nextev'); return }  // c.exclude = the event you're running tonight
     show(c.view, c.league); return   // league only matters to 'auto' — it picks the rotation
   }
-  // when the deck loads a match in the tracker, mirror it on the team-vs-team screen
-  if(c.type==='pickbar' && c.d && c.d.teamA && c.d.teamB) setTvs(c.d.teamA, c.d.teamB, 'Tonight')
+  // when the deck loads a match in the tracker, mirror it on the team-vs-team
+  // screen AND roster 2.0 (teams + revealed starters ride the same push)
+  if(c.type==='pickbar' && c.d && c.d.teamA && c.d.teamB){
+    setTvs(c.d.teamA, c.d.teamB, 'Tonight')
+    VSR={a:c.d.teamA, b:c.d.teamB, sa:c.d.left||[], sb:c.d.right||[]}
+    renderVsRosters()
+  }
   // coin toss — flips over the current standby view
   if(c.type==='segcard'){
     const ss=document.getElementById('segsplash')
