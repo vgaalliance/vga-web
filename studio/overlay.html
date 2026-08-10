@@ -291,7 +291,12 @@
      purple band down its left, no light strip. Anchored flush to the right
      edge at mid height — deliberately NOT the bottom corner, which belongs
      to the CTA. Named from the deck; stays up until hidden. */
-  #rrtag{position:fixed;right:0;top:36%;opacity:0;transform:translateX(110%);
+  /* Three-beat entrance: ① the tag slides in EMPTY (band + brackets),
+     ② RINGSIDE REPORTER lands big as the headline, ③ it hands off — the
+     headline collapses into a small (but still readable) kicker and the
+     NAME takes the stage in holo purple. Lower-third height, right edge. */
+  #rrtag{position:fixed;right:0;top:60%;opacity:0;transform:translateX(110%);
+    min-width:340px;min-height:58px;
     transition:opacity .4s ease,transform .55s cubic-bezier(.16,1,.3,1);
     background:rgba(4,0,12,.95);border:2px solid rgba(155,48,255,.45);border-right:none;
     padding:14px 34px 16px 32px;
@@ -303,8 +308,23 @@
     border:3px solid #cc66ff;border-right:none;border-bottom:none;}
   .rr-br{position:absolute;bottom:0;right:0;width:13px;height:13px;
     border:3px solid #cc66ff;border-left:none;border-top:none;}
-  .rr-kick{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.28em;
-    color:rgba(204,102,255,.75);margin-bottom:8px;}
+  /* beat ②: the headline */
+  .rr-hero{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:34px;
+    line-height:1;text-transform:uppercase;letter-spacing:.08em;color:#fff;
+    text-shadow:0 0 18px rgba(204,102,255,.6);
+    max-height:40px;opacity:0;transform:translateY(12px);overflow:hidden;
+    transition:opacity .45s ease,transform .45s cubic-bezier(.16,1,.3,1),
+      max-height .4s ease,margin .4s ease;}
+  #rrtag.st1 .rr-hero{opacity:1;transform:translateY(0);}
+  #rrtag.st2 .rr-hero{opacity:0;transform:translateY(-10px);max-height:0;margin:0;}
+  /* beat ③: kicker + name. The kicker stays genuinely readable — bigger and
+     brighter than standard pixel furniture, it is a job title not a garnish. */
+  .rr-fin{opacity:0;transform:translateY(16px);
+    transition:opacity .45s ease .1s,transform .45s cubic-bezier(.16,1,.3,1) .1s;}
+  #rrtag.st2 .rr-fin{opacity:1;transform:translateY(0);}
+  .rr-kick{font-family:'Press Start 2P',monospace;font-size:11px;letter-spacing:.24em;
+    color:#dba8ff;text-shadow:0 0 12px rgba(204,102,255,.55),1px 1px 0 #000;
+    margin-bottom:9px;}
   .rr-name{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:42px;
     line-height:1;text-transform:uppercase;letter-spacing:.04em;
     background:linear-gradient(180deg,#d8b4fe 0%,#a78bfa 20%,#818cf8 40%,#8b5cf6 60%,#a855f7 80%,#c084fc 100%);
@@ -626,8 +646,11 @@
   <!-- RINGSIDE REPORTER — named from the deck, any league, any event -->
   <div id="rrtag">
     <div class="rr-tl"></div><div class="rr-br"></div>
-    <div class="rr-kick">RINGSIDE REPORTER</div>
-    <div class="rr-name" id="rrName">—</div>
+    <div class="rr-hero">Ringside Reporter</div>
+    <div class="rr-fin">
+      <div class="rr-kick">RINGSIDE REPORTER</div>
+      <div class="rr-name" id="rrName">—</div>
+    </div>
   </div>
 
   <div id="panel"><div class="ph" id="phh">Schedule</div><div id="prows"></div></div>
@@ -792,11 +815,19 @@ function handle(c){
     if(d.eventSub)  $('ehSub').textContent    = d.eventSub
     return }
   if(c.type==='cta'){ ctaCmd(c); return }
-  // ringside reporter tag — every league, stays up until hidden by hand
+  // ringside reporter tag — every league, stays up until hidden by hand.
+  // Three beats: empty slide-in (500ms) → RINGSIDE REPORTER lands big
+  // (1.4s) → collapses to the kicker and the name takes over. Re-firing
+  // with a new name replays the whole entrance.
   if(c.type==='rr'){
-    if(c.on===false){ $('rrtag').classList.remove('show'); return }
+    const tag=$('rrtag')
+    ;(window._rrT||[]).forEach(clearTimeout); window._rrT=[]
+    if(c.on===false){ tag.classList.remove('show','st1','st2'); return }
     if(c.d&&c.d.name) $('rrName').textContent=c.d.name
-    $('rrtag').classList.add('show')
+    tag.classList.remove('show','st1','st2'); void tag.offsetWidth
+    tag.classList.add('show')
+    window._rrT.push(setTimeout(()=>tag.classList.add('st1'), 500))
+    window._rrT.push(setTimeout(()=>tag.classList.add('st2'), 1900))
     return }
   // Next-event promo. The deck sends everything rendered here -- the overlay
   // does no lookups, so the card can never disagree with what the deck showed
