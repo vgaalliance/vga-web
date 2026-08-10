@@ -88,12 +88,22 @@
   .vsrbox.starter{border-color:var(--hi);box-shadow:0 0 18px rgba(155,48,255,.5),
     inset 0 0 16px rgba(155,48,255,.14);}
   .vsrbox.res{opacity:.4;filter:saturate(.6);}
-  /* the roaming select cursor — cyan ring + blinking pick arrow on the name */
-  .vsrbox.cursor{border-color:#00e5ff;
-    box-shadow:0 0 18px rgba(0,229,255,.55),inset 0 0 14px rgba(0,229,255,.16);}
-  .vsrbox.cursor::before,.vsrbox.cursor::after{border-color:#00e5ff;opacity:1;}
-  @keyframes vsrblink{0%,49%{opacity:1}50%,100%{opacity:0}}
-  .vsrbox.cursor .nm::before{content:'▶ ';color:#00e5ff;animation:vsrblink .7s steps(1) infinite;}
+  /* P1/P2/P3 select frames — dull cyan, steady slow breathing, like three
+     player cursors resting on their picks. A revealed lineup PINS them to the
+     starters (backups get the same frame, duller); before the reveal the
+     three frames drift between tiles at a browse pace. */
+  .vsrbox.selp{border-color:rgba(0,229,255,.55);animation:vsrsel 2.4s ease-in-out infinite;}
+  @keyframes vsrsel{
+    0%,100%{box-shadow:0 0 8px rgba(0,229,255,.22),inset 0 0 8px rgba(0,229,255,.07);}
+    50%{box-shadow:0 0 18px rgba(0,229,255,.42),inset 0 0 12px rgba(0,229,255,.13);}}
+  .vsrbox.selp::before,.vsrbox.selp::after{border-color:rgba(0,229,255,.7);opacity:1;}
+  .vsr-pl{position:absolute;top:5px;left:7px;z-index:5;
+    font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.08em;
+    color:rgba(0,229,255,.75);text-shadow:1px 1px 0 #000,0 0 8px rgba(0,229,255,.4);}
+  /* backups: picked but not starting — same frame, turned down */
+  .vsrbox.backup{border-color:rgba(0,229,255,.26);opacity:.8;}
+  .vsrbox.backup::before,.vsrbox.backup::after{border-color:rgba(0,229,255,.32);opacity:.8;}
+  .vsrbox.backup .vsr-pl{color:rgba(0,229,255,.4);text-shadow:1px 1px 0 #000;}
   .vsrava{height:150px;background-size:cover;background-position:top center;background-repeat:no-repeat;}
   /* The blank silhouette is a MASK filled near-black — the character-select
      "empty slot" look — on a tile gradient light enough for black to read.
@@ -811,50 +821,64 @@ function renderRosters(st, rec){
    REC = every active fighter (name, team, photo). VSR = the matchup: set by
    the deck's pickbar push (teams + revealed starters), defaulted in loadAll
    to the nearest scheduled match with no starters lit. */
-let REC=[], VSR={a:null, b:null, sa:[], sb:[]}
+let REC=[], VSR={a:null, b:null, sa:[], sb:[], ka:[], kb:[]}
 function renderVsRosters(){
   const box=$('vsrContent'); if(!box) return
   if(!VSR.a||!VSR.b){ box.innerHTML='<div class="lrow"><span class="mt">Load a match on the deck</span></div>'; return }
-  box.innerHTML=[[VSR.a,VSR.sa,'l'],[VSR.b,VSR.sb,'r']].map(([team,starters,side])=>{
+  const lc=n=>(n||'').toLowerCase()
+  box.innerHTML=[[VSR.a,VSR.sa,VSR.ka||[],'l'],[VSR.b,VSR.sb,VSR.kb||[],'r']].map(([team,starters,backups,side])=>{
     const roster=REC.filter(f=>f.current_team===team)
     // case-insensitive on purpose: the DB has fighters like "baz", and a
     // case drift anywhere upstream must dim a fighter, never double him
-    const sset=new Set(starters.map(n=>n.toLowerCase()))
-    // starters first in lineup order (even if a name is missing from REC —
-    // a just-signed fighter still gets a box), then the rest alphabetical
-    const rows=[...starters.map(n=>roster.find(f=>f.stage_name.toLowerCase()===n.toLowerCase())||{stage_name:n}),
-                ...roster.filter(f=>!sset.has(f.stage_name.toLowerCase())).sort((x,y)=>x.stage_name.localeCompare(y.stage_name))]
+    const sset=new Set(starters.map(lc)), bset=new Set(backups.map(lc))
+    // starters in lineup order, then backups, then the rest alphabetical
+    // (a name missing from REC — a just-signed fighter — still gets a box)
+    const byName=n=>roster.find(f=>lc(f.stage_name)===lc(n))||{stage_name:n}
+    const rows=[...starters.map(byName), ...backups.map(byName),
+                ...roster.filter(f=>!sset.has(lc(f.stage_name))&&!bset.has(lc(f.stage_name)))
+                  .sort((x,y)=>x.stage_name.localeCompare(y.stage_name))]
     const lit=sset.size>0
     return `<div class="vsrteam"><div class="vsrhead"><span class="vsrname">${team}</span>
         <span class="vsrtag">${lit?'STARTING 3 LIT':'FULL ROSTER'}</span></div>
       <div class="vsrrow">${rows.map((f,i)=>{
-        const st=sset.has(f.stage_name.toLowerCase())
+        const st=sset.has(lc(f.stage_name)), bk=bset.has(lc(f.stage_name))
         const ava=f.photo_thumb_url
           ? `<div class="vsrava" style="background-image:url('${f.photo_thumb_url}')"></div>`
           : `<div class="vsrava sil ${side}"></div>`
-        return `<div class="vsrbox${lit?(st?' starter':' res'):''}">
-          <span class="vsr-num">${String(i+1).padStart(2,'0')}</span>${ava}
-          <div class="nm">${f.stage_name}</div>${st?'<div class="stag">STARTER</div>':''}</div>`
+        // starters carry pinned P1/P2/P3 frames; backups the same frame, duller
+        const badge=st?`<span class="vsr-pl">P${i+1}</span>`:bk?`<span class="vsr-pl">B${i+1-starters.length}</span>`:''
+        return `<div class="vsrbox${lit?(st?' starter selp':bk?' backup':' res'):''}">
+          ${badge}<span class="vsr-num">${String(i+1).padStart(2,'0')}</span>${ava}
+          <div class="nm">${f.stage_name}</div>${st?'<div class="stag">STARTER</div>':bk?'<div class="stag">BACKUP</div>':''}</div>`
       }).join('')}</div></div>`
   }).join('')
   vsrCursor()
 }
 
-// the choose-your-character cursor: one per team, hopping tiles like someone
-// is hovering the pick. Prefers lit starters when a lineup is revealed.
+// Before a lineup reveals there is nothing to pin, so the three P-frames
+// browse the row instead — slow, one hop every few seconds, like players
+// hovering the character screen. A revealed row is skipped: its frames are
+// rendered pinned and must not move.
 let _vsrCur=null
 function vsrCursor(){
   clearInterval(_vsrCur)
-  _vsrCur=setInterval(()=>{
+  const step=()=>{
     document.querySelectorAll('#vsrContent .vsrrow').forEach(row=>{
+      if(row.querySelector('.starter')) return
       const all=[...row.querySelectorAll('.vsrbox')]
       if(!all.length) return
-      const pool=all.filter(b=>b.classList.contains('starter'))
-      const pick=(pool.length?pool:all)
-      all.forEach(b=>b.classList.remove('cursor'))
-      pick[Math.floor(Math.random()*pick.length)].classList.add('cursor')
+      all.forEach(b=>{ b.classList.remove('selp'); const t=b.querySelector('.vsr-pl'); if(t) t.remove() })
+      const picks=[]
+      while(picks.length<Math.min(3,all.length)){
+        const c=all[Math.floor(Math.random()*all.length)]
+        if(!picks.includes(c)) picks.push(c)
+      }
+      picks.forEach((b,i)=>{ b.classList.add('selp')
+        const t=document.createElement('span'); t.className='vsr-pl'; t.textContent='P'+(i+1); b.appendChild(t) })
     })
-  },1100)
+  }
+  step()
+  _vsrCur=setInterval(step,3000)
 }
 
 function renderSchedule(mt){
@@ -971,7 +995,8 @@ sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
   // screen AND roster 2.0 (teams + revealed starters ride the same push)
   if(c.type==='pickbar' && c.d && c.d.teamA && c.d.teamB){
     setTvs(c.d.teamA, c.d.teamB, 'Tonight')
-    VSR={a:c.d.teamA, b:c.d.teamB, sa:c.d.left||[], sb:c.d.right||[]}
+    VSR={a:c.d.teamA, b:c.d.teamB, sa:c.d.left||[], sb:c.d.right||[],
+         ka:c.d.backupL||[], kb:c.d.backupR||[]}
     renderVsRosters()
   }
   // coin toss — flips over the current standby view

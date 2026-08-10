@@ -710,6 +710,7 @@ const leagueOf = name => /^GFL/i.test(name||'') ? 'GFL' : /^AMA/i.test(name||'')
 function mnPush(){
   send({type:'pickbar', d:{ split:SPLIT_NAME, teamA:MN.a, teamB:MN.b,
     left:(MN.lineups[MN.a]||{}).starters||[], right:(MN.lineups[MN.b]||{}).starters||[],
+    backupL:(MN.lineups[MN.a]||{}).backups||[], backupR:(MN.lineups[MN.b]||{}).backups||[],
     scoreA:MN.scoreA, scoreB:MN.scoreB, round:MN.round,
     pickL:MN.pickA, pickR:MN.pickB, usedL:MN.usedA, usedR:MN.usedB,
     won: MN.scoreA>=3?'L':(MN.scoreB>=3?'R':null) }})
