@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <title>VGA OBS Overlay</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;900&family=Barlow:wght@400;500;600&display=swap');
   html,body{margin:0;height:100%;background:transparent;overflow:hidden;
     font-family:'Barlow',system-ui,Arial,sans-serif;color:#fff;}
   /* CTA-purple theme: the accent tab + glows are purple (was red); gold/green stay for amounts */
@@ -33,6 +33,25 @@
   #status{position:fixed;top:8px;left:10px;font:11px monospace;color:#888;
     background:rgba(0,0,0,.4);padding:3px 7px;border-radius:4px;letter-spacing:.05em;}
   #status.on{color:var(--green);}
+
+  /* ── EVENT HEADER — league badge left, card name right, same holographic
+     purple as the countdown scene. Fed by the deck's countdown push, so
+     toggling the event in the panel brands this overlay too. ── */
+  @keyframes holoslide{0%{background-position:0 0}100%{background-position:0 300%}}
+  #evhdr{position:fixed;top:20px;left:48px;right:48px;display:flex;
+    justify-content:space-between;align-items:flex-start;pointer-events:none;}
+  .eh-league{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:46px;
+    letter-spacing:.12em;line-height:1;
+    background:linear-gradient(180deg,#d8b4fe 0%,#a78bfa 15%,#818cf8 30%,#6366f1 45%,#8b5cf6 60%,#a855f7 75%,#c084fc 90%,#d8b4fe 100%);
+    background-size:100% 300%;-webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;animation:holoslide 4s linear infinite;
+    filter:drop-shadow(0 0 18px rgba(155,48,255,.55));}
+  .eh-event{text-align:right;}
+  .eh-event-main{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:30px;
+    letter-spacing:.22em;color:#fff;text-transform:uppercase;line-height:1;
+    text-shadow:0 0 18px rgba(204,102,255,.55);}
+  .eh-event-sub{font:600 11px 'Barlow';letter-spacing:.3em;color:rgba(200,160,255,.65);
+    margin-top:5px;text-transform:uppercase;}
 
   /* ── FLASH CARD (bet / message / fact / cta) ── */
   /* left-zone lower-third — sits above the UBAe fight clock, no overlap (2026-07-25) */
@@ -489,6 +508,14 @@
 <body>
   <div id="status">connecting…</div>
 
+  <div id="evhdr">
+    <div class="eh-league" id="ehLeague">UBAE</div>
+    <div class="eh-event">
+      <div class="eh-event-main" id="ehMain">SUMMER SPLIT</div>
+      <div class="eh-event-sub" id="ehSub">ubaesports.com</div>
+    </div>
+  </div>
+
   <div id="flash"><div class="card">
     <div class="accent"></div>
     <div class="content">
@@ -721,6 +748,14 @@ function handle(c){
   // The deck stamps league on every command, so this stays correct even if the
   // operator switches shows mid-session.
   if(c.league) document.documentElement.dataset.league = c.league
+  // The countdown push carries the branding: d.league is the display acronym
+  // (UBA/UBAE/GFL/AMA — distinct from the lowercase layout stamp above) and
+  // d.eventMain is the card name. Same push, so both scenes stay in sync.
+  if(c.type==='countdown'){ const d=c.d||{}
+    if(d.league)    $('ehLeague').textContent = d.league
+    if(d.eventMain) $('ehMain').textContent   = d.eventMain
+    if(d.eventSub)  $('ehSub').textContent    = d.eventSub
+    return }
   if(c.type==='cta'){ ctaCmd(c); return }
   // Next-event promo. The deck sends everything rendered here -- the overlay
   // does no lookups, so the card can never disagree with what the deck showed
