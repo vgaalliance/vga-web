@@ -462,10 +462,10 @@
       <div class="rgrid" id="ubarankContent"></div>
     </div>
 
-    <div class="view" id="v-gblrank">
-      <div class="eyebrow">VGA · GBL</div>
+    <div class="view" id="v-gflrank">
+      <div class="eyebrow">VGA · GFL</div>
       <div class="title">Division Rankings</div>
-      <div class="rgrid" id="gblrankContent"></div>
+      <div class="rgrid" id="gflrankContent"></div>
     </div>
 
     <div class="view" id="v-schedule">
@@ -561,10 +561,10 @@ let VIEWS=['standings','rosters','vsrosters','ubarank','schedule','next3','teamv
 // The deck picks the rotation by mode, so 'auto' doesn't parade team standings
 // through a solo card.
 const VIEWS_UBA=['card','ubarank','champs','p4p','fotm','nextev','cards','cta']
-// GBL has no champions crowned and no P4P board yet, so its rotation is the
+// GFL has no champions crowned and no P4P board yet, so its rotation is the
 // views that actually have something in them. Listing empty screens would put
 // a blank panel on air every 15 seconds.
-const VIEWS_GBL=['card','gblrank','nextev','cta']
+const VIEWS_GFL=['card','gflrank','nextev','cta']
 const FUTURE=()=>new Date(Date.now()-6*3600e3).toISOString()
 
 async function loadAll(){
@@ -606,9 +606,9 @@ async function loadUba(rk){
     const champs=ch||[]
     // split by level -- pro to the UBA board (the amateur ladder is real data
     // now, seeded 2026-08-08, and unfiltered it interleaved: two #1s per
-    // division), amateur to the GBL board
+    // division), amateur to the GFL board
     renderRankBoard('ubarankContent', (rk||[]).filter(r=>r.level!=='amateur'), champs)
-    renderRankBoard('gblrankContent', (rk||[]).filter(r=>r.level==='amateur'), [])
+    renderRankBoard('gflrankContent', (rk||[]).filter(r=>r.level==='amateur'), [])
     renderChamps(champs)
     renderP4P(p4||[], champs)
     renderFotm((fm||[])[0], champs)
@@ -994,7 +994,7 @@ function show(view, league){
   hideAll()
   if(view==='off'||!view) return
   if(view==='auto'){
-    const list = league==='gbl' ? VIEWS_GBL : league==='uba' ? VIEWS_UBA : VIEWS
+    const list = league==='gfl' ? VIEWS_GFL : league==='uba' ? VIEWS_UBA : VIEWS
     let i=0; const step=()=>{ hideAll(); showView($('v-'+list[i%list.length])); i++ }
     step(); cycle=setInterval(step,15000); return }
   showView($('v-'+view))

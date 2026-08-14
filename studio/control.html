@@ -63,7 +63,7 @@
      hidden and not disabled: hiding them would mean re-teaching the panel
      every time you crossed leagues, and disabling them would take away a
      choice that's occasionally right. Green = for tonight. */
-  /* Gated on MODE, not on league. GBL runs a solo card exactly like UBA, so
+  /* Gated on MODE, not on league. GFL runs a solo card exactly like UBA, so
      both wear mode-solo and the fifteen .lg-uba / .lg-ubae buttons need no
      per-league rules -- adding a fourth league is one entry in setEv(). */
   body.mode-solo button.lg-ubae,
@@ -300,7 +300,7 @@
   <div class="row" id="evRow" style="margin-bottom:14px">
     <button data-ev="ubae" class="active" onclick="setEv('ubae')">UBAe · Team league<small>3v3 · battleroom pick'em · BO5</small></button>
     <button data-ev="uba" onclick="setEv('uba')">UBA · Fight night<small>solo card · bout by bout</small></button>
-    <button data-ev="gbl" onclick="setEv('gbl')">GBL · Feeder card<small>solo card · same run of show</small></button>
+    <button data-ev="gfl" onclick="setEv('gfl')">GFL · Feeder card<small>solo card · same run of show</small></button>
   </div>
 
   <!-- UBAe spine: the match tracker — one click loads every scene -->
@@ -410,7 +410,7 @@
       <button class="lg-ubae" onclick="standby('rosters')">Rosters</button>
       <button class="lg-ubae" onclick="standby('vsrosters')">Rosters VS</button>
       <button class="lg-uba"  onclick="standby('ubarank')">UBA rankings</button>
-      <button class="lg-uba"  onclick="standby('gblrank')">GBL rankings</button>
+      <button class="lg-uba"  onclick="standby('gflrank')">GFL rankings</button>
       <button class="lg-ubae" onclick="standby('schedule')">Schedule</button>
       <button onclick="standby('next3')">Next 3 events</button>
       <button class="lg-ubae" onclick="standby('teamvs')">Team vs team</button>
@@ -1181,10 +1181,10 @@ window.loadStandings=async()=>{
 const STAGES={
   ubae:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ BATTLEROOM'],['match','④ MATCH']],
   uba:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ TALE OF TAPE'],['match','④ MATCH']],
-  gbl:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ TALE OF TAPE'],['match','④ MATCH']]
+  gfl:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ TALE OF TAPE'],['match','④ MATCH']]
 }
 let EV='ubae', STG='countdown'
-// SOLO = one card, bout by bout: UBA and GBL. TEAM = UBAe. Everything on this
+// SOLO = one card, bout by bout: UBA and GFL. TEAM = UBAe. Everything on this
 // deck that used to ask "is this UBA?" is really asking "is this a solo card?",
 // and answering it here instead of at seven call sites is what stops a fourth
 // league needing seven more edits.
@@ -1207,7 +1207,7 @@ window.setEv=ev=>{
   EV=ev; STG='countdown'
   document.body.classList.toggle('ev-ubae', ev==='ubae')
   document.body.classList.toggle('ev-uba', ev==='uba')
-  document.body.classList.toggle('ev-gbl', ev==='gbl')
+  document.body.classList.toggle('ev-gfl', ev==='gfl')
   document.body.classList.toggle('mode-solo', isSolo())
   document.body.classList.toggle('mode-team', !isSolo())
   document.querySelectorAll('#evRow button').forEach(b=>b.classList.toggle('active', b.dataset.ev===ev))
