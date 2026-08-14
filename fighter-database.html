@@ -295,7 +295,7 @@
     <div class="pills" id="levels">
       <button class="pill active" data-l="all">All</button>
       <button class="pill" data-l="pro">Pro</button>
-      <button class="pill" data-l="amateur">Amateur</button>
+      <button class="pill" data-l="amateur">GFL</button>
       <button class="pill" data-l="retired">Retired</button>
     </div>
     <div class="pills" id="filters">
@@ -371,7 +371,7 @@ const card = f => {
   const img = src ? `<img src="${src}" alt="${f.display_name}" loading="lazy" decoding="async">` : '';
   const rankLabel = retired ? '' : (f.is_champion ? 'C' : (f.div_rank ? `#${f.div_rank}` : ''));
   const name = toTitleCase(f.display_name);
-  const statusLabel = retired ? 'Retired' : (f.level === 'amateur' ? 'Amateur' : '');
+  const statusLabel = retired ? 'Retired' : (f.level === 'amateur' ? 'GFL' : '');
   const slug = f.slug || f.display_name.toLowerCase().replace(/\s+/g, '-');
 
   return `<a class="card ${cls}" href="${BASE}${slug}" target="_parent">
