@@ -327,6 +327,9 @@
     <div id="ubaCardWrap" style="display:none">
       <h5><span class="only-uba">The card — ARM a bout (tape + clock) · tap a name to score the win</span><span class="only-ubae">The card — push it to the standby screen as a promo</span></h5>
       <div class="row" style="margin-bottom:8px">
+        <button onclick="ubaReload()">↻ Reload card from admin</button>
+      </div>
+      <div class="row" style="margin-bottom:8px">
         <span id="ubaFlt" style="display:contents">
           <button data-f="all" class="active" onclick="ubaFilter('all')">All</button>
           <button data-f="main_card" onclick="ubaFilter('main_card')">Main</button>
@@ -1254,6 +1257,35 @@ window.loadUbaEvents=async()=>{
     }
     box.appendChild(b)
   })
+  // A reload rebuilds these buttons from scratch, so the loaded event has to be
+  // re-marked or the deck looks like nothing is selected mid-show.
+  if(UBA.name) document.querySelectorAll('#ubaEvents button')
+    .forEach(x=>x.classList.toggle('active',x.textContent===UBA.name))
+}
+
+/* The deck is a one-shot loader: it reads the card when you press the event
+   button and never again. So a bout pulled or swapped in the admin card builder
+   stayed on the deck until somebody reloaded the whole page -- which is not a
+   thing you do mid-show. This re-reads the card in place instead.
+   Two things must survive the re-read, both mid-show state the DB doesn't know:
+   wins clicked on the deck but not yet committed, and which bout is armed. */
+window.ubaReload=async()=>{
+  const log=m=>{ const l=document.getElementById('log'); const d=document.createElement('div'); d.textContent=m; l.prepend(d) }
+  if(!UBA.id){ log('⚠ pick an event above first — nothing to reload'); return }
+  const keep={}
+  UBA.bouts.forEach(b=>{ if(b.winner) keep[b.bout_number]={winner:b.winner,method:b.method} })
+  // armed is an INDEX, and indices shift when a bout disappears — carry the
+  // bout NUMBER across and look it up again on the other side.
+  const armedNo = UBA.armed!=null ? (UBA.bouts[UBA.armed]||{}).bout_number : null
+  const before  = UBA.bouts.length
+  await ubaLoadCard({ id:UBA.id, name:UBA.name, event_date:UBA.date })
+  UBA.bouts.forEach(b=>{ const k=keep[b.bout_number]; if(k && !b.winner){ b.winner=k.winner; b.method=b.method||k.method } })
+  const i = UBA.bouts.findIndex(b=>b.bout_number===armedNo)
+  UBA.armed = i>=0 ? i : null
+  ubaDraw()
+  await loadUbaEvents()   // an event renamed/unpublished since load shows up here
+  const d=UBA.bouts.length-before
+  log(`↻ card reloaded — ${UBA.bouts.length} bouts${d?` (${d>0?'+':''}${d})`:' (no change)'}${armedNo&&i<0?' · armed bout is gone':''}`)
 }
 
 window.ubaLoadCard=async(ev)=>{
