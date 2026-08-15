@@ -586,17 +586,80 @@ function drawPhoto(box, src){
   box.style.backgroundImage = `url("${src}")`;
   box.textContent = '';
 }
-function applyFighterImage(boxId, imagePath) {
-  const box = document.getElementById(boxId);
-  if (!box) return;
-  if (!imagePath || !String(imagePath).trim()) { drawSilhouette(box); return; }
-  // probe before committing: a missing photo must fall back, not leave an
-  // empty panel where a fighter should be
-  const probe = new Image();
-  probe.onload  = () => drawPhoto(box, imagePath);
-  probe.onerror = () => drawSilhouette(box);
-  probe.src = imagePath;
+// Resolves to the src that actually loaded, or '' meaning "use the silhouette".
+// A missing photo must fall back, not leave an empty panel where a fighter
+// should be — so nothing is committed until the probe answers.
+function resolveFighterImage(imagePath) {
+  return new Promise(resolve => {
+    if (!imagePath || !String(imagePath).trim()) { resolve(''); return; }
+    const probe = new Image();
+    probe.onload  = () => resolve(imagePath);
+    probe.onerror = () => resolve('');
+    probe.src = imagePath;
+  });
 }
+
+// Direct paint, no staging — the manual photo drop and the initial silhouettes.
+// A deck-driven matchup goes through stageFighterImages instead.
+function applyFighterImage(boxId, imagePath) {
+  return resolveFighterImage(imagePath).then(src => {
+    const box = document.getElementById(boxId);
+    if (!box) return;
+    src ? drawPhoto(box, src) : drawSilhouette(box);
+    // kept in step so the next staged matchup knows what is actually on screen
+    if (boxId in _paintedSrc) _paintedSrc[boxId] = imagePath || '';
+  });
+}
+
+/* ---------- PHOTOS ARE STAGED, THEN REVEALED ----------
+   Painting each box from its own probe's onload is what put the PREVIOUS
+   matchup's faces on the new tape: the box keeps the old background-image
+   until its probe resolves, everything else in apply() is synchronous, and
+   the reveal never waited for the photos. Cached photo = same frame, nobody
+   notices; cold photo = a network fetch, and the tape animates in on the last
+   fighters and pops about a second later.
+
+   So: blank a box the moment its photo is going to change (the wrong face is
+   worse than no face), load both, paint them together, and let the reveal wait
+   on it. `_imgGen` drops a stale pair — arm bout A, then B before A's photos
+   land, and A must not paint itself over B. */
+let _imgGen = 0;
+let _photosReady = Promise.resolve();
+const PHOTO_WAIT_MS = 1500;
+const _paintedSrc = { imgBoxLeft: null, imgBoxRight: null };
+
+function stageFighterImages(leftPath, rightPath) {
+  const gen = ++_imgGen;
+  const want = { imgBoxLeft: leftPath || '', imgBoxRight: rightPath || '' };
+  // Blank NOW, before the load, so the outgoing fighter cannot be on screen
+  // when the tape plays. Unchanged photo stays put — no flicker on a replay.
+  Object.keys(want).forEach(id => {
+    if (_paintedSrc[id] !== want[id]) {
+      const box = document.getElementById(id);
+      if (box) drawSilhouette(box);
+      _paintedSrc[id] = null;
+    }
+  });
+  _photosReady = Promise.all([resolveFighterImage(want.imgBoxLeft), resolveFighterImage(want.imgBoxRight)])
+    .then(([l, r]) => {
+      if (gen !== _imgGen) return;   // a newer matchup was staged; this pair is stale
+      [['imgBoxLeft', l, want.imgBoxLeft], ['imgBoxRight', r, want.imgBoxRight]].forEach(([id, src, asked]) => {
+        const box = document.getElementById(id);
+        if (!box) return;
+        src ? drawPhoto(box, src) : drawSilhouette(box);
+        _paintedSrc[id] = asked;
+      });
+    });
+  return _photosReady;
+}
+
+// Never let a slow photo hold the broadcast. Whatever has loaded by the cap
+// goes on air; a straggler paints itself in behind the reveal, which is the
+// old behaviour and only happens now when the CDN is genuinely slow.
+function photosSettled() {
+  return Promise.race([_photosReady, new Promise(r => setTimeout(r, PHOTO_WAIT_MS))]);
+}
+async function showTape() { await photosSettled(); playTape(); }
 const slugPhoto = slug => slug ? ASSETS+'fighters/'+String(slug).toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.png' : '';
 applyFighterImage('imgBoxLeft', '');    // silhouette until a bout is fired
 applyFighterImage('imgBoxRight', '');
@@ -1686,8 +1749,8 @@ editOverlay.addEventListener('click', (e) => {
     // ran. The tape sat on TBA for every load, and because the throw happened
     // inside a broadcast callback nothing surfaced it.
     const L=d.left||{}, R=d.right||{}
-    applyFighterImage('imgBoxLeft',  L.photo || slugPhoto(L.slug))
-    applyFighterImage('imgBoxRight', R.photo || slugPhoto(R.slug))
+    // Staged, not painted: the reveal below waits on this. See stageFighterImages.
+    stageFighterImages(L.photo || slugPhoto(L.slug), R.photo || slugPhoto(R.slug))
     set('nameLeft',L.name); set('ageLeft',L.age); set('heightLeft',L.height); set('weightLeft',shortDivision(L.weight))
     set('reachLeft',L.reach); set('recordLeft',L.record); set('oddsLeft',L.odds); set('rankLeft',L.rank)
     set('nameRight',R.name); set('ageRight',R.age); set('heightRight',R.height); set('weightRight',shortDivision(R.weight))
@@ -1717,18 +1780,20 @@ editOverlay.addEventListener('click', (e) => {
   _ch.on('broadcast',{event:'cmd'},({payload:c})=>{
     if(c.type!=='tape') return   // tape-state is our own report; ignore it here
     if(c.on===false){ remember(null,false); hideTape(); return }
-    if(c.show===true){ remember(null,true); playTape(); return }   // reveal what's loaded
+    if(c.show===true){ remember(null,true); showTape(); return }   // reveal what's loaded
     const d=c.d||{}
     apply(d)
     remember(d, tapeShown)
     // Loading a matchup does NOT reveal it. If it's already on screen the
     // entrance replays so the change is visible; if it isn't, it waits.
-    if(tapeShown) playTape()
+    // showTape, not playTape: the deck's one-press button loads and reveals
+    // back to back, which is exactly when the photos have had no time to load.
+    if(tapeShown) showTape()
   }).subscribe()
 
   try{
     const saved = JSON.parse(localStorage.getItem('vga.tape')||'null')
-    if(saved && saved.on && saved.d){ apply(saved.d); playTape() }
+    if(saved && saved.on && saved.d){ apply(saved.d); showTape() }
   }catch{}
   // The bar rotates even before a matchup is loaded -- an OBS source that has
   // just been added shows a live sponsor strip rather than one dead word.
