@@ -98,6 +98,15 @@ body::before {
 .hero-badge.silver  { color: #c0c0c8; background: rgba(192,192,200,0.1); border: 1px solid rgba(192,192,200,0.3); }
 .hero-badge.bronze  { color: #cd7f32; background: rgba(205,127,50,0.1); border: 1px solid rgba(205,127,50,0.3); }
 .hero-badge.ama, .hero-badge.pro { color: var(--muted); background: rgba(74,74,104,0.12); border: 1px solid rgba(74,74,104,0.35); }
+/* FIGHTER PHOTO — fills the hero's right side, fading into the surface so the
+   name stays readable. Same rule as desktop: photo when there is one, the
+   playable cutout only when there isn't. */
+.hero-photo { position: absolute; right: 0; top: 0; bottom: 0; width: 64%; z-index: 1; }
+.hero-photo img { width: 100%; height: 100%; object-fit: cover; object-position: top center; }
+.hero-photo::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to right, var(--surf) 0%, rgba(11,11,18,0.72) 38%, rgba(11,11,18,0.15) 78%, transparent 100%);
+}
 .hero-inner { position: relative; z-index: 2; }
 .hero-nick { font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--pl); margin-bottom: 3px; text-shadow: var(--glow-sm); }
 .hero-name { font-family: 'Bebas Neue', sans-serif; font-size: 44px; color: var(--text); line-height: 1; letter-spacing: 1px; animation: phosphor-glitch 11s infinite; }
@@ -290,7 +299,7 @@ async function load() {
 
   try {
     const cards = await sb('fighter_cards_roster',
-      `slug=eq.${encodeURIComponent(slug)}&select=id,display_name,nickname,weight_class,level,wins:headline_wins,losses:headline_losses,draws:headline_draws,ko_wins:headline_ko_wins,rank,contract_tier,height,reach,stance,country,vc_balance`);
+      `slug=eq.${encodeURIComponent(slug)}&select=id,display_name,nickname,weight_class,level,profile_photo_url,wins:headline_wins,losses:headline_losses,draws:headline_draws,ko_wins:headline_ko_wins,rank,contract_tier,height,reach,stance,country,vc_balance`);
     if (!cards.length) { show('<div class="loading-state">Fighter not found</div>'); return; }
     const f = cards[0];
 
@@ -376,6 +385,7 @@ function render(f, recent, upcoming, lastVod, beltCount, streakHTML, stashPrints
     <div class="hero-wrap">
     <div class="hero">
       <div class="hero-lb"></div>
+      ${f.profile_photo_url ? `<div class="hero-photo"><img src="${esc(f.profile_photo_url)}" alt="${esc(f.display_name)}"></div>` : ''}
       <div class="hero-holo"></div>
       ${badgeHTML(f)}
       <div class="hero-inner">
@@ -388,7 +398,7 @@ function render(f, recent, upcoming, lastVod, beltCount, streakHTML, stashPrints
       </div>
     </div>
     <div class="hero-ava">
-      <iframe src="game/mini.html?v=${Date.now()}&slug=${encodeURIComponent(new URLSearchParams(location.search).get('fighter')||'')}" scrolling="no" title="Tap the fighter to punch"></iframe>
+      ${f.profile_photo_url ? '' : `<iframe src="game/mini.html?v=${Date.now()}&slug=${encodeURIComponent(new URLSearchParams(location.search).get('fighter')||'')}" scrolling="no" title="Tap the fighter to punch"></iframe>`}
       <button class="game-earn-btn ${gameLoggedIn()?'gm-in':'gm-out'}" onclick="openTrainingGame()">${gameLoggedIn()?'EARN VC':'LOG IN'}</button>
       ${streakHTML}
     </div>
