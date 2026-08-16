@@ -466,6 +466,20 @@
       <div class="row" style="margin-bottom:10px">
         <button id="clockTgl" onclick="clockToggle()">Fight clock: ON</button>
       </div>
+      <!-- MANUAL NAMES — the clock's names come from ARM, which reads the card
+           in the database. A late replacement (Deuce pulls out, WWSD steps in)
+           happens DURING the show, when nobody is editing the database, and the
+           clock had no way to be told: it kept announcing a fight that was not
+           happening for the whole bout. Typing over it is the fix. ARM still
+           wins whenever it is pressed, so this can never quietly outlive the
+           bout it was typed for. -->
+      <div class="row only-uba" style="margin-bottom:10px">
+        <span class="kitlbl">NAMES</span>
+        <input id="clkNameL" placeholder="LEFT NAME…" style="width:170px" onkeydown="if(event.key==='Enter')clockNames()">
+        <input id="clkNameR" placeholder="RIGHT NAME…" style="width:170px" onkeydown="if(event.key==='Enter')clockNames()">
+        <button onclick="clockNames()">✎ Set names</button>
+        <button class="hide" onclick="clockNamesReset()">↺ Back to armed bout</button>
+      </div>
       <div class="row" style="margin-bottom:10px">
         <span class="kitlbl">ROUND</span>
         <span id="roundBtns"></span>
@@ -904,6 +918,46 @@ window.clockToggle=()=>{
   if(b){ b.textContent='Fight clock: '+(window._clockOn?'ON':'OFF'); b.classList.toggle('hide',!window._clockOn) }
 }
 
+/* MANUAL NAMES on the fight clock.
+   Sends the same {type:'bout'} the clock already answers, with ONLY the names
+   in it — label, format line and corner colours are left out on purpose, so a
+   replacement fighter does not also blank "MAIN EVENT" or reset the trunks.
+   (The clock guards every field with `if(d.x)`, so an absent field is a
+   deliberate no-op there.)
+   One side may be left blank: the usual case is one fighter being swapped. */
+window.clockNames=()=>{
+  const a=(document.getElementById('clkNameL').value||'').trim()
+  const b=(document.getElementById('clkNameR').value||'').trim()
+  if(!a && !b){
+    const l=document.getElementById('log'); const d=document.createElement('div')
+    d.textContent='⚠ type at least one name first'; l.prepend(d)
+    return
+  }
+  const d={}
+  if(a) d.a=a
+  if(b) d.b=b
+  send({type:'bout', d})
+  // The tape reads the same two fighters, so it follows the clock rather than
+  // being re-typed — otherwise the tale of the tape introduces the man who
+  // pulled out, one segment after the clock stopped saying his name.
+  if(a){ const i=document.getElementById('mnBoutA'); if(i) i.value=a }
+  if(b){ const i=document.getElementById('mnBoutB'); if(i) i.value=b }
+  const h=document.getElementById('clockOddsHint')
+  if(h) h.textContent='on the clock — '+(a||'left')+' vs '+(b||'right')
+}
+
+/* Undo: put the ARMED bout's real names back. If nothing is armed there is
+   nothing to go back to, and saying so beats a button that looks broken. */
+window.clockNamesReset=()=>{
+  const b = UBA.armed!=null ? UBA.bouts[UBA.armed] : null
+  const l=document.getElementById('log')
+  if(!b){ const d=document.createElement('div')
+    d.textContent='⚠ no bout armed — nothing to go back to'; l.prepend(d); return }
+  document.getElementById('clkNameL').value=b.a
+  document.getElementById('clkNameR').value=b.b
+  clockNames()
+}
+
 // updates the countdown TEAMS only — the clock itself is set with the minutes input
 // Guarded on MN.id -- the UBAe match -- so on a fight night it returned
 // immediately and sent nothing, leaving the countdown on whatever it last
@@ -1340,6 +1394,10 @@ window.ubaArm=i=>{
   UBA.armed=i
   document.getElementById('mnBoutA').value=b.a
   document.getElementById('mnBoutB').value=b.b
+  // Pre-fill the manual override too, so a late replacement is ONE field
+  // edited, not two names typed from scratch under the lights.
+  ;[['clkNameL',b.a],['clkNameR',b.b]].forEach(([id,v])=>{
+    const el=document.getElementById(id); if(el) el.value=v })
   send({type:'bout', d:{ a:b.a, b:b.b,
     label: b.bout_number===1?'MAIN EVENT':'BOUT '+b.bout_number,
     sub: b.title? '5 ROUNDS · TITLE' : b.wc,
@@ -1587,7 +1645,7 @@ loadBetFeed()
       so it stays put while you scroll the controls.</div>
     <div class="rblock" id="rbState"><h6>Now on <em id="rbStateTag"></em></h6>
       <div class="rbody" id="slotState"></div></div>
-    <div class="rblock" id="rbClock"><h6>Clock <em>round &amp; timer</em></h6>
+    <div class="rblock" id="rbClock"><h6>Clock <em>names, round &amp; timer</em></h6>
       <div class="rbody" id="slotClock"></div></div>
     <div class="rblock" id="rbCard"><h6>The card <em>tap a name to score</em></h6>
       <div class="rbody" id="slotCard"></div></div>
