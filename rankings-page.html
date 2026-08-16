@@ -94,7 +94,9 @@
     font-family:'Bebas Neue',sans-serif;font-size:clamp(23px,2.5vw,33px);letter-spacing:0;line-height:.9;
     color:var(--gold);text-shadow:var(--glow-gold);padding:10px 0 0 7px;}
   .belt .bd{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;}
-  .belt .lbl{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:1.3px;color:var(--gold);
+  /* Nudged up with the record below it — a 7px division label under a 14px
+     record reads as a rendering fault, not as a hierarchy. */
+  .belt .lbl{font-family:'Space Mono',monospace;font-size:clamp(9px,.85vw,11px);letter-spacing:1.2px;color:var(--gold);
     opacity:.8;text-align:center;padding:8px 4px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
   /* photo window — placeholder initial until profile_photo_url is filled */
   .por{flex:1;width:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;}
@@ -106,8 +108,13 @@
   .por img{width:100%;height:100%;object-fit:cover;object-position:top;}
   .por .ini{font-family:'Bebas Neue',sans-serif;font-size:clamp(38px,4.5vw,58px);
     color:rgba(255,255,255,.06);line-height:1;}
-  .belt .rec{font-family:'Space Mono',monospace;font-size:8.5px;color:rgba(245,200,66,.65);
-    letter-spacing:1px;padding-bottom:26px;}
+  /* The record was 8.5px — smaller than any legal body text, and the ONE fact
+     on a champion banner a reader actually wants after the name. Scaled with
+     the column so six-across on desktop and two-across on a phone both stay
+     legible, and brightened: at .65 opacity on gold it was greying out at the
+     size it was set in. */
+  .belt .rec{font-family:'Space Mono',monospace;font-size:clamp(12px,1.25vw,15px);
+    color:rgba(245,200,66,.92);letter-spacing:.8px;padding-bottom:22px;}
 
   /* ── ② P4P ── */
   .p4pgrid{display:grid;grid-template-columns:1fr;gap:0 26px;}
@@ -198,12 +205,19 @@ const portrait=(name,photo)=>`<div class="por">${photo?`<img src="${esc(photo)}"
 
 /* ── ① champion banners + ② P4P + ③ divisions ── */
 (async()=>{
-  const [ranks,cards]=await Promise.all([
+  const [ranks,cards,belts]=await Promise.all([
     get('rankings_public?select=weight_class,rank,fighter_name,fighter_slug,as_of_date&league=eq.UBA&level=eq.pro&order=rank.asc'),
     get('fighter_cards?select=display_name,slug,weight_class,wins:headline_wins,losses:headline_losses,draws:headline_draws,is_champion,profile_photo_url'),
+    /* The belt, from the open reign. Was `cards.find(c=>c.is_champion&&…)`,
+       which trusts a CACHE of the reign and takes whichever row came back
+       first: on 2026-08-16 middleweight had two fighters flagged champion
+       (Adonnis retired 2026-08-05 and his flag was never cleared), so which
+       face hung in the rafters was down to row order. */
+    get('titles_public?select=weight_class,holder_slug&league=eq.UBA&level=eq.pro&kind=eq.weight_class&is_interim=eq.false'),
   ]);
   const byslug={}; cards.forEach(c=>byslug[c.slug]=c);
-  const champOf=wc=>cards.find(c=>c.is_champion&&c.weight_class===wc);
+  const champOf=wc=>{ const b=belts.find(x=>x.weight_class===wc);
+    return b&&b.holder_slug?byslug[b.holder_slug]:null; };
   if(ranks.length&&ranks[0].as_of_date) el('asof').textContent='AS OF '+String(ranks[0].as_of_date).toUpperCase();
 
   /* ① banners: 4 divisions + BMF + UBAe team champ */
