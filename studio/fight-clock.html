@@ -783,7 +783,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     gfl: { name:'GFL', sub:'Glory League', org:'Glory Fighting League',
            art:{ hue:4,   band:0,   bandSpan:26,  stroke:8,   wheel:18 } },
   }
-  function setLeague(lg){
+  window.VGA_setLeague = function setLeague(lg){
     const key = String(lg||'').toLowerCase() === 'gfl' ? 'gfl' : 'uba'
     if(document.body.dataset.league === key) return    // no needless repaint
     document.body.dataset.league = key
@@ -798,7 +798,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   // wanted. The deck still overrides it on the next command it sends.
   try{
     const q = new URLSearchParams(location.search).get('league')
-    if(q) setLeague(q)
+    if(q) window.VGA_setLeague(q)
   }catch{}
 
   const cv=document.getElementById('brandFlower');
@@ -1165,7 +1165,9 @@ function flipSwap(el, text){
     // correctly the moment the deck touches it. Only flipped when a league is
     // actually stamped: an unstamped legacy command must not silently undress
     // a GFL show back to violet.
-    if(c.league) setLeague(c.league)
+    // guarded: a missing skinner must never take the whole handler down with it,
+    // which is exactly what an unguarded cross-IIFE call did on 2026-08-17.
+    if(c.league && window.VGA_setLeague) window.VGA_setLeague(c.league)
     if(c.type==='clock'){
       document.querySelector('.hud-root').classList.toggle('off', c.show===false); return
     }
