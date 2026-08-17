@@ -747,20 +747,36 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 <script>
 // ══ FLOWER ENGINE — brand emblem ═════════════════
 (function(){
-  // League hue for everything drawn on canvas. 270 = UBA violet, 24 = GFL ember.
-  // Read at draw time, not captured, so a mid-show league switch repaints.
-  window.VGA_HUE = window.VGA_HUE || 270;
+  // Every hue the CANVAS art uses, in one object. CSS tokens cannot reach these:
+  // the emblem flower, the holographic sweep and the background flowers are all
+  // drawn in JS, and each had its own hardcoded violet -- a base hue, a band the
+  // flowers pick from, and a stroke anchored at 290. Setting one of them and not
+  // the others is how you get an orange clock with purple flowers in it.
+  //   hue    base hue for the emblem and the sweep
+  //   band /
+  //   bandSpan  the window the background flowers live in
+  //   stroke the emblem's outline anchor at rest
+  //   wheel  0 = the hue tours the whole colour wheel (UBA's psychedelic
+  //          drift, unchanged); a number = degrees it may wander, which is
+  //          what keeps GFL in the reds instead of touring through violet.
+  // Read at draw time, never captured, so a mid-show switch repaints.
+  window.VGA_ART = window.VGA_ART || { hue:270, band:185, bandSpan:120, stroke:290, wheel:0 };
 
   // One place decides what league this clock is wearing: the body class drives
-  // every CSS token, and VGA_HUE drives the canvas art (emblem flower, holo
+  // every CSS token, and VGA_ART drives the canvas art (emblem flower, holo
   // sweep, sparks) which CSS cannot reach.
   // The wordmark, the strapline and the organisation line are per-league copy.
   // A skin that changed only the colours left a GFL card orange and still signed
   // UNIFIED BOXING ASSOCIATION, which is worse than leaving it violet: it looks
   // like the right graphic for the wrong show.
   const LEAGUE_COPY = {
-    uba: { name:'UBA', sub:'Fight Night',  org:'Unified Boxing Association', hue:270 },
-    gfl: { name:'GFL', sub:'Glory League', org:'Glory Fighting League',      hue:24  },
+    uba: { name:'UBA', sub:'Fight Night',  org:'Unified Boxing Association',
+           art:{ hue:270, band:185, bandSpan:120, stroke:290, wheel:0 } },
+    // Tuned by measuring, not by eye: hue 14 with a 44 degree wheel came out
+    // 70% orange. hue 6 with a 26 degree wheel reads RED, wandering only as far
+    // as a hot amber at the top of its cycle.
+    gfl: { name:'GFL', sub:'Glory League', org:'Glory Fighting League',
+           art:{ hue:4,   band:0,   bandSpan:26,  stroke:8,   wheel:18 } },
   }
   function setLeague(lg){
     const key = String(lg||'').toLowerCase() === 'gfl' ? 'gfl' : 'uba'
@@ -768,7 +784,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     document.body.dataset.league = key
     const c = LEAGUE_COPY[key]
     document.body.classList.toggle('gfl', key === 'gfl')
-    window.VGA_HUE = c.hue
+    window.VGA_ART = c.art
     const set = (id, v) => { const e = document.getElementById(id); if(e) e.textContent = v }
     set('brandName', c.name); set('brandSub', c.sub); set('eventStripText', c.org)
   }
@@ -789,15 +805,15 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   newCycle();
   function ei(t){return t*t*t;}function eo(t){return 1-Math.pow(1-t,5);}
   function spr(c,tg,v,k,d){const f=(tg-c)*k-v*d;return{val:c+v+f,vel:v+f};}
-  const sparks=Array.from({length:16},()=>({x:CX,y:CY,vx:0,vy:0,life:0,max:40,hue:270,r:.7,on:false}));
-  function emit(si){const s=sparks.find(s=>!s.on||s.life>s.max);if(!s)return;const a=(Math.floor(Math.random()*5)/5)*Math.PI*2+spinAccum;s.x=CX+Math.cos(a)*R*.88;s.y=CY+Math.sin(a)*R*.88;const t2=a+Math.PI/2,v=si*.8+.05;s.vx=Math.cos(t2)*v+(Math.random()-.5)*.1;s.vy=Math.sin(t2)*v-.07+(Math.random()-.3)*.1;s.life=0;s.max=si>.5?18+Math.random()*14:55+Math.random()*70;s.hue=(window.VGA_HUE-5)+Math.random()*80;s.r=si>.5?.5+Math.random()*.8:.25+Math.random()*.4;s.on=true;}
+  const sparks=Array.from({length:16},()=>({x:CX,y:CY,vx:0,vy:0,life:0,max:40,hue:(window.VGA_ART||{hue:270}).hue,r:.7,on:false}));
+  function emit(si){const s=sparks.find(s=>!s.on||s.life>s.max);if(!s)return;const a=(Math.floor(Math.random()*5)/5)*Math.PI*2+spinAccum;s.x=CX+Math.cos(a)*R*.88;s.y=CY+Math.sin(a)*R*.88;const t2=a+Math.PI/2,v=si*.8+.05;s.vx=Math.cos(t2)*v+(Math.random()-.5)*.1;s.vy=Math.sin(t2)*v-.07+(Math.random()-.3)*.1;s.life=0;s.max=si>.5?18+Math.random()*14:55+Math.random()*70;s.hue=(window.VGA_ART.hue-5)+Math.random()*(window.VGA_ART.wheel||80);s.r=si>.5?.5+Math.random()*.8:.25+Math.random()*.4;s.on=true;}
   function tick(){
     ctx.clearRect(0,0,W,H);T++;cycleT++;
     const p=Math.min(1,cycleT/cycleLen);
     if(inBurst){if(p<.22)siTarget=ei(p/.22);else if(p<.48)siTarget=1-Math.sin((p-.22)/.26*Math.PI)*.03;else if(p<.72)siTarget=eo(1-(p-.48)/.24)*.6;else siTarget=Math.pow(1-(p-.72)/.28,2.5)*.45;if(p>=1&&spinI<.025){inBurst=false;siTarget=0;siVel=0;newCycle();}}else{siTarget=0;if(p>=1){inBurst=true;newCycle();}}
     const sp=spr(spinI,siTarget,siVel,spinI<siTarget?.016:.004,spinI<siTarget?.68:.60);spinI=Math.max(0,Math.min(1,sp.val));siVel=sp.vel;spinAccum+=.003+spinI*.18;
     const si=spinI;if(Math.random()<(inBurst?si*.65:.025))emit(si);
-    const hue=(T*.4+window.VGA_HUE)%360,budEW=R*.48,budEH=R*.95,bloEW=R*.32,bloEH=R*1.2;
+    const A=window.VGA_ART,hue=(A.wheel?A.hue+((T*.4)%A.wheel):(T*.4+A.hue)%360),budEW=R*.48,budEH=R*.95,bloEW=R*.32,bloEH=R*1.2;
     const ew=budEW+(bloEW-budEW)*si,eh=budEH+(bloEH-budEH)*si,bp=.85+si*.12;
     const b1=ctx.createRadialGradient(CX,CY,0,CX,CY,CX);b1.addColorStop(0,`hsla(${hue},100%,65%,${Math.pow(si,1.5)*.14})`);b1.addColorStop(1,'transparent');ctx.beginPath();ctx.arc(CX,CY,CX,0,Math.PI*2);ctx.fillStyle=b1;ctx.fill();
     if(si>.01)for(let g=1;g<=3;g++){const gs=spinAccum-g*.08;for(let p2=0;p2<5;p2++){const a=(p2/5)*Math.PI*2+gs,px=CX+Math.cos(a)*R*.88,py=CY+Math.sin(a)*R*.88;ctx.save();ctx.translate(px,py);ctx.rotate(a+Math.PI);ctx.beginPath();ctx.ellipse(0,0,ew*.85,eh*.85,0,0,Math.PI*2);ctx.fillStyle=`hsla(${(hue+p2*22)%360},100%,82%,${(1-g/4)*Math.pow(si,1.5)*.14})`;ctx.fill();ctx.restore();}}
@@ -811,7 +827,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
       ctx.globalAlpha=Math.pow(si,3)*.32;ctx.save();ctx.translate(px,py);ctx.rotate(tiltA);const ca=1.2*si;ctx.beginPath();ctx.ellipse(-ca,0,ew,eh,0,0,Math.PI*2);ctx.fillStyle='hsl(0,100%,72%)';ctx.fill();ctx.beginPath();ctx.ellipse(0,-ca*.5,ew,eh,0,0,Math.PI*2);ctx.fillStyle='hsl(130,100%,72%)';ctx.fill();ctx.beginPath();ctx.ellipse(ca,0,ew,eh,0,0,Math.PI*2);ctx.fillStyle='hsl(240,100%,78%)';ctx.fill();ctx.restore();ctx.globalAlpha=1;
       const tipW=ew*(.6+si*.4),baseW2=ew*(.9+si*.1);ctx.save();ctx.translate(px,py);ctx.rotate(tiltA);ctx.beginPath();ctx.moveTo(0,-eh);ctx.bezierCurveTo(tipW,-eh*.55,baseW2,eh*.1,0,eh*.55);ctx.bezierCurveTo(-baseW2,eh*.1,-tipW,-eh*.55,0,-eh);ctx.closePath();
       const lB=22+si*58,lM=16+si*66,sat=88+si*12,pg=ctx.createLinearGradient(-ew,0,ew,0);pg.addColorStop(0,`hsla(${ph},${sat}%,${lB}%,${bpp})`);pg.addColorStop(.5,`hsla(${(ph+20*si)%360},${sat}%,${lM}%,${bpp})`);pg.addColorStop(1,`hsla(${(ph+35*si)%360},${sat}%,${lB}%,${bpp})`);ctx.fillStyle=pg;ctx.fill();
-      const sH=290+(((ph+40)%360)-290)*Math.pow(si,2);ctx.strokeStyle=`hsla(${sH},100%,92%,${(.18+si*.6)*idleGlow+.12})`;ctx.lineWidth=.9+si*.35;ctx.stroke();ctx.restore();
+      const sH=A.stroke+(((ph+40)%360)-A.stroke)*Math.pow(si,2);ctx.strokeStyle=`hsla(${sH},100%,92%,${(.18+si*.6)*idleGlow+.12})`;ctx.lineWidth=.9+si*.35;ctx.stroke();ctx.restore();
     }
     const ch=(hue+160)%360,cR=R*.18+si*R*.12,cg=ctx.createRadialGradient(CX,CY,0,CX,CY,cR+.5);cg.addColorStop(0,`hsla(${ch},60%,100%,${.55+si*.4})`);cg.addColorStop(.5,`hsla(${ch},100%,85%,${.32+si*.45})`);cg.addColorStop(1,'transparent');ctx.beginPath();ctx.arc(CX,CY,cR+.5,0,Math.PI*2);ctx.fillStyle=cg;ctx.fill();ctx.beginPath();ctx.arc(CX,CY,cR*.4,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,.78)';ctx.fill();
     sparks.forEach(s=>{if(!s.on)return;s.life++;if(s.life>s.max){s.on=false;return;}s.vy-=.005;s.x+=s.vx;s.y+=s.vy;s.vx*=.95;s.vy*=.97;const fa=1-s.life/s.max;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle=`hsla(${s.hue},100%,90%,${fa*.75})`;ctx.fill();});
@@ -826,7 +842,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
       if(!window._hs)window._hs={pos:-1.2,sweeping:false,lastSi:0,fadeOut:0};
       const hs=window._hs;
       if(!hs.sweeping&&si>0.55&&hs.lastSi<=0.55){hs.sweeping=true;hs.pos=-1.2;}hs.lastSi=si;
-      if(hs.sweeping||hs.pos>-1.2){hx.clearRect(0,0,bW,bH);const prog=Math.max(0,Math.min(1,(hs.pos+1.2)/2.6));if(hs.sweeping)hs.pos+=(0.004+Math.sin(prog*Math.PI)*0.013);const cx2=hs.pos*bW,bandW=bW*1.3,masterA=Math.min(1,si*1.8)*Math.sin(Math.max(0,prog)*Math.PI);if(masterA>.01){for(let x=0;x<bW;x++){const t=(x-(cx2-bandW*.5))/bandW,edge=Math.sin(t*Math.PI),f1=Math.sin(x*.028+T*.032)*.5+.5,f2=Math.sin(x*.019-T*.024+1.2)*.5+.5,f3=Math.sin(x*.034+T*.018+2.4)*.5+.5,f4=Math.sin(x*.014-T*.028+3.6)*.5+.5,bHue=(window.VGA_HUE-5+(f1*45+f2*30+f3*20-40))%360;hx.fillStyle=`hsla(${bHue},${65+f2*20}%,${30+f1*30}%,${edge*masterA*(0.10+f3*.11)})`;hx.fillRect(x,0,f4>.72?3:f4>.44?2:1,bH);}}holoCV.style.opacity='1';if(hs.pos>1.5&&!hs.fadeOut){hs.sweeping=false;hs.fadeOut=1.0;}}
+      if(hs.sweeping||hs.pos>-1.2){hx.clearRect(0,0,bW,bH);const prog=Math.max(0,Math.min(1,(hs.pos+1.2)/2.6));if(hs.sweeping)hs.pos+=(0.004+Math.sin(prog*Math.PI)*0.013);const cx2=hs.pos*bW,bandW=bW*1.3,masterA=Math.min(1,si*1.8)*Math.sin(Math.max(0,prog)*Math.PI);if(masterA>.01){for(let x=0;x<bW;x++){const t=(x-(cx2-bandW*.5))/bandW,edge=Math.sin(t*Math.PI),f1=Math.sin(x*.028+T*.032)*.5+.5,f2=Math.sin(x*.019-T*.024+1.2)*.5+.5,f3=Math.sin(x*.034+T*.018+2.4)*.5+.5,f4=Math.sin(x*.014-T*.028+3.6)*.5+.5,bHue=(window.VGA_ART.hue-5+(f1*45+f2*30+f3*20-40)*(window.VGA_ART.wheel?window.VGA_ART.wheel/120:1)+360)%360;hx.fillStyle=`hsla(${bHue},${65+f2*20}%,${30+f1*30}%,${edge*masterA*(0.10+f3*.11)})`;hx.fillRect(x,0,f4>.72?3:f4>.44?2:1,bH);}}holoCV.style.opacity='1';if(hs.pos>1.5&&!hs.fadeOut){hs.sweeping=false;hs.fadeOut=1.0;}}
       if(hs.fadeOut>0){hs.fadeOut=Math.max(0,hs.fadeOut-0.008);holoCV.style.opacity=String(hs.fadeOut);if(hs.fadeOut<=0){hx.clearRect(0,0,bW,bH);holoCV.style.opacity='0';hs.pos=-1.2;hs.fadeOut=0;}}
     }
     requestAnimationFrame(tick);
@@ -841,12 +857,16 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   function init(){var bar=document.getElementById('mainBar');W=cv.width=bar.offsetWidth||920;H=cv.height=bar.offsetHeight||68;}
   setTimeout(init,100);
   function rnd(a,b){return a+Math.random()*(b-a);}
-  function pickHue(){var r=Math.random();return r<.35?rnd(252,268):r<.65?rnd(264,285):r<.85?rnd(280,300):rnd(260,278);}
+  function pickHue(){var A=window.VGA_ART,r=Math.random();
+    // banded league (GFL): stay in the reds and ambers. Unbanded (UBA): the
+    // original four violet bands, untouched.
+    if(A.wheel)return r<.45?rnd(A.hue-6,A.hue+2):r<.80?rnd(A.hue-2,A.hue+10):rnd(A.hue+8,A.hue+20);
+    return r<.35?rnd(252,268):r<.65?rnd(264,285):r<.85?rnd(280,300):rnd(260,278);}
   function mkFlower(){return{xf:rnd(.04,.96),yf:rnd(.05,.95),r:rnd(11,21),hue:pickHue(),ph:rnd(0,Math.PI*2),spin:(Math.random()<.5?1:-1)*rnd(.001,.003),spinSpd:0,st:0,lf:0,spd:rnd(.001,.002),pd:Math.floor(rnd(1800,4000)),pt:0,delay:Math.floor(rnd(0,400)),seed:Math.random()*100};}
   function tooClose(xf,yf){for(var k=0;k<flowers.length;k++){var dx=(flowers[k].xf-xf)*(W||1140),dy=(flowers[k].yf-yf)*(H||68);if(Math.sqrt(dx*dx+dy*dy)<58)return true;}return false;}
   function fill(){var need=8,tries=0;while(flowers.length<need&&tries<200){tries++;var f=mkFlower();if(tooClose(f.xf,f.yf))continue;flowers.push(f);}}
   function drawFlower(x,y,r,hue,alpha,ph,fading){if(alpha<.004)return;cx.save();if(fading&&alpha>.04){for(var p=0;p<5;p++){var ang=(p/5)*Math.PI*2+ph;cx.beginPath();cx.arc(x+Math.cos(ang)*r*.80+r*.04,y+Math.sin(ang)*r*.80,r*.28,0,Math.PI*2);cx.fillStyle='hsla('+((hue+40)%360)+',100%,78%,'+(alpha*.14)+')';cx.fill();}}for(var p=0;p<5;p++){var ang=(p/5)*Math.PI*2+ph,px=x+Math.cos(ang)*r*.80,py=y+Math.sin(ang)*r*.80,ph2=(hue+p*6)%360,pr=r*.34;cx.beginPath();cx.arc(px,py,pr*2.6,0,Math.PI*2);cx.fillStyle='hsla('+ph2+',100%,65%,'+(alpha*.12)+')';cx.fill();cx.beginPath();cx.arc(px,py,pr*1.5,0,Math.PI*2);cx.fillStyle='hsla('+ph2+',100%,74%,'+(alpha*.28)+')';cx.fill();cx.beginPath();cx.arc(px,py,pr,0,Math.PI*2);cx.fillStyle='hsla('+ph2+',100%,78%,'+(alpha*.42)+')';cx.fill();}cx.beginPath();cx.arc(x,y,r*.38,0,Math.PI*2);cx.fillStyle='hsla('+((hue+160)%360)+',80%,80%,'+(alpha*.45)+')';cx.fill();if(alpha>.10){cx.beginPath();cx.arc(x,y,r*.15,0,Math.PI*2);cx.fillStyle='hsla('+hue+',70%,92%,'+((alpha-.10)/.90)+')';cx.fill();}cx.restore();}
-  function tick(f){var tSpin=f.st===0?Math.abs(f.spin)*.15:f.st===1?Math.abs(f.spin):Math.abs(f.spin)*1.5;f.spinSpd+=(tSpin-f.spinSpd)*.018;f.ph+=f.spinSpd*(f.spin<0?-1:1);var lsdDrift=f.st===2?(f.hue+T*2.8)%360:f.hue,lsdH=(window.VGA_HUE>100?185:0)+((lsdDrift-(window.VGA_HUE>100?185:0)+360)%360)%(window.VGA_HUE>100?120:60),a=0;if(f.st===0){if(f.delay>0){f.delay--;return;}f.lf+=f.spd*.18;a=Math.pow(f.lf,2.2)*.55;if(f.lf>=1){f.st=1;f.pt=0;}}else if(f.st===1){a=.28+.06*Math.sin(T*.028+f.seed*1.3);f.pt++;if(f.pt>=f.pd)f.st=2;}else{f.lf-=f.spd*1.4;var s1=.88+.12*Math.sin(T*.16+f.seed*2.1),s2=1+.08*Math.sin(T*.10+f.seed*.8);a=Math.pow(Math.max(0,f.lf),1)*.52*s1*s2;if(f.lf<=0){var nf=mkFlower();var att=0;while(tooClose(nf.xf,nf.yf)&&att<20){nf=mkFlower();att++;}f.xf=nf.xf;f.yf=nf.yf;f.r=nf.r;f.hue=nf.hue;f.ph=nf.ph;f.spin=nf.spin;f.spd=nf.spd;f.pd=nf.pd;f.seed=nf.seed;f.spinSpd=0;f.st=0;f.lf=0;f.pt=0;f.delay=Math.floor(rnd(400,1200));return;}}if(a>.004&&W)drawFlower(f.xf*W,f.yf*H,f.r,lsdH,a,f.ph,f.st===2);}
+  function tick(f){var tSpin=f.st===0?Math.abs(f.spin)*.15:f.st===1?Math.abs(f.spin):Math.abs(f.spin)*1.5;f.spinSpd+=(tSpin-f.spinSpd)*.018;f.ph+=f.spinSpd*(f.spin<0?-1:1);var lsdDrift=f.st===2?(f.hue+T*2.8)%360:f.hue,lsdH=window.VGA_ART.band+((lsdDrift-window.VGA_ART.band+360)%360)%window.VGA_ART.bandSpan,a=0;if(f.st===0){if(f.delay>0){f.delay--;return;}f.lf+=f.spd*.18;a=Math.pow(f.lf,2.2)*.55;if(f.lf>=1){f.st=1;f.pt=0;}}else if(f.st===1){a=.28+.06*Math.sin(T*.028+f.seed*1.3);f.pt++;if(f.pt>=f.pd)f.st=2;}else{f.lf-=f.spd*1.4;var s1=.88+.12*Math.sin(T*.16+f.seed*2.1),s2=1+.08*Math.sin(T*.10+f.seed*.8);a=Math.pow(Math.max(0,f.lf),1)*.52*s1*s2;if(f.lf<=0){var nf=mkFlower();var att=0;while(tooClose(nf.xf,nf.yf)&&att<20){nf=mkFlower();att++;}f.xf=nf.xf;f.yf=nf.yf;f.r=nf.r;f.hue=nf.hue;f.ph=nf.ph;f.spin=nf.spin;f.spd=nf.spd;f.pd=nf.pd;f.seed=nf.seed;f.spinSpd=0;f.st=0;f.lf=0;f.pt=0;f.delay=Math.floor(rnd(400,1200));return;}}if(a>.004&&W)drawFlower(f.xf*W,f.yf*H,f.r,lsdH,a,f.ph,f.st===2);}
   function frame(){T++;if(W){cx.clearRect(0,0,W,H);flowers.forEach(tick);}requestAnimationFrame(frame);}
   fill();frame();
 })();
