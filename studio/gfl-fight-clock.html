@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>GFL Fight Clock</title>
+<!-- THE GFL FIGHT CLOCK. This is the URL that goes in the OBS scene.
+
+     The clock itself is fight-clock.html, shared by both solo leagues: same
+     bar, same timer, same trunk reveal, same odds board, one implementation.
+     This page is the GFL door into it -- it hands the clock its league and
+     gets out of the way, so the scene is dressed in fire from the first frame
+     with no deck press needed.
+
+     Why a door and not a copy: the clock is 2,000 lines and every fix to the
+     timer, the reveal or the pips would otherwise have to be made twice, and
+     the second one is the one that gets forgotten. uba-fight-clock.html is the
+     same door with the other league -- and it keeps that name so every OBS
+     scene already built against it still works.
+
+     The deck still overrides the league on any command it sends, which is what
+     lets a UBA card promoted mid-GFL-night dress itself correctly. -->
+<script>
+  // carry any other params through, so ?debug=1 style flags keep working
+  var q = new URLSearchParams(location.search)
+  q.set('league', 'gfl')
+  location.replace('fight-clock.html?' + q.toString())
+</script>
+<meta http-equiv="refresh" content="0;url=fight-clock.html?league=gfl">
+</head>
+<body style="background:transparent"></body>
+</html>
