@@ -1248,13 +1248,14 @@ async function fireRanking(weight,label){
   // A ranking without its champion is a list of contenders with the point of
   // the division missing. Pinned on top, unnumbered -- they aren't ranked,
   // they're who the ranking is chasing.
-  // Belts are pro-only (is_champion has no amateur equivalent), so a GFL board
-  // is contenders alone -- pinning a UBA champ on it would be the same
-  // cross-league bleed in one row.
+  // Filtered by level, NOT skipped for GFL. Unfiltered it pinned a UBA champ on
+  // a GFL board -- the same bleed in one row. But GFL is not champion-less by
+  // nature: set_title_holder sets is_champion at any level, so its belts
+  // (vacant today) start returning holders the day one is won, and a filter
+  // picks that up on its own where a skip would silently keep omitting them.
   const [{ data }, { data:ch }] = await Promise.all([q,
-    RANK_LG==='uba'
-      ? sb.from('fighter_cards').select('display_name,weight_class').eq('is_champion',true)
-      : Promise.resolve({data:[]})])
+    sb.from('fighter_cards').select('display_name,weight_class')
+      .eq('is_champion',true).eq('level',level)])
   const champ = weight==='p4p' ? null : (ch||[]).find(c=>c.weight_class===weight)
   const rows=(data||[])
     .filter(r=>!champ || r.fighter_name!==champ.display_name)   // never twice
