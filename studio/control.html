@@ -542,8 +542,10 @@
       <button class="hide" onclick="send({type:'fighter',on:false})">Hide</button>
     </div>
     <div class="row" id="fresults" style="margin-top:10px"></div>
-    <h5>Rankings + league table</h5>
+    <h5>Rankings + league table — pick the ladder first</h5>
     <div class="row">
+      <span id="rankLeague" style="display:contents"></span>
+      <span class="arr" style="color:var(--gdim)">→</span>
       <span id="rankBtnsWrap" style="display:contents"><span id="rankBtns" style="display:contents"></span></span>
       <button class="only-ubae" onclick="loadStandings()">UBAe standings</button>
       <button class="hide" onclick="send({type:'panel',on:false})">Hide panel</button>
@@ -1230,25 +1232,54 @@ window.loadBetFeed=async()=>{
   })
 }
 
+/* Both ladders live in ONE table, split only by `level` -- pro = UBA,
+   amateur = GFL. Without the level filter this query returned both, sorted by
+   rank, so LW fired "1. Jumpman (GFL) / 1. Ronin (UBA) / 2. kayvon (GFL)…":
+   one graphic, two leagues, duplicate numbers. Whichever ladder is selected
+   here is the ONLY one that can reach the screen. */
+const RANK_LEVEL={ uba:'pro', gfl:'amateur' }
+let RANK_LG='uba'
+
 async function fireRanking(weight,label){
-  let q=sb.from('rankings_public').select('rank,fighter_name,weight_class').order('rank').limit(30)
+  const level=RANK_LEVEL[RANK_LG]
+  let q=sb.from('rankings_public').select('rank,fighter_name,weight_class')
+        .eq('level',level).order('rank').limit(30)
   q = weight==='p4p' ? q.eq('scope','overall') : q.eq('weight_class',weight).eq('scope','weight_class')
   // A ranking without its champion is a list of contenders with the point of
   // the division missing. Pinned on top, unnumbered -- they aren't ranked,
   // they're who the ranking is chasing.
+  // Belts are pro-only (is_champion has no amateur equivalent), so a GFL board
+  // is contenders alone -- pinning a UBA champ on it would be the same
+  // cross-league bleed in one row.
   const [{ data }, { data:ch }] = await Promise.all([q,
-    sb.from('fighter_cards').select('display_name,weight_class').eq('is_champion',true)])
+    RANK_LG==='uba'
+      ? sb.from('fighter_cards').select('display_name,weight_class').eq('is_champion',true)
+      : Promise.resolve({data:[]})])
   const champ = weight==='p4p' ? null : (ch||[]).find(c=>c.weight_class===weight)
   const rows=(data||[])
     .filter(r=>!champ || r.fighter_name!==champ.display_name)   // never twice
     .map(r=>[`${r.rank}. ${r.fighter_name}`,''])
   if(champ) rows.unshift([`👑 ${champ.display_name}`,'CHAMPION'])
-  send({type:'panel',on:true,d:{title:label, rows}})
+  send({type:'panel',on:true,d:{title:`${RANK_LG.toUpperCase()} · ${label}`, rows}})
 }
+
+// GFL has no pound-for-pound list (no scope='overall' rows at amateur level),
+// so the P4P button would fire an empty board. It is dropped, not disabled.
 const RANKS=[['lightweight','LW'],['middleweight','MW'],['light_heavyweight','LHW'],['heavyweight','HW'],['p4p','P4P']]
-const rb=document.getElementById('rankBtns')
-RANKS.forEach(([w,l])=>{ const b=document.createElement('button'); b.textContent=l
-  b.onclick=()=>fireRanking(w, l==='P4P'?'Pound-for-Pound':l+' Rankings'); rb.appendChild(b) })
+function drawRankBtns(){
+  const lg=document.getElementById('rankLeague'), rb=document.getElementById('rankBtns')
+  lg.innerHTML=''; rb.innerHTML=''
+  ;[['uba','UBA'],['gfl','GFL']].forEach(([k,l])=>{
+    const b=document.createElement('button'); b.textContent=l
+    if(k===RANK_LG) b.classList.add('active')
+    b.onclick=()=>{ RANK_LG=k; drawRankBtns() }; lg.appendChild(b)
+  })
+  RANKS.filter(([w])=>w!=='p4p'||RANK_LG==='uba').forEach(([w,l])=>{
+    const b=document.createElement('button'); b.textContent=l
+    b.onclick=()=>fireRanking(w, l==='P4P'?'Pound-for-Pound':l+' Rankings'); rb.appendChild(b)
+  })
+}
+drawRankBtns()
 
 window.loadStandings=async()=>{
   const { data } = await sb.from('team_standings').select('*')
@@ -1290,6 +1321,9 @@ window.setEv=ev=>{
   document.body.classList.toggle('ev-gfl', ev==='gfl')
   document.body.classList.toggle('mode-solo', isSolo())
   document.body.classList.toggle('mode-team', !isSolo())
+  // Tonight's ladder is pre-picked, but stays switchable: both are reachable on
+  // any night, same as the standby boards.
+  RANK_LG = ev==='gfl' ? 'gfl' : 'uba'; drawRankBtns()
   document.querySelectorAll('#evRow button').forEach(b=>b.classList.toggle('active', b.dataset.ev===ev))
   drawRail()
   // The weekly schedule bar is UBAe furniture, so leaving UBAe retires it.
