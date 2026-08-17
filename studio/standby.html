@@ -351,17 +351,34 @@
   .ss-sub{font-family:'Press Start 2P',monospace;font-size:14px;letter-spacing:.3em;
     color:var(--dim);text-transform:uppercase;}
   /* call to action */
+  /* CTA sizing is BROADCAST sizing, not screen sizing. This view is read off a
+     1080p stream that most people watch on a phone, so the old sizes -- 12px
+     stat labels, 26px subs -- were legible on the design monitor and gone by
+     the time they reached the viewer. Everything here is scaled to survive that
+     trip, and the canvas had the room: the old composition sat in a narrow band
+     with dead margins above and below it.
+     The two shared classes are overridden INSIDE #v-cta only. `.eyebrow` and
+     `.title` dress every other standby screen too, and resizing them globally
+     would blow up the rosters, standings and schedule views to match. */
   #v-cta{text-align:center;}
-  .ctarow{display:flex;flex-direction:column;align-items:center;gap:30px;margin:24px 0 40px;}
-  .ctalink{font-weight:900;font-size:72px;text-transform:uppercase;line-height:1;
+  #v-cta .eyebrow{font-size:22px;letter-spacing:.38em;}
+  #v-cta .title{font-size:110px;}
+  .ctarow{display:flex;flex-direction:column;align-items:center;gap:46px;margin:44px 0 62px;}
+  .ctalink{font-weight:900;font-size:100px;text-transform:uppercase;line-height:1;
     background:linear-gradient(180deg,#e8c8ff,#b565ff 46%,#8a2be2);-webkit-background-clip:text;background-clip:text;
     -webkit-text-fill-color:transparent;filter:drop-shadow(0 0 26px rgba(155,48,255,.6));}
-  .ctalink.sm{font-size:56px;}
-  .ctasub{font-family:'Barlow',sans-serif;font-weight:600;font-size:26px;color:var(--dim);
-    text-transform:uppercase;letter-spacing:.1em;margin-top:6px;}
-  .ctastats{display:flex;justify-content:center;gap:56px;}
-  .ctastat .num{font-weight:900;font-size:82px;color:#fff;line-height:1;text-shadow:0 0 30px rgba(155,48,255,.7);}
-  .ctastat .lbl{font-family:'Press Start 2P',monospace;font-size:12px;color:var(--hi);letter-spacing:.16em;margin-top:8px;}
+  .ctalink.sm{font-size:80px;}
+  .ctasub{font-family:'Barlow',sans-serif;font-weight:600;font-size:36px;color:var(--dim);
+    text-transform:uppercase;letter-spacing:.1em;margin-top:12px;}
+  /* 60, not 88: at readable label sizes the three stats measure ~1130px of
+     content, and the wider gap spread them past the column of links above --
+     bottom-heavy. Well inside the 1728px (90%) title-safe area either way. */
+  .ctastats{display:flex;justify-content:center;gap:60px;}
+  .ctastat .num{font-weight:900;font-size:104px;color:#fff;line-height:1;text-shadow:0 0 30px rgba(155,48,255,.7);}
+  /* Press Start 2P is a very wide face, so the label leans on size rather than
+     tracking -- the old .16em at a readable size pushed the three stats apart
+     far enough to break the row. */
+  .ctastat .lbl{font-family:'Press Start 2P',monospace;font-size:24px;color:var(--hi);letter-spacing:.08em;margin-top:18px;}
   /* coin toss — full CTA-styled moment: label · spin · HEADS/TAILS reveal · fade */
   #cointoss{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:26px;opacity:0;pointer-events:none;transition:opacity .55s;}
