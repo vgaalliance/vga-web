@@ -514,9 +514,13 @@
     </div>
     <div class="row" style="margin-bottom:10px">
       <span class="kitlbl">PROMO</span>
+      <!-- No lg- classes on purpose: the promo is the one row that is always
+           cross-league. You promote the UBA card during a UBAe week and the GFL
+           card during a UBA night, so none of these is ever "not for tonight". -->
       <button onclick="fireNextEvent('ubae')">📅 UBAe night</button>
       <button onclick="fireNextEvent('uba')">📅 UBA card</button>
-      <button onclick="fireNextEvent('both')">📅 Both</button>
+      <button onclick="fireNextEvent('gfl')">📅 GFL card</button>
+      <button onclick="fireNextEvent('all')">📅 All</button>
       <button class="hide" onclick="hideNextEvent()">Hide</button>
       <span id="nextevHint" style="color:var(--gdim);font-size:16px"></span>
     </div>
@@ -863,17 +867,36 @@ window.rrShow=()=>{
 //         with no matchups rather than leaking the card early.
 //   UBAe: the next two scheduled team matches; the second only rides along
 //         when it is the same night.
-// scope: 'ubae' = the match night only, 'uba' = the next unlocked card only,
-// 'both' = the combined plate. Three buttons, because two events at once is a
-// choice the operator should make, not the default they cannot avoid.
-window.fireNextEvent=async(scope='both')=>{
+// scope: 'ubae' = the match night only, 'uba' / 'gfl' = the next unlocked card
+// in THAT league, 'all' = the combined plate. Separate buttons, because two or
+// three events at once is a choice the operator should make, not the default
+// they cannot avoid.
+//
+// The solo half used to be one bucket: take the soonest unlocked card, whatever
+// league it belonged to, and stop. That made the button labelled "UBA card"
+// send whichever card was nearest -- which since GFL started running is often a
+// GFL one -- and worse, it made the UBA card UNREACHABLE while a GFL card sat
+// in front of it, because the loop broke on the first hit. Splitting the
+// buckets fixes both: each league's next card is its own button, and 'all'
+// takes the next of EACH rather than the next overall.
+//
+// AMA counts as GFL. leagueOf still answers 'AMA' for the retired series
+// (AMA 1-63) and those are all completed, but a scheduled one would be an
+// amateur card and belongs on the GFL button, not stranded with no button.
+const SOLO_BUCKETS = { uba:['UBA'], gfl:['GFL'], all:['UBA','GFL'], both:['UBA','GFL'] }
+const bucketOf = name => leagueOf(name) === 'UBA' ? 'UBA' : 'GFL'
+
+window.fireNextEvent=async(scope='all')=>{
   const hint=document.getElementById('nextevHint')
   const fmt=iso=>new Date(iso).toLocaleString('en-US',{weekday:'long',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZone:'America/New_York'})+' ET'
   try{
     const blocks=[]
 
-    // The next UBAe match night, if one is scheduled.
-    if(scope!=='uba'){
+    // The next UBAe match night, if one is scheduled. Named scopes, not
+    // `scope!=='uba'` -- that spelling silently made every new solo league
+    // drag the UBAe block along with it, so the GFL button would have promoted
+    // a team night nobody asked for.
+    if(scope==='ubae' || scope==='all' || scope==='both'){
     const { data: ms } = await sb.from('team_matches_public').select('*')
       .eq('status','scheduled').gte('match_date',new Date(Date.now()-6*3600e3).toISOString())
       .order('match_date').limit(2)
@@ -894,25 +917,43 @@ window.fireNextEvent=async(scope='both')=>{
     // filter meant the promo could never advertise a GFL card at all: it read
     // straight past GFL 1 to the UBA card twelve days behind it. Soonest wins,
     // whatever the type.
-    if(scope!=='ubae'){
+    const want = SOLO_BUCKETS[scope] || []
+    if(want.length){
+    // limit 8, not 4: with two buckets the loop may have to read past several
+    // cards of one league to reach the other's. 4 was enough only while there
+    // was one bucket and the first hit ended it.
     const { data: evs } = await sb.from('events_public').select('id,name,type,event_date')
       .eq('status','scheduled')
       .gte('event_date',new Date(Date.now()-6*3600e3).toISOString())
-      .order('event_date').limit(4)
+      .order('event_date').limit(8)
+    const taken=new Set()
     for(const ev of (evs||[])){
+      const bucket=bucketOf(ev.name)
+      if(!want.includes(bucket) || taken.has(bucket)) continue   // wrong league, or already have that league's next one
       const { data: bouts } = await sb.from('event_matches')
         .select('bout_number,fighter_a_name,fighter_b_name').eq('event_id',ev.id)
         .in('bout_number',[1,2]).order('bout_number')
       if(!bouts?.length) continue   // locked — try the next one
       const m=bouts.find(b=>b.bout_number===1), co=bouts.find(b=>b.bout_number===2)
+      taken.add(bucket)
       blocks.push({ when:ev.event_date, kick:'NEXT EVENT', title:ev.name, dateText:fmt(ev.event_date),
         main: m ? {a:m.fighter_a_name,b:m.fighter_b_name} : null,
         co:   co ? {a:co.fighter_a_name,b:co.fighter_b_name} : null })
-      break
+      if(taken.size===want.length) break
     }
     }
 
-    if(!blocks.length){ if(hint)hint.textContent='nothing to promote — no team matches, no unlocked cards'; return }
+    // Name the league that came up empty. The old wording said "no team
+    // matches, no unlocked cards" whatever you pressed, so a GFL miss read as
+    // the whole promo being broken instead of "GFL has nothing published".
+    if(!blocks.length){
+      const asked = scope==='ubae' ? 'no UBAe match night scheduled'
+                  : scope==='uba'  ? 'no unlocked UBA card'
+                  : scope==='gfl'  ? 'no unlocked GFL card'
+                  : 'no team matches, no unlocked cards'
+      if(hint)hint.textContent='nothing to promote — '+asked
+      return
+    }
     blocks.sort((a,b)=>new Date(a.when)-new Date(b.when))
     send({type:'nextev', d:{ blocks }})
     if(hint)hint.textContent=blocks.map(b=>b.title).join('  +  ')
