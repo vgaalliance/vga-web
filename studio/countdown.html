@@ -818,6 +818,12 @@ tick();
     const fs=Math.min(sizeFor(L), sizeFor(R))
     L.style.fontSize=fs+'px'; R.style.fontSize=fs+'px'
   }
+  // Measure in the font you draw in. The display face loads over the network
+  // with `display=swap`, so a name set before it lands is measured against the
+  // FALLBACK — which is much wider than a condensed face — and the shrink loop
+  // takes it several steps too small. It then holds that size, because nothing
+  // re-runs the fit when the font finally arrives. Re-fit when it does.
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(fitPair)
   _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
     if(c.type!=='countdown') return
     const d=c.d||{}

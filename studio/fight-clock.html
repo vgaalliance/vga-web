@@ -1082,6 +1082,21 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     NAT[el.id]={key:el.textContent, w}
     return w
   }
+  // The font the name is measured in has to be the font it is DRAWN in.
+  //
+  // Barlow Condensed arrives over the network with `display=swap`, so until it
+  // lands the browser draws — and measures — in a fallback, and the fallback is
+  // far wider than a condensed face. Measured live: "IronPetrNovoseltsev" is
+  // 481px in the fallback against 336px in Barlow Condensed, so a name armed
+  // inside that window fits itself to 22px where 31px was right. That is the
+  // "tiny then it corrects itself" on air — and natWidth CACHES the number, so
+  // it only corrects when the name next changes, not when the font arrives.
+  //
+  // Clear the cache and re-fit the moment the real face is available. Same
+  // guard tale-of-the-tape.html already carries.
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(()=>{ for(const k in NAT) delete NAT[k]; fitNames() })
+  }
   function fitNames(){
     ;['nameL','nameR'].forEach(id=>{
       const el=$(id); if(!el) return
