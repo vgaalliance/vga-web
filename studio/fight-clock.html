@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920">
+<title>Fight Clock — UBA / GFL</title>
+<!-- THE SOLO FIGHT CLOCK, shared by UBA and GFL. Do not put this URL in a
+     scene: use uba-fight-clock.html or gfl-fight-clock.html, which are thin
+     doors that hand this page a league. Opened bare it dresses as UBA. -->
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,900;1,900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+
+/* ── GFL: fire on the REVEALS ─────────────────────────────────
+   The trunk reveal and the odds board both work by widening a
+   corner slit (196px / 152px) while the bar itself grows. On a GFL
+   card that opening now ignites: a flare at the slit's leading
+   edge, sparks thrown off it, and a warm sweep across the bar as
+   it widens.
+   These are one-shot animations bound to the .expand / .wide
+   classes the deck already toggles -- adding the class starts the
+   burst, removing and re-adding replays it. No JS hooks, so there
+   is nothing to keep in sync with the reveal logic, and a UBA card
+   never sees any of it. */
+.fire-burst,.fire-flash{display:none;}
+body.gfl .corner-slit .fire-burst{
+  display:block;position:absolute;inset:0;opacity:0;z-index:1;pointer-events:none;
+  background:linear-gradient(to top,rgba(255,210,120,.95),rgba(255,110,0,.7) 45%,transparent 85%);}
+body.gfl .corner-slit.expand .fire-burst{animation:slitIgnite .85s cubic-bezier(.16,.8,.3,1) 1;}
+/* odds are information, not a statement -- same fire, shorter and softer, so the
+   two reveals stay distinguishable at a glance the way their widths already are */
+body.gfl .corner-slit.expand.odds .fire-burst{animation:slitIgniteSoft .6s ease-out 1;}
+body.gfl .corner-slit .fire-spark{
+  display:block;position:absolute;width:3px;height:3px;border-radius:50%;
+  background:#ffd08a;box-shadow:0 0 8px rgba(255,140,20,.95);opacity:0;z-index:2;pointer-events:none;}
+body.gfl .corner-slit.expand .fire-spark{animation:slitSpark .9s ease-out 1;}
+body.gfl .main-bar .fire-flash{
+  display:block;position:absolute;inset:0;z-index:3;opacity:0;pointer-events:none;
+  background:radial-gradient(420px 60px at 50% 100%,rgba(255,120,20,.55),transparent 72%);}
+body.gfl .main-bar.wide .fire-flash{animation:barIgnite 1s ease-out 1;}
+@keyframes slitIgnite{
+  0%{opacity:0;transform:scaleY(.3)}
+  18%{opacity:1;transform:scaleY(1.08)}
+  55%{opacity:.55;transform:scaleY(1)}
+  100%{opacity:0;transform:scaleY(1)}
+}
+@keyframes slitIgniteSoft{0%{opacity:0}20%{opacity:.7}100%{opacity:0}}
+@keyframes slitSpark{
+  0%{opacity:0;transform:translate(0,0) scale(.6)}
+  15%{opacity:1;transform:translate(-6px,-10px) scale(1)}
+  100%{opacity:0;transform:translate(-22px,-46px) scale(.3)}
+}
+@keyframes barIgnite{0%{opacity:0}22%{opacity:1}100%{opacity:0}}
+
+/* ═══════════════════════════════════════════════════════════════
+   GFL FIRE LAYER — inert on a UBA card, alive on a GFL one.
+   Four layers, all inside .main-bar so its overflow:hidden clips
+   every particle: a lit top edge (filament), a bed of coals along
+   the bottom, a fast faint flicker for activity, and embers.
+   Positions and cycle lengths are BAKED, from a seeded generator:
+   irregular gaps and a different duration per element, because
+   evenly spaced spots sharing one cycle read as a row of lamps
+   however you stagger the delays. Nothing is random at runtime --
+   OBS reloads a scene and random would re-roll the whole bed.
+   z-index: everything here is 2-3, under the names (6) and the
+   centre block (8), so fire can never wash out a fighter's name.
+═══════════════════════════════════════════════════════════════ */
+.fire{display:none;}
+body.gfl .fire{display:block;position:absolute;inset:0;z-index:2;pointer-events:none;}
+body.gfl .fire i{position:absolute;display:block;}
+.fire-wire{position:absolute;left:0;right:0;top:0;height:2px;z-index:9;pointer-events:none;
+  background:linear-gradient(90deg,rgba(120,20,0,.15),#ff5a00 20%,#ffd08a 50%,#ff5a00 80%,rgba(120,20,0,.15));
+  background-size:200% 100%;animation:fireTravel 11s linear infinite;
+  box-shadow:0 0 16px rgba(255,110,0,.8),0 0 34px rgba(255,70,0,.35);}
+.fire-bloom{position:absolute;left:0;right:0;top:0;height:26px;filter:blur(7px);
+  background:linear-gradient(to bottom,rgba(255,110,0,.42),transparent);
+  animation:fireBreathe 8s ease-in-out infinite;}
+.fire-base{position:absolute;left:0;right:0;bottom:-8px;height:34px;filter:blur(10px);
+  background:linear-gradient(to top,rgba(255,85,10,.32),transparent);}
+.fire-coal{bottom:-10px;filter:blur(11px);animation:fireGlow 9s ease-in-out infinite;}
+.fire-lick{bottom:-6px;height:26px;filter:blur(8px);
+  background:radial-gradient(40px 14px at 50% 100%,rgba(255,140,40,.5),transparent 70%);
+  animation:fireLick 3s ease-in-out infinite;}
+.fire-em{border-radius:50%;background:#ffb066;opacity:0;
+  box-shadow:0 0 8px rgba(255,120,30,.95),0 0 16px rgba(255,80,0,.5);
+  animation:fireEmber 7s ease-out infinite;}
+@keyframes fireTravel{0%{background-position:0% 50%}100%{background-position:200% 50%}}
+@keyframes fireBreathe{0%,100%{opacity:.3}50%{opacity:.9}}
+@keyframes fireGlow{0%,100%{opacity:.28}50%{opacity:.8}}
+@keyframes fireLick{0%,100%{opacity:.06;transform:scaleY(.8)}45%{opacity:.42;transform:scaleY(1.25)}70%{opacity:.2;transform:scaleY(1)}}
+/* an ember appears, lifts, dies -- it does not stream */
+@keyframes fireEmber{
+  0%{transform:translateY(0) scale(.5);opacity:0}
+  8%{opacity:1;transform:translateY(-4px) scale(1)}
+  55%{opacity:.7}
+  100%{transform:translateY(-42px) scale(.3);opacity:0}
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PALETTE — the clock is UBA violet by default and GFL fire when
+   the deck stamps league 'gfl'. Every colour below was a literal
+   scattered through the file until 2026-08-17; they are tokens now
+   so a league re-skin cannot miss one and leave a purple border on
+   an otherwise-orange graphic.
+   Corner reds and blues are NOT here on purpose: those two are the
+   kit rule (wear all red / all blue) and never follow the league.
+═══════════════════════════════════════════════════════════════ */
+:root{
+  --c-key:168,85,247; --c-lit:216,180,254; --c-deep:155,48,255;
+  --c-panel:4,0,16; --c-ink:225,205,255;
+  --c-lit-solid:#d8b4fe; --c-name:#f0e8ff; --c-panel-solid:#0a0014; --c-rail:#3a2f5e;
+  --c-emblem-fill:rgb(6,1,18);
+}
+body.gfl{
+  --c-key:255,106,31; --c-lit:255,190,120; --c-deep:255,60,0;
+  --c-panel:14,5,2; --c-ink:255,205,175;
+  --c-lit-solid:#ffb066; --c-name:#fdeee4; --c-panel-solid:#0e0502; --c-rail:#5e3a2f;
+  --c-emblem-fill:rgb(16,4,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:relative;}
+
+/* ═══════════════════════════
+   KEYFRAMES
+═══════════════════════════ */
+@keyframes holoA{0%{transform:translateX(-200%)}100%{transform:translateX(400%)}}
+@keyframes ubaGlow{
+  0%,100%{text-shadow:0 0 10px rgba(var(--c-lit),.6),0 0 20px rgba(var(--c-deep),.3);}
+  50%{text-shadow:0 0 22px rgba(var(--c-lit),1),0 0 44px rgba(var(--c-deep),.6);}
+}
+@keyframes cornerDot{0%,100%{opacity:.4}50%{opacity:1}}
+@keyframes dotPulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes nameGlow{
+  0%,100%{text-shadow:0 0 14px rgba(var(--c-deep),.25);}
+  50%{text-shadow:0 0 32px rgba(var(--c-deep),.75),0 0 65px rgba(var(--c-lit),.4);}
+}
+@keyframes clockGlow{
+  0%,100%{text-shadow:0 0 16px rgba(var(--c-lit),.6),0 0 32px rgba(var(--c-deep),.28);}
+  50%{text-shadow:0 0 30px rgba(var(--c-lit),1),0 0 58px rgba(var(--c-deep),.6);}
+}
+@keyframes sepBlink{0%,49%{opacity:1}50%,100%{opacity:.18}}
+@keyframes borderPulse{
+  0%,100%{border-color:rgba(var(--c-key),.35);}
+  50%{border-color:rgba(var(--c-lit),.7);}
+}
+@keyframes emblemPulse{
+  0%,100%{box-shadow:0 0 10px rgba(var(--c-key),.3),0 0 24px rgba(var(--c-deep),.12);}
+  50%{box-shadow:0 0 22px rgba(var(--c-lit),.65),0 0 48px rgba(var(--c-deep),.3);}
+}
+@keyframes livePulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.3;transform:scale(.7);}}
+@keyframes eventBreath{
+  0%,100%{letter-spacing:.4em;opacity:.8;}
+  50%{letter-spacing:.44em;opacity:1;}
+}
+
+/* ═══════════════════════════
+   SCREEN EDGE HUD
+═══════════════════════════ */
+.corner{
+  position:absolute;width:56px;height:56px;
+  border-style:solid;border-color:rgba(var(--c-key),.45);z-index:20;
+}
+.corner-tl{top:20px;left:20px;border-width:2px 0 0 2px;}
+.corner-tr{top:20px;right:20px;border-width:2px 2px 0 0;}
+.corner-bl{bottom:20px;left:20px;border-width:0 0 2px 2px;}
+.corner-br{bottom:20px;right:20px;border-width:0 2px 2px 0;}
+.corner::before{
+  content:'';position:absolute;width:5px;height:5px;border-radius:50%;
+  background:rgba(var(--c-lit),.75);box-shadow:0 0 8px rgba(var(--c-key),.9);
+  animation:cornerDot 3s ease-in-out infinite;
+}
+.corner-tl::before{top:-3px;left:-3px;}
+.corner-tr::before{top:-3px;right:-3px;}
+.corner-bl::before{bottom:-3px;left:-3px;}
+.corner-br::before{bottom:-3px;right:-3px;}
+.edge-top{position:absolute;top:0;left:0;right:0;height:2px;z-index:18;background:linear-gradient(90deg,transparent 4%,rgba(var(--c-key),.3) 15%,rgba(var(--c-lit),.55) 50%,rgba(var(--c-key),.3) 85%,transparent 96%);}
+.edge-bottom{position:absolute;bottom:0;left:0;right:0;height:1px;z-index:18;background:linear-gradient(90deg,transparent 4%,rgba(var(--c-key),.2) 20%,rgba(var(--c-key),.35) 50%,rgba(var(--c-key),.2) 80%,transparent 96%);}
+.edge-left{position:absolute;top:76px;left:0;width:1px;bottom:76px;z-index:18;background:linear-gradient(to bottom,transparent,rgba(var(--c-key),.22) 20%,rgba(var(--c-key),.22) 80%,transparent);}
+.edge-right{position:absolute;top:76px;right:0;width:1px;bottom:76px;z-index:18;background:linear-gradient(to bottom,transparent,rgba(var(--c-key),.22) 20%,rgba(var(--c-key),.22) 80%,transparent);}
+.edge-tick{position:absolute;z-index:19;}
+.edge-tick.left-mid{left:0;top:50%;width:10px;height:1px;background:rgba(var(--c-key),.5);}
+.edge-tick.right-mid{right:0;top:50%;width:10px;height:1px;background:rgba(var(--c-key),.5);}
+
+/* ═══════════════════════════
+   TOP LEFT — UBA brand
+   Exact same pattern as underground:
+   emblem overlapping into brand block
+═══════════════════════════ */
+.brand-root{
+  position:absolute;top:24px;left:48px;
+  display:flex;align-items:center;gap:0;
+  z-index:30;filter:drop-shadow(0 4px 20px rgba(0,0,0,.9));
+}
+
+.brand-emblem{
+  width:64px;height:64px;border-radius:50%;
+  background:var(--c-emblem-fill);border:1.5px solid rgba(var(--c-lit),.65);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;position:relative;flex-shrink:0;z-index:2;
+  margin-right:-32px;
+  animation:emblemPulse 3s ease-in-out infinite;
+}
+#brandFlower{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:64px;height:64px;}
+.brand-block{
+  height:64px;
+  background:rgba(var(--c-panel),.75);
+  border:1px solid rgba(var(--c-key),.42);border-left:none;
+  padding:0 20px 0 42px;
+  display:flex;flex-direction:column;justify-content:center;
+  position:relative;overflow:hidden;
+  clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,0 100%);
+}
+.brand-block::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(var(--c-lit),.65),transparent);}
+.brand-holo{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.brand-holo::after{content:'';position:absolute;top:0;bottom:0;width:55%;background:linear-gradient(90deg,transparent,rgba(var(--c-lit),.16),rgba(var(--c-key),.2),transparent);animation:holoA 3.4s ease-in-out infinite;}
+.brand-name{font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;letter-spacing:.1em;color:#fff;position:relative;z-index:2;animation:ubaGlow 3s ease-in-out infinite;line-height:1;}
+.brand-sub{font-family:'Share Tech Mono',monospace;font-size:15px;letter-spacing:.28em;color:rgba(var(--c-ink),.95);position:relative;z-index:2;margin-top:4px;text-transform:uppercase;}
+
+/* ═══════════════════════════
+   TOP RIGHT — event + live badge
+═══════════════════════════ */
+.event-root{
+  position:absolute;top:24px;right:48px;
+  display:flex;flex-direction:column;align-items:flex-end;gap:5px;
+  z-index:30;filter:drop-shadow(0 4px 16px rgba(0,0,0,.9));
+}
+.event-chip{
+  position:relative;
+  background:rgba(var(--c-panel),.82);
+  border:1px solid rgba(var(--c-key),.42);
+  padding:0 22px;height:54px;
+  display:flex;align-items:center;gap:14px;
+  clip-path:polygon(10px 0,100% 0,100% 100%,0 100%,0 10px);
+  overflow:hidden;
+}
+.event-chip::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(var(--c-lit),.8),transparent);}
+.event-chip-holo{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.event-chip-holo::after{content:'';position:absolute;top:0;bottom:0;width:55%;background:linear-gradient(90deg,transparent,rgba(var(--c-lit),.1),rgba(var(--c-key),.14),transparent);animation:holoA 3.8s ease-in-out infinite;}
+.event-num{font-family:'Barlow Condensed',sans-serif;font-size:38px;font-weight:900;font-style:italic;letter-spacing:.08em;color:#fff;position:relative;z-index:2;line-height:1;animation:ubaGlow 3s ease-in-out infinite;}
+.event-chip-sep{width:1px;height:28px;background:linear-gradient(to bottom,transparent,rgba(var(--c-key),.55),transparent);flex-shrink:0;position:relative;z-index:2;}
+.event-detail{display:flex;flex-direction:column;gap:2px;position:relative;z-index:2;}
+.event-eyebrow{font-family:'Share Tech Mono',monospace;font-size:15px;letter-spacing:.26em;color:rgba(var(--c-ink),.9);text-transform:uppercase;}
+.event-name{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;letter-spacing:.18em;color:var(--c-lit-solid);text-transform:uppercase;white-space:nowrap;}
+/* live badge below chip */
+.live-badge{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(255,68,100,.08);
+  border:1px solid rgba(255,68,100,.38);
+  padding:4px 16px;
+  position:relative;overflow:hidden;
+  clip-path:polygon(6px 0,100% 0,100% 100%,0 100%,0 6px);
+}
+.live-badge::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,68,100,.5),transparent);}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#ff4466;box-shadow:0 0 8px rgba(255,68,102,.9);animation:livePulse 1.2s ease-in-out infinite;}
+.live-text{font-family:'Share Tech Mono',monospace;font-size:15px;letter-spacing:.26em;color:rgba(255,180,195,1);text-transform:uppercase;}
+
+/* ═══════════════════════════
+   MAIN HUD — bottom centre
+   Direct match to underground structure:
+   badge pill + wing dots + main bar
+═══════════════════════════ */
+.hud-root{
+  position:absolute;bottom:32px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:0;
+  filter:drop-shadow(0 8px 48px rgba(0,0,0,.95));
+  z-index:25;
+  /* It ASSEMBLES. The bar is a flex row whose name panels are flex:1 with
+     min-width:0 and whose clock block is flex-shrink:0 -- so animating the
+     bar's WIDTH collapses the panels into the clock and leaves the centre
+     standing. That is the trunk reveal running backwards: the exact mechanism
+     that expands a corner slit into a colour block, on the exact same curve.
+     Nothing scales, so no type ever distorts; the panels are physically
+     narrower, and the names inside are clipped by the bar's own overflow. */
+  transition:opacity .18s ease;
+}
+/* Closed = just the clock block. The whole graphic holds full opacity for the
+   ENTIRE contraction and only goes at 620ms, once the bar has finished drawing
+   in -- so it disappears at a point instead of dissolving while it moves. That
+   single delay is what separates "switched off" from "faded out"; a broadcast
+   bar cuts, it does not evaporate. */
+.hud-root.off{opacity:0;pointer-events:none;transition:opacity .26s ease 1.02s;}
+.hud-root .main-bar,.hud-root .bottom-strip{
+  transition:width .88s cubic-bezier(.16,.8,.3,1);}
+/* !important because .main-bar.wide.odds is the same specificity and is
+   declared later -- hiding the clock while a trunk or odds panel is still
+   expanded would otherwise leave it parked at 1102px and pop out at full
+   width on the next reveal. */
+/* 112px = the collapsed centre (88) + both corner slits (7+7) + both edge
+   accents (5+5). While the centre was a fixed 200 this could not go below 224,
+   which is why it still looked like a chunk of bar rather than a vanishing
+   point.
+   Stated exactly so the closed state is a decision, not a leftover.
+   NOW 112px: the centre collapses to 88 as well, so the old 224 floor is gone
+   and the bar shuts to little more than a token. */
+/* Delayed by 200ms so everything inside has already cleared. Simultaneous was
+   the mistake: the bar was narrowing THROUGH content that had not finished
+   leaving. UBAe's order -- parts retract, then the frame goes -- is what makes
+   a close read as deliberate. */
+.hud-root.off .main-bar,.hud-root.off .bottom-strip{
+  width:112px !important;
+  transition:width .8s cubic-bezier(.16,.8,.3,1) .22s;}
+
+/* The centre block was the floor: 200px and flex-shrink:0, so the bar could
+   never close past 224 and the round box + timer sat there at full size right
+   up to the cut. It now collapses too -- the round box and timer scale down
+   into the middle and clear FIRST, then the block itself narrows, letting the
+   whole bar shut to 112px. transform-origin is the centre on both so they
+   converge on the clock's own axis rather than drifting to one side. */
+.hud-root .bar-centre{
+  transition:width .74s cubic-bezier(.16,.8,.3,1) .22s;}
+.hud-root.off .bar-centre{width:88px;overflow:hidden;
+  transition:width .62s cubic-bezier(.16,.8,.3,1) .16s;}
+.hud-root .round-count-box,.hud-root .timer-zone{
+  transform-origin:50% 50%;
+  transition:transform .5s cubic-bezier(.16,1,.3,1) .42s, opacity .32s ease .46s;}
+.hud-root.off .round-count-box,.hud-root.off .timer-zone{
+  opacity:0;transform:scale(.62);
+  transition:transform .34s cubic-bezier(.55,0,.25,1), opacity .19s ease;}
+
+/* The bout/format floats sit ABOVE the bar at left:0 and right:0, so as it
+   contracts to 224px the two boxes converge and collide with each other --
+   that was the overlap still visible at the end of the close. Borrowed from
+   the UBAe clock, whose round tab and BO5 strip retract INTO the main row
+   before the row itself leaves: they tuck down into the bar and are gone
+   before it starts narrowing, so there is never a frame where they share
+   space. Opacity outruns the movement because they are z-index:15, above the
+   bar -- they must be invisible by the time they pass over it. */
+.hud-root .match-float,.hud-root .format-float{
+  transition:transform .52s cubic-bezier(.16,1,.3,1) .34s, opacity .3s ease .38s;}
+.hud-root.off .match-float,.hud-root.off .format-float{
+  opacity:0;transform:translateY(34px) scale(.94);
+  transition:transform .4s cubic-bezier(.55,0,.25,1), opacity .17s ease;}
+
+/* The name panels TUCK BEHIND the centre block rather than merely narrowing.
+   .bar-centre is already z-index:8 against the slots' z-index:6, so the
+   layering was right -- nothing was sliding under it. They now translate
+   inward on the trunk curve while the bar itself contracts, which is the
+   same read as a corner slit disappearing back behind the bar.
+   They also fade, because .bar-centre's background is only 42% opaque: a
+   fully-lit name would ghost through the glass instead of vanishing behind
+   it. The fade is fast and front-loaded so the movement is what you see. */
+.hud-root .fighter-slot{
+  transition:transform .82s cubic-bezier(.16,.8,.3,1), opacity .34s ease .46s;}
+.hud-root.off .fighter-slot{
+  opacity:0;transition:transform .72s cubic-bezier(.16,.8,.3,1), opacity .16s ease;}
+.hud-root.off .fighter-slot.left{transform:translateX(54%);}
+.hud-root.off .fighter-slot.right{transform:translateX(-54%);}
+
+/* The strip's text has nowhere to tuck, so it simply clears -- fast on the way
+   out, and on the way in it waits until the bar is nearly full width. Arriving
+   early is what made it look cramped and doubled-up mid-move. */
+.hud-root .strip-l,.hud-root .strip-c,.hud-root .strip-r{
+  transition:opacity .3s ease .42s;}
+.hud-root.off .strip-l,.hud-root.off .strip-c,.hud-root.off .strip-r{
+  opacity:0;transition:opacity .15s ease;}
+
+
+/* The event strip above the bar has nothing to collapse into, so it gets the
+   one move that is not a width: it drops back into the bar on the way out and
+   lifts out of it on the way in, timed to land AFTER the bar has opened. */
+/* It was popping, not retracting. Two reasons: scaleX with no transform-origin
+   pinched it toward its own left edge instead of its centre, and the opacity
+   ran in 160ms against a 460ms move -- so it was invisible for two-thirds of a
+   journey nobody could see. Now it collapses along its own centre line, on the
+   trunk curve, with the fade trailing the movement rather than outrunning it,
+   and it sinks INTO the bar rather than nudging 10px. */
+.hud-root .event-strip{
+  transform-origin:50% 100%;
+  transition:opacity .38s ease .58s, transform .7s cubic-bezier(.16,.8,.3,1) .5s;}
+.hud-root.off .event-strip{
+  opacity:0;transform:translateY(16px) scaleX(.18);
+  transition:opacity .3s ease .06s, transform .5s cubic-bezier(.16,.8,.3,1);}
+
+/* corner colours live on the OUTER EDGES of the bar (the accents), plus
+   UFC-style trunk reveals: side panels that extend out from behind the bar,
+   announce "<COLOUR> TRUNKS", hold, and tuck back in. Fired on every bout arm
+   and every corner-colour change. */
+.bar-wrap{position:relative;}
+/* UFC-style corner slits — the colour lives in the CENTRE, flanking the
+   clock block, as two slim full-height slivers. The trunk reveal EXPANDS the
+   slit itself into a labeled colour block (the names compress to make room,
+   because the bar is fixed-width flex), holds, and collapses back to a slit.
+   The reveal grows out of the graphic instead of being bolted onto it. */
+.corner-slit{width:7px;flex-shrink:0;align-self:stretch;position:relative;
+  overflow:hidden;display:flex;align-items:center;justify-content:center;
+  background:#e8312a;z-index:7;
+  border-top:1px solid rgba(255,255,255,.22);
+  transition:width .5s cubic-bezier(.16,.8,.3,1);}
+.corner-slit.rightside{background:#2e6fe8;}
+/* soft vertical sheen so even the resting slit feels lit, not painted */
+.corner-slit::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.22),transparent 40%,rgba(0,0,0,.28));}
+.corner-slit.expand{width:196px;}
+/* ODDS open narrower than trunks and in a NEUTRAL violet, not the corner
+   colour. A trunk reveal is a statement (who's in which corner); odds are
+   information. Sizing them the same left ~90% of a red block empty and read
+   as a broken trunk reveal. */
+.corner-slit.expand.odds{width:152px;}
+.main-bar.wide.odds{width:1102px;}
+.bottom-strip.wide.odds{width:1102px;}
+.corner-slit.odds .slit-eyebrow{color:rgba(var(--c-lit),.9);}
+.corner-slit.odds .slit-value{color:#fff;font-size:29px;}
+/* the label speaks the bar's own font — bold condensed caps, not tiny mono.
+   Two lines: an eyebrow (FAVOURITE / UNDERDOG / the corner) over the value,
+   so the number is never bare — "+130" means nothing without the word. */
+.slit-label{opacity:0;transform:translateY(6px);
+  transition:opacity .3s ease,transform .3s cubic-bezier(.16,.8,.3,1);
+  white-space:nowrap;position:relative;z-index:2;
+  display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1;}
+.slit-label{color:#fff;}          /* default -- see corner1(): light trunks flip it to dark */
+.slit-eyebrow{font-family:'Share Tech Mono',monospace;font-size:15px;letter-spacing:.14em;
+  text-transform:uppercase;opacity:1;}
+.slit-value{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:26px;
+  letter-spacing:.08em;text-transform:uppercase;text-shadow:0 1px 5px rgba(0,0,0,.65);}
+.corner-slit.expand .slit-label{opacity:1;transform:none;transition-delay:.26s;}
+
+/* deck-driven round + timer text (were blank slots for OBS text sources;
+   the deck now feeds them over the channel instead) */
+.round-text{width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:.32em;
+  color:var(--c-lit-solid);text-transform:uppercase;position:relative;z-index:2;}
+#fightTimer{width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  font-family:'Share Tech Mono',monospace;font-size:30px;letter-spacing:.08em;
+  color:#fff;animation:clockGlow 3s ease-in-out infinite;}
+/* UFC-style corner strips under each name — colours come from the deck */
+.f-corner{width:64px;height:4px;margin-top:5px;background:#e8312a;
+  box-shadow:0 0 10px currentColor;transition:background .3s ease;}
+.fighter-slot.right .f-corner{align-self:flex-end;}
+
+/* ── EVENT STRIP — centred above badge (like Underground top badge) ── */
+.event-strip{
+  position:relative;
+  background:rgba(var(--c-panel),.88);
+  border:1px solid rgba(var(--c-key),.5);
+  border-bottom:none;
+  padding:0 40px;height:30px;
+  display:flex;align-items:center;justify-content:center;gap:16px;
+  clip-path:polygon(14px 0,calc(100% - 14px) 0,100% 14px,100% 100%,0 100%,0 14px);
+  overflow:hidden;align-self:center;
+  width:560px;
+}
+.event-strip::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.9) 50%,transparent);}
+.event-strip-holo{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.event-strip-holo::after{content:'';position:absolute;top:0;bottom:0;width:55%;background:linear-gradient(90deg,transparent,rgba(var(--c-lit),.1),rgba(var(--c-key),.12),transparent);animation:holoA 4.2s ease-in-out infinite;}
+.event-strip-text{font-family:'Share Tech Mono',monospace;font-size:15px;letter-spacing:.3em;color:rgba(var(--c-ink),.95);text-transform:uppercase;position:relative;z-index:2;white-space:nowrap;animation:eventBreath 3.5s ease-in-out infinite;}
+.event-strip-dot{width:4px;height:4px;border-radius:50%;background:rgba(var(--c-key),.7);box-shadow:0 0 5px rgba(var(--c-key),.9);flex-shrink:0;position:relative;z-index:2;}
+
+/* ── TOP BADGE — same as underground badge-pill + wings ── */
+.top-badge{display:flex;align-items:center;position:relative;z-index:6;margin-bottom:-1px;}
+.wing{
+  width:100px;height:40px;
+  background:rgba(var(--c-panel),.78);border:1px solid rgba(var(--c-key),.3);
+  position:relative;flex-shrink:0;backdrop-filter:blur(6px);overflow:hidden;
+}
+.wing.left{clip-path:polygon(0 0,100% 0,100% 100%,12px 100%,0 calc(100% - 12px));border-right:none;margin-right:-1px;}
+.wing.right{clip-path:polygon(0 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%);border-left:none;margin-left:-1px;}
+.wing::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(var(--c-lit),.4),transparent);}
+.wing-inner{display:flex;align-items:center;justify-content:center;height:100%;}
+.wing-dots{display:flex;gap:5px;}
+.wing-dot{width:4px;height:4px;border-radius:50%;background:rgba(var(--c-key),.3);}
+.wing-dot.lit{background:var(--c-lit-solid);box-shadow:0 0 5px rgba(var(--c-key),.85);animation:dotPulse 2.2s ease-in-out infinite;}
+
+.badge-pill{
+  position:relative;background:rgba(var(--c-panel),.92);
+  border:1px solid rgba(var(--c-key),.55);
+  padding:0 32px;height:50px;
+  display:flex;align-items:center;gap:20px;overflow:hidden;z-index:2;
+  animation:borderPulse 3s ease-in-out infinite;
+}
+.badge-pill::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.85) 40%,rgba(var(--c-lit),1) 50%,rgba(255,255,255,.85) 60%,transparent);}
+.badge-pill::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(var(--c-key),.4),transparent);}
+.badge-holo{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.badge-holo::after{content:'';position:absolute;top:0;bottom:0;width:55%;background:linear-gradient(90deg,transparent,rgba(var(--c-lit),.14),rgba(var(--c-key),.18),transparent);animation:holoA 3.6s ease-in-out infinite;}
+.badge-uba{font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:900;letter-spacing:.12em;color:#fff;line-height:1;position:relative;z-index:2;flex-shrink:0;animation:ubaGlow 3s ease-in-out infinite;}
+.badge-sep{width:1px;height:28px;flex-shrink:0;background:linear-gradient(to bottom,transparent,rgba(var(--c-key),.6),transparent);position:relative;z-index:2;}
+.badge-title{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;letter-spacing:.28em;color:rgba(var(--c-lit),.9);text-transform:uppercase;position:relative;z-index:2;white-space:nowrap;}
+
+/* ── MAIN BAR ── exact clone of underground main-bar ── */
+.main-bar{
+  position:relative;display:flex;align-items:stretch;
+  width:920px;height:68px;
+  /* the BAR itself grows for a reveal — it's centred, so it opens from the
+     middle outward and the name slots keep their room. Previously the slit
+     expanded INSIDE a fixed bar and squeezed the names, which read as a panel
+     landing on top of the graphic rather than the graphic opening up. */
+  transition:width .55s cubic-bezier(.16,.8,.3,1);
+  background:rgba(var(--c-panel),.58);
+  border:1px solid rgba(var(--c-key),.28);
+  clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px));
+  backdrop-filter:blur(8px);overflow:hidden;
+}
+.main-bar::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;z-index:5;
+  background:linear-gradient(90deg,transparent,rgba(var(--c-lit),.5) 25%,rgba(255,255,255,.8) 50%,rgba(var(--c-lit),.5) 75%,transparent);
+}
+#holoCanvas{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:4;opacity:0;}
+.main-bar.wide{width:1180px;}
+.bottom-strip{transition:width .55s cubic-bezier(.16,.8,.3,1);}
+.bottom-strip.wide{width:1180px;}
+#hudFlowers{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:2;opacity:.85;}
+
+/* bar accents */
+.bar-accent{width:5px;flex-shrink:0;background:linear-gradient(to bottom,rgba(var(--c-lit),.85),rgba(var(--c-key),.4),transparent);position:relative;z-index:6;}
+.bar-accent.right{background:linear-gradient(to bottom,transparent,rgba(var(--c-key),.4),rgba(var(--c-lit),.85));}
+
+/* fighter slots */
+/* CENTRED in each half — the cleanest option when names vary wildly in length
+   ("M4" next to "iron Micheal Chandler"). Edge-aligned looked lopsided as the
+   bar widened; centred stays balanced at any width. */
+.fighter-slot{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;
+  text-align:center;padding:0 24px;position:relative;z-index:6;}
+.fighter-slot.right{align-items:center;text-align:center;}
+.f-label{font-family:'Share Tech Mono',monospace;font-size:15px;letter-spacing:.24em;color:rgba(var(--c-ink),.85);text-transform:uppercase;}
+/* nowrap + JS auto-fit: a long name shrinks instead of wrapping to two lines */
+.f-name{font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;font-style:italic;letter-spacing:.04em;color:var(--c-name);text-transform:uppercase;line-height:1;animation:nameGlow 3.5s ease-in-out infinite;white-space:nowrap;max-width:100%;}
+.fighter-slot.left .f-name{animation-delay:0s;}
+.fighter-slot.right .f-name{animation-delay:.9s;}
+
+/* ── CENTRE — small round box at top, open timer space below ── */
+.bar-centre{
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  border-left:1px solid rgba(var(--c-key),.28);
+  border-right:1px solid rgba(var(--c-key),.28);
+  background:rgba(var(--c-panel),.42);
+  flex-shrink:0;position:relative;z-index:8;
+  width:200px;overflow:visible;
+}
+
+/* ── ROUND SWITCH — a card flipping over ──────────────────────────────────
+   The number used to be replaced by assignment, which on a broadcast graphic
+   is a hard cut in the one place the eye is already looking. It now rotates
+   away on X, swaps while edge-on so the change is never visible, and rotates
+   back -- the mechanical flip-board read, which is what a round counter is
+   imitating anyway. Perspective lives on the PARENT or the rotation is
+   orthographic and reads as a squash rather than a turn.
+   Same exit curve as the bar's own close, so it belongs to this graphic. */
+.round-count-box{perspective:460px;}
+/* NO display change here. The first version set display:inline-block, which
+   overrode the flex centring these elements rely on -- the number jumped out of
+   the middle of its box the moment the rule loaded. transform applies to a flex
+   element perfectly well; the display property was never needed. */
+.round-text{backface-visibility:hidden;
+  transition:transform .26s cubic-bezier(.55,0,.25,1), opacity .18s ease;}
+.round-text.flip-out{transform:rotateX(-92deg);opacity:0;}
+.round-text.flip-in{transform:rotateX(92deg);opacity:0;}
+
+/* small round label box — sits at the very top of the bar */
+.round-count-box{
+  width:140px;height:22px;
+  background:rgba(var(--c-panel),.35);
+  border:1px solid rgba(var(--c-key),.65);
+  border-top:none;
+  clip-path:polygon(0 0,100% 0,calc(100% - 5px) 100%,5px 100%);
+  overflow:hidden;
+  flex-shrink:0;
+  position:relative;
+}
+.round-count-box::before{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(var(--c-lit),.7),transparent);
+}
+.round-count-box-holo{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.round-count-box-holo::after{
+  content:'';position:absolute;top:0;bottom:0;width:55%;
+  background:linear-gradient(90deg,transparent,rgba(var(--c-lit),.1),rgba(var(--c-key),.13),transparent);
+  animation:holoA 4s ease-in-out infinite;
+}
+
+/* timer zone — open space below, no box, just the bar background */
+.timer-zone{
+  flex:1;width:100%;
+}
+
+/* floater chips above bar corners */
+.match-float{
+  position:absolute;top:-36px;left:0;height:32px;
+  background:rgba(var(--c-panel),.85);border:1px solid rgba(var(--c-key),.3);
+  display:flex;align-items:center;gap:8px;padding:0 16px;
+  clip-path:polygon(0 0,calc(100% - 6px) 0,100% 6px,100% 100%,0 100%);
+  z-index:15;overflow:hidden;
+}
+.match-float::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(var(--c-lit),.6),transparent);}
+.format-float{
+  position:absolute;top:-36px;right:0;height:32px;
+  background:rgba(var(--c-panel),.85);border:1px solid rgba(var(--c-key),.3);
+  display:flex;align-items:center;gap:8px;padding:0 16px;
+  clip-path:polygon(6px 0,100% 0,100% 100%,0 100%,0 6px);
+  z-index:15;overflow:hidden;
+}
+.format-float::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(var(--c-lit),.6),transparent);}
+.float-label{font-family:'Share Tech Mono',monospace;font-size:14px;letter-spacing:.2em;color:rgba(var(--c-ink),.85);}
+.float-val{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:900;letter-spacing:.08em;color:var(--c-lit-solid);}
+
+/* pip strip */
+.pip-strip{
+  position:absolute;bottom:-28px;left:50%;transform:translateX(-50%);
+  height:24px;background:rgba(var(--c-panel),.72);
+  border:1px solid rgba(var(--c-key),.22);border-top:none;
+  display:flex;align-items:center;gap:14px;padding:0 18px;
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,6px 100%,0 calc(100% - 6px));
+  white-space:nowrap;
+}
+.pip-strip::before{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(var(--c-key),.45),transparent);}
+.pip-group{display:flex;gap:5px;align-items:center;}
+.pip{width:12px;height:8px;clip-path:polygon(0 100%,50% 0%,100% 100%);background:rgba(var(--c-deep),.28);}
+.pip.on{background:var(--c-lit-solid);filter:drop-shadow(0 0 5px rgba(var(--c-key),1));}
+.pip-mid{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:.18em;color:rgba(var(--c-ink),.9);}
+
+/* bottom strip */
+.bottom-strip{
+  width:920px;height:28px;
+  background:rgba(var(--c-panel),.82);
+  border:1px solid rgba(var(--c-key),.2);border-top:none;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 22px;position:relative;overflow:hidden;
+  clip-path:polygon(0 0,100% 0,calc(100% - 10px) 100%,10px 100%);
+}
+.bottom-strip::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(var(--c-key),.42) 25%,rgba(var(--c-lit),.62) 50%,rgba(var(--c-key),.42) 75%,transparent);}
+/* min-width:0 + overflow:hidden or these do not clip. Each is flex:1, so at
+   the bar's 224px closed width every section is ~60px while 'discord.gg/uba'
+   needs ~110 -- the text simply spilled out of its box and the three sections
+   printed on top of each other. That was the overlap. */
+.strip-l,.strip-c,.strip-r{min-width:0;overflow:hidden;white-space:nowrap;}
+.strip-l{display:flex;align-items:center;gap:9px;flex:1;}
+.strip-lbl{font-family:'Share Tech Mono',monospace;font-size:14px;letter-spacing:.2em;color:rgba(var(--c-ink),.8);text-transform:uppercase;}
+.strip-val{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:900;letter-spacing:.16em;color:var(--c-name);text-transform:uppercase;text-shadow:0 0 10px rgba(var(--c-key),.5);}
+.strip-c{display:flex;align-items:center;gap:9px;justify-content:center;flex:1;}
+.strip-r{display:flex;align-items:center;gap:7px;justify-content:flex-end;flex:1;}
+.strip-yt{font-family:'Share Tech Mono',monospace;font-size:14px;letter-spacing:.18em;color:rgba(var(--c-ink),.8);text-transform:uppercase;}
+</style>
+</head>
+<body>
+
+<!-- SCREEN EDGE -->
+<div class="edge-top"></div>
+<div class="edge-bottom"></div>
+<div class="edge-left"></div>
+<div class="edge-right"></div>
+<div class="edge-tick left-mid"></div>
+<div class="edge-tick right-mid"></div>
+<div class="corner corner-tl"></div>
+<div class="corner corner-tr"></div>
+<div class="corner corner-bl"></div>
+<div class="corner corner-br"></div>
+
+<!-- TOP LEFT — UBA Brand -->
+<div class="brand-root">
+  <div class="brand-emblem" id="brandEmblemEl">
+    <canvas id="brandFlower" width="64" height="64"></canvas>
+  </div>
+  <div class="brand-block">
+    <div class="brand-holo"></div>
+    <div class="brand-name" id="brandName">UBA</div>
+    <div class="brand-sub" id="brandSub">Fight Night</div>
+  </div>
+</div>
+
+
+<!-- MAIN HUD -->
+<div class="hud-root">
+
+  <!-- event strip sits directly above bar -->
+  <div class="event-strip">
+    <div class="event-strip-holo"></div>
+    <div class="event-strip-dot"></div>
+    <div class="event-strip-text" id="eventStripText">Unified Boxing Association</div>
+    <div class="event-strip-dot"></div>
+  </div>
+
+  <!-- main bar (wrapped so the trunk reveals can extend past its edges —
+       the bar itself is clip-pathed + overflow:hidden, nothing can stick out of it) -->
+  <div class="bar-wrap">
+  <div class="main-bar" id="mainBar">
+    <div class="fire-flash"></div>
+    <div class="fire" aria-hidden="true"><div class="fire-bloom"></div><div class="fire-wire"></div><div class="fire-base"></div><i class="fire-coal" style="left:3.1%;width:168px;margin-left:-84px;height:43px;background:radial-gradient(84px 21px at 50% 100%,rgba(255,100,10,0.61),transparent 72%);animation-delay:-5.4s;animation-duration:10.3s"></i><i class="fire-coal" style="left:6.0%;width:162px;margin-left:-81px;height:53px;background:radial-gradient(81px 26px at 50% 100%,rgba(255,99,10,0.58),transparent 72%);animation-delay:-6.0s;animation-duration:7.9s"></i><i class="fire-coal" style="left:13.7%;width:140px;margin-left:-70px;height:39px;background:radial-gradient(70px 19px at 50% 100%,rgba(255,91,10,0.64),transparent 72%);animation-delay:-7.3s;animation-duration:11.0s"></i><i class="fire-coal" style="left:20.0%;width:221px;margin-left:-110px;height:40px;background:radial-gradient(110px 20px at 50% 100%,rgba(255,106,10,0.68),transparent 72%);animation-delay:-2.1s;animation-duration:10.2s"></i><i class="fire-coal" style="left:29.6%;width:215px;margin-left:-107px;height:38px;background:radial-gradient(107px 19px at 50% 100%,rgba(255,101,10,0.65),transparent 72%);animation-delay:-4.9s;animation-duration:6.6s"></i><i class="fire-coal" style="left:42.1%;width:178px;margin-left:-89px;height:51px;background:radial-gradient(89px 25px at 50% 100%,rgba(255,79,10,0.57),transparent 72%);animation-delay:-10.1s;animation-duration:10.8s"></i><i class="fire-coal" style="left:44.1%;width:166px;margin-left:-83px;height:41px;background:radial-gradient(83px 20px at 50% 100%,rgba(255,95,10,0.60),transparent 72%);animation-delay:-3.2s;animation-duration:5.1s"></i><i class="fire-coal" style="left:50.2%;width:152px;margin-left:-76px;height:41px;background:radial-gradient(76px 20px at 50% 100%,rgba(255,104,10,0.62),transparent 72%);animation-delay:-0.2s;animation-duration:7.9s"></i><i class="fire-coal" style="left:64.6%;width:260px;margin-left:-130px;height:44px;background:radial-gradient(130px 22px at 50% 100%,rgba(255,105,10,0.69),transparent 72%);animation-delay:-0.4s;animation-duration:5.6s"></i><i class="fire-coal" style="left:69.4%;width:225px;margin-left:-112px;height:41px;background:radial-gradient(112px 20px at 50% 100%,rgba(255,79,10,0.47),transparent 72%);animation-delay:-8.5s;animation-duration:9.8s"></i><i class="fire-coal" style="left:80.1%;width:217px;margin-left:-108px;height:37px;background:radial-gradient(108px 18px at 50% 100%,rgba(255,85,10,0.53),transparent 72%);animation-delay:-5.5s;animation-duration:9.1s"></i><i class="fire-coal" style="left:82.1%;width:162px;margin-left:-81px;height:52px;background:radial-gradient(81px 26px at 50% 100%,rgba(255,107,10,0.51),transparent 72%);animation-delay:-3.8s;animation-duration:6.3s"></i><i class="fire-coal" style="left:94.3%;width:154px;margin-left:-77px;height:40px;background:radial-gradient(77px 20px at 50% 100%,rgba(255,107,10,0.51),transparent 72%);animation-delay:-4.6s;animation-duration:6.9s"></i><i class="fire-lick" style="left:5.9%;width:66px;margin-left:-33px;animation-delay:-0.4s;animation-duration:3.9s"></i><i class="fire-lick" style="left:10.0%;width:72px;margin-left:-36px;animation-delay:-0.1s;animation-duration:2.1s"></i><i class="fire-lick" style="left:12.6%;width:75px;margin-left:-37px;animation-delay:-2.6s;animation-duration:3.0s"></i><i class="fire-lick" style="left:17.3%;width:50px;margin-left:-25px;animation-delay:-2.7s;animation-duration:3.2s"></i><i class="fire-lick" style="left:28.0%;width:55px;margin-left:-27px;animation-delay:-1.0s;animation-duration:3.2s"></i><i class="fire-lick" style="left:33.4%;width:83px;margin-left:-41px;animation-delay:-3.2s;animation-duration:3.9s"></i><i class="fire-lick" style="left:37.3%;width:66px;margin-left:-33px;animation-delay:-1.5s;animation-duration:4.1s"></i><i class="fire-lick" style="left:45.8%;width:77px;margin-left:-38px;animation-delay:-1.6s;animation-duration:2.9s"></i><i class="fire-lick" style="left:52.1%;width:50px;margin-left:-25px;animation-delay:-2.3s;animation-duration:2.5s"></i><i class="fire-lick" style="left:62.1%;width:55px;margin-left:-27px;animation-delay:-0.4s;animation-duration:2.4s"></i><i class="fire-lick" style="left:67.3%;width:56px;margin-left:-28px;animation-delay:-3.2s;animation-duration:3.9s"></i><i class="fire-lick" style="left:71.9%;width:65px;margin-left:-32px;animation-delay:-0.9s;animation-duration:3.0s"></i><i class="fire-lick" style="left:79.9%;width:73px;margin-left:-36px;animation-delay:-0.2s;animation-duration:2.5s"></i><i class="fire-lick" style="left:86.9%;width:48px;margin-left:-24px;animation-delay:-1.9s;animation-duration:2.5s"></i><i class="fire-lick" style="left:88.7%;width:47px;margin-left:-23px;animation-delay:-1.1s;animation-duration:2.4s"></i><i class="fire-em" style="left:2.8%;bottom:24px;width:4px;height:4px;animation-delay:-1.2s;animation-duration:7.7s"></i><i class="fire-em" style="left:4.0%;bottom:6px;width:4px;height:4px;animation-delay:-3.1s;animation-duration:9.4s"></i><i class="fire-em" style="left:8.8%;bottom:33px;width:3px;height:3px;animation-delay:-4.2s;animation-duration:7.5s"></i><i class="fire-em" style="left:11.1%;bottom:29px;width:3px;height:3px;animation-delay:-0.9s;animation-duration:6.2s"></i><i class="fire-em" style="left:17.1%;bottom:26px;width:3px;height:3px;animation-delay:-5.5s;animation-duration:7.3s"></i><i class="fire-em" style="left:21.5%;bottom:15px;width:4px;height:4px;animation-delay:-3.9s;animation-duration:6.2s"></i><i class="fire-em" style="left:25.9%;bottom:22px;width:2px;height:2px;animation-delay:-0.5s;animation-duration:5.5s"></i><i class="fire-em" style="left:25.2%;bottom:29px;width:3px;height:3px;animation-delay:-7.3s;animation-duration:8.8s"></i><i class="fire-em" style="left:30.8%;bottom:27px;width:2px;height:2px;animation-delay:-5.3s;animation-duration:6.3s"></i><i class="fire-em" style="left:35.8%;bottom:24px;width:3px;height:3px;animation-delay:-3.2s;animation-duration:5.6s"></i><i class="fire-em" style="left:39.8%;bottom:8px;width:2px;height:2px;animation-delay:-3.2s;animation-duration:7.4s"></i><i class="fire-em" style="left:44.4%;bottom:13px;width:2px;height:2px;animation-delay:-2.1s;animation-duration:7.0s"></i><i class="fire-em" style="left:44.1%;bottom:25px;width:2px;height:2px;animation-delay:-4.7s;animation-duration:5.5s"></i><i class="fire-em" style="left:51.3%;bottom:17px;width:2px;height:2px;animation-delay:-6.6s;animation-duration:9.7s"></i><i class="fire-em" style="left:54.8%;bottom:30px;width:4px;height:4px;animation-delay:-5.1s;animation-duration:5.8s"></i><i class="fire-em" style="left:57.0%;bottom:25px;width:2px;height:2px;animation-delay:-0.9s;animation-duration:5.9s"></i><i class="fire-em" style="left:58.9%;bottom:23px;width:2px;height:2px;animation-delay:-4.6s;animation-duration:6.0s"></i><i class="fire-em" style="left:66.0%;bottom:13px;width:4px;height:4px;animation-delay:-8.9s;animation-duration:9.2s"></i><i class="fire-em" style="left:68.1%;bottom:24px;width:3px;height:3px;animation-delay:-1.6s;animation-duration:5.0s"></i><i class="fire-em" style="left:73.4%;bottom:30px;width:2px;height:2px;animation-delay:-8.0s;animation-duration:9.7s"></i><i class="fire-em" style="left:74.0%;bottom:32px;width:3px;height:3px;animation-delay:-9.1s;animation-duration:9.5s"></i><i class="fire-em" style="left:76.8%;bottom:11px;width:2px;height:2px;animation-delay:-1.9s;animation-duration:6.0s"></i><i class="fire-em" style="left:85.8%;bottom:7px;width:2px;height:2px;animation-delay:-6.6s;animation-duration:10.4s"></i><i class="fire-em" style="left:86.9%;bottom:24px;width:4px;height:4px;animation-delay:-3.3s;animation-duration:6.6s"></i><i class="fire-em" style="left:90.5%;bottom:27px;width:2px;height:2px;animation-delay:-2.1s;animation-duration:5.7s"></i><i class="fire-em" style="left:93.7%;bottom:17px;width:4px;height:4px;animation-delay:-2.4s;animation-duration:6.4s"></i></div>
+    <canvas id="holoCanvas"></canvas>
+    <canvas id="hudFlowers"></canvas>
+
+    <!-- floaters -->
+    <div class="match-float">
+      <div class="float-label">Bout</div>
+      <div class="float-val" id="boutFloat">Main Event</div>
+    </div>
+    <div class="format-float">
+      <div class="float-label">Format</div>
+      <div class="float-val" id="formatFloat">5 Rounds</div>
+    </div>
+
+    <div class="bar-accent" id="accentL"></div>
+
+    <!-- left fighter — fed by the deck's card runner -->
+    <div class="fighter-slot left">
+      <div class="f-name" id="nameL">&nbsp;</div>
+    </div>
+
+    <!-- UFC-style corner slit, left of the clock -->
+    <div class="corner-slit" id="slitL"><i class="fire-burst"></i><i class="fire-spark" style="left:22%;bottom:14px;animation-delay:0s"></i><i class="fire-spark" style="left:52%;bottom:8px;animation-delay:0.12s"></i><i class="fire-spark" style="left:78%;bottom:20px;animation-delay:0.24s"></i><span class="slit-label" id="slitLabelL">
+      <span class="slit-eyebrow" id="slitEyeL">RED</span><span class="slit-value" id="slitValL">TRUNKS</span>
+    </span></div>
+
+    <!-- centre — round box on top, timer below, both deck-driven -->
+    <div class="bar-centre">
+      <div class="round-count-box">
+        <div class="round-count-box-holo"></div>
+        <div class="round-text" id="roundText">ROUND 1</div>
+      </div>
+      <div class="timer-zone"><div id="fightTimer"></div></div>
+    </div>
+
+    <!-- UFC-style corner slit, right of the clock -->
+    <div class="corner-slit rightside" id="slitR"><i class="fire-burst"></i><i class="fire-spark" style="left:22%;bottom:14px;animation-delay:0s"></i><i class="fire-spark" style="left:52%;bottom:8px;animation-delay:0.12s"></i><i class="fire-spark" style="left:78%;bottom:20px;animation-delay:0.24s"></i><span class="slit-label" id="slitLabelR">
+      <span class="slit-eyebrow" id="slitEyeR">BLUE</span><span class="slit-value" id="slitValR">TRUNKS</span>
+    </span></div>
+
+    <!-- right fighter — fed by the deck's card runner -->
+    <div class="fighter-slot right">
+      <div class="f-name" id="nameR">&nbsp;</div>
+    </div>
+
+    <div class="bar-accent right"></div>
+
+    <!-- pip strip -->
+    <div class="pip-strip">
+      <div class="pip-group">
+        <div class="pip on"></div><div class="pip"></div>
+        <div class="pip"></div><div class="pip"></div><div class="pip"></div>
+      </div>
+      <div class="pip-mid">BO·5</div>
+      <div class="pip-group">
+        <div class="pip"></div><div class="pip"></div>
+        <div class="pip"></div><div class="pip"></div><div class="pip"></div>
+      </div>
+    </div>
+  </div>
+  </div><!-- /bar-wrap -->
+
+  <!-- bottom strip -->
+  <div class="bottom-strip">
+    <div class="strip-l">
+      <div class="strip-val">discord.gg/uba</div>
+    </div>
+    <div class="strip-c">
+      <div class="strip-lbl">Powered by</div>
+      <div class="strip-val">SHEATH</div>
+    </div>
+    <div class="strip-r">
+      <div class="strip-yt">ubaesports.com</div>
+    </div>
+  </div>
+
+</div><!-- /hud-root -->
+
+<script>
+// ══ FLOWER ENGINE — brand emblem ═════════════════
+(function(){
+  // Every hue the CANVAS art uses, in one object. CSS tokens cannot reach these:
+  // the emblem flower, the holographic sweep and the background flowers are all
+  // drawn in JS, and each had its own hardcoded violet -- a base hue, a band the
+  // flowers pick from, and a stroke anchored at 290. Setting one of them and not
+  // the others is how you get an orange clock with purple flowers in it.
+  //   hue    base hue for the emblem and the sweep
+  //   band /
+  //   bandSpan  the window the background flowers live in
+  //   stroke the emblem's outline anchor at rest
+  //   wheel  0 = the hue tours the whole colour wheel (UBA's psychedelic
+  //          drift, unchanged); a number = degrees it may wander, which is
+  //          what keeps GFL in the reds instead of touring through violet.
+  // Read at draw time, never captured, so a mid-show switch repaints.
+  window.VGA_ART = window.VGA_ART || { hue:270, band:185, bandSpan:120, stroke:290, wheel:0 };
+
+  // One place decides what league this clock is wearing: the body class drives
+  // every CSS token, and VGA_ART drives the canvas art (emblem flower, holo
+  // sweep, sparks) which CSS cannot reach.
+  // The wordmark, the strapline and the organisation line are per-league copy.
+  // A skin that changed only the colours left a GFL card orange and still signed
+  // UNIFIED BOXING ASSOCIATION, which is worse than leaving it violet: it looks
+  // like the right graphic for the wrong show.
+  const LEAGUE_COPY = {
+    uba: { name:'UBA', sub:'Fight Night',  org:'Unified Boxing Association',
+           art:{ hue:270, band:185, bandSpan:120, stroke:290, wheel:0 } },
+    // Tuned by measuring, not by eye: hue 14 with a 44 degree wheel came out
+    // 70% orange. hue 6 with a 26 degree wheel reads RED, wandering only as far
+    // as a hot amber at the top of its cycle.
+    gfl: { name:'GFL', sub:'Glory League', org:'Glory Fighting League',
+           art:{ hue:4,   band:0,   bandSpan:26,  stroke:8,   wheel:18 } },
+  }
+  function setLeague(lg){
+    const key = String(lg||'').toLowerCase() === 'gfl' ? 'gfl' : 'uba'
+    if(document.body.dataset.league === key) return    // no needless repaint
+    document.body.dataset.league = key
+    const c = LEAGUE_COPY[key]
+    document.body.classList.toggle('gfl', key === 'gfl')
+    window.VGA_ART = c.art
+    const set = (id, v) => { const e = document.getElementById(id); if(e) e.textContent = v }
+    set('brandName', c.name); set('brandSub', c.sub); set('eventStripText', c.org)
+  }
+  // ?league=gfl dresses the clock with no deck attached -- how you check the
+  // skin in a browser, and how OBS can be locked to one league if that is ever
+  // wanted. The deck still overrides it on the next command it sends.
+  try{
+    const q = new URLSearchParams(location.search).get('league')
+    if(q) setLeague(q)
+  }catch{}
+
+  const cv=document.getElementById('brandFlower');
+  if(!cv)return;
+  const ctx=cv.getContext('2d');
+  const W=64,H=64,CX=32,CY=32,R=16;
+  let T=0,spinAccum=0,cycleT=0,inBurst=false,cycleLen=600,spinI=0,siTarget=0,siVel=0;
+  function newCycle(){cycleLen=inBurst?360+Math.random()*160:700+Math.random()*500;cycleT=0;}
+  newCycle();
+  function ei(t){return t*t*t;}function eo(t){return 1-Math.pow(1-t,5);}
+  function spr(c,tg,v,k,d){const f=(tg-c)*k-v*d;return{val:c+v+f,vel:v+f};}
+  const sparks=Array.from({length:16},()=>({x:CX,y:CY,vx:0,vy:0,life:0,max:40,hue:(window.VGA_ART||{hue:270}).hue,r:.7,on:false}));
+  function emit(si){const s=sparks.find(s=>!s.on||s.life>s.max);if(!s)return;const a=(Math.floor(Math.random()*5)/5)*Math.PI*2+spinAccum;s.x=CX+Math.cos(a)*R*.88;s.y=CY+Math.sin(a)*R*.88;const t2=a+Math.PI/2,v=si*.8+.05;s.vx=Math.cos(t2)*v+(Math.random()-.5)*.1;s.vy=Math.sin(t2)*v-.07+(Math.random()-.3)*.1;s.life=0;s.max=si>.5?18+Math.random()*14:55+Math.random()*70;s.hue=(window.VGA_ART.hue-5)+Math.random()*(window.VGA_ART.wheel||80);s.r=si>.5?.5+Math.random()*.8:.25+Math.random()*.4;s.on=true;}
+  function tick(){
+    ctx.clearRect(0,0,W,H);T++;cycleT++;
+    const p=Math.min(1,cycleT/cycleLen);
+    if(inBurst){if(p<.22)siTarget=ei(p/.22);else if(p<.48)siTarget=1-Math.sin((p-.22)/.26*Math.PI)*.03;else if(p<.72)siTarget=eo(1-(p-.48)/.24)*.6;else siTarget=Math.pow(1-(p-.72)/.28,2.5)*.45;if(p>=1&&spinI<.025){inBurst=false;siTarget=0;siVel=0;newCycle();}}else{siTarget=0;if(p>=1){inBurst=true;newCycle();}}
+    const sp=spr(spinI,siTarget,siVel,spinI<siTarget?.016:.004,spinI<siTarget?.68:.60);spinI=Math.max(0,Math.min(1,sp.val));siVel=sp.vel;spinAccum+=.003+spinI*.18;
+    const si=spinI;if(Math.random()<(inBurst?si*.65:.025))emit(si);
+    const A=window.VGA_ART,hue=(A.wheel?A.hue+((T*.4)%A.wheel):(T*.4+A.hue)%360),budEW=R*.48,budEH=R*.95,bloEW=R*.32,bloEH=R*1.2;
+    const ew=budEW+(bloEW-budEW)*si,eh=budEH+(bloEH-budEH)*si,bp=.85+si*.12;
+    const b1=ctx.createRadialGradient(CX,CY,0,CX,CY,CX);b1.addColorStop(0,`hsla(${hue},100%,65%,${Math.pow(si,1.5)*.14})`);b1.addColorStop(1,'transparent');ctx.beginPath();ctx.arc(CX,CY,CX,0,Math.PI*2);ctx.fillStyle=b1;ctx.fill();
+    if(si>.01)for(let g=1;g<=3;g++){const gs=spinAccum-g*.08;for(let p2=0;p2<5;p2++){const a=(p2/5)*Math.PI*2+gs,px=CX+Math.cos(a)*R*.88,py=CY+Math.sin(a)*R*.88;ctx.save();ctx.translate(px,py);ctx.rotate(a+Math.PI);ctx.beginPath();ctx.ellipse(0,0,ew*.85,eh*.85,0,0,Math.PI*2);ctx.fillStyle=`hsla(${(hue+p2*22)%360},100%,82%,${(1-g/4)*Math.pow(si,1.5)*.14})`;ctx.fill();ctx.restore();}}
+    for(let p2=0;p2<5;p2++){
+      const a=(p2/5)*Math.PI*2+spinAccum,px=CX+Math.cos(a)*R*.88,py=CY+Math.sin(a)*R*.88;
+      const rawPh=(hue+p2*22)%360,purplePh=270+(rawPh%50)-5,ph=purplePh+(rawPh-purplePh)*Math.pow(si,3);
+      const depth=.75+.35*((CY-py)/R),ecl=Math.floor(T/180)%5,ef=Math.max(0,Math.sin((T%180)/180*Math.PI));
+      const bg=.2+Math.max(0,Math.sin(T*.035+p2*1.4+p2*p2*.6))*.25,idleVal=p2===ecl?bg+ef*.8:bg,idleGlow=idleVal+(1-idleVal)*Math.pow(si,.6);
+      const bpp=bp*Math.min(1.15,Math.max(.65,depth))*idleGlow,tiltA=a+Math.PI,glowR=ew*(1.8+si*2);
+      const g2=ctx.createRadialGradient(px,py,0,px,py,glowR);g2.addColorStop(0,`hsla(${ph},100%,78%,${(.65+si*.3)*idleGlow})`);g2.addColorStop(.5,`hsla(${(ph+20)%360},100%,65%,${(.45+si*.18)*idleGlow})`);g2.addColorStop(1,'transparent');ctx.beginPath();ctx.arc(px,py,glowR,0,Math.PI*2);ctx.fillStyle=g2;ctx.fill();
+      ctx.globalAlpha=Math.pow(si,3)*.32;ctx.save();ctx.translate(px,py);ctx.rotate(tiltA);const ca=1.2*si;ctx.beginPath();ctx.ellipse(-ca,0,ew,eh,0,0,Math.PI*2);ctx.fillStyle='hsl(0,100%,72%)';ctx.fill();ctx.beginPath();ctx.ellipse(0,-ca*.5,ew,eh,0,0,Math.PI*2);ctx.fillStyle='hsl(130,100%,72%)';ctx.fill();ctx.beginPath();ctx.ellipse(ca,0,ew,eh,0,0,Math.PI*2);ctx.fillStyle='hsl(240,100%,78%)';ctx.fill();ctx.restore();ctx.globalAlpha=1;
+      const tipW=ew*(.6+si*.4),baseW2=ew*(.9+si*.1);ctx.save();ctx.translate(px,py);ctx.rotate(tiltA);ctx.beginPath();ctx.moveTo(0,-eh);ctx.bezierCurveTo(tipW,-eh*.55,baseW2,eh*.1,0,eh*.55);ctx.bezierCurveTo(-baseW2,eh*.1,-tipW,-eh*.55,0,-eh);ctx.closePath();
+      const lB=22+si*58,lM=16+si*66,sat=88+si*12,pg=ctx.createLinearGradient(-ew,0,ew,0);pg.addColorStop(0,`hsla(${ph},${sat}%,${lB}%,${bpp})`);pg.addColorStop(.5,`hsla(${(ph+20*si)%360},${sat}%,${lM}%,${bpp})`);pg.addColorStop(1,`hsla(${(ph+35*si)%360},${sat}%,${lB}%,${bpp})`);ctx.fillStyle=pg;ctx.fill();
+      const sH=A.stroke+(((ph+40)%360)-A.stroke)*Math.pow(si,2);ctx.strokeStyle=`hsla(${sH},100%,92%,${(.18+si*.6)*idleGlow+.12})`;ctx.lineWidth=.9+si*.35;ctx.stroke();ctx.restore();
+    }
+    const ch=(hue+160)%360,cR=R*.18+si*R*.12,cg=ctx.createRadialGradient(CX,CY,0,CX,CY,cR+.5);cg.addColorStop(0,`hsla(${ch},60%,100%,${.55+si*.4})`);cg.addColorStop(.5,`hsla(${ch},100%,85%,${.32+si*.45})`);cg.addColorStop(1,'transparent');ctx.beginPath();ctx.arc(CX,CY,cR+.5,0,Math.PI*2);ctx.fillStyle=cg;ctx.fill();ctx.beginPath();ctx.arc(CX,CY,cR*.4,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,.78)';ctx.fill();
+    sparks.forEach(s=>{if(!s.on)return;s.life++;if(s.life>s.max){s.on=false;return;}s.vy-=.005;s.x+=s.vx;s.y+=s.vy;s.vx*=.95;s.vy*=.97;const fa=1-s.life/s.max;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle=`hsla(${s.hue},100%,90%,${fa*.75})`;ctx.fill();});
+    // emblem ring sync
+    const em=document.getElementById('brandEmblemEl');
+    if(em){em.style.boxShadow=si>.08?`0 0 ${10+si*22}px rgba(var(--c-lit),${.45+si*.5}),0 0 ${20+si*36}px rgba(var(--c-deep),${.2+si*.45})`:`0 0 ${5+3*Math.sin(T*.055)}px rgba(var(--c-key),.32)`;em.style.borderColor=`rgba(${180+Math.round(si*40)},${130+Math.round(si*30)},255,${.5+si*.38})`;}
+    // holo bar sweep
+    const holoCV=document.getElementById('holoCanvas');
+    if(holoCV&&holoCV.parentElement){
+      if(!holoCV._init){const bar=holoCV.parentElement;holoCV.width=bar.offsetWidth||920;holoCV.height=bar.offsetHeight||68;holoCV._init=true;}
+      const bW=holoCV.width,bH=holoCV.height,hx=holoCV.getContext('2d');
+      if(!window._hs)window._hs={pos:-1.2,sweeping:false,lastSi:0,fadeOut:0};
+      const hs=window._hs;
+      if(!hs.sweeping&&si>0.55&&hs.lastSi<=0.55){hs.sweeping=true;hs.pos=-1.2;}hs.lastSi=si;
+      if(hs.sweeping||hs.pos>-1.2){hx.clearRect(0,0,bW,bH);const prog=Math.max(0,Math.min(1,(hs.pos+1.2)/2.6));if(hs.sweeping)hs.pos+=(0.004+Math.sin(prog*Math.PI)*0.013);const cx2=hs.pos*bW,bandW=bW*1.3,masterA=Math.min(1,si*1.8)*Math.sin(Math.max(0,prog)*Math.PI);if(masterA>.01){for(let x=0;x<bW;x++){const t=(x-(cx2-bandW*.5))/bandW,edge=Math.sin(t*Math.PI),f1=Math.sin(x*.028+T*.032)*.5+.5,f2=Math.sin(x*.019-T*.024+1.2)*.5+.5,f3=Math.sin(x*.034+T*.018+2.4)*.5+.5,f4=Math.sin(x*.014-T*.028+3.6)*.5+.5,bHue=(window.VGA_ART.hue-5+(f1*45+f2*30+f3*20-40)*(window.VGA_ART.wheel?window.VGA_ART.wheel/120:1)+360)%360;hx.fillStyle=`hsla(${bHue},${65+f2*20}%,${30+f1*30}%,${edge*masterA*(0.10+f3*.11)})`;hx.fillRect(x,0,f4>.72?3:f4>.44?2:1,bH);}}holoCV.style.opacity='1';if(hs.pos>1.5&&!hs.fadeOut){hs.sweeping=false;hs.fadeOut=1.0;}}
+      if(hs.fadeOut>0){hs.fadeOut=Math.max(0,hs.fadeOut-0.008);holoCV.style.opacity=String(hs.fadeOut);if(hs.fadeOut<=0){hx.clearRect(0,0,bW,bH);holoCV.style.opacity='0';hs.pos=-1.2;hs.fadeOut=0;}}
+    }
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
+
+// ══ HUD BAR FLOWERS — ambient flowers inside the fight bar ═════════
+(function(){
+  var cv=document.getElementById('hudFlowers');if(!cv)return;
+  var cx=cv.getContext('2d');var W,H,T=0,flowers=[];
+  function init(){var bar=document.getElementById('mainBar');W=cv.width=bar.offsetWidth||920;H=cv.height=bar.offsetHeight||68;}
+  setTimeout(init,100);
+  function rnd(a,b){return a+Math.random()*(b-a);}
+  function pickHue(){var A=window.VGA_ART,r=Math.random();
+    // banded league (GFL): stay in the reds and ambers. Unbanded (UBA): the
+    // original four violet bands, untouched.
+    if(A.wheel)return r<.45?rnd(A.hue-6,A.hue+2):r<.80?rnd(A.hue-2,A.hue+10):rnd(A.hue+8,A.hue+20);
+    return r<.35?rnd(252,268):r<.65?rnd(264,285):r<.85?rnd(280,300):rnd(260,278);}
+  function mkFlower(){return{xf:rnd(.04,.96),yf:rnd(.05,.95),r:rnd(11,21),hue:pickHue(),ph:rnd(0,Math.PI*2),spin:(Math.random()<.5?1:-1)*rnd(.001,.003),spinSpd:0,st:0,lf:0,spd:rnd(.001,.002),pd:Math.floor(rnd(1800,4000)),pt:0,delay:Math.floor(rnd(0,400)),seed:Math.random()*100};}
+  function tooClose(xf,yf){for(var k=0;k<flowers.length;k++){var dx=(flowers[k].xf-xf)*(W||1140),dy=(flowers[k].yf-yf)*(H||68);if(Math.sqrt(dx*dx+dy*dy)<58)return true;}return false;}
+  function fill(){var need=8,tries=0;while(flowers.length<need&&tries<200){tries++;var f=mkFlower();if(tooClose(f.xf,f.yf))continue;flowers.push(f);}}
+  function drawFlower(x,y,r,hue,alpha,ph,fading){if(alpha<.004)return;cx.save();if(fading&&alpha>.04){for(var p=0;p<5;p++){var ang=(p/5)*Math.PI*2+ph;cx.beginPath();cx.arc(x+Math.cos(ang)*r*.80+r*.04,y+Math.sin(ang)*r*.80,r*.28,0,Math.PI*2);cx.fillStyle='hsla('+((hue+40)%360)+',100%,78%,'+(alpha*.14)+')';cx.fill();}}for(var p=0;p<5;p++){var ang=(p/5)*Math.PI*2+ph,px=x+Math.cos(ang)*r*.80,py=y+Math.sin(ang)*r*.80,ph2=(hue+p*6)%360,pr=r*.34;cx.beginPath();cx.arc(px,py,pr*2.6,0,Math.PI*2);cx.fillStyle='hsla('+ph2+',100%,65%,'+(alpha*.12)+')';cx.fill();cx.beginPath();cx.arc(px,py,pr*1.5,0,Math.PI*2);cx.fillStyle='hsla('+ph2+',100%,74%,'+(alpha*.28)+')';cx.fill();cx.beginPath();cx.arc(px,py,pr,0,Math.PI*2);cx.fillStyle='hsla('+ph2+',100%,78%,'+(alpha*.42)+')';cx.fill();}cx.beginPath();cx.arc(x,y,r*.38,0,Math.PI*2);cx.fillStyle='hsla('+((hue+160)%360)+',80%,80%,'+(alpha*.45)+')';cx.fill();if(alpha>.10){cx.beginPath();cx.arc(x,y,r*.15,0,Math.PI*2);cx.fillStyle='hsla('+hue+',70%,92%,'+((alpha-.10)/.90)+')';cx.fill();}cx.restore();}
+  function tick(f){var tSpin=f.st===0?Math.abs(f.spin)*.15:f.st===1?Math.abs(f.spin):Math.abs(f.spin)*1.5;f.spinSpd+=(tSpin-f.spinSpd)*.018;f.ph+=f.spinSpd*(f.spin<0?-1:1);var lsdDrift=f.st===2?(f.hue+T*2.8)%360:f.hue,lsdH=window.VGA_ART.band+((lsdDrift-window.VGA_ART.band+360)%360)%window.VGA_ART.bandSpan,a=0;if(f.st===0){if(f.delay>0){f.delay--;return;}f.lf+=f.spd*.18;a=Math.pow(f.lf,2.2)*.55;if(f.lf>=1){f.st=1;f.pt=0;}}else if(f.st===1){a=.28+.06*Math.sin(T*.028+f.seed*1.3);f.pt++;if(f.pt>=f.pd)f.st=2;}else{f.lf-=f.spd*1.4;var s1=.88+.12*Math.sin(T*.16+f.seed*2.1),s2=1+.08*Math.sin(T*.10+f.seed*.8);a=Math.pow(Math.max(0,f.lf),1)*.52*s1*s2;if(f.lf<=0){var nf=mkFlower();var att=0;while(tooClose(nf.xf,nf.yf)&&att<20){nf=mkFlower();att++;}f.xf=nf.xf;f.yf=nf.yf;f.r=nf.r;f.hue=nf.hue;f.ph=nf.ph;f.spin=nf.spin;f.spd=nf.spd;f.pd=nf.pd;f.seed=nf.seed;f.spinSpd=0;f.st=0;f.lf=0;f.pt=0;f.delay=Math.floor(rnd(400,1200));return;}}if(a>.004&&W)drawFlower(f.xf*W,f.yf*H,f.r,lsdH,a,f.ph,f.st===2);}
+  function frame(){T++;if(W){cx.clearRect(0,0,W,H);flowers.forEach(tick);}requestAnimationFrame(frame);}
+  fill();frame();
+})();
+</script>
+
+<!-- ── VGA STUDIO WIRE — deck listener (added 2026-08-01, visuals untouched) ──
+     Renders only its own commands, ignores the rest of the channel:
+       {type:'clock', show}        slide the HUD in/out between bouts
+       {type:'bout',  d:{a,b,label,sub,colorL,colorR}}   arm a bout
+       {type:'corner',d:{l,r}}     recolour the corner strips mid-fight
+       {type:'round', n}           round box
+       {type:'matchtimer', secs | on:false}              the fight timer -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+  const _sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
+    'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
+  const $=id=>document.getElementById(id)
+
+  // hex → a colour NAME, so the reveal can say "RED TRUNKS" instead of a hex.
+  // Nearest-bin by hue; low-saturation collapses to white/black/grey.
+  function colorName(hex){
+    const n=parseInt(hex.slice(1),16), r=(n>>16)/255, g=((n>>8)&255)/255, b=(n&255)/255
+    const mx=Math.max(r,g,b), mn=Math.min(r,g,b), l=(mx+mn)/2
+    // CHROMA, not HSL saturation. Saturation is (mx-mn)/(1-|2l-1|), whose
+    // denominator collapses near white/black — var(--c-name) computes 31% "saturated"
+    // and was announcing as PURPLE TRUNKS. Chroma stays honest at the extremes.
+    if((mx-mn) < .10) return l>.72?'WHITE':l<.26?'BLACK':'GREY'
+    let h=0
+    if(mx===r) h=((g-b)/(mx-mn))%6; else if(mx===g) h=(b-r)/(mx-mn)+2; else h=(r-g)/(mx-mn)+4
+    h=(h*60+360)%360
+    return h<15?'RED':h<40?'ORANGE':h<65?'GOLD':h<150?'GREEN':h<200?'CYAN'
+          :h<255?'BLUE':h<290?'PURPLE':h<345?'PINK':'RED'
+  }
+
+  // Corner colours are the CENTRE SLITS flanking the clock. Every change runs
+  // the UFC-style reveal: the slit expands into a labeled colour block (the
+  // fixed-width bar compresses the names to make room), holds, collapses back
+  // to a slit. Auto-collapse on a timer, so it can never strand mid-fight.
+  let trunkTimer=null
+  // WHITE text on trunks, black ONLY when the trunk colour is light enough that
+  // white would disappear into it -- white, silver, yellow, cream. Luminance,
+  // not a list of colour names, so a trunk colour nobody thought of still gets
+  // a readable label. .62 is above yellow (.79) and well above red (.40).
+  const darkText=hex=>{ const n=parseInt(hex.slice(1),16)
+    return (0.299*(n>>16)+0.587*((n>>8)&255)+0.114*(n&255))/255 > .62 }
+
+  // A trunk colour used as TEXT on the near-black bar has to clear a floor —
+  // black trunks would paint the name black on black and erase it. Keeps the
+  // hue, blends toward white only as far as legibility needs.
+  function liftForDark(hex){
+    let r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16)
+    const lum=()=>(0.299*r+0.587*g+0.114*b)/255
+    let guard=0
+    while(lum() < .58 && guard++ < 40){
+      r=Math.round(r+(255-r)*0.12); g=Math.round(g+(255-g)*0.12); b=Math.round(b+(255-b)*0.12)
+    }
+    return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('')
+  }
+  // The slit is solid at the clock edge and DISSOLVES toward the fighter's
+  // name, so the colour reads as lighting on the bar rather than a paint chip
+  // sitting on top of it. Resting (7px wide) it's effectively solid; expanded
+  // the fade has room to breathe.
+  // Every slit shows an EYEBROW over a VALUE. A bare number tells the audience
+  // nothing — "+130" only lands as "UNDERDOG +130".
+  function writeSlit(side, eyebrow, value){
+    const s = side==='left' ? 'L' : 'R'
+    $('slitEye'+s).textContent = eyebrow
+    $('slitVal'+s).textContent = value
+  }
+  function corner1(hex, slit, label, side){
+    const dir = side==='left' ? '270deg' : '90deg'   // solid nearest the clock
+    slit.style.background=
+      `linear-gradient(${dir}, ${hex} 0%, ${hex} 22%, ${hex}cc 46%, ${hex}66 72%, ${hex}1a 100%)`
+    writeSlit(side, colorName(hex), 'TRUNKS')
+    label.style.color = darkText(hex) ? 'var(--c-panel-solid)' : '#fff'
+    label.style.textShadow = darkText(hex) ? '0 1px 3px rgba(255,255,255,.35)' : '0 1px 5px rgba(0,0,0,.75)'
+    const eb=document.querySelector(`.fighter-slot.${side} .f-label`)
+    // The NAME takes the trunk colour — no label needed at all, the name IS
+    // the corner. Lifted to a readable lightness first: black trunks would
+    // otherwise paint the name black on a black bar and erase it.
+    const nm=$(side==='left'?'nameL':'nameR')
+    if(nm){
+      const tint=liftForDark(hex)
+      nm.style.color=tint
+      nm.style.animation='none'                       // the purple glow fought the tint
+      nm.style.textShadow=`0 0 22px ${tint}55, 0 2px 6px rgba(0,0,0,.8)`
+    }
+    if(eb) eb.style.color=hex
+  }
+  // Set the corner colours WITHOUT animating. Arming a bout uses this — the
+  // colours should just be correct, not perform. (Founder: arming a fight
+  // shouldn't auto-play the trunk reveal.)
+  // Remembered so an odds reveal can hand the slits back to the corner
+  // colours when it closes — odds are a moment, the trunks are the state.
+  const CUR={ l:'#e8312a', r:'#2e6fe8' }
+  function setCorners(l,r){
+    if(l){ CUR.l=l; corner1(l, $('slitL'), $('slitLabelL'), 'left') }
+    if(r){ CUR.r=r; corner1(r, $('slitR'), $('slitLabelR'), 'right') }
+  }
+
+  // The ONE reveal mechanism: widen the bar from its centre, open both slits,
+  // show whatever text was handed in, hold, close. Trunks and odds both use
+  // it — same motion, different words. Auto-closes so it can never strand.
+  // A neutral violet for odds — related to the bar, clearly not a corner
+  // colour. Same left/right fade direction as the trunk gradient so the two
+  // reveals feel like one family.
+  // Both reveals hold 3s longer than they used to. At 4.5s the trunk colours
+  // were closing about when a viewer finished reading the second name, and the
+  // odds longer still -- a betting line is two numbers to compare, not one to
+  // glance at.
+  const HOLD_TRUNKS = 7500
+  const HOLD_ODDS   = 9000
+
+  const ODDS_FILL = side =>
+    `linear-gradient(${side==='left'?'270deg':'90deg'},
+      var(--c-rail) 0%, var(--c-rail) 24%, #3a2f5ecc 50%, #3a2f5e66 76%, #3a2f5e1a 100%)`
+
+  // What's currently open, so a second reveal knows whether it's a repeat or a
+  // change of subject. null = closed.
+  let openMode=null
+
+  function collapse(restore){
+    const bar=$('mainBar'), strip=document.querySelector('.bottom-strip')
+    $('slitL').classList.remove('expand'); $('slitR').classList.remove('expand')
+    bar.classList.remove('wide'); strip.classList.remove('wide')
+    openMode=null
+    fitDuring(700)
+    // put the corner colours back once it has closed, so the resting slits
+    // are always the trunks — odds are a moment, not a state
+    setTimeout(()=>{
+      $('slitL').classList.remove('odds'); $('slitR').classList.remove('odds')
+      bar.classList.remove('odds'); strip.classList.remove('odds')
+      if(restore) setCorners(CUR.l, CUR.r)
+      fitNames()
+    },560)
+  }
+
+  function open1(L, R, hold, m){
+    const odds = m==='odds'
+    const bar=$('mainBar'), strip=document.querySelector('.bottom-strip')
+    bar.classList.toggle('odds', odds); strip.classList.toggle('odds', odds)
+    $('slitL').classList.toggle('odds', odds); $('slitR').classList.toggle('odds', odds)
+    // repaint the fills FIRST — setCorners rewrites the slit text, so writing
+    // our own labels after it is the only order that survives
+    if(odds){
+      $('slitL').style.background=ODDS_FILL('left')
+      $('slitR').style.background=ODDS_FILL('right')
+    } else {
+      setCorners(CUR.l, CUR.r)          // odds may have left the violet fill in place
+    }
+    if(L) writeSlit('left',  L.eyebrow, L.value)
+    if(R) writeSlit('right', R.eyebrow, R.value)
+    bar.classList.add('wide'); strip.classList.add('wide')
+    $('slitL').classList.add('expand'); $('slitR').classList.add('expand')
+    openMode=m
+    fitDuring(700)
+    clearTimeout(trunkTimer)
+    trunkTimer=setTimeout(()=>collapse(odds), hold||HOLD_TRUNKS)
+  }
+
+  function reveal(L, R, hold, mode){
+    const m = mode==='odds' ? 'odds' : 'trunks'
+    clearTimeout(trunkTimer)
+    // Changing subject while open (trunks → odds) used to swap the fill and the
+    // words in place, mid-animation, with no transition on either — a hard cut.
+    // Broadcast graphics don't cross-fade two different states in one panel:
+    // they retract and re-extend. Same panel, one idea at a time.
+    if(openMode && openMode!==m){
+      collapse(openMode==='odds')
+      trunkTimer=setTimeout(()=>open1(L,R,hold,m), 640)
+      return
+    }
+    open1(L,R,hold,m)
+  }
+
+  function corners(l,r){
+    setCorners(l,r)
+    reveal({eyebrow:colorName(l||'#e8312a'), value:'TRUNKS'},
+           {eyebrow:colorName(r||'#2e6fe8'), value:'TRUNKS'})
+  }
+
+  // Odds ride the same reveal. American odds carry their own meaning: negative
+  // = favourite, positive = underdog. The eyebrow says which so the number
+  // reads to someone who has never seen a betting line.
+  function oddsWord(v){
+    if(!v || v==='—') return 'EVEN'
+    return String(v).trim().startsWith('-') ? 'FAVOURITE' : 'UNDERDOG'
+  }
+  function oddsReveal(l,r){
+    reveal({eyebrow:oddsWord(l), value:l||'—'},
+           {eyebrow:oddsWord(r), value:r||'—'}, HOLD_ODDS, 'odds')
+  }
+
+  // Long names shrink instead of wrapping — "iron Micheal Chandler" was
+  // taking two lines. Re-run whenever a name or the bar width changes.
+  // A name's width at 36px is a property of the NAME, so measure it once and
+  // cache it. The old shrink-by-1-until-it-fits loop cost up to 22 forced
+  // reflows per name, which is fine once but not on every animation frame.
+  const NAT={}
+  function natWidth(el){
+    const c=NAT[el.id]
+    if(c && c.key===el.textContent) return c.w
+    const prev=el.style.fontSize
+    el.style.fontSize='36px'
+    const w=el.scrollWidth
+    el.style.fontSize=prev
+    NAT[el.id]={key:el.textContent, w}
+    return w
+  }
+  function fitNames(){
+    ;['nameL','nameR'].forEach(id=>{
+      const el=$(id); if(!el) return
+      const slot=el.parentElement
+      // clientWidth INCLUDES padding — measuring against it overstated the room
+      // by 48px and let long names run past the bar's edge. Subtract it.
+      const cs=getComputedStyle(slot)
+      const avail=slot.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 4
+      const nat=Math.max(natWidth(el), 1)
+      el.style.fontSize=Math.max(14, Math.min(36, Math.floor(36*avail/nat)))+'px'
+    })
+  }
+  // The bar's width animates over ~550ms, but the fit only ran when it SETTLED
+  // — so the names held their squeezed size for the whole slide and then jumped
+  // to their new size in one frame. That jump was the jolt. Re-fit every frame
+  // for the length of the transition instead, so the type scales WITH the bar.
+  let fitRAF=null
+  function fitDuring(ms){
+    cancelAnimationFrame(fitRAF)
+    const end=performance.now()+ms
+    const step=()=>{ fitNames(); if(performance.now()<end) fitRAF=requestAnimationFrame(step) }
+    step()
+  }
+
+  window.__trunks=(l,r)=>corners(l||'#e8312a',r||'#2e6fe8')   // preview/testing
+  window.__odds=(l,r)=>oddsReveal(l||'-150', r||'+130')
+
+  // fight timer — deck sends a length, this file counts it down. Re-sending
+  // the same length restarts it, matching the deck's one-button-per-length UX.
+  let tHandle=null
+
+// Swap text at the edge-on point of a 90deg turn, so the old value is never
+// seen becoming the new one. Returns early when the value has not changed --
+// re-sending the same round should not perform.
+function flipSwap(el, text){
+  if(!el || el.textContent === String(text)) return
+  el.classList.add('flip-out')
+  setTimeout(()=>{
+    el.textContent = String(text)
+    // the incoming pose must be applied WITHOUT a transition, or it animates
+    // from one rotated state to the other and the flip reads as a wobble
+    el.style.transition = 'none'
+    el.classList.remove('flip-out'); el.classList.add('flip-in')
+    requestAnimationFrame(()=>{
+      el.style.transition = ''
+      el.classList.remove('flip-in')
+    })
+  }, 260)
+}
+
+  function timer(secs){
+    clearInterval(tHandle)
+    const el=$('fightTimer')
+    if(secs==null){ el.textContent=''; return }
+    let left=secs
+    const draw=()=>{ el.textContent=`${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}` }
+    draw()
+    tHandle=setInterval(()=>{ left=Math.max(0,left-1); draw(); if(left<=0) clearInterval(tHandle) },1000)
+  }
+
+  _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
+    // LEAGUE GATE — every command, not just 'clock'.
+    //
+    // It used to sit inside the 'clock' branch alone, so show/hide was filtered
+    // and nothing else was. The deck stamps league on EVERY message (see
+    // send() in control.html), so 'corner', 'clockodds' and 'round' carried the
+    // tag and both clocks ignored it: one press of Colours, Odds or a round
+    // button animated the UBA bar and the UBAe bar at once whenever both
+    // sources were live. Names and timers were never at risk -- those use
+    // different command names per league ('bout'/'clocktimer' here,
+    // 'pickbar'/'matchtimer' there) -- which is exactly why it went unnoticed.
+    //
+    // An UNTAGGED command still passes, so an older cached deck keeps working.
+    // 'gfl' too: a GFL card is a solo fight night and runs on THIS clock, so
+    // gating on 'uba' alone would have made the deck's GFL mode look dead --
+    // every press accepted by the deck and silently dropped here.
+    if(c.league && c.league!=='uba' && c.league!=='gfl') return
+    // THE SKIN. Every command the deck sends carries its league, so the clock
+    // re-themes itself off the same stamp it already gates on -- no second
+    // scene, no second file, and a GFL card promoted mid-UBA-night is dressed
+    // correctly the moment the deck touches it. Only flipped when a league is
+    // actually stamped: an unstamped legacy command must not silently undress
+    // a GFL show back to violet.
+    if(c.league) setLeague(c.league)
+    if(c.type==='clock'){
+      document.querySelector('.hud-root').classList.toggle('off', c.show===false); return
+    }
+    if(c.type==='bout'){
+      const d=c.d||{}
+      if(d.a!=null) $('nameL').textContent=d.a
+      if(d.b!=null) $('nameR').textContent=d.b
+      if(d.label) $('boutFloat').textContent=d.label
+      if(d.sub)   $('formatFloat').textContent=d.sub
+      setCorners(d.colorL,d.colorR)   // set, don't perform
+      fitNames(); return
+    }
+    // Corner colours: SET by default, only perform when asked. Picking a swatch
+    // shouldn't replay the animation every time you try a colour — that's the
+    // deck's explicit reveal button ({reveal:true}).
+    if(c.type==='corner'){
+      const d=c.d||{}
+      if(c.reveal) corners(d.l,d.r); else setCorners(d.l,d.r)
+      return
+    }
+    // odds ride the same reveal, different words
+    if(c.type==='clockodds'){ const d=c.d||{}; oddsReveal(d.l,d.r); return }
+    if(c.type==='round'){ flipSwap($('roundText'), 'ROUND '+c.n); return }
+    // 'clocktimer' is THIS bar's own timer, deliberately a different type from
+    // the overlay's top-right 'matchtimer' — otherwise one deck press ran both
+    // clocks at once. UBA mode sends clocktimer; UBAe mode sends matchtimer.
+    if(c.type==='clocktimer'){ timer(c.on===false?null:c.secs); return }
+  }).subscribe()
+})()
+</script>
+</body>
+</html>
