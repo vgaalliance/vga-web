@@ -402,6 +402,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   transition:opacity .3s ease,transform .3s cubic-bezier(.16,.8,.3,1);
   white-space:nowrap;position:relative;z-index:2;
   display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1;}
+.slit-label{color:#fff;}          /* default -- see corner1(): light trunks flip it to dark */
 .slit-eyebrow{font-family:'Share Tech Mono',monospace;font-size:15px;letter-spacing:.14em;
   text-transform:uppercase;opacity:1;}
 .slit-value{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:26px;
@@ -907,6 +908,10 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   // fixed-width bar compresses the names to make room), holds, collapses back
   // to a slit. Auto-collapse on a timer, so it can never strand mid-fight.
   let trunkTimer=null
+  // WHITE text on trunks, black ONLY when the trunk colour is light enough that
+  // white would disappear into it -- white, silver, yellow, cream. Luminance,
+  // not a list of colour names, so a trunk colour nobody thought of still gets
+  // a readable label. .62 is above yellow (.79) and well above red (.40).
   const darkText=hex=>{ const n=parseInt(hex.slice(1),16)
     return (0.299*(n>>16)+0.587*((n>>8)&255)+0.114*(n&255))/255 > .62 }
 
