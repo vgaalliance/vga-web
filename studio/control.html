@@ -739,6 +739,14 @@ const SPLIT_NAME = 'Summer Split'
 // event's own name so GFL/AMA cards brand themselves without a deck edit.
 const leagueOf = name => /^GFL/i.test(name||'') ? 'GFL' : /^AMA/i.test(name||'') ? 'AMA' : 'UBA'
 
+// The badge every solo graphic wears. The card's NAME decides it when a card is
+// loaded -- the operator can promote a GFL card during a UBA night and it should
+// still say GFL -- and the deck's own mode is the fallback for the window before
+// a card is loaded. Without that fallback the countdown fell through to the
+// UBAe branch and opened a GFL show under the UBAE wordmark.
+const soloMark = () => UBA.name ? leagueOf(UBA.name) : (EV === 'gfl' ? 'GFL' : 'UBA')
+const tapeMark = () => isSolo() ? soloMark() : 'UBAe'
+
 function mnPush(){
   send({type:'pickbar', d:{ split:SPLIT_NAME, teamA:MN.a, teamB:MN.b,
     left:(MN.lineups[MN.a]||{}).starters||[], right:(MN.lineups[MN.b]||{}).starters||[],
@@ -879,10 +887,14 @@ window.fireNextEvent=async(scope='both')=>{
     // The next UNLOCKED solo event. events_public does not expose the lock, but
     // event_matches is the publish gate itself -- a locked card returns no rows
     // -- so "has bouts in event_matches" IS "unlocked", checked soonest-first.
-    // Amateur cards are skipped: this is the UBA slot of the promo.
+    // Amateur cards USED to be skipped here, from when they were not broadcast.
+    // They are GFL now -- a televised league with its own deck mode -- and the
+    // filter meant the promo could never advertise a GFL card at all: it read
+    // straight past GFL 1 to the UBA card twelve days behind it. Soonest wins,
+    // whatever the type.
     if(scope!=='ubae'){
     const { data: evs } = await sb.from('events_public').select('id,name,type,event_date')
-      .eq('status','scheduled').neq('type','ama')
+      .eq('status','scheduled')
       .gte('event_date',new Date(Date.now()-6*3600e3).toISOString())
       .order('event_date').limit(4)
     for(const ev of (evs||[])){
@@ -967,7 +979,7 @@ window.mnCountdown=()=>{
     const main = UBA.bouts.find(b=>b.bout_number===1) || UBA.bouts[0]
     if(!main) return
     send({type:'countdown', d:{ a:main.a, b:main.b,
-      league:leagueOf(UBA.name), eventMain: (UBA.name || 'FIGHT NIGHT').toUpperCase(), eventSub:'ubaesports.com' }})
+      league:soloMark(), eventMain: (UBA.name || 'FIGHT NIGHT').toUpperCase(), eventSub:'ubaesports.com' }})
     return
   }
   if(!MN.id) return
@@ -1082,7 +1094,10 @@ window.mnTape=async()=>{
   const SPONSOR_FULL = 'Sheath Underwear'
   const SPONSOR_URL  = ''      // e.g. 'sheath.com' -- only needed if it is not name.com
   const SPONSOR_CODE = ''      // e.g. 'SHEATHUBA30' -- only needed if it is not nameUBA30
-  send({type:'tape', d:{ title, subtitle, left:F(A), right:F(B),
+  // The league rides along so the tape's wordmark is not a hardcoded UBA. A
+  // GFL bout wearing the UBA mark is the one graphic where the wrong brand is
+  // full screen and unmissable.
+  send({type:'tape', d:{ title, subtitle, left:F(A), right:F(B), league:tapeMark(),
     sponsor:SPONSOR, sponsorFull:SPONSOR_FULL, sponsorUrl:SPONSOR_URL, sponsorCode:SPONSOR_CODE }})
 }
 
@@ -1159,13 +1174,21 @@ window.loadCardEvents=async()=>{
 // countdown to N minutes from now (changeable, independent of match start).
 // UBA mode: the countdown headlines the MAIN EVENT fighters, not teams —
 // bout_number 1 IS the main event (the card counts down from it).
+//
+// The BRANDING follows the deck's mode, the MATCHUP follows the loaded card.
+// Those used to be one decision -- no card loaded meant the whole payload fell
+// through to the UBAe branch -- so starting the clock before loading the card
+// opened a solo show under the UBAE wordmark and the UBAe split name. Scene ①
+// is the first thing on air and the card load is a separate press, so that was
+// the normal order of operations, not a slip.
 window.mnCountdownIn=()=>{
   const m=parseFloat(document.getElementById('cdMins').value); if(!m||m<=0) return
   const target=new Date(Date.now()+m*60000).toISOString()
   const main = (isSolo() && UBA.bouts.length)
     ? (UBA.bouts.find(b=>b.bout_number===1) || UBA.bouts[0]) : null
-  send({type:'countdown', d: main
-    ? { a:main.a, b:main.b, target, league:leagueOf(UBA.name), eventMain:(UBA.name||'FIGHT NIGHT').toUpperCase(), eventSub:'discord.gg/uba' }
+  send({type:'countdown', d: isSolo()
+    ? { a:main?main.a:'TBA', b:main?main.b:'TBA', target, league:soloMark(),
+        eventMain:(UBA.name||'FIGHT NIGHT').toUpperCase(), eventSub:'discord.gg/uba' }
     : { a:MN.a||'TEAM A', b:MN.b||'TEAM B', target, league:'UBAE', eventMain:SPLIT_NAME.toUpperCase(), eventSub:'ubaesports.com' }})
 }
 
@@ -1269,10 +1292,11 @@ window.setEv=ev=>{
   document.body.classList.toggle('mode-team', !isSolo())
   document.querySelectorAll('#evRow button').forEach(b=>b.classList.toggle('active', b.dataset.ev===ev))
   drawRail()
-  // The weekly schedule bar is UBAe furniture, and its toggle is UBAe-only --
-  // so switching to a fight night left it stranded on screen with no button
-  // anywhere to clear it. Switching leagues retires it.
-  if(ev==='uba' && window._loadbarOn){
+  // The weekly schedule bar is UBAe furniture, so leaving UBAe retires it.
+  // Gated on 'uba' alone until 2026-08-16, which meant switching to GFL carried
+  // the UBAe fixture bar onto a GFL show -- the off switch is visible in solo
+  // mode, so it was clearable, but only once somebody noticed it on air.
+  if(isSolo() && window._loadbarOn){
     window._loadbarOn=false; send({type:'loadbar', show:false}); _loadbarBtn()
   }
   _loadbarBtn()
