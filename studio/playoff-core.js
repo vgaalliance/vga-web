@@ -175,14 +175,16 @@
                 SF  1 v W(4/5) · 2 v W(3/6)
                 F   W(SF1) v W(SF2)
        LOSERS   R1  L(3/6) v L(4/5)
-                R2  W(LB R1) v the LOWER-seeded semi loser
-                SF  W(LB R2) v the HIGHER-seeded semi loser
+                R2  the two semi losers play EACH OTHER
+                SF  W(LB R1) v W(LB R2)
                 F   W(LB SF) v L(WB final)
        GRAND FINAL  W(WB final) v W(LB final) — one loss and it is over
 
-     The higher-seeded semi loser dropping in a round LATER is the seeding
-     reward for finishing higher; it is the one place a 6-team bracket has a
-     free choice, and it is made here rather than on the night. */
+     The one place a 6-team bracket has a free choice is what happens to the
+     two winners-semi losers, since the losers bracket can only take one of
+     them at that point. **They play each other** (founder, 2026-08-22), which
+     is the balanced answer: nobody rides a bye down, and both LB survivors
+     reach the losers semi having won exactly one elimination match. */
 
   // Seats 1..6. Teams already through take the top seats in seeded order and
   // the play-in winners take what is left — which seats those are is not
@@ -207,8 +209,8 @@
       ],
       lb:[
         { round:'LOSERS · ROUND 1', ms:[{a:ref('LOSER 3/6'),b:ref('LOSER 4/5')}] },
-        { round:'LOSERS · ROUND 2', ms:[{a:ref('WINNER LB R1'),b:ref('LOWER SEMI LOSER')}] },
-        { round:'LOSERS · SEMI',    ms:[{a:ref('WINNER LB R2'),b:ref('HIGHER SEMI LOSER')}] },
+        { round:'LOSERS · ROUND 2', ms:[{a:ref('LOSER SEMI 1'),b:ref('LOSER SEMI 2')}] },
+        { round:'LOSERS · SEMI',    ms:[{a:ref('WINNER LB R1'),b:ref('WINNER LB R2')}] },
         { round:'LOSERS · FINAL',   ms:[{a:ref('WINNER LB SEMI'),b:ref('LOSER WB FINAL')}] },
       ],
       gf:{ round:'GRAND FINAL', ms:[{a:ref('WINNERS BRACKET'),b:ref('LOSERS BRACKET')}] },
