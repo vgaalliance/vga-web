@@ -683,8 +683,25 @@ window.loadOdds=async()=>{
 /* ── UBAe MATCH NIGHT tracker — deck state only, never writes the DB ── */
 const MN={ id:null, a:null, b:null, scoreA:0, scoreB:0, round:1, date:null, week:null, lineups:{},
   pickA:null, pickB:null, usedA:[], usedB:[] }
-const DAY=['SUN','MON','TUE','WED','THU','FRI','SAT']
-const fmtDay=d=>{const x=new Date(d);return DAY[x.getDay()]+' '+String(x.getDate()).padStart(2,'0')+'.'+String(x.getMonth()+1).padStart(2,'0')}
+// Match dates are EASTERN. Read in the operator's own zone, a 9PM ET Saturday
+// bout is Sunday to anyone east of Chicago — and the deck is the thing that
+// tells the graphics which day the week runs. Intl converts; it also handles
+// EDT/EST without being told.
+const ET_TZ='America/New_York'
+const etBits=d=>{
+  // PostgREST's "2026-08-22 23:00:00+00" is not ISO: space, and an offset with
+  // no minutes. Chrome forgives it, Intl does not always.
+  let x=(d instanceof Date)?d:new Date(String(d))
+  if(isNaN(x)) x=new Date(String(d).replace(' ','T').replace(/([+-]\d{2})$/,'$1:00'))
+  const p={}
+  if(isNaN(x)) return {weekday:'',month:'Jan',day:'',year:''}
+  new Intl.DateTimeFormat('en-US',{timeZone:ET_TZ,weekday:'short',month:'short',
+    day:'numeric',year:'numeric'}).formatToParts(x).forEach(y=>{ p[y.type]=y.value })
+  return p
+}
+const fmtDay=d=>{const p=etBits(d)
+  return p.weekday.toUpperCase()+' '+String(p.day).padStart(2,'0')+'.'+
+    String(['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(p.month)+1).padStart(2,'0')}
 
 window.mnLoad=async()=>{
   const { data } = await sb.from('team_matches_public').select('*')
@@ -1042,9 +1059,9 @@ window.mnLoadbar=async()=>{
       a:{name:m.team_a_name, roster:((lu[m.team_a_name]||{}).starters||[]).concat((lu[m.team_a_name]||{}).backups||[])},
       b:{name:m.team_b_name, roster:((lu[m.team_b_name]||{}).starters||[]).concat((lu[m.team_b_name]||{}).backups||[])} })
   }
-  const ds=wkMatches.map(m=>new Date(m.match_date))
-  const MO=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
-  const dates= ds.length? MO[ds[0].getMonth()]+' '+ds[0].getDate()+'<br>'+MO[ds[ds.length-1].getMonth()]+' '+ds[ds.length-1].getDate()+'<br>'+ds[0].getFullYear() : ''
+  const ds=wkMatches.map(m=>etBits(m.match_date))
+  const dstamp=p=>p.month.toUpperCase()+' '+p.day
+  const dates= ds.length? dstamp(ds[0])+'<br>'+dstamp(ds[ds.length-1])+'<br>'+ds[0].year : ''
   send({type:'loadbar', d:{ week:String(wk).padStart(2,'0'), dates, matches }})
   window._loadbarOn=true; _loadbarBtn()
 }
