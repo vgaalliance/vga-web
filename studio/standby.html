@@ -687,10 +687,35 @@
 const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
   'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
 const $=id=>document.getElementById(id)
-const MO=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
-const DAY=['SUN','MON','TUE','WED','THU','FRI','SAT']
-const fdate=d=>{const x=new Date(d);return DAY[x.getDay()]+' '+MO[x.getMonth()]+' '+x.getDate()}
-const ftime=d=>{const x=new Date(d);let h=x.getHours(),m=x.getMinutes();const ap=h>=12?'PM':'AM';h=h%12||12;return h+(m?':'+String(m).padStart(2,'0'):'')+ap+' ET'}
+/* Every date and time on this screen is EASTERN — the league is scheduled in
+   it and the label says so. These used to format in the BROWSER's zone and
+   stamp "ET" on the result, which is correct only on an Eastern machine: a
+   7PM ET match rendered "4PM ET" on a Pacific one, and a late match rendered
+   the wrong DAY anywhere east of it. Intl does the conversion and handles
+   EDT/EST on its own — the same reason the weekly clock uses it. */
+const ET_TZ='America/New_York'
+// PostgREST hands timestamps back as "2026-08-22 23:00:00+00" — a space where
+// ISO wants a T, and an offset with no minutes. Chrome's Date forgives both,
+// Intl does not always, and a throw in here would take the whole screen down
+// mid-show. So parse defensively and hand back nothing rather than blow up.
+const asDate=d=>{
+  if(d instanceof Date) return d
+  const s=String(d)
+  let x=new Date(s)
+  if(isNaN(x)) x=new Date(s.replace(' ','T').replace(/([+-]\d{2})$/,'$1:00'))
+  return x
+}
+const etParts=d=>{
+  const x=asDate(d), p={}
+  if(isNaN(x)) return {weekday:'',month:'',day:'',hour:'',minute:'',dayPeriod:''}
+  new Intl.DateTimeFormat('en-US',{timeZone:ET_TZ,weekday:'short',month:'short',
+    day:'numeric',hour:'numeric',minute:'2-digit',hour12:true})
+    .formatToParts(x).forEach(y=>{ p[y.type]=y.value })
+  return p
+}
+const fdate=d=>{const p=etParts(d); return p.weekday ? `${p.weekday.toUpperCase()} ${p.month.toUpperCase()} ${p.day}` : ''}
+const ftime=d=>{const p=etParts(d)
+  return p.hour ? p.hour+(p.minute!=='00'?':'+p.minute:'')+p.dayPeriod.toUpperCase()+' ET' : ''}
 
 let VIEWS=['standings','playoff','bracket','rosters','vsrosters','ubarank','schedule','next3','teamvs','card','cta'], cycle=null
 // Auto-cycle for a UBA fight night: only the screens that mean something on one.
@@ -1002,7 +1027,7 @@ function renderSchedPlayoff(st, mt){
   box.innerHTML=`<div class="pow">
     <div class="pow-h">// PLAYOFFS · ${ns.length} NIGHTS · ${ns.reduce((a,n)=>a+n.ms.length,0)} MATCHES //</div>
     ${ns.map(n=>{
-      const d=new Date(n.date+'T18:00:00'), fin=n.ms.some(m=>m.id==='GF')
+      const d=new Date(n.date+'T16:00:00Z'), fin=n.ms.some(m=>m.id==='GF')   // midday ET — no zone can drag it a day
       let rows
       if(real[n.date] && real[n.date].length){
         rows=real[n.date].map(m=>`${m.team_a_name} <i>V</i> ${m.team_b_name}`).join(' <i>·</i> ')
