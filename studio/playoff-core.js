@@ -119,5 +119,101 @@
     return null
   }
 
-  return { SPRING_CHAMP, cmp, project, picture, branches, marginNote }
+  /* ── clinched, not "currently second" ──────────────────────────────────
+     A green THROUGH tag is a promise. Sitting 2nd in the conference with a
+     match still to play is not a promise: on the last night of the Summer
+     Split, Sheath Elite were A2 and ANY UKFC UNCS win pushed them into the
+     play-in without Sheath kicking a punch.
+
+     So the tag is decided by playing out every scenario the unplayed matches
+     allow — each winner, each scoreline — and keeping a status only if it
+     holds in ALL of them. Anything that survives in some and not others is
+     ON THE LINE, which is the honest thing to put on screen and also the more
+     interesting one. */
+  function outlook(standings, pending, springChamp){
+    const left=(pending||[]).filter(m=>m&&m.team_a_name&&m.team_b_name)
+    const base=picture(standings, null, springChamp)
+    // 6 scenarios per match; past three matches the combinations stop being
+    // worth computing and nothing is clinched that early anyway.
+    if(!left.length || left.length>3) return { status:base.status, base, pending:left.length, decided:!left.length }
+
+    let sims=[[]]
+    left.forEach(m=>{
+      const next=[]
+      sims.forEach(pre=>{
+        [[m.team_a_name,m.team_b_name],[m.team_b_name,m.team_a_name]].forEach(([w,l])=>{
+          [0,1,2].forEach(ls=>next.push(pre.concat([{winner:w,loser:l,winner_bouts:3,loser_bouts:ls}])))
+        })
+      })
+      sims=next
+    })
+
+    const seen={}
+    sims.forEach(chain=>{
+      // chain the hypotheticals: each one is applied to the table the last
+      // one produced, or a team playing twice would only ever bank one result
+      let rows=standings
+      chain.forEach(sim=>{ rows=project(rows, sim) })
+      const p=picture(rows, null, springChamp)
+      Object.keys(p.status).forEach(n=>{ (seen[n]=seen[n]||{})[p.status[n]]=1 })
+    })
+    const status={}
+    Object.keys(seen).forEach(n=>{
+      const k=Object.keys(seen[n])
+      status[n]= k.length===1 ? k[0] : 'live'
+    })
+    return { status, base, pending:left.length, decided:false }
+  }
+
+  /* ── the bracket ───────────────────────────────────────────────────────
+     6 teams, double elimination, seeds 1 and 2 sitting out winners round 1,
+     and a TRUE grand final (the winners-bracket team only has to lose once —
+     there is no reset). docs/ubae-plan.md locks those three facts; the seat
+     and pairing rules below are the standard 6-team shape they imply:
+
+       WINNERS  R1  3 v 6 · 4 v 5          (1 and 2 are already in the semis)
+                SF  1 v W(4/5) · 2 v W(3/6)
+                F   W(SF1) v W(SF2)
+       LOSERS   R1  L(3/6) v L(4/5)
+                R2  W(LB R1) v the LOWER-seeded semi loser
+                SF  W(LB R2) v the HIGHER-seeded semi loser
+                F   W(LB SF) v L(WB final)
+       GRAND FINAL  W(WB final) v W(LB final) — one loss and it is over
+
+     The higher-seeded semi loser dropping in a round LATER is the seeding
+     reward for finishing higher; it is the one place a 6-team bracket has a
+     free choice, and it is made here rather than on the night. */
+
+  // Seats 1..6. Teams already through take the top seats in seeded order and
+  // the play-in winners take what is left — which seats those are is not
+  // cosmetic, because seats 1 and 2 skip a round.
+  function seats(p){
+    const out=[]
+    ;(p.seeds||[]).forEach(t=>out.push({seed:out.length+1, name:t.team_name, team:t, from:null}))
+    ;(p.playin||[]).forEach(m=>out.push({seed:out.length+1, name:null, from:[m[0].team_name,m[1].team_name]}))
+    while(out.length<6) out.push({seed:out.length+1, name:null, from:null})
+    return out.slice(0,6)
+  }
+
+  function bracket(p){
+    const s=seats(p), at=n=>s[n-1], ref=t=>({ref:t})
+    return {
+      seats:s,
+      playin:(p.playin||[]).map(m=>({a:{name:m[0].team_name}, b:{name:m[1].team_name}})),
+      wb:[
+        { round:'WINNERS · ROUND 1', ms:[{a:at(3),b:at(6)},{a:at(4),b:at(5)}] },
+        { round:'WINNERS · SEMIS',   ms:[{a:at(1),b:ref('WINNER 4/5')},{a:at(2),b:ref('WINNER 3/6')}] },
+        { round:'WINNERS · FINAL',   ms:[{a:ref('WINNER SEMI 1'),b:ref('WINNER SEMI 2')}] },
+      ],
+      lb:[
+        { round:'LOSERS · ROUND 1', ms:[{a:ref('LOSER 3/6'),b:ref('LOSER 4/5')}] },
+        { round:'LOSERS · ROUND 2', ms:[{a:ref('WINNER LB R1'),b:ref('LOWER SEMI LOSER')}] },
+        { round:'LOSERS · SEMI',    ms:[{a:ref('WINNER LB R2'),b:ref('HIGHER SEMI LOSER')}] },
+        { round:'LOSERS · FINAL',   ms:[{a:ref('WINNER LB SEMI'),b:ref('LOSER WB FINAL')}] },
+      ],
+      gf:{ round:'GRAND FINAL', ms:[{a:ref('WINNERS BRACKET'),b:ref('LOSERS BRACKET')}] },
+    }
+  }
+
+  return { SPRING_CHAMP, cmp, project, picture, branches, marginNote, outlook, seats, bracket }
 })
