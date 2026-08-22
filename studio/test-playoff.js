@@ -179,5 +179,31 @@ console.log('\nUBAe playoff picture\n')
   eq(ids.filter(id=>all.indexOf(id)<0),[],'every bracket match has a night')
 }
 
+// 9 — WHO COULD BE IN THE SLOT. The bracket is read by an audience, not by
+// somebody holding six seeds in their head, so every slot that can name its
+// candidates has to carry them — and has to stop naming them once the pool is
+// the whole field.
+{
+  const p=P.picture(SUMMER), b=P.bracket(p), s=P.seats(p)
+  const find=id=>[].concat(...b.wb.map(r=>r.ms),...b.lb.map(r=>r.ms),b.gf.ms).find(m=>m.id===id)
+  const poss=n=>P.who(s[n-1])
+
+  eq(find('S1').b.of, poss(4).concat(poss(5)), 'WINNER 4/5 names whoever can win 4 v 5')
+  eq(find('S2').b.of, poss(3).concat(poss(6)), 'WINNER 3/6 names whoever can win 3 v 6')
+  eq(find('L1').a.of, poss(3).concat(poss(6)), 'LOSER 3/6 names the same pool as the winner does')
+  eq(find('L1').b.of, poss(4).concat(poss(5)), 'LOSER 4/5 names the same pool as the winner does')
+
+  // A play-in seat is exactly its two teams — never one of them early, which
+  // would be the screen picking a winner before the match.
+  const pin=s.filter(x=>!x.name&&x.from)
+  eq(pin.map(x=>x.from.length), pin.map(()=>2), 'every play-in seat offers exactly two teams')
+  eq(P.who(s[0]), [s[0].name], 'a settled seat is only itself')
+
+  // Past the semis it says nothing, on purpose: by the final the pool is the
+  // whole field and six names rotating in one slot is not information.
+  eq(find('WF').a.of, [], 'the winners final does not try to name the field')
+  eq(find('GF').a.of, [], 'the grand final does not try to name the field')
+}
+
 console.log(`\n${n-bad}/${n} passed${bad?` — ${bad} FAILED`:''}\n`)
 process.exit(bad?1:0)

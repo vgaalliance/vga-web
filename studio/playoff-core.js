@@ -197,8 +197,21 @@
     return out.slice(0,6)
   }
 
+  /* WHO COULD ACTUALLY BE IN THAT SLOT.
+     A bracket before it is played is a page of labels — "WINNER 4/5" says what
+     the slot is waiting for, not who might walk into it, and on a broadcast
+     nobody holds six seeds in their head to work it out. So every slot that can
+     name its candidates carries them: the seat itself if it is settled, both
+     play-in teams if it is not, and for a ref, whoever could win the match it
+     points at. The screen cycles them; this decides what there is to cycle.
+     Left abstract on purpose past the semis — by the final the pool is the
+     whole field, and six names rotating in one slot is not information. */
+  function who(x){ return !x ? [] : (x.name ? [x.name] : (x.from||[])) }
+
   function bracket(p){
-    const s=seats(p), at=n=>s[n-1], ref=t=>({ref:t})
+    const s=seats(p), at=n=>s[n-1]
+    const ref=(t,of)=>({ref:t, of:(of||[]).filter(Boolean)})
+    const pool=(...ns)=>ns.reduce((a,n)=>a.concat(who(at(n))),[])
     const PI=(p.playin||[]).map((m,i)=>'PI'+(i+1))   // winners round 1 cannot run before the play-in
     return {
       seats:s,
@@ -208,14 +221,14 @@
           {id:'W1', needs:PI, a:at(3), b:at(6)},
           {id:'W2', needs:PI, a:at(4), b:at(5)}] },
         { round:'WINNERS · SEMIS',   ms:[
-          {id:'S1', needs:['W2'], a:at(1), b:ref('WINNER 4/5')},
-          {id:'S2', needs:['W1'], a:at(2), b:ref('WINNER 3/6')}] },
+          {id:'S1', needs:['W2'], a:at(1), b:ref('WINNER 4/5', pool(4,5))},
+          {id:'S2', needs:['W1'], a:at(2), b:ref('WINNER 3/6', pool(3,6))}] },
         { round:'WINNERS · FINAL',   ms:[
           {id:'WF', needs:['S1','S2'], a:ref('WINNER SEMI 1'), b:ref('WINNER SEMI 2')}] },
       ],
       lb:[
         { round:'LOSERS · ROUND 1', ms:[
-          {id:'L1', needs:['W1','W2'], a:ref('LOSER 3/6'), b:ref('LOSER 4/5')}] },
+          {id:'L1', needs:['W1','W2'], a:ref('LOSER 3/6', pool(3,6)), b:ref('LOSER 4/5', pool(4,5))}] },
         { round:'LOSERS · ROUND 2', ms:[
           {id:'L2', needs:['S1','S2'], a:ref('LOSER SEMI 1'), b:ref('LOSER SEMI 2')}] },
         { round:'LOSERS · SEMI',    ms:[
@@ -296,5 +309,5 @@
     return out
   }
 
-  return { SPRING_CHAMP, cmp, project, picture, branches, marginNote, outlook, seats, bracket, road, NIGHTS, nights }
+  return { SPRING_CHAMP, cmp, project, picture, branches, marginNote, outlook, seats, who, bracket, road, NIGHTS, nights }
 })
