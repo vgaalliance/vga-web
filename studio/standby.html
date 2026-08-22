@@ -122,6 +122,16 @@
   .bk-s .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .bk-s.ref .nm{color:var(--dim);font-weight:600;font-size:16px;letter-spacing:.04em;}
   .bk-s .of{font-size:13px;color:var(--dim);font-weight:600;letter-spacing:.03em;}
+  /* A slot nobody has won yet, showing WHO could walk into it. The name is the
+     line you read; the label under it is what the slot is waiting for. They
+     cross-fade rather than cutting, because a hard swap on a loading screen
+     reads as the data changing. */
+  .bk-s .cyc{display:block;transition:opacity .34s ease;}
+  .bk-s .cyc.out{opacity:0;}
+  .bk-s .lbl{display:block;font-family:'Press Start 2P',monospace;font-size:8px;
+    letter-spacing:.16em;color:var(--dim);margin-top:5px;}
+  .bk-s.alt .nm{color:#ffb020;}          /* amber: this seat is not settled */
+  .bk-s.alt .sd{color:#ffb020;}
   .bk-s.prov .nm{color:#ffb020;} .bk-s.prov .sd{color:#ffb020;}
   .bk-col.gf .bk-m{border-left-color:#ffce00;box-shadow:0 0 26px rgba(255,206,0,.22);}
   .bk-col.gf .bk-h{color:#ffce00;}
@@ -1167,11 +1177,21 @@ function renderBracket(st, mt){
   const out=PLAYOFF.outlook(st, left)
   const prov=n=>out.status[n]==='live' ? ' prov' : ''
 
+  // A slot that is not a team yet NAMES ITS CANDIDATES and cycles them, rather
+  // than printing the label it is waiting on. "WINNER 4/5" is correct and tells
+  // an audience nothing; Sheath Elite ↔ UKFC UNCS, alternating under a small
+  // WINNER 4/5, tells them both of those teams can still be standing there.
+  // Four is the cap — past that a rotating slot is a slot machine.
+  const alt=(seed,names,label)=>`<div class="bk-s alt"><span class="sd">${seed||'·'}</span>
+      <span class="nm"><span class="cyc" data-names="${names.slice(0,4).join('|')}">${names[0]}</span>
+      <span class="lbl">${label}</span></span></div>`
   const slot=x=>{
     if(!x) return ''
-    if(x.ref) return `<div class="bk-s ref"><span class="sd">·</span><span class="nm">${x.ref}</span></div>`
+    if(x.ref) return (x.of||[]).length>1
+      ? alt('·', x.of, x.ref)
+      : `<div class="bk-s ref"><span class="sd">·</span><span class="nm">${x.ref}</span></div>`
     if(x.name) return `<div class="bk-s${prov(x.name)}"><span class="sd">${x.seed||''}</span><span class="nm">${x.name}</span></div>`
-    if(x.from) return `<div class="bk-s"><span class="sd">${x.seed||''}</span><span class="nm of">W: ${x.from.join(' / ')}</span></div>`
+    if(x.from) return alt(x.seed, x.from, 'PLAY-IN WINNER')
     return `<div class="bk-s ref"><span class="sd">${x.seed||''}</span><span class="nm">TBD</span></div>`
   }
   const col=(cls,head,ms,style)=>`<div class="bk-col ${cls||''}" ${style||''}>
@@ -1196,11 +1216,35 @@ function renderBracket(st, mt){
   }).join(' · ')
   const longest=Math.max.apply(null, Object.keys(r).map(sd=>r[sd].long))
 
+  // EVERY CYCLING SLOT TURNS TOGETHER. Independent timers drift within a
+  // minute and the board starts to twitch; one interval, one index, and the
+  // whole bracket steps at once.
+  bkCycle(box)
+
   note.innerHTML = (left.length
       ? `<b>AMBER = STILL DECIDED BY TONIGHT</b> · ${left.length} MATCH${left.length>1?'ES':''} STILL TO PLAY<br>`
       : 'SEEDS PROVISIONAL UNTIL THE PLAY-IN — A SURVIVOR SEEDS IN ON RECORD LIKE EVERYONE ELSE<br>')
     + `MATCHES TO THE TITLE, UNBEATEN — ${roadLine} · THE LONG WAY ROUND: <b>UP TO ${longest}</b><br>`
     + 'DOUBLE ELIMINATION · SEEDS 1–2 SKIP ROUND 1 · <b>TRUE GRAND FINAL — ONE LOSS AND IT IS OVER</b>'
+}
+
+let _bkTimer=null
+function bkCycle(box){
+  clearInterval(_bkTimer); _bkTimer=null
+  const cs=[...box.querySelectorAll('.cyc')].map(el=>({el, names:(el.dataset.names||'').split('|').filter(Boolean)}))
+    .filter(c=>c.names.length>1)
+  if(!cs.length) return
+  let i=0
+  _bkTimer=setInterval(()=>{
+    i++
+    cs.forEach(c=>c.el.classList.add('out'))
+    // Swap at the bottom of the fade, not on the way down: changing the text
+    // while it is still visible is the flicker this transition exists to avoid.
+    setTimeout(()=>cs.forEach(c=>{
+      c.el.textContent=c.names[i%c.names.length]
+      c.el.classList.remove('out')
+    }), 340)
+  }, 2600)
 }
 
 function renderRosters(st, rec){
