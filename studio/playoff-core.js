@@ -344,5 +344,55 @@
     return out.length>1 ? out : asIs
   }
 
-  return { SPRING_CHAMP, cmp, project, picture, branches, marginNote, outlook, seats, who, bracket, road, scenarios, NIGHTS, nights }
+  /* ── the playoffs as WEEKS ─────────────────────────────────────────────
+     Five dated nights, each with a round name and a count, is a true schedule
+     and an info dump: an audience wants to know when they need to be here and
+     who is playing, and everything past that is for the broadcast to explain
+     out loud. So the nights collapse into the three weeks they actually are —
+     play-in, then two weekends of bracket — and each week names its matches
+     only where they can be named. */
+  function weeks(b){
+    const ns=nights(b)
+    if(!ns.length) return []
+    const out=[]
+    ns.forEach(n=>{
+      // a weekend is one week: Friday and Saturday belong to the same card, and
+      // the play-in gets its own however close it sits
+      const isPI=n.ms.every(m=>m.round==='PLAY-IN')
+      const last=out[out.length-1]
+      const near=last && !last.isPI && !isPI &&
+        (new Date(n.date+'T12:00:00Z') - new Date(last.nights[last.nights.length-1].date+'T12:00:00Z')) <= 3*864e5
+      if(near) last.nights.push(n)
+      else out.push({isPI, nights:[n]})
+    })
+    let wk=0
+    return out.map(g=>{
+      const ms=[].concat(...g.nights.map(n=>n.ms))
+      return {
+        title: g.isPI ? 'PLAY-IN WEEK' : `PLAYOFFS · WEEK ${++wk}`,
+        isPI: g.isPI,
+        dates: g.nights.map(n=>n.date),
+        ms,
+        // What this week COSTS you, in one line. The round names say what the
+        // match is called; this says what it means.
+        stake: g.isPI ? 'TWO SURVIVE · TWO GO HOME'
+             : ms.some(m=>m.id==='GF') ? 'THE TITLE'
+             : 'FIRST LOSS PUTS YOU IN THE ELIMINATION BRACKET',
+      }
+    })
+  }
+
+  /* The teams tonight is choosing between, for the line under the play-in
+     week: the ones that are in the play-in on SOME boards and not others. */
+  function swing(scn){
+    if(!scn || scn.length<2) return []
+    const sets=scn.map(x=>{
+      const p=picture(x.rows)
+      return new Set([].concat(...(p.playin||[]).map(m=>m.map(t=>t.team_name))))
+    })
+    const all=new Set([].concat(...sets.map(s2=>[...s2])))
+    return [...all].filter(n=>!sets.every(s2=>s2.has(n)))
+  }
+
+  return { SPRING_CHAMP, cmp, project, picture, branches, marginNote, outlook, seats, who, bracket, road, scenarios, weeks, swing, NIGHTS, nights }
 })
