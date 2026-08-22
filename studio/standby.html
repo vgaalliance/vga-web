@@ -73,8 +73,40 @@
   .porow.bye{border-left-color:#ffce00;} .porow.bye .rk{color:#ffce00;}
   .tag.bye{color:#ffce00;border-color:rgba(255,206,0,.5);text-shadow:0 0 10px rgba(255,206,0,.35);}
   .tag.playin{color:var(--hi);border-color:rgba(204,102,255,.45);}
+  /* on the line — the tag a team has NOT earned yet. Amber, because green is
+     a promise and this is a question the night still answers. */
+  .porow.live{border-left-color:#ffb020;} .porow.live .rk{color:#ffb020;}
+  .tag.live{color:#ffb020;border-color:rgba(255,176,32,.5);text-shadow:0 0 10px rgba(255,176,32,.35);}
   .porow.out{opacity:.42;}
   .tag.out{color:rgba(255,255,255,.45);border-color:rgba(255,255,255,.2);}
+
+  /* ── playoff bracket — the same six teams, drawn as the road ──────────
+     Two bands (winners over losers), the play-in hanging off the left and the
+     grand final off the right, both spanning the bands because they belong to
+     neither. Slots that are not a team yet say what they are waiting for
+     ("WINNER 4/5") rather than sitting blank — a bracket before it is played
+     is mostly those, and they are the part that explains the format. */
+  .bk{display:grid;grid-template-columns:repeat(6,1fr);gap:14px 16px;align-items:start;}
+  .bk-h{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.14em;
+    color:var(--pink);margin-bottom:9px;text-align:center;line-height:1.5;}
+  .bk-m{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--pur);
+    margin-bottom:11px;box-shadow:0 0 16px rgba(60,0,110,.35);}
+  .bk-s{display:flex;align-items:center;gap:9px;padding:8px 10px;line-height:1;
+    font-weight:700;font-size:22px;text-transform:uppercase;}
+  .bk-s+.bk-s{border-top:1px solid var(--line);}
+  .bk-s .sd{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--hi);
+    min-width:20px;text-align:center;}
+  .bk-s .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .bk-s.ref .nm{color:var(--dim);font-weight:600;font-size:16px;letter-spacing:.04em;}
+  .bk-s .of{font-size:13px;color:var(--dim);font-weight:600;letter-spacing:.03em;}
+  .bk-s.prov .nm{color:#ffb020;} .bk-s.prov .sd{color:#ffb020;}
+  .bk-col.gf .bk-m{border-left-color:#ffce00;box-shadow:0 0 26px rgba(255,206,0,.22);}
+  .bk-col.gf .bk-h{color:#ffce00;}
+  .bk-col.pi .bk-m{border-left-color:var(--hi);}
+  .bk-span{grid-row:1 / span 2;align-self:center;}
+  .bk-note{font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.14em;
+    color:var(--dim);text-align:center;margin-top:16px;line-height:1.8;}
+  .bk-note b{color:#ffce00;font-weight:400;}
 
   /* the swing strip — tonight's result, both ways */
   .po-swing{margin-top:24px;background:var(--panel);border:2px solid var(--line);
@@ -512,6 +544,15 @@
       <div id="poSwing"></div>
     </div>
 
+    <!-- playoff bracket — the six seats and the road through them. Same
+         rules file as the picture; this one only draws it. -->
+    <div class="view" id="v-bracket">
+      <div class="eyebrow splitlbl">UBAe · Summer Split</div>
+      <div class="title sm">Playoff Bracket</div>
+      <div class="bk" id="bkContent"></div>
+      <div class="bk-note" id="bkNote"></div>
+    </div>
+
     <div class="view" id="v-rosters">
       <div class="eyebrow splitlbl">UBAe · Summer Split</div>
       <div class="title">Team Rosters</div>
@@ -627,7 +668,7 @@ const DAY=['SUN','MON','TUE','WED','THU','FRI','SAT']
 const fdate=d=>{const x=new Date(d);return DAY[x.getDay()]+' '+MO[x.getMonth()]+' '+x.getDate()}
 const ftime=d=>{const x=new Date(d);let h=x.getHours(),m=x.getMinutes();const ap=h>=12?'PM':'AM';h=h%12||12;return h+(m?':'+String(m).padStart(2,'0'):'')+ap+' ET'}
 
-let VIEWS=['standings','playoff','rosters','vsrosters','ubarank','schedule','next3','teamvs','card','cta'], cycle=null
+let VIEWS=['standings','playoff','bracket','rosters','vsrosters','ubarank','schedule','next3','teamvs','card','cta'], cycle=null
 // Auto-cycle for a UBA fight night: only the screens that mean something on one.
 // The deck picks the rotation by mode, so 'auto' doesn't parade team standings
 // through a solo card.
@@ -648,6 +689,7 @@ async function loadAll(){
   ])
   renderStandings(st||[]); renderRosters(st||[], rec||[]); renderSchedule(mt||[]); renderNext(ev||[]); renderTvs(mt||[])
   renderPlayoff(st||[], mt||[])
+  renderBracket(st||[], mt||[])
   // roster 2.0 keeps the full records list (photos included); before the deck
   // loads a match it defaults to the nearest scheduled one, starters unknown
   REC=rec||[]
@@ -931,10 +973,14 @@ function renderPlayoff(st, mt){
   if(!box||!swing) return
   if(!window.PLAYOFF||!(st||[]).length){ box.innerHTML=''; swing.innerHTML=''; return }
   const p=PLAYOFF.picture(st)
-  const TAG={in:'THROUGH', bye:'BYE · IN', playin:'PLAY-IN', out:'OUT'}
+  const left=(mt||[]).filter(m=>(m.stage||'regular')==='regular')
+  // The TAG is what is CLINCHED, not what the table says today: sitting 2nd
+  // with a rival still to play is not through, it is on the line.
+  const out=PLAYOFF.outlook(st, left)
+  const TAG={in:'THROUGH', bye:'BYE · IN', playin:'PLAY-IN', out:'OUT', live:'ON THE LINE'}
   box.innerHTML=p.order.map(c=>
     `<div><div class="conf-h">Conference ${c}</div>${p.confs[c].map((t,i)=>{
-      const s=p.status[t.team_name]||'playin'
+      const s=out.status[t.team_name]||p.status[t.team_name]||'playin'
       return `<div class="porow ${s}"><span class="rk">${i+1}</span>
         <span class="nm">${t.team_name}</span>
         <span class="rec">${t.match_wins}-${t.match_losses}${t.match_draws?'-'+t.match_draws:''}</span>
@@ -944,7 +990,6 @@ function renderPlayoff(st, mt){
 
   const RULES='6 TEAMS · DOUBLE ELIMINATION · SEEDS 1–2 BYE ROUND 1 · TRUE GRAND FINAL'
   const line=(lbl,a,b)=>`<div class="po-line"><span class="lbl">${lbl}</span>${a}${b?`<span class="vs">V</span>${b}`:''}</div>`
-  const left=(mt||[]).filter(m=>(m.stage||'regular')==='regular')
   const pin=(mt||[]).filter(m=>m.stage==='play_in')
 
   // One match left — the whole picture is a branch, so draw it as one.
@@ -977,6 +1022,50 @@ function renderPlayoff(st, mt){
     <div class="po-sh">// PLAY-IN${pin.length?' · SCHEDULED':''} //</div>
     <div class="po-brs"><div class="po-br">${rows}</div><div class="po-br">${right}</div></div>
     <div class="po-foot">${RULES}</div></div>`
+}
+
+/* ── playoff bracket ──
+   The seats and the pairings are playoff-core.js (tested); this draws them.
+   Everything a slot cannot know yet it SAYS instead of leaving blank, and the
+   seeds are labelled provisional for as long as they are — a play-in survivor
+   is seeded on the same record as everyone else and can out-seed a team that
+   never went to the play-in. */
+function renderBracket(st, mt){
+  const box=$('bkContent'), note=$('bkNote')
+  if(!box||!note) return
+  if(!window.PLAYOFF||!(st||[]).length){ box.innerHTML=''; note.innerHTML=''; return }
+  const p=PLAYOFF.picture(st), b=PLAYOFF.bracket(p)
+  const left=(mt||[]).filter(m=>(m.stage||'regular')==='regular')
+  // A seat held by a team that has not clinched anything is drawn amber, the
+  // same colour the picture uses for ON THE LINE. Without it the bracket
+  // quietly contradicts the screen before it — the seeds are only "as it
+  // stands" while a match is unplayed.
+  const out=PLAYOFF.outlook(st, left)
+  const prov=n=>out.status[n]==='live' ? ' prov' : ''
+
+  const slot=x=>{
+    if(!x) return ''
+    if(x.ref) return `<div class="bk-s ref"><span class="sd">·</span><span class="nm">${x.ref}</span></div>`
+    if(x.name) return `<div class="bk-s${prov(x.name)}"><span class="sd">${x.seed||''}</span><span class="nm">${x.name}</span></div>`
+    if(x.from) return `<div class="bk-s"><span class="sd">${x.seed||''}</span><span class="nm of">W: ${x.from.join(' / ')}</span></div>`
+    return `<div class="bk-s ref"><span class="sd">${x.seed||''}</span><span class="nm">TBD</span></div>`
+  }
+  const col=(cls,head,ms,style)=>`<div class="bk-col ${cls||''}" ${style||''}>
+    <div class="bk-h">${head}</div>
+    ${ms.map(m=>`<div class="bk-m">${slot(m.a)}${slot(m.b)}</div>`).join('')}</div>`
+
+  box.innerHTML =
+    col('pi bk-span','PLAY-IN', b.playin.length?b.playin:[{a:{ref:'TBD'},b:{ref:'TBD'}}], 'style="grid-column:1"')
+    + col('', b.wb[0].round, b.wb[0].ms, 'style="grid-column:2"')
+    + col('', b.wb[1].round, b.wb[1].ms, 'style="grid-column:3"')
+    + col('', b.wb[2].round, b.wb[2].ms, 'style="grid-column:4"')
+    + col('gf bk-span','GRAND FINAL', b.gf.ms, 'style="grid-column:6"')
+    + b.lb.map((r,i)=>col('', r.round, r.ms, `style="grid-column:${i+2};grid-row:2"`)).join('')
+
+  note.innerHTML = (left.length
+      ? `<b>AMBER = STILL DECIDED BY TONIGHT</b> · ${left.length} MATCH${left.length>1?'ES':''} STILL TO PLAY<br>`
+      : 'SEEDS PROVISIONAL UNTIL THE PLAY-IN — A SURVIVOR SEEDS IN ON RECORD LIKE EVERYONE ELSE<br>')
+    + 'DOUBLE ELIMINATION · SEEDS 1–2 SKIP ROUND 1 · <b>TRUE GRAND FINAL — ONE LOSS AND IT IS OVER</b>'
 }
 
 function renderRosters(st, rec){

@@ -104,5 +104,53 @@ console.log('\nUBAe playoff picture\n')
   eq(names(P.project(SUMMER,{winner:'Ghost Team',loser:'jUnC'})).length,8,'unknown team in a sim is ignored')
 }
 
+// 9 — clinched, not "currently second": the tag has to survive tonight
+{
+  const left=[{team_a_name:'UKFC UNCS',team_b_name:'Ring Reapers'}]
+  const o=P.outlook(SUMMER,left)
+  eq(o.status['Champions United'],'in','conference winner is clinched')
+  eq(o.status['Sheath Elite'],'live','A2 with a rival still to play is NOT through')
+  eq(o.status['UKFC UNCS'],'live','the team playing tonight is on the line')
+  eq(o.status['jUnC'],'playin','bottom of the conference is already in the play-in')
+  eq(o.status['Team MUDS'],'in','a conference nobody is still playing in is settled')
+  eq(o.status['Ring Reapers'],'playin','the Reapers cannot climb out of B4 tonight')
+  eq(o.pending,1,'one match left')
+  eq(o.decided,false,'not decided while a match is unplayed')
+}
+{
+  const o=P.outlook(SUMMER,[])
+  eq(o.status['Sheath Elite'],'in','with nothing left to play, current position IS the status')
+  eq(o.decided,true,'decided when nothing is pending')
+  eq(P.outlook(SUMMER,[{team_a_name:'x'}]).decided,true,'half a match is not a match')
+}
+
+// 10 — the bracket: six seats, and seeds 1-2 are not in round 1
+{
+  const b=P.bracket(P.picture(SUMMER))
+  eq(b.seats.map(s=>s.name),
+     ['Champions United','Team MUDS','Sheath Elite','Team Rag Tags',null,null],'through teams take the top seats in seeded order')
+  eq(b.seats[4].from,['UKFC UNCS','jUnC'],'seat 5 is a play-in winner')
+  eq(b.seats[5].from,['The 5 Great Kage','Ring Reapers'],'seat 6 is the other play-in winner')
+  eq(b.wb[0].ms.map(m=>[m.a.seed,m.b.seed]),[[3,6],[4,5]],'winners round 1 is 3v6 and 4v5')
+  eq(b.wb[1].ms.map(m=>m.a.seed),[1,2],'seeds 1 and 2 enter at the semis')
+  eq(b.wb[1].ms.map(m=>m.b.ref),['WINNER 4/5','WINNER 3/6'],'semis take the round-1 winners crossed')
+  eq(b.lb.length,4,'four losers rounds')
+  eq(b.lb[1].ms[0].b.ref,'LOWER SEMI LOSER','the lower seed drops in first')
+  eq(b.lb[2].ms[0].b.ref,'HIGHER SEMI LOSER','finishing higher buys a later drop')
+  eq(b.gf.ms[0].b.ref,'LOSERS BRACKET','grand final is the two brackets')
+}
+{
+  // with the Spring-champ bye biting there are five through and ONE play-in,
+  // so the bye team is a seat, not a seventh team
+  const s=[T('Champions United','A',4,1,12,8),T('UKFC UNCS','A',3,2,11,8),
+           T('Sheath Elite','A',2,3,9,10),T('jUnC','A',1,4,4,14),
+           T('The 5 Great Kage','B',4,1,13,7),T('Team Rag Tags','B',3,2,10,8),
+           T('Team MUDS','B',2,3,9,10),T('Ring Reapers','B',1,4,5,13)]
+  const b=P.bracket(P.picture(s))
+  eq(b.seats.length,6,'still six seats with the bye')
+  eq(b.seats.filter(x=>x.name).length,5,'five named, one play-in winner')
+  eq(b.seats[5].from,['Ring Reapers','Sheath Elite'],'the single play-in fills the last seat')
+}
+
 console.log(`\n${n-bad}/${n} passed${bad?` — ${bad} FAILED`:''}\n`)
 process.exit(bad?1:0)
