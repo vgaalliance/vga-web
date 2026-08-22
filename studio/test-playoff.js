@@ -214,5 +214,25 @@ console.log('\nUBAe playoff picture\n')
      'two matches left is a slideshow, not a picture — it stops at one')
 }
 
+// 10 — THE PLAYOFFS AS THREE WEEKS. Five dated nights with a round name and a
+// count is a true schedule and an info dump; this is the shape that goes on the
+// loading screen, so the grouping is a rule and not a layout accident.
+{
+  const b=P.bracket(P.picture(SUMMER)), w=P.weeks(b)
+  eq(w.length, 3, 'play-in week, then two weekends of bracket')
+  eq(w.map(x=>x.title), ['PLAY-IN WEEK','PLAYOFFS · WEEK 1','PLAYOFFS · WEEK 2'], 'and they are named that way')
+  eq(w.map(x=>x.dates.length), [1,2,2], 'a weekend is one card — Friday and Saturday together')
+  eq(w.map(x=>x.ms.length), [2,5,5], 'every match on the calendar is on exactly one card')
+  eq(w[2].ms.some(m=>m.id==='GF'), true, 'the last week holds the grand final')
+  eq(w.map(x=>x.stake), ['TWO SURVIVE · TWO GO HOME',
+                         'FIRST LOSS PUTS YOU IN THE ELIMINATION BRACKET',
+                         'THE TITLE'], 'each week says what it costs, in words')
+
+  // The one line that replaced three cycling boards.
+  eq(P.swing(P.scenarios(SUMMER,[{team_a_name:'UKFC UNCS',team_b_name:'Ring Reapers'}])).sort(),
+     ['Sheath Elite','UKFC UNCS'], 'tonight is choosing between exactly those two for a play-in place')
+  eq(P.swing(P.scenarios(SUMMER,[])), [], 'nothing left to play, nothing to choose between')
+}
+
 console.log(`\n${n-bad}/${n} passed${bad?` — ${bad} FAILED`:''}\n`)
 process.exit(bad?1:0)

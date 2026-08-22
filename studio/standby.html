@@ -113,6 +113,23 @@
     text-shadow:0 0 14px rgba(255,176,32,.45);}
   .bk-scn small{display:block;font-size:9px;letter-spacing:.14em;color:var(--dim);
     margin-top:7px;text-shadow:none;}
+  .powks{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:14px;}
+  .powk{background:var(--panel);border:1px solid var(--line);border-top:4px solid var(--pur);
+    padding:14px 18px 16px;}
+  .powk.pi{border-top-color:var(--hi);}
+  .powk.fin{border-top-color:#ffce00;box-shadow:0 0 26px rgba(255,206,0,.18);}
+  .powk-t{font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.16em;
+    color:var(--pink);}
+  .powk.fin .powk-t{color:#ffce00;}
+  .powk-d{font-weight:900;font-size:26px;text-transform:uppercase;margin:8px 0 12px;line-height:1;}
+  .powk-d i{font-style:normal;color:var(--dim);padding:0 6px;}
+  .powm{font-weight:700;font-size:19px;text-transform:uppercase;line-height:1.45;color:#f0e0ff;}
+  .powm b{font-family:'Press Start 2P',monospace;font-size:8px;letter-spacing:.14em;
+    color:var(--hi);font-weight:400;padding-right:8px;}
+  .powm i{font-style:normal;color:var(--dim);padding:0 6px;}
+  .powm.dim{color:var(--dim);font-size:15px;}
+  .powk-s{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.14em;
+    color:var(--dim);margin-top:12px;border-top:1px solid var(--line);padding-top:10px;}
   .pow-foot{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.14em;
     color:var(--dim);margin-top:12px;}
 
@@ -745,7 +762,10 @@ const fdate=d=>{const p=etParts(d); return p.weekday ? `${p.weekday.toUpperCase(
 const ftime=d=>{const p=etParts(d)
   return p.hour ? p.hour+(p.minute!=='00'?':'+p.minute:'')+p.dayPeriod.toUpperCase()+' ET' : ''}
 
-let VIEWS=['standings','playoff','bracket','rosters','vsrosters','ubarank','schedule','next3','teamvs','card','cta'], cycle=null
+// The BRACKET is not in this list on purpose: 24 slots, most of them waiting on
+// a match, is a screen that rewards somebody talking over it. It stays a deck
+// button; the schedule screen's three week-cards are what cycles.
+let VIEWS=['standings','playoff','rosters','vsrosters','ubarank','schedule','next3','teamvs','card','cta'], cycle=null
 // Auto-cycle for a UBA fight night: only the screens that mean something on one.
 // The deck picks the rotation by mode, so 'auto' doesn't parade team standings
 // through a solo card.
@@ -766,6 +786,7 @@ async function loadAll(){
   ])
   renderStandings(st||[]); renderRosters(st||[], rec||[]); renderNext(ev||[]); renderTvs(mt||[])
   renderPlayoff(st||[], mt||[])
+  renderPoWeeks(st||[], mt||[])
   playoffScenes(st||[], mt||[])
   renderSchedule(mt||[])   // LAST: it asks whether the playoff block filled before printing "TBA"
   // roster 2.0 keeps the full records list (photos included); before the deck
@@ -1036,64 +1057,80 @@ function renderStandings(st){
   }).join('')
 }
 
-/* ── the playoff weeks, on the schedule screen ──
-   Twelve matches across five nights (playoff-core.js NIGHTS, pinned by a test
-   that no night runs a match before the match that feeds it). Nothing is in
-   the database yet — the teams are unknown until the play-in is played — so
-   this is the CALENDAR. Real rows win the moment they exist: a scheduled
-   play_in / playoff match in team_matches replaces the planned line for that
-   date with the actual matchup and its time. */
-function renderSchedPlayoff(st, mt, scene){
+/* ── the playoffs, as three weeks ──
+   FIVE DATED NIGHTS WITH A ROUND NAME AND A COUNT IS AN INFO DUMP. What an
+   audience needs off a loading screen is when to be here and who is playing;
+   everything past that is for the broadcast to say out loud. So the nights
+   collapse into the three weeks they are — play-in, then two weekends — and a
+   week names its matches only where they can be named. The rest is a count and
+   one line saying what the week costs you.
+
+   Real rows still win: a play_in/playoff match actually scheduled in
+   team_matches replaces the planned line for its date. */
+function renderPoWeeks(st, mt){
   const box=$('schedPlayoff'); if(!box) return
   if(!window.PLAYOFF||!(st||[]).length){ box.innerHTML=''; return }
-  const ns=PLAYOFF.nights(PLAYOFF.bracket(PLAYOFF.picture(st)))
-  const settled=!(mt||[]).some(m=>(m.stage||'regular')==='regular')
+  const p=PLAYOFF.picture(st), b=PLAYOFF.bracket(p), wks=PLAYOFF.weeks(b)
+  const left=(mt||[]).filter(m=>(m.stage||'regular')==='regular')
+  const settled=!left.length
   const real={}
   ;(mt||[]).filter(m=>m.stage==='play_in'||m.stage==='playoff'||m.stage==='final')
     .forEach(m=>{ const d=String(m.match_date).slice(0,10); (real[d]=real[d]||[]).push(m) })
 
+  // Round names in words people use. "WINNERS · ROUND 1" is what the bracket
+  // calls it; ROUND 1 is what it is, and every losers-bracket match is the same
+  // thing to a viewer — lose and you are out.
+  const tag=r=> r==='PLAY-IN' ? ''
+    : r==='WINNERS · ROUND 1' ? 'ROUND 1'
+    : r==='WINNERS · SEMIS'   ? 'SEMI'
+    : r==='WINNERS · FINAL'   ? 'WINNERS FINAL'
+    : r==='GRAND FINAL'       ? 'GRAND FINAL'
+    : 'ELIMINATION'
+  // A slot is a team, a straight either/or (shown alternating, because a later
+  // match decides it), or something that has to be played first.
+  const nm=x=>{
+    if(!x) return null
+    if(x.name) return x.name
+    const two = x.from && x.from.length===2 ? x.from : null
+    return two ? `<span class="cyc pcy" data-names="${two.join('|')}">${two[0]}</span>` : null
+  }
+  const dts=ds=>ds.map(d=>fdate(new Date(d+'T16:00:00Z'))).join(' <i>·</i> ')
+
   box.innerHTML=`<div class="pow">
-    <div class="pow-h">// PLAYOFFS · ${ns.length} NIGHTS · ${ns.reduce((a,n)=>a+n.ms.length,0)} MATCHES${scene?` · <b class="scn">${scene}</b>`:''} //</div>
-    ${ns.map(n=>{
-      const d=new Date(n.date+'T16:00:00Z'), fin=n.ms.some(m=>m.id==='GF')   // midday ET — no zone can drag it a day
-      let rows
-      if(real[n.date] && real[n.date].length){
-        rows=real[n.date].map(m=>`${m.team_a_name} <i>V</i> ${m.team_b_name}`).join(' <i>·</i> ')
-      }else if(n.ms.every(m=>m.round==='PLAY-IN')){
-        // the play-in pairings are known ONLY once the regular season is done;
-        // until then say which places play, not which teams
-        rows = settled
-          ? n.ms.map(m=>`${m.a.name} <i>V</i> ${m.b.name}`).join(' <i>·</i> ')
-          : n.ms.map(m=>`CONF ${m.conf} 3RD <i>V</i> 4TH`).join(' <i>·</i> ')
+    <div class="pow-h">// THE PLAYOFFS · ${wks.length} WEEKS //</div>
+    <div class="powks">${wks.map(w=>{
+      const realHere=[].concat(...w.dates.map(d=>real[d]||[]))
+      let lines=[], hidden=0
+      if(realHere.length){
+        lines=realHere.map(m=>`<div class="powm">${m.team_a_name} <i>V</i> ${m.team_b_name}</div>`)
+      }else if(w.isPI){
+        // the play-in pairings are known only once the regular season is done;
+        // until then say which PLACES play, because naming teams would be the
+        // screen picking a winner before the match
+        lines=w.ms.map(m=>`<div class="powm">${settled && m.a && m.a.name
+          ? `${m.a.name} <i>V</i> ${m.b.name}`
+          : `CONF ${m.conf} 3RD <i>V</i> 4TH`}</div>`)
       }else{
-        // WHO IS IN IT, not which round it is. "W R1 ×2" is a true description
-        // of the night and tells nobody anything — the audience wants the two
-        // names. A slot that is a straight either/or shows both, alternating,
-        // because that is the whole point: either of those teams can be here.
-        // Anything with more possibilities than that keeps its label, which at
-        // least says what it is waiting on.
-        const nm=x=>{
-          if(!x) return 'TBD'
-          if(x.name) return x.name
-          const two = x.from && x.from.length===2 ? x.from
-                    : (x.of && x.of.length===2 ? x.of : null)
-          if(two) return `<span class="cyc pcy" data-names="${two.join('|')}">${two[0]}</span>`
-          return `<span class="pw">${x.ref||'TBD'}</span>`
-        }
-        const by=[]
-        n.ms.forEach(m=>{
-          const r=m.round.replace('WINNERS · ','W ').replace('LOSERS · ','L ')
-          const hit=by.find(x=>x.r===r)
-          const pair=`${nm(m.a)} <i>V</i> ${nm(m.b)}`
-          hit ? hit.ps.push(pair) : by.push({r, ps:[pair]})
+        w.ms.forEach(m=>{
+          const a=nm(m.a), bb=nm(m.b)
+          if(a&&bb) lines.push(`<div class="powm"><b>${tag(m.round)}</b> ${a} <i>V</i> ${bb}</div>`)
+          else hidden++
         })
-        rows=by.map(x=>`<b class="prd">${x.r}</b> ${x.ps.join(' <i>·</i> ')}`).join('<br>')
+        if(hidden) lines.push(`<div class="powm dim">${lines.length?'+ ':''}${hidden} MATCH${hidden>1?'ES':''} SET BY THE ONES ABOVE</div>`)
       }
-      return `<div class="pownight${fin?' fin':''}">
-        <div class="d">${fdate(d)}<small>${n.label}</small></div>
-        <div class="r">${rows}</div></div>`
-    }).join('')}
-    <div class="pow-foot">FRIDAYS AND SATURDAYS · MATCHUPS SET BY THE BRACKET AS EACH NIGHT IS PLAYED</div>
+      return `<div class="powk${w.isPI?' pi':''}${w.stake==='THE TITLE'?' fin':''}">
+        <div class="powk-t">${w.title}</div>
+        <div class="powk-d">${dts(w.dates)}</div>
+        ${lines.join('')}
+        <div class="powk-s">${w.stake}</div>
+      </div>`
+    }).join('')}</div>
+    ${(() => {
+      // ONE LINE about tonight, not three boards: which teams the last match is
+      // choosing between for a play-in place.
+      const sw=PLAYOFF.swing(PLAYOFF.scenarios(st, left))
+      return sw.length ? `<div class="pow-foot">TONIGHT DECIDES WHICH OF <b>${sw.join(' / ').toUpperCase()}</b> IS IN THE PLAY-IN</div>` : ''
+    })()}
   </div>`
 }
 
@@ -1289,7 +1326,6 @@ function playoffScenes(st, mt){
 function drawScene(){
   const s=SCN[SCNi]||{rows:_scnSt, label:null}
   renderBracket(s.rows, _scnMt, s.label)
-  renderSchedPlayoff(s.rows, _scnMt, s.label)
 }
 
 /* ── the alternating names ──
