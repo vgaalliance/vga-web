@@ -1062,9 +1062,20 @@ function renderBracket(st, mt){
     + col('gf bk-span','GRAND FINAL', b.gf.ms, 'style="grid-column:6"')
     + b.lb.map((r,i)=>col('', r.round, r.ms, `style="grid-column:${i+2};grid-row:2"`)).join('')
 
+  // What the seed is worth, said in matches — grouped so it reads as one line
+  // rather than six. This is the reason seeding is worth a broadcast segment.
+  const r=PLAYOFF.road(b), byWins={}
+  Object.keys(r).forEach(sd=>{ (byWins[r[sd].win]=byWins[r[sd].win]||[]).push(+sd) })
+  const roadLine=Object.keys(byWins).sort((a,b2)=>a-b2).map(w=>{
+    const sd=byWins[w].sort((a,b2)=>a-b2)
+    return `SEED${sd.length>1?'S':''} ${sd.length>1?sd[0]+'–'+sd[sd.length-1]:sd[0]}: <b>${w}</b>`
+  }).join(' · ')
+  const longest=Math.max.apply(null, Object.keys(r).map(sd=>r[sd].long))
+
   note.innerHTML = (left.length
       ? `<b>AMBER = STILL DECIDED BY TONIGHT</b> · ${left.length} MATCH${left.length>1?'ES':''} STILL TO PLAY<br>`
       : 'SEEDS PROVISIONAL UNTIL THE PLAY-IN — A SURVIVOR SEEDS IN ON RECORD LIKE EVERYONE ELSE<br>')
+    + `MATCHES TO THE TITLE, UNBEATEN — ${roadLine} · THE LONG WAY ROUND: <b>UP TO ${longest}</b><br>`
     + 'DOUBLE ELIMINATION · SEEDS 1–2 SKIP ROUND 1 · <b>TRUE GRAND FINAL — ONE LOSS AND IT IS OVER</b>'
 }
 

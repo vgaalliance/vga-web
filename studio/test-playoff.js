@@ -153,5 +153,13 @@ console.log('\nUBAe playoff picture\n')
   eq(b.seats[5].from,['Ring Reapers','Sheath Elite'],'the single play-in fills the last seat')
 }
 
+// 11 — what the bye is worth, in matches
+{
+  const b=P.bracket(P.picture(SUMMER))
+  const r=P.road(b)
+  eq([r[1].win,r[3].win,r[5].win],[3,4,5],'undefeated: seeds 1-2 in three · 3-4 in four · a play-in team in five')
+  eq([r[1].long,r[3].long,r[5].long],[5,6,7],'losing the winners semi is the long way — and seven is the most anyone can play')
+}
+
 console.log(`\n${n-bad}/${n} passed${bad?` — ${bad} FAILED`:''}\n`)
 process.exit(bad?1:0)
