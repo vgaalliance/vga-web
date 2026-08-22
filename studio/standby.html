@@ -604,7 +604,7 @@
 
     <div class="view" id="v-schedule">
       <div class="eyebrow splitlbl">UBAe · Summer Split</div>
-      <div class="title sm">Upcoming Match Nights</div>
+      <div class="title sm">Match Nights &amp; Playoffs</div>
       <div class="list" id="schedContent"></div>
       <div id="schedPlayoff"></div>
     </div>
@@ -721,7 +721,7 @@ let VIEWS=['standings','playoff','bracket','rosters','vsrosters','ubarank','sche
 // Auto-cycle for a UBA fight night: only the screens that mean something on one.
 // The deck picks the rotation by mode, so 'auto' doesn't parade team standings
 // through a solo card.
-const VIEWS_UBA=['card','ubarank','champs','p4p','fotm','nextev','cards','cta']
+const VIEWS_UBA=['card','ubarank','champs','p4p','fotm','nextev','next3','cards','cta']
 // GFL has no champions crowned and no P4P board yet, so its rotation is the
 // views that actually have something in them. Listing empty screens would put
 // a blank panel on air every 15 seconds.
@@ -736,10 +736,11 @@ async function loadAll(){
     sb.from('events_public').select('*').eq('status','scheduled').gte('event_date',FUTURE()).order('event_date').limit(3),
     sb.from('rankings_public').select('rank,fighter_name,weight_class,level').eq('scope','weight_class').order('rank'),
   ])
-  renderStandings(st||[]); renderRosters(st||[], rec||[]); renderSchedule(mt||[]); renderNext(ev||[]); renderTvs(mt||[])
+  renderStandings(st||[]); renderRosters(st||[], rec||[]); renderNext(ev||[]); renderTvs(mt||[])
   renderPlayoff(st||[], mt||[])
   renderBracket(st||[], mt||[])
   renderSchedPlayoff(st||[], mt||[])
+  renderSchedule(mt||[])   // LAST: it asks whether the playoff block filled before printing "TBA"
   // roster 2.0 keeps the full records list (photos included); before the deck
   // loads a match it defaults to the nearest scheduled one, starters unknown
   REC=rec||[]
@@ -1293,10 +1294,14 @@ function vsrCursor(){
 }
 
 function renderSchedule(mt){
+  // "Schedule TBA" under a full playoff calendar reads as broken, so the
+  // placeholder only appears when there is genuinely nothing below it either
+  const havePlayoffs=()=>!!($('schedPlayoff')&&$('schedPlayoff').innerHTML)
   $('schedContent').innerHTML=mt.map(m=>
     `<div class="lrow"><span class="wk">WK ${m.week}</span>
       <span class="mt">${m.team_a_name} <span style="color:var(--pink)">vs</span> ${m.team_b_name}</span>
-      <span class="dt">${fdate(m.match_date)} · ${ftime(m.match_date)}</span></div>`).join('') || '<div class="lrow"><span class="mt">Schedule TBA</span></div>'
+      <span class="dt">${fdate(m.match_date)} · ${ftime(m.match_date)}</span></div>`).join('')
+    || (havePlayoffs() ? '' : '<div class="lrow"><span class="mt">Schedule TBA</span></div>')
 }
 
 function renderNext(ev){
