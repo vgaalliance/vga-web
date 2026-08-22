@@ -56,9 +56,14 @@
      result does to both. The RULES are in playoff-core.js, tested; this block
      only dresses them. */
   .po-wrap{display:grid;grid-template-columns:1fr 1fr;gap:34px;}
-  .porow{display:grid;grid-template-columns:44px 1fr 96px 62px 136px;align-items:center;gap:10px;
+  .porow{display:grid;grid-template-columns:44px 1fr;align-items:center;gap:10px;
     padding:9px 14px 9px 16px;margin-bottom:7px;background:var(--panel);
     border-left:4px solid var(--pur);box-shadow:0 0 18px rgba(60,0,110,.4);}
+  /* Everything except the place number rides in ONE block, so two teams
+     fighting over the same place can physically trade it on screen. The
+     number stays put — it is the place, not the team. */
+  .pobody{display:grid;grid-template-columns:1fr 96px 62px 136px;align-items:center;gap:10px;
+    transition:transform .8s cubic-bezier(.5,0,.18,1);}
   .porow .rk{font-family:'Press Start 2P',monospace;font-size:15px;color:var(--hi);}
   .porow .nm{font-weight:700;font-size:29px;text-transform:uppercase;line-height:1;}
   .porow .rec{font-weight:700;font-size:26px;text-align:right;}
@@ -79,6 +84,24 @@
   .tag.live{color:#ffb020;border-color:rgba(255,176,32,.5);text-shadow:0 0 10px rgba(255,176,32,.35);}
   .porow.out{opacity:.42;}
   .tag.out{color:rgba(255,255,255,.45);border-color:rgba(255,255,255,.2);}
+
+  /* the playoff weeks, under whatever regular-season nights are left */
+  .pow{margin-top:22px;background:var(--panel);border:2px solid var(--line);
+    border-top:4px solid var(--pink);padding:14px 24px 18px;box-shadow:0 0 26px rgba(60,0,110,.45);}
+  .pow-h{font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.2em;
+    color:var(--pink);text-shadow:0 0 12px rgba(255,51,204,.5);margin-bottom:12px;}
+  .pownight{display:grid;grid-template-columns:230px 1fr;align-items:baseline;gap:20px;
+    padding:8px 0;border-top:1px solid var(--line);}
+  .pownight:first-of-type{border-top:none;}
+  .pownight .d{font-weight:900;font-size:30px;text-transform:uppercase;line-height:1;}
+  .pownight .d small{display:block;font-family:'Press Start 2P',monospace;font-size:9px;
+    letter-spacing:.14em;color:var(--hi);margin-top:6px;}
+  .pownight .r{font-weight:700;font-size:23px;text-transform:uppercase;color:#f0e0ff;
+    letter-spacing:.02em;line-height:1.3;}
+  .pownight .r i{font-style:normal;color:var(--dim);padding:0 8px;}
+  .pownight.fin .d{color:#ffce00;text-shadow:0 0 16px rgba(255,206,0,.4);}
+  .pow-foot{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.14em;
+    color:var(--dim);margin-top:12px;}
 
   /* ── playoff bracket — the same six teams, drawn as the road ──────────
      Two bands (winners over losers), the play-in hanging off the left and the
@@ -583,6 +606,7 @@
       <div class="eyebrow splitlbl">UBAe · Summer Split</div>
       <div class="title sm">Upcoming Match Nights</div>
       <div class="list" id="schedContent"></div>
+      <div id="schedPlayoff"></div>
     </div>
 
     <div class="view" id="v-champs">
@@ -690,6 +714,7 @@ async function loadAll(){
   renderStandings(st||[]); renderRosters(st||[], rec||[]); renderSchedule(mt||[]); renderNext(ev||[]); renderTvs(mt||[])
   renderPlayoff(st||[], mt||[])
   renderBracket(st||[], mt||[])
+  renderSchedPlayoff(st||[], mt||[])
   // roster 2.0 keeps the full records list (photos included); before the deck
   // loads a match it defaults to the nearest scheduled one, starters unknown
   REC=rec||[]
@@ -958,6 +983,51 @@ function renderStandings(st){
   }).join('')
 }
 
+/* ── the playoff weeks, on the schedule screen ──
+   Twelve matches across five nights (playoff-core.js NIGHTS, pinned by a test
+   that no night runs a match before the match that feeds it). Nothing is in
+   the database yet — the teams are unknown until the play-in is played — so
+   this is the CALENDAR. Real rows win the moment they exist: a scheduled
+   play_in / playoff match in team_matches replaces the planned line for that
+   date with the actual matchup and its time. */
+function renderSchedPlayoff(st, mt){
+  const box=$('schedPlayoff'); if(!box) return
+  if(!window.PLAYOFF||!(st||[]).length){ box.innerHTML=''; return }
+  const ns=PLAYOFF.nights(PLAYOFF.bracket(PLAYOFF.picture(st)))
+  const settled=!(mt||[]).some(m=>(m.stage||'regular')==='regular')
+  const real={}
+  ;(mt||[]).filter(m=>m.stage==='play_in'||m.stage==='playoff'||m.stage==='final')
+    .forEach(m=>{ const d=String(m.match_date).slice(0,10); (real[d]=real[d]||[]).push(m) })
+
+  box.innerHTML=`<div class="pow">
+    <div class="pow-h">// PLAYOFFS · ${ns.length} NIGHTS · ${ns.reduce((a,n)=>a+n.ms.length,0)} MATCHES //</div>
+    ${ns.map(n=>{
+      const d=new Date(n.date+'T18:00:00'), fin=n.ms.some(m=>m.id==='GF')
+      let rows
+      if(real[n.date] && real[n.date].length){
+        rows=real[n.date].map(m=>`${m.team_a_name} <i>V</i> ${m.team_b_name}`).join(' <i>·</i> ')
+      }else if(n.ms.every(m=>m.round==='PLAY-IN')){
+        // the play-in pairings are known ONLY once the regular season is done;
+        // until then say which places play, not which teams
+        rows = settled
+          ? n.ms.map(m=>`${m.a.name} <i>V</i> ${m.b.name}`).join(' <i>·</i> ')
+          : n.ms.map(m=>`CONF ${m.conf} 3RD <i>V</i> 4TH`).join(' <i>·</i> ')
+      }else{
+        // two matches of the same round read as a stutter — count them instead
+        const seen=[]
+        n.ms.forEach(m=>{ const r=m.round.replace('WINNERS · ','W ').replace('LOSERS · ','L ')
+          const hit=seen.find(x=>x.r===r); hit ? hit.n++ : seen.push({r,n:1}) })
+        rows=seen.map(x=>x.r+(x.n>1?` <i>×${x.n}</i>`:'')).join(' <i>·</i> ')
+      }
+      return `<div class="pownight${fin?' fin':''}">
+        <div class="d">${fdate(d)}<small>${n.label}</small></div>
+        <div class="r">${rows}</div></div>`
+    }).join('')}
+    <div class="pow-foot">FRIDAYS AND SATURDAYS · MATCHUPS SET BY THE BRACKET AS EACH NIGHT IS PLAYED</div>
+  </div>`
+}
+
+let poSwap=null   // the ON THE LINE trade, see renderPlayoff
 /* ── playoff picture ──────────────────────────────────────────────────────
    The standings re-read as qualification. Two bands: every team tagged
    through / play-in / out, then — while regular-season matches are still to
@@ -982,11 +1052,39 @@ function renderPlayoff(st, mt){
     `<div><div class="conf-h">Conference ${c}</div>${p.confs[c].map((t,i)=>{
       const s=out.status[t.team_name]||p.status[t.team_name]||'playin'
       return `<div class="porow ${s}"><span class="rk">${i+1}</span>
-        <span class="nm">${t.team_name}</span>
+        <div class="pobody"><span class="nm">${t.team_name}</span>
         <span class="rec">${t.match_wins}-${t.match_losses}${t.match_draws?'-'+t.match_draws:''}</span>
         <span class="df">${t.bout_diff>0?'+':''}${t.bout_diff}</span>
-        <span class="tag ${s}">${TAG[s]}</span></div>`
+        <span class="tag ${s}">${TAG[s]}</span></div></div>`
     }).join('')}</div>`).join('')
+
+  // Two teams ON THE LINE in the same conference are not two facts — they are
+  // ONE place with two names on it, so they trade it on a loop and the
+  // audience sees the swap instead of being told about it. The place numbers
+  // stay still: the place is the thing being swapped.
+  clearInterval(poSwap); poSwap=null
+  const swaps=[]
+  p.order.forEach((c,ci)=>{
+    const live=p.confs[c].map((t,i)=>i).filter(i=>out.status[p.confs[c][i].team_name]==='live')
+    if(live.length!==2) return
+    const rows=box.children[ci].querySelectorAll('.porow')
+    if(rows[live[0]]&&rows[live[1]]) swaps.push([rows[live[0]],rows[live[1]]])
+  })
+  if(swaps.length){
+    let on=false
+    poSwap=setInterval(()=>{
+      on=!on
+      swaps.forEach(([ra,rb])=>{
+        // measured every tick: the view is display:none until it is called up,
+        // and a distance measured while hidden is zero
+        const dy=rb.offsetTop-ra.offsetTop
+        const a=ra.querySelector('.pobody'), b=rb.querySelector('.pobody')
+        if(!a||!b||!dy) return
+        a.style.transform = on ? `translateY(${dy}px)` : ''
+        b.style.transform = on ? `translateY(${-dy}px)` : ''
+      })
+    }, 3800)
+  }
 
   const RULES='6 TEAMS · DOUBLE ELIMINATION · SEEDS 1–2 BYE ROUND 1 · TRUE GRAND FINAL'
   const line=(lbl,a,b)=>`<div class="po-line"><span class="lbl">${lbl}</span>${a}${b?`<span class="vs">V</span>${b}`:''}</div>`

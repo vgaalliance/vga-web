@@ -161,5 +161,23 @@ console.log('\nUBAe playoff picture\n')
   eq([r[1].long,r[3].long,r[5].long],[5,6,7],'losing the winners semi is the long way — and seven is the most anyone can play')
 }
 
+// 12 — the playoff calendar: every match once, and never before what feeds it
+{
+  const b=P.bracket(P.picture(SUMMER))
+  const ns=P.nights(b)
+  eq(ns.map(n=>n.ms.length),[2,3,2,3,2],'play-in night, then five matches a week over two weekends')
+  eq(ns.map(n=>n.date),['2026-08-28','2026-09-04','2026-09-05','2026-09-11','2026-09-12'],'fridays and saturdays, season ending Sep 12')
+
+  const all=ns.reduce((a,n)=>a.concat(n.ms.map(m=>m.id)),[])
+  eq(all.length,12,'two play-ins plus ten bracket matches, all scheduled')
+  eq(all.length,new Set(all).size,'nothing scheduled twice')
+  eq(all.filter(id=>ns.some(n=>n.ms.some(m=>m.id===id&&m.blocked))),[],'no night runs a match before the match that feeds it')
+
+  // and the bracket really does contain exactly what the calendar claims
+  const ids=[].concat(...b.wb.map(r=>r.ms.map(m=>m.id)),...b.lb.map(r=>r.ms.map(m=>m.id)),b.gf.ms.map(m=>m.id))
+  eq(ids.length,10,'ten bracket matches')
+  eq(ids.filter(id=>all.indexOf(id)<0),[],'every bracket match has a night')
+}
+
 console.log(`\n${n-bad}/${n} passed${bad?` — ${bad} FAILED`:''}\n`)
 process.exit(bad?1:0)
