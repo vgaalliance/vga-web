@@ -199,21 +199,32 @@
 
   function bracket(p){
     const s=seats(p), at=n=>s[n-1], ref=t=>({ref:t})
+    const PI=(p.playin||[]).map((m,i)=>'PI'+(i+1))   // winners round 1 cannot run before the play-in
     return {
       seats:s,
-      playin:(p.playin||[]).map(m=>({a:{name:m[0].team_name}, b:{name:m[1].team_name}})),
+      playin:(p.playin||[]).map(m=>({conf:m[0].conference, a:{name:m[0].team_name}, b:{name:m[1].team_name}})),
       wb:[
-        { round:'WINNERS · ROUND 1', ms:[{a:at(3),b:at(6)},{a:at(4),b:at(5)}] },
-        { round:'WINNERS · SEMIS',   ms:[{a:at(1),b:ref('WINNER 4/5')},{a:at(2),b:ref('WINNER 3/6')}] },
-        { round:'WINNERS · FINAL',   ms:[{a:ref('WINNER SEMI 1'),b:ref('WINNER SEMI 2')}] },
+        { round:'WINNERS · ROUND 1', ms:[
+          {id:'W1', needs:PI, a:at(3), b:at(6)},
+          {id:'W2', needs:PI, a:at(4), b:at(5)}] },
+        { round:'WINNERS · SEMIS',   ms:[
+          {id:'S1', needs:['W2'], a:at(1), b:ref('WINNER 4/5')},
+          {id:'S2', needs:['W1'], a:at(2), b:ref('WINNER 3/6')}] },
+        { round:'WINNERS · FINAL',   ms:[
+          {id:'WF', needs:['S1','S2'], a:ref('WINNER SEMI 1'), b:ref('WINNER SEMI 2')}] },
       ],
       lb:[
-        { round:'LOSERS · ROUND 1', ms:[{a:ref('LOSER 3/6'),b:ref('LOSER 4/5')}] },
-        { round:'LOSERS · ROUND 2', ms:[{a:ref('LOSER SEMI 1'),b:ref('LOSER SEMI 2')}] },
-        { round:'LOSERS · SEMI',    ms:[{a:ref('WINNER LB R1'),b:ref('WINNER LB R2')}] },
-        { round:'LOSERS · FINAL',   ms:[{a:ref('WINNER LB SEMI'),b:ref('LOSER WB FINAL')}] },
+        { round:'LOSERS · ROUND 1', ms:[
+          {id:'L1', needs:['W1','W2'], a:ref('LOSER 3/6'), b:ref('LOSER 4/5')}] },
+        { round:'LOSERS · ROUND 2', ms:[
+          {id:'L2', needs:['S1','S2'], a:ref('LOSER SEMI 1'), b:ref('LOSER SEMI 2')}] },
+        { round:'LOSERS · SEMI',    ms:[
+          {id:'LS', needs:['L1','L2'], a:ref('WINNER LB R1'), b:ref('WINNER LB R2')}] },
+        { round:'LOSERS · FINAL',   ms:[
+          {id:'LF', needs:['LS','WF'], a:ref('WINNER LB SEMI'), b:ref('LOSER WB FINAL')}] },
       ],
-      gf:{ round:'GRAND FINAL', ms:[{a:ref('WINNERS BRACKET'),b:ref('LOSERS BRACKET')}] },
+      gf:{ round:'GRAND FINAL', ms:[
+        {id:'GF', needs:['WF','LF'], a:ref('WINNERS BRACKET'), b:ref('LOSERS BRACKET')}] },
     }
   }
 
@@ -242,5 +253,48 @@
     return out
   }
 
-  return { SPRING_CHAMP, cmp, project, picture, branches, marginNote, outlook, seats, bracket, road }
+  /* ── the playoff calendar ──────────────────────────────────────────────
+     Locked with the founder 2026-08-22: PLAY-IN on the Friday, then two
+     weekends of bracket, five matches a week, Friday and Saturday. Ten bracket
+     matches plus the two play-ins is twelve, and this is the only split of
+     them that keeps every night's matches downstream of the nights before it —
+     which is what `nights()` returns and what the test checks. Dates are here
+     rather than in the DB because nothing is scheduled yet: teams are unknown
+     until the play-in is played. The graphic prefers REAL rows the moment they
+     exist in team_matches.
+
+     If the calendar moves, move it here and in docs/ubae-plan.md together. */
+  const NIGHTS=[
+    { date:'2026-08-28', label:'PLAY-IN NIGHT',   ids:['PI1','PI2'] },
+    { date:'2026-09-04', label:'BRACKET OPENS',   ids:['W1','W2','L1'] },
+    { date:'2026-09-05', label:'WINNERS SEMIS',   ids:['S1','S2'] },
+    { date:'2026-09-11', label:'ELIMINATION NIGHT', ids:['L2','LS','WF'] },
+    { date:'2026-09-12', label:'FINALS',          ids:['LF','GF'] },
+  ]
+
+  // The calendar with each night's matches named, and every match checked
+  // against what it waits on — a night that runs a match before the match that
+  // feeds it is a schedule nobody can play.
+  function nights(b){
+    const byId={}
+    ;(b.playin||[]).forEach((m,i)=>{ byId['PI'+(i+1)]={id:'PI'+(i+1), needs:[], round:'PLAY-IN', conf:m.conf, a:m.a, b:m.b} })
+    b.wb.concat(b.lb,[b.gf]).forEach(r=>r.ms.forEach(m=>{ byId[m.id]=Object.assign({round:r.round}, m) }))
+    const done={}, out=[]
+    NIGHTS.forEach(n=>{
+      const ms=[]
+      // the id order IS the running order of the night, so a match may feed
+      // another one the same evening — L1 after both round 1s, GF after the
+      // losers final — but never the other way round
+      n.ids.forEach(id=>{
+        const m=byId[id]; if(!m) return          // no play-in scheduled? skip its night
+        m.blocked=(m.needs||[]).some(d=>!done[d])
+        done[id]=1
+        ms.push(m)
+      })
+      if(ms.length) out.push({date:n.date, label:n.label, ms})
+    })
+    return out
+  }
+
+  return { SPRING_CHAMP, cmp, project, picture, branches, marginNote, outlook, seats, bracket, road, NIGHTS, nights }
 })
