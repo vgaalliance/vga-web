@@ -135,8 +135,9 @@ console.log('\nUBAe playoff picture\n')
   eq(b.wb[1].ms.map(m=>m.a.seed),[1,2],'seeds 1 and 2 enter at the semis')
   eq(b.wb[1].ms.map(m=>m.b.ref),['WINNER 4/5','WINNER 3/6'],'semis take the round-1 winners crossed')
   eq(b.lb.length,4,'four losers rounds')
-  eq(b.lb[1].ms[0].b.ref,'LOWER SEMI LOSER','the lower seed drops in first')
-  eq(b.lb[2].ms[0].b.ref,'HIGHER SEMI LOSER','finishing higher buys a later drop')
+  eq([b.lb[1].ms[0].a.ref,b.lb[1].ms[0].b.ref],['LOSER SEMI 1','LOSER SEMI 2'],'the two semi losers play EACH OTHER — nobody rides a bye down')
+  eq([b.lb[2].ms[0].a.ref,b.lb[2].ms[0].b.ref],['WINNER LB R1','WINNER LB R2'],'both LB survivors reach the semi having won one elimination match')
+  eq(b.lb[3].ms[0].b.ref,'LOSER WB FINAL','the losers final is where the WB final loser lands')
   eq(b.gf.ms[0].b.ref,'LOSERS BRACKET','grand final is the two brackets')
 }
 {
