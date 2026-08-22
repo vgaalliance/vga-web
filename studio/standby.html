@@ -50,6 +50,49 @@
   .srow.lead{border-left-color:#ffce00;box-shadow:0 0 26px rgba(255,206,0,.3);}
   .srow.lead .rk{color:#ffce00;}
 
+  /* ── playoff picture ─────────────────────────────────────────────────
+     The standings re-read as qualification: who is through, who has to win a
+     play-in, and — while a regular-season match is still to play — what each
+     result does to both. The RULES are in playoff-core.js, tested; this block
+     only dresses them. */
+  .po-wrap{display:grid;grid-template-columns:1fr 1fr;gap:34px;}
+  .porow{display:grid;grid-template-columns:44px 1fr 96px 62px 136px;align-items:center;gap:10px;
+    padding:9px 14px 9px 16px;margin-bottom:7px;background:var(--panel);
+    border-left:4px solid var(--pur);box-shadow:0 0 18px rgba(60,0,110,.4);}
+  .porow .rk{font-family:'Press Start 2P',monospace;font-size:15px;color:var(--hi);}
+  .porow .nm{font-weight:700;font-size:29px;text-transform:uppercase;line-height:1;}
+  .porow .rec{font-weight:700;font-size:26px;text-align:right;}
+  .porow .df{font-weight:600;font-size:20px;color:var(--dim);text-align:right;}
+  .porow .tag{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.1em;
+    text-align:center;padding:6px 0;border:1px solid;line-height:1;}
+  /* through = green, play-in = the panel's own violet, out = turned down. The
+     Spring-champ bye is gold because it is the one status nothing on the night
+     can change. */
+  .porow.in{border-left-color:#5cf2a0;} .porow.in .rk{color:#5cf2a0;}
+  .tag.in{color:#5cf2a0;border-color:rgba(92,242,160,.45);text-shadow:0 0 10px rgba(92,242,160,.35);}
+  .porow.bye{border-left-color:#ffce00;} .porow.bye .rk{color:#ffce00;}
+  .tag.bye{color:#ffce00;border-color:rgba(255,206,0,.5);text-shadow:0 0 10px rgba(255,206,0,.35);}
+  .tag.playin{color:var(--hi);border-color:rgba(204,102,255,.45);}
+  .porow.out{opacity:.42;}
+  .tag.out{color:rgba(255,255,255,.45);border-color:rgba(255,255,255,.2);}
+
+  /* the swing strip — tonight's result, both ways */
+  .po-swing{margin-top:24px;background:var(--panel);border:2px solid var(--line);
+    border-top:4px solid var(--pink);padding:16px 26px 20px;box-shadow:0 0 26px rgba(60,0,110,.45);}
+  .po-sh{font-family:'Press Start 2P',monospace;font-size:13px;letter-spacing:.2em;
+    color:var(--pink);text-shadow:0 0 12px rgba(255,51,204,.5);}
+  .po-brs{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:14px;}
+  .po-br{border-left:3px solid var(--pur);padding-left:18px;}
+  .po-if{font-weight:900;font-size:30px;text-transform:uppercase;line-height:1.05;margin-bottom:8px;}
+  .po-line{font-weight:700;font-size:25px;text-transform:uppercase;color:#f0e0ff;line-height:1.25;}
+  .po-line .vs{color:var(--pink);font-weight:900;padding:0 8px;}
+  .po-line .lbl{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.14em;
+    color:var(--dim);padding-right:10px;}
+  .po-note{font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.1em;
+    color:#ffce00;margin-top:10px;line-height:1.6;}
+  .po-foot{font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.16em;
+    color:var(--dim);margin-top:14px;text-align:center;}
+
   /* rosters — vertical team bars */
   .rgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}
   .tcol{background:var(--panel);border-top:5px solid var(--pur);padding:0 0 14px;
@@ -459,6 +502,16 @@
       <div class="confs" id="standContent"></div>
     </div>
 
+    <!-- playoff picture — standings read as qualification, plus the branch
+         for tonight's match. Draws itself from team_standings; the rules it
+         applies are playoff-core.js. -->
+    <div class="view" id="v-playoff">
+      <div class="eyebrow splitlbl">UBAe · Summer Split</div>
+      <div class="title">Playoff Picture</div>
+      <div class="po-wrap" id="poContent"></div>
+      <div id="poSwing"></div>
+    </div>
+
     <div class="view" id="v-rosters">
       <div class="eyebrow splitlbl">UBAe · Summer Split</div>
       <div class="title">Team Rosters</div>
@@ -564,6 +617,7 @@
   </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="playoff-core.js"></script>
 <script>
 const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
   'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
@@ -573,7 +627,7 @@ const DAY=['SUN','MON','TUE','WED','THU','FRI','SAT']
 const fdate=d=>{const x=new Date(d);return DAY[x.getDay()]+' '+MO[x.getMonth()]+' '+x.getDate()}
 const ftime=d=>{const x=new Date(d);let h=x.getHours(),m=x.getMinutes();const ap=h>=12?'PM':'AM';h=h%12||12;return h+(m?':'+String(m).padStart(2,'0'):'')+ap+' ET'}
 
-let VIEWS=['standings','rosters','vsrosters','ubarank','schedule','next3','teamvs','card','cta'], cycle=null
+let VIEWS=['standings','playoff','rosters','vsrosters','ubarank','schedule','next3','teamvs','card','cta'], cycle=null
 // Auto-cycle for a UBA fight night: only the screens that mean something on one.
 // The deck picks the rotation by mode, so 'auto' doesn't parade team standings
 // through a solo card.
@@ -593,6 +647,7 @@ async function loadAll(){
     sb.from('rankings_public').select('rank,fighter_name,weight_class,level').eq('scope','weight_class').order('rank'),
   ])
   renderStandings(st||[]); renderRosters(st||[], rec||[]); renderSchedule(mt||[]); renderNext(ev||[]); renderTvs(mt||[])
+  renderPlayoff(st||[], mt||[])
   // roster 2.0 keeps the full records list (photos included); before the deck
   // loads a match it defaults to the nearest scheduled one, starters unknown
   REC=rec||[]
@@ -859,6 +914,69 @@ function renderStandings(st){
         <span class="rec">${t.match_wins}-${t.match_losses}${t.match_draws?'-'+t.match_draws:''}</span>
         <span class="df">${t.bout_diff>0?'+':''}${t.bout_diff}</span></div>`).join('')}</div>`
   }).join('')
+}
+
+/* ── playoff picture ──────────────────────────────────────────────────────
+   The standings re-read as qualification. Two bands: every team tagged
+   through / play-in / out, then — while regular-season matches are still to
+   play — what each result of the LAST one does to that picture.
+
+   Every rule it applies (the wins → bout diff → bouts won tiebreak, the
+   Spring-champion play-in bye, the field staying at six) lives in
+   playoff-core.js with tests. Nothing here is pinned to a split: the swing
+   strip appears because exactly one regular-season match is left and turns
+   itself into the play-in board the moment that match is played. */
+function renderPlayoff(st, mt){
+  const box=$('poContent'), swing=$('poSwing')
+  if(!box||!swing) return
+  if(!window.PLAYOFF||!(st||[]).length){ box.innerHTML=''; swing.innerHTML=''; return }
+  const p=PLAYOFF.picture(st)
+  const TAG={in:'THROUGH', bye:'BYE · IN', playin:'PLAY-IN', out:'OUT'}
+  box.innerHTML=p.order.map(c=>
+    `<div><div class="conf-h">Conference ${c}</div>${p.confs[c].map((t,i)=>{
+      const s=p.status[t.team_name]||'playin'
+      return `<div class="porow ${s}"><span class="rk">${i+1}</span>
+        <span class="nm">${t.team_name}</span>
+        <span class="rec">${t.match_wins}-${t.match_losses}${t.match_draws?'-'+t.match_draws:''}</span>
+        <span class="df">${t.bout_diff>0?'+':''}${t.bout_diff}</span>
+        <span class="tag ${s}">${TAG[s]}</span></div>`
+    }).join('')}</div>`).join('')
+
+  const RULES='6 TEAMS · DOUBLE ELIMINATION · SEEDS 1–2 BYE ROUND 1 · TRUE GRAND FINAL'
+  const line=(lbl,a,b)=>`<div class="po-line"><span class="lbl">${lbl}</span>${a}${b?`<span class="vs">V</span>${b}`:''}</div>`
+  const left=(mt||[]).filter(m=>(m.stage||'regular')==='regular')
+  const pin=(mt||[]).filter(m=>m.stage==='play_in')
+
+  // One match left — the whole picture is a branch, so draw it as one.
+  if(left.length===1){
+    const m=left[0], brs=PLAYOFF.branches(st,m)||[]
+    swing.innerHTML=`<div class="po-swing">
+      <div class="po-sh">// TONIGHT SWINGS IT · ${(m.team_a_name||'').toUpperCase()} V ${(m.team_b_name||'').toUpperCase()} //</div>
+      <div class="po-brs">${brs.map(br=>{
+        const note=PLAYOFF.marginNote(br)
+        return `<div class="po-br"><div class="po-if">If ${br.winner} win</div>
+          ${br.picture.playin.map(x=>line('PLAY-IN', x[0].team_name, x[1].team_name)).join('')}
+          ${note?`<div class="po-note">▲ ${note}</div>`:''}</div>`
+      }).join('')}</div>
+      <div class="po-foot">${RULES}</div></div>`
+    return
+  }
+
+  // Settled (or not close to settled) — the play-in board, and the seeds the
+  // teams already through hold. Survivors slot into that order by record, so
+  // it is provisional until the play-in is played, and says so.
+  const rows = pin.length
+    ? pin.map(m=>line(fdate(m.match_date).toUpperCase(), m.team_a_name, m.team_b_name)).join('')
+    : (p.playin.length ? p.playin.map(x=>line('PLAY-IN', x[0].team_name, x[1].team_name)).join('')
+                       : line('PLAY-IN','TBA',''))
+  const right = left.length>1
+    ? line(left.length+' MATCHES LEFT','PICTURE NOT FINAL','')
+    : p.seeds.map((t,i)=>line('SEED '+(i+1), t.team_name,'')).join('')
+      + '<div class="po-note">▲ SURVIVORS SEED IN BY RECORD</div>'
+  swing.innerHTML=`<div class="po-swing">
+    <div class="po-sh">// PLAY-IN${pin.length?' · SCHEDULED':''} //</div>
+    <div class="po-brs"><div class="po-br">${rows}</div><div class="po-br">${right}</div></div>
+    <div class="po-foot">${RULES}</div></div>`
 }
 
 function renderRosters(st, rec){
