@@ -217,5 +217,30 @@
     }
   }
 
-  return { SPRING_CHAMP, cmp, project, picture, branches, marginNote, outlook, seats, bracket }
+  /* What the seed is WORTH, in matches — both roads.
+
+     WIN: never lose. Seeds 1 and 2 skip winners round 1, so it is semi → final
+     → grand final, THREE matches for the title. Seeds 3–4 need four, a play-in
+     team five.
+
+     LONG: lose once, in the worst place to lose it — the winners SEMI. The
+     losers bracket is not a straight line here (LB R1 and LB R2 both feed the
+     LB semi), so dropping out of the semi costs the same four matches as
+     dropping out of round 1 — LB R2 → LB semi → LB final → grand final — but
+     you have already played one more to get there. So the longest road is:
+     everything up to and including the semi, then those four. Which is WIN
+     plus two: you trade the winners final for three losers-bracket matches.
+     Seven for a play-in team, and seven is the most anyone can play. */
+  function road(b){
+    const out={}
+    b.seats.forEach(s=>{
+      const inR1=b.wb[0].ms.some(m=>(m.a&&m.a.seed)===s.seed||(m.b&&m.b.seed)===s.seed)
+      let n=(inR1 ? b.wb.length : b.wb.length-1) + 1   // + the grand final
+      if(!s.name && s.from) n+=1                        // + the play-in itself
+      out[s.seed]={win:n, long:n+2}
+    })
+    return out
+  }
+
+  return { SPRING_CHAMP, cmp, project, picture, branches, marginNote, outlook, seats, bracket, road }
 })
