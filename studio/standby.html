@@ -1086,13 +1086,20 @@ function renderPoWeeks(st, mt){
     : r==='WINNERS · FINAL'   ? 'WINNERS FINAL'
     : r==='GRAND FINAL'       ? 'GRAND FINAL'
     : 'ELIMINATION'
-  // A slot is a team, a straight either/or (shown alternating, because a later
-  // match decides it), or something that has to be played first.
+  // NAME A TEAM ONLY WHEN IT IS KNOWN, and say the same thing everywhere on the
+  // card. The play-in could only print CONF A 3RD v 4TH — because the places
+  // are not settled until tonight — while week 1 was printing SHEATH ELITE v
+  // 5GK two lines away, off the very same unfinished table. One of those is a
+  // fact and the other is a guess wearing the same typeface.
+  //
+  // So while a regular-season match is unplayed, every bracket line is SEEDS.
+  // The moment the season is settled the seeds become the teams that hold them,
+  // and a slot waiting on the play-in says so until the play-in is played.
   const nm=x=>{
     if(!x) return null
+    if(!settled) return x.seed ? `SEED ${x.seed}` : null
     if(x.name) return x.name
-    const two = x.from && x.from.length===2 ? x.from : null
-    return two ? `<span class="cyc pcy" data-names="${two.join('|')}">${two[0]}</span>` : null
+    return x.from ? 'PLAY-IN WINNER' : null
   }
   const dts=ds=>ds.map(d=>fdate(new Date(d+'T16:00:00Z'))).join(' <i>·</i> ')
 
@@ -1113,7 +1120,7 @@ function renderPoWeeks(st, mt){
       }else{
         w.ms.forEach(m=>{
           const a=nm(m.a), bb=nm(m.b)
-          if(a&&bb) lines.push(`<div class="powm"><b>${tag(m.round)}</b> ${a} <i>V</i> ${bb}</div>`)
+          if(a&&bb&&lines.length<3) lines.push(`<div class="powm"><b>${tag(m.round)}</b> ${a} <i>V</i> ${bb}</div>`)
           else hidden++
         })
         if(hidden) lines.push(`<div class="powm dim">${lines.length?'+ ':''}${hidden} MATCH${hidden>1?'ES':''} SET BY THE ONES ABOVE</div>`)
