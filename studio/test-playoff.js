@@ -179,30 +179,39 @@ console.log('\nUBAe playoff picture\n')
   eq(ids.filter(id=>all.indexOf(id)<0),[],'every bracket match has a night')
 }
 
-// 9 — WHO COULD BE IN THE SLOT. The bracket is read by an audience, not by
-// somebody holding six seeds in their head, so every slot that can name its
-// candidates has to carry them — and has to stop naming them once the pool is
-// the whole field.
+// 9 — THE BOARDS TONIGHT CAN LEAVE. The bracket is drawn one scenario at a
+// time, so the thing to pin is that each scenario is a board that can actually
+// happen — and that no board puts one team in two places.
 {
-  const p=P.picture(SUMMER), b=P.bracket(p), s=P.seats(p)
-  const find=id=>[].concat(...b.wb.map(r=>r.ms),...b.lb.map(r=>r.ms),b.gf.ms).find(m=>m.id===id)
-  const poss=n=>P.who(s[n-1])
+  const LAST=[{team_a_name:'UKFC UNCS', team_b_name:'Ring Reapers'}]
+  const sc=P.scenarios(SUMMER, LAST)
+  eq(sc.length, 3, 'three distinct boards: UNCS by any margin, UNCS 3-2, Reapers')
+  eq(sc.map(x=>x.label), ['IF UKFC UNCS WIN 3-0','IF UKFC UNCS WIN 3-2','IF RING REAPERS WIN'],
+     'each board says the result that produces it, and names the margin only when the margin did it')
 
-  eq(find('S1').b.of, poss(4).concat(poss(5)), 'WINNER 4/5 names whoever can win 4 v 5')
-  eq(find('S2').b.of, poss(3).concat(poss(6)), 'WINNER 3/6 names whoever can win 3 v 6')
-  eq(find('L1').a.of, poss(3).concat(poss(6)), 'LOSER 3/6 names the same pool as the winner does')
-  eq(find('L1').b.of, poss(4).concat(poss(5)), 'LOSER 4/5 names the same pool as the winner does')
+  // A play-in seat holds two teams because a LATER match decides it. What must
+  // never happen is one team appearing twice on the same board — the bug this
+  // replaced, where Sheath Elite sat in seat 2 and UKFC UNCS sat in the play-in
+  // on a page that claimed both.
+  sc.forEach(x=>{
+    const p=P.picture(x.rows)
+    const on=[].concat(...P.seats(p).map(s2=>P.who(s2)))
+    eq(on.length, new Set(on).size, `${x.label}: nobody is in two places`)
+    eq(P.seats(p).filter(s2=>!s2.name&&!s2.from).length, 0, `${x.label}: every seat is filled or waiting on the play-in`)
+  })
 
-  // A play-in seat is exactly its two teams — never one of them early, which
-  // would be the screen picking a winner before the match.
-  const pin=s.filter(x=>!x.name&&x.from)
-  eq(pin.map(x=>x.from.length), pin.map(()=>2), 'every play-in seat offers exactly two teams')
-  eq(P.who(s[0]), [s[0].name], 'a settled seat is only itself')
+  // The two teams racing for the seed swap between boards, which is the whole
+  // reason the screen cycles them.
+  const seatOf=(x,team)=>P.seats(P.picture(x.rows)).findIndex(s2=>s2.name===team)+1
+  eq(seatOf(sc[0],'UKFC UNCS'), 2, 'a 3-0 win puts UNCS on seed 2')
+  eq(seatOf(sc[2],'UKFC UNCS'), 0, 'lose and UNCS is not seeded at all — they are in the play-in')
+  eq(seatOf(sc[2],'Sheath Elite'), 3, 'and Sheath Elite keeps a seed')
 
-  // Past the semis it says nothing, on purpose: by the final the pool is the
-  // whole field and six names rotating in one slot is not information.
-  eq(find('WF').a.of, [], 'the winners final does not try to name the field')
-  eq(find('GF').a.of, [], 'the grand final does not try to name the field')
+  // Nothing left to play, nothing to cycle: one board, no caption.
+  eq(P.scenarios(SUMMER, []).length, 1, 'with the season over there is one board')
+  eq(P.scenarios(SUMMER, []).map(x=>x.label), [null], 'and it carries no caption')
+  eq(P.scenarios(SUMMER, LAST.concat([{team_a_name:'jUnC',team_b_name:'Team MUDS'}])).length, 1,
+     'two matches left is a slideshow, not a picture — it stops at one')
 }
 
 console.log(`\n${n-bad}/${n} passed${bad?` — ${bad} FAILED`:''}\n`)

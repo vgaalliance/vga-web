@@ -197,21 +197,10 @@
     return out.slice(0,6)
   }
 
-  /* WHO COULD ACTUALLY BE IN THAT SLOT.
-     A bracket before it is played is a page of labels — "WINNER 4/5" says what
-     the slot is waiting for, not who might walk into it, and on a broadcast
-     nobody holds six seeds in their head to work it out. So every slot that can
-     name its candidates carries them: the seat itself if it is settled, both
-     play-in teams if it is not, and for a ref, whoever could win the match it
-     points at. The screen cycles them; this decides what there is to cycle.
-     Left abstract on purpose past the semis — by the final the pool is the
-     whole field, and six names rotating in one slot is not information. */
   function who(x){ return !x ? [] : (x.name ? [x.name] : (x.from||[])) }
 
   function bracket(p){
-    const s=seats(p), at=n=>s[n-1]
-    const ref=(t,of)=>({ref:t, of:(of||[]).filter(Boolean)})
-    const pool=(...ns)=>ns.reduce((a,n)=>a.concat(who(at(n))),[])
+    const s=seats(p), at=n=>s[n-1], ref=t=>({ref:t})
     const PI=(p.playin||[]).map((m,i)=>'PI'+(i+1))   // winners round 1 cannot run before the play-in
     return {
       seats:s,
@@ -221,14 +210,14 @@
           {id:'W1', needs:PI, a:at(3), b:at(6)},
           {id:'W2', needs:PI, a:at(4), b:at(5)}] },
         { round:'WINNERS · SEMIS',   ms:[
-          {id:'S1', needs:['W2'], a:at(1), b:ref('WINNER 4/5', pool(4,5))},
-          {id:'S2', needs:['W1'], a:at(2), b:ref('WINNER 3/6', pool(3,6))}] },
+          {id:'S1', needs:['W2'], a:at(1), b:ref('WINNER 4/5')},
+          {id:'S2', needs:['W1'], a:at(2), b:ref('WINNER 3/6')}] },
         { round:'WINNERS · FINAL',   ms:[
           {id:'WF', needs:['S1','S2'], a:ref('WINNER SEMI 1'), b:ref('WINNER SEMI 2')}] },
       ],
       lb:[
         { round:'LOSERS · ROUND 1', ms:[
-          {id:'L1', needs:['W1','W2'], a:ref('LOSER 3/6', pool(3,6)), b:ref('LOSER 4/5', pool(4,5))}] },
+          {id:'L1', needs:['W1','W2'], a:ref('LOSER 3/6'), b:ref('LOSER 4/5')}] },
         { round:'LOSERS · ROUND 2', ms:[
           {id:'L2', needs:['S1','S2'], a:ref('LOSER SEMI 1'), b:ref('LOSER SEMI 2')}] },
         { round:'LOSERS · SEMI',    ms:[
@@ -309,5 +298,51 @@
     return out
   }
 
-  return { SPRING_CHAMP, cmp, project, picture, branches, marginNote, outlook, seats, who, bracket, road, NIGHTS, nights }
+  /* ── every way tonight can end, as WHOLE BOARDS ────────────────────────
+     The bracket used to be drawn from the table AS IT STANDS, which on the last
+     night is a page that cannot happen: Sheath Elite sat in seat 2 and UKFC
+     UNCS sat in the play-in, both printed as though settled, when the entire
+     point of the night is that only one of them can be in each of those places.
+     Marking the seats amber said "this might change" without saying into what,
+     and naming candidates inside each slot made it worse — the same two teams
+     rotating in two slots can still show one of them in both at once.
+
+     So the screen stops drawing one impossible board and draws the REAL ones,
+     in turn: this is the bracket if UKFC win, this is the bracket if the
+     Reapers win. Every frame is a board that can actually happen, which is a
+     thing you can point at on a broadcast.
+
+     Only with ONE match left. Two unplayed matches is four boards before
+     margins, which is a slideshow rather than a picture — and the swing strip
+     on the previous screen already says what each result does. */
+  function scenarios(standings, pending, springChamp){
+    const left=(pending||[]).filter(m=>m&&m.team_a_name&&m.team_b_name)
+    const asIs=[{label:null, rows:standings}]
+    if(left.length!==1) return asIs
+    const m=left[0], byWinner={}
+    ;[[m.team_a_name,m.team_b_name],[m.team_b_name,m.team_a_name]].forEach(([w,l])=>{
+      // 3-0/3-1/3-2 collapse unless the margin actually moves somebody: the
+      // board is the key, so "a 3-2 win puts MUDS on seed 2" appears as its own
+      // scenario and an irrelevant scoreline does not.
+      ;[0,1,2].forEach(ls=>{
+        const rows=project(standings,{winner:w,loser:l,winner_bouts:3,loser_bouts:ls})
+        const p=picture(rows,null,springChamp)
+        const key=JSON.stringify([seats(p).map(x=>x.name||(x.from||[]).join('/')),
+                                  (p.playin||[]).map(pr=>pr.map(t=>t.team_name))])
+        const list=byWinner[w]=byWinner[w]||[]
+        if(!list.some(x=>x.key===key)) list.push({key, rows, margin:`3-${ls}`})
+      })
+    })
+    const out=[]
+    Object.keys(byWinner).forEach(w=>{
+      const list=byWinner[w]
+      list.forEach(x=>out.push({
+        // the margin is only named when it is the thing that made this board
+        label:`IF ${w.toUpperCase()} WIN${list.length>1?' '+x.margin:''}`,
+        rows:x.rows, key:x.key }))
+    })
+    return out.length>1 ? out : asIs
+  }
+
+  return { SPRING_CHAMP, cmp, project, picture, branches, marginNote, outlook, seats, who, bracket, road, scenarios, NIGHTS, nights }
 })

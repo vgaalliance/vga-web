@@ -107,6 +107,12 @@
   .pownight .pcy{color:#ffb020;transition:opacity .34s ease;}
   .pownight .pcy.out{opacity:0;}
   .pownight.fin .d{color:#ffce00;text-shadow:0 0 16px rgba(255,206,0,.4);}
+  .scn{color:#ffb020;}
+  .bk-scn{font-family:'Press Start 2P',monospace;font-size:14px;letter-spacing:.18em;
+    color:#ffb020;text-align:center;margin:-6px 0 14px;min-height:16px;
+    text-shadow:0 0 14px rgba(255,176,32,.45);}
+  .bk-scn small{display:block;font-size:9px;letter-spacing:.14em;color:var(--dim);
+    margin-top:7px;text-shadow:none;}
   .pow-foot{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.14em;
     color:var(--dim);margin-top:12px;}
 
@@ -589,6 +595,11 @@
     <div class="view" id="v-bracket">
       <div class="eyebrow splitlbl">UBAe · Summer Split</div>
       <div class="title sm">Playoff Bracket</div>
+      <!-- WHICH BOARD THIS IS. While a match is unplayed the bracket is not one
+           page, and the caption is the difference between "these are the seeds"
+           and "these are the seeds if UKFC win" — so it sits above the board,
+           not in the small print under it. -->
+      <div class="bk-scn" id="bkScene"></div>
       <div class="bk" id="bkContent"></div>
       <div class="bk-note" id="bkNote"></div>
     </div>
@@ -755,8 +766,7 @@ async function loadAll(){
   ])
   renderStandings(st||[]); renderRosters(st||[], rec||[]); renderNext(ev||[]); renderTvs(mt||[])
   renderPlayoff(st||[], mt||[])
-  renderBracket(st||[], mt||[])
-  renderSchedPlayoff(st||[], mt||[])
+  playoffScenes(st||[], mt||[])
   renderSchedule(mt||[])   // LAST: it asks whether the playoff block filled before printing "TBA"
   // roster 2.0 keeps the full records list (photos included); before the deck
   // loads a match it defaults to the nearest scheduled one, starters unknown
@@ -1033,7 +1043,7 @@ function renderStandings(st){
    this is the CALENDAR. Real rows win the moment they exist: a scheduled
    play_in / playoff match in team_matches replaces the planned line for that
    date with the actual matchup and its time. */
-function renderSchedPlayoff(st, mt){
+function renderSchedPlayoff(st, mt, scene){
   const box=$('schedPlayoff'); if(!box) return
   if(!window.PLAYOFF||!(st||[]).length){ box.innerHTML=''; return }
   const ns=PLAYOFF.nights(PLAYOFF.bracket(PLAYOFF.picture(st)))
@@ -1043,7 +1053,7 @@ function renderSchedPlayoff(st, mt){
     .forEach(m=>{ const d=String(m.match_date).slice(0,10); (real[d]=real[d]||[]).push(m) })
 
   box.innerHTML=`<div class="pow">
-    <div class="pow-h">// PLAYOFFS · ${ns.length} NIGHTS · ${ns.reduce((a,n)=>a+n.ms.length,0)} MATCHES //</div>
+    <div class="pow-h">// PLAYOFFS · ${ns.length} NIGHTS · ${ns.reduce((a,n)=>a+n.ms.length,0)} MATCHES${scene?` · <b class="scn">${scene}</b>`:''} //</div>
     ${ns.map(n=>{
       const d=new Date(n.date+'T16:00:00Z'), fin=n.ms.some(m=>m.id==='GF')   // midday ET — no zone can drag it a day
       let rows
@@ -1188,18 +1198,17 @@ function renderPlayoff(st, mt){
    seeds are labelled provisional for as long as they are — a play-in survivor
    is seeded on the same record as everyone else and can out-seed a team that
    never went to the play-in. */
-function renderBracket(st, mt){
+function renderBracket(st, mt, scene){
   const box=$('bkContent'), note=$('bkNote')
   if(!box||!note) return
   if(!window.PLAYOFF||!(st||[]).length){ box.innerHTML=''; note.innerHTML=''; return }
   const p=PLAYOFF.picture(st), b=PLAYOFF.bracket(p)
   const left=(mt||[]).filter(m=>(m.stage||'regular')==='regular')
-  // A seat held by a team that has not clinched anything is drawn amber, the
-  // same colour the picture uses for ON THE LINE. Without it the bracket
-  // quietly contradicts the screen before it — the seeds are only "as it
-  // stands" while a match is unplayed.
-  const out=PLAYOFF.outlook(st, left)
-  const prov=n=>out.status[n]==='live' ? ' prov' : ''
+  // Amber = this seat is not settled. It has no job inside a SCENARIO board:
+  // "if UKFC win" already says the whole page is conditional, and marking seats
+  // inside it as uncertain says the opposite of what the caption promises.
+  const out=scene ? null : PLAYOFF.outlook(st, left)
+  const prov=n=>(out && out.status[n]==='live') ? ' prov' : ''
 
   // TWO TEAMS, ALTERNATING. A slot that is a straight either/or — Sheath Elite
   // or UKFC UNCS, one of them is standing here — shows both names in turn, so
@@ -1240,11 +1249,47 @@ function renderBracket(st, mt){
   }).join(' · ')
   const longest=Math.max.apply(null, Object.keys(r).map(sd=>r[sd].long))
 
-  note.innerHTML = (left.length
+  const cap=$('bkScene')
+  if(cap) cap.innerHTML = scene
+    ? `${scene}<small>ONE OF THE ${SCN.length} BOARDS TONIGHT CAN LEAVE — THIS SCREEN SHOWS EACH IN TURN</small>`
+    : ''
+  note.innerHTML = (scene
+      ? `EVERY SEAT ON THIS BOARD IS WHAT IT WOULD BE — <b>${scene}</b><br>`
+      : left.length
       ? `<b>AMBER = STILL DECIDED BY TONIGHT</b> · ${left.length} MATCH${left.length>1?'ES':''} STILL TO PLAY<br>`
       : 'SEEDS PROVISIONAL UNTIL THE PLAY-IN — A SURVIVOR SEEDS IN ON RECORD LIKE EVERYONE ELSE<br>')
     + `MATCHES TO THE TITLE, UNBEATEN — ${roadLine} · THE LONG WAY ROUND: <b>UP TO ${longest}</b><br>`
     + 'DOUBLE ELIMINATION · SEEDS 1–2 SKIP ROUND 1 · <b>TRUE GRAND FINAL — ONE LOSS AND IT IS OVER</b>'
+}
+
+/* ── the boards tonight can leave ──
+   THE BRACKET IS NOT ONE PAGE WHILE A MATCH IS UNPLAYED. Drawn from the table
+   as it stands it printed Sheath Elite in seat 2 AND UKFC UNCS in the play-in,
+   as though both were settled, when the whole point of the night is that only
+   one of them can be in each of those places — a board that cannot happen.
+   Naming candidates inside each slot made it worse: the same two teams rotating
+   in two slots can still show one team in both at once.
+
+   So it draws the boards that CAN happen, in turn, each with the result that
+   produces it written on it. Every frame is pointable-at on a broadcast. With
+   nothing left to play there is one board and no caption, which is the same
+   screen as before. */
+let SCN=[{label:null, rows:[]}], SCNi=0, _scnTimer=null, _scnSt=[], _scnMt=[]
+function playoffScenes(st, mt){
+  _scnSt=st||[]; _scnMt=mt||[]
+  const left=_scnMt.filter(m=>(m.stage||'regular')==='regular')
+  SCN = (window.PLAYOFF && _scnSt.length) ? PLAYOFF.scenarios(_scnSt, left) : [{label:null, rows:_scnSt}]
+  SCNi=0
+  drawScene()
+  clearInterval(_scnTimer); _scnTimer=null
+  // 7s, not the 2.6 the names use: the whole board changes, and a page that
+  // redraws faster than it can be read is a flicker with information in it.
+  if(SCN.length>1) _scnTimer=setInterval(()=>{ SCNi=(SCNi+1)%SCN.length; drawScene() }, 7000)
+}
+function drawScene(){
+  const s=SCN[SCNi]||{rows:_scnSt, label:null}
+  renderBracket(s.rows, _scnMt, s.label)
+  renderSchedPlayoff(s.rows, _scnMt, s.label)
 }
 
 /* ── the alternating names ──
