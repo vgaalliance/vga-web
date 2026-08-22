@@ -99,6 +99,13 @@
   .pownight .r{font-weight:700;font-size:23px;text-transform:uppercase;color:#f0e0ff;
     letter-spacing:.02em;line-height:1.3;}
   .pownight .r i{font-style:normal;color:var(--dim);padding:0 8px;}
+  /* the round label in front of the pairings, and a slot still waiting on a
+     match rather than on one of two teams */
+  .pownight .prd{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.14em;
+    color:var(--hi);font-weight:400;padding-right:10px;}
+  .pownight .pw{color:var(--dim);font-size:19px;}
+  .pownight .pcy{color:#ffb020;transition:opacity .34s ease;}
+  .pownight .pcy.out{opacity:0;}
   .pownight.fin .d{color:#ffce00;text-shadow:0 0 16px rgba(255,206,0,.4);}
   .pow-foot{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.14em;
     color:var(--dim);margin-top:12px;}
@@ -1049,11 +1056,28 @@ function renderSchedPlayoff(st, mt){
           ? n.ms.map(m=>`${m.a.name} <i>V</i> ${m.b.name}`).join(' <i>·</i> ')
           : n.ms.map(m=>`CONF ${m.conf} 3RD <i>V</i> 4TH`).join(' <i>·</i> ')
       }else{
-        // two matches of the same round read as a stutter — count them instead
-        const seen=[]
-        n.ms.forEach(m=>{ const r=m.round.replace('WINNERS · ','W ').replace('LOSERS · ','L ')
-          const hit=seen.find(x=>x.r===r); hit ? hit.n++ : seen.push({r,n:1}) })
-        rows=seen.map(x=>x.r+(x.n>1?` <i>×${x.n}</i>`:'')).join(' <i>·</i> ')
+        // WHO IS IN IT, not which round it is. "W R1 ×2" is a true description
+        // of the night and tells nobody anything — the audience wants the two
+        // names. A slot that is a straight either/or shows both, alternating,
+        // because that is the whole point: either of those teams can be here.
+        // Anything with more possibilities than that keeps its label, which at
+        // least says what it is waiting on.
+        const nm=x=>{
+          if(!x) return 'TBD'
+          if(x.name) return x.name
+          const two = x.from && x.from.length===2 ? x.from
+                    : (x.of && x.of.length===2 ? x.of : null)
+          if(two) return `<span class="cyc pcy" data-names="${two.join('|')}">${two[0]}</span>`
+          return `<span class="pw">${x.ref||'TBD'}</span>`
+        }
+        const by=[]
+        n.ms.forEach(m=>{
+          const r=m.round.replace('WINNERS · ','W ').replace('LOSERS · ','L ')
+          const hit=by.find(x=>x.r===r)
+          const pair=`${nm(m.a)} <i>V</i> ${nm(m.b)}`
+          hit ? hit.ps.push(pair) : by.push({r, ps:[pair]})
+        })
+        rows=by.map(x=>`<b class="prd">${x.r}</b> ${x.ps.join(' <i>·</i> ')}`).join('<br>')
       }
       return `<div class="pownight${fin?' fin':''}">
         <div class="d">${fdate(d)}<small>${n.label}</small></div>
@@ -1177,17 +1201,17 @@ function renderBracket(st, mt){
   const out=PLAYOFF.outlook(st, left)
   const prov=n=>out.status[n]==='live' ? ' prov' : ''
 
-  // A slot that is not a team yet NAMES ITS CANDIDATES and cycles them, rather
-  // than printing the label it is waiting on. "WINNER 4/5" is correct and tells
-  // an audience nothing; Sheath Elite ↔ UKFC UNCS, alternating under a small
-  // WINNER 4/5, tells them both of those teams can still be standing there.
-  // Four is the cap — past that a rotating slot is a slot machine.
+  // TWO TEAMS, ALTERNATING. A slot that is a straight either/or — Sheath Elite
+  // or UKFC UNCS, one of them is standing here — shows both names in turn, so
+  // the swap is the thing you see. THREE OR MORE and it goes back to the label:
+  // a slot rotating through half the league is a slot machine, and "WINNER 4/5"
+  // at least says what it is waiting for.
   const alt=(seed,names,label)=>`<div class="bk-s alt"><span class="sd">${seed||'·'}</span>
-      <span class="nm"><span class="cyc" data-names="${names.slice(0,4).join('|')}">${names[0]}</span>
+      <span class="nm"><span class="cyc" data-names="${names.join('|')}">${names[0]}</span>
       <span class="lbl">${label}</span></span></div>`
   const slot=x=>{
     if(!x) return ''
-    if(x.ref) return (x.of||[]).length>1
+    if(x.ref) return (x.of||[]).length===2
       ? alt('·', x.of, x.ref)
       : `<div class="bk-s ref"><span class="sd">·</span><span class="nm">${x.ref}</span></div>`
     if(x.name) return `<div class="bk-s${prov(x.name)}"><span class="sd">${x.seed||''}</span><span class="nm">${x.name}</span></div>`
@@ -1216,11 +1240,6 @@ function renderBracket(st, mt){
   }).join(' · ')
   const longest=Math.max.apply(null, Object.keys(r).map(sd=>r[sd].long))
 
-  // EVERY CYCLING SLOT TURNS TOGETHER. Independent timers drift within a
-  // minute and the board starts to twitch; one interval, one index, and the
-  // whole bracket steps at once.
-  bkCycle(box)
-
   note.innerHTML = (left.length
       ? `<b>AMBER = STILL DECIDED BY TONIGHT</b> · ${left.length} MATCH${left.length>1?'ES':''} STILL TO PLAY<br>`
       : 'SEEDS PROVISIONAL UNTIL THE PLAY-IN — A SURVIVOR SEEDS IN ON RECORD LIKE EVERYONE ELSE<br>')
@@ -1228,20 +1247,26 @@ function renderBracket(st, mt){
     + 'DOUBLE ELIMINATION · SEEDS 1–2 SKIP ROUND 1 · <b>TRUE GRAND FINAL — ONE LOSS AND IT IS OVER</b>'
 }
 
-let _bkTimer=null
-function bkCycle(box){
-  clearInterval(_bkTimer); _bkTimer=null
-  const cs=[...box.querySelectorAll('.cyc')].map(el=>({el, names:(el.dataset.names||'').split('|').filter(Boolean)}))
-    .filter(c=>c.names.length>1)
-  if(!cs.length) return
-  let i=0
-  _bkTimer=setInterval(()=>{
-    i++
+/* ── the alternating names ──
+   ONE timer for the whole page, not one per screen. The bracket and the
+   playoff schedule both carry these now, and independent timers drift into a
+   twitch within a minute; a single interval that re-reads the document each
+   step also survives any redraw without being restarted. Fixed index, so a
+   slot that appears late still lands on the same name as its neighbours. */
+let _cycTimer=null, _cycAt=0
+function cycAll(){
+  if(_cycTimer) return
+  _cycTimer=setInterval(()=>{
+    const cs=[...document.querySelectorAll('.cyc')]
+      .map(el=>({el, names:(el.dataset.names||'').split('|').filter(Boolean)}))
+      .filter(c=>c.names.length>1)
+    if(!cs.length) return
+    _cycAt++
     cs.forEach(c=>c.el.classList.add('out'))
     // Swap at the bottom of the fade, not on the way down: changing the text
     // while it is still visible is the flicker this transition exists to avoid.
     setTimeout(()=>cs.forEach(c=>{
-      c.el.textContent=c.names[i%c.names.length]
+      c.el.textContent=c.names[_cycAt%c.names.length]
       c.el.classList.remove('out')
     }), 340)
   }, 2600)
@@ -1482,6 +1507,7 @@ sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
 }).subscribe(s=>{ $('status').textContent='standby: '+(s==='SUBSCRIBED'?'● live':s.toLowerCase()) })
 
 loadAll()
+cycAll()          // the alternating names, on one page-wide timer
 </script>
 </body>
 </html>
