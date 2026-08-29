@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VGA — Rankings at Stake</title>
+<!-- ============================================================
+     RANKINGS AT STAKE — WHO CAN JUMP WHO.
+     The broadcast twin of the admin panel's "Rankings at stake"
+     card (gfxRankStakes). Same rules, same colour language, dressed
+     in the standby CRT style and laid out for 1920x1080 instead of
+     a 1080x1920 Discord post.
+
+     THE RULES IT SHARES WITH THE PANEL CARD — change one, change both:
+       · ONE COLOUR AND ONE NUMBER PER BOUT. Both fighters carry it, so
+         the eye pairs them even when a #2 is fighting an unranked
+         challenger twelve rows down.
+       · BADGES ARE NUMBERED BY STAKES, NOT BOUT ORDER. (1) is the bout
+         that reaches highest up a ladder, so the card ranks itself and
+         the biggest fight is always (1). A champion sorts as rank 0,
+         which is how a title fight always lands on (1).
+       · A DIVISION WITH 2+ COMPETITORS EARNS A COLUMN; exactly one gets
+         a one-line strip instead of burning a column on a single row.
+         That is how a fighter moving up a division is shown without a
+         lopsided layout.
+       · CHAMPIONS SIT ABOVE THE LADDER as C. A champion has NO row in
+         `rankings` — the league's convention is the is_champion flag,
+         not rank #1 — so reading rankings alone drops them to the
+         bottom of their own division.
+
+     WHAT IT DOES NOT DO: predict. Rankings here are set by the
+     committee and `points` is null on every row, so there is no
+     formula that turns a win into a new rank. This screen says who is
+     in position to jump whom, which is a fact about the card. It never
+     says who WILL move.
+     ============================================================= -->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Barlow+Condensed:wght@500;700;900&family=Barlow:wght@500;600&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  :root{ --pur:#9b30ff; --hi:#cc66ff; --pink:#ff33cc; --gold:#ffce00;
+    --panel:rgba(14,0,30,.82); --line:rgba(155,48,255,.28); --dim:rgba(200,160,255,.55); }
+  html,body{width:1920px;height:1080px;background:#04000c;overflow:hidden;
+    font-family:'Barlow Condensed',sans-serif;color:#fff;}
+
+  #room{position:fixed;inset:0;background:
+    radial-gradient(ellipse 70% 30% at 50% 4%, rgba(155,48,255,.24), transparent 70%),
+    radial-gradient(ellipse 70% 26% at 50% 96%, rgba(255,51,204,.13), transparent 72%),
+    linear-gradient(180deg,#07000f 0%,#12042a 50%,#04000c 100%);}
+  /* the same CRT dressing every other studio screen wears */
+  #crt{position:fixed;inset:0;pointer-events:none;z-index:60;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1px,transparent 1px 3px);}
+  #vig{position:fixed;inset:0;pointer-events:none;z-index:59;
+    background:radial-gradient(ellipse at center,transparent 58%,rgba(0,0,0,.6) 100%);}
+
+  #stage{position:fixed;inset:0;z-index:10;padding:44px 56px 34px;
+    display:flex;flex-direction:column;
+    opacity:0;transform:translateY(22px);
+    transition:opacity .55s cubic-bezier(.16,1,.3,1), transform .55s cubic-bezier(.16,1,.3,1);}
+  body.on #stage{opacity:1;transform:none;}
+
+  /* ── head ───────────────────────────────────────────────────────── */
+  .head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:20px;}
+  .eyebrow{font-family:'Press Start 2P',monospace;font-size:13px;letter-spacing:.3em;
+    color:var(--gold);text-shadow:0 0 14px rgba(255,206,0,.5);}
+  .title{font-weight:900;font-size:64px;line-height:.9;text-transform:uppercase;
+    margin-top:13px;letter-spacing:.008em;text-shadow:0 0 32px rgba(155,48,255,.65);}
+  .evt{text-align:right;}
+  .evt .n{font-weight:900;font-size:40px;text-transform:uppercase;line-height:1;
+    text-shadow:0 0 24px rgba(155,48,255,.6);}
+  .evt .k{font-family:'Press Start 2P',monospace;font-size:11px;letter-spacing:.2em;
+    color:var(--hi);margin-top:11px;}
+
+  /* ── the ladders ────────────────────────────────────────────────── */
+  #cols{flex:1;min-height:0;display:flex;gap:20px;align-items:stretch;}
+  .col{flex:1;min-width:0;display:flex;flex-direction:column;}
+  .ch{font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.16em;
+    color:var(--pink);text-shadow:0 0 12px rgba(255,51,204,.5);padding-bottom:9px;}
+  .cbar{height:3px;background:var(--pur);margin-bottom:8px;box-shadow:0 0 12px var(--pur);}
+  .rows{flex:1;min-height:0;display:flex;flex-direction:column;}
+
+  .r{display:flex;align-items:center;gap:10px;padding:0 10px;
+    border-left:3px solid transparent;min-width:0;}
+  .r .rk{width:34px;flex:0 0 34px;text-align:right;font-weight:800;
+    font-variant-numeric:tabular-nums;color:rgba(200,160,255,.4);}
+  .r .nm{flex:1;min-width:0;font-weight:700;text-transform:uppercase;line-height:1.06;
+    color:rgba(255,255,255,.36);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  /* the badge is the pairing. Same colour AND same number on both ends. */
+  .r .bg{flex:0 0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-family:'Barlow Condensed',sans-serif;font-weight:900;color:#20030A;
+    font-variant-numeric:tabular-nums;}
+  /* A row in play. The tint and the left rule are the bout's colour; the
+     PULSE is what makes a pair findable across two columns — both ends
+     breathe on the same clock, so the eye catches the partner without
+     reading a legend. */
+  .r.live{animation:pair 2.6s ease-in-out infinite;}
+  @keyframes pair{0%,100%{filter:brightness(1);}50%{filter:brightness(1.28);}}
+  .r.live .nm{color:#fff;}
+  .r.champ .rk{color:var(--gold);}
+
+  /* a division with exactly one competitor — a strip, not a column */
+  #strips{display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:12px;}
+  .strip{display:flex;align-items:center;gap:10px;padding:7px 14px;background:var(--panel);
+    border-left:3px solid var(--pur);font-weight:700;font-size:20px;text-transform:uppercase;}
+  .strip .d{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.14em;
+    color:var(--hi);}
+
+  /* ── the legend ─────────────────────────────────────────────────── */
+  #key{display:flex;flex-wrap:wrap;gap:10px 26px;margin-top:16px;padding-top:14px;
+    border-top:1px solid var(--line);}
+  #key .e{display:inline-flex;align-items:center;gap:10px;font-weight:700;font-size:21px;
+    text-transform:uppercase;color:#f0e0ff;}
+  #key .e .bg{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;
+    justify-content:center;font-weight:900;font-size:15px;color:#20030A;}
+  #key .e i{font-style:normal;color:var(--dim);padding:0 3px;}
+  #foot{font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.16em;
+    color:var(--dim);margin-top:12px;}
+
+  #msg{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;
+    font-family:'Press Start 2P',monospace;font-size:16px;letter-spacing:.2em;color:var(--dim);
+    text-align:center;padding:0 200px;line-height:2;}
+  body.empty #msg{display:flex;}
+  body.empty #stage{opacity:.12;}
+</style>
+</head>
+<body>
+
+<div id="room"></div>
+<div id="stage">
+  <div class="head">
+    <div>
+      <div class="eyebrow">RANKINGS AT STAKE</div>
+      <div class="title">WHO CAN JUMP WHO</div>
+    </div>
+    <div class="evt"><div class="n" id="evName">—</div><div class="k" id="evKick">TONIGHT</div></div>
+  </div>
+  <div id="cols"></div>
+  <div id="strips"></div>
+  <div id="key"></div>
+  <div id="foot">MATCHING COLOUR AND NUMBER = THE SAME FIGHT · RANKS ARE CURRENT</div>
+</div>
+<div id="msg"></div>
+
+<div id="vig"></div>
+<div id="crt"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
+  'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
+const $ = id => document.getElementById(id)
+const Q = new URLSearchParams(location.search)
+const esc = t => String(t ?? '').replace(/[<>&]/g, ch => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[ch]))
+const norm = s => String(s ?? '').trim().toLowerCase()
+
+// The panel's palette, unchanged. Sequenced for maximum hue separation so two
+// bouts in the same column never look alike.
+const PAIR = ['#F2D06A','#6FD0E8','#F58BA8','#8FE0B0','#B49AF0','#C8DE72','#8FB8F0','#F58F6B','#E89AD8']
+// Weight order is canonical here, not card order: a Set preserves INSERTION
+// order, so columns came out in whatever sequence the card happened to book
+// its fights — LW then LHW then MW reads as a mistake even when every ladder
+// in it is right.
+const WC_LABEL = { flyweight:'FLYWEIGHT', bantamweight:'BANTAMWEIGHT', featherweight:'FEATHERWEIGHT',
+  lightweight:'LIGHTWEIGHT', welterweight:'WELTERWEIGHT', middleweight:'MIDDLEWEIGHT',
+  light_heavyweight:'LIGHT HEAVYWEIGHT', heavyweight:'HEAVYWEIGHT', cruiserweight:'CRUISERWEIGHT' }
+const WC_SEQ = Object.keys(WC_LABEL)
+const wcKey = v => norm(v).replace(/\s+/g,'_')
+const wcPos = k => { const i = WC_SEQ.indexOf(k); return i < 0 ? 99 : i }
+const FUTURE = () => new Date(Date.now() - 6*3600e3).toISOString()
+
+function fail(t){ document.body.classList.add('empty'); $('msg').textContent = t; console.warn('[rankstakes]', t) }
+
+async function load(eventName){
+  document.body.classList.remove('empty')
+
+  let q = sb.from('events_public').select('id,name,event_date,type').eq('status','scheduled')
+  q = eventName ? q.eq('name', eventName) : q.gte('event_date', FUTURE()).order('event_date')
+  const { data: evs, error: eErr } = await q.limit(1)
+  // supabase-js resolves {data:null,error} rather than throwing, so a failed
+  // read must never be mistaken for "no events" — that would put an innocent
+  // "no card" message on air over a working database.
+  if(eErr){ return fail('COULD NOT REACH THE DATABASE') }
+  const ev = evs && evs[0]
+  if(!ev) return fail('NO SCHEDULED EVENT')
+  $('evName').textContent = String(ev.name).toUpperCase()
+
+  const { data: bs, error: bErr } = await sb.from('event_matches').select('*')
+    .eq('event_id', ev.id).order('bout_number')
+  if(bErr) return fail('COULD NOT LOAD THE CARD')
+  // event_matches already hides cancelled bouts and gates on a published card,
+  // so an unpublished card returns nothing here rather than leaking its
+  // matchups — which on THIS screen would leak the whole division picture.
+  const bouts0 = (bs || []).filter(b => b.fighter_a_name && b.fighter_b_name)
+  if(!bouts0.length) return fail('CARD NOT PUBLISHED YET')
+
+  // The LEVEL comes from the card, not a constant. Pinned to 'pro', a GFL card
+  // wore GFL's name over UBA's ladders — the most convincing way to be wrong,
+  // because everything around the numbers looks right.
+  const level = norm(bouts0[0].bout_level) === 'amateur' ? 'amateur' : 'pro'
+
+  const [{ data: cards }, { data: rk }] = await Promise.all([
+    sb.from('fighter_cards').select('display_name,slug,weight_class,is_champion,level'),
+    sb.from('rankings_public').select('rank,fighter_name,fighter_slug,weight_class,level')
+      .eq('scope','weight_class').eq('level', level).order('rank'),
+  ])
+  if(!cards || !rk) return fail('COULD NOT LOAD THE RANKINGS')
+
+  const cardOf = new Map((cards || []).map(c => [norm(c.display_name), c]))
+  const divOf  = n => { const c = cardOf.get(norm(n)); return c ? wcKey(c.weight_class) : null }
+
+  // ── bouts, sorted by stake ──────────────────────────────────────
+  // best() is the lowest rank in the bout, and a champion is rank 0, so a
+  // title fight always sorts to badge (1).
+  const rankOf = new Map((rk || []).map(r => [norm(r.fighter_name), +r.rank]))
+  const isChamp = n => { const c = cardOf.get(norm(n)); return !!(c && c.is_champion && norm(c.level) === level) }
+  const seat = n => isChamp(n) ? 0 : (rankOf.has(norm(n)) ? rankOf.get(norm(n)) : 999)
+
+  const bouts = bouts0.map(b => ({
+      n: b.bout_number,
+      f: [{ name: b.fighter_a_name, div: divOf(b.fighter_a_name) || wcKey(b.weight_class) },
+          { name: b.fighter_b_name, div: divOf(b.fighter_b_name) || wcKey(b.weight_class) }],
+      best: Math.min(seat(b.fighter_a_name), seat(b.fighter_b_name)),
+    }))
+    .sort((x, y) => x.best - y.best || (x.n ?? 0) - (y.n ?? 0))
+    .map((b, i) => ({ ...b, stake: i + 1, col: PAIR[i % PAIR.length] }))
+
+  const inBout = new Map()
+  bouts.forEach(b => b.f.forEach(f => inBout.set(f.div + '|' + norm(f.name), b)))
+
+  // ── divisions ───────────────────────────────────────────────────
+  const divKeys = [...new Set(bouts.flatMap(b => b.f.map(f => f.div)).filter(Boolean))]
+    .sort((a, b) => wcPos(a) - wcPos(b))
+
+  const divisions = divKeys.map(k => {
+    const ranked = (rk || []).filter(r => wcKey(r.weight_class) === k)
+      .sort((a, b) => a.rank - b.rank)
+      .map(r => ({ rank: +r.rank, name: r.fighter_name, champ: false }))
+    // The champion is fetched from the is_champion FLAG, not from rank 1: a
+    // champion has no row in `rankings` at all, so reading the ladder alone
+    // drops them below the #15 contender they are fighting.
+    const champ = (cards || []).find(c => wcKey(c.weight_class) === k && c.is_champion && norm(c.level) === level)
+    const rows = champ
+      ? [{ rank: 0, champ: true, name: champ.display_name },
+         ...ranked.filter(r => norm(r.name) !== norm(champ.display_name))]
+      : ranked
+    // Unranked competitors are appended below their ladder so a fighter on the
+    // card is never invisible on the screen that is about the card.
+    const seen = new Set(rows.map(r => norm(r.name)))
+    bouts.flatMap(b => b.f).filter(f => f.div === k && !seen.has(norm(f.name)))
+      .forEach(f => { rows.push({ rank: null, name: f.name }); seen.add(norm(f.name)) })
+    return { key: k, rows, count: rows.filter(r => inBout.has(k + '|' + norm(r.name))).length }
+  }).filter(x => x.rows.length)
+
+  const columns = divisions.filter(d => d.count >= 2)
+  const strips  = divisions.filter(d => d.count === 1)
+  if(!columns.length) return fail('NO DIVISION ON THIS CARD HAS TWO RANKED FIGHTERS YET')
+
+  // ── size to fit ─────────────────────────────────────────────────
+  // Measure the chrome, give the rest to rows, and scale type with row height
+  // so a taller row never reads as empty. Same approach as the panel card,
+  // different budget because this frame is 1080 tall, not 1920.
+  const maxRows = Math.max(...columns.map(c => c.rows.length))
+  const CHROME = 300 + (strips.length ? 58 : 0) + Math.min(120, 34 + bouts.length * 4)
+  const rowH = Math.max(26, Math.min(56, Math.floor((1080 - CHROME) / Math.max(maxRows, 1))))
+  const nameSz = n => Math.round(String(n).length > 17 ? rowH * .40 : String(n).length >= 12 ? rowH * .47 : rowH * .55)
+  const rankSz = Math.round(rowH * .44), badgeSz = Math.round(rowH * .72)
+
+  const row = (d, r) => {
+    const b = inBout.get(d.key + '|' + norm(r.name))
+    const rkTxt = r.champ ? 'C' : (r.rank || '—')
+    return `<div class="r${b ? ' live' : ''}${r.champ ? ' champ' : ''}" style="height:${rowH}px;`
+      + (b ? `background:${b.col}14;border-left-color:${b.col};` : '') + `">`
+      + `<span class="rk" style="font-size:${rankSz}px;${b ? `color:${b.col};` : ''}${r.champ && !b ? 'color:var(--gold);' : ''}">${rkTxt}</span>`
+      + `<span class="nm" style="font-size:${nameSz(r.name)}px;">${esc(r.name)}</span>`
+      + (b ? `<span class="bg" style="width:${badgeSz}px;height:${badgeSz}px;background:${b.col};font-size:${Math.round(badgeSz*.62)}px;">${b.stake}</span>` : '')
+      + `</div>`
+  }
+  $('cols').innerHTML = columns.map(d =>
+    `<div class="col"><div class="ch">${esc(WC_LABEL[d.key] || d.key)}</div><div class="cbar"></div>
+      <div class="rows">${d.rows.map(r => row(d, r)).join('')}</div></div>`).join('')
+
+  $('strips').innerHTML = strips.map(d => {
+    const r = d.rows.find(x => inBout.has(d.key + '|' + norm(x.name)))
+    if(!r) return ''
+    const b = inBout.get(d.key + '|' + norm(r.name))
+    return `<div class="strip" style="border-left-color:${b.col};">
+      <span class="d">${esc(WC_LABEL[d.key] || d.key)}</span>
+      <span style="color:${b.col};font-weight:800;">${r.champ ? 'C' : (r.rank || '—')}</span>
+      <span>${esc(r.name)}</span>
+      <span class="bg" style="width:24px;height:24px;background:${b.col};font-size:15px;">${b.stake}</span>
+    </div>`
+  }).join('')
+
+  $('key').innerHTML = bouts.map(b =>
+    `<span class="e"><span class="bg" style="background:${b.col};">${b.stake}</span>`
+    + `${esc(b.f[0].name)}<i>vs</i>${esc(b.f[1].name)}</span>`).join('')
+
+  document.body.classList.add('on')
+  console.log(`[rankstakes] ${ev.name} — ${bouts.length} bouts, ${columns.length} columns, ${strips.length} strips, level ${level}`)
+}
+
+// The deck already names the event on its standby pushes, so this rides those
+// rather than asking for a button of its own.
+sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, ({ payload: c }) => {
+  if(!c) return
+  // The deck names the event on its standby pushes, so the ladder follows the
+  // card the operator loaded without needing its own event picker.
+  if(c.type === 'standby' && c.event) load(c.event)
+  if(c.type === 'rankstakes'){
+    // Hide must not fall through to load(): a reload on the way OFF puts the
+    // screen back up for a frame, which on a cut is exactly when it is seen.
+    if(c.on === false || c.show === false){ document.body.classList.remove('on'); return }
+    load(c.event || null)
+  }
+}).subscribe()
+
+load(Q.get('event') || null)
+})()
+</script>
+</body>
+</html>
