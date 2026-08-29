@@ -43,7 +43,10 @@
      filtered element, because the silhouette is a MASK — the photo's own
      alpha punched out of a violet field — and a filter cannot do that. */
   #stage{position:absolute;inset:0;overflow:hidden;}
-  #por,#sil{position:absolute;top:50%;left:38%;height:132%;width:auto;
+  /* The second fighter's picture is loaded and parked from the start. Swapping
+     one element's src at the handoff means a blank frame while the next file
+     opens, twenty seconds into a segment nobody can re-cut. */
+  #por,#porB,#sil{position:absolute;top:50%;left:38%;height:132%;width:auto;
     transform:translate(-50%,-50%);
     transition:transform 3.4s cubic-bezier(.22,.61,.36,1),
                filter 1.6s ease, opacity 1.2s ease;}
@@ -71,19 +74,19 @@
      middle, and cooling off again as it pulls out. A single colour grade is
      also what makes captures of wildly different quality read as one
      broadcast. */
-  .s1 #por{transform:translate(-50%,var(--y1,-50%)) scale(var(--s1,3));
+  .s1 #por,.s1 #porB{transform:translate(-50%,var(--y1,-50%)) scale(var(--s1,3));
     filter:grayscale(.15) contrast(1.35) brightness(.92) saturate(1.15)
            drop-shadow(0 0 52px rgba(155,48,255,.6));}
-  .s2 #por{transform:translate(-50%,var(--y2,-50%)) scale(var(--s2,2));
+  .s2 #por,.s2 #porB{transform:translate(-50%,var(--y2,-50%)) scale(var(--s2,2));
     filter:grayscale(.4) contrast(1.2) brightness(.9) saturate(1.05)
            drop-shadow(0 0 40px rgba(155,48,255,.45));}
-  .s3 #por{transform:translate(-50%,var(--y3,-50%)) scale(var(--s3,1.35));
+  .s3 #por,.s3 #porB{transform:translate(-50%,var(--y3,-50%)) scale(var(--s3,1.35));
     filter:grayscale(1) contrast(1.15) brightness(.8) sepia(.35) hue-rotate(215deg) saturate(2.2);}
 
   /* THE OUTRO — the last few seconds only. The photo burns down to a
      silhouette of itself while the stakes line lands, so the segment ends on a
      shape and a sentence rather than trailing off on a held frame. */
-  .outro #por{opacity:0;}
+  .outro #por,.outro #porB{opacity:0;}
   .outro #sil{opacity:1;}
 
   /* grain, scanlines, vignette — the house treatment, and the thing that
@@ -91,6 +94,10 @@
   .grain{position:absolute;inset:0;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
     background-size:180px;}
+  /* Only one of them is ever on screen; the other waits at zero. */
+  #porB{opacity:0;}
+  .onB #por{opacity:0;}
+  .onB #porB{opacity:1;}
   .scan{position:absolute;inset:0;pointer-events:none;
     background:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px);}
   .vig{position:absolute;inset:0;pointer-events:none;
@@ -157,6 +164,7 @@
 <div id="scene">
   <div id="stage">
     <img id="por" alt="">
+    <img id="porB" class="hold" alt="">
     <div id="sil"></div>
     <div class="grain"></div>
     <div class="scan"></div>
@@ -195,14 +203,29 @@ const DIVISION = { heavyweight:'HEAVYWEIGHT', light_heavyweight:'LIGHT HEAVY',
 const division = v => DIVISION[norm(v).replace(/\s+/g,'_')] || String(v ?? '').toUpperCase()
 
 // ── THE TIMELINE ──────────────────────────────────────────────────────
-// Three states across 45 seconds, and the numbers arrive inside them. The
-// beats are FRACTIONS of the runtime, not seconds: a voiceover that comes in
-// at 38s or 52s still lands its record two thirds of the way through rather
-// than four seconds before the end. An explicit beats list overrides them,
-// for a read that does not divide evenly.
-const DEFAULT_BEATS = [0, .34, .70]     // arrival · the record · the stakes
+// One 45-second read covers BOTH fighters, so the segment is six moments, not
+// three: each fighter gets a close, a medium and a waist-up, and the picture
+// hands over halfway.
+//
+// MARKS are the six start times in seconds, in order:
+//   A close · A medium · A waist · B close · B medium · B waist
+// They are the adjustable part -- paste the timestamps off the voiceover and
+// the graphic cuts where the voice does. Given none, they are derived from the
+// runtime: half each, thirds within, which is right for a read that is evenly
+// split and a starting point for one that is not.
+//
+//   ?marks=0,7,14,22,29,36     the six, in seconds
+//   ?len=45                    runtime, when there is no audio to measure
 const DEFAULT_LEN = 45
-let LEN = DEFAULT_LEN, BEATS = DEFAULT_BEATS.slice()
+let LEN = DEFAULT_LEN, MARKS = []
+function defaultMarks(len){
+  const half = len / 2
+  return [0, half*.34, half*.68, half, half + half*.34, half + half*.68]
+}
+// The outro is the last stretch of the SECOND fighter's waist-up, never a
+// fraction of the whole -- on an uneven read that put the burn in the middle
+// of fighter B's introduction.
+function outroAt(){ return MARKS[5] + (LEN - MARKS[5]) * .55 }
 
 let raf = null, t0 = 0, fired = new Set(), state = 0
 const vo = $('vo')
@@ -267,37 +290,61 @@ function run(){
   t0 = performance.now()
 
   const step = () => {
-    const now = t(), p = Math.min(1, now / LEN)
+    const now = t()
 
-    if(p >= BEATS[2])      setState(3)
-    else if(p >= BEATS[1]) setState(2)
-    else                   setState(1)
+    // WHICH OF THE SIX WE ARE IN. Walked from the end so a mark that has
+    // passed always wins -- scanning forward and stopping at the first future
+    // mark leaves the graphic a beat behind for the whole segment.
+    let i = 0
+    for(let k = MARKS.length - 1; k >= 0; k--){ if(now >= MARKS[k]){ i = k; break } }
+    const onB = i >= 3
+    setState((i % 3) + 1)
+    if(onB) once('handoff', handoff)
 
-    // STATE 1 — who it is
-    once('in',   ()=> $('side').classList.add('in'))
-    // STATE 2 — the record, then the rows off the back of it
-    if(p >= BEATS[1]){
-      once('rec', ()=> $('rec').classList.add('in'))
-      const into = (p - BEATS[1]) / Math.max(.001, BEATS[2] - BEATS[1])
-      drawRecord(Math.min(1, into * 2.4), REC.w, REC.l, REC.d)   // lands early in its own section
-      ;[...document.querySelectorAll('.row')].forEach((r, i) => {
-        if(into > .18 + i * .12) once('row' + i, ()=> r.classList.add('in'))
+    // Each fighter's numbers arrive inside THEIR OWN medium shot, which is
+    // where the voice is saying them. Tied to the whole segment they landed
+    // over the wrong face.
+    const mid = onB ? MARKS[4] : MARKS[1], wide = onB ? MARKS[5] : MARKS[2]
+    if(now >= mid){
+      once('rec' + (onB?'B':'A'), ()=> $('rec').classList.add('in'))
+      const into = (now - mid) / Math.max(.001, wide - mid)
+      drawRecord(Math.min(1, into * 2.2), REC.w, REC.l, REC.d)
+      ;[...document.querySelectorAll('.row')].forEach((r, k) => {
+        if(into > .16 + k * .13) once('row' + (onB?'B':'A') + k, ()=> r.classList.add('in'))
       })
     }
-    // STATE 3 — what it is worth, and the burn down to a silhouette under it
-    if(p >= BEATS[2]) once('stake', ()=> $('stake').classList.add('in'))
-    if(p >= OUTRO) once('outro', ()=> $('scene').classList.add('outro'))
+    if(now >= wide) once('stake' + (onB?'B':'A'), ()=> $('stake').classList.add('in'))
+    if(onB && now >= outroAt()) once('outro', ()=> $('scene').classList.add('outro'))
 
     $('clock').textContent = now.toFixed(1) + ' / ' + LEN.toFixed(1)
-    if(p < 1) raf = requestAnimationFrame(step)
-    else if(Q.get('demo')) setTimeout(reset, 1200)   // demo loops so the style can be watched
+      + '  ·  ' + (onB ? 'B' : 'A') + (i % 3 + 1)
+    if(now < LEN) raf = requestAnimationFrame(step)
+    else if(Q.get('demo')) setTimeout(reset, 1200)
   }
   raf = requestAnimationFrame(step)
+}
+
+// THE HANDOVER. The side clears and rebuilds for the second fighter rather
+// than dissolving one set of numbers into another -- a record that morphs
+// digit by digit into somebody else's reads as a bug, not a transition.
+function handoff(){
+  $('scene').classList.add('onB')
+  $('side').classList.remove('in')
+  $('rec').classList.remove('in')
+  $('stake').classList.remove('in')
+  document.querySelectorAll('.row').forEach(r => r.classList.remove('in'))
+  setTimeout(()=>{
+    paint(FB, OVER_B)
+    frameShots()
+    $('side').classList.add('in')
+  }, 260)
 }
 
 function reset(){
   cancelAnimationFrame(raf)
   fired.clear(); state = 0
+  $('scene').classList.remove('onB')
+  paint(FA, OVER_A)
   $('side').classList.remove('in')
   $('rec').classList.remove('in')
   $('stake').classList.remove('in')
@@ -312,6 +359,10 @@ function reset(){
 
 // ── WHO IS ON ─────────────────────────────────────────────────────────
 let REC = { w:0, l:0, d:0 }
+// A is on first, B takes over at the halfway mark. Both are looked up before
+// anything runs: a lookup landing mid-segment would swap a name under a face
+// that is already on screen.
+let FA = null, FB = null, OVER_A = {}, OVER_B = {}
 
 function paint(f, over){
   over = over || {}
@@ -346,14 +397,23 @@ function paint(f, over){
 
   const url = over.photo || (f && f.profile_photo_url) || ''
   if(url){
-    $('por').onload = frameShots     // the offsets depend on THIS photo's height
-    $('por').src = url
+    // The silhouette always masks whoever is CURRENTLY on, because the outro
+    // only ever happens over the second fighter.
     $('sil').style.webkitMaskImage = 'url("' + url + '")'
     $('sil').style.maskImage = 'url("' + url + '")'
   }
 }
 
-async function load(who, over){
+// The two pictures are loaded up front and parked, so the handoff is an
+// opacity swap rather than a file open twenty seconds into a live segment.
+function stagePhotos(a, b){
+  const ua = (OVER_A.photo) || (a && a.profile_photo_url) || ''
+  const ub = (OVER_B.photo) || (b && b.profile_photo_url) || ''
+  if(ua){ $('por').onload = frameShots; $('por').src = ua }
+  if(ub){ $('porB').src = ub }
+}
+
+async function load(who){
   let f = null
   if(has(who)){
     // supabase-js resolves {data:null,error} instead of throwing, so a failed
@@ -367,7 +427,6 @@ async function load(who, over){
              data.find(c => norm(c.display_name) === norm(who)) || null
     if(!f) console.warn('[vo] no fighter matched', who)
   }
-  paint(f, over)
   return f
 }
 
@@ -378,32 +437,67 @@ async function load(who, over){
 // Named by convention: assets/vo/<slug>.mp3, so nothing has to be configured
 // per fight. A missing file is not an error — the visuals run silent on the
 // default runtime, which is a segment without a voice rather than no segment.
+// Extensions are TRIED, not assumed: a voiceover arrives as whatever the
+// editor exported — an m4a out of a video project, an mp3 off a recorder — and
+// renaming it is a step that gets skipped. A name with an extension already on
+// it is taken as given.
+const AUDIO_EXT = ['.m4a', '.mp3', '.ogg', '.wav']
 function loadAudio(src){
   if(Q.get('mute') === '1'){ LEN = DEFAULT_LEN; return }
-  vo.src = src
+  const base = src.replace(/\.(m4a|mp3|ogg|wav)$/i, '')
+  const tries = /\.(m4a|mp3|ogg|wav)$/i.test(src) ? [src] : AUDIO_EXT.map(e => base + e)
+  let i = 0
+  vo.onerror = () => {
+    if(++i < tries.length){ vo.src = tries[i]; vo.load(); return }
+    console.warn('[vo] no audio for', base, '— running silent')
+    LEN = DEFAULT_LEN; MARKS = defaultMarks(LEN); reset()
+  }
+  vo.src = tries[0]
   vo.onloadedmetadata = () => {
     if(isFinite(vo.duration) && vo.duration > 4) LEN = vo.duration
+    // Derived marks are fractions of the runtime, so they have to be rebuilt
+    // once the file says how long it actually is. Marks sent from the deck are
+    // real timestamps and are left alone.
+    if(!(Q.get('marks') || '').trim() && !window.__marksFromDeck) MARKS = defaultMarks(LEN)
     vo.play().catch(err => console.warn('[vo] autoplay blocked —', err.name,
       '— in OBS this plays; a browser tab needs a click'))
     reset()
   }
-  vo.onerror = () => { console.warn('[vo] no audio at', src, '— running silent'); LEN = DEFAULT_LEN }
 }
 
 // ── DEMO ──────────────────────────────────────────────────────────────
-// The style, on a real fighter with a real photo, looping. This is what the
-// scene is designed against — not a lorem-ipsum plate that hides how a long
-// name or a missing rank behaves.
-async function demo(){
-  await load(Q.get('slug') || 'jester', { event:'UBA 15', stake:'A TOP TEN SPOT IS WAITING' })
-  LEN = Number(Q.get('len')) || DEFAULT_LEN
-  reset()
+// The style on two real fighters with real photos, looping. This is what it is
+// designed against -- a placeholder plate hides how a long name or a missing
+// rank behaves, and a one-fighter demo hides the handoff entirely.
+async function boot(aWho, bWho, oa, ob){
+  OVER_A = oa || {}; OVER_B = ob || {}
+  const [a, b] = await Promise.all([load(aWho), load(bWho)])
+  FA = a; FB = b
+  stagePhotos(a, b)
+  paint(FA, OVER_A)
+  const m = (Q.get('marks') || '').split(',').map(Number).filter(n => !isNaN(n))
+  MARKS = m.length === 6 ? m : defaultMarks(LEN)
+  frameShots()
 }
 
-if(Q.get('demo') === '1'){ demo() }
-else if(has(Q.get('slug'))){
-  load(Q.get('slug'), {}).then(()=>{ if(has(Q.get('audio'))) loadAudio('assets/vo/' + Q.get('audio')); else reset() })
+if(Q.get('demo') === '1'){
+  LEN = Number(Q.get('len')) || DEFAULT_LEN
+  boot(Q.get('a') || 'jester', Q.get('b') || 'excel',
+       { event:'UBA 15', stake:'A TOP TEN SPOT IS WAITING' },
+       { event:'UBA 15', stake:'HE HAS NOT LOST SINCE MARCH' }).then(reset)
+}else if(has(Q.get('a'))){
+  LEN = Number(Q.get('len')) || DEFAULT_LEN
+  boot(Q.get('a'), Q.get('b'), {}, {}).then(()=>{
+    if(has(Q.get('audio'))) loadAudio('assets/vo/' + Q.get('audio')); else reset()
+  })
 }
+
+// Exposed for the same reason the other scenes expose theirs: the segment runs
+// on a broadcast channel every source in the building is listening to, and
+// checking it should not mean putting a fake one on air.
+window.__vo = () => ({ len:LEN, marks:MARKS.map(n => +n.toFixed(2)),
+  a:FA && FA.display_name, b:FB && FB.display_name,
+  onB:$('scene').classList.contains('onB'), state:$('scene').className })
 
 // ── THE WIRE ──────────────────────────────────────────────────────────
 sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, async ({ payload:c }) => {
@@ -415,11 +509,19 @@ sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, async ({ payload:c })
     return
   }
   const d = c.d || {}
-  const f = await load(d.slug || d.name, d)
-  // Beats can be sent per fight for a read that does not divide evenly.
-  BEATS = Array.isArray(d.beats) && d.beats.length === 3 ? d.beats : DEFAULT_BEATS.slice()
-  if(d.audio !== null) loadAudio('assets/vo/' + (d.audio || ((f && f.slug) || norm(d.slug || d.name)) + '.mp3'))
-  else { LEN = DEFAULT_LEN; reset() }
+  LEN = Number(d.len) || DEFAULT_LEN
+  await boot(d.a || d.slug, d.b,
+             { event:d.event, stake:d.stakeA, name:d.nameA },
+             { event:d.event, stake:d.stakeB, name:d.nameB })
+  // The deck can send the six timestamps off the voiceover; without them the
+  // segment splits itself in half and each half into thirds.
+  window.__marksFromDeck = Array.isArray(d.marks) && d.marks.length === 6
+  if(window.__marksFromDeck) MARKS = d.marks.map(Number)
+  // Named by convention, assets/vo/<a>-vs-<b>.mp3, so nothing is configured
+  // per fight. audio:null runs it silent, for a read played from elsewhere.
+  if(d.audio === null){ reset(); return }
+  const file = d.audio || (norm(d.a || d.slug) + '-vs-' + norm(d.b) + '.mp3')
+  loadAudio('assets/vo/' + file)
 }).subscribe()
 })()
 </script>
