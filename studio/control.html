@@ -627,6 +627,19 @@
         <button onclick="fireStakes()">Push typed lines</button>
       </div>
 
+      <!-- THE VO HIGHLIGHT. It follows whatever bout is ARMED above, so the
+           sequence is one press after arming rather than two names retyped.
+           Nothing is automatic: the segment goes when it is pressed. -->
+      <h5>🎙 VO highlight — 45s on the armed bout, both fighters</h5>
+      <div class="row">
+        <button onclick="fireVO()">▶ Play VO highlight</button>
+        <button class="hide" onclick="send({type:'vo',on:false})">■ Hide</button>
+        <span id="voHint" style="color:var(--gdim);font-size:15px">arm a bout first</span>
+      </div>
+      <div class="row" style="margin-top:4px">
+        <input id="voMarks" placeholder="TIMESTAMPS — six seconds, comma separated. Blank = split it evenly" style="flex:1">
+      </div>
+
       <h5>Rankings at stake — who can jump who</h5>
       <div class="row">
         <button onclick="send({type:'rankstakes',event:(window.UBA&&UBA.name)||null,on:true})">▶ Show ladder</button>
@@ -840,6 +853,27 @@ function fcDraw(){
       + (f.found ? '' : ' <b style="color:#ff6b6b">?</b>')
       + ' <small style="opacity:.6">seat ' + seat + '</small></span>'
   }).join('')
+}
+
+// ── VO HIGHLIGHT ─────────────────────────────────────────────────────────
+// Reads the armed bout rather than its own inputs: the tape, the clock and
+// this all describe the same fight, and a second place to type the names is a
+// second place for them to disagree.
+// The six timestamps are optional and are the only thing typed. Blank splits
+// the read in half and each half into thirds, which is right for an evenly
+// paced one.
+window.fireVO = () => {
+  const b = (window.UBA && UBA.bouts && UBA.armed != null) ? UBA.bouts[UBA.armed] : null
+  if(!b){ document.getElementById('voHint').textContent = 'arm a bout first'; return }
+  const raw = document.getElementById('voMarks').value.trim()
+  const marks = raw ? raw.split(/[,\s]+/).map(Number).filter(n => !isNaN(n)) : []
+  if(raw && marks.length !== 6){
+    document.getElementById('voHint').textContent = 'six numbers, or leave it blank'
+    return
+  }
+  send({ type:'vo', on:true, d:{ a:b.a, b:b.b, event:(UBA.name || null),
+    marks: marks.length === 6 ? marks : undefined } })
+  document.getElementById('voHint').textContent = 'playing — ' + b.a + ' vs ' + b.b
 }
 
 window.searchFighter=async()=>{
@@ -1792,6 +1826,7 @@ window.ubaArm=i=>{
   // bout's market and bets instead of all nine
   loadOdds(); loadBetFeed()
   const h=document.getElementById('clockOddsHint'); if(h) h.textContent='ready — '+b.a+' vs '+b.b
+  const vh=document.getElementById('voHint'); if(vh) vh.textContent='ready — '+b.a+' vs '+b.b
 }
 
 /* tap a name = that side won. Tap again to undo. Pushes the rundown live so

@@ -248,19 +248,28 @@ function once(key, fn){ if(fired.has(key)) return; fired.add(key); fn() }
 // 2.6 rather than 3: the photos are ~1400x2160, and a 3x close-up is a 2x
 // upscale of a game capture — soft in a way the grain cannot hide at 1920.
 // 2.6 is still unmistakably a close-up and stays under 1.8x.
-const SHOTS = { s1:2.6, s2:1.85, s3:1.3 }   // close · medium · waist up
-const HEAD = 0.10, EYE = 0.34
+// Each shot carries its own scale AND its own eye line, because they are not
+// the same picture at three sizes -- they are three shots. Pinning the head at
+// the same height for all of them made the wide one a medium with empty air
+// above it: pulling out only ever revealed more floor, never more fighter.
+// The wider the shot, the higher the head sits, which is how the frame fills
+// downward with body instead of upward with nothing.
+const SHOTS = { s1:{ s:2.6, eye:.36 },    // close — the face
+                s2:{ s:1.85, eye:.30 },   // medium — head and shoulders
+                s3:{ s:1.30, eye:.16 } }  // waist up
+const HEAD = 0.10
 function frameShots(){
   const el = $('por')
   const H = el.offsetHeight || (1080 * 1.32)     // layout height, before any scale
   const root = document.documentElement
   for(const k in SHOTS){
-    const sc = SHOTS[k]
+    const sc = SHOTS[k].s
     // where the head lands with the element centred and scaled about its middle
     const y = (1080/2) + (HEAD - 0.5) * H * sc
-    // …and the shift that puts it on the eye line. -50% is the centring the
-    // transform already carries, so the correction is added to it in px.
-    root.style.setProperty('--' + k.replace('s','y'), 'calc(-50% + ' + Math.round(1080*EYE - y) + 'px)')
+    // …and the shift that puts it on this shot's eye line. -50% is the centring
+    // the transform already carries, so the correction is added to it in px.
+    root.style.setProperty('--' + k.replace('s','y'),
+      'calc(-50% + ' + Math.round(1080 * SHOTS[k].eye - y) + 'px)')
     root.style.setProperty('--' + k, String(sc))
   }
 }
@@ -520,7 +529,10 @@ sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, async ({ payload:c })
   // Named by convention, assets/vo/<a>-vs-<b>.mp3, so nothing is configured
   // per fight. audio:null runs it silent, for a read played from elsewhere.
   if(d.audio === null){ reset(); return }
-  const file = d.audio || (norm(d.a || d.slug) + '-vs-' + norm(d.b) + '.mp3')
+  // No extension on the derived name: loadAudio tries m4a, mp3, ogg and wav in
+  // turn, and naming one here would pin it to the format the deck happened to
+  // guess. The first read arrived as m4a out of a video project.
+  const file = d.audio || (norm(d.a || d.slug) + '-vs-' + norm(d.b))
   loadAudio('assets/vo/' + file)
 }).subscribe()
 })()
