@@ -193,8 +193,21 @@ place()
 // automatic: an operator who has not shot the clip yet should get a
 // usable scene, not a broken one.
 const vid = $('bg')
+// SEATS FIRST, THEN THE OLD SINGLE-CLIP NAMES.
+// This defaulted to loop.webm / loop.mp4 and nothing else — but the clips that
+// actually shipped are seat-1.mp4, seat-2.mp4, seat-3.mp4, listed in
+// seats.json. So a source added to OBS and left alone found no clip, fell back
+// to the empty floor, and showed the name bug over nothing. It looked like a
+// broken scene and was really a scene waiting for a filename that was never
+// going to exist.
+//
+// seats.json is fetched at load and its FIRST entry becomes the default, with
+// that seat's framing — so the scene looks right the moment it is added,
+// before anybody touches the deck. The deck still overrides both.
+let SEATS = []
 function playClip(name){
-  const tries = name ? [name] : ['loop.webm','loop.mp4']
+  const fromSeats = SEATS.length ? [SEATS[0].clip] : []
+  const tries = name ? [name] : [...fromSeats, 'loop.webm', 'loop.mp4']
   let i = 0
   const next = () => {
     if(i >= tries.length){
@@ -210,7 +223,27 @@ function playClip(name){
   vid.onloadeddata = () => { $('floor').classList.add('hide'); vid.style.display = '' }
   next()
 }
-playClip(KN.clip)
+// Load the seat list, then start the clip. A failed or missing seats.json is
+// not an error — it just means the old single-clip behaviour, which is what
+// this file did before seats existed.
+fetch('assets/fancam/seats.json', { cache:'no-store' })
+  .then(r => r.ok ? r.json() : [])
+  .then(list => {
+    SEATS = Array.isArray(list) ? list : []
+    // adopt the first seat's framing too, unless the URL already set it —
+    // the position of the chair is a property of the clip, so a default clip
+    // with someone else's x/y would sit the fighter beside the chair
+    if(SEATS.length && !KN.clip){
+      const s0 = SEATS[0]
+      if(Q.get('x') == null && s0.x != null) KN.x = +s0.x
+      if(Q.get('y') == null && s0.y != null) KN.y = +s0.y
+      if(Q.get('scale') == null && s0.scale != null) KN.scale = +s0.scale
+      if(Q.get('flip') == null && s0.flip != null) KN.flip = !!s0.flip
+      place()
+    }
+  })
+  .catch(() => {})
+  .finally(() => playClip(KN.clip))
 
 // ── who is in the chair ─────────────────────────────────────────────
 const DIVISION = { heavyweight:'HEAVYWEIGHT', light_heavyweight:'LIGHT HEAVYWEIGHT',
