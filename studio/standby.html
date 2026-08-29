@@ -387,10 +387,18 @@
   .fan{position:relative;flex:0 0 auto;}
   .fan img{position:absolute;top:50%;left:50%;display:block;width:auto;
     transform-origin:50% 50%;
+    transition:transform .7s cubic-bezier(.16,1,.3,1);
     border:1px solid var(--line);background:transparent;
     box-shadow:0 18px 46px rgba(0,0,0,.6),0 0 46px rgba(60,0,110,.45);}
   /* 560, matched to the fan's 520 plus its lean: the card standing a hundred
      pixels taller than the stack beside it reads as two unrelated graphics. */
+  /* The pair is stacked: the outgoing card holds the box while the incoming one
+     fades over it, so the cell never collapses mid-swap and shunts the posters
+     sideways. */
+  #promoFilmCell{position:relative;}
+  .card-vid{position:absolute;top:0;left:50%;transform:translateX(-50%);
+    opacity:0;transition:opacity .6s ease;pointer-events:none;}
+  .card-vid.on{opacity:1;position:relative;left:auto;transform:none;}
   .promo-cell video{display:block;height:auto;width:auto;max-height:560px;max-width:34vw;
     border:1px solid var(--line);background:transparent;
     box-shadow:0 0 46px rgba(60,0,110,.5);}
@@ -1040,7 +1048,13 @@ function renderCards(sets, coll){
 const POSTER_INDEX = 'assets/posters.json'
 const PROMO_PRIZE = ['assets/prize.png','assets/prize.jpg','assets/prize.webp']
 const PROMO_POSTER = ['assets/poster.png','assets/poster.jpg','assets/poster.webp']
+// A LIST, like the posters: eleven cards exist, and a slot that can only play
+// one of them is a slot that shows the same fighter all night.
+// assets/cards.json holds the filenames; without it the single-file names below
+// still work, so a folder with one card-3d.mp4 in it needs no json.
+const CARD_INDEX   = 'assets/cards.json'
 const PROMO_FILM   = ['assets/card-3d.mp4','assets/card-3d.webm']
+const CARD_HOLD    = 8000   // one card's turn before the next fades in
 let promoFilmEl = null, promoHas = { poster:false, prize:false, film:false }
 
 function promoLayout(){
@@ -1056,7 +1070,10 @@ function promoLayout(){
   if(n && !VIEWS_UBA.includes('poster')) VIEWS_UBA.splice(0, 0, 'poster')
 }
 
-let posterList = []
+let posterList = [], fanAt = 0, fanTimer = null
+const FAN_HOLD = 10000   // long enough to read the one in front, short enough that the others get their turn
+const FAN_PEEK = 1600    // the stack opens for this long before it swaps
+const FAN_OPEN = 1.28    // how far the ones behind slide out while it is open
 async function mountPoster(){
   const fan = document.getElementById('promoFan'); if(!fan) return
   try{
@@ -1118,21 +1135,61 @@ async function mountPoster(){
   // silently shoving the card off the frame.
   fan.innerHTML = ''
   const DROP = Math.round(H * 0.02), TILT = 6
-  posterList.forEach((src, n) => {
-    const depth = depthOf(n)
-    const side  = n === 0 ? 0 : ((n - 1) % 2 ? -1 : 1)
+  const nodes = posterList.map(src => {
     const img = document.createElement('img')
     img.src = src
     img.style.height = H + 'px'
+    fan.appendChild(img)
+    return img
+  })
+
+  // WHICH ONE IS IN FRONT ROTATES. A stack with a permanent front poster shows
+  // the other two as edges all night -- they are in the shot but nobody ever
+  // reads them. Every poster takes its turn in front and the rest slide back a
+  // place, so the fan keeps its shape while the subject changes. The positions
+  // are fixed and the posters move BETWEEN them, which is what makes it read as
+  // a shuffle rather than three graphics being swapped.
+  const place = (img, depth, side, bump) => {
     img.style.zIndex = String(20 - depth)
     img.style.transform = 'translate(-50%,-50%)'
-      + ' translate(' + (side * depth * STEP) + 'px,' + (depth * DROP) + 'px)'
-      + ' rotate(' + (side * depth * TILT) + 'deg)'
-    fan.appendChild(img)
-  })
-  const widest = Math.round(H * widestRatio)
-  fan.style.width  = Math.round(widest + maxDepth * STEP * 2 + widest * 0.12) + 'px'
-  fan.style.height = Math.round(H + maxDepth * DROP * 2 + H * 0.10) + 'px'
+      + ' translate(' + Math.round(side * depth * STEP * bump) + 'px,'
+                      + Math.round(depth * DROP * bump) + 'px)'
+      + ' rotate(' + (side * depth * TILT * bump).toFixed(2) + 'deg)'
+  }
+  fanAt = 0
+  // bump 1 = resting. Anything above it slides the posters BEHIND further out
+  // and leans them a touch more, which is the movement before a change: the
+  // stack opens, shows more of what is coming, then swaps. A cut with nothing
+  // before it reads as the graphic glitching.
+  function layFan(bump){
+    nodes.forEach((img, n) => {
+      // n is where this poster IS in the list; slot is where it sits tonight.
+      const slot = (n - fanAt + nodes.length) % nodes.length
+      place(img, depthOf(slot), slot === 0 ? 0 : ((slot - 1) % 2 ? -1 : 1), bump)
+    })
+  }
+  layFan(1)
+
+  // Only while the scene is up: a timer behind a hidden view spends the
+  // streaming box's frames on a shuffle nobody can see, and it would otherwise
+  // land mid-transition the moment the scene came back.
+  window.__fanShuffle = () => {
+    clearTimeout(fanTimer); fanTimer = null
+    if(nodes.length < 2) return
+    if(!document.getElementById('v-poster').classList.contains('on')) return
+    // open … swap … settle. The open is the long part, because it is the part
+    // that is meant to be looked at; the settle is what lands the new front
+    // poster square.
+    fanTimer = setTimeout(()=>{
+      layFan(FAN_OPEN)
+      fanTimer = setTimeout(()=>{
+        fanAt = (fanAt + 1) % nodes.length
+        layFan(1)
+        window.__fanShuffle()
+      }, FAN_PEEK)
+    }, FAN_HOLD - FAN_PEEK)
+  }
+  window.__fanShuffle()
 
   document.getElementById('promoPosterCap').textContent =
     posterList.length > 1 ? 'THE POSTERS' : 'THE POSTER'
@@ -1151,27 +1208,79 @@ function mountPrize(){
   img.src = PROMO_PRIZE[0]
 }
 
-function mountCardFilm(){
+let cardList = [], cardAt = 0, cardTimer = null, cardVids = []
+async function mountCardFilm(){
   const cell = document.getElementById('promoFilmCell'); if(!cell) return
-  let i = 0
-  const v = document.createElement('video')
-  v.muted = true; v.loop = true; v.autoplay = true; v.playsInline = true; v.preload = 'auto'
-  // loadeddata rather than canplay: this only has to learn the file is real.
-  v.addEventListener('loadeddata', ()=>{ promoFilmEl = v; promoHas.film = true; promoLayout(); syncPromo() })
-  // An error AFTER it has played takes the cell with it. A stalled black frame
-  // parked in a scene is worse than the scene never having had a film.
-  v.addEventListener('error', ()=>{
-    if(!promoFilmEl && ++i < PROMO_FILM.length){ v.src = PROMO_FILM[i]; v.load(); return }
-    promoFilmEl = null; promoHas.film = false; v.remove(); promoLayout()
+  try{
+    const r = await fetch(CARD_INDEX, {cache:'no-store'})
+    if(r.ok){
+      const list = await r.json()
+      if(Array.isArray(list)) cardList = list.filter(n => typeof n === 'string' && n)
+        .map(n => n.includes('/') ? n : 'assets/cards/' + n)
+    }
+  }catch(e){}
+  if(!cardList.length) cardList = PROMO_FILM.slice()
+
+  // TWO video elements, crossfaded. One element with its src swapped goes black
+  // for a frame or two while the next file opens, and a black rectangle in the
+  // middle of a scene is exactly what this whole screen is built to avoid.
+  cardVids = [0,1].map(() => {
+    const v = document.createElement('video')
+    v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto'
+    v.className = 'card-vid'
+    cell.insertBefore(v, cell.firstChild)
+    return v
   })
-  v.src = PROMO_FILM[0]
-  cell.insertBefore(v, cell.firstChild)
+  const first = cardVids[0]
+  first.addEventListener('loadeddata', ()=>{
+    if(promoHas.film) return
+    promoFilmEl = first; promoHas.film = true
+    first.classList.add('on')
+    promoLayout(); syncPromo()
+  }, {once:true})
+  // Only the FIRST file failing means there is no card: a later one that is
+  // missing is skipped by the rotation, which is a card short, not a dead slot.
+  first.addEventListener('error', ()=>{
+    if(promoHas.film) return
+    cardList.shift()
+    if(cardList.length){ first.src = cardList[0]; first.load(); return }
+    promoFilmEl = null; promoHas.film = false; cardVids.forEach(v=>v.remove()); promoLayout()
+  })
+  first.src = cardList[0]
+  first.play().catch(()=>{})
+}
+
+// One card at a time, not eleven: this runs on the machine that is also
+// encoding the stream, and eleven h264 decoders behind one graphic is the kind
+// of thing that costs dropped frames in the fight rather than here.
+function cardCycle(){
+  clearTimeout(cardTimer); cardTimer = null
+  if(cardList.length < 2 || cardVids.length < 2) return
+  if(!document.getElementById('v-poster').classList.contains('on')) return
+  cardTimer = setTimeout(()=>{
+    const cur  = cardVids.find(v => v.classList.contains('on')) || cardVids[0]
+    const next = cardVids.find(v => v !== cur)
+    cardAt = (cardAt + 1) % cardList.length
+    next.src = cardList[cardAt]
+    // The swap waits for the file to be REAL. Fading to a video that has not
+    // opened yet is the black frame this pair of elements exists to prevent.
+    next.addEventListener('loadeddata', ()=>{
+      next.play().catch(()=>{})
+      next.classList.add('on'); cur.classList.remove('on')
+      promoFilmEl = next
+      cardCycle()
+    }, {once:true})
+    next.addEventListener('error', ()=>{ cardCycle() }, {once:true})
+    next.load()
+  }, CARD_HOLD)
 }
 
 // A loop decoding behind a screen nobody is looking at costs the streaming box
 // frames it needs for the fight. It runs while the poster scene is up and is
 // paused every other second of the night.
 function syncPromo(){
+  if(window.__fanShuffle) window.__fanShuffle()   // starts on the way in, stops itself on the way out
+  cardCycle()
   if(!promoFilmEl) return
   if(document.getElementById('v-poster').classList.contains('on')){
     const p = promoFilmEl.play(); if(p && p.catch) p.catch(()=>{})
