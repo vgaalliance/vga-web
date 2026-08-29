@@ -631,14 +631,41 @@
         <span style="color:var(--gdim);font-size:15px">reads the card you loaded above</span>
       </div>
 
-      <h5>Fan cam — search a fighter, then cut to the scene</h5>
-      <div class="row">
-        <input id="fcq" placeholder="QUERY FIGHTER NAME…" onkeydown="if(event.key==='Enter')searchFanCam()">
-        <button onclick="searchFanCam()">Search</button>
-        <button class="hide" onclick="send({type:'fancam',on:false})">■ Hide</button>
-      </div>
-      <div class="row" id="fcresults" style="margin-top:10px"></div>
     </div>
+  </div></div>
+
+  <!-- ⑤ FAN CAM -->
+  <div class="panel" data-panel="fancam"><div class="sec">
+    <h4>FAN CAM — the queue, built before the show</h4>
+    <!-- A QUEUE, not a search box. Typing a name while the scene is live is
+         where a typo becomes a blank plate on air, and searching mid-fight is
+         three actions when there should be one. Names go in before doors, get
+         checked against the database THEN, and on the night the only thing
+         anybody presses is Next. -->
+    <h5>The fans — one name per line, in the order you want them</h5>
+    <div class="row" style="align-items:flex-start">
+      <textarea id="fcQueue" rows="5" style="width:420px"
+        placeholder="Smokinem&#10;Boady&#10;Killer Kam"></textarea>
+      <div>
+        <div class="row"><button onclick="fcLoad()">✓ Check + load queue</button></div>
+        <div class="row"><span id="fcCheck" style="color:var(--gdim);font-size:15px">nothing loaded</span></div>
+      </div>
+    </div>
+    <h5>On the night</h5>
+    <div class="row">
+      <button onclick="fcStep(-1)">◀ Prev</button>
+      <button onclick="fcStep(1)">▶ Next fan</button>
+      <button onclick="fcRepeat()">↻ Re-cut current</button>
+      <button class="hide" onclick="send({type:'fancam',on:false})">■ Hide</button>
+    </div>
+    <div id="fcNow" style="margin-top:10px">QUEUE EMPTY</div>
+
+    <h5>Off-queue — somebody who was not on the list</h5>
+    <div class="row">
+      <input id="fcq" placeholder="QUERY FIGHTER NAME…" onkeydown="if(event.key==='Enter')searchFanCam()">
+      <button onclick="searchFanCam()">Search</button>
+    </div>
+    <div class="row" id="fcresults" style="margin-top:10px"></div>
   </div></div>
 
   <div id="log"></div>
@@ -734,6 +761,82 @@ window.searchFanCam=async()=>{
     b.onclick=()=>send({type:'fancam', on:true, d:{ fighter:f.slug, name:f.display_name }})
     box.appendChild(b)
   })
+}
+
+// ── FAN CAM: the queue and the seats ─────────────────────────────────────
+// The seats are assets/fancam/seats.json, one entry per clip, carrying the clip
+// AND its framing -- where the chair sits in frame is a property of the
+// footage, not of the graphic. Each fan gets the next seat in turn
+// (seat = position % seats.length), so two fans in a row are never in the same
+// chair and the order is reproducible rather than random. No seats.json and the
+// deck sends no clip, which is the single-loop behaviour the scene always had.
+let FC_SEATS = [], FC_Q = [], FC_AT = -1
+;(async function loadSeats(){
+  try{
+    const r = await fetch('assets/fancam/seats.json', {cache:'no-store'})
+    if(r.ok){ const j = await r.json(); if(Array.isArray(j)) FC_SEATS = j }
+  }catch(e){}
+})()
+
+// Checked HERE, before doors, against the same view the scene reads. A name
+// that matches nothing is worth knowing about while there is time to fix it;
+// found out live it is a blank plate with a stranger's name on it.
+window.fcLoad = async () => {
+  const lines = document.getElementById('fcQueue').value.split('\n')
+    .map(x => x.trim()).filter(Boolean)
+  const out = document.getElementById('fcCheck')
+  if(!lines.length){ FC_Q = []; FC_AT = -1; out.textContent = 'nothing loaded'; fcDraw(); return }
+  out.textContent = 'checking…'
+  const { data, error } = await sb.from('fighter_cards')
+    .select('slug,display_name,profile_photo_url')
+  // supabase-js resolves {data:null,error} rather than throwing, so a failed
+  // query must never be reported as "none of your fans exist".
+  if(error || !data){ out.textContent = 'CHECK FAILED — ' + (error && error.message || 'no data'); return }
+  const norm = v => String(v ?? '').toLowerCase().replace(/[^a-z0-9]/g,'')
+  FC_Q = lines.map(name => {
+    const f = data.find(c => norm(c.slug) === norm(name)) ||
+              data.find(c => norm(c.display_name) === norm(name)) || null
+    return { typed:name, slug:f && f.slug, name:(f && f.display_name) || name,
+             found:!!f, photo:!!(f && f.profile_photo_url) }
+  })
+  FC_AT = -1
+  const missing = FC_Q.filter(x => !x.found).length
+  const noPhoto = FC_Q.filter(x => x.found && !x.photo).length
+  out.innerHTML = FC_Q.length + ' loaded'
+    + (missing ? ' · <b style="color:#ff6b6b">' + missing + ' NOT FOUND</b>' : '')
+    + (noPhoto ? ' · ' + noPhoto + ' with no photo' : '')
+    + (FC_SEATS.length ? ' · ' + FC_SEATS.length + ' seats' : ' · no seats.json, single clip')
+  fcDraw()
+}
+
+function fcSend(i){
+  const f = FC_Q[i]; if(!f) return
+  const seat = FC_SEATS.length ? FC_SEATS[i % FC_SEATS.length] : {}
+  send({ type:'fancam', on:true, d:{ fighter:f.slug || f.typed, name:f.name,
+    clip:seat.clip, x:seat.x, y:seat.y, scale:seat.scale, flip:seat.flip } })
+  fcDraw()
+}
+// Manual, both ways. Nothing advances on a timer: the cut happens when the
+// director calls it, and going back one is the fix for cutting too early.
+window.fcStep = dir => {
+  if(!FC_Q.length) return
+  FC_AT = Math.min(FC_Q.length - 1, Math.max(0, FC_AT + dir))
+  fcSend(FC_AT)
+}
+window.fcRepeat = () => { if(FC_AT >= 0) fcSend(FC_AT) }
+
+function fcDraw(){
+  const box = document.getElementById('fcNow'); if(!box) return
+  if(!FC_Q.length){ box.textContent = 'QUEUE EMPTY'; return }
+  box.innerHTML = FC_Q.map((f, i) => {
+    const seat = FC_SEATS.length ? (i % FC_SEATS.length) + 1 : 1
+    const live = i === FC_AT
+    return '<span style="display:inline-block;margin:0 14px 6px 0;'
+      + (live ? 'color:#fff' : 'color:var(--gdim)') + '">'
+      + (live ? '▶ ' : '') + (i + 1) + '. ' + f.name
+      + (f.found ? '' : ' <b style="color:#ff6b6b">?</b>')
+      + ' <small style="opacity:.6">seat ' + seat + '</small></span>'
+  }).join('')
 }
 
 window.searchFighter=async()=>{
@@ -1510,9 +1613,9 @@ window.loadStandings=async()=>{
 
 /* ── EVENT + STAGE navigation ── */
 const STAGES={
-  ubae:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ BATTLEROOM'],['match','④ MATCH']],
-  uba:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ TALE OF TAPE'],['match','④ MATCH']],
-  gfl:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ TALE OF TAPE'],['match','④ MATCH']]
+  ubae:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ BATTLEROOM'],['match','④ MATCH'],['fancam','⑤ FAN CAM']],
+  uba:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ TALE OF TAPE'],['match','④ MATCH'],['fancam','⑤ FAN CAM']],
+  gfl:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ TALE OF TAPE'],['match','④ MATCH'],['fancam','⑤ FAN CAM']]
 }
 let EV='ubae', STG='countdown'
 // SOLO = one card, bout by bout: UBA and GFL. TEAM = UBAe. Everything on this

@@ -402,8 +402,12 @@
   .promo-cell video{display:block;height:auto;width:auto;max-height:560px;max-width:34vw;
     border:1px solid var(--line);background:transparent;
     box-shadow:0 0 46px rgba(60,0,110,.5);}
-  #promoPrize{display:block;height:auto;width:auto;max-height:560px;max-width:28vw;
-    border:1px solid var(--line);background:transparent;box-shadow:0 0 46px rgba(60,0,110,.5);}
+  /* No frame on the product: these are cut-out shots on transparent ground, and
+     a border round one draws a box round empty space. The posters and the card
+     are printed things and keep theirs. */
+  #promoPrize{display:block;height:auto;width:auto;max-height:420px;max-width:26vw;
+    filter:drop-shadow(0 18px 40px rgba(0,0,0,.55));}
+  #promoPrizeLogo{display:block;height:38px;width:auto;max-width:26vw;opacity:.95;}
   .promo-cap{font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.2em;
     color:var(--dim);white-space:nowrap;text-align:center;}
   .setgrid{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:start;}
@@ -749,6 +753,7 @@
              posters and the card. Same rule as everything else on this screen:
              no file, no cell. -->
         <div class="promo-cell" id="promoPrizeCell">
+          <img id="promoPrizeLogo" alt="">
           <img id="promoPrize" alt="">
           <div class="promo-cap" id="promoPrizeCap">TONIGHT'S PRIZE</div>
         </div>
@@ -1046,7 +1051,12 @@ function renderCards(sets, coll){
 // Without it the old single-file names still work, so a folder with one
 // poster.png in it needs no json at all.
 const POSTER_INDEX = 'assets/posters.json'
+// The prize is a PRODUCT, so it is a small object rather than one file: the
+// partner's mark, the thing itself from more than one angle, and what to call
+// it. assets/prize.json holds them; without it the single-file names still work.
+const PRIZE_INDEX = 'assets/prize.json'
 const PROMO_PRIZE = ['assets/prize.png','assets/prize.jpg','assets/prize.webp']
+const PRIZE_HOLD  = 5000   // one angle's turn — a product turning is what says it is a real thing
 const PROMO_POSTER = ['assets/poster.png','assets/poster.jpg','assets/poster.webp']
 // A LIST, like the posters: eleven cards exist, and a slot that can only play
 // one of them is a slot that shows the same fighter all night.
@@ -1197,15 +1207,50 @@ async function mountPoster(){
   promoLayout()
 }
 
-function mountPrize(){
+let prizeList = [], prizeAt = 0, prizeTimer = null
+async function mountPrize(){
   const img = document.getElementById('promoPrize'); if(!img) return
+  let spec = null
+  try{
+    const r = await fetch(PRIZE_INDEX, {cache:'no-store'})
+    if(r.ok) spec = await r.json()
+  }catch(e){}
+  const fix = n => n.startsWith('assets/') ? n : 'assets/' + n
+  if(spec && Array.isArray(spec.images) && spec.images.length) prizeList = spec.images.map(fix)
+  else prizeList = PROMO_PRIZE.slice()
+
+  // The partner's own mark, above the thing they are giving away. A prize with
+  // no logo on it is a photo of an object; with it, it reads as who is putting
+  // it up -- which is the point of a sponsor's prize being on screen at all.
+  const logo = document.getElementById('promoPrizeLogo')
+  if(spec && spec.logo){ logo.src = fix(spec.logo); logo.style.display = '' }
+  else logo.style.display = 'none'
+  logo.addEventListener('error', ()=>{ logo.style.display = 'none' })
+  if(spec && spec.cap) document.getElementById('promoPrizeCap').textContent = spec.cap
+
   let i = 0
-  img.addEventListener('load', ()=>{ promoHas.prize = true; promoLayout() })
+  img.addEventListener('load', ()=>{ promoHas.prize = true; promoLayout(); prizeCycle() })
+  // A missing angle drops out of the rotation; only every angle failing means
+  // there is no prize.
   img.addEventListener('error', ()=>{
-    if(++i < PROMO_PRIZE.length){ img.src = PROMO_PRIZE[i]; return }
+    prizeList.splice(i, 1)
+    if(prizeList.length){ i = i % prizeList.length; img.src = prizeList[i]; return }
     promoHas.prize = false; promoLayout()
   })
-  img.src = PROMO_PRIZE[0]
+  img.src = prizeList[0]
+}
+
+// The product turns while the scene is up. Same rule as everywhere else here:
+// nothing runs behind a hidden view.
+function prizeCycle(){
+  clearTimeout(prizeTimer); prizeTimer = null
+  if(prizeList.length < 2) return
+  if(!document.getElementById('v-poster').classList.contains('on')) return
+  prizeTimer = setTimeout(()=>{
+    prizeAt = (prizeAt + 1) % prizeList.length
+    document.getElementById('promoPrize').src = prizeList[prizeAt]
+    prizeCycle()
+  }, PRIZE_HOLD)
 }
 
 let cardList = [], cardAt = 0, cardTimer = null, cardVids = []
@@ -1280,7 +1325,7 @@ function cardCycle(){
 // paused every other second of the night.
 function syncPromo(){
   if(window.__fanShuffle) window.__fanShuffle()   // starts on the way in, stops itself on the way out
-  cardCycle()
+  cardCycle(); prizeCycle()
   if(!promoFilmEl) return
   if(document.getElementById('v-poster').classList.contains('on')){
     const p = promoFilmEl.play(); if(p && p.catch) p.catch(()=>{})
