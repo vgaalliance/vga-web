@@ -468,6 +468,24 @@
       <span class="only-ubae" style="color:var(--gdim);font-size:15px">retires itself after 2 min</span>
       <span class="only-uba" style="color:var(--gdim);font-size:15px">retires itself after 2 min</span>
     </div>
+    <!-- THE VO HIGHLIGHT LIVES HERE, NOT IN MATCH (moved 2026-08-29).
+         It is a 45-second pre-fight package about the two fighters — the same
+         job as the tale of the tape, pressed in the same breath, and it is
+         over before the round starts. It was sitting in the MATCH panel, which
+         is the stage you are on while the fight is actually happening, so the
+         one segment you play BEFORE the bout was filed under during it.
+         It follows whatever bout is armed, so the sequence from here is:
+         arm → tape → VO → cut to the match stage. -->
+    <h5>🎙 VO highlight — 45s on the armed bout, both fighters</h5>
+    <div class="row">
+      <button onclick="fireVO()">▶ Play VO highlight</button>
+      <button class="hide" onclick="send({type:'vo',on:false})">■ Hide</button>
+      <span id="voHint" style="color:var(--gdim);font-size:15px">arm a bout first</span>
+    </div>
+    <div class="row" style="margin-top:4px">
+      <input id="voMarks" placeholder="TIMESTAMPS — six seconds, comma separated. Blank = split it evenly" style="flex:1">
+    </div>
+
     <!-- The venue bug belongs to this stage as much as to the match: the tape
          is where "Live From London" sits longest. Buttons only, no second set
          of inputs -- the venue text stays written down once, in the match
@@ -618,27 +636,9 @@
         <button onclick="send({type:'stakes',on:true})">▶ Show stakes</button>
         <button class="hide" onclick="send({type:'stakes',on:false})">■ Hide</button>
       </div>
-      <div class="row" style="margin-top:6px">
-        <input id="stkA" placeholder="LINE 1 — leave blank to read the database" style="flex:1">
-      </div>
-      <div class="row" style="margin-top:4px">
-        <input id="stkB" placeholder="LINE 2 (optional)" style="flex:1">
-        <input id="stkC" placeholder="LINE 3 (optional)" style="flex:1">
-        <button onclick="fireStakes()">Push typed lines</button>
-      </div>
 
-      <!-- THE VO HIGHLIGHT. It follows whatever bout is ARMED above, so the
-           sequence is one press after arming rather than two names retyped.
-           Nothing is automatic: the segment goes when it is pressed. -->
-      <h5>🎙 VO highlight — 45s on the armed bout, both fighters</h5>
-      <div class="row">
-        <button onclick="fireVO()">▶ Play VO highlight</button>
-        <button class="hide" onclick="send({type:'vo',on:false})">■ Hide</button>
-        <span id="voHint" style="color:var(--gdim);font-size:15px">arm a bout first</span>
-      </div>
-      <div class="row" style="margin-top:4px">
-        <input id="voMarks" placeholder="TIMESTAMPS — six seconds, comma separated. Blank = split it evenly" style="flex:1">
-      </div>
+
+
       <div class="row" style="margin-top:6px"><span id="voCover" style="color:var(--gdim);font-size:15px"></span></div>
 
       <h5>Rankings at stake — who can jump who</h5>
@@ -739,22 +739,12 @@ const deckLog = t => {
 // joining them — a hand-written stake is a decision, and the automatic ones
 // must not argue with it in the next row down. Blank boxes send nothing, so
 // pressing this with an empty form is not a way to wipe the screen.
-window.fireStakes=()=>{
-  const lines=['stkA','stkB','stkC']
-    .map(id=>(document.getElementById(id).value||'').trim())
-    .filter(Boolean)
-    .map(t=>{
-      // "EYEBROW | HEAD | sub" if you want the full shape, otherwise the whole
-      // line is the headline. Splitting on a pipe keeps the common case to
-      // typing one sentence.
-      const p=t.split('|').map(x=>x.trim())
-      return p.length>=2 ? {eyebrow:p[0], head:p[1], sub:p[2]||''} : {eyebrow:'On the line', head:t}
-    })
-  // warn() is a LOCAL const inside another function, not a global — calling it
-  // from here threw ReferenceError on exactly the press that needed feedback.
-  if(!lines.length){ deckLog('type a line first — blank does not clear the screen'); return }
-  send({type:'stakes', on:true, d:{lines}})
-}
+// fireStakes() was removed with stakes.html (2026-08-29). It read #stkA/B/C,
+// which no longer exist, and pushed {type:'stakes'} to a scene that is no
+// longer in the repo — three inputs on the deck that looked live and went
+// nowhere. rankings-at-stake.html is the screen that replaced it, and it needs
+// no typing.
+
 
 // Fan cam. The scene can composite any fighter, but WHERE the person sits is a
 // property of the clip, not of the fighter, so the knobs stay in the browser
