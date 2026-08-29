@@ -342,9 +342,15 @@
      30px it gives back is one more stat segment. */
   #fighter .hi{background:var(--kit-panel);padding:0 22px;align-items:flex-start;
     justify-content:center;width:330px;flex:0 0 330px;}
-  #fighter .hi .t{font:600 21px 'Barlow';color:#14121a;line-height:1.2;
-    letter-spacing:.005em;white-space:normal;overflow:hidden;
-    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;}
+  /* THE SIZE IS SET IN JS, not here — see fitPanel().
+     A fixed 21px in a fixed 330x112 box meant "MAKING THEIR DEBUT" floated in
+     white space at the same size as a sentence twice its length. The panel is
+     the one inverted element on the bar; half-empty, it reads as a mistake.
+     line-height stays here because the fitter needs a stable ratio to measure
+     against. */
+  #fighter .hi .t{font-family:'Barlow',system-ui,sans-serif;font-weight:600;
+    color:#14121a;line-height:1.16;letter-spacing:.005em;white-space:normal;
+    overflow:hidden;width:100%;}
   #fighter .hi .t b{font-weight:800;}
 
   /* the promo tail. Fighter socials do not exist in the database (no column),
@@ -1413,44 +1419,74 @@ function drawDossier(d){
   // measure, and shed the lowest-priority segment until it fits inside the
   // cap. The mark, the flag, the name and the white panel are never dropped —
   // those are the plate.
-  const CAP = 1440
-  // CLEAR LAST RENDER'S WIDTH FIRST. The fitting pass ends by pinning
-  // el.style.width, and that inline value survives the next innerHTML — so
-  // the second bout onward measured scrollWidth against the PREVIOUS bar's
-  // width and shed four stats to fit a box that was never the constraint.
-  // Symptom was a bar that got shorter every time it was shown.
-  el.style.width = ''
-  // MEASURE THE CHILDREN, NOT scrollWidth.
-  // #fighter carries max-width:1440 AND overflow:hidden, so scrollWidth comes
-  // back CLAMPED to the clip width — the loop was told the bar fit at exactly
-  // the moment it had started cutting the promo tail in half. Symptom on air
-  // would have been "DISCORD.G" with no error anywhere.
-  const GAP = 3
-  const measure = () => [...el.children].reduce((t, c, i) =>
-    t + c.getBoundingClientRect().width + (i ? GAP : 0), 0)
-  for(let guard = 0; guard < 6; guard++){
-    if(measure() <= CAP) break
-    // IN PRIORITY ORDER, ONE CLASS AT A TIME.
-    // A single querySelector with all five classes returns the first match in
-    // DOCUMENT order, not the lowest priority — which dropped rank, record and
-    // KO wins while keeping the country, the exact opposite of the intent.
-    let victim = null
-    for(const cls of ['drop0','drop1','drop2','drop3','drop4']){
-      victim = el.querySelector('.' + cls)
-      if(victim) break
-    }
-    if(!victim) break                  // nothing left that is safe to lose
-    victim.remove()
-  }
-  // Whatever survived is what the bar is: let it size to that, so the box is
-  // always exactly as wide as what is in it.
-  el.style.width = Math.ceil(Math.min(measure(), CAP)) + 'px'
+  // Fitting is a SEPARATE PASS because it has to run twice — see fitBar().
+  fitBar()
   // stagger the wipe left to right, ~70ms apart — the reference reveals its
   // segments in sequence, and simultaneous is the thing that makes a bar read
   // as a single pasted image
   ;[...el.children].forEach((c, i) => { c.style.animationDelay = (i * 70) + 'ms' })
   slotShow(el)
 }
+// ── FITTING THE BAR ────────────────────────────────────────────────────
+// Runs on every dossier push AND again when the webfont lands, because the
+// first run measures the FALLBACK face. Barlow Condensed is narrower than the
+// system fallback at the same size, so the first pass sees a bar that fits,
+// keeps every segment, pins a width — and then the real font arrives, every
+// segment grows, and the promo tail slides out past the clip edge. Measured:
+// children summed to 1511 inside a bar pinned at 1419, and "DISCORD.GG/UBA"
+// rendered as "DISCORD.G" with nothing in the console.
+//
+// tale-of-the-tape.html carries the same warning about Archivo Black coming
+// back ~18% narrow. Same trap, different file.
+const BAR_CAP = 1440
+function fitBar(){
+  const el = $('fighter')
+  if(!el || !el.children.length) return
+  el.style.width = ''
+  const GAP = 3
+  const measure = () => [...el.children].reduce((t, c, i) =>
+    t + c.getBoundingClientRect().width + (i ? GAP : 0), 0)
+  for(let guard = 0; guard < 6; guard++){
+    if(measure() <= BAR_CAP) break
+    let victim = null
+    for(const cls of ['drop0','drop1','drop2','drop3','drop4']){
+      victim = el.querySelector('.' + cls)
+      if(victim) break
+    }
+    if(!victim) break
+    victim.remove()
+  }
+  el.style.width = Math.ceil(Math.min(measure(), BAR_CAP)) + 'px'
+  fitPanel()
+}
+
+// Grows the white panel's type to fill its box. Measured, not guessed: the
+// same string is a different width in Barlow than in the fallback, so this runs
+// again once the face has loaded (see the fonts.ready hook below).
+function fitPanel(){
+  const box = document.querySelector('#fighter .hi')
+  const t = box && box.querySelector('.t')
+  if(!box || !t) return
+  const availW = box.clientWidth - 44          // the .hi padding
+  const availH = box.clientHeight - 16
+  let lo = 17, hi = 38, best = 17
+  // binary search rather than a decrementing loop: this runs on every dossier
+  // push, and a 21-step loop with a reflow each time is 21 forced layouts.
+  while(lo <= hi){
+    const mid = (lo + hi) >> 1
+    t.style.fontSize = mid + 'px'
+    if(t.scrollWidth <= availW && t.scrollHeight <= availH){ best = mid; lo = mid + 1 }
+    else hi = mid - 1
+  }
+  t.style.fontSize = best + 'px'
+}
+// The panel is measured, so it has to be measured against the REAL face —
+// against the fallback, Barlow comes back narrow and every panel sizes a step
+// or two too big, then reflows smaller the moment the webfont lands.
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(() => {
+  if($('fighter').classList.contains('in')) fitBar()
+})
+
 // Fun facts, keyed by fighter name, harvested from the bout notes the keys
 // engine already loads. fighter_fun_facts itself is service_role only, so this
 // is the only way the overlay can see one — and it is enough, because the
