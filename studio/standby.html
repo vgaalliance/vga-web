@@ -368,39 +368,34 @@
      deliberately -- someone who has seen their own stash should recognise
      this at a glance. */
   /* ── THE POSTER SCREEN ────────────────────────────────────────────────
-     Its own view, like the rankings or the playoff picture — not a panel
-     bolted onto the card list. The poster and the moving card are the only two
-     things in this package that are PICTURES rather than data, and they belong
-     on screen together: the poster says what the night is, the card says what
-     you can win off the back of it.
-     Either half can be absent. The grid is set from what actually LOADED, so a
-     poster with no film is a poster, a film with no poster is a film, and
-     neither one is a scene that drops out of the rotation rather than showing a
-     violet rectangle with nothing in it. */
-  /* minmax(0,…), not 1fr: a grid column's default min-width is its content, so
-     a 1920-wide card render pushed its own column past the frame and left the
-     poster beside it squeezed to a stamp. The columns are equal halves and the
-     media fills whichever it is given. */
-  .promo{display:grid;gap:44px;align-items:center;justify-items:center;width:100%;}
-  /* auto columns, centred as a pair: equal halves parked each picture in the
-     middle of its own half and left 375px of nothing between them, which reads
-     as two graphics that happen to share a screen rather than one pairing. */
-  .promo.both{grid-template-columns:auto auto;justify-content:center;}
-  .promo.one{grid-template-columns:auto;justify-content:center;}
-  .promo-cell{display:none;flex-direction:column;align-items:center;gap:14px;}
-  .promo-cell.on{display:flex;}
-  /* Ceilings, not a fixed size. A fixed WIDTH letterboxed each portrait inside
-     its box, so the border was drawn round empty space instead of round the
-     picture; a fixed HEIGHT did the same thing the moment the frame was
-     narrower than 1920. Two maximums let the box take the picture's own
-     proportions and shrink to whichever limit it meets first — 660px is what
-     clears a 1080 frame under the heading, and 44vw is what stops a landscape
-     poster running the pair off the side. */
-  .promo-cell img,.promo-cell video{display:block;height:auto;width:auto;
-    max-height:660px;max-width:44vw;
-    border:1px solid var(--line);box-shadow:0 0 46px rgba(60,0,110,.5);background:transparent;}
-  /* nowrap: at 10px with .2em tracking "EARNED · TRADED · FUSED" broke onto a
-     second line inside its cell and sat under the neighbouring caption. */
+     Its own view, like the rankings or the playoff picture. Everything the
+     night has as a PICTURE rather than data goes up together: the posters and
+     the turning card. They were cycling one at a time, which meant the poster
+     somebody wanted to point at was the one that had just gone.
+     THE POSTERS ARE A FAN, not a row: three posters laid out flat read as
+     three separate graphics, while a stack with one in front reads as a pile
+     of the same night's artwork — and it leaves the card the room it needs
+     beside them. Whatever is missing simply is not there, and nothing at all
+     keeps the scene out of the rotation rather than showing an empty screen. */
+  .promo{display:flex;justify-content:center;align-items:center;gap:64px;width:100%;}
+  .promo-cell{display:flex;flex-direction:column;align-items:center;gap:18px;min-width:0;}
+  /* The front poster sits in normal flow and SETS the fan's size; the ones
+     behind are absolute, so a third poster cannot make the box grow and shove
+     the card off the frame. */
+  /* The fan's box is measured in JS from the posters it actually has, because a
+     tilted poster reaches past its own corner and CSS cannot know how far. */
+  .fan{position:relative;flex:0 0 auto;}
+  .fan img{position:absolute;top:50%;left:50%;display:block;width:auto;
+    transform-origin:50% 50%;
+    border:1px solid var(--line);background:transparent;
+    box-shadow:0 18px 46px rgba(0,0,0,.6),0 0 46px rgba(60,0,110,.45);}
+  /* 560, matched to the fan's 520 plus its lean: the card standing a hundred
+     pixels taller than the stack beside it reads as two unrelated graphics. */
+  .promo-cell video{display:block;height:auto;width:auto;max-height:560px;max-width:34vw;
+    border:1px solid var(--line);background:transparent;
+    box-shadow:0 0 46px rgba(60,0,110,.5);}
+  #promoPrize{display:block;height:auto;width:auto;max-height:560px;max-width:28vw;
+    border:1px solid var(--line);background:transparent;box-shadow:0 0 46px rgba(60,0,110,.5);}
   .promo-cap{font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.2em;
     color:var(--dim);white-space:nowrap;text-align:center;}
   .setgrid{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:start;}
@@ -738,8 +733,16 @@
       <div class="title sm" id="promoTitle">Fight Night</div>
       <div class="promo" id="promo">
         <div class="promo-cell" id="promoPosterCell">
-          <img id="promoPoster" alt="">
+          <div class="fan" id="promoFan"></div>
           <div class="promo-cap" id="promoPosterCap">THE POSTER</div>
+        </div>
+        <!-- THE PRIZE — a partner's giveaway is not a poster and does not
+             belong in the stack of them, so it stands on its own between the
+             posters and the card. Same rule as everything else on this screen:
+             no file, no cell. -->
+        <div class="promo-cell" id="promoPrizeCell">
+          <img id="promoPrize" alt="">
+          <div class="promo-cap" id="promoPrizeCap">TONIGHT'S PRIZE</div>
         </div>
         <div class="promo-cell" id="promoFilmCell">
           <div class="promo-cap">EARNED · TRADED · FUSED</div>
@@ -1035,17 +1038,16 @@ function renderCards(sets, coll){
 // Without it the old single-file names still work, so a folder with one
 // poster.png in it needs no json at all.
 const POSTER_INDEX = 'assets/posters.json'
+const PROMO_PRIZE = ['assets/prize.png','assets/prize.jpg','assets/prize.webp']
 const PROMO_POSTER = ['assets/poster.png','assets/poster.jpg','assets/poster.webp']
-const POSTER_HOLD = 12000   // long enough to read a poster, short enough to see the other one
 const PROMO_FILM   = ['assets/card-3d.mp4','assets/card-3d.webm']
-let promoFilmEl = null, promoHas = { poster:false, film:false }
+let promoFilmEl = null, promoHas = { poster:false, prize:false, film:false }
 
 function promoLayout(){
   const box = document.getElementById('promo'); if(!box) return
-  const n = (promoHas.poster?1:0) + (promoHas.film?1:0)
-  box.classList.toggle('both', n === 2)
-  box.classList.toggle('one',  n === 1)
+  const n = (promoHas.poster?1:0) + (promoHas.prize?1:0) + (promoHas.film?1:0)
   document.getElementById('promoPosterCell').classList.toggle('on', promoHas.poster)
+  document.getElementById('promoPrizeCell').classList.toggle('on', promoHas.prize)
   document.getElementById('promoFilmCell').classList.toggle('on', promoHas.film)
   // The scene joins the rotation the moment it has something to show, and only
   // then. A rotation that parades an empty screen every 15 seconds is worse
@@ -1054,12 +1056,9 @@ function promoLayout(){
   if(n && !VIEWS_UBA.includes('poster')) VIEWS_UBA.splice(0, 0, 'poster')
 }
 
-let posterList = [], posterAt = 0, posterTimer = null
+let posterList = []
 async function mountPoster(){
-  const img = document.getElementById('promoPoster'); if(!img) return
-  // The index if there is one, the fixed names if there is not. A missing or
-  // malformed json is not an error worth showing -- it just means the folder is
-  // being used the simple way.
+  const fan = document.getElementById('promoFan'); if(!fan) return
   try{
     const r = await fetch(POSTER_INDEX, {cache:'no-store'})
     if(r.ok){
@@ -1068,33 +1067,74 @@ async function mountPoster(){
         .map(n => n.startsWith('assets/') ? n : 'assets/' + n)
     }
   }catch(e){}
-  const tried = posterList.length ? posterList.slice() : PROMO_POSTER.slice()
-  let i = 0
-  img.addEventListener('load', ()=>{ promoHas.poster = true; promoLayout(); posterCycle() })
-  // A name in the index that is not in the folder must not take the scene down
-  // with it -- it steps to the next one, and only a list where NONE of them
-  // loads means there is no poster.
-  img.addEventListener('error', ()=>{
-    tried.splice(i, 1)
-    if(tried.length){ i = i % tried.length; img.src = tried[i]; return }
-    promoHas.poster = false; promoLayout()
+  if(!posterList.length) posterList = PROMO_POSTER.slice()
+
+  // Loaded before ANY of them is drawn: a poster that 404s must not leave a gap
+  // in the fan or, worse, a broken-image glyph on air, and the fan's shape
+  // depends on how many actually exist. The index is a list somebody typed --
+  // a name in it that is not in the folder is the normal case, not the odd one.
+  const ok = new Map()
+  await Promise.all(posterList.map(src => new Promise(done => {
+    const im = new Image()
+    im.onload  = () => { ok.set(src, {w:im.naturalWidth, h:im.naturalHeight}); done() }
+    im.onerror = () => done()
+    im.src = src
+  })))
+  // Promise.all settles in completion order, so the fan would otherwise be laid
+  // out by which file downloaded fastest. Index order is restored here: the
+  // first line of posters.json is the one meant to be in front.
+  posterList = posterList.filter(src => ok.has(src))
+  if(!posterList.length){ promoHas.poster = false; promoLayout(); return }
+
+  // ONE HEIGHT FOR ALL OF THEM. Left to a max-height each poster took its own
+  // size from its own proportions, and the tall thin one behind stood a third
+  // taller than the one in front -- which reads as a mistake, not a stack.
+  const H = 520
+  const wide = src => Math.round(H * (ok.get(src).w / ok.get(src).h))
+
+  // THE FAN. First in the index is the front poster; the rest alternate behind
+  // it, right then left, leaning further out and sitting lower the deeper they
+  // go. Every one is absolutely placed and the FAN's own box is measured from
+  // them, so a fourth poster widens the stack by a known amount instead of
+  // silently shoving the card off the frame.
+  fan.innerHTML = ''
+  const STEP = 74, DROP = 10, TILT = 6
+  let maxDepth = 0
+  posterList.forEach((src, n) => {
+    const depth = n === 0 ? 0 : Math.floor((n - 1) / 2) + 1
+    const side  = n === 0 ? 0 : ((n - 1) % 2 ? -1 : 1)
+    if(depth > maxDepth) maxDepth = depth
+    const img = document.createElement('img')
+    img.src = src
+    img.style.height = H + 'px'
+    img.style.zIndex = String(20 - depth)
+    img.style.transform = 'translate(-50%,-50%)'
+      + ' translate(' + (side * depth * STEP) + 'px,' + (depth * DROP) + 'px)'
+      + ' rotate(' + (side * depth * TILT) + 'deg)'
+    fan.appendChild(img)
   })
-  img.src = tried[0]
-  posterList = tried
+  // A tilted poster reaches past its own corner, so the box is the widest one
+  // plus the lean, not just the front one -- without this the flex row centres
+  // on the front poster alone and the stack lies across the heading.
+  const widest = Math.max(...posterList.map(wide))
+  fan.style.width  = Math.round(widest + maxDepth * STEP * 2 + widest * 0.12) + 'px'
+  fan.style.height = Math.round(H + maxDepth * DROP * 2 + H * 0.10) + 'px'
+
+  document.getElementById('promoPosterCap').textContent =
+    posterList.length > 1 ? 'THE POSTERS' : 'THE POSTER'
+  promoHas.poster = true
+  promoLayout()
 }
 
-// Cycles only while the scene is up. A timer running behind a hidden view
-// spends the streaming box's frames on a picture nobody is looking at, and it
-// would also land mid-crossfade the moment the scene came back.
-function posterCycle(){
-  clearTimeout(posterTimer); posterTimer = null
-  if(posterList.length < 2) return
-  if(!document.getElementById('v-poster').classList.contains('on')) return
-  posterTimer = setTimeout(()=>{
-    posterAt = (posterAt + 1) % posterList.length
-    document.getElementById('promoPoster').src = posterList[posterAt]
-    posterCycle()
-  }, POSTER_HOLD)
+function mountPrize(){
+  const img = document.getElementById('promoPrize'); if(!img) return
+  let i = 0
+  img.addEventListener('load', ()=>{ promoHas.prize = true; promoLayout() })
+  img.addEventListener('error', ()=>{
+    if(++i < PROMO_PRIZE.length){ img.src = PROMO_PRIZE[i]; return }
+    promoHas.prize = false; promoLayout()
+  })
+  img.src = PROMO_PRIZE[0]
 }
 
 function mountCardFilm(){
@@ -1118,7 +1158,6 @@ function mountCardFilm(){
 // frames it needs for the fight. It runs while the poster scene is up and is
 // paused every other second of the night.
 function syncPromo(){
-  posterCycle()          // starts on the way in, stops itself on the way out
   if(!promoFilmEl) return
   if(document.getElementById('v-poster').classList.contains('on')){
     const p = promoFilmEl.play(); if(p && p.catch) p.catch(()=>{})
@@ -1701,7 +1740,7 @@ function show(view, league){
   // with nothing under it on air. The rotation already skips the scene; an
   // explicit press has to as well, because the button gives no sign that the
   // files are missing and a blank screen is the only thing the room would see.
-  if(view==='poster' && !promoHas.poster && !promoHas.film) return
+  if(view==='poster' && !promoHas.poster && !promoHas.prize && !promoHas.film) return
   clearInterval(cycle); cycle=null
   hideAll()
   if(view==='off'||!view) return
@@ -1838,8 +1877,9 @@ sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
 
 loadAll()
 cycAll()          // the alternating names, on one page-wide timer
-mountPoster()     // both are no-ops unless the files are actually there,
-mountCardFilm()   // and the scene stays out of the rotation until one loads
+mountPoster()     // all three are no-ops unless the files are actually there,
+mountPrize()      // and the scene stays out of the rotation until one loads
+mountCardFilm()
 </script>
 </body>
 </html>
