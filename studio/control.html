@@ -890,6 +890,17 @@ window.voCoverage = () => {
         + missing.map(b => b.a + ' v ' + b.b).join(', ') + '</b>' : '')
 }
 
+// Reports whether the armed bout has a voiceover, without playing anything.
+window.voArmed = () => {
+  const el = document.getElementById('voHint'); if(!el) return
+  const b = (window.UBA && UBA.bouts && UBA.armed != null) ? UBA.bouts[UBA.armed] : null
+  if(!b){ el.textContent = 'arm a bout first'; return }
+  const file = voFor(b.a, b.b)
+  el.innerHTML = file
+    ? '<b style="color:#5cf2a0">VO READY</b> · ' + b.a + ' vs ' + b.b
+    : '<b style="color:#ff6b6b">NO VO FILE</b> · ' + b.a + ' vs ' + b.b + ' — will run silent'
+}
+
 window.fireVO = () => {
   const b = (window.UBA && UBA.bouts && UBA.armed != null) ? UBA.bouts[UBA.armed] : null
   if(!b){ document.getElementById('voHint').textContent = 'arm a bout first'; return }
@@ -1856,6 +1867,12 @@ window.ubaArm=i=>{
     colorL:document.getElementById('ubaColorL').value,
     colorR:document.getElementById('ubaColorR').value }})
   ubaDraw()
+  // THE VO TELLS YOU ITS STATE WHEN YOU ARM, not when you press Play.
+  // Arming already pre-fills the tape so its button is one press; the VO was
+  // the one segment where you only found out whether a read existed by firing
+  // it at the programme. Now the hint beside the button answers it the moment
+  // the bout is armed, while there is still time to pick a different one.
+  voArmed()
   // the wagers section follows the armed fight — stage 4 now shows only this
   // bout's market and bets instead of all nine
   loadOdds(); loadBetFeed()

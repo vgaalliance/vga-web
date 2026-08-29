@@ -470,12 +470,25 @@ function loadAudio(src){
   const base = src.replace(/\.(m4a|mp3|ogg|wav)$/i, '')
   const tries = /\.(m4a|mp3|ogg|wav)$/i.test(src) ? [src] : AUDIO_EXT.map(e => base + e)
   let i = 0
+  // STOP WHATEVER IS PLAYING FIRST. Pressing Play on a second bout used to
+  // leave the previous read running underneath the new one whenever the new
+  // file was slow, because nothing ever paused it.
+  try{ vo.pause(); vo.currentTime = 0 }catch(e){}
+
   vo.onerror = () => {
     if(++i < tries.length){ vo.src = tries[i]; vo.load(); return }
     console.warn('[vo] no audio for', base, '— running silent')
     LEN = DEFAULT_LEN; MARKS = defaultMarks(LEN); reset()
   }
-  vo.src = tries[0]
+  // HANDLER BEFORE SRC, AND load() AFTER.
+  //
+  // This read `vo.src = tries[0]` and THEN assigned onloadedmetadata. The load
+  // starts the moment src is set, so on any file the browser already had —
+  // which is every replay, and every second bout in a night — the event fired
+  // before the handler existed. play() never ran and reset() never restarted
+  // the visuals, so the first press worked and every press after it was a coin
+  // flip on cache timing. Exactly the shape of the tale-of-the-tape entrance
+  // bug: correct code in the wrong order.
   vo.onloadedmetadata = () => {
     if(isFinite(vo.duration) && vo.duration > 4) LEN = vo.duration
     // Derived marks are fractions of the runtime, so they have to be rebuilt
@@ -486,6 +499,8 @@ function loadAudio(src){
       '— in OBS this plays; a browser tab needs a click'))
     reset()
   }
+  vo.src = tries[0]
+  vo.load()          // explicit: a re-set of the SAME src is otherwise a no-op
 }
 
 // ── DEMO ──────────────────────────────────────────────────────────────
