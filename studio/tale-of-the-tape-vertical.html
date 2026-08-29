@@ -90,6 +90,22 @@
   #rows{flex:0 1 auto;display:flex;flex-direction:column;justify-content:flex-start;}
   .row{display:grid;grid-template-columns:1fr 210px 1fr;align-items:center;
     padding:11px 22px;border-top:1px solid var(--line);background:var(--panel);}
+  /* The rows DEAL IN from opposite sides — left values from the left, right
+     values from the right — so the plate assembles as a comparison rather than
+     appearing as a finished table. This file had no keyframes at all: it faded
+     in as one block while its horizontal twin has real motion, and side by
+     side that read as the vertical being the afterthought. */
+  body.on .row{animation:rowin .4s cubic-bezier(.16,1,.3,1) backwards;}
+  @keyframes rowin{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
+  body.on .row .v.l{animation:fromL .44s cubic-bezier(.16,1,.3,1) backwards;}
+  body.on .row .v.r{animation:fromR .44s cubic-bezier(.16,1,.3,1) backwards;}
+  @keyframes fromL{from{opacity:0;transform:translateX(-18px);}to{opacity:1;transform:none;}}
+  @keyframes fromR{from{opacity:0;transform:translateX(18px);}to{opacity:1;transform:none;}}
+  /* the two faces arrive first, from their own sides */
+  body.on .face.l{animation:fromL .6s cubic-bezier(.16,1,.3,1) backwards;}
+  body.on .face.r{animation:fromR .6s cubic-bezier(.16,1,.3,1) backwards;}
+  body.on .vs{animation:vsin .5s cubic-bezier(.2,1.6,.4,1) .42s backwards;}
+  @keyframes vsin{from{opacity:0;transform:scale(.5);}to{opacity:1;transform:none;}}
   .row:first-child{border-top:2px solid var(--pur);}
   .row:last-child{border-bottom:1px solid var(--line);}
   .row .v{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:40px;
@@ -230,6 +246,12 @@ function renderRows(L, R){
              `<div class="lbl">${r.l}</div>${cell(b,'r')}</div>`)
   }
   $('rows').innerHTML = out.join('')
+  // dealt top to bottom, 55ms apart, starting after the two faces have landed
+  ;[...$('rows').children].forEach((r, i) => {
+    const t = 520 + i * 55
+    r.style.animationDelay = t + 'ms'
+    r.querySelectorAll('.v').forEach(v => { v.style.animationDelay = (t + 60) + 'ms' })
+  })
 }
 
 // ── the faces ───────────────────────────────────────────────────────

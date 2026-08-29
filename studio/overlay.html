@@ -151,6 +151,77 @@
   #flash.in #timer{animation:drain 7.5s linear .55s forwards;}
   @keyframes drain{from{transform:scaleX(1);}to{transform:scaleX(0);}}
 
+  /* ── MESSAGE AS A SOCIAL POST ─────────────────────────────────────────
+     A message is not a lower third. It is somebody else's post being read
+     out, so it is shaped like one: a narrow card floating at mid-left with
+     the poster on top, the words in the middle and the platform underneath
+     — the shape broadcast uses when it puts a tweet on screen.
+
+     IT LEAVES THE BOTTOM-LEFT SLOT. The bet / fact / CTA flashes keep the
+     wide card down there and stay in the shared slot; only the message
+     floats, which is why a message and a keys card can now be on screen at
+     once without either hiding the other. They are in different parts of
+     the frame and they are saying different kinds of thing. */
+  #flash[data-kind="msg"]{left:64px;bottom:auto;top:50%;width:352px;max-width:352px;
+    transform:translate(-118%,-50%);}
+  #flash[data-kind="msg"].in{animation:postin .5s cubic-bezier(.16,1,.3,1) forwards;}
+  #flash[data-kind="msg"].out{animation:postout .42s cubic-bezier(.5,0,.75,.2) forwards;}
+  @keyframes postin {to{transform:translate(0,-50%);opacity:1;}}
+  @keyframes postout{from{transform:translate(0,-50%);opacity:1;}
+                       to{transform:translate(-118%,-50%);opacity:0;}}
+
+  #post{display:none;flex-direction:column;position:relative;
+    background:linear-gradient(160deg,rgba(20,4,38,.96),rgba(7,0,16,.98));
+    box-shadow:0 24px 60px rgba(0,0,0,.66),0 0 0 1px rgba(155,48,255,.22);}
+  #flash[data-kind="msg"] #post{display:flex;}
+  #flash[data-kind="msg"] .card{display:none;}
+  /* the CRT scanline, on the card itself — this overlay has no global one */
+  #post::after{content:'';position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1px,transparent 1px 3px);}
+
+  /* Each block wipes down in turn — poster, then words, then platform. The
+     order is the order you read it in, which is the whole trick: the card
+     assembles itself in reading order instead of arriving finished. */
+  #flash[data-kind="msg"].in #post > *{animation:blockin .38s cubic-bezier(.16,1,.3,1) backwards;}
+  #flash[data-kind="msg"].in #post > *:nth-child(1){animation-delay:.10s;}
+  #flash[data-kind="msg"].in #post > *:nth-child(2){animation-delay:.26s;}
+  #flash[data-kind="msg"].in #post > *:nth-child(3){animation-delay:.42s;}
+  @keyframes blockin{from{clip-path:inset(0 0 100% 0);opacity:0;}
+                       to{clip-path:inset(0 0 0 0);opacity:1;}}
+
+  #post .who{padding:19px 22px 15px;}
+  #post .dn{font-family:'Barlow Condensed';font-weight:900;font-size:31px;
+    letter-spacing:.02em;text-transform:uppercase;color:#fff;line-height:1;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #post .hn{display:flex;align-items:center;gap:8px;margin-top:8px;
+    font:500 17px 'Barlow';color:#9c92ad;letter-spacing:.02em;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  /* The platform glyph is a letterform in a ring, not a brand logo: no logo
+     files ship with this repo and a wrong-looking mark is worse than a clean
+     initial. */
+  #post .gl{flex:0 0 auto;width:21px;height:21px;border-radius:50%;
+    border:1.5px solid #6f6480;color:#c8b8dd;font:700 11px 'Barlow';
+    display:flex;align-items:center;justify-content:center;}
+  #post .rule{height:1px;background:rgba(155,48,255,.3);margin:0 22px;}
+
+  #post .body{padding:17px 22px 20px;}
+  #post .msg{font:500 24px 'Barlow';color:#fff;line-height:1.34;
+    /* five lines, then it stops. A pasted paragraph must not grow the card off
+       the top and bottom of the frame. */
+    display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;}
+
+  /* The platform block — inverted, like the reference's threads panel.
+     position/z-index lift it ABOVE the card's scanline: the scanline is what
+     makes the dark panels read as CRT, but laid over white it just turned the
+     one clean block on the card grey and striped. */
+  #post .plat{position:relative;z-index:1;background:#f4f2f7;padding:15px 22px;
+    display:flex;align-items:center;justify-content:center;}
+  #post .plat .w{font-family:'Barlow Condensed';font-weight:900;font-size:29px;
+    letter-spacing:.1em;text-transform:uppercase;color:#14121a;line-height:1;}
+  #post .tag{padding:12px 22px 15px;font-family:'Press Start 2P',monospace;font-size:11px;
+    letter-spacing:.16em;color:#8f84a3;text-align:center;}
+  #post .tag:empty,#post .plat.off{display:none;}
+
   /* ── FIGHTER LOWER-THIRD — the segmented bar ──────────────────────────
      A full-width bar cut into segments, not a card. Modelled on the UFC
      Fight Night lower-third: mark, flag, name, a run of value-over-label
@@ -664,7 +735,22 @@
     </div>
   </div>
 
-  <div id="flash"><div class="card">
+  <div id="flash">
+  <!-- the message shape. Hidden unless data-kind="msg"; every other flash
+       kind still uses .card below. -->
+  <div id="post">
+    <div class="who">
+      <div class="dn" id="pName">—</div>
+      <div class="hn" id="pHandleRow"><span class="gl" id="pGlyph">D</span><span id="pHandle"></span></div>
+      <div class="rule" style="margin:15px 0 0;"></div>
+    </div>
+    <div class="body"><div class="msg" id="pMsg"></div></div>
+    <div>
+      <div class="plat" id="pPlat"><span class="w" id="pPlatName">DISCORD</span></div>
+      <div class="tag" id="pTag"></div>
+    </div>
+  </div>
+  <div class="card">
     <div class="accent"></div>
     <div class="content">
       <div class="lead">
@@ -989,22 +1075,11 @@ function handle(c){
       $('ftitle').textContent=c.d.t; $('fsub').innerHTML=c.d.s
     } else if(c.w==='msg'){
       const md = (typeof c.d==='string') ? {text:c.d} : (c.d||{})
-      // Purple, not gold. Gold is the money colour on this overlay -- stakes and
-      // payouts -- and a chat message wearing it read as a bet. Purple is the
-      // kit's own accent, which is what a message from the crowd is: house talk.
-      setAcc('var(--red)'); $('fkick').textContent = md.from ? ('Message from '+md.from) : 'Message'
-      $('ftitle').classList.remove('cond')
-      // mixed case and smaller than a headline on purpose: this is somebody's
-      // sentence, and setting a chat message in 56px caps reads as the show
-      // shouting rather than as a message being read out
-      $('ftitle').style.fontSize='40px'; $('ftitle').style.textTransform='none'
-      // wrapped in a span so the span can slide inside the clipping title
-      $('ftitle').innerHTML=''
-      const sp=document.createElement('span'); sp.className='mscroll'; sp.textContent=md.text
-      $('ftitle').appendChild(sp)
-      $('fsub').textContent=''
+      // Purple, not gold. Gold is the money colour on this overlay — stakes and
+      // payouts — and a chat message wearing it read as a bet.
+      setAcc('var(--red)')
+      drawPost(md)
     }
-    if(isBet||c.w==='cta'){ $('ftitle').classList.add('cond'); $('ftitle').style.fontSize=''; $('ftitle').style.textTransform='' }
     showFlash()
     // SFX per moment — whoosh on entrance, bet stinger, whale = big hit
     if(isBet){ sfx.whoosh(); setTimeout(()=>sfx.ching(),120); if(c.d.amt>=50000){ setTimeout(()=>sfx.impact(),90) } }
@@ -1137,6 +1212,37 @@ function handle(c){
   }
 }
 
+// ── THE MESSAGE POST ───────────────────────────────────────────────────
+// A message is somebody else's post, so it is shaped like one. The PLATFORM
+// is chosen on the deck, never guessed: a message typed by the operator is not
+// from Discord just because most of them are, and a card claiming a platform
+// the words did not come from is a small lie on a big screen.
+const PLATFORMS = {
+  discord: { name:'DISCORD',  glyph:'D', handle:h => h && ('@'+String(h).replace(/^@/,'')) },
+  x:       { name:'X',        glyph:'X', handle:h => h && ('@'+String(h).replace(/^@/,'')) },
+  tiktok:  { name:'TIKTOK',   glyph:'T', handle:h => h && ('@'+String(h).replace(/^@/,'')) },
+  none:    { name:null,       glyph:null, handle:() => null },
+}
+function drawPost(md){
+  const p = PLATFORMS[String(md.platform||'none').toLowerCase()] || PLATFORMS.none
+  $('pName').textContent = String(md.from || 'MESSAGE').toUpperCase()
+
+  // The handle row needs BOTH a platform and a handle. With a platform and no
+  // handle it drew a lone glyph in a ring next to nothing.
+  const handle = p.handle(md.handle || md.from)
+  const showHandle = !!(p.name && handle)
+  $('pHandleRow').style.display = showHandle ? 'flex' : 'none'
+  if(showHandle){ $('pGlyph').textContent = p.glyph; $('pHandle').textContent = handle }
+
+  $('pMsg').textContent = String(md.text || '')
+
+  // Platform block and hashtag are independent: a message with no platform can
+  // still carry the event tag, and one with a platform need not have a tag.
+  $('pPlat').classList.toggle('off', !p.name)
+  if(p.name) $('pPlatName').textContent = p.name
+  $('pTag').textContent = md.tag ? String(md.tag).toUpperCase() : ''
+}
+
 // ── THE DOSSIER BAR ────────────────────────────────────────────────────
 // Segments are built from what the fighter HAS. Nothing is reserved and
 // nothing is dashed: 237 of 435 fighters have a country, 235 a nickname, 55 a
@@ -1221,6 +1327,12 @@ function slotShow(el){
   for(const id of SLOT){
     const o = $(id)
     if(!o || o === el) continue
+    // A MESSAGE is exempt. It floats at mid-left as a post card while the
+    // dossier and the keys card live along the bottom, so they no longer
+    // occupy the same space and hiding one for the other would be throwing
+    // away a graphic for no reason. Every OTHER flash kind — bet, fact, CTA —
+    // is still the wide card in the corner and still takes its turn.
+    if(o.id === 'flash' && o.dataset.kind === 'msg') continue
     if(o.classList.contains('in')){ o.classList.remove('in'); o.classList.add('out') }
   }
   el.classList.remove('out'); void el.offsetWidth; el.classList.add('in')

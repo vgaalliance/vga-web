@@ -98,6 +98,20 @@
     box-shadow:0 22px 55px rgba(0,0,0,.62),0 0 0 1px rgba(155,48,255,.2);}
   #bug.in{animation:bin .6s cubic-bezier(.16,1,.3,1) .35s forwards;}
   @keyframes bin{to{transform:translateX(0);opacity:1;}}
+  /* The bug's three lines land in reading order once the plate has slid in,
+     rather than arriving pre-written. The eyebrow is a label so it goes first
+     and gets out of the way; the name is the graphic. */
+  #cam.on #eyebrow{animation:lineup .38s cubic-bezier(.16,1,.3,1) .70s backwards;}
+  #cam.on #name   {animation:lineup .42s cubic-bezier(.16,1,.3,1) .82s backwards;}
+  #cam.on #sub    {animation:lineup .38s cubic-bezier(.16,1,.3,1) .98s backwards;}
+  @keyframes lineup{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+  /* the cut-out settles rather than snapping — it is meant to be IN the room */
+  #cam.on #who{animation:settle .9s cubic-bezier(.16,1,.3,1) backwards;}
+  @keyframes settle{from{opacity:0;transform:translateX(-50%) scale(1.04);}
+                      to{opacity:1;}}
+  /* the tally light fades up last, because it is the thing that says LIVE and
+     a live light that is already on when the scene cuts in says nothing */
+  #cam.on #tally{animation:lineup .4s ease .55s backwards;}
   #bug .accent{width:14px;flex:0 0 14px;background:var(--pur);box-shadow:0 0 26px var(--pur);}
   #bug .bd{padding:17px 42px 19px 26px;min-width:0;}
   #eyebrow{font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.24em;
