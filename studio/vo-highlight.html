@@ -31,10 +31,15 @@
   *{box-sizing:border-box;margin:0;padding:0;}
   :root{ --pur:#9b30ff; --hi:#cc66ff; --pink:#ff33cc; --gold:#ffce00;
          --bg:#05000e; --dim:rgba(200,160,255,.55); --line:rgba(155,48,255,.28); }
-  html,body{width:1920px;height:1080px;overflow:hidden;background:var(--bg);
+  /* TRANSPARENT WHEN IDLE. The ground belongs to the scene, not the page: with
+     it on the body this source blacked out whatever it was parked over between
+     segments, which makes it unusable as a layer inside the loading scene and
+     turns a forgotten source into a dead screen. Idle it now draws nothing. */
+  html,body{width:1920px;height:1080px;overflow:hidden;background:transparent;
     font-family:'Barlow Condensed',sans-serif;color:#fff;}
 
-  #scene{position:absolute;inset:0;opacity:0;transition:opacity .5s ease;}
+  #scene{position:absolute;inset:0;opacity:0;transition:opacity .5s ease;
+    background:var(--bg);}
   #scene.on{opacity:1;}
 
   /* ── THE STAGE ────────────────────────────────────────────────────────
