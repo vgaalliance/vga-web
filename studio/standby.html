@@ -12,6 +12,19 @@
     font-family:'Barlow Condensed',sans-serif;color:#fff;}
 
   /* CRT scanlines + vignette to match the other overlays */
+  /* ── KIOSK ────────────────────────────────────────────────────────────
+     ?kiosk=1 turns this file into something that can be SENT TO SOMEBODY: it
+     cycles tonight's screens on its own, ignores the deck so a live show
+     cannot yank the page around under a person reading it, and scales the
+     1920x1080 board to fit whatever window it is opened in. Without the param
+     nothing here applies and OBS gets exactly the board it always got. */
+  body.kiosk{background:#04000c;display:flex;align-items:center;justify-content:center;}
+  /* the connection readout is for whoever is running the show, not for the
+     people the link was sent to */
+  body.kiosk #status{display:none;}
+  body.kiosk #board{transform-origin:50% 50%;}
+  body.kiosk #crt,body.kiosk #vig{position:absolute;}
+  #board{position:absolute;inset:0;}
   #crt{position:fixed;inset:0;pointer-events:none;z-index:60;
     background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1px,transparent 1px 3px);}
   #vig{position:fixed;inset:0;pointer-events:none;z-index:59;
@@ -670,6 +683,7 @@
 </style>
 </head>
 <body>
+  <div id="board">
   <div id="crt"></div><div id="vig"></div>
   <div id="cointoss">
     <div class="ct-eyebrow">Coin Toss</div>
@@ -856,6 +870,8 @@
       <div class="sb-cards" id="sbCards"></div>
     </div>
   </div>
+
+  </div><!-- /#board -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="playoff-core.js"></script>
@@ -2065,6 +2081,9 @@ function fillBar(d){
 }
 
 sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
+  // A kiosk is somebody else's laptop, not a source in the rig — the deck must
+  // not be able to change what they are looking at. See KIOSK MODE below.
+  if(document.body.classList.contains('kiosk')) return
   if(c.type==='loadbar'){
     if(c.show===false){ barShow(false); return }
     if(c.show===true && !c.d){ barShow(true); return }
@@ -2113,7 +2132,46 @@ sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
   }
 }).subscribe(s=>{ $('status').textContent='standby: '+(s==='SUBSCRIBED'?'● live':s.toLowerCase()) })
 
-loadAll()
+// ── KIOSK MODE ───────────────────────────────────────────────────────────
+// A link that can be handed to anybody for a pre-show chat: it drives itself,
+// it cannot be driven by anyone else, and it fits the window it is opened in.
+//
+//   ?kiosk=1              cycle tonight's screens, ignore the deck, scale to fit
+//   &league=uba|ubae|gfl  which rotation (default uba)
+//   &views=card,ubarank   an explicit running order, if the default is not it
+//
+// IGNORING THE DECK is the point, not an oversight. This page is open on other
+// people's laptops while the show is being run, and every deck press would
+// otherwise reach through and change what they are reading mid-sentence.
+const KIOSK = new URLSearchParams(location.search)
+if(KIOSK.get('kiosk') === '1'){
+  document.body.classList.add('kiosk')
+  // The board is a fixed 1920x1080 and is SCALED rather than reflowed: every
+  // screen in this file is laid out against that size, and a reflow would be a
+  // second design to maintain for an audience of five people on a call.
+  const board = document.getElementById('board')
+  const fit = () => {
+    const k = Math.min(innerWidth / 1920, innerHeight / 1080)
+    board.style.cssText = 'position:absolute;left:50%;top:50%;width:1920px;height:1080px;'
+      + 'transform:translate(-50%,-50%) scale(' + k + ');'
+  }
+  addEventListener('resize', fit); fit()
+
+  const lg = (KIOSK.get('league') || 'uba').toLowerCase()
+  const custom = (KIOSK.get('views') || '').split(',').map(v => v.trim()).filter(Boolean)
+  // Waits for the data. Starting the rotation first shows an empty screen, and
+  // that is the screen whoever opened the link sees first.
+  loadAll().then(() => {
+    if(custom.length){
+      VIEWS = custom
+      VIEWS_UBA.length = 0; VIEWS_UBA.push(...custom)
+      VIEWS_GFL.length = 0; VIEWS_GFL.push(...custom)
+    }
+    show('auto', lg)
+  })
+}else{
+  loadAll()
+}
 cycAll()          // the alternating names, on one page-wide timer
 mountPoster()     // all three are no-ops unless the files are actually there,
 mountPrize()      // and the scene stays out of the rotation until one loads
