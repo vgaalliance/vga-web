@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VGA — Keys to Victory</title>
+<!-- ============================================================
+     KEYS TO VICTORY + FUN FACTS. The in-match filler, bottom-left,
+     in the same stack the dossier / message flash / odds bar use
+     (overlay.html's --ll-lift). It NEVER covers the game feed.
+
+     WHAT IT SHOWS, IN ORDER:
+       1. KEYS TO VICTORY — up to 3 bullets per fighter, TYPED per
+          bout in the admin panel's card builder. Opponent-specific,
+          so they die with the bout.
+       2. FUN FACT — one per fighter, drawn from a reusable pool that
+          is also typed in the card builder.
+       3. Only if neither was written: six automatic facts.
+
+     THE AUTOMATIC ONES ARE A FALLBACK, NOT THE POINT. This file used
+     to lead with record, KO rate, ladder position, reach and age —
+     every one of which overlay.html's fighter dossier ALREADY has on
+     screen. Two graphics saying the same thing is one graphic and
+     some noise. What survived is the six the dossier cannot show: the
+     belt, a win streak, a previous meeting, a common opponent, the
+     betting pool, and team form.
+
+     Anything it cannot fill is DROPPED, never rendered with a dash.
+     A card reading "REACH EDGE — vs " looks like the graphic broke;
+     a dark corner looks like a quiet moment.
+     ============================================================= -->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Barlow+Condensed:wght@500;700;900&family=Barlow:wght@500;600&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  /* Same palette as standby / the playoff screens — one system, not a
+     second look that happens to be purple. */
+  :root{ --pur:#9b30ff; --hi:#cc66ff; --pink:#ff33cc;
+    --panel:rgba(14,0,30,.92); --line:rgba(155,48,255,.28); --dim:rgba(200,160,255,.6);
+    --gold:#ffce00; --amber:#ffb020; --green:#5cf2a0;
+    /* The one knob. The UBAe fight clock owns the bottom-left corner and
+       the UBA one is centred, so this matches overlay.html's stack: base
+       190px already clears the clock's 145px high point with 45px of air.
+       Raise it only if a clock ever grows past ~180px tall. */
+    --ll-lift:0px; }
+  html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;
+    font-family:'Barlow',system-ui,Arial,sans-serif;color:#fff;}
+
+  #fact{position:fixed;left:48px;bottom:calc(190px + var(--ll-lift));
+    display:flex;min-width:560px;max-width:900px;
+    transform:translateX(-135%);opacity:0;
+    background:linear-gradient(135deg,rgba(20,4,38,.97),rgba(6,0,14,.98));
+    border-radius:10px;overflow:hidden;
+    box-shadow:0 22px 55px rgba(0,0,0,.6),0 0 0 1px rgba(155,48,255,.18);}
+  /* Same slide the dossier uses, so the two read as one family when they
+     trade the same corner during a match. */
+  #fact.in{animation:fin .55s cubic-bezier(.16,1,.3,1) forwards;}
+  #fact.out{animation:fout .5s cubic-bezier(.5,0,.75,.2) forwards;}
+  @keyframes fin{to{transform:translateX(0);opacity:1;}}
+  @keyframes fout{from{transform:translateX(0);opacity:1;}to{transform:translateX(-135%);opacity:0;}}
+
+  .accent{width:12px;flex:0 0 12px;background:var(--pur);box-shadow:0 0 24px var(--pur);}
+  /* The accent is the category colour: it is the only part of the card a
+     director sees from across the room, so it carries the meaning the
+     rest of the studio already assigns these colours. */
+  #fact[data-tone="gold"]  .accent{background:var(--gold); box-shadow:0 0 24px var(--gold);}
+  #fact[data-tone="amber"] .accent{background:var(--amber);box-shadow:0 0 24px var(--amber);}
+  #fact[data-tone="green"] .accent{background:var(--green);box-shadow:0 0 24px var(--green);}
+  #fact[data-tone="pink"]  .accent{background:var(--pink); box-shadow:0 0 24px var(--pink);}
+
+  .body{padding:15px 30px 16px 24px;flex:1;min-width:0;}
+  .eyebrow{font-family:'Press Start 2P',monospace;font-size:11px;letter-spacing:.22em;
+    color:var(--hi);text-shadow:0 0 12px rgba(204,102,255,.55);margin-bottom:9px;}
+  #fact[data-tone="gold"]  .eyebrow{color:var(--gold); text-shadow:0 0 12px rgba(255,206,0,.5);}
+  #fact[data-tone="amber"] .eyebrow{color:var(--amber);text-shadow:0 0 12px rgba(255,176,32,.5);}
+  #fact[data-tone="green"] .eyebrow{color:var(--green);text-shadow:0 0 12px rgba(92,242,160,.45);}
+  #fact[data-tone="pink"]  .eyebrow{color:var(--pink); text-shadow:0 0 12px rgba(255,51,204,.5);}
+
+  .head{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:50px;
+    line-height:.94;text-transform:uppercase;letter-spacing:.005em;
+    text-shadow:0 0 26px rgba(155,48,255,.5);}
+  .head b{color:var(--gold);font-weight:900;}
+  .sub{font:500 20px 'Barlow',sans-serif;color:var(--dim);margin-top:9px;line-height:1.25;}
+  .sub em{font-style:normal;color:#fff;font-weight:600;}
+
+  /* ── the compare bar ──────────────────────────────────────────────
+     For the facts that are a difference between two fighters rather
+     than a claim about one. Two names, two numbers, and a rule that
+     leans to whoever is ahead. Drawn only when BOTH sides have the
+     number — a one-sided reach comparison is not a comparison. */
+  .cmp{display:grid;grid-template-columns:1fr 74px 1fr;align-items:center;
+    gap:14px;margin-top:13px;}
+  .cmp .side{min-width:0;}
+  .cmp .side.r{text-align:right;}
+  .cmp .nm{font:600 15px 'Barlow',sans-serif;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .cmp .vl{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:32px;
+    line-height:1;color:#fff;margin-top:2px;}
+  .cmp .side.win .vl{color:var(--gold);text-shadow:0 0 16px rgba(255,206,0,.45);}
+  .cmp .side.win .nm{color:#fff;}
+  .cmp .mid{font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.14em;
+    color:var(--dim);text-align:center;}
+
+  /* ── the keys list ────────────────────────────────────────────────
+     Three bullets in ONE card, not three cards. They are a single
+     argument about how this fight is won; split across three cards
+     ninety seconds apart, nobody assembles them back into one. */
+  .keys{margin-top:14px;display:flex;flex-direction:column;gap:11px;}
+  .keys .k{display:flex;align-items:flex-start;gap:16px;}
+  .keys .n{font-family:'Press Start 2P',monospace;font-size:15px;color:var(--gold);
+    line-height:1.35;flex:0 0 auto;padding-top:2px;text-shadow:0 0 12px rgba(255,206,0,.4);}
+  .keys .t{font:600 27px 'Barlow',sans-serif;line-height:1.24;color:#fff;}
+  #fact[data-tone="keys"] .accent{background:linear-gradient(180deg,#ffe27a,#c9a11e);
+    box-shadow:0 0 26px rgba(255,206,0,.6);}
+  #fact[data-tone="keys"] .eyebrow{color:var(--gold);text-shadow:0 0 12px rgba(255,206,0,.5);}
+  /* On a keys card the head is the FIGHTER, so it is set smaller than a
+     headline claim — the bullets under it are the content. */
+  #fact[data-tone="keys"] .head{font-size:44px;}
+</style>
+</head>
+<body>
+
+<div id="fact">
+  <div class="accent"></div>
+  <div class="body">
+    <div class="eyebrow" id="fEyebrow">FIGHT FACT</div>
+    <div class="head" id="fHead">—</div>
+    <div class="sub" id="fSub"></div>
+    <div class="keys" id="fKeys" style="display:none;"></div>
+    <div class="cmp" id="fCmp" style="display:none;">
+      <div class="side" id="cmpL"><div class="nm"></div><div class="vl"></div></div>
+      <div class="mid" id="cmpM">VS</div>
+      <div class="side r" id="cmpR"><div class="nm"></div><div class="vl"></div></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+// ============================================================
+// TIMING — edit to taste.
+// A fact HOLDS long enough to read, then the corner goes quiet. It is
+// filler, not a permanent bug: leaving one on screen for a whole round
+// makes it furniture and nobody reads furniture.
+// ============================================================
+const ENTER = 550
+const HOLD  = 8200     // fully visible
+const EXIT  = 500
+const GAP   = 22000    // dark corner between facts
+
+const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
+  'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
+const $ = id => document.getElementById(id)
+const Q = new URLSearchParams(location.search)
+
+// ── helpers ─────────────────────────────────────────────────────────
+const norm = s => String(s ?? '').trim().toLowerCase()
+// Keys and fun facts are TYPED BY AN OPERATOR, so they are the one thing on
+// this screen that is not league data. Escaped on the way in — a stray angle
+// bracket in a hand-written key must not be able to reshape the card.
+const esc = t => String(t ?? '').replace(/[<>&]/g, ch => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[ch]))
+const has  = v => v !== null && v !== undefined && String(v).trim() !== '' && String(v).trim() !== '—'
+const pct  = (n,d) => d > 0 ? Math.round(n * 100 / d) : null
+
+// Reach and height are free text ("74\"", "6'1", "185cm"). Compared as
+// numbers when BOTH parse to one and the unit agrees, dropped otherwise —
+// a graphic that says 6 beats 185 is worse than no graphic.
+function inches(v){
+  const s = String(v ?? '').trim()
+  if(!s) return null
+  let m = s.match(/^(\d+)\s*['’]\s*(\d+(?:\.\d+)?)?/)          // 6'1
+  if(m) return (+m[1]) * 12 + (m[2] ? +m[2] : 0)
+  m = s.match(/^(\d+(?:\.\d+)?)\s*(?:cm)\b/i)                   // 185cm
+  if(m) return +m[1] / 2.54
+  m = s.match(/^(\d+(?:\.\d+)?)/)                               // 74 / 74"
+  if(m){ const n = +m[1]; return n > 40 && n < 90 ? n : null }
+  return null
+}
+const showIn = n => {
+  const f = Math.floor(n / 12), i = Math.round(n - f * 12)
+  return f >= 4 && f <= 7 ? `${f}'${i}"` : `${Math.round(n)}"`
+}
+
+const DIVISION_SHORT = { heavyweight:'HEAVYWEIGHT', light_heavyweight:'LIGHT HEAVY',
+  middleweight:'MIDDLEWEIGHT', lightweight:'LIGHTWEIGHT', welterweight:'WELTERWEIGHT',
+  featherweight:'FEATHERWEIGHT', bantamweight:'BANTAMWEIGHT', flyweight:'FLYWEIGHT',
+  cruiserweight:'CRUISERWEIGHT' }
+const division = v => DIVISION_SHORT[norm(v).replace(/\s+/g,'_')] || String(v ?? '').toUpperCase()
+
+const MON = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+// Eastern, like every other date in the studio — see standby.html. A bout
+// date rendered in the browser's zone reads a day early west of ET.
+function monthYear(d){
+  if(!d) return null
+  let x = new Date(String(d))
+  if(isNaN(x)) x = new Date(String(d).replace(' ','T'))
+  if(isNaN(x)) return null
+  const p = {}
+  new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',month:'short',year:'numeric'})
+    .formatToParts(x).forEach(y => { p[y.type] = y.value })
+  return p.month ? `${p.month.toUpperCase()} ${p.year}` : null
+}
+const dateOf = m => m.event_date || m.created_at || null
+const sortDesc = list => list.slice().sort((a,b) =>
+  new Date(String(dateOf(b) ?? 0)) - new Date(String(dateOf(a) ?? 0)))
+
+// ────────────────────────────────────────────────────────────────────
+// THE FACTS.
+//
+// Each builder gets both fighters (a, b), their completed bouts, and the
+// night's extras, and returns a card or null. Returning null is the
+// normal case, not an error: most fighters do not have a streak worth a
+// card, and none of them have every field filled in.
+//
+// Order here is the order they are OFFERED, and the rotator walks it in
+// order rather than shuffling — the strongest fact should land first,
+// while people are still looking.
+// ────────────────────────────────────────────────────────────────────
+const CARD = (tone, eyebrow, head, sub, cmp) => ({ tone, eyebrow, head, sub: sub || '', cmp: cmp || null, keys: null })
+const KEYS = (name, keys) => ({ tone:'keys', eyebrow:'KEYS TO VICTORY', head: String(name).toUpperCase(),
+  sub:'', cmp:null, keys })
+
+const BUILDERS = [
+
+  // 1 · TITLE PICTURE — the biggest thing that can be true about a bout.
+  function titlePicture(a, b, ctx){
+    if(ctx.titleName)
+      return CARD('gold','ON THE LINE', ctx.titleName,
+        ctx.champName ? `<em>${ctx.champName}</em> defends` : '')
+    const ch = a.is_champion ? a : (b.is_champion ? b : null)
+    if(!ch) return null
+    return CARD('gold','CHAMPION', ch.display_name,
+      `${division(ch.weight_class)} titleholder`)
+  },
+
+  // NOTE — five builders were deleted here on 2026-08-29: KO rate, ladder
+  // position, ranked-one, reach/height edge and age gap, plus the records
+  // floor further down. Every one of them restated something overlay.html's
+  // fighter dossier already has on screen at the same moment, in the same
+  // corner. What is left is what the dossier cannot say.
+
+  // 2 · STREAK — a current run, and when it started. A streak of one is not a
+  //     streak and two is barely one; three earns the card. Not in the
+  //     dossier, which shows only the flat record.
+  function streak(a, b, ctx){
+    const best = [a, b].map(f => {
+      const bouts = sortDesc((ctx.bouts[f.id] || []).filter(m => m.won !== null))
+      if(!bouts.length) return null
+      const won = bouts[0].won
+      let n = 0
+      for(const m of bouts){ if(m.won !== won) break; n++ }
+      return { f, won, n, broke: bouts[n] }
+    }).filter(x => x && x.n >= 3).sort((x, y) => y.n - x.n)[0]
+    if(!best) return null
+    const word = best.won ? 'STRAIGHT WINS' : 'STRAIGHT LOSSES'
+    const tail = best.broke
+      ? `last ${best.won ? 'loss' : 'win'} ${monthYear(dateOf(best.broke)) || 'earlier'}`
+      : 'unbeaten in the record'
+    return CARD(best.won ? 'green' : 'amber','ON A RUN', `${best.n} ${word}`,
+      `<em>${best.f.display_name}</em> — ${tail}`)
+  },
+
+  // 3 · HEAD TO HEAD — they have met before. Rare, and the single most
+  //     interesting thing on the list when it is true.
+  function headToHead(a, b, ctx){
+    const prev = (ctx.bouts[a.id] || []).filter(m =>
+      norm(m.opponent_slug) === norm(b.slug) ||
+      norm(m.opponent_name) === norm(b.display_name))
+    if(!prev.length) return null
+    const aw = prev.filter(m => m.won === true).length
+    const bw = prev.filter(m => m.won === false).length
+    const when = monthYear(dateOf(sortDesc(prev)[0]))
+    const head = prev.length === 1
+      ? (aw ? `${a.display_name} WON IT` : bw ? `${b.display_name} WON IT` : 'IT WAS A DRAW')
+      : `${aw}—${bw} ${a.display_name}`
+    return CARD('pink','THEY HAVE MET', head,
+      prev.length === 1
+        ? `their only previous meeting${when ? ` — <em>${when}</em>` : ''}`
+        : `${prev.length} previous bouts${when ? `, latest <em>${when}</em>` : ''}`)
+  },
+
+  // 4 · COMMON OPPONENT — the next best thing to a head-to-head, and the
+  //     line every commentator reaches for.
+  function commonOpponent(a, b, ctx){
+    const key = m => norm(m.opponent_slug) || norm(m.opponent_name)
+    const bm = new Map()
+    for(const m of (ctx.bouts[b.id] || [])) if(key(m) && m.won !== null) bm.set(key(m), m)
+    for(const m of sortDesc(ctx.bouts[a.id] || [])){
+      const k = key(m)
+      if(!k || m.won === null || k === norm(b.slug)) continue
+      const other = bm.get(k)
+      if(!other || other.won === m.won) continue     // only interesting when they DIFFER
+      const winner = m.won ? a : b
+      const loser  = m.won ? b : a
+      return CARD('pink','COMMON OPPONENT', m.opponent_name || 'SHARED FOE',
+        `<em>${winner.display_name}</em> beat them · <em>${loser.display_name}</em> did not`)
+    }
+    return null
+  },
+
+  // 5 · BETTING — pari-mutuel, so the split IS the price. Needs a pool
+  //     with something in it; an empty market says nothing.
+  function betting(a, b, ctx){
+    const p = ctx.pool
+    if(!p || !(+p.pool > 0) || +p.bets < 3) return null
+    const ta = +p.total_a || 0, tb = +p.total_b || 0
+    if(ta + tb <= 0) return null
+    const share = Math.round(ta * 100 / (ta + tb))
+    const lean  = share >= 50 ? share : 100 - share
+    if(lean < 58) return CARD('amber','THE MONEY', 'A SPLIT ROOM',
+      `<em>${(+p.pool).toLocaleString()} VC</em> across ${p.bets} bets — ${share}/${100 - share}`)
+    const side = share >= 50 ? (p.side_a || a.display_name) : (p.side_b || b.display_name)
+    return CARD('amber','THE MONEY', `${lean}% ON ${side}`,
+      `<em>${(+p.pool).toLocaleString()} VC</em> in the pool across ${p.bets} bets`)
+  },
+
+  // 6 · TEAM FORM — UBAe only, and only when the fighter is actually on a
+  //      team with a record to quote.
+  function teamForm(a, b, ctx){
+    if(!ctx.standings.length) return null
+    const byName = new Map(ctx.standings.map(t => [norm(t.name || t.team_name), t]))
+    for(const f of [a, b]){
+      const t = byName.get(norm(f.team))
+      if(!t) continue
+      const w = +t.wins, l = +t.losses
+      if(!(w >= 0) || !(l >= 0) || (w + l) < 2) continue
+      return CARD('green','HIS TEAM', `${t.name || t.team_name} ${w}—${l}`,
+        `<em>${f.display_name}</em> fights out of them this season`)
+    }
+    return null
+  },
+
+]
+
+// ── data ────────────────────────────────────────────────────────────
+// One pass per bout. Names arrive from the deck, so the lookup is by
+// name — the deck sends what it printed on the clock, which is
+// display_name. Matched case-insensitively because a hand-typed bout on
+// the deck is not guaranteed to match the casing in the database.
+let FACTS = [], idx = 0, loop = null, gen = 0, current = ''
+
+async function lookup(nameA, nameB){
+  const key = norm(nameA) + '|' + norm(nameB)
+  if(key === current) return                 // the deck re-pushes the same bout constantly
+  current = key
+  const mine = ++gen
+
+  // queryRows-style guard, by hand: supabase-js does NOT throw on a failed
+  // query, it resolves {data:null, error}. Treating null as "no fighters"
+  // would leave the corner silently dark for the rest of the match with
+  // nothing in the log — the exact failure that emptied every autocomplete
+  // picker in the bot on 2026-08-25.
+  const { data: cards, error } = await sb.from('fighter_cards')
+    .select('id,slug,display_name,weight_class,rank,height,reach,age,country,team,'+
+            'is_champion,nickname,headline_wins,headline_losses,headline_draws,headline_ko_wins')
+  if(error || !cards){ console.warn('[keys] fighter lookup failed —', error); current = ''; return }
+
+  const find = n => cards.find(c => norm(c.display_name) === norm(n)) ||
+                    cards.find(c => norm(c.slug) === norm(n))
+  const a = find(nameA), b = find(nameB)
+  if(!a || !b){ console.warn('[keys] no match for', nameA, '/', nameB); current = ''; return }
+
+  const [{ data: ma }, { data: mb }, { data: pools }, { data: st }, notesR] = await Promise.all([
+    sb.from('fighter_matches').select('*').eq('fighter_id', a.id).eq('status','completed'),
+    sb.from('fighter_matches').select('*').eq('fighter_id', b.id).eq('status','completed'),
+    sb.from('bet_pools_public').select('*'),
+    sb.from('team_standings').select('*'),
+    // The typed content. Gated on card_published in the view, so a locked
+    // card returns nothing here rather than leaking its matchups.
+    sb.from('bout_notes_public').select('*'),
+  ])
+  if(mine !== gen) return                    // a newer bout landed while this was in flight
+
+  const ctx = {
+    bouts: { [a.id]: ma || [], [b.id]: mb || [] },
+    pool: (pools || []).find(p =>
+      (norm(p.side_a) === norm(a.display_name) && norm(p.side_b) === norm(b.display_name)) ||
+      (norm(p.side_a) === norm(b.display_name) && norm(p.side_b) === norm(a.display_name))) || null,
+    standings: st || [],
+    titleName: TITLE.name, champName: TITLE.champ,
+  }
+
+  // ── TYPED FIRST ──────────────────────────────────────────────────
+  // Keys to victory, then fun facts, then whatever the automatic
+  // builders can add. Someone sat down and wrote these about THIS bout;
+  // nothing derived should get in front of them.
+  //
+  // Matched on the fighter/opponent NAME PAIR, because the deck sends
+  // names and not a match_id. Checking BOTH ends matters: a fighter on
+  // two cards in one night would otherwise pick up the wrong bout's
+  // keys, which name the wrong opponent.
+  const built = []
+  if(notesR.error) console.warn('[keys] bout notes failed —', notesR.error)
+  const notes = (notesR.data || []).filter(n =>
+    (norm(n.fighter_name) === norm(a.display_name) && norm(n.opponent_name) === norm(b.display_name)) ||
+    (norm(n.fighter_name) === norm(b.display_name) && norm(n.opponent_name) === norm(a.display_name)))
+  // A's keys, then B's — never one side's alone if both wrote some.
+  for(const side of [a, b]){
+    const n = notes.find(x => norm(x.fighter_name) === norm(side.display_name))
+    const ks = (n && Array.isArray(n.keys) ? n.keys : []).filter(k => String(k || '').trim())
+    if(ks.length) built.push(KEYS(side.display_name, ks))
+  }
+  for(const side of [a, b]){
+    const n = notes.find(x => norm(x.fighter_name) === norm(side.display_name))
+    if(n && String(n.fun_fact || '').trim())
+      built.push(CARD('pink','FUN FACT', side.display_name.toUpperCase(), esc(n.fun_fact)))
+  }
+
+  for(const fn of BUILDERS){
+    let c = null
+    // One bad builder must not take the package down mid-match. The corner
+    // going quiet for a round is a missing graphic; a throw here is every
+    // graphic after it missing too.
+    try { c = fn(a, b, ctx) } catch(e){ console.warn('[keys] builder threw —', fn.name, e) }
+    if(c && has(c.head)) built.push(c)
+  }
+  FACTS = built; idx = 0
+  const typed = built.filter(c => c.tone === 'keys' || c.eyebrow === 'FUN FACT').length
+  console.log(`[keys] ${built.length} cards for ${a.display_name} vs ${b.display_name} `
+    + `(${typed} typed, ${built.length - typed} automatic):`, built.map(c => c.eyebrow).join(' · '))
+  if(AUTO) start()
+}
+
+// The deck stamps the title on the tale of the tape, not on the clock, so
+// it is remembered separately and survives a later plain {type:'bout'}.
+let TITLE = { name: null, champ: null }
+
+// ── the rotator ─────────────────────────────────────────────────────
+const el = $('fact')
+function paint(c){
+  el.dataset.tone = c.tone
+  $('fEyebrow').textContent = c.eyebrow
+  $('fHead').innerHTML = c.head
+  $('fSub').innerHTML = c.sub || ''
+  $('fSub').style.display = c.sub ? '' : 'none'
+  const kbox = $('fKeys')
+  if(c.keys && c.keys.length){
+    kbox.style.display = ''
+    kbox.innerHTML = c.keys.slice(0, 3).map((k, i) =>
+      `<div class="k"><span class="n">${i + 1}</span><span class="t">${esc(k)}</span></div>`).join('')
+  } else { kbox.style.display = 'none'; kbox.innerHTML = '' }
+  const box = $('fCmp')
+  if(!c.cmp){ box.style.display = 'none'; return }
+  box.style.display = ''
+  $('cmpM').textContent = c.cmp.m
+  for(const [side, d] of [['cmpL', c.cmp.l], ['cmpR', c.cmp.r]]){
+    const n = $(side)
+    n.querySelector('.nm').textContent = d.nm
+    n.querySelector('.vl').textContent = d.vl
+    n.classList.toggle('win', !!d.win)
+  }
+}
+function show(c){
+  paint(c)
+  el.classList.remove('out'); el.classList.add('in')
+  setTimeout(() => { el.classList.remove('in'); el.classList.add('out') }, ENTER + HOLD)
+}
+function stop(){ if(loop){ clearTimeout(loop); loop = null }
+  el.classList.remove('in'); el.classList.add('out') }
+function start(){
+  if(loop) clearTimeout(loop)
+  const tick = () => {
+    if(!FACTS.length){ loop = setTimeout(tick, GAP); return }
+    show(FACTS[idx % FACTS.length]); idx++
+    loop = setTimeout(tick, ENTER + HOLD + EXIT + GAP)
+  }
+  loop = setTimeout(tick, 400)
+}
+
+// ── the wire ────────────────────────────────────────────────────────
+// ?auto=0 holds the package until something explicitly asks for it. The
+// default is on, because the deck has no button for this file and OBS
+// source visibility is the operator's real switch.
+const AUTO = Q.get('auto') !== '0'
+
+const _ch = sb.channel('vga-overlay')
+_ch.on('broadcast', { event:'cmd' }, ({ payload: c }) => {
+  if(!c) return
+  const d = c.d || {}
+
+  // The two names, wherever the deck happens to be sending them from.
+  // 'bout' is the UBA/GFL clock, 'tape' the tale of the tape, 'pickbar'
+  // the UBAe match. All three already carry the pair.
+  if(c.type === 'bout'   && has(d.a) && has(d.b)) lookup(d.a, d.b)
+  if(c.type === 'pickbar'&& has(d.teamA) && has(d.teamB)) lookup(d.teamA, d.teamB)
+  if(c.type === 'tape'){
+    if(d.left && d.right){
+      // The tape carries the belt when there is one — remember it before
+      // the lookup, so the title card can be built on this same pass.
+      TITLE = { name: has(d.title) && /title|championship|belt/i.test(String(d.title))
+                  ? String(d.title).toUpperCase() : null, champ: null }
+      if(has(d.left.name) && has(d.right.name)) lookup(d.left.name, d.right.name)
+    }
+    if(c.on === false || c.show === false) return
+  }
+
+  // Explicit control, for whenever the deck grows a button. Nothing in
+  // control.html sends these today and this file does not need it to.
+  if(c.type === 'facts'){
+    if(c.on === false){ stop(); return }
+    if(c.on === true){ start(); return }
+  }
+  // One typed fact, straight to air, bypassing the database entirely.
+  if(c.type === 'fact' && has(d.head)){
+    if(loop){ clearTimeout(loop); loop = null }
+    show(CARD(d.tone || 'pur', d.eyebrow || 'FIGHT FACT', d.head, d.sub, d.cmp || null))
+    if(AUTO) start()
+  }
+}).subscribe()
+
+// A preview harness, so this file can be opened and judged without a deck
+// and without a live match: ?demo=1 rotates one of every card shape, and
+// ?card=N pins card N on screen so a single layout can be checked against
+// the real 1920x1080 frame without waiting out a 31-second rotation.
+if(Q.get('demo') === '1' || Q.has('card')){
+  FACTS = [
+    KEYS('smokinem', ['Keep it long — win the first two minutes at range',
+                      'Make him lead, then counter off the back foot',
+                      'Bank the early rounds; he fades after three']),
+    KEYS('Hello World', ['Close the distance early and make it ugly',
+                         'Body work in the clinch — take the legs away']),
+    CARD('pink','FUN FACT','SMOKINEM','Has fought on every card since the league opened and has never missed a weigh-in.'),
+    CARD('gold','ON THE LINE','UBA HEAVYWEIGHT TITLE','<em>Hello World</em> defends'),
+    CARD('green','ON A RUN','4 STRAIGHT WINS','<em>smokinem</em> — last loss MAR 2026'),
+    CARD('pink','THEY HAVE MET','2—1 SMOKINEM','3 previous bouts, latest <em>JAN 2026</em>'),
+    CARD('pink','COMMON OPPONENT','DRAGON 5000','<em>smokinem</em> beat them · <em>Hello World</em> did not'),
+    CARD('amber','THE MONEY','71% ON SMOKINEM','<em>18,400 VC</em> in the pool across 63 bets'),
+  ]
+  const pin = Q.get('card')
+  if(pin !== null && pin !== ''){
+    const c = FACTS[(+pin || 0) % FACTS.length]
+    paint(c); el.classList.add('in')     // pinned: enters once, never leaves
+  } else start()
+}
+})()
+</script>
+</body>
+</html>
