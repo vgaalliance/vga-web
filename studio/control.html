@@ -571,6 +571,50 @@
       <h5>Bet alerts — click a bet (anonymous)</h5>
       <div class="row" id="betFeed">SCANNING WAGERS…</div>
     </div>
+
+    <!-- ── THE 2026-08-29 GRAPHICS ────────────────────────────────────
+         These four shipped self-driving — they read the bout you armed
+         and need nothing pressed to be CORRECT. What they had no way to
+         do was be turned OFF, or be pointed at a different fighter, and
+         a graphic an operator cannot stop is a graphic that eventually
+         will not stop. -->
+    <div>
+      <h5>Keys to victory / fun facts — bottom-left, rotates all fight</h5>
+      <div class="row">
+        <button onclick="send({type:'keys',on:true})">▶ Start rotation</button>
+        <button class="hide" onclick="send({type:'keys',on:false})">■ Stop</button>
+        <span style="color:var(--gdim);font-size:15px">starts itself when you arm a bout · written in the admin card builder</span>
+      </div>
+
+      <h5>What's on the line — full screen, ProTubeVR</h5>
+      <div class="row">
+        <button onclick="send({type:'stakes',on:true})">▶ Show stakes</button>
+        <button class="hide" onclick="send({type:'stakes',on:false})">■ Hide</button>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <input id="stkA" placeholder="LINE 1 — leave blank to read the database" style="flex:1">
+      </div>
+      <div class="row" style="margin-top:4px">
+        <input id="stkB" placeholder="LINE 2 (optional)" style="flex:1">
+        <input id="stkC" placeholder="LINE 3 (optional)" style="flex:1">
+        <button onclick="fireStakes()">Push typed lines</button>
+      </div>
+
+      <h5>Rankings at stake — who can jump who</h5>
+      <div class="row">
+        <button onclick="send({type:'rankstakes',event:(window.UBA&&UBA.name)||null,on:true})">▶ Show ladder</button>
+        <button class="hide" onclick="send({type:'rankstakes',on:false})">■ Hide</button>
+        <span style="color:var(--gdim);font-size:15px">reads the card you loaded above</span>
+      </div>
+
+      <h5>Fan cam — search a fighter, then cut to the scene</h5>
+      <div class="row">
+        <input id="fcq" placeholder="QUERY FIGHTER NAME…" onkeydown="if(event.key==='Enter')searchFanCam()">
+        <button onclick="searchFanCam()">Search</button>
+        <button class="hide" onclick="send({type:'fancam',on:false})">■ Hide</button>
+      </div>
+      <div class="row" id="fcresults" style="margin-top:10px"></div>
+    </div>
   </div></div>
 
   <div id="log"></div>
@@ -609,6 +653,61 @@ window.send=cmd=>{ if(cmd && cmd.league==null) cmd.league = EV
 }
 
 const cap = s => (s||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())
+
+// ── the 2026-08-29 graphics ────────────────────────────────────────────
+// One line into the deck's own log strip, for the presses that do nothing and
+// need to say why.
+const deckLog = t => {
+  const l = document.getElementById('log'); if(!l) return
+  const d = document.createElement('div')
+  d.textContent = '! ' + t
+  d.style.color = '#ffb020'
+  l.prepend(d)
+}
+// Typed stakes REPLACE the ones the screen read for itself, rather than
+// joining them — a hand-written stake is a decision, and the automatic ones
+// must not argue with it in the next row down. Blank boxes send nothing, so
+// pressing this with an empty form is not a way to wipe the screen.
+window.fireStakes=()=>{
+  const lines=['stkA','stkB','stkC']
+    .map(id=>(document.getElementById(id).value||'').trim())
+    .filter(Boolean)
+    .map(t=>{
+      // "EYEBROW | HEAD | sub" if you want the full shape, otherwise the whole
+      // line is the headline. Splitting on a pipe keeps the common case to
+      // typing one sentence.
+      const p=t.split('|').map(x=>x.trim())
+      return p.length>=2 ? {eyebrow:p[0], head:p[1], sub:p[2]||''} : {eyebrow:'On the line', head:t}
+    })
+  // warn() is a LOCAL const inside another function, not a global — calling it
+  // from here threw ReferenceError on exactly the press that needed feedback.
+  if(!lines.length){ deckLog('type a line first — blank does not clear the screen'); return }
+  send({type:'stakes', on:true, d:{lines}})
+}
+
+// Fan cam. The scene can composite any fighter, but WHERE the person sits is a
+// property of the clip, not of the fighter, so the knobs stay in the browser
+// source's URL and the deck only says who.
+window.searchFanCam=async()=>{
+  const q=document.getElementById('fcq').value.trim(); if(!q) return
+  const box=document.getElementById('fcresults')
+  box.textContent='SEARCHING…'
+  const { data, error } = await sb.from('fighter_cards')
+    .select('slug,display_name,wins:headline_wins,losses:headline_losses,rank,is_champion')
+    .ilike('display_name','%'+q+'%').limit(6)
+  // supabase-js resolves {data:null,error} instead of throwing, so a failed
+  // query must not print "NO RECORD FOUND" over a working database — that
+  // sends an operator hunting for a fighter who is right there.
+  if(error){ box.textContent='SEARCH FAILED — '+error.message; return }
+  if(!data||!data.length){ box.textContent='NO RECORD FOUND'; return }
+  box.innerHTML=''
+  data.forEach(f=>{
+    const b=document.createElement('button')
+    b.innerHTML=`${f.display_name}<small>${f.wins}-${f.losses}${f.rank?' · #'+f.rank:''}${f.is_champion?' · CHAMP':''}</small>`
+    b.onclick=()=>send({type:'fancam', on:true, d:{ fighter:f.slug, name:f.display_name }})
+    box.appendChild(b)
+  })
+}
 
 window.searchFighter=async()=>{
   const q=document.getElementById('fq').value.trim(); if(!q) return
