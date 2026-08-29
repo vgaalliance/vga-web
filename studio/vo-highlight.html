@@ -58,30 +58,31 @@
     width:100%;height:132%;
     background:linear-gradient(160deg,var(--pur) 0%,var(--pink) 55%,#4b0f9e 100%);}
 
-  /* ── THE THREE SHOTS ──────────────────────────────────────────────────
-     CLOSE on the face → MEDIUM, shoulders and face → WAIST UP. Tight to wide,
-     which is the order a voice does it in: it starts on the person and pulls
-     back to where they stand.
+  /* ── THE SHOTS ────────────────────────────────────────────────────────
+     TWO framings, three grades. The close-up was on the face at 2.6 and it
+     read as a mugshot pressed against the lens -- these are game-engine heads,
+     and past about 2x they stop being a portrait and start being pores.
+     Shoulders up, then waist up, and the third beat holds the wide while the
+     TREATMENT changes instead of the camera. Variety without another push.
 
-     Every one of them is anchored to the HEAD, not the middle of the picture.
-     Scaling a standing figure about its centre walks the frame down the body,
-     so the "close-up" landed on a chest. The vertical offsets are computed in
-     JS from the photo's real height (see frameShots) rather than typed here,
-     because 200px of shift means a different part of a fighter depending on
-     how tall the cut-out is.
+     Every one is anchored to the HEAD and each carries its own eye line, so
+     widening the frame fills it downward with fighter rather than upward with
+     empty air. The offsets are computed in JS from the photo's real height —
+     200px of shift is a face on one cut-out and a collarbone on the next. */
 
-     The treatment moves with the shot: cold and hard up close, neutral in the
-     middle, and cooling off again as it pulls out. A single colour grade is
-     also what makes captures of wildly different quality read as one
-     broadcast. */
-  .s1 #por,.s1 #porB{transform:translate(-50%,var(--y1,-50%)) scale(var(--s1,3));
-    filter:grayscale(.15) contrast(1.35) brightness(.92) saturate(1.15)
-           drop-shadow(0 0 52px rgba(155,48,255,.6));}
-  .s2 #por,.s2 #porB{transform:translate(-50%,var(--y2,-50%)) scale(var(--s2,2));
-    filter:grayscale(.4) contrast(1.2) brightness(.9) saturate(1.05)
-           drop-shadow(0 0 40px rgba(155,48,255,.45));}
-  .s3 #por,.s3 #porB{transform:translate(-50%,var(--y3,-50%)) scale(var(--s3,1.35));
-    filter:grayscale(1) contrast(1.15) brightness(.8) sepia(.35) hue-rotate(215deg) saturate(2.2);}
+  /* SHOULDERS — cold, hard, the arrival. A single colour treatment is what
+     makes captures of wildly different quality read as one broadcast. */
+  .s1 #por,.s1 #porB{transform:translate(-50%,var(--y1,-50%)) scale(var(--s1,1.75));
+    filter:grayscale(1) contrast(1.2) brightness(.82) sepia(.35) hue-rotate(215deg) saturate(2.2);}
+  /* WAIST UP — the colour comes back with the record. */
+  .s2 #por,.s2 #porB{transform:translate(-50%,var(--y2,-50%)) scale(var(--s2,1.25));
+    filter:grayscale(.25) contrast(1.2) brightness(.95) saturate(1.15)
+           drop-shadow(0 0 46px rgba(155,48,255,.55));}
+  /* WAIST UP, HELD — same frame, hotter grade. The picture stops moving right
+     as the stakes line lands, which is the one moment worth holding still. */
+  .s3 #por,.s3 #porB{transform:translate(-50%,var(--y3,-50%)) scale(var(--s3,1.2));
+    filter:grayscale(.1) contrast(1.4) brightness(1.05) saturate(1.5)
+           drop-shadow(0 0 60px rgba(255,51,204,.5));}
 
   /* THE OUTRO — the last few seconds only. The photo burns down to a
      silhouette of itself while the stakes line lands, so the segment ends on a
@@ -98,8 +99,11 @@
   #porB{opacity:0;}
   .onB #por{opacity:0;}
   .onB #porB{opacity:1;}
-  .scan{position:absolute;inset:0;pointer-events:none;
+  .scan{position:absolute;inset:0;pointer-events:none;transition:opacity .8s ease;
     background:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px);}
+  /* heavier on the held beat — the frame is still, so the texture is what
+     keeps it from reading as a paused video */
+  .s3 .scan{opacity:1.6;}
   .vig{position:absolute;inset:0;pointer-events:none;
     background:radial-gradient(ellipse at 34% 50%,transparent 30%,rgba(5,0,14,.86) 78%),
                linear-gradient(90deg,transparent 40%,rgba(5,0,14,.94) 72%);}
@@ -254,9 +258,9 @@ function once(key, fn){ if(fired.has(key)) return; fired.add(key); fn() }
 // above it: pulling out only ever revealed more floor, never more fighter.
 // The wider the shot, the higher the head sits, which is how the frame fills
 // downward with body instead of upward with nothing.
-const SHOTS = { s1:{ s:2.6, eye:.36 },    // close — the face
-                s2:{ s:1.85, eye:.30 },   // medium — head and shoulders
-                s3:{ s:1.30, eye:.16 } }  // waist up
+const SHOTS = { s1:{ s:1.75, eye:.30 },   // shoulders up
+                s2:{ s:1.25, eye:.15 },   // waist up
+                s3:{ s:1.20, eye:.13 } }  // waist up, held — the grade changes, not the frame
 const HEAD = 0.10
 function frameShots(){
   const el = $('por')
