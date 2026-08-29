@@ -367,29 +367,27 @@
      of each are out there. Rarity palette lifted from fighter-profile.html
      deliberately -- someone who has seen their own stash should recognise
      this at a glance. */
-  /* THE CARD, MOVING. A card set printed as a list of names is a spreadsheet of
-     things that are meant to be objects; the 3D render is the only thing on
-     this screen that says they are collectable. The column only EXISTS when the
-     film loaded — see mountCardFilm — so a missing file leaves the sets exactly
-     as they were rather than a black rectangle nobody on the night can explain. */
-  .cardsplit{display:grid;grid-template-columns:1fr;gap:34px;align-items:start;}
-  /* 320, not 400: the sets column has to hold the same list in less width, and
-     measured against tonight's four sets a wider film pushed the grid 450px
-     past the bottom of the frame. The tiles narrow with it for the same
-     reason — see fitCardFilm, which drops the column outright if a future set
-     still overflows. */
-  .cardsplit.film{grid-template-columns:320px 1fr;}
-  .cardsplit.film .scards{grid-template-columns:repeat(auto-fill,minmax(118px,1fr));}
-  .cardsplit.film .scard-name{font-size:17px;}
-  .cardfilm{display:none;position:relative;border:1px solid var(--line);
-    background:rgba(14,0,30,.6);box-shadow:0 0 34px rgba(60,0,110,.45);}
-  .cardsplit.film .cardfilm{display:block;}
-  .cardfilm video{display:block;width:100%;height:auto;max-height:660px;object-fit:contain;
-    background:transparent;}
-  /* The label is the point of the panel: it says the cards are won and traded,
-     which the moving render alone does not. */
-  .cardfilm-cap{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.18em;
-    color:var(--dim);text-align:center;padding:10px 8px 11px;border-top:1px solid var(--line);}
+  /* ── THE POSTER SCREEN ────────────────────────────────────────────────
+     Its own view, like the rankings or the playoff picture — not a panel
+     bolted onto the card list. The poster and the moving card are the only two
+     things in this package that are PICTURES rather than data, and they belong
+     on screen together: the poster says what the night is, the card says what
+     you can win off the back of it.
+     Either half can be absent. The grid is set from what actually LOADED, so a
+     poster with no film is a poster, a film with no poster is a film, and
+     neither one is a scene that drops out of the rotation rather than showing a
+     violet rectangle with nothing in it. */
+  .promo{display:grid;gap:44px;align-items:center;justify-items:center;width:100%;}
+  .promo.both{grid-template-columns:1fr 1fr;}
+  .promo.one{grid-template-columns:1fr;}
+  .promo-cell{display:none;flex-direction:column;align-items:center;gap:14px;max-width:100%;}
+  .promo-cell.on{display:flex;}
+  .promo-cell img,.promo-cell video{display:block;max-height:660px;max-width:100%;
+    border:1px solid var(--line);box-shadow:0 0 46px rgba(60,0,110,.5);background:transparent;}
+  /* nowrap: at 10px with .2em tracking "EARNED · TRADED · FUSED" broke onto a
+     second line inside its cell and sat under the neighbouring caption. */
+  .promo-cap{font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.2em;
+    color:var(--dim);white-space:nowrap;text-align:center;}
   .setgrid{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:start;}
   .sethead{display:flex;justify-content:space-between;align-items:baseline;
     border-bottom:2px solid var(--pur);padding-bottom:6px;margin-bottom:10px;}
@@ -719,13 +717,25 @@
       <div class="cbouts" id="nextevContent"></div>
     </div>
 
+    <!-- POSTER + CARD — a scene of its own, picked like any other. -->
+    <div class="view" id="v-poster">
+      <div class="eyebrow">VGA · UBA</div>
+      <div class="title sm" id="promoTitle">Fight Night</div>
+      <div class="promo" id="promo">
+        <div class="promo-cell" id="promoPosterCell">
+          <img id="promoPoster" alt="">
+          <div class="promo-cap" id="promoPosterCap">THE POSTER</div>
+        </div>
+        <div class="promo-cell" id="promoFilmCell">
+          <div class="promo-cap">EARNED · TRADED · FUSED</div>
+        </div>
+      </div>
+    </div>
+
     <div class="view" id="v-cards">
       <div class="eyebrow">VGA · UBA</div>
       <div class="title sm">Card Collection</div>
-      <div class="cardsplit" id="cardSplit">
-        <div class="cardfilm" id="cardFilm"></div>
-        <div class="setgrid" id="cardsContent"></div>
-      </div>
+      <div class="setgrid" id="cardsContent"></div>
     </div>
 
     <div class="view" id="v-next3">
@@ -828,6 +838,11 @@ async function loadAll(){
     sb.from('rankings_public').select('rank,fighter_name,weight_class,level').eq('scope','weight_class').order('rank'),
   ])
   renderStandings(st||[]); renderRosters(st||[], rec||[]); renderNext(ev||[]); renderTvs(mt||[])
+  // The poster scene names the night it is a poster for. Falls back to the
+  // heading already in the markup when nothing is scheduled -- a poster under
+  // the word "Fight Night" is still a poster; one under a stale event name is a
+  // graphic lying about which show this is.
+  if(ev && ev[0] && ev[0].name) document.getElementById('promoTitle').textContent = ev[0].name
   renderPlayoff(st||[], mt||[])
   renderPoWeeks(st||[], mt||[])
   playoffScenes(st||[], mt||[])
@@ -985,60 +1000,74 @@ function renderCards(sets, coll){
   }).join('') : '<div class="setfoot">NO SETS RELEASED</div>'
 }
 
-// ── THE 3D CARD FILM ─────────────────────────────────────────────────────
-// Wired by EXISTENCE, not configuration: drop assets/card-3d.mp4 (or .webm) in
-// and the Card Collection screen grows a turning card beside the sets; take it
-// away and the screen is exactly what it always was. Nothing to switch on, no
-// deck button to remember, and no way to end up presenting a black rectangle --
-// an OBS browser source cannot tell you a file 404'd, it just shows the hole.
-const CARD_FILM = ['assets/card-3d.mp4','assets/card-3d.webm']
-let cardFilmEl = null
+// ── THE POSTER SCENE ─────────────────────────────────────────────────────
+// Its own screen, picked like the rankings or the playoff picture. Two files
+// and no configuration: drop them in and the scene exists; leave them out and
+// it never enters the rotation at all.
+//
+//   assets/poster.png   the night's poster (.jpg / .webp also tried)
+//   assets/card-3d.mp4  the turning card (.webm also tried)
+//
+// Wired by EXISTENCE because an OBS browser source cannot tell you a file
+// 404'd -- it just shows the hole, mid-show, with nobody able to explain it.
+// A scene with neither file is never offered; a scene with one is that one,
+// full width.
+const PROMO_POSTER = ['assets/poster.png','assets/poster.jpg','assets/poster.webp']
+const PROMO_FILM   = ['assets/card-3d.mp4','assets/card-3d.webm']
+let promoFilmEl = null, promoHas = { poster:false, film:false }
+
+function promoLayout(){
+  const box = document.getElementById('promo'); if(!box) return
+  const n = (promoHas.poster?1:0) + (promoHas.film?1:0)
+  box.classList.toggle('both', n === 2)
+  box.classList.toggle('one',  n === 1)
+  document.getElementById('promoPosterCell').classList.toggle('on', promoHas.poster)
+  document.getElementById('promoFilmCell').classList.toggle('on', promoHas.film)
+  // The scene joins the rotation the moment it has something to show, and only
+  // then. A rotation that parades an empty screen every 15 seconds is worse
+  // than one screen short.
+  if(n && !VIEWS.includes('poster')) VIEWS.splice(0, 0, 'poster')
+  if(n && !VIEWS_UBA.includes('poster')) VIEWS_UBA.splice(0, 0, 'poster')
+}
+
+function mountPoster(){
+  const img = document.getElementById('promoPoster'); if(!img) return
+  let i = 0
+  img.addEventListener('load', ()=>{ promoHas.poster = true; promoLayout() })
+  // Three extensions before giving up: which one comes out of the design tool
+  // is a decision made months from now, not here.
+  img.addEventListener('error', ()=>{
+    if(++i < PROMO_POSTER.length){ img.src = PROMO_POSTER[i]; return }
+    promoHas.poster = false; promoLayout()
+  })
+  img.src = PROMO_POSTER[0]
+}
+
 function mountCardFilm(){
-  const wrap = document.getElementById('cardFilm'); if(!wrap) return
+  const cell = document.getElementById('promoFilmCell'); if(!cell) return
   let i = 0
   const v = document.createElement('video')
   v.muted = true; v.loop = true; v.autoplay = true; v.playsInline = true; v.preload = 'auto'
   // loadeddata rather than canplay: this only has to learn the file is real.
-  v.addEventListener('loadeddata', ()=>{
-    cardFilmEl = v
-    document.getElementById('cardSplit').classList.add('film')
-    syncCardFilm()
-  })
-  // Both encodings are tried before giving up, because which one gets exported
-  // is a decision made in an editor months from now, not here.
-  // An error AFTER it has played takes the column with it: a film that dies
-  // mid-show would otherwise leave a 400px hole beside the sets, which is a
-  // worse screen than the one that never had a film at all.
+  v.addEventListener('loadeddata', ()=>{ promoFilmEl = v; promoHas.film = true; promoLayout(); syncPromo() })
+  // An error AFTER it has played takes the cell with it. A stalled black frame
+  // parked in a scene is worse than the scene never having had a film.
   v.addEventListener('error', ()=>{
-    if(!cardFilmEl && ++i < CARD_FILM.length){ v.src = CARD_FILM[i]; v.load(); return }
-    cardFilmEl = null
-    document.getElementById('cardSplit').classList.remove('film')
-    v.remove()
+    if(!promoFilmEl && ++i < PROMO_FILM.length){ v.src = PROMO_FILM[i]; v.load(); return }
+    promoFilmEl = null; promoHas.film = false; v.remove(); promoLayout()
   })
-  v.src = CARD_FILM[0]
-  wrap.appendChild(v)
-  const cap = document.createElement('div')
-  cap.className = 'cardfilm-cap'
-  cap.textContent = 'EARNED · TRADED · FUSED'
-  wrap.appendChild(cap)
+  v.src = PROMO_FILM[0]
+  cell.insertBefore(v, cell.firstChild)
 }
+
 // A loop decoding behind a screen nobody is looking at costs the streaming box
-// frames it needs for the fight. It runs while the Card Collection is up and is
+// frames it needs for the fight. It runs while the poster scene is up and is
 // paused every other second of the night.
-function syncCardFilm(){
-  const split = document.getElementById('cardSplit')
-  if(!cardFilmEl || !split) return
-  if(!document.getElementById('v-cards').classList.contains('on')){ cardFilmEl.pause(); return }
-  split.classList.add('film')
-  // Measured while the view is actually on screen, the only time the answer is
-  // real -- a hidden view has no height. THE SETS ARE THE SCREEN AND THE FILM
-  // IS THE GUEST: if a newly released set makes the list taller than the frame,
-  // the film's column is what gives way. A card list running off the bottom of
-  // a 1080 frame loses information the audience cannot get back, and this
-  // screen gains sets over time.
-  const room = document.getElementById('stage').clientHeight - 140   // stage padding, top and bottom
-  if(document.getElementById('v-cards').scrollHeight > room) split.classList.remove('film')
-  const p = cardFilmEl.play(); if(p && p.catch) p.catch(()=>{})
+function syncPromo(){
+  if(!promoFilmEl) return
+  if(document.getElementById('v-poster').classList.contains('on')){
+    const p = promoFilmEl.play(); if(p && p.catch) p.catch(()=>{})
+  } else promoFilmEl.pause()
 }
 
 function renderCta(count){
@@ -1592,7 +1621,7 @@ function hideView(el){
   el.style.left=(r.left-p.left)+'px'
   el.style.width=r.width+'px'
   el.classList.remove('on'); el.classList.add('out')
-  syncCardFilm()
+  syncPromo()
   clearTimeout(el._voutT)
   el._voutT=setTimeout(()=>{
     el.classList.remove('out')
@@ -1609,7 +1638,7 @@ function showView(el){
   el.classList.remove('out')
   el.style.position=el.style.top=el.style.left=el.style.width=''
   el.classList.add('on')
-  syncCardFilm()
+  syncPromo()
 }
 
 function show(view, league){
@@ -1749,7 +1778,8 @@ sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
 
 loadAll()
 cycAll()          // the alternating names, on one page-wide timer
-mountCardFilm()   // no-op unless assets/card-3d.mp4 (or .webm) is actually there
+mountPoster()     // both are no-ops unless the files are actually there,
+mountCardFilm()   // and the scene stays out of the rotation until one loads
 </script>
 </body>
 </html>
