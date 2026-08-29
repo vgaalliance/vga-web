@@ -43,34 +43,48 @@
      filtered element, because the silhouette is a MASK — the photo's own
      alpha punched out of a violet field — and a filter cannot do that. */
   #stage{position:absolute;inset:0;overflow:hidden;}
-  #por,#sil{position:absolute;top:50%;left:38%;height:132%;
+  #por,#sil{position:absolute;top:50%;left:38%;height:132%;width:auto;
     transform:translate(-50%,-50%);
     transition:transform 3.4s cubic-bezier(.22,.61,.36,1),
                filter 1.6s ease, opacity 1.2s ease;}
-  #por{width:auto;}
-  #sil{width:min(1200px,62vw);opacity:0;
+  .s3 #sil,.outro #sil{transform:translate(-50%,var(--y3,-50%)) scale(var(--s3,1.35));}
+  #sil{opacity:0;
     -webkit-mask-position:center;mask-position:center;
     -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
     -webkit-mask-size:contain;mask-size:contain;
+    width:100%;height:132%;
     background:linear-gradient(160deg,var(--pur) 0%,var(--pink) 55%,#4b0f9e 100%);}
 
-  /* STATE 1 — ARRIVAL. Wide, cold, pushing in slowly. Duotone rather than
-     the raw photo: these are game captures of very different quality and a
-     single colour treatment is what makes twenty of them look like one
+  /* ── THE THREE SHOTS ──────────────────────────────────────────────────
+     CLOSE on the face → MEDIUM, shoulders and face → WAIST UP. Tight to wide,
+     which is the order a voice does it in: it starts on the person and pulls
+     back to where they stand.
+
+     Every one of them is anchored to the HEAD, not the middle of the picture.
+     Scaling a standing figure about its centre walks the frame down the body,
+     so the "close-up" landed on a chest. The vertical offsets are computed in
+     JS from the photo's real height (see frameShots) rather than typed here,
+     because 200px of shift means a different part of a fighter depending on
+     how tall the cut-out is.
+
+     The treatment moves with the shot: cold and hard up close, neutral in the
+     middle, and cooling off again as it pulls out. A single colour grade is
+     also what makes captures of wildly different quality read as one
      broadcast. */
-  .s1 #por{transform:translate(-50%,-50%) scale(1.06);
-    filter:grayscale(1) contrast(1.15) brightness(.82) sepia(.35) hue-rotate(215deg) saturate(2.2);}
-  /* STATE 2 — THE RECORD. Punch in on the head and shoulders and let the
-     colour back in. The move is the point: the same photo at 1.06 and at
-     1.9 does not read as the same shot. */
-  .s2 #por{transform:translate(-50%,-58%) scale(1.9);
-    filter:grayscale(.35) contrast(1.25) brightness(.95) saturate(1.1)
-           drop-shadow(0 0 42px rgba(155,48,255,.55));}
-  /* STATE 3 — THE STAKES. The photo goes and the silhouette takes over, so
-     the last third is a shape and a number rather than a face and a list. */
-  .s3 #por{transform:translate(-50%,-50%) scale(1.3);opacity:0;
-    filter:grayscale(1) brightness(.4);}
-  .s3 #sil{opacity:1;transform:translate(-50%,-50%) scale(1.04);}
+  .s1 #por{transform:translate(-50%,var(--y1,-50%)) scale(var(--s1,3));
+    filter:grayscale(.15) contrast(1.35) brightness(.92) saturate(1.15)
+           drop-shadow(0 0 52px rgba(155,48,255,.6));}
+  .s2 #por{transform:translate(-50%,var(--y2,-50%)) scale(var(--s2,2));
+    filter:grayscale(.4) contrast(1.2) brightness(.9) saturate(1.05)
+           drop-shadow(0 0 40px rgba(155,48,255,.45));}
+  .s3 #por{transform:translate(-50%,var(--y3,-50%)) scale(var(--s3,1.35));
+    filter:grayscale(1) contrast(1.15) brightness(.8) sepia(.35) hue-rotate(215deg) saturate(2.2);}
+
+  /* THE OUTRO — the last few seconds only. The photo burns down to a
+     silhouette of itself while the stakes line lands, so the segment ends on a
+     shape and a sentence rather than trailing off on a held frame. */
+  .outro #por{opacity:0;}
+  .outro #sil{opacity:1;}
 
   /* grain, scanlines, vignette — the house treatment, and the thing that
      hides how soft an upscaled game capture gets at 1.9x */
@@ -200,9 +214,40 @@ function at(frac){ return BEATS[0] + frac }   // beats are already fractions
 // its transition and leave the row shivering in place.
 function once(key, fn){ if(fired.has(key)) return; fired.add(key); fn() }
 
+// ── WHERE THE HEAD IS ────────────────────────────────────────────────────
+// Each shot is a scale plus the vertical offset that keeps the HEAD at eye
+// level while it happens. Computed from the photo's own laid-out height rather
+// than typed as pixels, because the same offset is a face on one cut-out and a
+// sternum on the next.
+//   HEAD   how far down a standing cut-out the head sits, as a fraction
+//   EYE    where on the 1080 frame we want it — a third down, not the middle,
+//          which is where a face sits in every broadcast ever cut
+// 2.6 rather than 3: the photos are ~1400x2160, and a 3x close-up is a 2x
+// upscale of a game capture — soft in a way the grain cannot hide at 1920.
+// 2.6 is still unmistakably a close-up and stays under 1.8x.
+const SHOTS = { s1:2.6, s2:1.85, s3:1.3 }   // close · medium · waist up
+const HEAD = 0.10, EYE = 0.34
+function frameShots(){
+  const el = $('por')
+  const H = el.offsetHeight || (1080 * 1.32)     // layout height, before any scale
+  const root = document.documentElement
+  for(const k in SHOTS){
+    const sc = SHOTS[k]
+    // where the head lands with the element centred and scaled about its middle
+    const y = (1080/2) + (HEAD - 0.5) * H * sc
+    // …and the shift that puts it on the eye line. -50% is the centring the
+    // transform already carries, so the correction is added to it in px.
+    root.style.setProperty('--' + k.replace('s','y'), 'calc(-50% + ' + Math.round(1080*EYE - y) + 'px)')
+    root.style.setProperty('--' + k, String(sc))
+  }
+}
+
+const OUTRO = .88     // the last eighth: the stakes line is up, the picture goes
 function setState(n){
   if(state === n) return
   state = n
+  // the outro class is re-applied by the driver, so rebuilding className here
+  // cannot strip it — it only ever runs before p reaches OUTRO
   $('scene').className = 'on s' + n
 }
 
@@ -239,8 +284,9 @@ function run(){
         if(into > .18 + i * .12) once('row' + i, ()=> r.classList.add('in'))
       })
     }
-    // STATE 3 — what it is worth
+    // STATE 3 — what it is worth, and the burn down to a silhouette under it
     if(p >= BEATS[2]) once('stake', ()=> $('stake').classList.add('in'))
+    if(p >= OUTRO) once('outro', ()=> $('scene').classList.add('outro'))
 
     $('clock').textContent = now.toFixed(1) + ' / ' + LEN.toFixed(1)
     if(p < 1) raf = requestAnimationFrame(step)
@@ -257,6 +303,7 @@ function reset(){
   $('stake').classList.remove('in')
   document.querySelectorAll('.row').forEach(r => r.classList.remove('in'))
   $('scene').className = 'on s1'
+  frameShots()
   drawRecord(0, REC.w, REC.l, REC.d)
   void $('side').offsetWidth
   if(vo.src){ try{ vo.currentTime = 0; vo.play().catch(()=>{}) }catch(e){} }
@@ -299,6 +346,7 @@ function paint(f, over){
 
   const url = over.photo || (f && f.profile_photo_url) || ''
   if(url){
+    $('por').onload = frameShots     // the offsets depend on THIS photo's height
     $('por').src = url
     $('sil').style.webkitMaskImage = 'url("' + url + '")'
     $('sil').style.maskImage = 'url("' + url + '")'
