@@ -308,6 +308,11 @@ function run(){
     for(let k = MARKS.length - 1; k >= 0; k--){ if(now >= MARKS[k]){ i = k; break } }
     const onB = i >= 3
     setState((i % 3) + 1)
+    // The name, the eyebrow and the nickname come in on the first frame of the
+    // segment. Rewriting the driver for two fighters dropped this line, and the
+    // whole run played with an anonymous face: the record was there, the name
+    // was not.
+    once('in', ()=> $('side').classList.add('in'))
     if(onB) once('handoff', handoff)
 
     // Each fighter's numbers arrive inside THEIR OWN medium shot, which is
