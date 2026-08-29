@@ -377,12 +377,27 @@
      poster with no film is a poster, a film with no poster is a film, and
      neither one is a scene that drops out of the rotation rather than showing a
      violet rectangle with nothing in it. */
+  /* minmax(0,…), not 1fr: a grid column's default min-width is its content, so
+     a 1920-wide card render pushed its own column past the frame and left the
+     poster beside it squeezed to a stamp. The columns are equal halves and the
+     media fills whichever it is given. */
   .promo{display:grid;gap:44px;align-items:center;justify-items:center;width:100%;}
-  .promo.both{grid-template-columns:1fr 1fr;}
-  .promo.one{grid-template-columns:1fr;}
-  .promo-cell{display:none;flex-direction:column;align-items:center;gap:14px;max-width:100%;}
+  /* auto columns, centred as a pair: equal halves parked each picture in the
+     middle of its own half and left 375px of nothing between them, which reads
+     as two graphics that happen to share a screen rather than one pairing. */
+  .promo.both{grid-template-columns:auto auto;justify-content:center;}
+  .promo.one{grid-template-columns:auto;justify-content:center;}
+  .promo-cell{display:none;flex-direction:column;align-items:center;gap:14px;}
   .promo-cell.on{display:flex;}
-  .promo-cell img,.promo-cell video{display:block;max-height:660px;max-width:100%;
+  /* Ceilings, not a fixed size. A fixed WIDTH letterboxed each portrait inside
+     its box, so the border was drawn round empty space instead of round the
+     picture; a fixed HEIGHT did the same thing the moment the frame was
+     narrower than 1920. Two maximums let the box take the picture's own
+     proportions and shrink to whichever limit it meets first — 660px is what
+     clears a 1080 frame under the heading, and 44vw is what stops a landscape
+     poster running the pair off the side. */
+  .promo-cell img,.promo-cell video{display:block;height:auto;width:auto;
+    max-height:660px;max-width:44vw;
     border:1px solid var(--line);box-shadow:0 0 46px rgba(60,0,110,.5);background:transparent;}
   /* nowrap: at 10px with .2em tracking "EARNED · TRADED · FUSED" broke onto a
      second line inside its cell and sat under the neighbouring caption. */
