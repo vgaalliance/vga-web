@@ -367,7 +367,10 @@ body::after { display:none; }
 <div class="bottom-bar">
   <div style="display:flex;align-items:baseline;gap:8px">
     <span class="sponsor-pre">POWERED BY</span>
-    <span class="sponsor">SHEATH.COM</span>
+    <!-- Filled from sponsors.js, the same list the tale of the tape reads. It
+         was hardcoded to one partner, so a night on a different sponsor would
+         have had this screen and the tape naming two different companies. -->
+    <span class="sponsor" id="sponsorSite">SPONSOR</span>
   </div>
   <div class="b-links">
     <span>ubaesports.com</span><span>discord.gg/uba</span><span>ubaesports.com</span>
@@ -803,6 +806,12 @@ tick();
 <div id="cdTimer">00:00</div>
 
 <!-- ── VGA STUDIO WIRE — deck listener (added 2026-07-24, visuals untouched) ── -->
+<script src="sponsors.js"></script>
+<script>
+  // Set before the countdown's own logic runs: this screen is up longer than
+  // any other, so it is the last place a wrong sponsor should sit.
+  document.getElementById('sponsorSite').textContent = sponsorSite(activeSponsor())
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 (function(){
