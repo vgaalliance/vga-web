@@ -34,25 +34,43 @@
 <script>
 // x, y, w, h are the graphic's box inside the 1920x1080 frame.
 const SHOTS = [
-  { id:'dossier', lab:'Fighter dossier — the segmented bar', note:'1440x112 · 75% of frame',
-    box:[52,770,1420,128], sc:.56,
+  { id:'dossier', lab:'Dossier — numbered event, has a next fight', note:'mark reads UBA 15, not "Fight Night"',
+    box:[52,770,1420,128], sc:.56, event:'UBA 15',
     cmd:{type:'fighter',league:'uba',d:{name:'Namsrai Batbayar',record:'11-2-1',ko:7,rank:7,
       weight:'Heavyweight',country:'Mongolia',next:'vs Dragon 5000 · UBA 16'}} },
+
+  { id:'nonext', lab:'Dossier — NO next fight, no nickname', note:'falls to the team line',
+    box:[52,770,1420,128], sc:.56, event:'GFL 2',
+    cmd:{type:'fighter',league:'gfl',d:{name:'Contour',record:'6-1',ko:4,rank:3,
+      weight:'Middleweight',country:'Canada',team:'Sheath Elite'}} },
+
+  { id:'bare', lab:'Dossier — debut, nothing known at all', note:'no rank, no country, no team',
+    box:[52,770,1420,128], sc:.56, event:'UBA 15',
+    cmd:{type:'fighter',league:'uba',d:{name:'Slove',record:'0-0',weight:'Lightweight'}} },
+
+  { id:'champ', lab:'Dossier — champion', note:'belt outranks everything else',
+    box:[52,770,1420,128], sc:.56, event:'UBA 15',
+    cmd:{type:'fighter',league:'uba',d:{name:'Boady',record:'14-2',ko:9,rank:1,champion:true,
+      weight:'Heavyweight',country:'United States',next:'vs Contour · UBA 16'}} },
+
   { id:'keys', lab:'Keys to victory', note:'gold accent · 3 bullets in one card',
     box:[52,650,780,255], sc:1,
     card:{tone:'keys', eyebrow:'Keys to victory', head:'SMOKINEM', sub:'', keys:[
       'Keep it long — win the first two minutes at range',
       'Make him lead, then counter off the back foot',
       'Bank the early rounds; he fades after three']} },
-  { id:'fact', lab:'Fun fact', note:'same card, typed in the admin panel',
+
+  { id:'fact', lab:'Fun fact', note:'white accent · wraps to 3 lines',
     box:[52,712,780,190], sc:1,
     card:{tone:'fact', eyebrow:'Fun fact', head:'SMOKINEM', keys:null,
       sub:'Has fought on every card since the league opened and has never missed a weigh-in.'} },
+
   { id:'msg', lab:'Message — social post', note:'352 wide · inverted platform panel',
     box:[56,360,368,360], sc:1,
     cmd:{type:'flash',w:'msg',league:'uba',d:{text:'10-9 Lima. The headkick is there all night.',
       from:'PNW.MMA',handle:'pnw.mma',platform:'discord',tag:'#UBA15'}} },
 ];
+
 
 const out = document.getElementById('out');
 SHOTS.forEach(s => {
@@ -98,6 +116,9 @@ window.drive = async () => {
         w.slotShow(w.document.getElementById('keys'));
       } else {
         await ready(w, x => typeof x.handle === 'function' && x.document.getElementById('fighter'));
+        // the event name rides in on the countdown push, exactly as the deck
+        // sends it, so the mark is reading the real source not a shortcut
+        if(s.event) w.handle({type:'countdown', d:{eventMain:s.event}});
         w.handle(s.cmd);
       }
       log.push(s.id + ':ok');
