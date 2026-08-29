@@ -2,22 +2,31 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>VGA — Facts Package</title>
+<title>VGA — Keys to Victory</title>
 <!-- ============================================================
-     IN-MATCH FILLER. Sits bottom-left, above the fight clock, in the
-     same lower-left stack the dossier / message flash / odds bar use
+     KEYS TO VICTORY + FUN FACTS. The in-match filler, bottom-left,
+     in the same stack the dossier / message flash / odds bar use
      (overlay.html's --ll-lift). It NEVER covers the game feed.
 
-     It drives ITSELF. The deck has no facts button and this file does
-     not ask for one: it listens for the bout the deck already pushes
-     ({type:'bout'} in UBA/GFL mode, {type:'tape'} from the tale of the
-     tape, {type:'pickbar'} in UBAe mode), looks both fighters up, and
-     rotates whatever facts it can actually build about them.
+     WHAT IT SHOWS, IN ORDER:
+       1. KEYS TO VICTORY — up to 3 bullets per fighter, TYPED per
+          bout in the admin panel's card builder. Opponent-specific,
+          so they die with the bout.
+       2. FUN FACT — one per fighter, drawn from a reusable pool that
+          is also typed in the card builder.
+       3. Only if neither was written: six automatic facts.
 
-     A fact whose inputs are missing is DROPPED, never rendered with a
-     dash. Half the roster has no reach, no age and no country, and a
-     card reading "REACH EDGE — vs " is worse than no card: one looks
-     like the graphic is broken, the other looks like a quiet moment.
+     THE AUTOMATIC ONES ARE A FALLBACK, NOT THE POINT. This file used
+     to lead with record, KO rate, ladder position, reach and age —
+     every one of which overlay.html's fighter dossier ALREADY has on
+     screen. Two graphics saying the same thing is one graphic and
+     some noise. What survived is the six the dossier cannot show: the
+     belt, a win streak, a previous meeting, a common opponent, the
+     betting pool, and team form.
+
+     Anything it cannot fill is DROPPED, never rendered with a dash.
+     A card reading "REACH EDGE — vs " looks like the graphic broke;
+     a dark corner looks like a quiet moment.
      ============================================================= -->
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Barlow+Condensed:wght@500;700;900&family=Barlow:wght@500;600&display=swap');
@@ -36,7 +45,7 @@
     font-family:'Barlow',system-ui,Arial,sans-serif;color:#fff;}
 
   #fact{position:fixed;left:48px;bottom:calc(190px + var(--ll-lift));
-    display:flex;min-width:560px;max-width:760px;
+    display:flex;min-width:560px;max-width:900px;
     transform:translateX(-135%);opacity:0;
     background:linear-gradient(135deg,rgba(20,4,38,.97),rgba(6,0,14,.98));
     border-radius:10px;overflow:hidden;
@@ -89,6 +98,22 @@
   .cmp .side.win .nm{color:#fff;}
   .cmp .mid{font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.14em;
     color:var(--dim);text-align:center;}
+
+  /* ── the keys list ────────────────────────────────────────────────
+     Three bullets in ONE card, not three cards. They are a single
+     argument about how this fight is won; split across three cards
+     ninety seconds apart, nobody assembles them back into one. */
+  .keys{margin-top:14px;display:flex;flex-direction:column;gap:11px;}
+  .keys .k{display:flex;align-items:flex-start;gap:16px;}
+  .keys .n{font-family:'Press Start 2P',monospace;font-size:15px;color:var(--gold);
+    line-height:1.35;flex:0 0 auto;padding-top:2px;text-shadow:0 0 12px rgba(255,206,0,.4);}
+  .keys .t{font:600 27px 'Barlow',sans-serif;line-height:1.24;color:#fff;}
+  #fact[data-tone="keys"] .accent{background:linear-gradient(180deg,#ffe27a,#c9a11e);
+    box-shadow:0 0 26px rgba(255,206,0,.6);}
+  #fact[data-tone="keys"] .eyebrow{color:var(--gold);text-shadow:0 0 12px rgba(255,206,0,.5);}
+  /* On a keys card the head is the FIGHTER, so it is set smaller than a
+     headline claim — the bullets under it are the content. */
+  #fact[data-tone="keys"] .head{font-size:44px;}
 </style>
 </head>
 <body>
@@ -99,6 +124,7 @@
     <div class="eyebrow" id="fEyebrow">FIGHT FACT</div>
     <div class="head" id="fHead">—</div>
     <div class="sub" id="fSub"></div>
+    <div class="keys" id="fKeys" style="display:none;"></div>
     <div class="cmp" id="fCmp" style="display:none;">
       <div class="side" id="cmpL"><div class="nm"></div><div class="vl"></div></div>
       <div class="mid" id="cmpM">VS</div>
@@ -128,6 +154,10 @@ const Q = new URLSearchParams(location.search)
 
 // ── helpers ─────────────────────────────────────────────────────────
 const norm = s => String(s ?? '').trim().toLowerCase()
+// Keys and fun facts are TYPED BY AN OPERATOR, so they are the one thing on
+// this screen that is not league data. Escaped on the way in — a stray angle
+// bracket in a hand-written key must not be able to reshape the card.
+const esc = t => String(t ?? '').replace(/[<>&]/g, ch => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[ch]))
 const has  = v => v !== null && v !== undefined && String(v).trim() !== '' && String(v).trim() !== '—'
 const pct  = (n,d) => d > 0 ? Math.round(n * 100 / d) : null
 
@@ -185,7 +215,9 @@ const sortDesc = list => list.slice().sort((a,b) =>
 // order rather than shuffling — the strongest fact should land first,
 // while people are still looking.
 // ────────────────────────────────────────────────────────────────────
-const CARD = (tone, eyebrow, head, sub, cmp) => ({ tone, eyebrow, head, sub: sub || '', cmp: cmp || null })
+const CARD = (tone, eyebrow, head, sub, cmp) => ({ tone, eyebrow, head, sub: sub || '', cmp: cmp || null, keys: null })
+const KEYS = (name, keys) => ({ tone:'keys', eyebrow:'KEYS TO VICTORY', head: String(name).toUpperCase(),
+  sub:'', cmp:null, keys })
 
 const BUILDERS = [
 
@@ -200,22 +232,15 @@ const BUILDERS = [
       `${division(ch.weight_class)} titleholder`)
   },
 
-  // 2 · KO RATE — the stat a fight crowd actually wants. Needs a real
-  //     sample: 1-0 with a KO is not a 100% finish rate, it is one fight.
-  function koRate(a, b){
-    const pick = [a, b]
-      .map(f => ({ f, w: +f.headline_wins || 0, ko: +f.headline_ko_wins || 0 }))
-      .filter(x => x.w >= 3 && x.ko > 0)
-      .sort((x, y) => (y.ko / y.w) - (x.ko / x.w))[0]
-    if(!pick) return null
-    const rate = pct(pick.ko, pick.w)
-    if(rate === null || rate < 40) return null
-    return CARD('amber','FINISHING RATE', `${rate}% BY KO`,
-      `<em>${pick.f.display_name}</em> — ${pick.ko} of ${pick.w} wins inside the distance`)
-  },
+  // NOTE — five builders were deleted here on 2026-08-29: KO rate, ladder
+  // position, ranked-one, reach/height edge and age gap, plus the records
+  // floor further down. Every one of them restated something overlay.html's
+  // fighter dossier already has on screen at the same moment, in the same
+  // corner. What is left is what the dossier cannot say.
 
-  // 3 · STREAK — current run, and when it started. A streak of 1 is not a
-  //     streak; 2 is barely one. Three or more earns the card.
+  // 2 · STREAK — a current run, and when it started. A streak of one is not a
+  //     streak and two is barely one; three earns the card. Not in the
+  //     dossier, which shows only the flat record.
   function streak(a, b, ctx){
     const best = [a, b].map(f => {
       const bouts = sortDesc((ctx.bouts[f.id] || []).filter(m => m.won !== null))
@@ -223,7 +248,7 @@ const BUILDERS = [
       const won = bouts[0].won
       let n = 0
       for(const m of bouts){ if(m.won !== won) break; n++ }
-      return { f, won, n, since: monthYear(dateOf(bouts[n - 1])), broke: bouts[n] }
+      return { f, won, n, broke: bouts[n] }
     }).filter(x => x && x.n >= 3).sort((x, y) => y.n - x.n)[0]
     if(!best) return null
     const word = best.won ? 'STRAIGHT WINS' : 'STRAIGHT LOSSES'
@@ -234,7 +259,7 @@ const BUILDERS = [
       `<em>${best.f.display_name}</em> — ${tail}`)
   },
 
-  // 4 · HEAD TO HEAD — they have met before. Rare, and the single most
+  // 3 · HEAD TO HEAD — they have met before. Rare, and the single most
   //     interesting thing on the list when it is true.
   function headToHead(a, b, ctx){
     const prev = (ctx.bouts[a.id] || []).filter(m =>
@@ -253,7 +278,7 @@ const BUILDERS = [
         : `${prev.length} previous bouts${when ? `, latest <em>${when}</em>` : ''}`)
   },
 
-  // 5 · COMMON OPPONENT — the next best thing to a head-to-head, and the
+  // 4 · COMMON OPPONENT — the next best thing to a head-to-head, and the
   //     line every commentator reaches for.
   function commonOpponent(a, b, ctx){
     const key = m => norm(m.opponent_slug) || norm(m.opponent_name)
@@ -272,57 +297,7 @@ const BUILDERS = [
     return null
   },
 
-  // 6 · RANKING — where they sit, when both are ranked. One ranked fighter
-  //     against an unranked one is a fact about only one of them, so it
-  //     falls through to the single-rank card below it.
-  function ranking(a, b){
-    const ra = +a.rank, rb = +b.rank
-    if(!(ra > 0) || !(rb > 0)) return null
-    return CARD('pur','THE LADDER', `#${ra} MEETS #${rb}`,
-      `${division(a.weight_class)} rankings`,
-      { l: { nm: a.display_name, vl: `#${ra}`, win: ra < rb },
-        m: 'RANK',
-        r: { nm: b.display_name, vl: `#${rb}`, win: rb < ra } })
-  },
-  function rankedOne(a, b){
-    const r = (+a.rank > 0) ? a : ((+b.rank > 0) ? b : null)
-    if(!r) return null
-    return CARD('pur','THE LADDER', `RANKED #${+r.rank}`,
-      `<em>${r.display_name}</em> — ${division(r.weight_class)}`)
-  },
-
-  // 7 · REACH / HEIGHT EDGE — only when both sides parse to a number in
-  //     the same unit, and only when the gap is worth a graphic. A 1"
-  //     reach edge is noise.
-  function reachEdge(a, b){
-    for(const [field, label, floor] of [['reach','REACH',2],['height','HEIGHT',2]]){
-      const x = inches(a[field]), y = inches(b[field])
-      if(x === null || y === null || Math.abs(x - y) < floor) continue
-      const gap = Math.abs(x - y)
-      const ahead = x > y ? a : b
-      return CARD('pur', `${label} ADVANTAGE`,
-        `${gap >= 12 ? showIn(gap) : Math.round(gap) + '"'} LONGER`,
-        `<em>${ahead.display_name}</em> owns the ${label.toLowerCase()}`,
-        { l: { nm: a.display_name, vl: showIn(x), win: x > y },
-          m: label,
-          r: { nm: b.display_name, vl: showIn(y), win: y > x } })
-    }
-    return null
-  },
-
-  // 8 · AGE GAP — same rule: a card only when the gap is real.
-  function ageGap(a, b){
-    const x = +a.age, y = +b.age
-    if(!(x > 0) || !(y > 0) || Math.abs(x - y) < 5) return null
-    const younger = x < y ? a : b
-    return CARD('pur','AGE GAP', `${Math.abs(x - y)} YEARS`,
-      `<em>${younger.display_name}</em> is the younger fighter`,
-      { l: { nm: a.display_name, vl: String(x), win: x < y },
-        m: 'AGE',
-        r: { nm: b.display_name, vl: String(y), win: y < x } })
-  },
-
-  // 9 · BETTING — pari-mutuel, so the split IS the price. Needs a pool
+  // 5 · BETTING — pari-mutuel, so the split IS the price. Needs a pool
   //     with something in it; an empty market says nothing.
   function betting(a, b, ctx){
     const p = ctx.pool
@@ -338,7 +313,7 @@ const BUILDERS = [
       `<em>${(+p.pool).toLocaleString()} VC</em> in the pool across ${p.bets} bets`)
   },
 
-  // 10 · TEAM FORM — UBAe only, and only when the fighter is actually on a
+  // 6 · TEAM FORM — UBAe only, and only when the fighter is actually on a
   //      team with a record to quote.
   function teamForm(a, b, ctx){
     if(!ctx.standings.length) return null
@@ -354,17 +329,6 @@ const BUILDERS = [
     return null
   },
 
-  // 11 · THE RECORD — the floor. Always available, so it is LAST: it is
-  //      what the corner shows when nothing sharper is true, and on a
-  //      thin card that is most of the night.
-  function records(a, b){
-    const R = f => `${+f.headline_wins || 0}—${+f.headline_losses || 0}` +
-      ((+f.headline_draws || 0) ? `—${+f.headline_draws}` : '')
-    return CARD('pur','THE RECORDS', division(a.weight_class || b.weight_class),
-      '', { l: { nm: a.display_name, vl: R(a), win: false },
-            m: 'RECORD',
-            r: { nm: b.display_name, vl: R(b), win: false } })
-  },
 ]
 
 // ── data ────────────────────────────────────────────────────────────
@@ -388,18 +352,21 @@ async function lookup(nameA, nameB){
   const { data: cards, error } = await sb.from('fighter_cards')
     .select('id,slug,display_name,weight_class,rank,height,reach,age,country,team,'+
             'is_champion,nickname,headline_wins,headline_losses,headline_draws,headline_ko_wins')
-  if(error || !cards){ console.warn('[facts] fighter lookup failed —', error); current = ''; return }
+  if(error || !cards){ console.warn('[keys] fighter lookup failed —', error); current = ''; return }
 
   const find = n => cards.find(c => norm(c.display_name) === norm(n)) ||
                     cards.find(c => norm(c.slug) === norm(n))
   const a = find(nameA), b = find(nameB)
-  if(!a || !b){ console.warn('[facts] no match for', nameA, '/', nameB); current = ''; return }
+  if(!a || !b){ console.warn('[keys] no match for', nameA, '/', nameB); current = ''; return }
 
-  const [{ data: ma }, { data: mb }, { data: pools }, { data: st }] = await Promise.all([
+  const [{ data: ma }, { data: mb }, { data: pools }, { data: st }, notesR] = await Promise.all([
     sb.from('fighter_matches').select('*').eq('fighter_id', a.id).eq('status','completed'),
     sb.from('fighter_matches').select('*').eq('fighter_id', b.id).eq('status','completed'),
     sb.from('bet_pools_public').select('*'),
     sb.from('team_standings').select('*'),
+    // The typed content. Gated on card_published in the view, so a locked
+    // card returns nothing here rather than leaking its matchups.
+    sb.from('bout_notes_public').select('*'),
   ])
   if(mine !== gen) return                    // a newer bout landed while this was in flight
 
@@ -412,18 +379,44 @@ async function lookup(nameA, nameB){
     titleName: TITLE.name, champName: TITLE.champ,
   }
 
+  // ── TYPED FIRST ──────────────────────────────────────────────────
+  // Keys to victory, then fun facts, then whatever the automatic
+  // builders can add. Someone sat down and wrote these about THIS bout;
+  // nothing derived should get in front of them.
+  //
+  // Matched on the fighter/opponent NAME PAIR, because the deck sends
+  // names and not a match_id. Checking BOTH ends matters: a fighter on
+  // two cards in one night would otherwise pick up the wrong bout's
+  // keys, which name the wrong opponent.
   const built = []
+  if(notesR.error) console.warn('[keys] bout notes failed —', notesR.error)
+  const notes = (notesR.data || []).filter(n =>
+    (norm(n.fighter_name) === norm(a.display_name) && norm(n.opponent_name) === norm(b.display_name)) ||
+    (norm(n.fighter_name) === norm(b.display_name) && norm(n.opponent_name) === norm(a.display_name)))
+  // A's keys, then B's — never one side's alone if both wrote some.
+  for(const side of [a, b]){
+    const n = notes.find(x => norm(x.fighter_name) === norm(side.display_name))
+    const ks = (n && Array.isArray(n.keys) ? n.keys : []).filter(k => String(k || '').trim())
+    if(ks.length) built.push(KEYS(side.display_name, ks))
+  }
+  for(const side of [a, b]){
+    const n = notes.find(x => norm(x.fighter_name) === norm(side.display_name))
+    if(n && String(n.fun_fact || '').trim())
+      built.push(CARD('pink','FUN FACT', side.display_name.toUpperCase(), esc(n.fun_fact)))
+  }
+
   for(const fn of BUILDERS){
     let c = null
     // One bad builder must not take the package down mid-match. The corner
     // going quiet for a round is a missing graphic; a throw here is every
     // graphic after it missing too.
-    try { c = fn(a, b, ctx) } catch(e){ console.warn('[facts] builder threw —', fn.name, e) }
+    try { c = fn(a, b, ctx) } catch(e){ console.warn('[keys] builder threw —', fn.name, e) }
     if(c && has(c.head)) built.push(c)
   }
   FACTS = built; idx = 0
-  console.log(`[facts] ${built.length} facts for ${a.display_name} vs ${b.display_name}:`,
-    built.map(c => c.eyebrow).join(' · '))
+  const typed = built.filter(c => c.tone === 'keys' || c.eyebrow === 'FUN FACT').length
+  console.log(`[keys] ${built.length} cards for ${a.display_name} vs ${b.display_name} `
+    + `(${typed} typed, ${built.length - typed} automatic):`, built.map(c => c.eyebrow).join(' · '))
   if(AUTO) start()
 }
 
@@ -439,6 +432,12 @@ function paint(c){
   $('fHead').innerHTML = c.head
   $('fSub').innerHTML = c.sub || ''
   $('fSub').style.display = c.sub ? '' : 'none'
+  const kbox = $('fKeys')
+  if(c.keys && c.keys.length){
+    kbox.style.display = ''
+    kbox.innerHTML = c.keys.slice(0, 3).map((k, i) =>
+      `<div class="k"><span class="n">${i + 1}</span><span class="t">${esc(k)}</span></div>`).join('')
+  } else { kbox.style.display = 'none'; kbox.innerHTML = '' }
   const box = $('fCmp')
   if(!c.cmp){ box.style.display = 'none'; return }
   box.style.display = ''
@@ -514,17 +513,17 @@ _ch.on('broadcast', { event:'cmd' }, ({ payload: c }) => {
 // the real 1920x1080 frame without waiting out a 31-second rotation.
 if(Q.get('demo') === '1' || Q.has('card')){
   FACTS = [
-    CARD('gold','ON THE LINE','UBA HEAVYWEIGHT TITLE','<em>DANNYG</em> defends'),
-    CARD('amber','FINISHING RATE','64% BY KO','<em>DANNYG</em> — 9 of 14 wins inside the distance'),
-    CARD('green','ON A RUN','4 STRAIGHT WINS','<em>DRAGON 5000</em> — last loss MAR 2026'),
-    CARD('pink','THEY HAVE MET','2—1 DANNYG','3 previous bouts, latest <em>JAN 2026</em>'),
-    CARD('pur','THE LADDER','#2 MEETS #7','HEAVYWEIGHT rankings',
-      { l:{nm:'DANNYG',vl:'#2',win:true}, m:'RANK', r:{nm:'DRAGON 5000',vl:'#7',win:false} }),
-    CARD('pur','REACH ADVANTAGE','4" LONGER','<em>DRAGON 5000</em> owns the reach',
-      { l:{nm:'DANNYG',vl:'74"',win:false}, m:'REACH', r:{nm:'DRAGON 5000',vl:'78"',win:true} }),
-    CARD('amber','THE MONEY','71% ON DANNYG','<em>18,400 VC</em> in the pool across 63 bets'),
-    CARD('pur','THE RECORDS','HEAVYWEIGHT','',
-      { l:{nm:'DANNYG',vl:'14—3',win:false}, m:'RECORD', r:{nm:'DRAGON 5000',vl:'11—5—1',win:false} }),
+    KEYS('smokinem', ['Keep it long — win the first two minutes at range',
+                      'Make him lead, then counter off the back foot',
+                      'Bank the early rounds; he fades after three']),
+    KEYS('Hello World', ['Close the distance early and make it ugly',
+                         'Body work in the clinch — take the legs away']),
+    CARD('pink','FUN FACT','SMOKINEM','Has fought on every card since the league opened and has never missed a weigh-in.'),
+    CARD('gold','ON THE LINE','UBA HEAVYWEIGHT TITLE','<em>Hello World</em> defends'),
+    CARD('green','ON A RUN','4 STRAIGHT WINS','<em>smokinem</em> — last loss MAR 2026'),
+    CARD('pink','THEY HAVE MET','2—1 SMOKINEM','3 previous bouts, latest <em>JAN 2026</em>'),
+    CARD('pink','COMMON OPPONENT','DRAGON 5000','<em>smokinem</em> beat them · <em>Hello World</em> did not'),
+    CARD('amber','THE MONEY','71% ON SMOKINEM','<em>18,400 VC</em> in the pool across 63 bets'),
   ]
   const pin = Q.get('card')
   if(pin !== null && pin !== ''){
