@@ -336,9 +336,13 @@
      a sentence, crushed to nothing, while five segments carrying single words
      kept their padding. It is fixed-width now and the drop pass sheds a stat
      instead; losing a stat is a smaller loss than losing the headline. */
-  #fighter .hi{background:var(--kit-panel);padding:0 26px;align-items:flex-start;
-    justify-content:center;width:400px;flex:0 0 400px;}
-  #fighter .hi .t{font:600 22px 'Barlow';color:#14121a;line-height:1.22;
+  /* 330, not 400. In the UFC reference the white panel is about 19% of the
+     bar and the STAT block is the widest element at ~26%; at 400 this was 30%
+     of the bar and the stats were single words squeezed either side of it. The
+     30px it gives back is one more stat segment. */
+  #fighter .hi{background:var(--kit-panel);padding:0 22px;align-items:flex-start;
+    justify-content:center;width:330px;flex:0 0 330px;}
+  #fighter .hi .t{font:600 21px 'Barlow';color:#14121a;line-height:1.2;
     letter-spacing:.005em;white-space:normal;overflow:hidden;
     display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;}
   #fighter .hi .t b{font-weight:800;}
@@ -1319,7 +1323,16 @@ function drawPost(md){
 // nothing is dashed: 237 of 435 fighters have a country, 235 a nickname, 55 a
 // team, so a fixed layout would be mostly holes. An absent segment is not
 // drawn and the bar comes out shorter.
-const DOSS_SOCIAL = { handle:'@VGAGLOBAL', label:'FOLLOW THE LEAGUE' }
+// The promo tail. Fighter socials do not exist in the database (no column),
+// so this is the league's — the same job the UFC reference gives the slot.
+// It is the JOIN address, not a handle: the handle told a viewer who we are,
+// which they can already see in the mark two feet to the left; the invite
+// tells them where to go.
+const DOSS_SOCIAL = { handle:'DISCORD.GG/UBA', label:'FOLLOW THE LEAGUE' }
+// b is only the FALLBACK sub-line. The real one is tonight's event name, which
+// the deck already pushes to the event header — "UBA / FIGHT NIGHT" was
+// hardcoded here, so a numbered card that is not a Fight Night (UBA 15, a
+// GFL card, a title show) wore words that were simply not true.
 const DOSS_LEAGUE = { uba:{a:'UBA', b:'Fight Night'}, gfl:{a:'GFL', b:'Glory League'},
                       ubae:{a:'UBAe', b:'Team League'} }
 
@@ -1336,7 +1349,12 @@ function drawDossier(d){
   // full width across the bottom of the screen.
   const lg = DOSS_LEAGUE[String(d.league || document.documentElement.dataset.league || 'uba').toLowerCase()]
            || DOSS_LEAGUE.uba
-  const out = [`<div class="seg mark"><div class="a">${esc(lg.a)}</div><div class="b">${esc(lg.b)}</div></div>`]
+  // Tonight's card name if the deck has pushed one, the league's generic
+  // label if it has not. #ehMain is fed by the same countdown push, so this
+  // needs no new command and cannot drift from the event header above it.
+  const evName = ($('ehMain') && $('ehMain').textContent || '').trim()
+  const sub = (d.event || evName || lg.b)
+  const out = [`<div class="seg mark"><div class="a">${esc(lg.a)}</div><div class="b">${esc(sub)}</div></div>`]
 
   // flag: an image, and only when the country actually maps to one — an
   // unmapped country drops the segment rather than drawing a broken tile
@@ -1367,12 +1385,20 @@ function drawDossier(d){
   // filled: a belt beats a fun fact beats the next booking beats a nickname.
   // If none of them exist the panel is not drawn, because an inverted panel
   // reading "—" would draw the eye to nothing.
+  // Six sources, in order of how interesting they are, because a fighter with
+  // no next booking and no nickname is common and used to leave the panel out
+  // entirely — which made the bar visibly shorter for exactly the fighters who
+  // already had the least on screen.
   const fact = d.fact || DOSS_FACTS.get(norm2(d.name)) || null
+  const bouts = (+d.wins || 0) + (+d.losses || 0) + (+d.draws || 0)
   let hi = null
   if(d.champion)      hi = `<b>${esc(String(d.weight||'').toUpperCase())} CHAMPION</b>`
   else if(fact)       hi = esc(fact)
   else if(d.next)     hi = `Next: <b>${esc(d.next)}</b>`
   else if(d.nickname) hi = `Known as <b>"${esc(d.nickname)}"</b>`
+  else if(d.team)     hi = `Fights out of <b>${esc(d.team)}</b>`
+  // A first-timer is the one case where having nothing IS the story.
+  else if(d.record && /^0\s*-\s*0/.test(String(d.record))) hi = `<b>MAKING THEIR DEBUT</b>`
   if(hi) out.push(`<div class="seg hi"><div class="t">${hi}</div></div>`)
 
   out.push(`<div class="seg tail"><div class="v">${esc(DOSS_SOCIAL.handle)}</div>`
@@ -1394,8 +1420,16 @@ function drawDossier(d){
   // width and shed four stats to fit a box that was never the constraint.
   // Symptom was a bar that got shorter every time it was shown.
   el.style.width = ''
+  // MEASURE THE CHILDREN, NOT scrollWidth.
+  // #fighter carries max-width:1440 AND overflow:hidden, so scrollWidth comes
+  // back CLAMPED to the clip width — the loop was told the bar fit at exactly
+  // the moment it had started cutting the promo tail in half. Symptom on air
+  // would have been "DISCORD.G" with no error anywhere.
+  const GAP = 3
+  const measure = () => [...el.children].reduce((t, c, i) =>
+    t + c.getBoundingClientRect().width + (i ? GAP : 0), 0)
   for(let guard = 0; guard < 6; guard++){
-    if(el.scrollWidth <= CAP) break
+    if(measure() <= CAP) break
     // IN PRIORITY ORDER, ONE CLASS AT A TIME.
     // A single querySelector with all five classes returns the first match in
     // DOCUMENT order, not the lowest priority — which dropped rank, record and
@@ -1410,7 +1444,7 @@ function drawDossier(d){
   }
   // Whatever survived is what the bar is: let it size to that, so the box is
   // always exactly as wide as what is in it.
-  el.style.width = Math.min(el.scrollWidth, CAP) + 'px'
+  el.style.width = Math.ceil(Math.min(measure(), CAP)) + 'px'
   // stagger the wipe left to right, ~70ms apart — the reference reveals its
   // segments in sequence, and simultaneous is the thing that makes a bar read
   // as a single pasted image
