@@ -1089,8 +1089,27 @@ async function mountPoster(){
   // ONE HEIGHT FOR ALL OF THEM. Left to a max-height each poster took its own
   // size from its own proportions, and the tall thin one behind stood a third
   // taller than the one in front -- which reads as a mistake, not a stack.
-  const H = 520
-  const wide = src => Math.round(H * (ok.get(src).w / ok.get(src).h))
+  //
+  // THE SPREAD IS A FRACTION OF THE POSTER, not a fixed 74px. A fixed offset is
+  // a different amount of poster depending on how wide the poster is, and
+  // against these it showed a sliver: you could tell something was back there
+  // and not what it was. 44% leaves nearly half of each one visible.
+  //
+  // The fan then has to FIT: at full size three posters plus the prize and the
+  // card come to more than the 1640 this view has, so the height comes down
+  // until the row fits rather than the stack running off the frame. The other
+  // two cells are budgeted at their own ceilings even when their files are
+  // missing, so the fan does not resize the moment a prize is dropped in.
+  const ROW = 1640, GAP = 64, PRIZE_MAX = 380, FILM_MAX = 401
+  const ratio = src => ok.get(src).w / ok.get(src).h
+  const widestRatio = Math.max(...posterList.map(ratio))
+  const depthOf = n => n === 0 ? 0 : Math.floor((n - 1) / 2) + 1
+  const maxDepth = depthOf(posterList.length - 1)
+  const fanBudget = ROW - (promoHas.prize ? PRIZE_MAX + GAP : 0) - FILM_MAX - GAP
+  // width = one poster + the lean either side, all of it proportional to H
+  const perH = widestRatio * (1 + maxDepth * 2 * 0.44) + widestRatio * 0.12
+  const H = Math.round(Math.min(520, fanBudget / perH))
+  const STEP = Math.round(H * widestRatio * 0.44)
 
   // THE FAN. First in the index is the front poster; the rest alternate behind
   // it, right then left, leaning further out and sitting lower the deeper they
@@ -1098,12 +1117,10 @@ async function mountPoster(){
   // them, so a fourth poster widens the stack by a known amount instead of
   // silently shoving the card off the frame.
   fan.innerHTML = ''
-  const STEP = 74, DROP = 10, TILT = 6
-  let maxDepth = 0
+  const DROP = Math.round(H * 0.02), TILT = 6
   posterList.forEach((src, n) => {
-    const depth = n === 0 ? 0 : Math.floor((n - 1) / 2) + 1
+    const depth = depthOf(n)
     const side  = n === 0 ? 0 : ((n - 1) % 2 ? -1 : 1)
-    if(depth > maxDepth) maxDepth = depth
     const img = document.createElement('img')
     img.src = src
     img.style.height = H + 'px'
@@ -1113,10 +1130,7 @@ async function mountPoster(){
       + ' rotate(' + (side * depth * TILT) + 'deg)'
     fan.appendChild(img)
   })
-  // A tilted poster reaches past its own corner, so the box is the widest one
-  // plus the lean, not just the front one -- without this the flex row centres
-  // on the front poster alone and the stack lies across the heading.
-  const widest = Math.max(...posterList.map(wide))
+  const widest = Math.round(H * widestRatio)
   fan.style.width  = Math.round(widest + maxDepth * STEP * 2 + widest * 0.12) + 'px'
   fan.style.height = Math.round(H + maxDepth * DROP * 2 + H * 0.10) + 'px'
 
