@@ -2,61 +2,243 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>VGA — Vertical (all layers)</title>
+<title>VGA — Vertical</title>
 <!-- ============================================================
-     THE VERTICAL CANVAS — ONE SOURCE, FOUR LAYERS.
+     THE VERTICAL CANVAS — ONE COMPOSED FRAME.
 
      Add THIS as the only 1080x1920 browser source in the vertical
-     canvas (Aitum Vertical). It carries the fight clock, the lower
-     third, the tale of the tape and standby, and it answers exactly
-     the deck commands the horizontal originals do — so one press
-     still lights both canvases and no deck work is needed.
+     canvas (Aitum Vertical), with the game capture BEHIND it.
 
-     WHY THIS EXISTS. As four separate browser sources they could not
-     see each other, and two of them are FULL FRAME with an opaque
-     background: standby paints #04000c over the whole canvas, so
-     stacked above the clock it simply blacked it out. Four sources
-     cannot coordinate; one can. The same class of bug as the keys
-     card sitting on the dossier, which is the third time it has come
-     up, so it is fixed structurally here rather than by remembering.
+     FOUR FIXED REGIONS, top to bottom:
+       CTA sliver      y    0- 88   always up, never moves
+       video slot      y   88- 696  1080x608, transparent — the game
+                                    shows THROUGH it
+       clock sliver    y  696- 812  one symmetrical row
+       bottom info     y  812-1920  58% of the frame
 
-     WHY LAYERS AND NOT ONE MERGED FILE. The four share four element
-     ids (#crt, #vig, #nameL, #nameR) and most of their class names
-     (.row, .title, .eyebrow, .sub). Textually merging them means
-     renaming all of it by hand in CSS, markup and JS at once — a
-     large edit with no way to prove it beyond reading it. Held as
-     layers, each file stays exactly the thing that was already
-     verified, and the only new code is the ~120 lines below that
-     decide which is on top. If a layer ever needs editing, it is
-     still its own file and still opens on its own.
+     TWO STATES.
+       LOADING  between matches: the video slot is covered and the
+                whole frame below the CTA is the loading screen.
+       MATCH    the shutters OPEN — arcade-machine style, splitting
+                apart from the centre — revealing the game, the clock
+                and whatever the bottom is carrying.
 
-     THE COST, stated: four Supabase realtime connections rather than
-     one. The studio already runs five or more sources that each hold
-     their own, so this changes nothing about how the channel behaves.
+     THE VIDEO SLOT IS TRANSPARENT ON PURPOSE. This page never draws
+     the game; OBS composites the capture behind it. The slot only
+     carries its frame and, in LOADING, its shutters.
+
+     THE CLOCK IS ONE ROW, NOT A STACK. A fight clock is read left to
+     right across a centre — name, corner, time, corner, name — and
+     stacking it made a 400px tower out of something that is 116px of
+     information. Symmetrical about the centre line so neither fighter
+     reads as the home side.
      ============================================================= -->
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Barlow+Condensed:wght@500;700;900&family=Barlow:wght@500;600&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
-  html,body{width:1080px;height:1920px;background:transparent;overflow:hidden;}
-  .layer{position:absolute;inset:0;width:1080px;height:1920px;border:0;
-    opacity:0;pointer-events:none;transition:opacity .34s ease;}
-  .layer.up{opacity:1;}
-  /* Stacking order is deliberate and fixed. The two BARS sit underneath
-     because they are furniture; the two FULL-FRAME screens come over the top
-     because when either is up it is the whole picture. */
-  #l-clock{z-index:10;}
-  #l-third{z-index:11;}
-  #l-tape {z-index:20;}
-  #l-stand{z-index:21;}
+  :root{
+    --pur:#9b30ff; --hi:#cc66ff; --pink:#ff33cc; --gold:#ffce00; --green:#5cf2a0;
+    --panel:rgba(14,0,30,.92); --line:rgba(155,48,255,.3); --dim:rgba(200,160,255,.6);
+    --accent:var(--pur); --glow:rgba(155,48,255,.55);
+    /* THE ONE PLACE THE COMPOSITION LIVES. Change these and every region
+       follows; nothing below hardcodes a y position. */
+    --cta:88px; --feed:608px; --clock:116px;
+  }
+  body.gfl{ --accent:#e8312a; --glow:rgba(232,49,42,.55); --hi:#ff6a5e; --pink:#ff3b2f; }
+  html,body{width:1080px;height:1920px;background:transparent;overflow:hidden;
+    font-family:'Barlow Condensed',sans-serif;color:#fff;}
+
+  /* ── CTA SLIVER ───────────────────────────────────────────────────── */
+  #cta{position:absolute;top:0;left:0;right:0;height:var(--cta);z-index:40;
+    display:flex;align-items:center;justify-content:center;gap:22px;
+    background:linear-gradient(180deg,rgba(12,0,26,.97),rgba(8,0,18,.92));
+    border-bottom:2px solid var(--accent);box-shadow:0 4px 26px rgba(0,0,0,.5);}
+  #cta .k{font-family:'Press Start 2P',monospace;font-size:13px;letter-spacing:.24em;
+    color:var(--hi);text-shadow:0 0 12px var(--glow);}
+  #cta .v{font-weight:900;font-size:40px;letter-spacing:.05em;text-transform:uppercase;
+    text-shadow:0 0 22px var(--glow);}
+  #cta .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 14px var(--accent);animation:pulse 2.4s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+  /* ── VIDEO SLOT ───────────────────────────────────────────────────── */
+  /* Transparent. Only the frame and the shutters are drawn here. */
+  #slot{position:absolute;top:var(--cta);left:0;right:0;height:var(--feed);z-index:20;}
+  #slot .edge{position:absolute;inset:0;pointer-events:none;
+    box-shadow:inset 0 0 0 2px rgba(155,48,255,.35), inset 0 0 40px rgba(155,48,255,.14);}
+  /* the arcade shutters — two halves that part from the centre line */
+  .shut{position:absolute;left:0;right:0;height:50%;overflow:hidden;
+    background:linear-gradient(180deg,#0b0018,#16062e);
+    transition:transform .78s cubic-bezier(.7,0,.2,1);}
+  #shutT{top:0;   border-bottom:2px solid var(--accent);}
+  #shutB{bottom:0;border-top:2px solid var(--accent);}
+  body.open #shutT{transform:translateY(-100%);}
+  body.open #shutB{transform:translateY(100%);}
+  /* what is printed across the closed shutters */
+  #shutTxt{position:absolute;top:0;left:0;right:0;height:100%;z-index:2;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:14px;pointer-events:none;transition:opacity .3s ease;}
+  body.open #shutTxt{opacity:0;}
+  #shutTxt .k{font-family:'Press Start 2P',monospace;font-size:14px;letter-spacing:.3em;color:var(--hi);}
+  #shutTxt .v{font-weight:900;font-size:66px;line-height:.92;text-transform:uppercase;text-align:center;
+    text-shadow:0 0 30px var(--glow);padding:0 60px;}
+  #shutTxt .s{font:600 24px 'Barlow';color:var(--dim);letter-spacing:.14em;text-transform:uppercase;}
+  /* the scan bar that travels the shutters while waiting */
+  #scan{position:absolute;left:0;right:0;height:3px;z-index:3;
+    background:linear-gradient(90deg,transparent,var(--hi),transparent);
+    animation:scan 3.4s linear infinite;opacity:.7;}
+  @keyframes scan{0%{top:0}100%{top:100%}}
+  body.open #scan{display:none;}
+
+  /* ── CLOCK SLIVER — one row, symmetrical ──────────────────────────── */
+  #clock{position:absolute;top:calc(var(--cta) + var(--feed));left:0;right:0;
+    height:var(--clock);z-index:30;display:grid;
+    /* name | corner | CENTRE | corner | name — the centre column is fixed so
+       the timer sits on the frame's true midline whatever the names do */
+    grid-template-columns:1fr 14px 290px 14px 1fr;align-items:stretch;
+    background:linear-gradient(180deg,rgba(13,0,28,.96),rgba(8,0,18,.97));
+    border-top:1px solid var(--line);border-bottom:2px solid var(--accent);
+    opacity:0;transform:translateY(-14px);
+    transition:opacity .45s cubic-bezier(.16,1,.3,1), transform .45s cubic-bezier(.16,1,.3,1);}
+  body.open.clockon #clock{opacity:1;transform:none;}
+  #clock .nm{display:flex;align-items:center;font-weight:900;font-size:52px;
+    text-transform:uppercase;letter-spacing:.01em;white-space:nowrap;overflow:hidden;
+    text-shadow:0 0 22px var(--glow);padding:0 26px;}
+  #clock .nm.l{justify-content:flex-end;} #clock .nm.r{justify-content:flex-start;}
+  #clock .cor{align-self:stretch;}                       /* the corner colour */
+  #clock .mid{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:linear-gradient(180deg,rgba(155,48,255,.2),rgba(255,51,204,.12));
+    border-left:1px solid var(--line);border-right:1px solid var(--line);}
+  body.gfl #clock .mid{background:linear-gradient(180deg,rgba(232,49,42,.22),rgba(255,120,40,.12));}
+  #tm{font-weight:900;font-size:54px;line-height:1;letter-spacing:.02em;color:var(--gold);
+    font-variant-numeric:tabular-nums;text-shadow:0 0 22px rgba(255,206,0,.5);}
+  #tm.low{color:#ff4d4d;text-shadow:0 0 22px rgba(255,77,77,.6);animation:pulse 1s ease-in-out infinite;}
+  #rd{font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.16em;
+    color:#fff;margin-top:8px;text-shadow:0 0 12px var(--glow);}
+  /* the bout label rides UNDER the sliver so the row itself stays one line */
+  #boutTag{position:absolute;top:calc(var(--cta) + var(--feed) + var(--clock));left:0;right:0;
+    z-index:29;display:flex;justify-content:center;pointer-events:none;
+    opacity:0;transition:opacity .4s ease .2s;}
+  body.open.clockon #boutTag{opacity:1;}
+  #boutTag span{background:var(--accent);color:#fff;font-family:'Press Start 2P',monospace;
+    font-size:11px;letter-spacing:.2em;padding:7px 20px;box-shadow:0 6px 20px rgba(0,0,0,.5);}
+
+  /* ── BOTTOM INFO ──────────────────────────────────────────────────── */
+  #bot{position:absolute;top:calc(var(--cta) + var(--feed) + var(--clock));bottom:0;left:0;right:0;
+    z-index:25;padding:56px 46px 40px;overflow:hidden;}
+  /* When the clock is down the bottom starts right under the slot instead —
+     one rule, so a scene with no clock does not leave a 116px hole. */
+  body:not(.clockon) #bot{top:calc(var(--cta) + var(--feed));}
+  .pane{position:absolute;inset:0;padding:inherit;display:none;flex-direction:column;}
+  .pane.on{display:flex;animation:panein .5s cubic-bezier(.16,1,.3,1);}
+  @keyframes panein{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
+
+  .ph{font-family:'Press Start 2P',monospace;font-size:13px;letter-spacing:.26em;
+    color:var(--hi);text-align:center;text-shadow:0 0 12px var(--glow);margin-bottom:6px;}
+  .pt{font-weight:900;font-size:50px;line-height:.94;text-transform:uppercase;text-align:center;
+    text-shadow:0 0 26px var(--glow);margin-bottom:22px;}
+
+  /* tale of the tape, compact — the stat column is what earns the space */
+  .trow{display:grid;grid-template-columns:1fr 190px 1fr;align-items:center;
+    padding:13px 20px;border-top:1px solid var(--line);background:var(--panel);}
+  .trow:last-child{border-bottom:1px solid var(--line);}
+  .trow .v{font-weight:700;font-size:38px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .trow .v.r{text-align:right;}
+  .trow .v.win{color:var(--gold);text-shadow:0 0 16px rgba(255,206,0,.45);}
+  .trow .lb{font-family:'Press Start 2P',monospace;font-size:11px;letter-spacing:.16em;
+    color:var(--hi);text-align:center;}
+  .tnames{display:grid;grid-template-columns:1fr 190px 1fr;align-items:end;margin-bottom:16px;}
+  .tnames .n{font-weight:900;font-size:44px;text-transform:uppercase;line-height:1;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tnames .n.r{text-align:right;}
+  .tnames .vs{font-family:'Press Start 2P',monospace;font-size:22px;color:var(--pink);
+    text-align:center;text-shadow:0 0 16px rgba(255,51,204,.6);}
+  body.on .trow{animation:dealin .4s cubic-bezier(.16,1,.3,1) backwards;}
+  @keyframes dealin{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
+
+  /* the dossier pane */
+  #paneWho .big{font-weight:900;font-size:82px;line-height:.92;text-transform:uppercase;
+    text-shadow:0 0 32px var(--glow);}
+  #paneWho .nick{font:500 30px 'Barlow';color:var(--gold);font-style:italic;margin-top:8px;}
+  #paneWho .chips{display:flex;gap:40px;margin-top:26px;flex-wrap:wrap;}
+  #paneWho .chip .l{font-family:'Press Start 2P',monospace;font-size:11px;letter-spacing:.18em;
+    color:var(--dim);margin-bottom:9px;}
+  #paneWho .chip .v{font-weight:700;font-size:46px;line-height:.9;}
+  #paneWho .chip .v.gold{color:var(--gold);}
+
+  /* the loading pane fills everything under the CTA when closed */
+  /* The loading screen is TWO parts that make one picture: the shutters carry
+     the event name across the slot, and this carries the card underneath them.
+     It used to start at the CTA and cover the slot, so it drew straight over
+     the shutter title — two loading screens fighting for the same 608px. */
+  #load{position:absolute;top:calc(var(--cta) + var(--feed));bottom:0;left:0;right:0;z-index:22;
+    padding:0 46px 46px;display:flex;flex-direction:column;
+    transition:opacity .4s ease;}
+  body.open #load{opacity:0;pointer-events:none;}
+  #load .body{flex:1;min-height:0;padding-top:30px;}
+  .lrow{display:grid;grid-template-columns:56px 1fr 130px;align-items:center;gap:14px;
+    padding:13px 18px;margin-bottom:9px;background:var(--panel);border-left:4px solid var(--pur);}
+  .lrow .r{font-family:'Press Start 2P',monospace;font-size:13px;color:var(--hi);}
+  .lrow .n{font-weight:700;font-size:33px;text-transform:uppercase;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .lrow .x{font-weight:700;font-size:28px;text-align:right;color:var(--dim);}
+
+  #crt{position:absolute;inset:0;pointer-events:none;z-index:60;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1px,transparent 1px 3px);}
+  #vig{position:absolute;inset:0;pointer-events:none;z-index:59;
+    background:radial-gradient(ellipse at center,transparent 62%,rgba(0,0,0,.5) 100%);}
 </style>
 </head>
 <body>
 
-<!-- Each layer is the file that was built and verified on its own. Nothing is
-     re-implemented here; this page only decides which of them is visible. -->
-<iframe class="layer" id="l-clock" src="fight-clock-vertical.html"      scrolling="no"></iframe>
-<iframe class="layer" id="l-third" src="lower-third-vertical.html"      scrolling="no"></iframe>
-<iframe class="layer" id="l-tape"  src="tale-of-the-tape-vertical.html" scrolling="no"></iframe>
-<iframe class="layer" id="l-stand" src="standby-vertical.html"          scrolling="no"></iframe>
+<div id="cta">
+  <span class="dot"></span>
+  <span class="k">JOIN THE LEAGUE</span>
+  <span class="v" id="ctaUrl">DISCORD.GG/UBA</span>
+</div>
+
+<div id="slot">
+  <div class="shut" id="shutT"></div>
+  <div class="shut" id="shutB"></div>
+  <div id="scan"></div>
+  <div id="shutTxt">
+    <div class="k" id="loadKick">STANDING BY</div>
+    <div class="v" id="loadTitle">UBA</div>
+    <div class="s" id="loadSub"></div>
+  </div>
+  <div class="edge"></div>
+</div>
+
+<div id="clock">
+  <div class="nm l" id="cnL">—</div>
+  <div class="cor" id="corL" style="background:#3a3a44"></div>
+  <div class="mid"><div id="tm">0:00</div><div id="rd">ROUND 1</div></div>
+  <div class="cor" id="corR" style="background:#3a3a44"></div>
+  <div class="nm r" id="cnR">—</div>
+</div>
+<div id="boutTag"><span id="boutTagTxt">MAIN EVENT</span></div>
+
+<div id="bot">
+  <div class="pane" id="paneTape">
+    <div class="ph" id="tapeKick">TALE OF THE TAPE</div>
+    <div class="tnames"><span class="n" id="tnL">—</span><span class="vs">VS</span><span class="n r" id="tnR">—</span></div>
+    <div id="tapeRows"></div>
+  </div>
+
+  <div class="pane" id="paneWho">
+    <div class="ph" id="whoKick">IN THE RING</div>
+    <div class="big" id="whoName">—</div>
+    <div class="nick" id="whoNick"></div>
+    <div class="chips" id="whoChips"></div>
+  </div>
+</div>
+
+<div id="load">
+  <div class="body" id="loadBody"></div>
+</div>
+
+<div id="vig"></div>
+<div id="crt"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
@@ -64,87 +246,210 @@
 const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
   'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
 const $ = id => document.getElementById(id)
-const has = v => v !== null && v !== undefined && String(v).trim() !== ''
+const Q = new URLSearchParams(location.search)
+const esc = t => String(t ?? '').replace(/[<>&]/g, ch => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[ch]))
+const has = v => v !== null && v !== undefined && String(v).trim() !== '' && String(v).trim() !== '—'
+const norm = s => String(s ?? '').trim().toLowerCase()
 
-// ── the layers ─────────────────────────────────────────────────────────
-// `full` means: when this is up, the bars go away. Nothing else about a
-// layer matters to this file.
-const LAYERS = {
-  clock: { el:'l-clock', full:false },
-  third: { el:'l-third', full:false },
-  tape:  { el:'l-tape',  full:true  },
-  stand: { el:'l-stand', full:true  },
+// ── the two states ─────────────────────────────────────────────────────
+// open = the shutters are apart and the game is showing through the slot.
+// Everything else keys off this one class, so there is exactly one place
+// that decides whether the frame is a loading screen or a match.
+function setOpen(on){ document.body.classList.toggle('open', !!on) }
+function setClock(on){ document.body.classList.toggle('clockon', !!on) }
+function pane(which){
+  document.querySelectorAll('.pane').forEach(p => p.classList.remove('on'))
+  if(which) $(which).classList.add('on')
 }
-const up = { clock:false, third:false, tape:false, stand:false }
 
-function paint(){
-  const anyFull = up.tape || up.stand
-  for(const [k, L] of Object.entries(LAYERS)){
-    // A bar is only drawn when it is on AND nothing full-frame is over it.
-    // The bar layer is not told to hide — it keeps its own state and comes
-    // straight back when the full-frame screen goes, which is what an
-    // operator expects after cutting away to the tape and back.
-    const vis = up[k] && (L.full || !anyFull)
-    $(L.el).classList.toggle('up', vis)
+// ── league skin ────────────────────────────────────────────────────────
+const LEAGUE = { uba:{n:'UBA', s:'Fight Night'}, gfl:{n:'GFL', s:'Glory League'},
+                 ubae:{n:'UBAe', s:'Team League'} }
+function setLeague(lg){
+  const k = norm(lg) === 'gfl' ? 'gfl' : norm(lg) === 'ubae' ? 'ubae' : 'uba'
+  document.body.classList.toggle('gfl', k === 'gfl')
+  document.body.dataset.league = k
+}
+if(Q.get('league')) setLeague(Q.get('league'))
+
+// ── clock ──────────────────────────────────────────────────────────────
+let tHandle = null
+function timer(secs){
+  clearInterval(tHandle)
+  const el = $('tm')
+  if(secs == null){ el.textContent = ''; el.classList.remove('low'); return }
+  let left = secs
+  const draw = () => { el.textContent = `${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`
+    el.classList.toggle('low', left <= 10) }
+  draw()
+  tHandle = setInterval(() => { left = Math.max(0, left-1); draw(); if(left <= 0) clearInterval(tHandle) }, 1000)
+}
+// Names shrink to fit their half rather than being clipped. Measured after
+// the face loads: measured against the fallback they come back narrow.
+function fitNames(){
+  for(const id of ['cnL','cnR']){
+    const el = $(id); if(!el) return
+    const room = el.clientWidth - 52
+    let px = 52; el.style.fontSize = px + 'px'
+    const w = () => { const r = document.createRange(); r.selectNodeContents(el)
+      return r.getBoundingClientRect().width }
+    while(w() > room && px > 22){ px -= 2; el.style.fontSize = px + 'px' }
   }
 }
-function set(k, on){ if(up[k] === !!on) return; up[k] = !!on; paint() }
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(fitNames)
+
+// ── tale of the tape, in the bottom half ───────────────────────────────
+const inches = v => {
+  const s = String(v ?? '').trim(); if(!s) return null
+  let m = s.match(/^(\d+)\s*['’]\s*(\d+(?:\.\d+)?)?/); if(m) return (+m[1])*12 + (m[2] ? +m[2] : 0)
+  m = s.match(/^(\d+(?:\.\d+)?)\s*cm\b/i); if(m) return +m[1]/2.54
+  m = s.match(/^(\d+(?:\.\d+)?)/); if(m){ const n = +m[1]; return n > 40 && n < 90 ? n : null }
+  return null
+}
+const rankNum = v => { const m = String(v ?? '').match(/(\d+)/); return m ? +m[1] : null }
+const TROWS = [
+  { k:'record', l:'RECORD' },
+  { k:'rank',   l:'RANK',   lead:(a,b)=>{const x=rankNum(a),y=rankNum(b);return (x&&y)?(x<y?-1:x>y?1:0):0} },
+  { k:'height', l:'HEIGHT', lead:(a,b)=>{const x=inches(a),y=inches(b);return (x!==null&&y!==null)?(x>y?-1:x<y?1:0):0} },
+  { k:'reach',  l:'REACH',  lead:(a,b)=>{const x=inches(a),y=inches(b);return (x!==null&&y!==null)?(x>y?-1:x<y?1:0):0} },
+  { k:'age',    l:'AGE' },
+  { k:'stance', l:'STANCE' },
+  { k:'weight', l:'DIVISION' },
+]
+function drawTape(d){
+  const L = d.left || {}, R = d.right || {}
+  $('tnL').textContent = String(L.name || '—').toUpperCase()
+  $('tnR').textContent = String(R.name || '—').toUpperCase()
+  if(has(d.title)) $('tapeKick').textContent = String(d.title).toUpperCase()
+  const out = []
+  for(const r of TROWS){
+    const a = L[r.k], b = R[r.k]
+    // A row neither side can fill is DROPPED — half the roster has no reach
+    // and no age, and this pane has 1108px, not a whole frame, to spend.
+    if(!has(a) && !has(b)) continue
+    const lead = r.lead ? r.lead(a, b) : 0
+    const cell = (v, side) => `<span class="v ${side}${(side==='l'&&lead===-1)||(side==='r'&&lead===1)?' win':''}">`
+      + (has(v) ? esc(String(v).toUpperCase()) : '—') + `</span>`
+    out.push(`<div class="trow">${cell(a,'l')}<span class="lb">${r.l}</span>${cell(b,'r')}</div>`)
+  }
+  $('tapeRows').innerHTML = out.join('')
+  ;[...$('tapeRows').children].forEach((n,i) => { n.style.animationDelay = (60 + i*55) + 'ms' })
+  document.body.classList.add('on')
+}
+
+// ── dossier, in the bottom half ────────────────────────────────────────
+function drawWho(d){
+  $('whoName').textContent = String(d.name || '—').toUpperCase()
+  $('whoNick').textContent = has(d.nickname) ? `"${d.nickname}"` : ''
+  const chips = []
+  const chip = (l, v, gold) => `<div class="chip"><div class="l">${l}</div><div class="v${gold?' gold':''}">${esc(v)}</div></div>`
+  if(has(d.record)) chips.push(chip('RECORD', d.record))
+  if(+d.ko > 0)     chips.push(chip('KO WINS', String(+d.ko)))
+  if(+d.rank > 0)   chips.push(chip('RANKED', '#' + (+d.rank), true))
+  if(has(d.weight)) chips.push(chip('DIVISION', String(d.weight).toUpperCase()))
+  $('whoChips').innerHTML = chips.join('')
+}
+
+// ── the loading screen ─────────────────────────────────────────────────
+async function loadCard(eventName){
+  const FUTURE = new Date(Date.now() - 6*3600e3).toISOString()
+  let q = sb.from('events_public').select('id,name,event_date').eq('status','scheduled')
+  q = eventName ? q.eq('name', eventName) : q.gte('event_date', FUTURE).order('event_date')
+  const { data: evs, error } = await q.limit(1)
+  // A failed read must never be mistaken for "no event" — that would put
+  // STANDING BY on air over a working database with a card behind it.
+  if(error){ console.warn('[vertical] event read failed —', error); return }
+  const ev = evs && evs[0]; if(!ev) return
+  $('loadTitle').textContent = String(ev.name).toUpperCase()
+  $('loadKick').textContent = 'UP NEXT'
+  const { data: bs } = await sb.from('event_matches').select('*').eq('event_id', ev.id).order('bout_number')
+  const open = (bs || []).filter(b => b.fighter_a_name && b.fighter_b_name)
+  $('loadSub').textContent = open.length ? `${open.length} BOUTS` : ''
+  $('loadBody').innerHTML = open.slice(0, 9).map((b, i) =>
+    `<div class="lrow" style="${b.is_title_fight ? 'border-left-color:var(--gold);' : ''}">
+       <span class="r">${b.bout_number ?? i+1}</span>
+       <span class="n">${esc(b.fighter_a_name)} <span style="color:var(--dim)">v</span> ${esc(b.fighter_b_name)}</span>
+       <span class="x">${esc(String(b.weight_class || '').replace(/_/g,' ').toUpperCase().slice(0,10))}</span>
+     </div>`).join('')
+}
 
 // ── the wire ───────────────────────────────────────────────────────────
-// Read-only. Every command is ALSO delivered to the layers themselves, in
-// their own iframes, over their own subscriptions — this file never forwards
-// anything and never speaks on the channel. It is watching the same traffic
-// to work out which layer should be on top.
 sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, ({ payload: c }) => {
   if(!c) return
+  if(has(c.league)) setLeague(c.league)
 
-  // FIGHT CLOCK. The league gate is the clock's own (uba/gfl, untagged
-  // passes) — mirrored here so a UBAe night does not leave an empty clock
-  // layer switched on over the top of standby.
+  // STANDBY closes the shutters and puts the loading screen back. This is the
+  // between-matches state, and it is also what the deck already presses.
+  if(c.type === 'standby'){
+    if(c.on === false || c.view === 'off'){ setOpen(true); return }
+    setOpen(false); setClock(false); pane(null)
+    loadCard(c.event || null)
+    return
+  }
+
+  // THE CLOCK. Showing it is what OPENS the machine: the shutters part, the
+  // game appears, the sliver drops in. That is the arcade moment and it is
+  // driven by the press the operator already makes.
   if(c.type === 'clock'){
     const mine = !c.league || c.league === 'uba' || c.league === 'gfl'
-    if(mine) set('clock', c.show !== false)
+    if(!mine) return
+    if(c.show === false){ setClock(false); return }
+    setOpen(true); setClock(true)
+    return
   }
-  // Arming a bout implies the clock is wanted, which is how the horizontal
-  // one behaves: the deck arms, then shows.
-  if(c.type === 'bout' && c.d && (c.d.a || c.d.b)){
-    if(!c.league || c.league === 'uba' || c.league === 'gfl') set('clock', true)
+  if(c.type === 'bout' && c.d){
+    const d = c.d
+    if(has(d.a)) $('cnL').textContent = String(d.a).toUpperCase()
+    if(has(d.b)) $('cnR').textContent = String(d.b).toUpperCase()
+    if(has(d.label)) $('boutTagTxt').textContent = String(d.label).toUpperCase()
+    if(has(d.colorL)) $('corL').style.background = d.colorL
+    if(has(d.colorR)) $('corR').style.background = d.colorR
+    setOpen(true); setClock(true); fitNames()
+    return
   }
+  if(c.type === 'corner' && c.d){
+    if(has(c.d.l)) $('corL').style.background = c.d.l
+    if(has(c.d.r)) $('corR').style.background = c.d.r
+    return
+  }
+  if(c.type === 'round'){ $('rd').textContent = 'ROUND ' + c.n; return }
+  if(c.type === 'clocktimer'){ timer(c.on === false ? null : c.secs); return }
 
-  // LOWER THIRD. It auto-hides itself after 12s, so the layer has to come
-  // down on the same clock or an invisible iframe keeps swallowing nothing
-  // for the rest of the show. 12s + its own exit.
-  if(c.type === 'fighter'){
-    if(c.on === false || !c.d){ set('third', false) }
-    else {
-      set('third', true)
-      clearTimeout(thirdTimer)
-      thirdTimer = setTimeout(() => set('third', false), 12600)
-    }
-  }
-
-  // TALE OF THE TAPE. Data and reveal arrive as two messages; only the
-  // reveal raises the layer, which is what keeps "Show" from ever revealing
-  // the previous matchup.
+  // THE TAPE lives in the bottom half during a match. Pressed with the
+  // machine closed it is still the full screen it was — the shutters simply
+  // have not opened, so the bottom pane is all there is to see.
   if(c.type === 'tape'){
-    if(c.on === false) set('tape', false)
-    if(c.show === true) set('tape', true)
+    if(c.on === false){ pane(null); return }
+    if(c.d) drawTape(c.d)
+    if(c.show === true){ pane('paneTape') }
+    return
   }
-
-  // STANDBY. 'off' and on:false both mean down.
-  if(c.type === 'standby'){
-    set('stand', c.on === false || c.view === 'off' ? false : true)
+  // THE DOSSIER takes the same bottom half. One pane at a time, so they can
+  // never draw over each other — the thing four separate sources could not do.
+  if(c.type === 'fighter'){
+    if(c.on === false || !c.d){ pane(null); return }
+    drawWho(c.d); pane('paneWho')
+    clearTimeout(whoTimer); whoTimer = setTimeout(() => pane(null), 14000)
+    return
   }
-}).subscribe(s => { if(s === 'SUBSCRIBED') console.log('[vertical] layer manager live') })
-let thirdTimer = null
+}).subscribe(s => { if(s === 'SUBSCRIBED') console.log('[vertical] live') })
+let whoTimer = null
 
-// ?layer=clock|third|tape|stand forces one up with no deck, for checking a
-// layer in a browser. ?layer=all raises the two bars together, which is the
-// combination that has to be checked most often.
-const q = new URLSearchParams(location.search).get('layer')
-if(has(q)){
-  if(q === 'all'){ set('clock', true); set('third', true) }
-  else if(LAYERS[q]) set(q, true)
+// first paint: closed, showing whatever is next
+loadCard(null)
+
+// ?state=open|closed and ?pane=tape|who for checking it without a deck
+if(Q.get('state') === 'open'){ setOpen(true); setClock(true) }
+if(Q.get('pane') === 'tape'){
+  drawTape({ title:'UBA HEAVYWEIGHT TITLE',
+    left:{name:'smokinem',record:'11-2-1',rank:'#7',age:27,height:"6'2",reach:'76',weight:'Heavyweight',stance:'Orthodox'},
+    right:{name:'Hello World',record:'5-4',rank:'#12',age:31,height:"6'0",reach:'73',weight:'Heavyweight',stance:'Southpaw'} })
+  pane('paneTape'); $('cnL').textContent='SMOKINEM'; $('cnR').textContent='HELLO WORLD'
+  $('corL').style.background='#e8312a'; $('corR').style.background='#2e6fe8'; timer(143); fitNames()
+}
+if(Q.get('pane') === 'who'){
+  drawWho({name:'smokinem',nickname:'The Quiet Part',record:'11-2-1',ko:7,rank:7,weight:'Heavyweight'})
+  pane('paneWho')
 }
 })()
 </script>
