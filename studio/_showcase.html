@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VGA — Transition showcase</title>
+<!-- ============================================================
+     A REVIEW TOOL, NOT A SCENE. Never add this to OBS.
+
+     Every broadcast graphic, scaled down and laid out together, with
+     one button that plays all of their entrances at once and another
+     that plays every exit. The point is to see them AGAINST each
+     other: a graphic can look fine alone and read as a different kit
+     next to the one that follows it.
+
+     Each tile is the real file in an iframe driven over the real
+     channel, so what you are watching is what goes on air — not a
+     mock-up of it.
+     ============================================================= -->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;900&family=Barlow:wght@500;600&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#0b0910;color:#eee;font-family:'Barlow',system-ui,sans-serif;padding:22px 26px 60px;}
+  h1{font-family:'Barlow Condensed';font-weight:900;font-size:30px;letter-spacing:.04em;text-transform:uppercase;}
+  .sub{color:#9a90ab;font-size:14px;margin-top:5px;}
+  .bar{position:sticky;top:0;z-index:50;background:#0b0910;padding:14px 0 16px;
+    display:flex;gap:9px;flex-wrap:wrap;align-items:center;border-bottom:1px solid #241d31;margin-bottom:20px;}
+  button{background:#1c1626;color:#eee;border:1px solid #3a2f4d;border-radius:6px;
+    padding:9px 15px;font:600 13px 'Barlow';cursor:pointer;letter-spacing:.04em;}
+  button:hover{background:#2a2138;border-color:#5a4a75;}
+  button.go{background:#9b30ff;border-color:#b565ff;color:#fff;}
+  button.out{background:#3a1a2a;border-color:#7a3050;}
+  .note{color:#7d7390;font-size:12.5px;margin-left:6px;}
+
+  .grid{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;}
+  .tile{background:#121019;border:1px solid #241d31;border-radius:8px;padding:10px;}
+  .cap{font:600 12.5px 'Barlow';color:#cbbfe0;margin-bottom:8px;display:flex;
+    justify-content:space-between;gap:10px;align-items:baseline;}
+  .cap i{font-style:normal;color:#7d7390;font-size:11px;font-family:monospace;}
+  .fr{position:relative;overflow:hidden;background:#07050c;border-radius:4px;}
+  .fr iframe{border:0;transform-origin:0 0;position:absolute;top:0;left:0;}
+  /* 1920x1080 at 26% -> 499x281 ; 1080x1920 at 17% -> 184x326 */
+  .h .fr{width:499px;height:281px;} .h iframe{width:1920px;height:1080px;transform:scale(.26);}
+  .v .fr{width:184px;height:326px;} .v iframe{width:1080px;height:1920px;transform:scale(.17);}
+  h2{font-family:'Barlow Condensed';font-weight:700;font-size:17px;letter-spacing:.14em;
+    text-transform:uppercase;color:#b9a6d8;margin:26px 0 12px;}
+</style>
+</head>
+<body>
+
+<h1>Transition showcase</h1>
+<div class="sub">Every graphic, real files, driven over the real channel. Press IN, watch them all together, then press OUT.</div>
+
+<div class="bar">
+  <button class="go" onclick="playIn()">▶ Play every entrance</button>
+  <button class="out" onclick="playOut()">■ Play every exit</button>
+  <button onclick="location.reload()">↻ Reset</button>
+  <span class="note" id="st">connecting…</span>
+</div>
+
+<h2>Horizontal · 1920 × 1080</h2>
+<div class="grid" id="gh"></div>
+
+<h2>Vertical · 1080 × 1920</h2>
+<div class="grid" id="gv"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
+  'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
+const ch = sb.channel('vga-overlay')
+ch.subscribe(s => { document.getElementById('st').textContent =
+  s === 'SUBSCRIBED' ? '● channel live' : s.toLowerCase() })
+const fire = p => ch.send({ type:'broadcast', event:'cmd', payload:p })
+const wait = ms => new Promise(r => setTimeout(r, ms))
+
+const A = { name:'smokinem', record:'11-2-1', rank:'#7', age:27, height:"6'2", reach:'76',
+  weight:'Heavyweight', stance:'Orthodox', country:'United States', odds:'+140',
+  photo:'https://emzlivoykbhhjcugupit.supabase.co/storage/v1/object/public/fighter-photos/smokinem-031f-1787671926636.png' }
+const B = { name:'Hello World', record:'5-4', rank:'#12', age:31, height:"6'0", reach:'73',
+  weight:'Heavyweight', stance:'Southpaw', country:'United Kingdom', odds:'-165',
+  photo:'https://emzlivoykbhhjcugupit.supabase.co/storage/v1/object/public/fighter-photos/hello-world-0b61-1787536081064.png' }
+
+// Each tile: the file, how it is driven in, and how it is driven out.
+const TILES = [
+  // ONE overlay tile, not three. All three of these graphics live in
+  // overlay.html and ship as ONE browser source — and because every iframe
+  // subscribes to the same channel, three overlay tiles each received the
+  // others' commands and showed the wrong graphic. One tile, driven through
+  // its three states in order, is both correct and what the operator sees.
+  { g:'h', t:'Overlay · dossier → keys → message', f:'overlay.html',
+    note:'one source, three graphics, one shared corner',
+    in:[{type:'fighter',league:'uba',d:{name:'Namsrai Batbayar',record:'11-2-1',ko:7,rank:7,weight:'Heavyweight',country:'Mongolia',next:'vs Dragon 5000 · UBA 16'}},
+        {type:'flash',w:'msg',league:'uba',d:{text:'10-9 Lima. The headkick is there all night.',from:'PNW.MMA',handle:'pnw.mma',platform:'discord',tag:'#UBA15'}}],
+    out:[{type:'fighter',on:false},{type:'flash',w:'msg',on:false},{type:'keys',on:false}] },
+  { g:'h', t:'Tale of the tape', f:'tale-of-the-tape.html', note:'centre drops, rows stagger 150ms',
+    in:[{type:'tape',d:{title:'HEAVYWEIGHT',subtitle:'UBA 15',left:A,right:B,league:'UBA',sponsor:'SHEATH'}},{type:'tape',show:true}],
+    out:[{type:'tape',on:false}] },
+  { g:'h', t:'Stakes · what\'s on the line', f:'stakes.html?demo=1', note:'3 lines stagger in', in:[], out:[{type:'stakes',on:false}] },
+  { g:'h', t:'Rankings at stake', f:'rankings-at-stake.html', note:'ladder cascades, badges stamp', in:[], out:[{type:'rankstakes',on:false}] },
+  { g:'h', t:'Fan cam', f:'fan-cam.html?fighter=smokinem', note:'plate settles, bug lines land', in:[], out:[{type:'fancam',on:false}] },
+  { g:'h', t:'Fight clock', f:'fight-clock.html', note:'existing scene, for comparison',
+    in:[{type:'clock',league:'uba',show:true},{type:'bout',league:'uba',d:{a:'smokinem',b:'Hello World',label:'MAIN EVENT',sub:'5 ROUNDS',colorL:'#e8312a',colorR:'#2e6fe8'}}],
+    out:[{type:'clock',league:'uba',show:false}] },
+
+  { g:'v', t:'Vertical · all layers', f:'vertical.html', note:'one OBS source',
+    in:[{type:'clock',league:'uba',show:true},{type:'bout',league:'uba',d:{a:'smokinem',b:'Hello World',label:'MAIN EVENT',sub:'5 ROUNDS',colorL:'#e8312a',colorR:'#2e6fe8'}}],
+    out:[{type:'clock',league:'uba',show:false},{type:'fighter',on:false}] },
+  { g:'v', t:'Fight clock (v)', f:'fight-clock-vertical.html?demo=1', note:'builds: brand→strip→sides→band', in:[], out:[{type:'clock',league:'uba',show:false}] },
+  { g:'v', t:'Lower third (v)', f:'lower-third-vertical.html?demo=1', note:'accent draws, lines land', in:[], out:[{type:'fighter',on:false}] },
+  { g:'v', t:'Tale of the tape (v)', f:'tale-of-the-tape-vertical.html?demo=1', note:'faces from sides, rows deal', in:[], out:[{type:'tape',on:false}] },
+  { g:'v', t:'Standby (v)', f:'standby-vertical.html?view=card', note:'contents deal in behind the view', in:[], out:[{type:'standby',on:false}] },
+]
+
+TILES.forEach((t, i) => {
+  const d = document.createElement('div')
+  d.className = 'tile ' + t.g
+  d.innerHTML = `<div class="cap"><span>${t.t}</span><i>${t.note}</i></div>
+    <div class="fr"><iframe id="f${i}" src="${t.f}" scrolling="no"></iframe></div>`
+  document.getElementById(t.g === 'h' ? 'gh' : 'gv').appendChild(d)
+})
+
+// Reloading the iframe is what replays a demo-driven entrance; a channel push
+// is what replays a deck-driven one. Tiles with an `in` list get the push,
+// the rest get the reload — otherwise a ?demo=1 tile would sit there finished.
+async function playIn(){
+  for(let i = 0; i < TILES.length; i++){
+    const t = TILES[i], fr = document.getElementById('f' + i)
+    // 900ms between pushes, not 120: the overlay tile drives two graphics in
+    // sequence and 120ms meant the second cancelled the first's entrance
+    // before it had visibly played.
+    if(t.in.length){ for(const p of t.in){ await fire(p); await wait(t.in.length > 1 ? 900 : 120) } }
+    else { fr.contentWindow.location.reload() }
+    await wait(90)
+  }
+}
+async function playOut(){
+  for(const t of TILES){ for(const p of t.out){ await fire(p); await wait(80) } }
+}
+</script>
+</body>
+</html>
