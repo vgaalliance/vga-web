@@ -834,6 +834,13 @@ tick();
   // re-runs the fit when the font finally arrives. Re-fit when it does.
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(fitPair)
   _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
+    // The deck's sponsor choice. This screen is up longest before a show, so it
+    // must not need a reload to catch a switch made two minutes before doors.
+    if(c.type==='sponsor'){
+      if(pinSponsor(c.key))
+        document.getElementById('sponsorSite').textContent = sponsorSite(activeSponsor())
+      return
+    }
     if(c.type!=='countdown') return
     const d=c.d||{}
     // team name goes in the BIG slot; the small chip stays TEAM A / TEAM B

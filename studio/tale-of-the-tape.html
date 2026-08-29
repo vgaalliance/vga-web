@@ -1853,6 +1853,13 @@ editOverlay.addEventListener('click', (e) => {
   window.__tapeReport = on => { try { _ch.send({ type:'broadcast', event:'cmd',
     payload:{ type:'tape-state', on: !!on } }) } catch {} }
   _ch.on('broadcast',{event:'cmd'},({payload:c})=>{
+    // An explicit choice off the deck, which pins and repaints straight away --
+    // waiting for the next matchup would leave the old partner on a bar that is
+    // already on screen.
+    if(c.type==='sponsor'){
+      if(pinSponsor(c.key)) startSponsorRotator(activeSponsor())
+      return
+    }
     if(c.type!=='tape') return   // tape-state is our own report; ignore it here
     if(c.on===false){ remember(null,false); hideTape(); return }
     if(c.show===true){ remember(null,true); showTape(); return }   // reveal what's loaded
