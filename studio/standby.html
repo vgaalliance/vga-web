@@ -1244,6 +1244,18 @@ async function mountPoster(){
   }
   layFan(1)
 
+  // THE FAN'S OWN BOX. Every poster in it is absolutely positioned, so without
+  // this the element measures ZERO and the flex row centres on nothing — which
+  // is what put the card on top of the posters. A tilted poster also reaches
+  // past its own corner, so the box is the widest one plus the lean, not just
+  // the front one.
+  const widest = Math.round(H * widestRatio)
+  // 0.28, measured: a poster tilted 6 degrees reaches about a seventh of its
+  // width past its own corner, and at 0.12 the stack still crossed 19px into
+  // the card beside it.
+  fan.style.width  = Math.round(widest + maxDepth * STEP * 2 + widest * 0.28) + 'px'
+  fan.style.height = Math.round(H + maxDepth * DROP * 2 + H * 0.10) + 'px'
+
   // Only while the scene is up: a timer behind a hidden view spends the
   // streaming box's frames on a shuffle nobody can see, and it would otherwise
   // land mid-transition the moment the scene came back.
