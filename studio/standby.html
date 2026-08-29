@@ -367,6 +367,42 @@
      of each are out there. Rarity palette lifted from fighter-profile.html
      deliberately -- someone who has seen their own stash should recognise
      this at a glance. */
+  /* ── THE PRIZE SCREEN ─────────────────────────────────────────────────
+     The product on the left at size, and on the right the three things the
+     audience has to leave with: how many there are, who is giving them, and
+     what you have to do to win one. The awards are ROWS rather than a
+     sentence, because somebody reading this screen is half-listening to
+     commentary and will take one line, not a paragraph. */
+  .prize-wrap{display:grid;grid-template-columns:auto minmax(0,560px);
+    gap:64px;align-items:center;justify-content:center;}
+  /* A LIGHT BEHIND IT. The straps are black moulded plastic photographed on
+     transparent ground, and this screen's ground is nearly black — without
+     something behind them the product reads as a silhouette of itself. */
+  .prize-shot{display:flex;align-items:center;justify-content:center;position:relative;}
+  .prize-shot::before{content:'';position:absolute;inset:-6%;z-index:0;
+    background:radial-gradient(ellipse at 50% 52%,
+      rgba(155,48,255,.30) 0%, rgba(120,30,200,.16) 38%, transparent 70%);}
+  .prize-shot img{position:relative;z-index:1;}
+  /* No frame: a cut-out on transparent ground with a border round it is a box
+     drawn round empty space. */
+  #prizeShot{display:block;height:auto;width:auto;max-height:620px;max-width:44vw;
+    filter:drop-shadow(0 22px 52px rgba(0,0,0,.6));}
+  .prize-side{display:flex;flex-direction:column;gap:16px;}
+  #prizeLogo{display:block;height:44px;width:auto;max-width:340px;margin-bottom:6px;}
+  .prize-count{display:flex;align-items:baseline;gap:16px;}
+  .prize-count b{font-weight:900;font-size:96px;line-height:.9;color:#fff;
+    text-shadow:0 0 34px rgba(155,48,255,.7);}
+  .prize-count span{font-weight:900;font-size:40px;text-transform:uppercase;line-height:1.05;}
+  .prize-sub{font-family:'Press Start 2P',monospace;font-size:11px;letter-spacing:.24em;
+    color:var(--hi);margin-top:-4px;}
+  .prize-awards{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+  .prow{display:grid;grid-template-columns:64px 1fr;align-items:center;gap:16px;
+    padding:14px 18px;background:var(--panel);border-left:4px solid var(--pur);
+    box-shadow:0 0 18px rgba(60,0,110,.4);}
+  .prow .pn{font-family:'Press Start 2P',monospace;font-size:20px;color:#ffce00;text-align:center;}
+  .prow .pw{font-weight:700;font-size:26px;text-transform:uppercase;line-height:1.1;}
+  .prow .pnote{font-family:'Barlow',sans-serif;font-weight:500;font-size:15px;color:var(--dim);}
+
   /* ── THE POSTER SCREEN ────────────────────────────────────────────────
      Its own view, like the rankings or the playoff picture. Everything the
      night has as a PICTURE rather than data goes up together: the posters and
@@ -739,6 +775,26 @@
       <div class="cbouts" id="nextevContent"></div>
     </div>
 
+    <!-- THE PRIZE — its own scene. A giveaway is not a decoration on the poster
+         screen: it is a thing being given away, to somebody, for doing
+         something, and all three of those have to be READ. Sharing a screen it
+         got a corner and said none of it. -->
+    <div class="view" id="v-prize">
+      <div class="eyebrow" id="prizeBrand">VGA · UBA</div>
+      <div class="title sm" id="prizeTitle">Tonight's Prize</div>
+      <div class="prize-wrap">
+        <div class="prize-shot">
+          <img id="prizeShot" alt="">
+        </div>
+        <div class="prize-side">
+          <img id="prizeLogo" alt="">
+          <div class="prize-count"><b id="prizeCount">3</b><span id="prizeProduct">PROSTRAPS MK2</span></div>
+          <div class="prize-sub" id="prizeSub">FOR META QUEST 3</div>
+          <div class="prize-awards" id="prizeAwards"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- POSTER + CARD — a scene of its own, picked like any other. -->
     <div class="view" id="v-poster">
       <div class="eyebrow">VGA · UBA</div>
@@ -747,15 +803,6 @@
         <div class="promo-cell" id="promoPosterCell">
           <div class="fan" id="promoFan"></div>
           <div class="promo-cap" id="promoPosterCap">THE POSTER</div>
-        </div>
-        <!-- THE PRIZE — a partner's giveaway is not a poster and does not
-             belong in the stack of them, so it stands on its own between the
-             posters and the card. Same rule as everything else on this screen:
-             no file, no cell. -->
-        <div class="promo-cell" id="promoPrizeCell">
-          <img id="promoPrizeLogo" alt="">
-          <img id="promoPrize" alt="">
-          <div class="promo-cap" id="promoPrizeCap">TONIGHT'S PRIZE</div>
         </div>
         <div class="promo-cell" id="promoFilmCell">
           <div class="promo-cap">EARNED · TRADED · FUSED</div>
@@ -1069,15 +1116,16 @@ let promoFilmEl = null, promoHas = { poster:false, prize:false, film:false }
 
 function promoLayout(){
   const box = document.getElementById('promo'); if(!box) return
-  const n = (promoHas.poster?1:0) + (promoHas.prize?1:0) + (promoHas.film?1:0)
+  const n = (promoHas.poster?1:0) + (promoHas.film?1:0)
   document.getElementById('promoPosterCell').classList.toggle('on', promoHas.poster)
-  document.getElementById('promoPrizeCell').classList.toggle('on', promoHas.prize)
   document.getElementById('promoFilmCell').classList.toggle('on', promoHas.film)
   // The scene joins the rotation the moment it has something to show, and only
   // then. A rotation that parades an empty screen every 15 seconds is worse
   // than one screen short.
   if(n && !VIEWS.includes('poster')) VIEWS.splice(0, 0, 'poster')
   if(n && !VIEWS_UBA.includes('poster')) VIEWS_UBA.splice(0, 0, 'poster')
+  if(promoHas.prize && !VIEWS.includes('prize')) VIEWS.splice(1, 0, 'prize')
+  if(promoHas.prize && !VIEWS_UBA.includes('prize')) VIEWS_UBA.splice(1, 0, 'prize')
 }
 
 let posterList = [], fanAt = 0, fanTimer = null
@@ -1127,12 +1175,12 @@ async function mountPoster(){
   // until the row fits rather than the stack running off the frame. The other
   // two cells are budgeted at their own ceilings even when their files are
   // missing, so the fan does not resize the moment a prize is dropped in.
-  const ROW = 1640, GAP = 64, PRIZE_MAX = 380, FILM_MAX = 401
+  const ROW = 1640, GAP = 64, FILM_MAX = 401
   const ratio = src => ok.get(src).w / ok.get(src).h
   const widestRatio = Math.max(...posterList.map(ratio))
   const depthOf = n => n === 0 ? 0 : Math.floor((n - 1) / 2) + 1
   const maxDepth = depthOf(posterList.length - 1)
-  const fanBudget = ROW - (promoHas.prize ? PRIZE_MAX + GAP : 0) - FILM_MAX - GAP
+  const fanBudget = ROW - FILM_MAX - GAP
   // width = one poster + the lean either side, all of it proportional to H
   const perH = widestRatio * (1 + maxDepth * 2 * 0.44) + widestRatio * 0.12
   const H = Math.round(Math.min(520, fanBudget / perH))
@@ -1207,48 +1255,65 @@ async function mountPoster(){
   promoLayout()
 }
 
+// ── THE PRIZE SCENE ──────────────────────────────────────────────────────
+// Everything about it is in assets/prize.json, because a giveaway changes per
+// partner and per night and nobody should be editing a broadcast graphic to
+// say "three" instead of "two".
+//   brand/logo/product/sub   who is giving it and what it is
+//   count                    how many
+//   images                   the product from more than one angle, turning
+//   awards[{n,who,note}]     what you have to do to win one
 let prizeList = [], prizeAt = 0, prizeTimer = null
 async function mountPrize(){
-  const img = document.getElementById('promoPrize'); if(!img) return
+  const shot = document.getElementById('prizeShot'); if(!shot) return
   let spec = null
   try{
     const r = await fetch(PRIZE_INDEX, {cache:'no-store'})
     if(r.ok) spec = await r.json()
   }catch(e){}
   const fix = n => n.startsWith('assets/') ? n : 'assets/' + n
-  if(spec && Array.isArray(spec.images) && spec.images.length) prizeList = spec.images.map(fix)
-  else prizeList = PROMO_PRIZE.slice()
+  prizeList = (spec && Array.isArray(spec.images) && spec.images.length)
+    ? spec.images.map(fix) : PROMO_PRIZE.slice()
 
-  // The partner's own mark, above the thing they are giving away. A prize with
-  // no logo on it is a photo of an object; with it, it reads as who is putting
-  // it up -- which is the point of a sponsor's prize being on screen at all.
-  const logo = document.getElementById('promoPrizeLogo')
+  const logo = document.getElementById('prizeLogo')
   if(spec && spec.logo){ logo.src = fix(spec.logo); logo.style.display = '' }
   else logo.style.display = 'none'
   logo.addEventListener('error', ()=>{ logo.style.display = 'none' })
-  if(spec && spec.cap) document.getElementById('promoPrizeCap').textContent = spec.cap
+
+  if(spec){
+    if(spec.brand)   document.getElementById('prizeBrand').textContent = 'VGA · ' + spec.brand
+    if(spec.product) document.getElementById('prizeProduct').textContent = spec.product
+    if(spec.sub)     document.getElementById('prizeSub').textContent = spec.sub
+    if(spec.count != null) document.getElementById('prizeCount').textContent = spec.count
+    // WHO WINS ONE, as rows. Somebody reading this screen is half-listening to
+    // commentary and will take one line, not a paragraph.
+    const aw = Array.isArray(spec.awards) ? spec.awards : []
+    document.getElementById('prizeAwards').innerHTML = aw.map(a =>
+      '<div class="prow"><div class="pn">' + (a.n != null ? '×' + a.n : '') + '</div>'
+      + '<div><div class="pw">' + (a.who || '') + '</div>'
+      + (a.note ? '<div class="pnote">' + a.note + '</div>' : '') + '</div></div>').join('')
+  }
 
   let i = 0
-  img.addEventListener('load', ()=>{ promoHas.prize = true; promoLayout(); prizeCycle() })
+  shot.addEventListener('load', ()=>{ promoHas.prize = true; prizeCycle() })
   // A missing angle drops out of the rotation; only every angle failing means
-  // there is no prize.
-  img.addEventListener('error', ()=>{
+  // there is nothing to show, and then the scene is not offered at all.
+  shot.addEventListener('error', ()=>{
     prizeList.splice(i, 1)
-    if(prizeList.length){ i = i % prizeList.length; img.src = prizeList[i]; return }
-    promoHas.prize = false; promoLayout()
+    if(prizeList.length){ i = i % prizeList.length; shot.src = prizeList[i]; return }
+    promoHas.prize = false
   })
-  img.src = prizeList[0]
+  shot.src = prizeList[0]
 }
 
-// The product turns while the scene is up. Same rule as everywhere else here:
-// nothing runs behind a hidden view.
+// The product turns while the scene is up, and only while it is up.
 function prizeCycle(){
   clearTimeout(prizeTimer); prizeTimer = null
   if(prizeList.length < 2) return
-  if(!document.getElementById('v-poster').classList.contains('on')) return
+  if(!document.getElementById('v-prize').classList.contains('on')) return
   prizeTimer = setTimeout(()=>{
     prizeAt = (prizeAt + 1) % prizeList.length
-    document.getElementById('promoPrize').src = prizeList[prizeAt]
+    document.getElementById('prizeShot').src = prizeList[prizeAt]
     prizeCycle()
   }, PRIZE_HOLD)
 }
@@ -1325,7 +1390,7 @@ function cardCycle(){
 // paused every other second of the night.
 function syncPromo(){
   if(window.__fanShuffle) window.__fanShuffle()   // starts on the way in, stops itself on the way out
-  cardCycle(); prizeCycle()
+  cardCycle()
   if(!promoFilmEl) return
   if(document.getElementById('v-poster').classList.contains('on')){
     const p = promoFilmEl.play(); if(p && p.catch) p.catch(()=>{})
@@ -1896,6 +1961,7 @@ const hideAll=()=>document.querySelectorAll('.view').forEach(hideView)
 // absolutely positioned at wherever it was left.
 function showView(el){
   if(!el) return
+  if(el.id === 'v-prize') setTimeout(prizeCycle, 0)
   clearTimeout(el._voutT)
   el.classList.remove('out')
   el.style.position=el.style.top=el.style.left=el.style.width=''
@@ -1908,7 +1974,11 @@ function show(view, league){
   // with nothing under it on air. The rotation already skips the scene; an
   // explicit press has to as well, because the button gives no sign that the
   // files are missing and a blank screen is the only thing the room would see.
-  if(view==='poster' && !promoHas.poster && !promoHas.prize && !promoHas.film) return
+  if(view==='poster' && !promoHas.poster && !promoHas.film) return
+  // Same rule as the poster scene: a button press that would put up a heading
+  // with nothing under it does nothing instead. The button cannot tell you the
+  // files are missing; a blank screen is all the room would see.
+  if(view==='prize' && !promoHas.prize) return
   clearInterval(cycle); cycle=null
   hideAll()
   if(view==='off'||!view) return
