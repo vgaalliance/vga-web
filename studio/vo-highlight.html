@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VGA — VO Highlight</title>
+<!-- ============================================================
+     VO HIGHLIGHT — 45 seconds on one fighter, cut to a voiceover.
+
+     A whole scene with AUDIO, which is why it is its own OBS source and
+     not another standby view: standby must never make a sound, and a
+     source that does needs to be routable and duckable on its own.
+
+     THERE IS NO FOOTAGE IN THIS. We have one cut-out photo per fighter
+     and no time to cut highlight reels, so the movement comes from
+     treating that one photo three ways and moving the camera on it. A
+     still that never moves for 45 seconds is a slide; this is the same
+     still, pushed, punched and burned down to a silhouette, with the
+     numbers arriving as the voice reaches them.
+
+       ?demo=1        run the whole thing on a sample fighter, looping
+       ?slug=jester   who to look up
+       ?audio=x.mp3   the voiceover, from assets/vo/
+       ?mute=1        run the visuals only, audio played elsewhere
+
+     ⚠ AUTOPLAY: OBS launches Chromium with autoplay allowed, so the
+     voiceover starts on its own there. A normal browser tab will not
+     play it without a click — test the sound in OBS, not in Chrome.
+============================================================= -->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Barlow+Condensed:wght@500;700;900&family=Barlow:wght@500;600&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  :root{ --pur:#9b30ff; --hi:#cc66ff; --pink:#ff33cc; --gold:#ffce00;
+         --bg:#05000e; --dim:rgba(200,160,255,.55); --line:rgba(155,48,255,.28); }
+  html,body{width:1920px;height:1080px;overflow:hidden;background:var(--bg);
+    font-family:'Barlow Condensed',sans-serif;color:#fff;}
+
+  #scene{position:absolute;inset:0;opacity:0;transition:opacity .5s ease;}
+  #scene.on{opacity:1;}
+
+  /* ── THE STAGE ────────────────────────────────────────────────────────
+     The portrait and its silhouette are the same picture in the same box,
+     one fading into the other. Two separate elements rather than one
+     filtered element, because the silhouette is a MASK — the photo's own
+     alpha punched out of a violet field — and a filter cannot do that. */
+  #stage{position:absolute;inset:0;overflow:hidden;}
+  #por,#sil{position:absolute;top:50%;left:38%;height:132%;
+    transform:translate(-50%,-50%);
+    transition:transform 3.4s cubic-bezier(.22,.61,.36,1),
+               filter 1.6s ease, opacity 1.2s ease;}
+  #por{width:auto;}
+  #sil{width:min(1200px,62vw);opacity:0;
+    -webkit-mask-position:center;mask-position:center;
+    -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+    -webkit-mask-size:contain;mask-size:contain;
+    background:linear-gradient(160deg,var(--pur) 0%,var(--pink) 55%,#4b0f9e 100%);}
+
+  /* STATE 1 — ARRIVAL. Wide, cold, pushing in slowly. Duotone rather than
+     the raw photo: these are game captures of very different quality and a
+     single colour treatment is what makes twenty of them look like one
+     broadcast. */
+  .s1 #por{transform:translate(-50%,-50%) scale(1.06);
+    filter:grayscale(1) contrast(1.15) brightness(.82) sepia(.35) hue-rotate(215deg) saturate(2.2);}
+  /* STATE 2 — THE RECORD. Punch in on the head and shoulders and let the
+     colour back in. The move is the point: the same photo at 1.06 and at
+     1.9 does not read as the same shot. */
+  .s2 #por{transform:translate(-50%,-58%) scale(1.9);
+    filter:grayscale(.35) contrast(1.25) brightness(.95) saturate(1.1)
+           drop-shadow(0 0 42px rgba(155,48,255,.55));}
+  /* STATE 3 — THE STAKES. The photo goes and the silhouette takes over, so
+     the last third is a shape and a number rather than a face and a list. */
+  .s3 #por{transform:translate(-50%,-50%) scale(1.3);opacity:0;
+    filter:grayscale(1) brightness(.4);}
+  .s3 #sil{opacity:1;transform:translate(-50%,-50%) scale(1.04);}
+
+  /* grain, scanlines, vignette — the house treatment, and the thing that
+     hides how soft an upscaled game capture gets at 1.9x */
+  .grain{position:absolute;inset:0;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size:180px;}
+  .scan{position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px);}
+  .vig{position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse at 34% 50%,transparent 30%,rgba(5,0,14,.86) 78%),
+               linear-gradient(90deg,transparent 40%,rgba(5,0,14,.94) 72%);}
+
+  /* ── THE SIDE ─────────────────────────────────────────────────────────
+     Everything that is words lives right of centre, where the vignette has
+     already taken the picture down to nothing. */
+  #side{position:absolute;right:96px;top:50%;transform:translateY(-50%);
+    width:760px;display:flex;flex-direction:column;align-items:flex-end;text-align:right;}
+  #eyebrow{font-family:'Press Start 2P',monospace;font-size:13px;letter-spacing:.34em;
+    color:var(--hi);text-shadow:0 0 16px rgba(204,102,255,.6);
+    opacity:0;transform:translateY(10px);transition:opacity .6s ease,transform .6s ease;}
+  #name{font-weight:900;font-size:112px;line-height:.9;text-transform:uppercase;
+    text-shadow:0 0 40px rgba(155,48,255,.6);margin:10px 0 4px;
+    opacity:0;transform:translateX(40px);transition:opacity .7s ease,transform .9s cubic-bezier(.16,1,.3,1);}
+  #nick{font-family:'Barlow',sans-serif;font-weight:600;font-size:26px;letter-spacing:.12em;
+    color:var(--gold);text-transform:uppercase;
+    opacity:0;transition:opacity .6s ease .1s;}
+  .in #eyebrow,.in #name,.in #nick{opacity:1;transform:none;}
+
+  /* THE RECORD, as one big number that counts. A record that is simply
+     printed is a fact; a record that arrives at its number while the voice
+     says it is the same fact with a beat under it. */
+  #rec{display:flex;align-items:baseline;gap:14px;margin:26px 0 6px;
+    opacity:0;transform:translateX(30px);transition:opacity .5s ease,transform .7s cubic-bezier(.16,1,.3,1);}
+  #rec.in{opacity:1;transform:none;}
+  #rec b{font-weight:900;font-size:96px;line-height:.85;letter-spacing:-.02em;}
+  #rec small{font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.28em;color:var(--dim);}
+
+  .rows{display:flex;flex-direction:column;gap:10px;margin-top:18px;width:100%;}
+  .row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:20px;
+    padding:13px 20px;background:rgba(14,0,30,.82);border-right:4px solid var(--pur);
+    box-shadow:0 0 20px rgba(60,0,110,.45);
+    opacity:0;transform:translateX(52px);
+    transition:opacity .45s ease,transform .6s cubic-bezier(.16,1,.3,1);}
+  .row.in{opacity:1;transform:none;}
+  .row .k{font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.2em;color:var(--dim);}
+  .row .v{font-weight:900;font-size:34px;text-transform:uppercase;line-height:1;}
+  .row.gold{border-right-color:var(--gold);}
+  .row.gold .v{color:var(--gold);}
+
+  /* THE STAKES — the last third's line, big and alone. */
+  #stake{margin-top:30px;font-weight:900;font-size:54px;line-height:1;text-transform:uppercase;
+    color:#fff;text-shadow:0 0 34px rgba(255,51,204,.6);
+    opacity:0;transform:translateY(18px);transition:opacity .7s ease,transform .8s cubic-bezier(.16,1,.3,1);}
+  #stake.in{opacity:1;transform:none;}
+
+  /* the bug, bottom left, so the segment is identifiable in a clip */
+  #bug{position:absolute;left:80px;bottom:70px;display:flex;align-items:center;gap:12px;
+    font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.26em;color:var(--dim);}
+  #bug .dot{width:9px;height:9px;border-radius:50%;background:var(--pink);
+    box-shadow:0 0 12px var(--pink);animation:pulse 1.6s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  /* the operator's clock — Interact window only, never the program feed */
+  #clock{position:absolute;right:22px;bottom:16px;font-family:'Press Start 2P',monospace;
+    font-size:10px;color:rgba(200,160,255,.3);}
+</style>
+</head>
+<body>
+
+<div id="scene">
+  <div id="stage">
+    <img id="por" alt="">
+    <div id="sil"></div>
+    <div class="grain"></div>
+    <div class="scan"></div>
+    <div class="vig"></div>
+  </div>
+
+  <div id="side">
+    <div id="eyebrow">FIGHT NIGHT</div>
+    <div id="name">—</div>
+    <div id="nick"></div>
+    <div id="rec"><b id="recNum">0—0</b><small id="recLbl">PROFESSIONAL</small></div>
+    <div class="rows" id="rows"></div>
+    <div id="stake"></div>
+  </div>
+
+  <div id="bug"><span class="dot"></span><span id="bugText">FIGHTER PROFILE</span></div>
+  <div id="clock"></div>
+</div>
+
+<audio id="vo" preload="auto"></audio>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
+  'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
+const $ = id => document.getElementById(id)
+const Q = new URLSearchParams(location.search)
+const has = v => v != null && String(v).trim() !== ''
+const norm = v => String(v ?? '').toLowerCase().replace(/[^a-z0-9]/g,'')
+
+const DIVISION = { heavyweight:'HEAVYWEIGHT', light_heavyweight:'LIGHT HEAVY',
+  middleweight:'MIDDLEWEIGHT', lightweight:'LIGHTWEIGHT', welterweight:'WELTERWEIGHT',
+  featherweight:'FEATHERWEIGHT', bantamweight:'BANTAMWEIGHT', flyweight:'FLYWEIGHT',
+  cruiserweight:'CRUISERWEIGHT' }
+const division = v => DIVISION[norm(v).replace(/\s+/g,'_')] || String(v ?? '').toUpperCase()
+
+// ── THE TIMELINE ──────────────────────────────────────────────────────
+// Three states across 45 seconds, and the numbers arrive inside them. The
+// beats are FRACTIONS of the runtime, not seconds: a voiceover that comes in
+// at 38s or 52s still lands its record two thirds of the way through rather
+// than four seconds before the end. An explicit beats list overrides them,
+// for a read that does not divide evenly.
+const DEFAULT_BEATS = [0, .34, .70]     // arrival · the record · the stakes
+const DEFAULT_LEN = 45
+let LEN = DEFAULT_LEN, BEATS = DEFAULT_BEATS.slice()
+
+let raf = null, t0 = 0, fired = new Set(), state = 0
+const vo = $('vo')
+
+function at(frac){ return BEATS[0] + frac }   // beats are already fractions
+
+// Everything that appears does so ONCE per run, keyed by name: the driver
+// runs sixty times a second and re-adding a class every frame would restart
+// its transition and leave the row shivering in place.
+function once(key, fn){ if(fired.has(key)) return; fired.add(key); fn() }
+
+function setState(n){
+  if(state === n) return
+  state = n
+  $('scene').className = 'on s' + n
+}
+
+// The record counts up to itself. Tweened on the same clock as everything
+// else rather than on its own timer, so a scrub or a restart cannot leave it
+// halfway to a number.
+function drawRecord(p, W, L, D){
+  const w = Math.round(W * p), l = Math.round(L * p), d = Math.round((D||0) * p)
+  $('recNum').textContent = w + '—' + l + (D ? '—' + d : '')
+}
+
+function run(){
+  cancelAnimationFrame(raf)
+  fired.clear(); state = 0
+  $('scene').classList.add('on')
+  const t = () => vo.src && !vo.paused ? vo.currentTime : (performance.now() - t0) / 1000
+  t0 = performance.now()
+
+  const step = () => {
+    const now = t(), p = Math.min(1, now / LEN)
+
+    if(p >= BEATS[2])      setState(3)
+    else if(p >= BEATS[1]) setState(2)
+    else                   setState(1)
+
+    // STATE 1 — who it is
+    once('in',   ()=> $('side').classList.add('in'))
+    // STATE 2 — the record, then the rows off the back of it
+    if(p >= BEATS[1]){
+      once('rec', ()=> $('rec').classList.add('in'))
+      const into = (p - BEATS[1]) / Math.max(.001, BEATS[2] - BEATS[1])
+      drawRecord(Math.min(1, into * 2.4), REC.w, REC.l, REC.d)   // lands early in its own section
+      ;[...document.querySelectorAll('.row')].forEach((r, i) => {
+        if(into > .18 + i * .12) once('row' + i, ()=> r.classList.add('in'))
+      })
+    }
+    // STATE 3 — what it is worth
+    if(p >= BEATS[2]) once('stake', ()=> $('stake').classList.add('in'))
+
+    $('clock').textContent = now.toFixed(1) + ' / ' + LEN.toFixed(1)
+    if(p < 1) raf = requestAnimationFrame(step)
+    else if(Q.get('demo')) setTimeout(reset, 1200)   // demo loops so the style can be watched
+  }
+  raf = requestAnimationFrame(step)
+}
+
+function reset(){
+  cancelAnimationFrame(raf)
+  fired.clear(); state = 0
+  $('side').classList.remove('in')
+  $('rec').classList.remove('in')
+  $('stake').classList.remove('in')
+  document.querySelectorAll('.row').forEach(r => r.classList.remove('in'))
+  $('scene').className = 'on s1'
+  drawRecord(0, REC.w, REC.l, REC.d)
+  void $('side').offsetWidth
+  if(vo.src){ try{ vo.currentTime = 0; vo.play().catch(()=>{}) }catch(e){} }
+  run()
+}
+
+// ── WHO IS ON ─────────────────────────────────────────────────────────
+let REC = { w:0, l:0, d:0 }
+
+function paint(f, over){
+  over = over || {}
+  const name = over.name || (f && f.display_name) || 'FIGHTER'
+  $('name').textContent = String(name).toUpperCase()
+  $('nick').textContent = has(f && f.nickname) ? '"' + f.nickname + '"' : ''
+  $('eyebrow').textContent = String(over.event || Q.get('event') || 'FIGHT NIGHT').toUpperCase()
+  $('bugText').textContent = String(over.bug || 'FIGHTER PROFILE').toUpperCase()
+
+  REC = { w:+((f && f.headline_wins) || 0), l:+((f && f.headline_losses) || 0),
+          d:+((f && f.headline_draws) || 0) }
+  drawRecord(0, REC.w, REC.l, REC.d)
+  $('recLbl').textContent = REC.w + REC.l + REC.d > 0 ? 'RECORD' : 'DEBUT'
+
+  // The rows are built from what the fighter HAS. Every part is optional and
+  // an absent one is dropped, never dashed — the studio's rule everywhere: a
+  // thin profile makes a shorter panel, not a panel with holes in it.
+  const rows = []
+  if(f && f.is_champion) rows.push(['STATUS', division(f.weight_class) + ' CHAMPION', true])
+  else if(f && +f.rank > 0) rows.push(['RANKED', '#' + f.rank + ' ' + division(f.weight_class), false])
+  else if(f && has(f.weight_class)) rows.push(['DIVISION', division(f.weight_class), false])
+  if(f && +f.headline_ko_wins > 0) rows.push(['KNOCKOUTS', String(f.headline_ko_wins), false])
+  if(f && has(f.team)) rows.push(['TEAM', String(f.team), false])
+  if(f && has(f.country)) rows.push(['FIGHTING OUT OF', String(f.country), false])
+  if(f && has(f.reach)) rows.push(['REACH', String(f.reach).replace(/"/g,'') + '"', false])
+  $('rows').innerHTML = rows.map(([k,v,g]) =>
+    '<div class="row' + (g ? ' gold' : '') + '"><span class="k">' + k + '</span>'
+    + '<span class="v">' + v + '</span></div>').join('')
+
+  $('stake').textContent = String(over.stake || Q.get('stake') ||
+    (f && f.is_champion ? 'THE BELT IS ON THE LINE' : 'TONIGHT HE MOVES')).toUpperCase()
+
+  const url = over.photo || (f && f.profile_photo_url) || ''
+  if(url){
+    $('por').src = url
+    $('sil').style.webkitMaskImage = 'url("' + url + '")'
+    $('sil').style.maskImage = 'url("' + url + '")'
+  }
+}
+
+async function load(who, over){
+  let f = null
+  if(has(who)){
+    // supabase-js resolves {data:null,error} instead of throwing, so a failed
+    // lookup has to be told apart from a fighter who is not there — otherwise
+    // a database blip puts a blank plate on air and logs nothing.
+    const { data, error } = await sb.from('fighter_cards')
+      .select('slug,display_name,nickname,weight_class,rank,is_champion,country,team,'
+            + 'profile_photo_url,headline_wins,headline_losses,headline_draws,headline_ko_wins,height,reach,stance')
+    if(error || !data) console.warn('[vo] lookup failed —', error)
+    else f = data.find(c => norm(c.slug) === norm(who)) ||
+             data.find(c => norm(c.display_name) === norm(who)) || null
+    if(!f) console.warn('[vo] no fighter matched', who)
+  }
+  paint(f, over)
+  return f
+}
+
+// ── AUDIO ─────────────────────────────────────────────────────────────
+// The graphic plays the voiceover itself so there is ONE clock. A track OBS
+// plays separately drifts from a graphic on its own timer, and the drift is
+// invisible in rehearsal and obvious on air.
+// Named by convention: assets/vo/<slug>.mp3, so nothing has to be configured
+// per fight. A missing file is not an error — the visuals run silent on the
+// default runtime, which is a segment without a voice rather than no segment.
+function loadAudio(src){
+  if(Q.get('mute') === '1'){ LEN = DEFAULT_LEN; return }
+  vo.src = src
+  vo.onloadedmetadata = () => {
+    if(isFinite(vo.duration) && vo.duration > 4) LEN = vo.duration
+    vo.play().catch(err => console.warn('[vo] autoplay blocked —', err.name,
+      '— in OBS this plays; a browser tab needs a click'))
+    reset()
+  }
+  vo.onerror = () => { console.warn('[vo] no audio at', src, '— running silent'); LEN = DEFAULT_LEN }
+}
+
+// ── DEMO ──────────────────────────────────────────────────────────────
+// The style, on a real fighter with a real photo, looping. This is what the
+// scene is designed against — not a lorem-ipsum plate that hides how a long
+// name or a missing rank behaves.
+async function demo(){
+  await load(Q.get('slug') || 'jester', { event:'UBA 15', stake:'A TOP TEN SPOT IS WAITING' })
+  LEN = Number(Q.get('len')) || DEFAULT_LEN
+  reset()
+}
+
+if(Q.get('demo') === '1'){ demo() }
+else if(has(Q.get('slug'))){
+  load(Q.get('slug'), {}).then(()=>{ if(has(Q.get('audio'))) loadAudio('assets/vo/' + Q.get('audio')); else reset() })
+}
+
+// ── THE WIRE ──────────────────────────────────────────────────────────
+sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, async ({ payload:c }) => {
+  if(!c || c.type !== 'vo') return
+  if(c.on === false){
+    $('scene').classList.remove('on')
+    cancelAnimationFrame(raf)
+    try{ vo.pause(); vo.currentTime = 0 }catch(e){}
+    return
+  }
+  const d = c.d || {}
+  const f = await load(d.slug || d.name, d)
+  // Beats can be sent per fight for a read that does not divide evenly.
+  BEATS = Array.isArray(d.beats) && d.beats.length === 3 ? d.beats : DEFAULT_BEATS.slice()
+  if(d.audio !== null) loadAudio('assets/vo/' + (d.audio || ((f && f.slug) || norm(d.slug || d.name)) + '.mp3'))
+  else { LEN = DEFAULT_LEN; reset() }
+}).subscribe()
+})()
+</script>
+</body>
+</html>
