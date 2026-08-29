@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VGA — Vertical (all layers)</title>
+<!-- ============================================================
+     THE VERTICAL CANVAS — ONE SOURCE, FOUR LAYERS.
+
+     Add THIS as the only 1080x1920 browser source in the vertical
+     canvas (Aitum Vertical). It carries the fight clock, the lower
+     third, the tale of the tape and standby, and it answers exactly
+     the deck commands the horizontal originals do — so one press
+     still lights both canvases and no deck work is needed.
+
+     WHY THIS EXISTS. As four separate browser sources they could not
+     see each other, and two of them are FULL FRAME with an opaque
+     background: standby paints #04000c over the whole canvas, so
+     stacked above the clock it simply blacked it out. Four sources
+     cannot coordinate; one can. The same class of bug as the keys
+     card sitting on the dossier, which is the third time it has come
+     up, so it is fixed structurally here rather than by remembering.
+
+     WHY LAYERS AND NOT ONE MERGED FILE. The four share four element
+     ids (#crt, #vig, #nameL, #nameR) and most of their class names
+     (.row, .title, .eyebrow, .sub). Textually merging them means
+     renaming all of it by hand in CSS, markup and JS at once — a
+     large edit with no way to prove it beyond reading it. Held as
+     layers, each file stays exactly the thing that was already
+     verified, and the only new code is the ~120 lines below that
+     decide which is on top. If a layer ever needs editing, it is
+     still its own file and still opens on its own.
+
+     THE COST, stated: four Supabase realtime connections rather than
+     one. The studio already runs five or more sources that each hold
+     their own, so this changes nothing about how the channel behaves.
+     ============================================================= -->
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{width:1080px;height:1920px;background:transparent;overflow:hidden;}
+  .layer{position:absolute;inset:0;width:1080px;height:1920px;border:0;
+    opacity:0;pointer-events:none;transition:opacity .34s ease;}
+  .layer.up{opacity:1;}
+  /* Stacking order is deliberate and fixed. The two BARS sit underneath
+     because they are furniture; the two FULL-FRAME screens come over the top
+     because when either is up it is the whole picture. */
+  #l-clock{z-index:10;}
+  #l-third{z-index:11;}
+  #l-tape {z-index:20;}
+  #l-stand{z-index:21;}
+</style>
+</head>
+<body>
+
+<!-- Each layer is the file that was built and verified on its own. Nothing is
+     re-implemented here; this page only decides which of them is visible. -->
+<iframe class="layer" id="l-clock" src="fight-clock-vertical.html"      scrolling="no"></iframe>
+<iframe class="layer" id="l-third" src="lower-third-vertical.html"      scrolling="no"></iframe>
+<iframe class="layer" id="l-tape"  src="tale-of-the-tape-vertical.html" scrolling="no"></iframe>
+<iframe class="layer" id="l-stand" src="standby-vertical.html"          scrolling="no"></iframe>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
+  'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
+const $ = id => document.getElementById(id)
+const has = v => v !== null && v !== undefined && String(v).trim() !== ''
+
+// ── the layers ─────────────────────────────────────────────────────────
+// `full` means: when this is up, the bars go away. Nothing else about a
+// layer matters to this file.
+const LAYERS = {
+  clock: { el:'l-clock', full:false },
+  third: { el:'l-third', full:false },
+  tape:  { el:'l-tape',  full:true  },
+  stand: { el:'l-stand', full:true  },
+}
+const up = { clock:false, third:false, tape:false, stand:false }
+
+function paint(){
+  const anyFull = up.tape || up.stand
+  for(const [k, L] of Object.entries(LAYERS)){
+    // A bar is only drawn when it is on AND nothing full-frame is over it.
+    // The bar layer is not told to hide — it keeps its own state and comes
+    // straight back when the full-frame screen goes, which is what an
+    // operator expects after cutting away to the tape and back.
+    const vis = up[k] && (L.full || !anyFull)
+    $(L.el).classList.toggle('up', vis)
+  }
+}
+function set(k, on){ if(up[k] === !!on) return; up[k] = !!on; paint() }
+
+// ── the wire ───────────────────────────────────────────────────────────
+// Read-only. Every command is ALSO delivered to the layers themselves, in
+// their own iframes, over their own subscriptions — this file never forwards
+// anything and never speaks on the channel. It is watching the same traffic
+// to work out which layer should be on top.
+sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, ({ payload: c }) => {
+  if(!c) return
+
+  // FIGHT CLOCK. The league gate is the clock's own (uba/gfl, untagged
+  // passes) — mirrored here so a UBAe night does not leave an empty clock
+  // layer switched on over the top of standby.
+  if(c.type === 'clock'){
+    const mine = !c.league || c.league === 'uba' || c.league === 'gfl'
+    if(mine) set('clock', c.show !== false)
+  }
+  // Arming a bout implies the clock is wanted, which is how the horizontal
+  // one behaves: the deck arms, then shows.
+  if(c.type === 'bout' && c.d && (c.d.a || c.d.b)){
+    if(!c.league || c.league === 'uba' || c.league === 'gfl') set('clock', true)
+  }
+
+  // LOWER THIRD. It auto-hides itself after 12s, so the layer has to come
+  // down on the same clock or an invisible iframe keeps swallowing nothing
+  // for the rest of the show. 12s + its own exit.
+  if(c.type === 'fighter'){
+    if(c.on === false || !c.d){ set('third', false) }
+    else {
+      set('third', true)
+      clearTimeout(thirdTimer)
+      thirdTimer = setTimeout(() => set('third', false), 12600)
+    }
+  }
+
+  // TALE OF THE TAPE. Data and reveal arrive as two messages; only the
+  // reveal raises the layer, which is what keeps "Show" from ever revealing
+  // the previous matchup.
+  if(c.type === 'tape'){
+    if(c.on === false) set('tape', false)
+    if(c.show === true) set('tape', true)
+  }
+
+  // STANDBY. 'off' and on:false both mean down.
+  if(c.type === 'standby'){
+    set('stand', c.on === false || c.view === 'off' ? false : true)
+  }
+}).subscribe(s => { if(s === 'SUBSCRIBED') console.log('[vertical] layer manager live') })
+let thirdTimer = null
+
+// ?layer=clock|third|tape|stand forces one up with no deck, for checking a
+// layer in a browser. ?layer=all raises the two bars together, which is the
+// combination that has to be checked most often.
+const q = new URLSearchParams(location.search).get('layer')
+if(has(q)){
+  if(q === 'all'){ set('clock', true); set('third', true) }
+  else if(LAYERS[q]) set(q, true)
+}
+})()
+</script>
+</body>
+</html>
