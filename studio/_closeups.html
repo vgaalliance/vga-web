@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VGA — Close-ups</title>
+<!-- A REVIEW TOOL. Never add to OBS.
+     Each graphic is the real overlay.html in a 1920x1080 iframe, cropped
+     tight to that graphic's own bounding box and shown at 1:1. On a full
+     frame these are corner furniture and review shots come back as specks;
+     cropped, each one fills the picture at the size it was designed at. -->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Barlow:wght@500;600&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#0b0910;color:#eee;font-family:'Barlow',system-ui,sans-serif;padding:18px 20px 60px;}
+  h1{font-family:'Barlow Condensed';font-weight:900;font-size:26px;text-transform:uppercase;letter-spacing:.04em;}
+  .sub{color:#9a90ab;font-size:13px;margin:4px 0 16px;}
+  .item{margin-bottom:22px;}
+  .lab{font:600 13px 'Barlow';color:#cbbfe0;letter-spacing:.06em;margin-bottom:7px;
+    display:flex;gap:12px;align-items:baseline;}
+  .lab i{font-style:normal;color:#7d7390;font-size:11px;font-family:monospace;}
+  /* the crop: a window onto the 1920x1080 frame, offset so the graphic lands
+     at 0,0 inside it. --sc scales the whole thing down only if it is wider
+     than the review column. */
+  .crop{position:relative;overflow:hidden;background:#141018;border:1px solid #2a2237;}
+  .crop iframe{position:absolute;border:0;width:1920px;height:1080px;transform-origin:0 0;}
+</style>
+</head>
+<body>
+<h1>Close-ups — the in-match corner</h1>
+<div class="sub">Real overlay.html, cropped to each graphic's own bounds, shown at the size it was designed at.</div>
+<div id="out"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// x, y, w, h are the graphic's box inside the 1920x1080 frame.
+const SHOTS = [
+  { id:'dossier', lab:'Fighter dossier — the segmented bar', note:'1440x112 · 75% of frame',
+    box:[52,770,1420,128], sc:.56,
+    cmd:{type:'fighter',league:'uba',d:{name:'Namsrai Batbayar',record:'11-2-1',ko:7,rank:7,
+      weight:'Heavyweight',country:'Mongolia',next:'vs Dragon 5000 · UBA 16'}} },
+  { id:'keys', lab:'Keys to victory', note:'gold accent · 3 bullets in one card',
+    box:[52,650,780,255], sc:1,
+    card:{tone:'keys', eyebrow:'Keys to victory', head:'SMOKINEM', sub:'', keys:[
+      'Keep it long — win the first two minutes at range',
+      'Make him lead, then counter off the back foot',
+      'Bank the early rounds; he fades after three']} },
+  { id:'fact', lab:'Fun fact', note:'same card, typed in the admin panel',
+    box:[52,712,780,190], sc:1,
+    card:{tone:'fact', eyebrow:'Fun fact', head:'SMOKINEM', keys:null,
+      sub:'Has fought on every card since the league opened and has never missed a weigh-in.'} },
+  { id:'msg', lab:'Message — social post', note:'352 wide · inverted platform panel',
+    box:[56,360,368,360], sc:1,
+    cmd:{type:'flash',w:'msg',league:'uba',d:{text:'10-9 Lima. The headkick is there all night.',
+      from:'PNW.MMA',handle:'pnw.mma',platform:'discord',tag:'#UBA15'}} },
+];
+
+const out = document.getElementById('out');
+SHOTS.forEach(s => {
+  const [x,y,w,h] = s.box;
+  const d = document.createElement('div');
+  d.className = 'item';
+  d.innerHTML = `<div class="lab"><span>${s.lab}</span><i>${s.note}</i></div>
+    <div class="crop" style="width:${Math.round(w*s.sc)}px;height:${Math.round(h*s.sc)}px;">
+      <iframe id="if_${s.id}" src="overlay.html"
+        style="transform:scale(${s.sc}) translate(${-x}px,${-y}px);"></iframe></div>`;
+  out.appendChild(d);
+});
+
+const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
+  'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF');
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+// Each crop is driven INSIDE its own iframe rather than over the channel:
+// all four frames are overlay.html and would otherwise hear each other's
+// commands and all show the same graphic.
+// Wait for each frame to be genuinely ready rather than guessing a delay:
+// overlay.html builds K_CARDS after its own demo guard runs, and a fixed
+// 1800ms caught some frames before that and some after — which is why one
+// crop came back empty and one painted the wrong card.
+const ready = (w, test, ms=8000) => new Promise((res, rej) => {
+  const t0 = Date.now();
+  const tick = () => {
+    try { if(test(w)) return res(true) } catch(e){}
+    if(Date.now() - t0 > ms) return rej(new Error('timeout'));
+    setTimeout(tick, 100);
+  };
+  tick();
+});
+
+window.drive = async () => {
+  const log = [];
+  for(const s of SHOTS){
+    const w = document.getElementById('if_' + s.id).contentWindow;
+    try{
+      if(s.card){
+        await ready(w, x => typeof x.kPaint === 'function');
+        w.kPaint(s.card);
+        w.slotShow(w.document.getElementById('keys'));
+      } else {
+        await ready(w, x => typeof x.handle === 'function' && x.document.getElementById('fighter'));
+        w.handle(s.cmd);
+      }
+      log.push(s.id + ':ok');
+    }catch(e){ log.push(s.id + ':' + e.message) }
+    await wait(200);
+  }
+  await wait(700);
+  // HOLD EVERYTHING OPEN. The dossier retires itself after 14s and the keys
+  // card after its hold, so a review page that takes any time to drive would
+  // photograph an empty frame. Cancel the timers and pin the classes.
+  for(const s of SHOTS){
+    const w = document.getElementById('if_' + s.id).contentWindow;
+    try{
+      for(let i = 1; i < 99999; i++) w.clearTimeout(i)
+      const el = w.document.getElementById(s.card ? 'keys' : s.cmd.type === 'flash' ? 'flash' : 'fighter')
+      if(el){ el.classList.remove('out'); el.classList.add('in') }
+    }catch(e){}
+  }
+  return log.join(' | ');
+};
+</script>
+</body>
+</html>

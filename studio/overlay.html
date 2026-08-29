@@ -382,6 +382,10 @@
   #keys[data-tone="gold"]  .accent{background:var(--gold);}
   #keys[data-tone="green"] .accent{background:var(--green);}
   #keys[data-tone="amber"] .accent{background:#ffb020;}
+  /* the fun fact: white, the same device as the bar's inverted panel — it is
+     a highlight, not a category */
+  #keys[data-tone="fact"] .accent{background:var(--kit-panel);}
+  #keys[data-tone="fact"] #kEyebrow{color:var(--kit-label);}
   #keys .kb{padding:15px 30px 17px 24px;min-width:0;}
   /* the bar's label style, verbatim */
   #kEyebrow{font:500 15px 'Barlow';letter-spacing:.24em;text-transform:uppercase;
@@ -393,7 +397,14 @@
   #kHead{font-family:'Barlow Condensed';font-weight:500;font-size:44px;line-height:1;
     letter-spacing:.11em;text-transform:uppercase;color:var(--kit-ink);}
   #keys[data-tone="keys"] #kHead{font-size:38px;}
-  #kSub{font:500 21px 'Barlow';color:#b8b2c4;margin-top:9px;line-height:1.28;}
+  /* WRAPS. The card is sized by its widest child, and a fun fact is a single
+     long sentence with nothing to break it — so it ran straight off the right
+     edge and got clipped ("never missed a weigh-"). Three lines, then it
+     stops: a fact nobody can finish reading in eight seconds is too long for
+     this card anyway. */
+  #kSub{font:500 21px 'Barlow';color:#b8b2c4;margin-top:9px;line-height:1.3;
+    max-width:660px;white-space:normal;overflow:hidden;
+    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;}
   #kSub em{font-style:normal;color:#fff;font-weight:600;}
   #kSub:empty{display:none;}
   /* Three bullets in ONE card. They are a single argument about how the
@@ -1613,7 +1624,9 @@ async function kLoad(nameA,nameB){
   for(const side of [a,b]){
     const n=notes.find(x=>kNorm(x.fighter_name)===kNorm(side.display_name))
     if(n&&String(n.fun_fact||'').trim()){
-      built.push(K_CARD('red','Fun fact', side.display_name, esc(n.fun_fact)))
+      // 'fact' — its own tone. It was 'red', which in this file is the violet
+      // --red token: the one colour deliberately taken out of this corner.
+      built.push(K_CARD('fact','Fun fact', side.display_name, esc(n.fun_fact)))
       // the dossier bar's white panel reads from here too — same fact, two
       // places, loaded once
       DOSS_FACTS.set(kNorm(side.display_name), String(n.fun_fact).trim())
@@ -1641,7 +1654,7 @@ try{
                          'Bank the early rounds; he fades after three']),
       K_KEYS('Hello World',['Close the distance early and make it ugly',
                             'Body work in the clinch — take the legs away']),
-      K_CARD('red','Fun fact','SMOKINEM','Has fought on every card since the league opened and has never missed a weigh-in.'),
+      K_CARD('fact','Fun fact','SMOKINEM','Has fought on every card since the league opened and has never missed a weigh-in.'),
       K_CARD('gold','On the line','UBA HEAVYWEIGHT TITLE',''),
       K_CARD('green','On a run','4 STRAIGHT WINS','<em>smokinem</em> — last loss MAR 2026'),
       K_CARD('amber','The money','71% ON SMOKINEM','<em>18,400 VC</em> in the pool across 63 bets'),
