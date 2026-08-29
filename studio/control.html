@@ -462,8 +462,8 @@
     <h5><span class="only-uba">The tape — arm a bout, or type both names</span><span
       class="only-ubae">The tape — type the two fighters about to box; it heads itself with the teams and week</span></h5>
     <div class="row">
-      <input id="mnBoutA" placeholder="LEFT FIGHTER NAME…" style="width:200px">
-      <input id="mnBoutB" placeholder="RIGHT FIGHTER NAME…" style="width:200px">
+      <input id="mnBoutA" placeholder="LEFT FIGHTER NAME…" style="width:200px" oninput="voArmed()">
+      <input id="mnBoutB" placeholder="RIGHT FIGHTER NAME…" style="width:200px" oninput="voArmed()">
       <button id="tapeBtn" onclick="tapeToggle()">▶ Show tale of the tape</button>
       <span class="only-ubae" style="color:var(--gdim);font-size:15px">retires itself after 2 min</span>
       <span class="only-uba" style="color:var(--gdim);font-size:15px">retires itself after 2 min</span>
@@ -890,11 +890,32 @@ window.voCoverage = () => {
         + missing.map(b => b.a + ' v ' + b.b).join(', ') + '</b>' : '')
 }
 
-// Reports whether the armed bout has a voiceover, without playing anything.
+// THE ARMED BOUT, OR THE TWO NAMES TYPED ABOVE IT.
+//
+// The VO sits directly under the tale of the tape, whose own label reads "arm a
+// bout, or type both names" — and the tape has always honoured both. The VO
+// only honoured the armed bout, so it answered "arm a bout first" in every
+// situation the tape handles fine: a UBAe night (this deck BOOTS in ubae mode,
+// where the card runner is not what fills UBA.bouts), an event whose card is
+// not published, a late replacement typed straight into the boxes, or simply
+// pressing it before loading the card.
+//
+// It reads the same two inputs the tape does, so the two segments can never
+// disagree about who is fighting.
+function voPair(){
+  const b = (window.UBA && UBA.bouts && UBA.armed != null) ? UBA.bouts[UBA.armed] : null
+  if(b) return { a:b.a, b:b.b, from:'armed' }
+  const a = (document.getElementById('mnBoutA')||{}).value
+  const c = (document.getElementById('mnBoutB')||{}).value
+  if((a||'').trim() && (c||'').trim()) return { a:a.trim(), b:c.trim(), from:'typed' }
+  return null
+}
+
+// Reports whether the bout has a voiceover, without playing anything.
 window.voArmed = () => {
   const el = document.getElementById('voHint'); if(!el) return
-  const b = (window.UBA && UBA.bouts && UBA.armed != null) ? UBA.bouts[UBA.armed] : null
-  if(!b){ el.textContent = 'arm a bout first'; return }
+  const b = voPair()
+  if(!b){ el.textContent = 'arm a bout, or type both names above'; return }
   const file = voFor(b.a, b.b)
   el.innerHTML = file
     ? '<b style="color:#5cf2a0">VO READY</b> · ' + b.a + ' vs ' + b.b
@@ -902,8 +923,8 @@ window.voArmed = () => {
 }
 
 window.fireVO = () => {
-  const b = (window.UBA && UBA.bouts && UBA.armed != null) ? UBA.bouts[UBA.armed] : null
-  if(!b){ document.getElementById('voHint').textContent = 'arm a bout first'; return }
+  const b = voPair()
+  if(!b){ document.getElementById('voHint').textContent = 'arm a bout, or type both names above'; return }
   const file = voFor(b.a, b.b)
   const raw = document.getElementById('voMarks').value.trim()
   const marks = raw ? raw.split(/[,\s]+/).map(Number).filter(n => !isNaN(n)) : []
