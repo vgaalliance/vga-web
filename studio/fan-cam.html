@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VGA — Fan Cam</title>
+<!-- ============================================================
+     FAN CAM — a whole scene, like standby and the loading bar, not a
+     corner bug. The clip fills the frame, the fighter is composited
+     into it, and a UFC-style name bug names who you are looking at.
+
+     THE CLIP IS A PROPERTY OF THE SHOOT, NOT OF THIS FILE. Where the
+     chair sits in frame, how big the person is, which way they face —
+     none of that is knowable here, so all of it is dialled in from the
+     URL (?x= ?y= ?scale= ?flip=) and nothing is baked in. Change the
+     clip, change the URL; this file does not need touching.
+
+     A missing clip falls back to a lit-seat gradient rather than
+     black. A scene that renders black looks identical to a scene that
+     crashed, and on air that costs a director thirty seconds of
+     wondering which one it is.
+     ============================================================= -->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Barlow+Condensed:wght@500;700;900&family=Barlow:wght@500;600&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  :root{ --pur:#9b30ff; --hi:#cc66ff; --pink:#ff33cc;
+    --panel:rgba(14,0,30,.92); --line:rgba(155,48,255,.28); --dim:rgba(200,160,255,.6);
+    --gold:#ffce00; }
+  html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;
+    font-family:'Barlow',system-ui,Arial,sans-serif;color:#fff;}
+
+  /* ── the plate ────────────────────────────────────────────────────
+     Everything lives inside one element so the whole scene can be cut
+     in and out as a unit. Hidden by default is WRONG here: this is a
+     scene, and an OBS scene that renders nothing when you cut to it is
+     indistinguishable from a dead browser source. It comes up live. */
+  #cam{position:fixed;inset:0;opacity:0;transform:scale(1.03);
+    transition:opacity .6s cubic-bezier(.16,1,.3,1), transform .6s cubic-bezier(.16,1,.3,1);}
+  #cam.on{opacity:1;transform:none;}
+
+  /* the clip, and the floor under it */
+  #bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+    background:#05000d;}
+  /* The fallback. Not a placeholder card that says "no video" — that is a
+     graphic nobody wants on air. A dark room with one seat lit from above,
+     which is what the clip is a photograph of. */
+  #floor{position:absolute;inset:0;background:
+    radial-gradient(ellipse 46% 34% at 50% 74%, rgba(155,48,255,.16), transparent 70%),
+    radial-gradient(ellipse 26% 52% at 50% 20%, rgba(204,102,255,.13), transparent 72%),
+    linear-gradient(180deg,#0a0118 0%,#12042a 42%,#07000f 100%);}
+  #floor.hide{display:none;}
+
+  /* ── the fighter ──────────────────────────────────────────────────
+     Composited into the clip, not pasted over it: a contact shadow
+     under the feet and a light wrap on the edge, so the cut-out sits in
+     the room instead of floating in front of it. */
+  #who{position:absolute;left:50%;bottom:0;transform-origin:50% 100%;
+    display:flex;align-items:flex-end;justify-content:center;
+    filter:drop-shadow(0 22px 40px rgba(0,0,0,.72));}
+  #who img{display:block;max-height:none;height:auto;
+    /* the wrap: a faint rim in the room's own violet, so the cut-out's
+       hard edge is not the brightest line in the frame */
+    filter:drop-shadow(0 0 22px rgba(155,48,255,.35)) contrast(1.03) saturate(1.04);}
+  #who.flip img{transform:scaleX(-1);}
+  /* the contact shadow — an ellipse on the floor, under the cut-out */
+  #shade{position:absolute;left:50%;bottom:0;transform:translate(-50%,42%);
+    width:52%;height:70px;border-radius:50%;
+    background:radial-gradient(ellipse at center,rgba(0,0,0,.62),transparent 70%);}
+  /* Nothing to composite is a legitimate state — 2 of 343 fighters have a
+     photo. The bug still names them and the clip still plays. */
+  #who.empty{display:none;}
+
+  /* ── grade + CRT, the same treatment every other scene wears ────── */
+  #grade{position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(180deg,rgba(4,0,12,.42) 0%,transparent 26%,transparent 52%,rgba(4,0,12,.72) 100%);}
+  #vig{position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse at center,transparent 54%,rgba(0,0,0,.66) 100%);}
+  #crt{position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1px,transparent 1px 3px);}
+
+  /* ── the LIVE tally, top-right ────────────────────────────────────
+     What tells you this is a cutaway and not a still. Slow pulse, not a
+     blink: a fast blink reads as an error light. */
+  #tally{position:absolute;top:54px;right:60px;display:flex;align-items:center;gap:12px;
+    padding:10px 20px 10px 16px;background:rgba(8,0,18,.78);
+    border:1px solid rgba(155,48,255,.34);border-radius:6px;
+    font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.2em;color:#fff;}
+  #tally .dot{width:11px;height:11px;border-radius:50%;background:#ff2d55;
+    box-shadow:0 0 14px #ff2d55;animation:tal 2.4s ease-in-out infinite;}
+  @keyframes tal{0%,100%{opacity:1;}50%{opacity:.34;}}
+
+  /* ── the name bug, bottom-left ────────────────────────────────────
+     Same geometry as the dossier in overlay.html, so a director reading
+     the bottom-left corner reads it the same way in every scene. */
+  #bug{position:absolute;left:70px;bottom:84px;display:flex;
+    max-width:1100px;border-radius:10px;overflow:hidden;
+    transform:translateX(-125%);opacity:0;
+    background:linear-gradient(135deg,rgba(20,4,38,.96),rgba(6,0,14,.97));
+    box-shadow:0 22px 55px rgba(0,0,0,.62),0 0 0 1px rgba(155,48,255,.2);}
+  #bug.in{animation:bin .6s cubic-bezier(.16,1,.3,1) .35s forwards;}
+  @keyframes bin{to{transform:translateX(0);opacity:1;}}
+  #bug .accent{width:14px;flex:0 0 14px;background:var(--pur);box-shadow:0 0 26px var(--pur);}
+  #bug .bd{padding:17px 42px 19px 26px;min-width:0;}
+  #eyebrow{font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.24em;
+    color:var(--hi);text-shadow:0 0 13px rgba(204,102,255,.6);margin-bottom:11px;}
+  #name{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:78px;
+    line-height:.9;text-transform:uppercase;letter-spacing:.006em;
+    text-shadow:0 0 34px rgba(155,48,255,.6);white-space:nowrap;}
+  #sub{font:600 25px 'Barlow',sans-serif;color:var(--dim);margin-top:10px;letter-spacing:.04em;}
+  #sub b{color:var(--gold);font-weight:600;}
+  #sub.gone{display:none;}
+</style>
+</head>
+<body>
+
+<div id="cam">
+  <div id="floor"></div>
+  <video id="bg" autoplay muted loop playsinline></video>
+
+  <div id="who"><div id="shade"></div><img id="portrait" alt=""></div>
+
+  <div id="grade"></div>
+  <div id="vig"></div>
+  <div id="crt"></div>
+
+  <div id="tally"><span class="dot"></span><span id="tallyText">FAN CAM</span></div>
+
+  <div id="bug">
+    <div class="accent"></div>
+    <div class="bd">
+      <div id="eyebrow">IN THE BUILDING</div>
+      <div id="name">—</div>
+      <div id="sub"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
+  'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
+const $ = id => document.getElementById(id)
+const Q = new URLSearchParams(location.search)
+const has = v => v !== null && v !== undefined && String(v).trim() !== ''
+const norm = s => String(s ?? '').trim().toLowerCase()
+
+// ============================================================
+// THE KNOBS. All live in the URL, none baked in — see the note at the
+// top of the file. Defaults put the cut-out centred and standing on the
+// bottom edge, which is right for a clip shot square on.
+//
+//   ?clip=loop.webm   which file in assets/fancam/ to play
+//   ?x=52             horizontal centre of the cut-out, % of frame
+//   ?y=0              how far off the bottom edge it stands, px
+//   ?scale=1.0        1.0 = the cut-out is 88% of frame height
+//   ?flip=1           mirror it, for a clip lit from the other side
+//   ?fighter=slug     who to look up (slug or display name)
+//   ?eyebrow= ?sub=   override the two text lines
+// ============================================================
+const KN = {
+  clip : Q.get('clip') || null,
+  x    : Number(Q.get('x')) || 52,
+  y    : Number(Q.get('y')) || 0,
+  scale: Number(Q.get('scale')) || 1,
+  flip : Q.get('flip') === '1',
+}
+function place(){
+  const who = $('who')
+  who.style.left = KN.x + '%'
+  who.style.bottom = KN.y + 'px'
+  who.style.transform = `translateX(-50%) scale(${KN.scale})`
+  who.classList.toggle('flip', KN.flip)
+  $('portrait').style.height = Math.round(1080 * 0.88) + 'px'
+}
+place()
+
+// ── the clip ────────────────────────────────────────────────────────
+// webm first, mp4 second, gradient third. Each step down is silent and
+// automatic: an operator who has not shot the clip yet should get a
+// usable scene, not a broken one.
+const vid = $('bg')
+function playClip(name){
+  const tries = name ? [name] : ['loop.webm','loop.mp4']
+  let i = 0
+  const next = () => {
+    if(i >= tries.length){
+      // nothing played — leave the lit-seat floor showing and say so once
+      vid.style.display = 'none'; $('floor').classList.remove('hide')
+      console.warn('[fancam] no clip in assets/fancam/ — using the fallback floor')
+      return
+    }
+    vid.src = 'assets/fancam/' + tries[i++]
+    vid.load()
+  }
+  vid.onerror = next
+  vid.onloadeddata = () => { $('floor').classList.add('hide'); vid.style.display = '' }
+  next()
+}
+playClip(KN.clip)
+
+// ── who is in the chair ─────────────────────────────────────────────
+const DIVISION = { heavyweight:'HEAVYWEIGHT', light_heavyweight:'LIGHT HEAVYWEIGHT',
+  middleweight:'MIDDLEWEIGHT', lightweight:'LIGHTWEIGHT', welterweight:'WELTERWEIGHT',
+  featherweight:'FEATHERWEIGHT', bantamweight:'BANTAMWEIGHT', flyweight:'FLYWEIGHT',
+  cruiserweight:'CRUISERWEIGHT' }
+const division = v => DIVISION[norm(v).replace(/\s+/g,'_')] || String(v ?? '').toUpperCase()
+
+let gen = 0
+async function show(who, over){
+  over = over || {}
+  const mine = ++gen
+  let f = null
+
+  if(has(who)){
+    // supabase-js resolves {data:null, error} instead of throwing, so a
+    // failed lookup must be told apart from a fighter who is not there.
+    // Conflating them would put a blank plate on air and log nothing.
+    const { data, error } = await sb.from('fighter_cards')
+      .select('slug,display_name,nickname,weight_class,rank,is_champion,country,team,'+
+              'profile_photo_url,headline_wins,headline_losses,headline_draws')
+    if(error || !data){ console.warn('[fancam] lookup failed —', error) }
+    else f = data.find(c => norm(c.slug) === norm(who)) ||
+             data.find(c => norm(c.display_name) === norm(who)) || null
+    if(!f) console.warn('[fancam] no fighter matched', who)
+  }
+  if(mine !== gen) return
+
+  const name = over.name || (f && f.display_name) || (has(who) ? String(who) : 'FAN CAM')
+  $('name').textContent = String(name).toUpperCase()
+
+  $('eyebrow').textContent = String(over.eyebrow || Q.get('eyebrow') || 'IN THE BUILDING').toUpperCase()
+
+  // The sub line writes itself from whatever the fighter actually has.
+  // Every part is optional and an absent part is DROPPED, not dashed —
+  // the studio's rule everywhere: a thin profile makes a shorter line,
+  // never a line with holes in it.
+  let sub = over.sub || Q.get('sub') || ''
+  if(!sub && f){
+    const bits = []
+    if(f.is_champion) bits.push(`<b>${division(f.weight_class)} CHAMPION</b>`)
+    else if(+f.rank > 0) bits.push(`#${+f.rank} ${division(f.weight_class)}`)
+    else if(has(f.weight_class)) bits.push(division(f.weight_class))
+    const w = +f.headline_wins, l = +f.headline_losses, d = +f.headline_draws
+    if(w >= 0 && l >= 0 && (w + l + (d||0)) > 0) bits.push(`${w}—${l}${d ? '—' + d : ''}`)
+    if(has(f.team)) bits.push(String(f.team).toUpperCase())
+    sub = bits.join('  ·  ')
+  }
+  $('sub').innerHTML = sub
+  $('sub').classList.toggle('gone', !sub)
+
+  // the cut-out
+  const img = $('portrait'), holder = $('who')
+  const url = over.photo || (f && f.profile_photo_url) || null
+  if(url){
+    img.onload  = () => { if(mine === gen) holder.classList.remove('empty') }
+    img.onerror = () => { if(mine === gen) holder.classList.add('empty') }
+    img.src = url
+  } else holder.classList.add('empty')
+
+  $('cam').classList.add('on')
+  $('bug').classList.remove('in'); void $('bug').offsetWidth; $('bug').classList.add('in')
+}
+
+// Up on load, so cutting to the scene in OBS shows something. ?fighter=
+// names who; without it the clip plays under a plain FAN CAM bug, which
+// is a real state — the cutaway before anyone is identified.
+show(Q.get('fighter'), {})
+
+// ── the wire ────────────────────────────────────────────────────────
+sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, ({ payload: c }) => {
+  if(!c || c.type !== 'fancam') return
+  const d = c.d || {}
+  if(c.on === false){ $('cam').classList.remove('on'); return }
+  // A clip can be swapped from the deck without reloading the source —
+  // the seat is in a different place in every clip, so the knobs travel
+  // with it rather than being re-typed into the URL mid-show.
+  if(has(d.clip)) playClip(d.clip)
+  if(d.x != null) KN.x = +d.x
+  if(d.y != null) KN.y = +d.y
+  if(d.scale != null) KN.scale = +d.scale
+  if(d.flip != null) KN.flip = !!d.flip
+  place()
+  if(has(d.tally)) $('tallyText').textContent = String(d.tally).toUpperCase()
+  show(d.fighter || d.slug || d.name, d)
+}).subscribe()
+})()
+</script>
+</body>
+</html>
