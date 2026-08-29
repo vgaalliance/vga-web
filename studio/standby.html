@@ -1642,6 +1642,11 @@ function showView(el){
 }
 
 function show(view, league){
+  // Pressing the poster button before either file exists would put a heading
+  // with nothing under it on air. The rotation already skips the scene; an
+  // explicit press has to as well, because the button gives no sign that the
+  // files are missing and a blank screen is the only thing the room would see.
+  if(view==='poster' && !promoHas.poster && !promoHas.film) return
   clearInterval(cycle); cycle=null
   hideAll()
   if(view==='off'||!view) return

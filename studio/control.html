@@ -424,6 +424,10 @@
       <button class="lg-uba" onclick="standby('fotm')">Fighter of the month</button>
       <button class="lg-uba" onclick="standby('nextev')">Next event</button>
       <button class="lg-uba" onclick="standby('cards')">Card collection</button>
+      <!-- Shows nothing until studio/assets/poster.png or card-3d.mp4 exists,
+           and stays out of the auto-cycle until then, so an empty press is a
+           no-op rather than a blank screen on air. -->
+      <button onclick="standby('poster')">🖼 Poster + card</button>
       <button onclick="standby('cta')">📣 Call to action</button>
       <button onclick="standby('auto')">▶ Auto-cycle</button>
       <button class="hide" onclick="standby('off')">Hide</button>
@@ -449,6 +453,17 @@
       <span class="only-ubae" style="color:var(--gdim);font-size:15px">retires itself after 2 min</span>
       <span class="only-uba" style="color:var(--gdim);font-size:15px">retires itself after 2 min</span>
     </div>
+    <!-- THE SPONSOR. The list is studio/sponsors.js, shared with the tape and
+         the countdown -- this is a picker over it, not a second copy. Pressing
+         it broadcasts an explicit choice, which every screen pins; the sponsor
+         that rides along with each matchup push cannot override that, because
+         it is a constant in this file rather than a decision anybody made. -->
+    <h5>🤝 Sponsor — the tape and the countdown both follow this</h5>
+    <div class="row">
+      <select id="sponsorPick" onchange="pickSponsor(this.value)" style="width:220px"></select>
+      <span id="sponsorEcho" style="color:var(--gdim);font-size:16px"></span>
+    </div>
+
     <!-- The venue bug belongs to this stage as much as to the match: the tape
          is where "Live From London" sits longest. Buttons only, no second set
          of inputs -- the venue text stays written down once, in the match
@@ -627,6 +642,9 @@
 
   <div id="log"></div>
 
+<!-- The sponsor list, shared with the tape and the countdown. Loaded before
+     the deck's own script so the picker and the tape push read one list. -->
+<script src="sponsors.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
@@ -1254,15 +1272,15 @@ window.mnTape=async()=>{
   const subtitle = uba
     ? (UBA.name || 'BOUT')
     : (MN.week ? (SPLIT_NAME.toUpperCase()+' · WEEK '+MN.week) : SPLIT_NAME.toUpperCase())
-  // THE SPONSOR. The deck never sent one, so the tape fell back to a hardcoded
-  // wordmark and could only ever say "SHEATH". Four fields, edited here when the
-  // sponsor changes -- name is the wordmark, full is what the middle face reads
-  // out, and url/code drive the promo line. Leave url/code empty and the tape
-  // derives them from the name (sheath.com / SHEATHUBA30).
-  const SPONSOR      = 'SHEATH'
-  const SPONSOR_FULL = 'Sheath Underwear'
-  const SPONSOR_URL  = ''      // e.g. 'sheath.com' -- only needed if it is not name.com
-  const SPONSOR_CODE = ''      // e.g. 'SHEATHUBA30' -- only needed if it is not nameUBA30
+  // THE SPONSOR rides along so a tape loaded cold still names one. It comes
+  // from sponsors.js -- the same list the picker above writes to and the tape
+  // and countdown read -- because four constants typed here is how the deck and
+  // the graphics ended up able to disagree about who tonight's partner is.
+  const SP = activeSponsor()
+  const SPONSOR      = SP.name
+  const SPONSOR_FULL = SP.full
+  const SPONSOR_URL  = SP.url
+  const SPONSOR_CODE = SP.code
   // The league rides along so the tape's wordmark is not a hardcoded UBA. A
   // GFL bout wearing the UBA mark is the one graphic where the wrong brand is
   // full screen and unmissable.
@@ -1309,6 +1327,33 @@ window.fireMsg=()=>{
 
 // league rides along so 'auto' cycles the right set -- a UBA fight night
 // shouldn't parade team standings and rosters between bouts
+// ── THE SPONSOR PICKER ───────────────────────────────────────────────────
+// Options built from SPONSORS, so adding a partner to sponsors.js is the only
+// edit -- there is no second list here to fall out of step with it.
+// The choice is broadcast as its own command rather than folded into the tape
+// push: a tape push happens per matchup and carries a sponsor whether or not
+// anybody chose one, so the two must be distinguishable at the other end.
+window.pickSponsor = key => {
+  if(!pinSponsor(key)) return
+  send({ type:'sponsor', key: SPONSOR_KEY })
+  sponsorEchoNow()
+}
+function sponsorEchoNow(){
+  const s = activeSponsor()
+  document.getElementById('sponsorEcho').textContent =
+    s.code ? s.name + ' · ' + s.code + ' at ' + sponsorSite(s)
+           : s.name + ' · ' + sponsorSite(s) + ' · no promo code'
+}
+;(function initSponsorPick(){
+  const sel = document.getElementById('sponsorPick'); if(!sel) return
+  sel.innerHTML = Object.keys(SPONSORS)
+    .map(k => '<option value="'+k+'">'+SPONSORS[k].name+'</option>').join('')
+  // Reflects what is already pinned, so opening the deck mid-show tells you who
+  // is on air rather than resetting the answer to the first option.
+  sel.value = SPONSOR_KEY
+  sponsorEchoNow()
+})()
+
 window.standby=view=>send({type:'standby', view, league:EV, on:view!=='off', split:SPLIT_NAME,
   // 'next event' must skip the one you're running, or on a fight night it
   // resolves to tonight and shows the same card twice
