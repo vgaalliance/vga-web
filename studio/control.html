@@ -639,6 +639,7 @@
       <div class="row" style="margin-top:4px">
         <input id="voMarks" placeholder="TIMESTAMPS — six seconds, comma separated. Blank = split it evenly" style="flex:1">
       </div>
+      <div class="row" style="margin-top:6px"><span id="voCover" style="color:var(--gdim);font-size:15px"></span></div>
 
       <h5>Rankings at stake — who can jump who</h5>
       <div class="row">
@@ -862,9 +863,47 @@ function fcDraw(){
 // The six timestamps are optional and are the only thing typed. Blank splits
 // the read in half and each half into thirds, which is right for an evenly
 // paced one.
+// WHICH BOUTS HAVE A VOICEOVER. assets/vo/index.json is the list of files that
+// exist; a static site cannot read its own folder, so the index is written
+// beside them. Checked HERE rather than discovered on air: a bout with no
+// voiceover is worth knowing about while there is still time to record one,
+// and pressing play on it would otherwise run 45 silent seconds.
+let VO_INDEX = []
+;(async function loadVoIndex(){
+  try{
+    const r = await fetch('assets/vo/index.json', {cache:'no-store'})
+    if(r.ok){ const j = await r.json(); if(Array.isArray(j)) VO_INDEX = j }
+  }catch(e){}
+  voCoverage()
+})()
+const voNorm = v => String(v ?? '').toLowerCase().replace(/[^a-z0-9]/g,'')
+// Either order: the file is named from whichever way round the card had them
+// the day it was recorded, and that is not worth a re-export.
+function voFor(a, b){
+  const x = voNorm(a) + '-vs-' + voNorm(b), y = voNorm(b) + '-vs-' + voNorm(a)
+  return VO_INDEX.find(n => n.startsWith(x + '.') || n.startsWith(y + '.')) || null
+}
+
+// The whole card at a glance, because "we are missing one or two" is a
+// different problem from "we are missing six". Title fights are counted
+// separately: they get their own promo and are not expected to have one.
+window.voCoverage = () => {
+  const el = document.getElementById('voCover'); if(!el) return
+  const bouts = (window.UBA && UBA.bouts) || []
+  if(!bouts.length){ el.textContent = ''; return }
+  const missing = bouts.filter(b => !b.is_title_fight && !voFor(b.a, b.b))
+  const titles  = bouts.filter(b => b.is_title_fight).length
+  el.innerHTML = (bouts.length - titles - missing.length) + ' of ' + (bouts.length - titles)
+    + ' non-title bouts have a VO'
+    + (titles ? ' · ' + titles + (titles === 1 ? ' title fight has its own promo' : ' title fights have their own promo') : '')
+    + (missing.length ? ' · <b style="color:#ff6b6b">NO VO: '
+        + missing.map(b => b.a + ' v ' + b.b).join(', ') + '</b>' : '')
+}
+
 window.fireVO = () => {
   const b = (window.UBA && UBA.bouts && UBA.armed != null) ? UBA.bouts[UBA.armed] : null
   if(!b){ document.getElementById('voHint').textContent = 'arm a bout first'; return }
+  const file = voFor(b.a, b.b)
   const raw = document.getElementById('voMarks').value.trim()
   const marks = raw ? raw.split(/[,\s]+/).map(Number).filter(n => !isNaN(n)) : []
   if(raw && marks.length !== 6){
@@ -872,8 +911,12 @@ window.fireVO = () => {
     return
   }
   send({ type:'vo', on:true, d:{ a:b.a, b:b.b, event:(UBA.name || null),
+    audio: file || undefined,
     marks: marks.length === 6 ? marks : undefined } })
-  document.getElementById('voHint').textContent = 'playing — ' + b.a + ' vs ' + b.b
+  // It still plays without one — the visuals are a segment either way — but the
+  // operator is told, because 45 silent seconds looks like the graphic broke.
+  document.getElementById('voHint').innerHTML = 'playing — ' + b.a + ' vs ' + b.b
+    + (file ? '' : ' · <b style="color:#ff6b6b">NO VO FILE — running silent</b>')
 }
 
 window.searchFighter=async()=>{
@@ -1803,6 +1846,7 @@ function ubaDraw(){
     })
   })
   box.innerHTML=html
+  if(window.voCoverage) voCoverage()
 }
 
 /* ARM = this bout is next on screen: names the fight clock, pre-fills the
@@ -1826,7 +1870,9 @@ window.ubaArm=i=>{
   // bout's market and bets instead of all nine
   loadOdds(); loadBetFeed()
   const h=document.getElementById('clockOddsHint'); if(h) h.textContent='ready — '+b.a+' vs '+b.b
-  const vh=document.getElementById('voHint'); if(vh) vh.textContent='ready — '+b.a+' vs '+b.b
+  const vh=document.getElementById('voHint')
+  if(vh){ const f=voFor(b.a,b.b)
+    vh.innerHTML = (f ? 'ready — ' : 'ready, <b style="color:#ff6b6b">NO VO</b> — ') + b.a+' vs '+b.b }
 }
 
 /* tap a name = that side won. Tap again to undo. Pushes the rundown live so
