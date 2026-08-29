@@ -1027,7 +1027,16 @@ function renderCards(sets, coll){
 // 404'd -- it just shows the hole, mid-show, with nobody able to explain it.
 // A scene with neither file is never offered; a scene with one is that one,
 // full width.
+// A LIST, because there is never one poster: an event poster, a second cut of
+// it, a poster for one bout on the card. They cycle on the scene rather than
+// making somebody rename files between shows.
+// assets/posters.json holds the filenames, newest first. A static site cannot
+// list its own folder, so this file is the index -- add a poster, add a line.
+// Without it the old single-file names still work, so a folder with one
+// poster.png in it needs no json at all.
+const POSTER_INDEX = 'assets/posters.json'
 const PROMO_POSTER = ['assets/poster.png','assets/poster.jpg','assets/poster.webp']
+const POSTER_HOLD = 12000   // long enough to read a poster, short enough to see the other one
 const PROMO_FILM   = ['assets/card-3d.mp4','assets/card-3d.webm']
 let promoFilmEl = null, promoHas = { poster:false, film:false }
 
@@ -1045,17 +1054,47 @@ function promoLayout(){
   if(n && !VIEWS_UBA.includes('poster')) VIEWS_UBA.splice(0, 0, 'poster')
 }
 
-function mountPoster(){
+let posterList = [], posterAt = 0, posterTimer = null
+async function mountPoster(){
   const img = document.getElementById('promoPoster'); if(!img) return
+  // The index if there is one, the fixed names if there is not. A missing or
+  // malformed json is not an error worth showing -- it just means the folder is
+  // being used the simple way.
+  try{
+    const r = await fetch(POSTER_INDEX, {cache:'no-store'})
+    if(r.ok){
+      const list = await r.json()
+      if(Array.isArray(list)) posterList = list.filter(n => typeof n === 'string' && n)
+        .map(n => n.startsWith('assets/') ? n : 'assets/' + n)
+    }
+  }catch(e){}
+  const tried = posterList.length ? posterList.slice() : PROMO_POSTER.slice()
   let i = 0
-  img.addEventListener('load', ()=>{ promoHas.poster = true; promoLayout() })
-  // Three extensions before giving up: which one comes out of the design tool
-  // is a decision made months from now, not here.
+  img.addEventListener('load', ()=>{ promoHas.poster = true; promoLayout(); posterCycle() })
+  // A name in the index that is not in the folder must not take the scene down
+  // with it -- it steps to the next one, and only a list where NONE of them
+  // loads means there is no poster.
   img.addEventListener('error', ()=>{
-    if(++i < PROMO_POSTER.length){ img.src = PROMO_POSTER[i]; return }
+    tried.splice(i, 1)
+    if(tried.length){ i = i % tried.length; img.src = tried[i]; return }
     promoHas.poster = false; promoLayout()
   })
-  img.src = PROMO_POSTER[0]
+  img.src = tried[0]
+  posterList = tried
+}
+
+// Cycles only while the scene is up. A timer running behind a hidden view
+// spends the streaming box's frames on a picture nobody is looking at, and it
+// would also land mid-crossfade the moment the scene came back.
+function posterCycle(){
+  clearTimeout(posterTimer); posterTimer = null
+  if(posterList.length < 2) return
+  if(!document.getElementById('v-poster').classList.contains('on')) return
+  posterTimer = setTimeout(()=>{
+    posterAt = (posterAt + 1) % posterList.length
+    document.getElementById('promoPoster').src = posterList[posterAt]
+    posterCycle()
+  }, POSTER_HOLD)
 }
 
 function mountCardFilm(){
@@ -1079,6 +1118,7 @@ function mountCardFilm(){
 // frames it needs for the fight. It runs while the poster scene is up and is
 // paused every other second of the night.
 function syncPromo(){
+  posterCycle()          // starts on the way in, stops itself on the way out
   if(!promoFilmEl) return
   if(document.getElementById('v-poster').classList.contains('on')){
     const p = promoFilmEl.play(); if(p && p.catch) p.catch(()=>{})
