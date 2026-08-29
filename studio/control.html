@@ -303,6 +303,18 @@
     <button data-ev="gfl" onclick="setEv('gfl')">GFL · Feeder card<small>solo card · same run of show</small></button>
   </div>
 
+  <!-- THE SPONSOR — top of the deck, next to the league switch, because it is
+       not the tape's setting or the countdown's. It is TONIGHT'S, and every
+       screen that names a partner follows it. Buried inside the tale of the
+       tape panel it read as a setting for that one graphic.
+       The list is studio/sponsors.js, shared with the graphics -- this is a
+       picker over it, never a second copy. -->
+  <div class="row" id="sponsorRow" style="margin-bottom:14px">
+    <span style="color:var(--gdim);font-size:16px">🤝 TONIGHT'S SPONSOR</span>
+    <select id="sponsorPick" onchange="pickSponsor(this.value)" style="width:220px"></select>
+    <span id="sponsorEcho" style="color:var(--gdim);font-size:16px"></span>
+  </div>
+
   <!-- UBAe spine: the match tracker — one click loads every scene -->
   <div class="sec only-ubae">
     <h4>UBAE MATCH NIGHT — TRACKER</h4>
@@ -453,17 +465,6 @@
       <span class="only-ubae" style="color:var(--gdim);font-size:15px">retires itself after 2 min</span>
       <span class="only-uba" style="color:var(--gdim);font-size:15px">retires itself after 2 min</span>
     </div>
-    <!-- THE SPONSOR. The list is studio/sponsors.js, shared with the tape and
-         the countdown -- this is a picker over it, not a second copy. Pressing
-         it broadcasts an explicit choice, which every screen pins; the sponsor
-         that rides along with each matchup push cannot override that, because
-         it is a constant in this file rather than a decision anybody made. -->
-    <h5>🤝 Sponsor — the tape and the countdown both follow this</h5>
-    <div class="row">
-      <select id="sponsorPick" onchange="pickSponsor(this.value)" style="width:220px"></select>
-      <span id="sponsorEcho" style="color:var(--gdim);font-size:16px"></span>
-    </div>
-
     <!-- The venue bug belongs to this stage as much as to the match: the tape
          is where "Live From London" sits longest. Buttons only, no second set
          of inputs -- the venue text stays written down once, in the match

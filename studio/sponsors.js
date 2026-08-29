@@ -15,7 +15,12 @@ const SPONSORS = {
   sheath:    { name:'SHEATH',    full:'Sheath Underwear', url:'sheath.com',    code:'SHEATHUBA30' },
   protubevr: { name:'PROTUBEVR', full:'ProTubeVR',        url:'protubevr.com', code:'' },
 }
-const SPONSOR_DEFAULT = 'sheath'
+// PROTUBEVR is the current partner, so it is what a source with no pin shows.
+// This is the answer every cold OBS browser source lands on -- the live
+// countdown read SHEATH.COM for exactly this reason, not because the switch
+// was broken. Change this line when the partner changes; the picker is for
+// switching mid-show, not for carrying the season.
+const SPONSOR_DEFAULT = 'protubevr'
 const sponKey = v => String(v ?? '').toLowerCase().replace(/[^a-z0-9]/g,'')
 
 // WHO IS ON AIR, in priority order:
