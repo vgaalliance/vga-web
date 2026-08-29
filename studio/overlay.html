@@ -176,14 +176,18 @@
   @keyframes postout{from{transform:translate(0,-50%);opacity:1;}
                        to{transform:translate(-118%,-50%);opacity:0;}}
 
+  /* the kit's charcoal, not a violet gradient — same ground as the bar and
+     the keys card, so all three read as one object seen three ways */
   #post{display:none;flex-direction:column;position:relative;
-    background:linear-gradient(160deg,rgba(20,4,38,.96),rgba(7,0,16,.98));
-    box-shadow:0 24px 60px rgba(0,0,0,.66),0 0 0 1px rgba(155,48,255,.22);}
+    background:var(--kit-bg);backdrop-filter:blur(3px);
+    box-shadow:0 24px 60px rgba(0,0,0,.6);}
   #flash[data-kind="msg"] #post{display:flex;}
   #flash[data-kind="msg"] .card{display:none;}
-  /* the CRT scanline, on the card itself — this overlay has no global one */
-  #post::after{content:'';position:absolute;inset:0;pointer-events:none;
-    background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1px,transparent 1px 3px);}
+  /* THE SCANLINE IS GONE. It was the single biggest thing making this card
+     read as a different kit from the bar it shares a corner with: the bar has
+     no texture at all, so a striped neighbour looks like it came from another
+     graphics package. The inverted platform panel is what gives the card its
+     character now, and that is the same device the bar uses. */
 
   /* Each block wipes down in turn — poster, then words, then platform. The
      order is the order you read it in, which is the whole trick: the card
@@ -196,11 +200,11 @@
                        to{clip-path:inset(0 0 0 0);opacity:1;}}
 
   #post .who{padding:19px 22px 15px;}
-  #post .dn{font-family:'Barlow Condensed';font-weight:900;font-size:31px;
-    letter-spacing:.02em;text-transform:uppercase;color:#fff;line-height:1;
+  #post .dn{font-family:'Barlow Condensed';font-weight:500;font-size:30px;
+    letter-spacing:.11em;text-transform:uppercase;color:var(--kit-ink);line-height:1;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  #post .hn{display:flex;align-items:center;gap:8px;margin-top:8px;
-    font:500 17px 'Barlow';color:#9c92ad;letter-spacing:.02em;
+  #post .hn{display:flex;align-items:center;gap:8px;margin-top:9px;
+    font:500 16px 'Barlow';color:var(--kit-label);letter-spacing:.06em;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   /* The platform glyph is a letterform in a ring, not a brand logo: no logo
      files ship with this repo and a wrong-looking mark is worse than a clean
@@ -208,10 +212,10 @@
   #post .gl{flex:0 0 auto;width:21px;height:21px;border-radius:50%;
     border:1.5px solid #6f6480;color:#c8b8dd;font:700 11px 'Barlow';
     display:flex;align-items:center;justify-content:center;}
-  #post .rule{height:1px;background:rgba(155,48,255,.3);margin:0 22px;}
+  #post .rule{height:1px;background:rgba(255,255,255,.13);margin:0 22px;}
 
   #post .body{padding:17px 22px 20px;}
-  #post .msg{font:500 24px 'Barlow';color:#fff;line-height:1.34;
+  #post .msg{font:500 24px 'Barlow';color:var(--kit-ink);line-height:1.34;
     /* five lines, then it stops. A pasted paragraph must not grow the card off
        the top and bottom of the frame. */
     display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;}
@@ -220,13 +224,34 @@
      position/z-index lift it ABOVE the card's scanline: the scanline is what
      makes the dark panels read as CRT, but laid over white it just turned the
      one clean block on the card grey and striped. */
-  #post .plat{position:relative;z-index:1;background:#f4f2f7;padding:15px 22px;
+  #post .plat{position:relative;z-index:1;background:var(--kit-panel);padding:15px 22px;
     display:flex;align-items:center;justify-content:center;}
-  #post .plat .w{font-family:'Barlow Condensed';font-weight:900;font-size:29px;
-    letter-spacing:.1em;text-transform:uppercase;color:#14121a;line-height:1;}
-  #post .tag{padding:12px 22px 15px;font-family:'Press Start 2P',monospace;font-size:11px;
-    letter-spacing:.16em;color:#8f84a3;text-align:center;}
+  #post .plat .w{font-family:'Barlow Condensed';font-weight:700;font-size:28px;
+    letter-spacing:.12em;text-transform:uppercase;color:#14121a;line-height:1;}
+  /* Barlow, not Press Start 2P. The pixel face is the loading-screen voice;
+     in this corner it was the last thing still speaking it. */
+  #post .tag{padding:12px 22px 16px;font:500 15px 'Barlow';
+    letter-spacing:.24em;text-transform:uppercase;color:var(--kit-label);text-align:center;}
   #post .tag:empty,#post .plat.off{display:none;}
+
+  /* ── THE IN-MATCH KIT ────────────────────────────────────────────────
+     Every graphic that shares the lower-left corner during a fight is built
+     from these four values. They were not shared before: the dossier bar was
+     charcoal with light wide type (the UFC treatment), while the keys card
+     and the message post were violet CRT with glow. Alone each looked
+     finished; cutting between them read as two different shows, because a
+     viewer sees them seconds apart in the same corner.
+
+     The full-frame screens — standby, the tape, rankings at stake — are
+     deliberately NOT bound to this. You cut TO those; they own the picture
+     and are allowed their own voice. These three sit ON the picture, next to
+     each other, and have to agree. */
+  :root{
+    --kit-bg:rgba(16,14,20,.94);
+    --kit-ink:#f3f1fa;
+    --kit-label:#8d8798;
+    --kit-panel:#f4f2f7;      /* the inverted standout */
+  }
 
   /* ── FIGHTER LOWER-THIRD — the segmented bar ──────────────────────────
      A full-width bar cut into segments, not a card. Modelled on the UFC
@@ -306,9 +331,14 @@
   /* THE WHITE PANEL. Exactly one, and it carries the single most interesting
      thing known about this fighter. Inverted because on a bar of identical
      charcoal blocks, inversion is the only thing the eye lands on first. */
-  #fighter .hi{background:#f4f2f7;padding:0 26px;align-items:flex-start;
-    justify-content:center;max-width:440px;flex:0 1 auto;min-width:0;}
-  #fighter .hi .t{font:600 23px 'Barlow';color:#14121a;line-height:1.22;
+  /* THE PANEL NEVER SQUEEZES. flex:0 1 auto with min-width:0 let it collapse
+     to a sliver whenever the stats happened to fit — the one segment carrying
+     a sentence, crushed to nothing, while five segments carrying single words
+     kept their padding. It is fixed-width now and the drop pass sheds a stat
+     instead; losing a stat is a smaller loss than losing the headline. */
+  #fighter .hi{background:var(--kit-panel);padding:0 26px;align-items:flex-start;
+    justify-content:center;width:400px;flex:0 0 400px;}
+  #fighter .hi .t{font:600 22px 'Barlow';color:#14121a;line-height:1.22;
     letter-spacing:.005em;white-space:normal;overflow:hidden;
     display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;}
   #fighter .hi .t b{font-weight:800;}
@@ -328,10 +358,12 @@
      during-match popup in the bottom-left corner — which is what this
      file is. As a separate browser source it parked on exactly the same
      coordinates as the dossier with no way to know the dossier existed. */
-  #keys{position:fixed;left:48px;bottom:190px;transform:translateX(-135%);opacity:0;
-    display:flex;min-width:520px;max-width:900px;border-radius:10px;overflow:hidden;
-    background:linear-gradient(135deg,rgba(20,4,38,.97),rgba(6,0,14,.98));
-    box-shadow:0 22px 55px rgba(0,0,0,.6),0 0 0 1px rgba(155,48,255,.18);}
+  /* Same charcoal, same light wide type, same 12px accent as the bar. It was
+     a violet gradient card with a purple rim — a different object entirely. */
+  #keys{position:fixed;left:60px;bottom:190px;transform:translateX(-135%);opacity:0;
+    display:flex;min-width:520px;max-width:860px;overflow:hidden;
+    background:var(--kit-bg);backdrop-filter:blur(3px);
+    box-shadow:0 22px 55px rgba(0,0,0,.55);}
   /* ITS OWN KEYFRAMES, deliberately not shared.
      These used to be `lin`/`lout`, which belonged to the OLD dossier card.
      Rebuilding the dossier as a segmented bar deleted that block — and took
@@ -344,22 +376,24 @@
   @keyframes keysin{to{transform:translateX(0);opacity:1;}}
   @keyframes keysout{from{transform:translateX(0);opacity:1;}
                        to{transform:translateX(-135%);opacity:0;}}
-  #keys .accent{width:14px;flex:0 0 14px;background:var(--red);box-shadow:0 0 24px var(--red);}
+  #keys .accent{width:12px;flex:0 0 12px;background:var(--red);}
   /* the accent is the category colour — the only part read from across a room */
-  #keys[data-tone="keys"]  .accent{background:linear-gradient(180deg,#ffe27a,#c9a11e);box-shadow:0 0 26px rgba(255,206,0,.55);}
-  #keys[data-tone="gold"]  .accent{background:var(--gold);box-shadow:0 0 24px var(--gold);}
-  #keys[data-tone="green"] .accent{background:var(--green);box-shadow:0 0 24px var(--green);}
-  #keys[data-tone="amber"] .accent{background:#ffb020;box-shadow:0 0 24px #ffb020;}
+  #keys[data-tone="keys"]  .accent{background:linear-gradient(180deg,#ffe27a,#c9a11e);}
+  #keys[data-tone="gold"]  .accent{background:var(--gold);}
+  #keys[data-tone="green"] .accent{background:var(--green);}
+  #keys[data-tone="amber"] .accent{background:#ffb020;}
   #keys .kb{padding:15px 30px 17px 24px;min-width:0;}
-  #kEyebrow{font:600 13px 'Barlow';letter-spacing:.22em;text-transform:uppercase;
-    color:var(--red);margin-bottom:9px;}
+  /* the bar's label style, verbatim */
+  #kEyebrow{font:500 15px 'Barlow';letter-spacing:.24em;text-transform:uppercase;
+    color:var(--kit-label);margin-bottom:10px;}
   #keys[data-tone="keys"] #kEyebrow{color:var(--gold);}
   #keys[data-tone="green"] #kEyebrow{color:var(--green);}
   #keys[data-tone="amber"] #kEyebrow{color:#ffb020;}
-  #kHead{font-family:'Barlow Condensed';font-weight:900;font-size:46px;line-height:.95;
-    text-transform:uppercase;color:#fff;}
-  #keys[data-tone="keys"] #kHead{font-size:40px;}
-  #kSub{font:500 20px 'Barlow';color:#9aa0a6;margin-top:8px;line-height:1.25;}
+  /* 500, not 900, and tracked out — the bar's name treatment */
+  #kHead{font-family:'Barlow Condensed';font-weight:500;font-size:44px;line-height:1;
+    letter-spacing:.11em;text-transform:uppercase;color:var(--kit-ink);}
+  #keys[data-tone="keys"] #kHead{font-size:38px;}
+  #kSub{font:500 21px 'Barlow';color:#b8b2c4;margin-top:9px;line-height:1.28;}
   #kSub em{font-style:normal;color:#fff;font-weight:600;}
   #kSub:empty{display:none;}
   /* Three bullets in ONE card. They are a single argument about how the
@@ -368,9 +402,9 @@
   #kList{margin-top:13px;display:flex;flex-direction:column;gap:10px;}
   #kList:empty{display:none;}
   #kList .k{display:flex;align-items:flex-start;gap:15px;}
-  #kList .n{font-family:'Barlow Condensed';font-weight:900;font-size:22px;color:var(--gold);
-    line-height:1.15;flex:0 0 auto;}
-  #kList .t{font:600 25px 'Barlow';line-height:1.24;color:#fff;}
+  #kList .n{font-family:'Barlow Condensed';font-weight:700;font-size:22px;color:var(--gold);
+    line-height:1.15;flex:0 0 auto;letter-spacing:.04em;}
+  #kList .t{font:600 25px 'Barlow';line-height:1.24;color:var(--kit-ink);}
 
   /* ── ODDS BOARD ── */
 /* Raised from bottom:190px. It cleared the fight clock by only 32px, and with
@@ -1343,6 +1377,12 @@ function drawDossier(d){
   // cap. The mark, the flag, the name and the white panel are never dropped —
   // those are the plate.
   const CAP = 1440
+  // CLEAR LAST RENDER'S WIDTH FIRST. The fitting pass ends by pinning
+  // el.style.width, and that inline value survives the next innerHTML — so
+  // the second bout onward measured scrollWidth against the PREVIOUS bar's
+  // width and shed four stats to fit a box that was never the constraint.
+  // Symptom was a bar that got shorter every time it was shown.
+  el.style.width = ''
   for(let guard = 0; guard < 6; guard++){
     if(el.scrollWidth <= CAP) break
     // IN PRIORITY ORDER, ONE CLASS AT A TIME.
