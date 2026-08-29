@@ -528,8 +528,16 @@
     </div>
     <h5>💬 Message — fastest reach</h5>
     <div class="row">
-      <input id="msgFrom" placeholder="FROM (name, optional)…" style="width:200px">
+      <select id="msgPlat" style="width:120px" title="which platform the card wears — 'none' shows no platform block">
+        <option value="none">NO PLATFORM</option>
+        <option value="discord" selected>DISCORD</option>
+        <option value="x">X</option>
+        <option value="tiktok">TIKTOK</option>
+      </select>
+      <input id="msgFrom" placeholder="FROM (name, optional)…" style="width:180px">
+      <input id="msgHandle" placeholder="@HANDLE…" style="width:150px">
       <input id="msgText" placeholder="MESSAGE TEXT…" style="width:380px" onkeydown="if(event.key==='Enter')fireMsg()">
+      <input id="msgTag" placeholder="#HASHTAG (optional)…" style="width:180px">
       <button onclick="fireMsg()">Fire message</button>
     </div>
     <h5>📍 Info bug — lower-left graphic, auto-hides</h5>
@@ -1290,7 +1298,13 @@ window.tapeToggle = async ()=>{
 window.fireMsg=()=>{
   const t=document.getElementById('msgText').value.trim(); if(!t) return
   const from=document.getElementById('msgFrom').value.trim()
-  send({type:'flash', w:'msg', d:{ text:t, from } })
+  // The platform is PICKED, never inferred. A message typed by the operator is
+  // not from Discord just because most of them are, and a card claiming a
+  // platform the words did not come from is a small lie on a big screen.
+  const platform=document.getElementById('msgPlat').value
+  const handle=document.getElementById('msgHandle').value.trim()
+  const tag=document.getElementById('msgTag').value.trim()
+  send({type:'flash', w:'msg', d:{ text:t, from, platform, handle, tag } })
 }
 
 // league rides along so 'auto' cycles the right set -- a UBA fight night

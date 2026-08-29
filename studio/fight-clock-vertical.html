@@ -62,6 +62,25 @@
   /* Drops away downward — it lives below the feed, so lifting it upward would
      take it back across the gameplay on its way out. */
   #hud.off{opacity:0;transform:translateY(40px);pointer-events:none;}
+  /* The clock BUILDS: brand, then the bout strip, then the two fighters with
+     the round band between them. It had transitions but no sequence, so the
+     whole HUD arrived as one slab — fine on a cut, wrong on a reveal, and this
+     is a graphic that gets revealed before every bout. */
+  #hud:not(.off) .brand{animation:up .42s cubic-bezier(.16,1,.3,1) backwards;}
+  #hud:not(.off) .strip{animation:up .42s cubic-bezier(.16,1,.3,1) .10s backwards;}
+  #hud:not(.off) .side:nth-of-type(1){animation:fromL .5s cubic-bezier(.16,1,.3,1) .22s backwards;}
+  #hud:not(.off) .band{animation:widen .46s cubic-bezier(.16,1,.3,1) .40s backwards;}
+  #hud:not(.off) .side:nth-of-type(3){animation:fromR .5s cubic-bezier(.16,1,.3,1) .30s backwards;}
+  @keyframes up{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:none;}}
+  @keyframes fromL{from{opacity:0;transform:translateX(-26px);}to{opacity:1;transform:none;}}
+  @keyframes fromR{from{opacity:0;transform:translateX(26px);}to{opacity:1;transform:none;}}
+  /* the round band opens from its centre, the way the horizontal bar's slits do */
+  @keyframes widen{from{opacity:0;clip-path:inset(0 50% 0 50%);}
+                     to{opacity:1;clip-path:inset(0 0 0 0);}}
+  /* the corner swatches grow after their fighter has landed — they are the
+     answer to "who is who", so they should arrive second */
+  #hud:not(.off) .swatch{animation:grow .4s cubic-bezier(.2,1.6,.4,1) .52s backwards;}
+  @keyframes grow{from{opacity:0;transform:scaleY(.2);}to{opacity:1;transform:none;}}
 
   /* ?guides=1 draws the CTA band and the feed rectangle so the composition
      can be judged in a browser. Never visible without the flag. */

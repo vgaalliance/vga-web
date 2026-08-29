@@ -69,9 +69,27 @@
   #lt.in{animation:lin .6s cubic-bezier(.16,1,.3,1) forwards;}
   #lt.out{animation:lout .5s cubic-bezier(.5,0,.75,.2) forwards;}
   @keyframes lin{to{transform:translateY(0);opacity:1;}}
+  /* Contents land after the plate does, in reading order. The plate sliding up
+     with its text already set reads as a picture of a lower third; the text
+     arriving after it reads as one being written. */
+  #lt.in #next {animation:lineup .34s cubic-bezier(.16,1,.3,1) .34s backwards;}
+  #lt.in #name {animation:lineup .40s cubic-bezier(.16,1,.3,1) .42s backwards;}
+  #lt.in #nick {animation:lineup .34s cubic-bezier(.16,1,.3,1) .54s backwards;}
+  #lt.in .chip {animation:lineup .34s cubic-bezier(.16,1,.3,1) backwards;}
+  #lt.in .chip:nth-child(1){animation-delay:.62s;}
+  #lt.in .chip:nth-child(2){animation-delay:.70s;}
+  #lt.in .chip:nth-child(3){animation-delay:.78s;}
+  #lt.in .belt {animation:pop .4s cubic-bezier(.2,1.6,.4,1) .84s backwards;}
+  @keyframes lineup{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
+  @keyframes pop{from{opacity:0;transform:scale(.6);}to{opacity:1;transform:none;}}
+  /* the accent bar draws to full height first — it is the thing that says a
+     graphic is arriving before any word is readable */
+  #lt.in .accent{animation:draw .34s cubic-bezier(.16,1,.3,1) backwards;}
+  @keyframes draw{from{transform:scaleY(0);}to{transform:scaleY(1);}}
   @keyframes lout{from{transform:translateY(0);opacity:1;}to{transform:translateY(150%);opacity:0;}}
 
-  .accent{width:18px;flex:0 0 18px;background:var(--pur);box-shadow:0 0 30px var(--pur);}
+  .accent{width:18px;flex:0 0 18px;background:var(--pur);box-shadow:0 0 30px var(--pur);
+    transform-origin:50% 100%;}
   #lt.champ .accent{background:linear-gradient(180deg,#ffe27a,#c9a11e);box-shadow:0 0 30px rgba(255,206,0,.6);}
   .bd{padding:26px 34px 28px 30px;flex:1;min-width:0;}
 
