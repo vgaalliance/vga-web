@@ -249,7 +249,17 @@
      frame — so the white panel shrinks first (it is the only segment holding a
      sentence rather than a word) and the bar clips as a last resort rather
      than letting a segment hang off the edge. */
-  #fighter{position:fixed;left:60px;right:60px;bottom:70px;
+  /* WIDTH IS A CAP, NOT A SPAN.
+     This was left:60 right:60 — 1800px, 94% of frame — so a fully-populated
+     bar reached almost edge to edge and read as a strip of furniture rather
+     than a name plate.
+     Measured against the UFC Fight Night reference: their bar runs about 75%
+     of frame width, left-aligned, with the right quarter deliberately empty.
+     1440px at 1920 is that 75%. Title-safe wants 5% margins (96px); 60px is
+     inside action-safe and matches the reference's tighter left edge.
+     The bar SIZES TO ITS CONTENT and stops at the cap — a fighter with three
+     facts gets a short bar, which is the point. */
+  #fighter{position:fixed;left:60px;bottom:70px;max-width:1440px;
     display:flex;align-items:stretch;gap:3px;height:112px;overflow:hidden;
     transform:none;opacity:0;pointer-events:none;}
   /* Segments wipe in left to right rather than the whole box sliding: a box
@@ -1269,6 +1279,8 @@ const DOSS_LEAGUE = { uba:{a:'UBA', b:'Fight Night'}, gfl:{a:'GFL', b:'Glory Lea
                       ubae:{a:'UBAe', b:'Team League'} }
 
 function drawDossier(d){
+  // cls carries the DROP PRIORITY (drop0 = first to go). It is only ever a
+  // hook for the fitting pass below; it styles nothing.
   const seg = (v, l, cls) => (v==null || String(v).trim()==='') ? ''
     : `<div class="seg ${cls||''}"><div class="v">${esc(v)}</div>`
       + (l ? `<div class="l">${esc(l)}</div>` : '') + `</div>`
@@ -1295,11 +1307,15 @@ function drawDossier(d){
     + (stacked ? esc(parts[0]) + '<br>' + esc(parts.slice(1).join(' ')) : esc(nm))
     + `</div></div>`)
 
-  out.push(seg(d.record || null, 'Record'))
-  out.push(seg((+d.ko > 0) ? d.ko : null, 'KO wins'))
-  out.push(seg((+d.rank > 0) ? ('#' + (+d.rank)) : null, 'Ranked'))
-  out.push(seg(d.weight || null, 'Division'))
-  out.push(seg(d.country || null, 'From'))
+  // STAT SEGMENTS, WEAKEST LAST. Everything here is optional and everything
+  // here is droppable — the order is what gets sacrificed first when the bar
+  // runs past its cap. Rank and record are why the plate exists; the country
+  // is already a flag two segments to the left, so it is the first to go.
+  out.push(seg((+d.rank > 0) ? ('#' + (+d.rank)) : null, 'Ranked', 'drop4'))
+  out.push(seg(d.record || null,                          'Record', 'drop3'))
+  out.push(seg((+d.ko > 0) ? d.ko : null,                 'KO wins','drop2'))
+  out.push(seg(d.weight || null,                          'Division','drop1'))
+  out.push(seg(d.country || null,                         'From',   'drop0'))
 
   // THE WHITE PANEL — exactly one, and it takes the most interesting true
   // thing available. Order is by weight, not by which field happens to be
@@ -1319,6 +1335,31 @@ function drawDossier(d){
 
   const el = $('fighter')
   el.innerHTML = out.filter(Boolean).join('')
+
+  // FIT BY DROPPING, NOT BY SQUEEZING.
+  // A bar that shrinks its type to fit reads as a different graphic every
+  // time; a bar that carries one fact fewer reads the same every time. So
+  // measure, and shed the lowest-priority segment until it fits inside the
+  // cap. The mark, the flag, the name and the white panel are never dropped —
+  // those are the plate.
+  const CAP = 1440
+  for(let guard = 0; guard < 6; guard++){
+    if(el.scrollWidth <= CAP) break
+    // IN PRIORITY ORDER, ONE CLASS AT A TIME.
+    // A single querySelector with all five classes returns the first match in
+    // DOCUMENT order, not the lowest priority — which dropped rank, record and
+    // KO wins while keeping the country, the exact opposite of the intent.
+    let victim = null
+    for(const cls of ['drop0','drop1','drop2','drop3','drop4']){
+      victim = el.querySelector('.' + cls)
+      if(victim) break
+    }
+    if(!victim) break                  // nothing left that is safe to lose
+    victim.remove()
+  }
+  // Whatever survived is what the bar is: let it size to that, so the box is
+  // always exactly as wide as what is in it.
+  el.style.width = Math.min(el.scrollWidth, CAP) + 'px'
   // stagger the wipe left to right, ~70ms apart — the reference reveals its
   // segments in sequence, and simultaneous is the thing that makes a bar read
   // as a single pasted image
