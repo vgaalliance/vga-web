@@ -322,8 +322,18 @@
     display:flex;min-width:520px;max-width:900px;border-radius:10px;overflow:hidden;
     background:linear-gradient(135deg,rgba(20,4,38,.97),rgba(6,0,14,.98));
     box-shadow:0 22px 55px rgba(0,0,0,.6),0 0 0 1px rgba(155,48,255,.18);}
-  #keys.in{animation:lin .55s cubic-bezier(.16,1,.3,1) forwards;}
-  #keys.out{animation:lout .58s cubic-bezier(.5,0,.75,.2) forwards;}
+  /* ITS OWN KEYFRAMES, deliberately not shared.
+     These used to be `lin`/`lout`, which belonged to the OLD dossier card.
+     Rebuilding the dossier as a segmented bar deleted that block — and took
+     lin/lout with it — so this card kept its animation names, found nothing
+     to run, and stayed at opacity 0. It had content, it had the .in class,
+     and it drew nothing. Naming them after the element that uses them is what
+     stops the next rewrite from doing it again. */
+  #keys.in{animation:keysin .55s cubic-bezier(.16,1,.3,1) forwards;}
+  #keys.out{animation:keysout .58s cubic-bezier(.5,0,.75,.2) forwards;}
+  @keyframes keysin{to{transform:translateX(0);opacity:1;}}
+  @keyframes keysout{from{transform:translateX(0);opacity:1;}
+                       to{transform:translateX(-135%);opacity:0;}}
   #keys .accent{width:14px;flex:0 0 14px;background:var(--red);box-shadow:0 0 24px var(--red);}
   /* the accent is the category colour — the only part read from across a room */
   #keys[data-tone="keys"]  .accent{background:linear-gradient(180deg,#ffe27a,#c9a11e);box-shadow:0 0 26px rgba(255,206,0,.55);}
