@@ -5,14 +5,54 @@
 <!-- ============================================================
      EDIT EVERYTHING HERE — fill in all 8 fights ahead of time.
      During the broadcast, click "Next Fight" on the card (or the
-     SHEATH button) to advance through them one at a time — no
+     sponsor bar) to advance through them one at a time — no
      typing needed live. Image filenames follow the pattern
      "left1.png" / "right1.png" for fight 1, "left2.png" / "right2.png"
      for fight 2, etc. — save your fighter cutouts in the same folder
      as this HTML file using those exact names.
 ============================================================= -->
 <script>
-const SPONSOR_NAME = "SHEATH"; // doesn't change per fight, set once
+// ── SPONSORS ─────────────────────────────────────────────────────────────
+// A LIST, not one constant. The league runs more than one partner now and this
+// file could only ever say a single word. Add a partner here and it becomes
+// selectable everywhere -- nothing else in the file needs to know about it.
+//   name — the wordmark on the plate
+//   full — what the first face reads ("SHEATH UNDERWEAR"). Optional
+//   url  — the site face. Derived as name.com when left blank
+//   code — the promo face. LEAVE IT BLANK when there is no promo code: the
+//          rotator then drops that face instead of deriving one. ProTubeVR has
+//          no code, and an invented "PROTUBEVRUBA30" on air is a viewer typing
+//          a code that does not exist into somebody else's checkout.
+// The plate is a WORDMARK, not a logo slot -- it is set in the card's own type
+// at 24px/900 with 5px tracking, which is what makes a partner look like part
+// of the broadcast rather than a banner pasted onto it.
+const SPONSORS = {
+  sheath:    { name:'SHEATH',    full:'Sheath Underwear', url:'sheath.com',    code:'SHEATHUBA30' },
+  protubevr: { name:'PROTUBEVR', full:'ProTubeVR',        url:'protubevr.com', code:'' },
+};
+const SPONSOR_DEFAULT = 'sheath';
+const sponKey = v => String(v ?? '').toLowerCase().replace(/[^a-z0-9]/g,'');
+
+// WHO IS ON THE PLATE, in priority order:
+//   1. ?sponsor=protubevr on the browser source — locks one OBS scene to one
+//      partner with nobody clicking anything on the night.
+//   2. the operator's pick in the edit panel, remembered in localStorage
+//      because an OBS browser source reloads every time its scene becomes
+//      active, and a sponsor that reverts to Sheath mid-show is worse than one
+//      that was never switched.
+//   3. SPONSOR_DEFAULT.
+// A deck push carries its own sponsor name, and that wins ONLY while nothing
+// above is pinned: the deck's value is a hardcoded constant in control.html,
+// not a live decision, so it must not be able to stamp on a deliberate pick.
+let SPONSOR_PIN = '';        // '' = nothing pinned locally, follow the deck
+try {
+  const q = sponKey(new URLSearchParams(location.search).get('sponsor'));
+  const saved = sponKey(localStorage.getItem('vga.tape.sponsor'));
+  SPONSOR_PIN = SPONSORS[q] ? q : SPONSORS[saved] ? saved : '';
+} catch (e) { SPONSOR_PIN = ''; }
+let SPONSOR_KEY = SPONSOR_PIN || SPONSOR_DEFAULT;
+const activeSponsor = () => SPONSORS[SPONSOR_KEY] || SPONSORS[SPONSOR_DEFAULT];
+const SPONSOR_NAME = activeSponsor().name;
 
 // Neutral placeholder ONLY. This used to hold a hardcoded queue of Fight
 // Night 28 bouts that you paged through by hand, which the deck replaced --
@@ -245,7 +285,11 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
       <!-- The flip needs a fixed-height stage: the three faces are different
            lengths, and without a set height the panel would resize on every
            rotation and drag the rails' height sync with it. -->
-      <div class="spon-stage"><div class="spon-plate"><span id="sponsorText">SHEATH</span></div></div>
+      <!-- Neutral in the markup, filled from SPONSORS before first paint. It
+           named one partner here for as long as there was only one; with a list
+           it would be the WRONG partner for the half-second before the script
+           ran, and the wrong partner is exactly what a sponsor bar cannot be. -->
+      <div class="spon-stage"><div class="spon-plate"><span id="sponsorText">SPONSOR</span></div></div>
     </div>
     </div>
   </div>
@@ -406,7 +450,7 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
 <canvas id="flowerFull" width="1920" height="1080" style="position:fixed;top:0;left:0;display:none;"></canvas>
 
 <!-- ============================================================
-     LIVE EDIT PANEL — click SHEATH to open. Lets you change every
+     LIVE EDIT PANEL — click the sponsor bar to open. Lets you change every
      stat for both fighters without touching the file. Image fields
      accept either a pasted URL or a direct file upload from your
      computer (converted to a data URL in-browser, no file paths or
@@ -434,7 +478,7 @@ ageR: 28
       <button id="parsePasteBtn" style="margin-top:8px; padding:8px 16px; background:hsl(272,55%,48%); border:none; color:#fff; border-radius:4px; cursor:pointer; font-size:12px; font-weight:600;">Fill Fields From Paste ↓</button>
     </div>
 
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:20px;">
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:24px; margin-bottom:20px;">
       <div>
         <label style="font-size:12px; letter-spacing:2px; color:hsla(270,25%,70%,0.6); text-transform:uppercase;">Bout Title</label>
         <input id="editBoutTitle" type="text" style="width:100%; margin-top:4px; padding:8px; background:#2b2b30; border:1px solid hsla(270,30%,50%,0.3); color:#f3f1fa; border-radius:4px; font-size:14px;">
@@ -442,6 +486,15 @@ ageR: 28
       <div>
         <label style="font-size:12px; letter-spacing:2px; color:hsla(270,25%,70%,0.6); text-transform:uppercase;">Subtitle</label>
         <input id="editBoutSubtitle" type="text" style="width:100%; margin-top:4px; padding:8px; background:#2b2b30; border:1px solid hsla(270,30%,50%,0.3); color:#f3f1fa; border-radius:4px; font-size:14px;">
+      </div>
+      <!-- THE PARTNER ON THE PLATE. Options are built from SPONSORS at the top
+           of the file, so adding a partner there puts it in this list -- there
+           is no second list to keep in step. The pick sticks across an OBS
+           source reload and outranks the deck's constant. -->
+      <div>
+        <label style="font-size:12px; letter-spacing:2px; color:hsla(270,25%,70%,0.6); text-transform:uppercase;">Sponsor</label>
+        <select id="editSponsor" style="width:100%; margin-top:4px; padding:8px; background:#2b2b30; border:1px solid hsla(270,30%,50%,0.3); color:#f3f1fa; border-radius:4px; font-size:14px;"></select>
+        <div id="editSponsorNote" style="margin-top:6px; font-size:11px; color:hsla(270,25%,65%,0.6); line-height:1.4;"></div>
       </div>
     </div>
 
@@ -871,7 +924,7 @@ if(document.fonts && document.fonts.ready) document.fonts.ready.then(fitAll)
 window.__tape = playTape; window.__tapeHide = hideTape; window.__fitTitle = fitBoutTitle;
 window.__fitAll = fitAll;
 
-// ---------- RAIL HEIGHT — match exactly to where SHEATH starts ----------
+// ---------- RAIL HEIGHT — match exactly to where the sponsor bar starts ----------
 // Rather than guess a fixed pixel height, measure sponsorBar's actual
 // position relative to centerCol and size both rails to stop exactly
 // there. Runs after layout settles so the measurement is accurate.
@@ -1398,12 +1451,32 @@ function frame() {
 frame();
 
 // ---------- LIVE EDIT PANEL ----------
-// Click SHEATH to open. Pre-fills with current CONFIG values, lets
+// Click the sponsor bar to open. Pre-fills with current CONFIG values, lets
 // you change anything, and applies it straight to the live elements
 // on Apply — no file editing, no reload needed mid-broadcast.
 const editOverlay = document.getElementById('editOverlay');
 
+// One <option> per partner in SPONSORS, with what that partner's bar will
+// actually rotate written under it -- an operator picking a sponsor can see
+// whether it carries a promo code without going to air to find out.
+function fillSponsorPicker() {
+  const sel = document.getElementById('editSponsor');
+  if (!sel) return;
+  sel.innerHTML = Object.keys(SPONSORS)
+    .map(k => '<option value="' + k + '">' + SPONSORS[k].name + '</option>').join('');
+  sel.value = SPONSOR_KEY;
+  const note = () => {
+    const s = SPONSORS[sel.value] || {};
+    const site = s.url || (s.name || '').toLowerCase().replace(/[^a-z0-9]/g, '') + '.com';
+    document.getElementById('editSponsorNote').textContent =
+      s.code ? 'Rotates ' + s.code + ' at ' + site : 'No promo code — rotates ' + site + ' alone';
+  };
+  sel.onchange = note;
+  note();
+}
+
 function openEditPanel() {
+  fillSponsorPicker();
   document.getElementById('editBoutTitle').value = CONFIG.boutTitle;
   document.getElementById('editBoutSubtitle').value = CONFIG.boutSubtitle;
   document.getElementById('editNameLeft').value = CONFIG.left.name;
@@ -1436,6 +1509,14 @@ function fileToDataUrl(fileInput, callback) {
 }
 
 function applyEdits() {
+  // The sponsor is applied straight away rather than through pushToCard: the
+  // rotator owns the plate's text, so writing it here would be overwritten on
+  // the next flip.
+  const spon = document.getElementById('editSponsor');
+  if (spon && spon.value && window.__setSponsor) {
+    CONFIG.sponsorName = (SPONSORS[spon.value] || {}).name || CONFIG.sponsorName;
+    window.__setSponsor(spon.value);
+  }
   CONFIG.boutTitle = document.getElementById('editBoutTitle').value;
   CONFIG.boutSubtitle = document.getElementById('editBoutSubtitle').value;
 
@@ -1505,7 +1586,7 @@ function pushToCard() {
 }
 
 document.getElementById('sponsorBar').addEventListener('click', function(e) {
-  console.log('SHEATH clicked');
+  console.log('sponsor bar clicked -> edit panel');
   try {
     openEditPanel();
   } catch (err) {
@@ -1667,29 +1748,54 @@ editOverlay.addEventListener('click', (e) => {
   // showing a made-up address -- and a sponsor whose site isn't name.com can be
   // corrected from the deck without touching this file.
   let sponTimer = null, sponGen = 0
-  // full: the sponsor's full name for the middle face ("SHEATH UNDERWEAR").
-  // Optional -- without it the face shows the plain name, which is still right,
-  // just less specific.
-  function startSponsorRotator(name, url, code, full){
+
+  // WHICH partner the plate is for, decided in one place. A locally pinned pick
+  // -- ?sponsor= on the source, or the operator's saved choice -- beats the
+  // deck, because the deck's sponsor is a hardcoded constant in control.html
+  // rather than a decision anybody makes on the night, and it rides along with
+  // EVERY matchup push. Without this, switching partner held until the first
+  // bout loaded and then silently went back to Sheath.
+  // Nothing pinned: the deck's name is looked up in SPONSORS, so a known
+  // partner arrives with its site and code attached even though the deck sends
+  // neither.
+  function resolveSponsor(name, url, code, full){
+    if(SPONSOR_PIN && SPONSORS[SPONSOR_PIN]) return SPONSORS[SPONSOR_PIN]
+    const known = SPONSORS[sponKey(name)]
+    if(known) return { name:known.name, full:full||known.full, url:url||known.url, code:code||known.code }
+    if(!name) return activeSponsor()
+    return { name:String(name).trim(), full:full||'', url:url||'', code:code||'' }
+  }
+
+  // Takes a sponsor from SPONSORS (or the shape resolveSponsor returns):
+  //   full — the full name for the first face ("SHEATH UNDERWEAR"). Optional;
+  //          without it the face shows the plain wordmark, still right.
+  //   code — the promo code. Optional, and NOT derived when absent: see the
+  //          SPONSORS block at the top of the file.
+  function startSponsorRotator(spon){
     const stage = document.querySelector('.spon-stage')
     const plate = document.querySelector('.spon-plate')
     const face  = document.getElementById('sponsorText')
-    if(!stage || !plate || !face || !name) return
+    if(!stage || !plate || !face || !spon || !spon.name) return
     if(sponTimer){ clearTimeout(sponTimer); sponTimer = null }
     const gen = ++sponGen        // anything still pending from a previous start is now stale
 
-    const clean = String(name).trim()
-    const site  = (url  || clean.toLowerCase().replace(/[^a-z0-9]/g,'') + '.com').toUpperCase()
-    const promo = (code || clean.toUpperCase().replace(/[^A-Z0-9]/g,'') + 'UBA30').toUpperCase()
+    const clean = String(spon.name).trim()
+    const site  = (spon.url || clean.toLowerCase().replace(/[^a-z0-9]/g,'') + '.com').toUpperCase()
+    const promo = String(spon.code || '').toUpperCase().replace(/\s+/g,'')
     // Each face holds for as long as it is worth reading, not an equal share.
     // OUR SPONSOR is a label -- it lands and gets out of the way; the promo
     // code has to be read and typed off a screen, so it gets the longest hold.
     // Equal intervals gave the label the same airtime as the code, which is why
     // it felt slow.
+    // A partner with NO code shows the address alone, and holds it for less
+    // time -- an address is shorter to read than an address plus a code, and
+    // the alternative (deriving "PROTUBEVRUBA30" from the name) was a code that
+    // does not exist being read out to the audience as if it did.
     const faces = [
-      { text: (full || clean).toUpperCase(), code:false, ms: 3000 },
+      { text: (spon.full || clean).toUpperCase(), code:false, ms: 3000 },
       { text: 'OUR SPONSOR',         code:false, ms: 1100 },
-      { text: promo + ' AT ' + site, code:true,  ms: 4600 },
+      promo ? { text: promo + ' AT ' + site, code:true, ms: 4600 }
+            : { text: site,                   code:true, ms: 3200 },
     ]
     let i = 0
     face.textContent = faces[0].text
@@ -1772,7 +1878,7 @@ editOverlay.addEventListener('click', (e) => {
     // data. Collapse those rows instead, re-run every load.
     hideEmptyRows()
     applyFlag('Left', L.country); applyFlag('Right', R.country)
-    startSponsorRotator(d.sponsor || 'SHEATH', d.sponsorUrl, d.sponsorCode, d.sponsorFull)
+    startSponsorRotator(resolveSponsor(d.sponsor, d.sponsorUrl, d.sponsorCode, d.sponsorFull))
     // Every bout brings different-length names and divisions, so the fitters
     // have to run per matchup -- not once at load.
     fitAll()
@@ -1803,7 +1909,23 @@ editOverlay.addEventListener('click', (e) => {
   }catch{}
   // The bar rotates even before a matchup is loaded -- an OBS source that has
   // just been added shows a live sponsor strip rather than one dead word.
-  if(sponGen === 0) startSponsorRotator(CONFIG.sponsorName || 'SHEATH')
+  if(sponGen === 0) startSponsorRotator(activeSponsor())
+
+  // The edit panel's partner picker comes through here: the rotator is private
+  // to this block, and a picker that only wrote a variable would not change
+  // what is on screen until the next matchup pushed.
+  // Exposed so the pin-beats-the-deck rule can be checked from a browser
+  // console without pushing a fake matchup onto the live broadcast channel,
+  // which every other OBS source in the building is also listening to.
+  window.__resolveSponsor = resolveSponsor
+  window.__setSponsor = key => {
+    const k = sponKey(key)
+    if(!SPONSORS[k]) return
+    SPONSOR_KEY = k
+    SPONSOR_PIN = k                              // a deliberate pick outranks the deck
+    try { localStorage.setItem('vga.tape.sponsor', k) } catch(e){}
+    startSponsorRotator(SPONSORS[k])
+  }
 })()
 // Empty on BOTH sides -> the row is removed for this matchup. One side blank
 // still renders, so a fighter with no listed reach shows the em-dash against
