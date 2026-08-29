@@ -27,8 +27,14 @@
      Kept as a variable because it is still the right knob: if the clock ever
      grows past ~180px tall, this is the one number to raise. */
   :root[data-league="ubae"]{ --ll-lift:0px; }
+  /* THE SHARED SLOT. flash, the dossier and the keys card all sit at 190px
+     because they are the same thing to a viewer: the one card in the bottom
+     left. They are mutually exclusive in CODE (see slotShow) rather than by
+     the operator remembering — the keys card rotates on a timer all fight,
+     so "don't fire two at once" was never going to hold. */
   #flash  { bottom:calc(190px + var(--ll-lift)) !important; }
   #fighter{ bottom:calc(190px + var(--ll-lift)) !important; }
+  #keys   { bottom:calc(190px + var(--ll-lift)) !important; }
   #odds   { bottom:calc(268px + var(--ll-lift)) !important; }
   #status{position:fixed;top:8px;left:10px;font:11px monospace;color:#888;
     background:rgba(0,0,0,.4);padding:3px 7px;border-radius:4px;letter-spacing:.05em;}
@@ -170,6 +176,49 @@
   .chip .v.rk{color:var(--gold);}
   .beltbadge{background:linear-gradient(90deg,#c9a11e,#ffe27a);color:#4a3600;
     font:700 13px 'Barlow';letter-spacing:.1em;padding:4px 10px;border-radius:4px;text-transform:uppercase;}
+
+  /* ── KEYS TO VICTORY / FUN FACT ──────────────────────────────────────
+     The in-match filler. Up to three keys per fighter and one fun fact,
+     both TYPED per bout in the admin panel's card builder; six automatic
+     facts only when nobody wrote either.
+
+     It lives here rather than in its own scene file because it is a
+     during-match popup in the bottom-left corner — which is what this
+     file is. As a separate browser source it parked on exactly the same
+     coordinates as the dossier with no way to know the dossier existed. */
+  #keys{position:fixed;left:48px;bottom:190px;transform:translateX(-135%);opacity:0;
+    display:flex;min-width:520px;max-width:900px;border-radius:10px;overflow:hidden;
+    background:linear-gradient(135deg,rgba(20,4,38,.97),rgba(6,0,14,.98));
+    box-shadow:0 22px 55px rgba(0,0,0,.6),0 0 0 1px rgba(155,48,255,.18);}
+  #keys.in{animation:lin .55s cubic-bezier(.16,1,.3,1) forwards;}
+  #keys.out{animation:lout .58s cubic-bezier(.5,0,.75,.2) forwards;}
+  #keys .accent{width:14px;flex:0 0 14px;background:var(--red);box-shadow:0 0 24px var(--red);}
+  /* the accent is the category colour — the only part read from across a room */
+  #keys[data-tone="keys"]  .accent{background:linear-gradient(180deg,#ffe27a,#c9a11e);box-shadow:0 0 26px rgba(255,206,0,.55);}
+  #keys[data-tone="gold"]  .accent{background:var(--gold);box-shadow:0 0 24px var(--gold);}
+  #keys[data-tone="green"] .accent{background:var(--green);box-shadow:0 0 24px var(--green);}
+  #keys[data-tone="amber"] .accent{background:#ffb020;box-shadow:0 0 24px #ffb020;}
+  #keys .kb{padding:15px 30px 17px 24px;min-width:0;}
+  #kEyebrow{font:600 13px 'Barlow';letter-spacing:.22em;text-transform:uppercase;
+    color:var(--red);margin-bottom:9px;}
+  #keys[data-tone="keys"] #kEyebrow{color:var(--gold);}
+  #keys[data-tone="green"] #kEyebrow{color:var(--green);}
+  #keys[data-tone="amber"] #kEyebrow{color:#ffb020;}
+  #kHead{font-family:'Barlow Condensed';font-weight:900;font-size:46px;line-height:.95;
+    text-transform:uppercase;color:#fff;}
+  #keys[data-tone="keys"] #kHead{font-size:40px;}
+  #kSub{font:500 20px 'Barlow';color:#9aa0a6;margin-top:8px;line-height:1.25;}
+  #kSub em{font-style:normal;color:#fff;font-weight:600;}
+  #kSub:empty{display:none;}
+  /* Three bullets in ONE card. They are a single argument about how the
+     fight is won; split across three cards ninety seconds apart, nobody
+     assembles them back together. */
+  #kList{margin-top:13px;display:flex;flex-direction:column;gap:10px;}
+  #kList:empty{display:none;}
+  #kList .k{display:flex;align-items:flex-start;gap:15px;}
+  #kList .n{font-family:'Barlow Condensed';font-weight:900;font-size:22px;color:var(--gold);
+    line-height:1.15;flex:0 0 auto;}
+  #kList .t{font:600 25px 'Barlow';line-height:1.24;color:#fff;}
 
   /* ── ODDS BOARD ── */
 /* Raised from bottom:190px. It cleared the fight clock by only 32px, and with
@@ -596,6 +645,16 @@
     </div>
   </div>
 
+  <div id="keys">
+    <div class="accent"></div>
+    <div class="kb">
+      <div id="kEyebrow">Keys to victory</div>
+      <div id="kHead">—</div>
+      <div id="kSub"></div>
+      <div id="kList"></div>
+    </div>
+  </div>
+
   <!-- odds pill — one glanceable strip: name · payout · pool-split dots ·
        payout · name · pool. The dots bounce in after the pill slides up,
        then hold a slow balanced wave from both ends. -->
@@ -946,7 +1005,7 @@ function handle(c){
     if(d.country) chips.push(`<div class="chip"><span class="l">From</span><span class="v" style="font-size:20px">${d.country}</span></div>`)
     if(d.champion) chips.push(`<span class="beltbadge">🏆 Champion</span>`)
     $('fstatrow').innerHTML=chips.join('')
-    const f=$('fighter'); f.classList.remove('out'); void f.offsetWidth; f.classList.add('in')
+    const f=$('fighter'); slotShow(f)
     clearTimeout(fighterTimer); fighterTimer=setTimeout(()=>{ f.classList.remove('in'); f.classList.add('out') }, 12000)
     sfx.whoosh()
   }
@@ -966,6 +1025,23 @@ function handle(c){
       while(size>13 && wide() > room){ size-=1; el.style.fontSize=size+'px' }
     })
   }
+  // ── keys / fun facts ──────────────────────────────────────────────
+  // Self-driving: it learns the bout from what the deck already sends, so it
+  // needs no button. {type:'keys',on:false} stops it when the corner is
+  // wanted for something else.
+  if(c.type==='bout' && c.d && c.d.a && c.d.b){ kLoad(c.d.a, c.d.b) }
+  if(c.type==='tape' && c.d && c.d.left && c.d.right && c.d.left.name && c.d.right.name){
+    // the tape's title is the belt when it IS one, and the division otherwise —
+    // only the former is a stake worth a card
+    K_TITLE = /title|championship|belt/i.test(String(c.d.title||''))
+      ? String(c.d.title).toUpperCase() : null
+    kLoad(c.d.left.name, c.d.right.name)
+  }
+  if(c.type==='keys'){
+    if(c.on===false){ kStop(); return }
+    if(c.on===true){ kStart(); return }
+  }
+
   if(c.type==='odds'){
     if(c.on===false){ $('odds').classList.remove('show'); clearTimeout(oddsTimer); return }
     const d=c.d, pool=d.total_a+d.total_b
@@ -1022,6 +1098,233 @@ function handle(c){
     setTimeout(()=>{ coin.classList.remove('flip') }, 7400)
   }
 }
+
+// ── THE SHARED BOTTOM-LEFT SLOT ────────────────────────────────────────
+// flash, the dossier and the keys card are one card to a viewer. Whichever
+// arrives last owns the slot and the others get out of the way. This is the
+// whole reason the keys card moved into this file: as its own browser source
+// it sat on identical coordinates with no way to know the dossier existed,
+// so firing a dossier mid-rotation drew the two on top of each other.
+const SLOT = ['flash','fighter','keys']
+function slotShow(el){
+  for(const id of SLOT){
+    const o = $(id)
+    if(!o || o === el) continue
+    if(o.classList.contains('in')){ o.classList.remove('in'); o.classList.add('out') }
+  }
+  el.classList.remove('out'); void el.offsetWidth; el.classList.add('in')
+}
+
+// ── KEYS TO VICTORY + FUN FACTS ────────────────────────────────────────
+// Typed content leads; six automatic facts fill in behind it. The automatic
+// list is deliberately SHORT: record, KO rate, ladder position, reach and age
+// all used to be in here and every one of them is already on the dossier, in
+// this same corner, moments earlier. What is left is what the dossier cannot
+// say.
+const K_ENTER=550, K_HOLD=8200, K_EXIT=500, K_GAP=22000
+let K_CARDS=[], K_i=0, K_loop=null, K_gen=0, K_key='', K_TITLE=null
+
+const kNorm = v => String(v ?? '').trim().toLowerCase()
+const kHas  = v => v!==null && v!==undefined && String(v).trim()!=='' && String(v).trim()!=='—'
+const kDate = m => m.event_date || m.created_at || null
+const kDesc = l => l.slice().sort((a,b)=> new Date(String(kDate(b)??0)) - new Date(String(kDate(a)??0)))
+function kMonth(d){
+  if(!d) return null
+  let x=new Date(String(d)); if(isNaN(x)) x=new Date(String(d).replace(' ','T'))
+  if(isNaN(x)) return null
+  const p={}
+  new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',month:'short',year:'numeric'})
+    .formatToParts(x).forEach(y=>{p[y.type]=y.value})
+  return p.month ? `${p.month.toUpperCase()} ${p.year}` : null
+}
+const K_DIV={heavyweight:'HEAVYWEIGHT',light_heavyweight:'LIGHT HEAVYWEIGHT',middleweight:'MIDDLEWEIGHT',
+  lightweight:'LIGHTWEIGHT',welterweight:'WELTERWEIGHT',featherweight:'FEATHERWEIGHT',
+  bantamweight:'BANTAMWEIGHT',flyweight:'FLYWEIGHT',cruiserweight:'CRUISERWEIGHT'}
+const kDiv = v => K_DIV[kNorm(v).replace(/\s+/g,'_')] || String(v??'').toUpperCase()
+
+const K_CARD = (tone,eyebrow,head,sub) => ({tone,eyebrow,head,sub:sub||'',keys:null})
+const K_KEYS = (name,keys) => ({tone:'keys',eyebrow:'Keys to victory',head:String(name).toUpperCase(),sub:'',keys})
+
+// Six builders. Each returns a card or null, and null is the normal case.
+const K_BUILD = [
+  function belt(a,b,ctx){
+    if(ctx.titleName) return K_CARD('gold','On the line', ctx.titleName, '')
+    const ch = a.is_champion ? a : (b.is_champion ? b : null)
+    if(!ch) return null
+    return K_CARD('gold','Champion', ch.display_name, `${kDiv(ch.weight_class)} titleholder`)
+  },
+  function streak(a,b,ctx){
+    const best=[a,b].map(f=>{
+      const bs=kDesc((ctx.bouts[f.id]||[]).filter(m=>m.won!==null))
+      if(!bs.length) return null
+      const won=bs[0].won; let n=0
+      for(const m of bs){ if(m.won!==won) break; n++ }
+      return {f,won,n,broke:bs[n]}
+    }).filter(x=>x&&x.n>=3).sort((x,y)=>y.n-x.n)[0]
+    if(!best) return null
+    const tail = best.broke ? `last ${best.won?'loss':'win'} ${kMonth(kDate(best.broke))||'earlier'}`
+                            : 'unbeaten in the record'
+    return K_CARD(best.won?'green':'amber','On a run',
+      `${best.n} ${best.won?'STRAIGHT WINS':'STRAIGHT LOSSES'}`, `<em>${esc(best.f.display_name)}</em> — ${tail}`)
+  },
+  function h2h(a,b,ctx){
+    const prev=(ctx.bouts[a.id]||[]).filter(m=>
+      kNorm(m.opponent_slug)===kNorm(b.slug) || kNorm(m.opponent_name)===kNorm(b.display_name))
+    if(!prev.length) return null
+    const aw=prev.filter(m=>m.won===true).length, bw=prev.filter(m=>m.won===false).length
+    const when=kMonth(kDate(kDesc(prev)[0]))
+    const head = prev.length===1
+      ? (aw?`${a.display_name} WON IT`: bw?`${b.display_name} WON IT`:'IT WAS A DRAW')
+      : `${aw}—${bw} ${a.display_name}`
+    return K_CARD('red','They have met', head, prev.length===1
+      ? `their only previous meeting${when?` — <em>${when}</em>`:''}`
+      : `${prev.length} previous bouts${when?`, latest <em>${when}</em>`:''}`)
+  },
+  function common(a,b,ctx){
+    const key=m=>kNorm(m.opponent_slug)||kNorm(m.opponent_name)
+    const bm=new Map()
+    for(const m of (ctx.bouts[b.id]||[])) if(key(m)&&m.won!==null) bm.set(key(m),m)
+    for(const m of kDesc(ctx.bouts[a.id]||[])){
+      const k=key(m)
+      if(!k||m.won===null||k===kNorm(b.slug)) continue
+      const o=bm.get(k); if(!o||o.won===m.won) continue      // only interesting when they DIFFER
+      const w=m.won?a:b, l=m.won?b:a
+      return K_CARD('red','Common opponent', m.opponent_name||'SHARED FOE',
+        `<em>${esc(w.display_name)}</em> beat them · <em>${esc(l.display_name)}</em> did not`)
+    }
+    return null
+  },
+  function money(a,b,ctx){
+    const p=ctx.pool
+    if(!p||!(+p.pool>0)||+p.bets<3) return null
+    const ta=+p.total_a||0, tb=+p.total_b||0
+    if(ta+tb<=0) return null
+    const share=Math.round(ta*100/(ta+tb)), lean=share>=50?share:100-share
+    if(lean<58) return K_CARD('amber','The money','A SPLIT ROOM',
+      `<em>${(+p.pool).toLocaleString()} VC</em> across ${p.bets} bets — ${share}/${100-share}`)
+    const side=share>=50?(p.side_a||a.display_name):(p.side_b||b.display_name)
+    return K_CARD('amber','The money', `${lean}% ON ${side}`,
+      `<em>${(+p.pool).toLocaleString()} VC</em> in the pool across ${p.bets} bets`)
+  },
+  function team(a,b,ctx){
+    if(!ctx.standings.length) return null
+    const byName=new Map(ctx.standings.map(t=>[kNorm(t.name||t.team_name),t]))
+    for(const f of [a,b]){
+      const t=byName.get(kNorm(f.team)); if(!t) continue
+      const w=+t.wins, l=+t.losses
+      if(!(w>=0)||!(l>=0)||(w+l)<2) continue
+      return K_CARD('green','His team', `${t.name||t.team_name} ${w}—${l}`,
+        `<em>${esc(f.display_name)}</em> fights out of them this season`)
+    }
+    return null
+  },
+]
+
+function kPaint(c){
+  const el=$('keys')
+  el.dataset.tone=c.tone
+  $('kEyebrow').textContent=c.eyebrow
+  $('kHead').textContent=c.head
+  $('kSub').innerHTML=c.sub||''
+  const list=$('kList')
+  list.innerHTML=(c.keys&&c.keys.length)
+    ? c.keys.slice(0,3).map((k,i)=>`<div class="k"><span class="n">${i+1}</span><span class="t">${esc(k)}</span></div>`).join('')
+    : ''
+}
+function kStop(){ if(K_loop){clearTimeout(K_loop);K_loop=null}
+  const el=$('keys'); if(el.classList.contains('in')){el.classList.remove('in');el.classList.add('out')} }
+function kStart(){
+  if(K_loop) clearTimeout(K_loop)
+  const tick=()=>{
+    if(!K_CARDS.length){ K_loop=setTimeout(tick,K_GAP); return }
+    kPaint(K_CARDS[K_i%K_CARDS.length]); K_i++
+    slotShow($('keys'))
+    setTimeout(()=>{ const el=$('keys')
+      if(el.classList.contains('in')){el.classList.remove('in');el.classList.add('out')} }, K_ENTER+K_HOLD)
+    K_loop=setTimeout(tick, K_ENTER+K_HOLD+K_EXIT+K_GAP)
+  }
+  K_loop=setTimeout(tick, 600)
+}
+
+async function kLoad(nameA,nameB){
+  const key=kNorm(nameA)+'|'+kNorm(nameB)+'|'+kNorm(K_TITLE)
+  if(key===K_key) return                    // the deck re-pushes the same bout constantly
+  K_key=key
+  const mine=++K_gen
+  // supabase-js resolves {data:null,error} instead of throwing, so a failed read
+  // must never be mistaken for "no fighters" — that would leave the corner dark
+  // for the rest of the fight with nothing in the log.
+  const { data:cards, error } = await sb.from('fighter_cards')
+    .select('id,slug,display_name,weight_class,rank,is_champion,team,headline_wins,headline_losses,headline_draws')
+  if(error||!cards){ console.warn('[keys] fighter lookup failed —',error); K_key=''; return }
+  const find=n=>cards.find(c=>kNorm(c.display_name)===kNorm(n))||cards.find(c=>kNorm(c.slug)===kNorm(n))
+  const a=find(nameA), b=find(nameB)
+  if(!a||!b){ console.warn('[keys] no match for',nameA,'/',nameB); K_key=''; return }
+
+  const [{data:ma},{data:mb},{data:pools},{data:st},notesR] = await Promise.all([
+    sb.from('fighter_matches').select('*').eq('fighter_id',a.id).eq('status','completed'),
+    sb.from('fighter_matches').select('*').eq('fighter_id',b.id).eq('status','completed'),
+    sb.from('bet_pools_public').select('*'),
+    sb.from('team_standings').select('*'),
+    // the typed content — gated on card_published in the view, so a locked card
+    // returns nothing rather than leaking its matchups
+    sb.from('bout_notes_public').select('*'),
+  ])
+  if(mine!==K_gen) return
+
+  const ctx={ bouts:{[a.id]:ma||[],[b.id]:mb||[]}, standings:st||[], titleName:K_TITLE,
+    pool:(pools||[]).find(p=>
+      (kNorm(p.side_a)===kNorm(a.display_name)&&kNorm(p.side_b)===kNorm(b.display_name))||
+      (kNorm(p.side_a)===kNorm(b.display_name)&&kNorm(p.side_b)===kNorm(a.display_name)))||null }
+
+  const built=[]
+  if(notesR.error) console.warn('[keys] bout notes failed —',notesR.error)
+  // Matched on the fighter/opponent NAME PAIR. The deck sends names, not a
+  // match_id, and a fighter booked twice in one night would otherwise pick up
+  // keys that name the wrong opponent.
+  const notes=(notesR.data||[]).filter(n=>
+    (kNorm(n.fighter_name)===kNorm(a.display_name)&&kNorm(n.opponent_name)===kNorm(b.display_name))||
+    (kNorm(n.fighter_name)===kNorm(b.display_name)&&kNorm(n.opponent_name)===kNorm(a.display_name)))
+  for(const side of [a,b]){
+    const n=notes.find(x=>kNorm(x.fighter_name)===kNorm(side.display_name))
+    const ks=(n&&Array.isArray(n.keys)?n.keys:[]).filter(k=>String(k||'').trim())
+    if(ks.length) built.push(K_KEYS(side.display_name,ks))
+  }
+  for(const side of [a,b]){
+    const n=notes.find(x=>kNorm(x.fighter_name)===kNorm(side.display_name))
+    if(n&&String(n.fun_fact||'').trim())
+      built.push(K_CARD('red','Fun fact', side.display_name, esc(n.fun_fact)))
+  }
+  for(const fn of K_BUILD){
+    let c=null
+    // one bad builder must not take the corner down for the rest of the fight
+    try{ c=fn(a,b,ctx) }catch(e){ console.warn('[keys] builder threw —',fn.name,e) }
+    if(c&&kHas(c.head)) built.push(c)
+  }
+  K_CARDS=built; K_i=0
+  const typed=built.filter(c=>c.tone==='keys'||c.eyebrow==='Fun fact').length
+  console.log(`[keys] ${built.length} cards for ${a.display_name} vs ${b.display_name} `
+    +`(${typed} typed, ${built.length-typed} automatic)`)
+  kStart()
+}
+
+// ?keysdemo=1 shows one of every card shape without a deck or a live bout.
+try{
+  if(new URLSearchParams(location.search).get('keysdemo')==='1'){
+    K_CARDS=[
+      K_KEYS('smokinem',['Keep it long — win the first two minutes at range',
+                         'Make him lead, then counter off the back foot',
+                         'Bank the early rounds; he fades after three']),
+      K_KEYS('Hello World',['Close the distance early and make it ugly',
+                            'Body work in the clinch — take the legs away']),
+      K_CARD('red','Fun fact','SMOKINEM','Has fought on every card since the league opened and has never missed a weigh-in.'),
+      K_CARD('gold','On the line','UBA HEAVYWEIGHT TITLE',''),
+      K_CARD('green','On a run','4 STRAIGHT WINS','<em>smokinem</em> — last loss MAR 2026'),
+      K_CARD('amber','The money','71% ON SMOKINEM','<em>18,400 VC</em> in the pool across 63 bets'),
+    ]
+    kStart()
+  }
+}catch(e){}
 
 const channel = sb.channel('vga-overlay')
 channel.on('broadcast', { event:'cmd' }, ({ payload }) => handle(payload))
