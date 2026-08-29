@@ -367,6 +367,29 @@
      of each are out there. Rarity palette lifted from fighter-profile.html
      deliberately -- someone who has seen their own stash should recognise
      this at a glance. */
+  /* THE CARD, MOVING. A card set printed as a list of names is a spreadsheet of
+     things that are meant to be objects; the 3D render is the only thing on
+     this screen that says they are collectable. The column only EXISTS when the
+     film loaded — see mountCardFilm — so a missing file leaves the sets exactly
+     as they were rather than a black rectangle nobody on the night can explain. */
+  .cardsplit{display:grid;grid-template-columns:1fr;gap:34px;align-items:start;}
+  /* 320, not 400: the sets column has to hold the same list in less width, and
+     measured against tonight's four sets a wider film pushed the grid 450px
+     past the bottom of the frame. The tiles narrow with it for the same
+     reason — see fitCardFilm, which drops the column outright if a future set
+     still overflows. */
+  .cardsplit.film{grid-template-columns:320px 1fr;}
+  .cardsplit.film .scards{grid-template-columns:repeat(auto-fill,minmax(118px,1fr));}
+  .cardsplit.film .scard-name{font-size:17px;}
+  .cardfilm{display:none;position:relative;border:1px solid var(--line);
+    background:rgba(14,0,30,.6);box-shadow:0 0 34px rgba(60,0,110,.45);}
+  .cardsplit.film .cardfilm{display:block;}
+  .cardfilm video{display:block;width:100%;height:auto;max-height:660px;object-fit:contain;
+    background:transparent;}
+  /* The label is the point of the panel: it says the cards are won and traded,
+     which the moving render alone does not. */
+  .cardfilm-cap{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.18em;
+    color:var(--dim);text-align:center;padding:10px 8px 11px;border-top:1px solid var(--line);}
   .setgrid{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:start;}
   .sethead{display:flex;justify-content:space-between;align-items:baseline;
     border-bottom:2px solid var(--pur);padding-bottom:6px;margin-bottom:10px;}
@@ -566,7 +589,24 @@
   .sb-side.r{align-items:flex-end;text-align:right;}
   .sb-team{font-weight:900;font-size:20px;text-transform:uppercase;line-height:1.1;margin-bottom:8px;}
   .sb-rule{width:100%;height:1px;background:var(--line);margin-bottom:8px;}
-  .sb-plr{font-family:'Barlow',sans-serif;font-weight:500;font-size:13px;color:var(--dim);line-height:1.65;}
+  /* A NAME IS A NAME; A FACE IS A PERSON. This strip is the last thing up
+     before a match, so the roster should read as the people about to play
+     rather than a list of handles. The avatar rides the line height that was
+     already there -- 18px keeps a six-player roster inside the bar's 300px,
+     which a taller one does not. */
+  .sb-plr{font-family:'Barlow',sans-serif;font-weight:500;font-size:13px;color:var(--dim);
+    line-height:1.65;display:flex;align-items:center;gap:7px;}
+  .sb-side.r .sb-plr{flex-direction:row-reverse;}
+  /* The fallback is the fighter's INITIAL, not an empty disc: 364 of 454
+     fighters have no photo, and a row of blank circles reads as a graphic that
+     failed to load rather than a roster that is simply unphotographed. */
+  .sb-ava{width:18px;height:18px;flex:0 0 18px;border-radius:50%;position:relative;
+    overflow:hidden;background:rgba(155,48,255,.14);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;}
+  .sb-ava i{font-family:'Press Start 2P',monospace;font-size:7px;font-style:normal;
+    color:rgba(204,102,255,.65);}
+  .sb-ava img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+    object-position:50% 22%;}   /* faces sit high in a portrait; a centre crop takes the chin */
   .sb-vs{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--hi);text-align:center;padding-top:3px;}
   /* stage gets out of the bar's way while it's up */
   #stage{transition:padding-bottom .55s cubic-bezier(.16,1,.3,1);}
@@ -682,7 +722,10 @@
     <div class="view" id="v-cards">
       <div class="eyebrow">VGA · UBA</div>
       <div class="title sm">Card Collection</div>
-      <div class="setgrid" id="cardsContent"></div>
+      <div class="cardsplit" id="cardSplit">
+        <div class="cardfilm" id="cardFilm"></div>
+        <div class="setgrid" id="cardsContent"></div>
+      </div>
     </div>
 
     <div class="view" id="v-next3">
@@ -792,6 +835,8 @@ async function loadAll(){
   // roster 2.0 keeps the full records list (photos included); before the deck
   // loads a match it defaults to the nearest scheduled one, starters unknown
   REC=rec||[]
+  indexPhotos(rec)
+  if(BAR_LAST) fillBar(BAR_LAST)      // a strip already on air gains its faces
   if(!VSR.a && mt && mt[0]) VSR={a:mt[0].team_a_name, b:mt[0].team_b_name, sa:[], sb:[]}
   renderVsRosters()
   showCard(null)   // preload soonest card
@@ -938,6 +983,62 @@ function renderCards(sets, coll){
       + (rarest ? ' &middot; RAREST <b>'+String(rarest.card_fighter).toUpperCase()+'</b> &times;'+rarest.copies : '')
       + '</div></div>'
   }).join('') : '<div class="setfoot">NO SETS RELEASED</div>'
+}
+
+// ── THE 3D CARD FILM ─────────────────────────────────────────────────────
+// Wired by EXISTENCE, not configuration: drop assets/card-3d.mp4 (or .webm) in
+// and the Card Collection screen grows a turning card beside the sets; take it
+// away and the screen is exactly what it always was. Nothing to switch on, no
+// deck button to remember, and no way to end up presenting a black rectangle --
+// an OBS browser source cannot tell you a file 404'd, it just shows the hole.
+const CARD_FILM = ['assets/card-3d.mp4','assets/card-3d.webm']
+let cardFilmEl = null
+function mountCardFilm(){
+  const wrap = document.getElementById('cardFilm'); if(!wrap) return
+  let i = 0
+  const v = document.createElement('video')
+  v.muted = true; v.loop = true; v.autoplay = true; v.playsInline = true; v.preload = 'auto'
+  // loadeddata rather than canplay: this only has to learn the file is real.
+  v.addEventListener('loadeddata', ()=>{
+    cardFilmEl = v
+    document.getElementById('cardSplit').classList.add('film')
+    syncCardFilm()
+  })
+  // Both encodings are tried before giving up, because which one gets exported
+  // is a decision made in an editor months from now, not here.
+  // An error AFTER it has played takes the column with it: a film that dies
+  // mid-show would otherwise leave a 400px hole beside the sets, which is a
+  // worse screen than the one that never had a film at all.
+  v.addEventListener('error', ()=>{
+    if(!cardFilmEl && ++i < CARD_FILM.length){ v.src = CARD_FILM[i]; v.load(); return }
+    cardFilmEl = null
+    document.getElementById('cardSplit').classList.remove('film')
+    v.remove()
+  })
+  v.src = CARD_FILM[0]
+  wrap.appendChild(v)
+  const cap = document.createElement('div')
+  cap.className = 'cardfilm-cap'
+  cap.textContent = 'EARNED · TRADED · FUSED'
+  wrap.appendChild(cap)
+}
+// A loop decoding behind a screen nobody is looking at costs the streaming box
+// frames it needs for the fight. It runs while the Card Collection is up and is
+// paused every other second of the night.
+function syncCardFilm(){
+  const split = document.getElementById('cardSplit')
+  if(!cardFilmEl || !split) return
+  if(!document.getElementById('v-cards').classList.contains('on')){ cardFilmEl.pause(); return }
+  split.classList.add('film')
+  // Measured while the view is actually on screen, the only time the answer is
+  // real -- a hidden view has no height. THE SETS ARE THE SCREEN AND THE FILM
+  // IS THE GUEST: if a newly released set makes the list taller than the frame,
+  // the film's column is what gives way. A card list running off the bottom of
+  // a 1080 frame loses information the audience cannot get back, and this
+  // screen gains sets over time.
+  const room = document.getElementById('stage').clientHeight - 140   // stage padding, top and bottom
+  if(document.getElementById('v-cards').scrollHeight > room) split.classList.remove('film')
+  const p = cardFilmEl.play(); if(p && p.catch) p.catch(()=>{})
 }
 
 function renderCta(count){
@@ -1491,6 +1592,7 @@ function hideView(el){
   el.style.left=(r.left-p.left)+'px'
   el.style.width=r.width+'px'
   el.classList.remove('on'); el.classList.add('out')
+  syncCardFilm()
   clearTimeout(el._voutT)
   el._voutT=setTimeout(()=>{
     el.classList.remove('out')
@@ -1507,6 +1609,7 @@ function showView(el){
   el.classList.remove('out')
   el.style.position=el.style.top=el.style.left=el.style.width=''
   el.classList.add('on')
+  syncCardFilm()
 }
 
 function show(view, league){
@@ -1525,7 +1628,57 @@ function barShow(on){
   $('schedBar').classList.toggle('on', on)
   document.body.classList.toggle('bar-on', on)
 }
+// PHOTOS, BY NAME — the deck sends rosters as plain strings, so a name is all
+// the strip ever has to go on. Case-insensitive on purpose: the DB has fighters
+// like "baz", and a case drift anywhere upstream must never cost somebody their
+// face.
+const PHOTOS = new Map()
+function indexPhotos(rec){
+  (rec||[]).forEach(f=>{ if(f && f.photo_thumb_url)
+    PHOTOS.set(String(f.stage_name||'').trim().toLowerCase(), f.photo_thumb_url) })
+}
+const posterSlug = n => String(n||'').trim().toLowerCase()
+  .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')
+// Two sources, in this order: the photo on the fighter's record, then a poster
+// dropped into assets/fighters/<slug>.png. The database first because those 90
+// are known to exist, and asking for a file that isn't there 454 times a render
+// is a page full of 404s. The <img> IS the existence check for the poster —
+// it removes itself when the file is missing and the initial is left standing,
+// which is the one thing an OBS source can never tell you about on its own.
+const NO_POSTER = new Set()   // names already known to have no poster file
+// A placeholder is not a person: an em-dash row would otherwise get a disc
+// with a dash in it, which reads as a fighter whose photo failed to load.
+const PLACEHOLDER = /^(—|-|–|TBA|\?)$/i
+function avaFor(name){
+  const key = String(name||'').trim().toLowerCase()
+  if(!key || PLACEHOLDER.test(key)) return ''
+  const initial = (String(name||'').trim()[0] || '?').toUpperCase()
+  const db = PHOTOS.get(key)
+  // Asked for once. The strip re-renders on every deck push, and a 404 is not
+  // cached the way a hit is -- without this, the same 25 misses go back to the
+  // server every time the operator changes the week.
+  const poster = (key && !NO_POSTER.has(key)) ? 'assets/fighters/'+posterSlug(name)+'.png' : ''
+  const src = db || poster
+  const next = db ? poster : ''
+  return '<span class="sb-ava"><i>'+initial+'</i>'
+    + (src ? '<img src="'+src+'" data-next="'+next+'" data-who="'+key+'" onerror="avaFallback(this)">' : '')
+    + '</span>'
+}
+function avaFallback(img){
+  const next = img.dataset.next
+  if(next){ img.dataset.next=''; img.src=next; return }
+  if(img.dataset.who) NO_POSTER.add(img.dataset.who)
+  img.remove()
+}
+const plrRow = p => '<span class="sb-plr">'+avaFor(p)+'<span>'+p+'</span></span>'
+
+// The last payload the deck sent, kept because the photos arrive AFTER the bar
+// can. The deck pushes the week the moment the operator presses it; the fighter
+// records are a network round trip behind, and without this the strip that was
+// already up would keep a full row of initials all night.
+let BAR_LAST = null
 function fillBar(d){
+  BAR_LAST = d
   if(d.week) $('sbWeek').innerHTML='WK<br>'+d.week
   if(d.dates) $('sbDates').innerHTML=d.dates
   $('sbCards').innerHTML=(d.matches||[]).slice(0,4).map(m=>
@@ -1534,13 +1687,13 @@ function fillBar(d){
         <div class="sb-side">
           <span class="sb-team">${(m.a&&m.a.name||'').toUpperCase()}</span>
           <div class="sb-rule"></div>
-          ${((m.a&&m.a.roster)||[]).map(p=>`<span class="sb-plr">${p}</span>`).join('')}
+          ${((m.a&&m.a.roster)||[]).map(plrRow).join('')}
         </div>
         <div class="sb-vs">VS</div>
         <div class="sb-side r">
           <span class="sb-team">${(m.b&&m.b.name||'').toUpperCase()}</span>
           <div class="sb-rule"></div>
-          ${((m.b&&m.b.roster)||[]).map(p=>`<span class="sb-plr">${p}</span>`).join('')}
+          ${((m.b&&m.b.roster)||[]).map(plrRow).join('')}
         </div>
       </div></div>`).join('')
 }
@@ -1596,6 +1749,7 @@ sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
 
 loadAll()
 cycAll()          // the alternating names, on one page-wide timer
+mountCardFilm()   // no-op unless assets/card-3d.mp4 (or .webm) is actually there
 </script>
 </body>
 </html>

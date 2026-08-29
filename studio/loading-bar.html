@@ -55,8 +55,32 @@
   .live-pill { display:flex; align-items:center; gap:7px; font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--green-dim); }
   .live-dot { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 5px var(--green); animation:blink 1s step-end infinite; }
 
-  /* GRAPHIC ZONE */
-  .graphic-zone { position:absolute; top:56px; left:0; right:0; bottom:340px; }
+  /* GRAPHIC ZONE — the hole this screen exists around. Empty until a file is
+     actually there: see mountCardFilm. An OBS browser source cannot tell you a
+     video 404'd, it just shows a black box, so nothing is drawn here unless
+     the film loaded. */
+  .graphic-zone { position:absolute; top:56px; left:0; right:0; bottom:340px;
+    display:flex; align-items:center; justify-content:center; }
+  .zone-film { display:none; flex-direction:column; align-items:center; gap:18px; }
+  .zone-film.on { display:flex; }
+  .zone-film video { display:block; max-height:520px; max-width:900px;
+    border:1px solid var(--border); box-shadow:0 0 60px rgba(106,31,194,.35); }
+  .zone-film .cap { font-size:10px; letter-spacing:.32em; color:var(--amber-dim); }
+
+  /* A NAME IS A NAME; A FACE IS A PERSON. The strip is the last thing up before
+     a match, so the roster should read as the people about to play. 18px keeps
+     a six-player roster inside the bar, which a taller avatar does not. */
+  .player-row { display:flex; align-items:center; gap:7px; }
+  .roster-list.right .player-row { flex-direction:row-reverse; }
+  /* The fallback is the fighter's INITIAL, not an empty disc: most of the roster
+     has no photo, and a column of blank circles reads as a graphic that failed
+     rather than a roster that is simply unphotographed. */
+  .p-ava { width:18px; height:18px; flex:0 0 18px; border-radius:50%; position:relative;
+    overflow:hidden; background:rgba(106,31,194,.18); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center; }
+  .p-ava i { font-size:6px; font-style:normal; color:var(--purple-hi); }
+  .p-ava img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+    object-position:50% 22%; }   /* faces sit high in a portrait; a centre crop takes the chin */
 
   /* SCHEDULE STRIP — height driven by content, not a fixed guess */
   .schedule-strip {
@@ -173,148 +197,102 @@
   </div>
 </div>
 
-<div class="graphic-zone"></div>
+<div class="graphic-zone">
+  <div class="zone-film" id="zoneFilm"><div class="cap">VGA · COLLECT THE CARD</div></div>
+</div>
 
 <div class="schedule-strip">
   <div class="strip-inner">
 
+    <!-- PLACEHOLDER, deliberately. This strip used to ship with week 1's real
+         matchups and real dates baked in, so any load before the deck pushed --
+         an OBS source added mid-show, a refresh on scene change -- put a
+         months-old week on air looking exactly like tonight's. Stale real data
+         is worse than obvious placeholder data: one of them looks like the
+         graphic is working. Same lesson as FIGHT_QUEUE in tale-of-the-tape. -->
     <div class="strip-label">
       <span class="week-eyebrow">// SCHEDULE //</span>
-      <div class="week-number">WK<br>01</div>
-      <div class="week-dates">MAR 19<br>MAR 20<br>2026</div>
+      <div class="week-number">WK<br>--</div>
+      <div class="week-dates">AWAITING<br>SCHEDULE</div>
       <div class="format-tag">3v3<br>BEST OF 5</div>
     </div>
 
     <div class="cards-area">
-
       <div class="match-card">
-        <div class="day-tag"><div class="day-pip"></div>THU 19.03</div>
+        <div class="day-tag"><div class="day-pip"></div>DAY 1</div>
         <div class="matchup-body">
           <div class="team-side">
-            <span class="team-name">TEAM<br>MUDS</span>
+            <span class="team-name">TBA</span>
             <div class="name-rule"></div>
-            <div class="roster-list">
-              <span class="player">DirtiestJordan</span>
-              <span class="player">Galf</span>
-              <span class="player">Tynado</span>
-              <span class="player">Tomato</span>
-              <span class="player">Oavoid</span>
-            </div>
+            <div class="roster-list"><span class="player">—</span></div>
           </div>
           <div class="vs-col"><span class="vs-badge">VS</span></div>
           <div class="team-side right">
-            <span class="team-name">5 GREAT<br>KAGE</span>
+            <span class="team-name">TBA</span>
             <div class="name-rule"></div>
-            <div class="roster-list right">
-              <span class="player">Jester</span>
-              <span class="player">Clint</span>
-              <span class="player">Steel</span>
-              <span class="player">Sage</span>
-              <span class="player">Contour</span>
-              <span class="player">Danny G</span>
-            </div>
+            <div class="roster-list right"><span class="player">—</span></div>
           </div>
         </div>
-        <span class="match-id">W1-M01</span>
+        <span class="match-id">W?-M01</span>
       </div>
-
       <div class="v-div"></div>
 
       <div class="match-card">
-        <div class="day-tag"><div class="day-pip" style="animation-delay:.3s"></div>THU 19.03</div>
+        <div class="day-tag"><div class="day-pip" style="animation-delay:.3s"></div>DAY 1</div>
         <div class="matchup-body">
           <div class="team-side">
-            <span class="team-name">SHEATH<br>ELITE</span>
+            <span class="team-name">TBA</span>
             <div class="name-rule"></div>
-            <div class="roster-list">
-              <span class="player">Bloob</span>
-              <span class="player">Maki</span>
-              <span class="player">Rico</span>
-              <span class="player">Excel</span>
-              <span class="player">Smokinem</span>
-            </div>
+            <div class="roster-list"><span class="player">—</span></div>
           </div>
           <div class="vs-col"><span class="vs-badge">VS</span></div>
           <div class="team-side right">
-            <span class="team-name">TEAM<br>RAG TAGS</span>
+            <span class="team-name">TBA</span>
             <div class="name-rule"></div>
-            <div class="roster-list right">
-              <span class="player">Boady</span>
-              <span class="player">Helloworld</span>
-              <span class="player">Xi</span>
-              <span class="player">Baz</span>
-              <span class="player">Pablo</span>
-            </div>
+            <div class="roster-list right"><span class="player">—</span></div>
           </div>
         </div>
-        <span class="match-id">W1-M02</span>
+        <span class="match-id">W?-M02</span>
       </div>
-
       <div class="v-div"></div>
 
       <div class="match-card">
-        <div class="day-tag fri"><div class="day-pip fri" style="animation-delay:.7s"></div>FRI 20.03</div>
+        <div class="day-tag"><div class="day-pip" style="animation-delay:.7s"></div>DAY 2</div>
         <div class="matchup-body">
           <div class="team-side">
-            <span class="team-name">CHAMPS<br>UNITED</span>
+            <span class="team-name">TBA</span>
             <div class="name-rule"></div>
-            <div class="roster-list">
-              <span class="player">Nekota</span>
-              <span class="player">Kam</span>
-              <span class="player">IamAura</span>
-              <span class="player">Adonnis</span>
-            </div>
+            <div class="roster-list"><span class="player">—</span></div>
           </div>
           <div class="vs-col"><span class="vs-badge">VS</span></div>
           <div class="team-side right">
-            <span class="team-name">RING<br>REAPERS</span>
+            <span class="team-name">TBA</span>
             <div class="name-rule"></div>
-            <div class="roster-list right">
-              <span class="player">Slove</span>
-              <span class="player">Warhog</span>
-              <span class="player">Carbonshield</span>
-              <span class="player">Yoboi</span>
-              <span class="player">Guts</span>
-            </div>
+            <div class="roster-list right"><span class="player">—</span></div>
           </div>
         </div>
-        <span class="match-id">W1-M03</span>
+        <span class="match-id">W?-M03</span>
       </div>
-
       <div class="v-div"></div>
 
       <div class="match-card">
-        <div class="day-tag fri"><div class="day-pip fri" style="animation-delay:1s"></div>FRI 20.03</div>
+        <div class="day-tag"><div class="day-pip" style="animation-delay:1s"></div>DAY 2</div>
         <div class="matchup-body">
           <div class="team-side">
-            <span class="team-name">UKFC<br>UNCS</span>
+            <span class="team-name">TBA</span>
             <div class="name-rule"></div>
-            <div class="roster-list">
-              <span class="player">ChickenShawarma</span>
-              <span class="player">Cube</span>
-              <span class="player">Xion</span>
-              <span class="player">Gold e</span>
-              <span class="player">Lockz</span>
-              <span class="player">Ashcoop</span>
-            </div>
+            <div class="roster-list"><span class="player">—</span></div>
           </div>
           <div class="vs-col"><span class="vs-badge">VS</span></div>
           <div class="team-side right">
-            <span class="team-name">jUnC</span>
+            <span class="team-name">TBA</span>
             <div class="name-rule"></div>
-            <div class="roster-list right">
-              <span class="player">Asilagy</span>
-              <span class="player">Mao</span>
-              <span class="player">Napboi</span>
-              <span class="player">Ronin</span>
-              <span class="player">Tonyhunglow</span>
-            </div>
+            <div class="roster-list right"><span class="player">—</span></div>
           </div>
         </div>
-        <span class="match-id">W1-M04</span>
+        <span class="match-id">W?-M04</span>
       </div>
-
-    </div>
+        </div>
   </div>
 
   <div class="strip-footer">
@@ -322,7 +300,7 @@
     <span class="footer-sep">//</span>
     <span class="footer-item">FOLLOW › @UBAeSports</span>
     <span class="footer-sep">//</span>
-    <span class="footer-item">JOIN › discord.gg/vga</span>
+    <span class="footer-item">JOIN › discord.gg/uba</span>
   </div>
 </div>
 
@@ -334,6 +312,97 @@
   const _sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
     'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
   const brName = s => (s||'').toUpperCase().replace(/ /g,'<br>')
+
+  // ── THE 3D CARD FILM ───────────────────────────────────────────────────
+  // Wired by EXISTENCE, not configuration: drop assets/card-3d.mp4 (or .webm)
+  // in and the empty graphic zone fills with the turning card; take it away and
+  // the screen is exactly what it was. Nothing to switch on, nothing on the
+  // deck to remember, and no way to present a black rectangle nobody in the
+  // room can explain mid-show.
+  const CARD_FILM = ['assets/card-3d.mp4','assets/card-3d.webm']
+  function mountCardFilm(){
+    const wrap = document.getElementById('zoneFilm'); if(!wrap) return
+    let i = 0, up = false
+    const v = document.createElement('video')
+    v.muted = true; v.loop = true; v.autoplay = true; v.playsInline = true; v.preload = 'auto'
+    v.addEventListener('loadeddata', ()=>{ up = true; wrap.classList.add('on') })
+    // Both encodings are tried before giving up -- which one gets exported is a
+    // decision made in an editor months from now, not here. An error AFTER it
+    // has played takes the zone down with it, because a stalled black frame
+    // parked on a loading screen is worse than the empty zone it replaced.
+    v.addEventListener('error', ()=>{
+      if(!up && ++i < CARD_FILM.length){ v.src = CARD_FILM[i]; v.load(); return }
+      up = false; wrap.classList.remove('on'); v.remove()
+    })
+    v.src = CARD_FILM[0]
+    wrap.insertBefore(v, wrap.firstChild)
+  }
+  mountCardFilm()
+
+  // ── FACES ON THE ROSTER ────────────────────────────────────────────────
+  // Photos by NAME, because names are all this strip is ever handed -- the deck
+  // sends rosters as plain strings. Case-insensitive on purpose: the DB has
+  // fighters like "baz", and a case drift upstream must never cost somebody
+  // their face.
+  const PHOTOS = new Map(), NO_POSTER = new Set()
+  const PLACEHOLDER = /^(—|-|–|TBA|\?)$/i
+  const posterSlug = n => String(n||'').trim().toLowerCase()
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')
+  window.__avaFallback = img => {
+    const next = img.dataset.next
+    if(next){ img.dataset.next=''; img.src=next; return }
+    if(img.dataset.who) NO_POSTER.add(img.dataset.who)   // asked once, never again
+    img.remove()
+  }
+  // Applied by WALKING the rendered rows rather than by building them, because
+  // the rows are written in three places -- the markup below, the deck's push,
+  // and a re-render when the photos land -- and a face that only appears in one
+  // of those is the kind of gap nobody notices until it is on air.
+  function paintAvatars(){
+    document.querySelectorAll('.player').forEach(el=>{
+      // The name is REMEMBERED on the row, because after the first paint the
+      // row's text is the initial plus the name and reading it back would grow
+      // a letter every pass. It is also what lets a row be repainted at all.
+      const name = (el.dataset.name || el.textContent).trim(); if(!name) return
+      // A placeholder is not a person: the em-dash rows this strip shows before
+      // a schedule is pushed would otherwise each get a disc with a dash in it,
+      // which reads as eight fighters whose photos failed to load.
+      if(PLACEHOLDER.test(name)) return
+      const key = name.toLowerCase()
+      const db = PHOTOS.get(key)
+      // The database first: those photos are known to exist, and asking for a
+      // poster that is not there once per fighter per render is a page of 404s.
+      const poster = NO_POSTER.has(key) ? '' : 'assets/fighters/'+posterSlug(name)+'.png'
+      const src = db || poster, next = db ? poster : ''
+      // Compared, not skipped-if-present. Skipping any row that already had an
+      // avatar meant the photos arriving a network trip later could never
+      // replace the initials that were drawn before them -- which is the whole
+      // point of running this again. Comparing also means a repaint that would
+      // change nothing costs nothing, so no row re-requests a file it has
+      // already failed to find.
+      if(el.dataset.ava === src) return
+      el.dataset.name = name; el.dataset.ava = src
+      el.classList.add('player-row')
+      el.innerHTML = '<span class="p-ava"><i>'+(name[0]||'?').toUpperCase()+'</i>'
+        + (src ? '<img src="'+src+'" data-next="'+next+'" data-who="'+key+'" '
+               + 'onerror="window.__avaFallback(this)">' : '')
+        + '</span><span>'+name+'</span>'
+    })
+  }
+  // One read at load. The strip can be pushed before this lands, which is why
+  // paintAvatars runs again when it does -- otherwise a bar already on air
+  // would keep a full column of initials all night.
+  _sb.from('ubae_fighter_records').select('stage_name,photo_thumb_url').then(({data,error})=>{
+    if(error || !data) return           // no photos is a worse screen, never a broken one
+    data.forEach(f=>{ if(f.photo_thumb_url)
+      PHOTOS.set(String(f.stage_name||'').trim().toLowerCase(), f.photo_thumb_url) })
+    paintAvatars()
+  })
+  paintAvatars()   // the markup's own rosters, before any of that arrives
+  // Exposed for the same reason __avaFallback is: the rows are rewritten by a
+  // broadcast nobody can safely fire by hand mid-show, so this is how the paint
+  // gets checked without pushing a fake week to every source in the building.
+  window.__paintAvatars = paintAvatars
   _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
     if(c.type!=='loadbar') return
     const strip=document.querySelector('.schedule-strip')
@@ -361,6 +430,7 @@
       const mid=card.querySelector('.match-id'); if(mid) mid.textContent=m.id||('W'+(d.week||'?')+'-M0'+(i+1))
     })
     for(let i=(d.matches||[]).length;i<cards.length;i++){ cards[i].style.display='none'; if(divs[i-1]) divs[i-1].style.display='none' }
+    paintAvatars()   // the push rewrote the rosters as plain names
   }).subscribe()
 })()
 </script>
