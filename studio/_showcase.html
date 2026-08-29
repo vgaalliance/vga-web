@@ -2,66 +2,65 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>VGA — Transition showcase</title>
+<title>VGA — Every graphic</title>
 <!-- ============================================================
-     A REVIEW TOOL, NOT A SCENE. Never add this to OBS.
+     A REVIEW TOOL. NEVER ADD THIS TO OBS.
 
-     Every broadcast graphic, scaled down and laid out together, with
-     one button that plays all of their entrances at once and another
-     that plays every exit. The point is to see them AGAINST each
-     other: a graphic can look fine alone and read as a different kit
-     next to the one that follows it.
+     Every broadcast graphic in studio/, grouped by the section of
+     the control deck you drive it from, each one the REAL file in an
+     iframe driven over the REAL channel. What you watch here is what
+     goes on air.
 
-     Each tile is the real file in an iframe driven over the real
-     channel, so what you are watching is what goes on air — not a
-     mock-up of it.
+     ONE THING TO KNOW WHILE READING IT. Every iframe subscribes to
+     the same channel, so tiles that share a file (the six overlay
+     tiles) all receive each other's commands. That is not a bug in
+     this page, it is a fact about the channel and about the fact
+     that those six graphics ship as ONE browser source. Play a
+     section at a time rather than the whole page if you want to
+     watch one in isolation.
      ============================================================= -->
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;900&family=Barlow:wght@500;600&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:#0b0910;color:#eee;font-family:'Barlow',system-ui,sans-serif;padding:22px 26px 60px;}
+  body{background:#0b0910;color:#eee;font-family:'Barlow',system-ui,sans-serif;padding:20px 24px 80px;}
   h1{font-family:'Barlow Condensed';font-weight:900;font-size:30px;letter-spacing:.04em;text-transform:uppercase;}
-  .sub{color:#9a90ab;font-size:14px;margin-top:5px;}
-  .bar{position:sticky;top:0;z-index:50;background:#0b0910;padding:14px 0 16px;
-    display:flex;gap:9px;flex-wrap:wrap;align-items:center;border-bottom:1px solid #241d31;margin-bottom:20px;}
+  .sub{color:#9a90ab;font-size:13.5px;margin-top:5px;max-width:840px;line-height:1.5;}
+  .bar{position:sticky;top:0;z-index:60;background:#0b0910;padding:13px 0 15px;margin-bottom:8px;
+    display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-bottom:1px solid #241d31;}
   button{background:#1c1626;color:#eee;border:1px solid #3a2f4d;border-radius:6px;
-    padding:9px 15px;font:600 13px 'Barlow';cursor:pointer;letter-spacing:.04em;}
+    padding:8px 14px;font:600 12.5px 'Barlow';cursor:pointer;letter-spacing:.03em;}
   button:hover{background:#2a2138;border-color:#5a4a75;}
   button.go{background:#9b30ff;border-color:#b565ff;color:#fff;}
   button.out{background:#3a1a2a;border-color:#7a3050;}
-  .note{color:#7d7390;font-size:12.5px;margin-left:6px;}
-
-  .grid{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;}
-  .tile{background:#121019;border:1px solid #241d31;border-radius:8px;padding:10px;}
-  .cap{font:600 12.5px 'Barlow';color:#cbbfe0;margin-bottom:8px;display:flex;
+  .note{color:#7d7390;font-size:12px;margin-left:4px;}
+  h2{font-family:'Barlow Condensed';font-weight:700;font-size:16px;letter-spacing:.15em;
+    text-transform:uppercase;color:#b9a6d8;margin:24px 0 4px;display:flex;align-items:center;gap:12px;}
+  h2 button{padding:4px 10px;font-size:11px;}
+  .grid{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;margin-top:10px;}
+  .tile{background:#121019;border:1px solid #241d31;border-radius:8px;padding:9px;}
+  .cap{font:600 12px 'Barlow';color:#cbbfe0;margin-bottom:7px;display:flex;
     justify-content:space-between;gap:10px;align-items:baseline;}
-  .cap i{font-style:normal;color:#7d7390;font-size:11px;font-family:monospace;}
+  .cap i{font-style:normal;color:#7d7390;font-size:10.5px;font-family:monospace;text-align:right;}
   .fr{position:relative;overflow:hidden;background:#07050c;border-radius:4px;}
   .fr iframe{border:0;transform-origin:0 0;position:absolute;top:0;left:0;}
-  /* 1920x1080 at 26% -> 499x281 ; 1080x1920 at 17% -> 184x326 */
-  .h .fr{width:499px;height:281px;} .h iframe{width:1920px;height:1080px;transform:scale(.26);}
-  .v .fr{width:184px;height:326px;} .v iframe{width:1080px;height:1920px;transform:scale(.17);}
-  h2{font-family:'Barlow Condensed';font-weight:700;font-size:17px;letter-spacing:.14em;
-    text-transform:uppercase;color:#b9a6d8;margin:26px 0 12px;}
+  .h .fr{width:426px;height:240px;} .h iframe{width:1920px;height:1080px;transform:scale(.2219);}
+  .v .fr{width:176px;height:313px;} .v iframe{width:1080px;height:1920px;transform:scale(.163);}
 </style>
 </head>
 <body>
 
-<h1>Transition showcase</h1>
-<div class="sub">Every graphic, real files, driven over the real channel. Press IN, watch them all together, then press OUT.</div>
+<h1>Every graphic</h1>
+<div class="sub">All 20 studio files, grouped by the deck section you drive them from. Real files, real channel.
+Tiles that share a file (the overlay six) hear each other's commands — that is how they ship, as one source. Play one section at a time to watch a single graphic.</div>
 
 <div class="bar">
-  <button class="go" onclick="playIn()">▶ Play every entrance</button>
-  <button class="out" onclick="playOut()">■ Play every exit</button>
+  <button class="go" onclick="playAll()">▶ Play everything</button>
+  <button class="out" onclick="outAll()">■ Hide everything</button>
   <button onclick="location.reload()">↻ Reset</button>
   <span class="note" id="st">connecting…</span>
 </div>
 
-<h2>Horizontal · 1920 × 1080</h2>
-<div class="grid" id="gh"></div>
-
-<h2>Vertical · 1080 × 1920</h2>
-<div class="grid" id="gv"></div>
+<div id="secs"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
@@ -73,68 +72,42 @@ ch.subscribe(s => { document.getElementById('st').textContent =
 const fire = p => ch.send({ type:'broadcast', event:'cmd', payload:p })
 const wait = ms => new Promise(r => setTimeout(r, ms))
 
-const A = { name:'smokinem', record:'11-2-1', rank:'#7', age:27, height:"6'2", reach:'76',
-  weight:'Heavyweight', stance:'Orthodox', country:'United States', odds:'+140',
-  photo:'https://emzlivoykbhhjcugupit.supabase.co/storage/v1/object/public/fighter-photos/smokinem-031f-1787671926636.png' }
-const B = { name:'Hello World', record:'5-4', rank:'#12', age:31, height:"6'0", reach:'73',
-  weight:'Heavyweight', stance:'Southpaw', country:'United Kingdom', odds:'-165',
-  photo:'https://emzlivoykbhhjcugupit.supabase.co/storage/v1/object/public/fighter-photos/hello-world-0b61-1787536081064.png' }
+const TILES = [["Pre-show", "Countdown", "countdown.html", "h", "timer + matchup, game-menu style", [{"type": "countdown", "d": {"a": "smokinem", "b": "Hello World", "league": "UBA", "eventMain": "UBA 15", "eventSub": "ubaesports.com"}}], []], ["Pre-show", "Poster / sponsor top bar", "standby.html", "h", "sponsor strip + poster screen", [{"type": "standby", "view": "cta", "on": true, "league": "uba"}], [{"type": "standby", "on": false}]], ["Standby \u00b7 the loading screen", "Standby \u2014 fight card", "standby.html", "h", "the card, tiers, winner ticks", [{"type": "standby", "view": "card", "on": true, "league": "uba", "event": "UBA 15"}], [{"type": "standby", "on": false}]], ["Standby \u00b7 the loading screen", "Standby \u2014 rankings", "standby.html", "h", "division ladders + champions", [{"type": "standby", "view": "ubarank", "on": true, "league": "uba"}], [{"type": "standby", "on": false}]], ["Standby \u00b7 the loading screen", "Weekly schedule bar", "loading-bar.html", "h", "toggles over the info screens", [{"type": "loadbar", "d": {"week": "04", "dates": "SEP 4-5", "matches": []}}, {"type": "loadbar", "show": true}], [{"type": "loadbar", "show": false}]], ["Tale of the tape", "Tale of the tape", "tale-of-the-tape.html", "h", "centre drops, rows stagger 150ms", [{"type": "tape", "d": {"title": "UBA HEAVYWEIGHT TITLE", "subtitle": "UBA 15", "left": {"name": "smokinem", "record": "11-2-1", "rank": "#7", "age": 27, "height": "6'2", "reach": "76", "weight": "Heavyweight", "stance": "Orthodox", "country": "United States", "odds": "+140", "photo": "https://emzlivoykbhhjcugupit.supabase.co/storage/v1/object/public/fighter-photos/smokinem-031f-1787671926636.png"}, "right": {"name": "Hello World", "record": "5-4", "rank": "#12", "age": 31, "height": "6'0", "reach": "73", "weight": "Heavyweight", "stance": "Southpaw", "country": "United Kingdom", "odds": "-165", "photo": "https://emzlivoykbhhjcugupit.supabase.co/storage/v1/object/public/fighter-photos/hello-world-0b61-1787536081064.png"}, "league": "UBA", "sponsor": "SHEATH"}}, {"type": "tape", "show": true}], [{"type": "tape", "on": false}]], ["Match \u00b7 clocks", "UBA / GFL fight clock", "fight-clock.html", "h", "the bar, trunk + odds reveal", [{"type": "clock", "league": "uba", "show": true}, {"type": "bout", "league": "uba", "d": {"a": "smokinem", "b": "Hello World", "label": "MAIN EVENT", "sub": "5 ROUNDS", "colorL": "#e8312a", "colorR": "#2e6fe8"}}, {"type": "clocktimer", "league": "uba", "secs": 143}], [{"type": "clock", "league": "uba", "show": false}]], ["Match \u00b7 clocks", "UBAe fight clock", "ubae-fight-clock.html", "h", "team clock, BO5 strip", [{"type": "pickbar", "league": "ubae", "d": {"teamA": "Sheath Elite", "teamB": "UKFC UNCS", "scoreA": 1, "scoreB": 2}}], []], ["Match \u00b7 clocks", "Pick bar (UBAe)", "pick-bar.html", "h", "battleroom pick'em", [{"type": "pickbar", "league": "ubae", "d": {"split": "SUMMER SPLIT", "teamA": "Sheath Elite", "teamB": "UKFC UNCS", "scoreA": 1, "scoreB": 2}}], []], ["Match \u00b7 overlay (one file, one source)", "Fighter dossier \u2014 the segmented bar", "overlay.html", "h", "segments wipe L to R, 70ms apart", [{"type": "fighter", "league": "uba", "d": {"name": "Namsrai Batbayar", "record": "11-2-1", "ko": 7, "rank": 7, "weight": "Heavyweight", "country": "Mongolia", "next": "vs Dragon 5000 \u00b7 UBA 16"}}], [{"type": "fighter", "on": false}]], ["Match \u00b7 overlay (one file, one source)", "Keys to victory + fun fact", "overlay.html?keysdemo=1", "h", "typed in the admin card builder", "RELOAD", [{"type": "keys", "on": false}]], ["Match \u00b7 overlay (one file, one source)", "Message \u2014 social post card", "overlay.html", "h", "platform picked on the deck", [{"type": "flash", "w": "msg", "league": "uba", "d": {"text": "10-9 Lima. The headkick is there all night.", "from": "PNW.MMA", "handle": "pnw.mma", "platform": "discord", "tag": "#UBA15"}}], [{"type": "flash", "w": "msg", "on": false}]], ["Match \u00b7 overlay (one file, one source)", "Bet alert", "overlay.html", "h", "anonymous by default", [{"type": "flash", "w": "bet", "league": "uba", "d": {"amt": 2500, "pick": "smokinem", "odds": 1.85}}], []], ["Match \u00b7 overlay (one file, one source)", "Odds board", "overlay.html", "h", "pool split as dots", [{"type": "odds", "league": "uba", "on": true, "d": {"a": "smokinem", "b": "Hello World", "total_a": 11200, "total_b": 7200, "bets": 63}}], [{"type": "odds", "on": false}]], ["Match \u00b7 overlay (one file, one source)", "Venue bug", "overlay.html", "h", "auto-hides on a timer", [{"type": "bug", "league": "uba", "d": {"text": "Memorial Hall", "eyebrow": "Live From"}}], [{"type": "bug", "d": {"on": false}}]], ["Rankings", "Rankings at stake \u2014 who can jump who", "rankings-at-stake.html", "h", "ladder cascades, badges stamp", "RELOAD", [{"type": "rankstakes", "on": false}]], ["Fan cam", "Fan cam", "fan-cam.html?fighter=smokinem", "h", "clip file still missing \u2014 fallback floor", "RELOAD", [{"type": "fancam", "on": false}]], ["Vertical \u00b7 1080x1920", "Vertical \u2014 LOADING (shutters closed)", "vertical.html", "v", "between matches", "RELOAD", []], ["Vertical \u00b7 1080x1920", "Vertical \u2014 MATCH (shutters open)", "vertical.html?state=open&pane=tape", "v", "clock sliver + tape in the bottom half", "RELOAD", []], ["Vertical \u00b7 1080x1920", "Vertical \u2014 dossier in the bottom", "vertical.html?state=open&pane=who", "v", "one pane at a time", "RELOAD", []]];
 
-// Each tile: the file, how it is driven in, and how it is driven out.
-const TILES = [
-  // ONE overlay tile, not three. All three of these graphics live in
-  // overlay.html and ship as ONE browser source — and because every iframe
-  // subscribes to the same channel, three overlay tiles each received the
-  // others' commands and showed the wrong graphic. One tile, driven through
-  // its three states in order, is both correct and what the operator sees.
-  { g:'h', t:'Overlay · dossier → keys → message', f:'overlay.html',
-    note:'one source, three graphics, one shared corner',
-    in:[{type:'fighter',league:'uba',d:{name:'Namsrai Batbayar',record:'11-2-1',ko:7,rank:7,weight:'Heavyweight',country:'Mongolia',next:'vs Dragon 5000 · UBA 16'}},
-        {type:'flash',w:'msg',league:'uba',d:{text:'10-9 Lima. The headkick is there all night.',from:'PNW.MMA',handle:'pnw.mma',platform:'discord',tag:'#UBA15'}}],
-    out:[{type:'fighter',on:false},{type:'flash',w:'msg',on:false},{type:'keys',on:false}] },
-  { g:'h', t:'Tale of the tape', f:'tale-of-the-tape.html', note:'centre drops, rows stagger 150ms',
-    in:[{type:'tape',d:{title:'HEAVYWEIGHT',subtitle:'UBA 15',left:A,right:B,league:'UBA',sponsor:'SHEATH'}},{type:'tape',show:true}],
-    out:[{type:'tape',on:false}] },
-  { g:'h', t:'Stakes · what\'s on the line', f:'stakes.html?demo=1', note:'3 lines stagger in', in:[], out:[{type:'stakes',on:false}] },
-  { g:'h', t:'Rankings at stake', f:'rankings-at-stake.html', note:'ladder cascades, badges stamp', in:[], out:[{type:'rankstakes',on:false}] },
-  { g:'h', t:'Fan cam', f:'fan-cam.html?fighter=smokinem', note:'plate settles, bug lines land', in:[], out:[{type:'fancam',on:false}] },
-  { g:'h', t:'Fight clock', f:'fight-clock.html', note:'existing scene, for comparison',
-    in:[{type:'clock',league:'uba',show:true},{type:'bout',league:'uba',d:{a:'smokinem',b:'Hello World',label:'MAIN EVENT',sub:'5 ROUNDS',colorL:'#e8312a',colorR:'#2e6fe8'}}],
-    out:[{type:'clock',league:'uba',show:false}] },
+const bySec = {};
+TILES.forEach((t, i) => { (bySec[t[0]] = bySec[t[0]] || []).push([t, i]) });
+const secs = document.getElementById('secs');
+Object.entries(bySec).forEach(([name, list], si) => {
+  const h = document.createElement('h2');
+  h.innerHTML = `<span>${name}</span>`;
+  const b = document.createElement('button');
+  b.textContent = '▶ play section'; b.onclick = () => playSome(list.map(x => x[1]));
+  h.appendChild(b); secs.appendChild(h);
+  const g = document.createElement('div'); g.className = 'grid';
+  list.forEach(([t, i]) => {
+    const d = document.createElement('div');
+    d.className = 'tile ' + t[3];
+    d.innerHTML = `<div class="cap"><span>${t[1]}</span><i>${t[4]}</i></div>
+      <div class="fr"><iframe id="f${i}" src="${t[2]}" scrolling="no"></iframe></div>`;
+    g.appendChild(d);
+  });
+  secs.appendChild(g);
+});
 
-  { g:'v', t:'Vertical · all layers', f:'vertical.html', note:'one OBS source',
-    in:[{type:'clock',league:'uba',show:true},{type:'bout',league:'uba',d:{a:'smokinem',b:'Hello World',label:'MAIN EVENT',sub:'5 ROUNDS',colorL:'#e8312a',colorR:'#2e6fe8'}}],
-    out:[{type:'clock',league:'uba',show:false},{type:'fighter',on:false}] },
-  { g:'v', t:'Fight clock (v)', f:'fight-clock-vertical.html?demo=1', note:'builds: brand→strip→sides→band', in:[], out:[{type:'clock',league:'uba',show:false}] },
-  { g:'v', t:'Lower third (v)', f:'lower-third-vertical.html?demo=1', note:'accent draws, lines land', in:[], out:[{type:'fighter',on:false}] },
-  { g:'v', t:'Tale of the tape (v)', f:'tale-of-the-tape-vertical.html?demo=1', note:'faces from sides, rows deal', in:[], out:[{type:'tape',on:false}] },
-  { g:'v', t:'Standby (v)', f:'standby-vertical.html?view=card', note:'contents deal in behind the view', in:[], out:[{type:'standby',on:false}] },
-]
-
-TILES.forEach((t, i) => {
-  const d = document.createElement('div')
-  d.className = 'tile ' + t.g
-  d.innerHTML = `<div class="cap"><span>${t.t}</span><i>${t.note}</i></div>
-    <div class="fr"><iframe id="f${i}" src="${t.f}" scrolling="no"></iframe></div>`
-  document.getElementById(t.g === 'h' ? 'gh' : 'gv').appendChild(d)
-})
-
-// Reloading the iframe is what replays a demo-driven entrance; a channel push
-// is what replays a deck-driven one. Tiles with an `in` list get the push,
-// the rest get the reload — otherwise a ?demo=1 tile would sit there finished.
-async function playIn(){
-  for(let i = 0; i < TILES.length; i++){
-    const t = TILES[i], fr = document.getElementById('f' + i)
-    // 900ms between pushes, not 120: the overlay tile drives two graphics in
-    // sequence and 120ms meant the second cancelled the first's entrance
-    // before it had visibly played.
-    if(t.in.length){ for(const p of t.in){ await fire(p); await wait(t.in.length > 1 ? 900 : 120) } }
-    else { fr.contentWindow.location.reload() }
-    await wait(90)
+// A tile whose `in` is the string RELOAD is driven by its own ?demo/?state
+// parameter, so replaying it means reloading the frame. Everything else is
+// driven by pushing its commands onto the channel.
+async function playSome(idxs){
+  for(const i of idxs){
+    const t = TILES[i], fr = document.getElementById('f' + i);
+    if(t[5] === 'RELOAD' || !t[5].length){ fr.contentWindow.location.reload(); }
+    else { for(const p of t[5]){ await fire(p); await wait(t[5].length > 1 ? 700 : 140) } }
+    await wait(120);
   }
 }
-async function playOut(){
-  for(const t of TILES){ for(const p of t.out){ await fire(p); await wait(80) } }
+const playAll = () => playSome(TILES.map((_, i) => i));
+async function outAll(){
+  for(const t of TILES){ for(const p of t[6]){ await fire(p); await wait(70) } }
 }
 </script>
 </body>
