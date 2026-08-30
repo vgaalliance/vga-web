@@ -201,14 +201,22 @@
 
   function bracket(p){
     const s=seats(p), at=n=>s[n-1], ref=t=>({ref:t})
-    const PI=(p.playin||[]).map((m,i)=>'PI'+(i+1))   // winners round 1 cannot run before the play-in
+    // Winners round 1 cannot run before the play-in — but only before the ONE
+    // play-in that fills ITS seat. Seats are handed out in order, seeds first,
+    // so the nth unnamed seat is the nth play-in match. Keeping this specific
+    // is what lets a round-1 match share a night with the OTHER conference's
+    // play-in, which is exactly the Sep 4 card: seat 6 was settled on Aug 28,
+    // seat 5 is fought that evening, and only W2 waits on it.
+    const piOf={}; let piN=0
+    s.forEach(x=>{ if(!x.name && x.from) piOf[x.seed]='PI'+(++piN) })
+    const needPI=n=>piOf[n]?[piOf[n]]:[]
     return {
       seats:s,
       playin:(p.playin||[]).map(m=>({conf:m[0].conference, a:{name:m[0].team_name}, b:{name:m[1].team_name}})),
       wb:[
         { round:'WINNERS · ROUND 1', ms:[
-          {id:'W1', needs:PI, a:at(3), b:at(6)},
-          {id:'W2', needs:PI, a:at(4), b:at(5)}] },
+          {id:'W1', needs:needPI(6), a:at(3), b:at(6)},
+          {id:'W2', needs:needPI(5), a:at(4), b:at(5)}] },
         { round:'WINNERS · SEMIS',   ms:[
           {id:'S1', needs:['W2'], a:at(1), b:ref('WINNER 4/5')},
           {id:'S2', needs:['W1'], a:at(2), b:ref('WINNER 3/6')}] },
@@ -256,22 +264,37 @@
   }
 
   /* ── the playoff calendar ──────────────────────────────────────────────
-     Locked with the founder 2026-08-22: PLAY-IN on the Friday, then two
-     weekends of bracket, five matches a week, Friday and Saturday. Ten bracket
-     matches plus the two play-ins is twelve, and this is the only split of
-     them that keeps every night's matches downstream of the nights before it —
-     which is what `nights()` returns and what the test checks. Dates are here
-     rather than in the DB because nothing is scheduled yet: teams are unknown
-     until the play-in is played. The graphic prefers REAL rows the moment they
-     exist in team_matches.
+     RESCHEDULED with the founder 2026-08-30: the bracket now runs FRIDAY,
+     SATURDAY AND SUNDAY of two weekends — Sep 4-5-6 and Sep 11-12-13 — instead
+     of Friday/Saturday only. Six bracket nights for ten bracket matches, so
+     every round gets room and nobody is asked to fight twice in a night except
+     once, on Sep 12.
 
-     If the calendar moves, move it here and in docs/ubae-plan.md together. */
+     The play-in is SPLIT across two nights and that is not a typo. PI2
+     (conference B, The 5 Great Kage v Ring Reapers) was played on Aug 28; PI1
+     (conference A, Sheath Elite v jUnC) was not, so it opens Sep 4. It can
+     share that night with W1 because W1 is seed 3 v seat 6 and seat 6 is the
+     conference B winner — already decided. W2 is the one that waits on it, and
+     it is on the Saturday.
+
+     Ten bracket matches plus the two play-ins is twelve, and every night's
+     matches stay downstream of the nights before it — which is what `nights()`
+     returns and what the test checks. Dates are here rather than in the DB
+     because nothing is scheduled yet: teams are unknown until each night is
+     played. The graphic prefers REAL rows the moment they exist in
+     team_matches.
+
+     If the calendar moves, move it here, in docs/ubae-plan.md and in the
+     ubae_playoff_nights seed in db/001_schema.sql together — the bot asks
+     fighters off that table and check-code-drift.sh 18 compares the two. */
   const NIGHTS=[
-    { date:'2026-08-28', label:'PLAY-IN NIGHT',   ids:['PI1','PI2'] },
-    { date:'2026-09-04', label:'BRACKET OPENS',   ids:['W1','W2','L1'] },
-    { date:'2026-09-05', label:'WINNERS SEMIS',   ids:['S1','S2'] },
-    { date:'2026-09-11', label:'ELIMINATION NIGHT', ids:['L2','LS','WF'] },
-    { date:'2026-09-12', label:'FINALS',          ids:['LF','GF'] },
+    { date:'2026-08-28', label:'PLAY-IN NIGHT',          ids:['PI2'] },
+    { date:'2026-09-04', label:'PLAY-IN + BRACKET OPENS', ids:['PI1','W1'] },
+    { date:'2026-09-05', label:'WINNERS R1 + FIRST SEMI', ids:['W2','S2'] },
+    { date:'2026-09-06', label:'SECOND SEMI + LOSERS R1', ids:['S1','L1'] },
+    { date:'2026-09-11', label:'LOSERS R2 + WINNERS FINAL', ids:['L2','WF'] },
+    { date:'2026-09-12', label:'ELIMINATION NIGHT',      ids:['LS','LF'] },
+    { date:'2026-09-13', label:'GRAND FINAL',            ids:['GF'] },
   ]
 
   // The calendar with each night's matches named, and every match checked
@@ -375,7 +398,11 @@
         ms,
         // What this week COSTS you, in one line. The round names say what the
         // match is called; this says what it means.
-        stake: g.isPI ? 'TWO SURVIVE · TWO GO HOME'
+        // The play-in card counts what is actually on it: conference A's play-in
+        // was pushed to the Sep 4 card, so Aug 28 is one match, not two, and a
+        // card that says TWO of anything is describing a night that did not
+        // happen.
+        stake: g.isPI ? (ms.length > 1 ? 'TWO SURVIVE · TWO GO HOME' : 'ONE SURVIVES · ONE GOES HOME')
              : ms.some(m=>m.id==='GF') ? 'THE TITLE'
              : 'FIRST LOSS PUTS YOU IN THE ELIMINATION BRACKET',
       }
