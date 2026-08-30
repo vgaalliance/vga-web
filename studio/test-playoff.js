@@ -250,5 +250,31 @@ console.log('\nUBAe playoff picture\n')
   eq(P.swing(P.scenarios(SUMMER,[])), [], 'nothing left to play, nothing to choose between')
 }
 
+// 13 — A PLAY-IN THAT HAS BEEN FOUGHT IS NOT A COIN FLIP. Ring Reapers beat
+// The 5 Great Kage on Aug 28 and the bracket kept printing "WINNER 5GK / RING
+// REAPERS" in seat 6 — on a poster handed to the team that won it.
+{
+  const p=P.picture(SUMMER, null, undefined, ['Ring Reapers'])
+  const s=P.seats(p), b=P.bracket(p)
+  eq(s[5].name,'Ring Reapers','the settled seat holds the team that won it')
+  eq(s[4].name,null,'the play-in nobody has fought yet is still open')
+  eq(s[4].from,['UKFC UNCS','jUnC'],'and still says which two it is between')
+  eq(P.who(s[5]),['Ring Reapers'],'one team in the seat, not two')
+
+  // Seat 5 is conference A's play-in, seat 6 conference B's. Numbering only the
+  // OPEN seats would have handed seat 5 conference B's match.
+  eq(b.wb[0].ms.find(m=>m.id==='W2').needs,['PI1'],'the open round 1 still waits on ITS play-in')
+  eq(b.wb[0].ms.find(m=>m.id==='W1').needs,[],'and the settled one waits on nothing')
+
+  // Winning a play-in fills seat 6. It does NOT make you seed 4.
+  eq(s.slice(0,4).map(x=>x.name),
+     ['Champions United','Team MUDS','Sheath Elite','Team Rag Tags'],
+     'the top four are still the four seeded on record')
+  eq(p.status['The 5 Great Kage'],'out','and the team that lost it is out')
+
+  const ns=P.nights(b)
+  eq(ns.map(n=>n.ms.length),[1,2,2,2,2,2,1],'the calendar is unchanged by a result')
+}
+
 console.log(`\n${n-bad}/${n} passed${bad?` — ${bad} FAILED`:''}\n`)
 process.exit(bad?1:0)

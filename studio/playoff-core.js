@@ -51,7 +51,11 @@
 
   // status per team: 'in' (through) · 'bye' (through on the Spring-champ bye) ·
   // 'playin' (has to win one) · 'out' (only reachable via rule 3)
-  function picture(standings, sim, springChamp){
+  /* `won` — the names of teams that have already WON a play-in. A seat whose
+     play-in has been fought is not a coin flip any more, and drawing it as one
+     is the poster telling a team that beat somebody last Friday that it might
+     not be here. Left out, everything behaves as it did. */
+  function picture(standings, sim, springChamp, won){
     const champ = springChamp===undefined ? SPRING_CHAMP : springChamp
     const rows=project(standings, sim)
     const confs={}
@@ -81,8 +85,17 @@
       order.forEach(k=>{ const b=confs[k].slice(2); if(b[0]&&b[1]) playin.push([b[0],b[1]]) })
     }
 
+    // Which play-in each result settles, in the same order as `playin`. It does
+    // NOT touch `status` or `seeds`: winning a play-in fills seat 5 or 6, it
+    // does not make a team one of the four seeded on regular-season record, and
+    // feeding it into `seeds` would hand it a top-4 seed it never earned.
+    const wonSet=new Set(won||[])
+    const playinWon=playin.map(m=>m.map(t=>t.team_name).find(n=>wonSet.has(n))||null)
+    playin.forEach((m,i)=>{ if(playinWon[i]) m.forEach(t=>{
+      if(t.team_name!==playinWon[i]) status[t.team_name]='out' }) })
+
     const seeds=rows.filter(t=>status[t.team_name]==='in'||status[t.team_name]==='bye').sort(cmp)
-    return { confs, order, status, playin, seeds, byeTeam }
+    return { confs, order, status, playin, playinWon, seeds, byeTeam }
   }
 
   // One remaining match, two branches, each played out at all three possible
@@ -192,7 +205,11 @@
   function seats(p){
     const out=[]
     ;(p.seeds||[]).forEach(t=>out.push({seed:out.length+1, name:t.team_name, team:t, from:null}))
-    ;(p.playin||[]).forEach(m=>out.push({seed:out.length+1, name:null, from:[m[0].team_name,m[1].team_name]}))
+    ;(p.playin||[]).forEach((m,i)=>{
+      const w=(p.playinWon||[])[i]
+      out.push({seed:out.length+1, name:w||null, from:[m[0].team_name,m[1].team_name],
+                fromPlayin:true, team:w?(m.find(t=>t.team_name===w)||null):null})
+    })
     while(out.length<6) out.push({seed:out.length+1, name:null, from:null})
     return out.slice(0,6)
   }
@@ -207,12 +224,16 @@
     // is what lets a round-1 match share a night with the OTHER conference's
     // play-in, which is exactly the Sep 4 card: seat 6 was settled on Aug 28,
     // seat 5 is fought that evening, and only W2 waits on it.
-    const piOf={}; let piN=0
-    s.forEach(x=>{ if(!x.name && x.from) piOf[x.seed]='PI'+(++piN) })
+    // Count EVERY play-in seat, settled or not — the nth play-in seat is PIn.
+    // Counting only the unsettled ones renumbers them the moment one is played:
+    // with seat 5 still open and seat 6 fought, seat 5 would claim PI1's slot.
+    const piOf={}; let piI=0
+    s.forEach(x=>{ if(x.fromPlayin){ piI++; if(!x.name) piOf[x.seed]='PI'+piI } })
     const needPI=n=>piOf[n]?[piOf[n]]:[]
     return {
       seats:s,
-      playin:(p.playin||[]).map(m=>({conf:m[0].conference, a:{name:m[0].team_name}, b:{name:m[1].team_name}})),
+      playin:(p.playin||[]).map((m,i)=>({conf:m[0].conference, a:{name:m[0].team_name}, b:{name:m[1].team_name},
+                                         won:(p.playinWon||[])[i]||null})),
       wb:[
         { round:'WINNERS · ROUND 1', ms:[
           {id:'W1', needs:needPI(6), a:at(3), b:at(6)},
