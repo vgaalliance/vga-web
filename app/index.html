@@ -138,49 +138,49 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 
    CSS paints, inside a stacking context: (1) the element's own background,
    (2) its negative z-index children, ... so a `z-index:-1` child lands ON TOP
-   of its parent's background, not under it. `.fc` makes a stacking context
-   (position:relative + z-index, and a transform on the two back cards), so
-   the stage was painting over the white card the whole time. It only looked
-   right while the overlap was a few pixels of a fighter's legs; a 152px
-   poster made it obvious.
-
-   Moving the surface to ::before puts it in the "positioned descendants" pass,
-   which runs AFTER negative children — so the order becomes stage, then card,
-   then card content. Do not put a background back on .fc itself. */
+   of its parent's background, not under it. `.fc` makes a stacking context, so
+   the art was painting over the white card. Moving the surface to ::before
+   puts it in the "positioned descendants" pass, which runs AFTER negative
+   children: stage, then card, then card content. Do not put a background back
+   on .fc itself. */
 .fc::before{content:'';position:absolute;inset:0;z-index:0;
   border-radius:0 0 14px 14px;background:linear-gradient(168deg,#F8F6FC 0%,#E5E0F2 100%)}
 .fc > .foil,.fc > .in,.fc > .past{position:relative;z-index:1}
 
-/* The peek is a SLIDESHOW, not a row: one slide at a time, crossfading —
-   poster 1, poster 2, poster 3, then the main event's two corners. */
-.fc .stage .sl{position:absolute;inset:0;opacity:0;transition:opacity .55s ease}
-.fc .stage .sl.on{opacity:1}
-.fc .stage .pz{position:absolute;top:0;bottom:0;left:50%;width:152px;margin-left:-76px;
-  border-radius:6px 6px 0 0;background-size:cover;background-position:50% 22%;
-  background-color:#2A2450;box-shadow:0 -3px 14px rgba(4,2,14,.6)}
+/* THE FAN, the same one the standby scene runs. Every poster is visible at
+   once, laid out flat as a hand rather than a row, and WHICH ONE IS IN FRONT
+   ROTATES — a stack with a permanent front poster shows the other two as edges
+   all night and nobody ever reads them. The positions are fixed and the
+   posters move BETWEEN them, which is what makes it read as a shuffle rather
+   than graphics being swapped.
 
-/* no poster: the two corners peek instead, nothing behind them */
-.fc .stage .cut{position:absolute;bottom:0;height:100%;width:auto;
-  filter:drop-shadow(0 4px 12px rgba(4,2,14,.75))}
-.fc .stage .cut.l{left:16px}
-.fc .stage .cut.r{right:16px;transform:scaleX(-1)}
-.fc .stage .sil{position:absolute;bottom:0;height:94%;width:auto;fill:rgba(190,175,235,.34)}
-.fc .stage .sil.l{left:22px}
-.fc .stage .sil.r{right:22px}
-.fc .stage .vsx{position:absolute;left:50%;top:26px;transform:translateX(-50%);z-index:4;
-  font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:.1em;color:#F4F1FB;
-  text-shadow:0 2px 12px rgba(0,0,0,.9)}
-/* names sit just above the card's top edge, inside the peek */
-.fc .stage .cn{position:absolute;bottom:30px;z-index:4;font-family:'Barlow',sans-serif;font-weight:700;
-  font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:#F4F1FB;
-  text-shadow:0 1px 8px rgba(0,0,0,.95);max-width:44%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fc .stage .cn.l{left:8px}
-.fc .stage .cn.r{right:8px;text-align:right}
-/* nothing at all: the event name peeks instead of an empty gap */
-.fc .stage .bare{position:absolute;left:0;right:0;top:16px;text-align:center;
-  font-family:'Bebas Neue',sans-serif;font-size:21px;letter-spacing:.05em;color:rgba(244,241,251,.85);
-  text-shadow:0 2px 14px rgba(0,0,0,.8);padding:0 10px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+   The stage is a zero-size point at the card's top-centre; every item hangs
+   its BOTTOM on that point and rotates about it, so the fan opens upward out
+   of the card the way a hand of cards opens out of a fist. */
+.fc .stage{position:absolute;left:50%;bottom:calc(100% - 30px);width:0;height:0;
+  z-index:-1;pointer-events:none}
+.fc .stage .fi{position:absolute;left:0;bottom:0;height:132px;width:auto;
+  transform-origin:50% 100%;
+  transition:transform .5s cubic-bezier(.32,.9,.35,1)}
+.fc .stage img.fi{border-radius:4px;box-shadow:0 8px 20px rgba(4,2,14,.7)}
+
+/* the fighter-v-fighter item: same box as a poster, and NO plate behind it */
+.fc .stage .fo{width:96px}
+.fc .stage .fo .cut{position:absolute;bottom:0;height:88%;width:auto;max-width:58%;
+  filter:drop-shadow(0 4px 12px rgba(4,2,14,.8))}
+.fc .stage .fo .cut.l{left:-6px}
+.fc .stage .fo .cut.r{right:-6px;transform:scaleX(-1)}
+.fc .stage .fo .sil{position:absolute;bottom:0;height:80%;width:auto;fill:rgba(190,175,235,.36)}
+.fc .stage .fo .sil.l{left:0}
+.fc .stage .fo .sil.r{right:0}
+.fc .stage .fo .vsx{position:absolute;left:50%;top:16%;transform:translateX(-50%);
+  font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:.09em;color:#F4F1FB;
+  text-shadow:0 2px 12px rgba(0,0,0,.95)}
+.fc .stage .fo .cn{position:absolute;bottom:2px;font-family:'Barlow',sans-serif;font-weight:700;
+  font-size:7.5px;letter-spacing:.04em;text-transform:uppercase;color:#F4F1FB;
+  text-shadow:0 1px 8px rgba(0,0,0,.95);max-width:48%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fc .stage .fo .cn.l{left:-4px}
+.fc .stage .fo .cn.r{right:-4px;text-align:right}
 .fc .past{position:absolute;right:8px;top:6px;z-index:5;font-family:'Space Mono',monospace;
   font-size:7px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#EDEAF6;
   background:rgba(10,8,20,.8);padding:3px 7px;border-radius:3px}
@@ -933,7 +933,7 @@ async function loadFaceoffs(ids){
 
 async function loadPosters(ids){
   if(!ids.length) return;
-  var rows = await q("graphic_assets?select=key,url&or=(key.like.card-*,key.like.poster-*)");
+  var rows = await q("graphic_assets?select=key,url&key=like.poster-*");
   if(!rows) return;
   // Every poster is stored TWICE: the animation under its own key, and a
   // still under `<key>-thumb`. Prefer the thumb — the animations are 4-11MB
@@ -941,25 +941,19 @@ async function loadPosters(ids){
   // postage stamp and did not arrive before somebody had scrolled past. Fall
   // back to the full file when a thumb has not been rendered yet, so an event
   // from before thumbnails existed still shows its poster.
-  // TWO different things are called a poster here and they are not the same.
-  // `poster-<event>-<n>` is an ACTUAL fight poster somebody designed for the
-  // night. `card-<event>-<variant>` is a graphic the renderer drew — the
-  // faceoff, the stack, the reel. The real poster wins every time and the
-  // renders are only what fills the fan when nobody made one, which is why
-  // the real ones sort ahead of every card variant.
-  var rank = { faceoff:10, 'faceoff-0':11, 'faceoff-1':12, stack:13, reel:14 };
+  // ONLY real posters — `poster-<event>-<n>`, the ones somebody designed.
+  // The renderer's `card-<event>-<variant>` graphics are for the broadcast and
+  // are deliberately not used here: in the app the live fighter-v-fighter is
+  // better than a rendered faceoff, because it pulls each photo at load and
+  // falls back to a silhouette per fighter with nothing to re-render.
   var found = {};
   rows.forEach(function(r){
-    var m = /^(card|poster)-([0-9a-f-]{36})-(.+)$/.exec(r.key);
+    var m = /^poster-([0-9a-f-]{36})-(\d+)(-thumb)?$/.exec(r.key);
     if(!m) return;
-    var kind = m[1], id = m[2], variant = m[3];
+    var id = m[1], n = parseInt(m[2], 10), isThumb = !!m[3];
     if(ids.indexOf(id) === -1) return;
-    var isThumb = /-thumb$/.test(variant);
-    if(isThumb) variant = variant.slice(0, -6);
     var bag = found[id] = found[id] || {};
-    var slot = bag[kind + ':' + variant] = bag[kind + ':' + variant] ||
-      { score: kind === 'poster' ? (parseInt(variant, 10) || 9)
-                                 : (rank[variant] != null ? rank[variant] : 19) };
+    var slot = bag[n] = bag[n] || { score: n };
     if(isThumb) slot.thumb = r.url; else slot.full = r.url;
   });
   Object.keys(found).forEach(function(id){
@@ -1015,10 +1009,10 @@ function silhouetteSwap(img){
   img.outerHTML = SILHOUETTE.replace('class="sil"', 'class="sil ' + side + '"');
 }
 
-function faceoffSlide(eventId){
+function faceoffItem(eventId){
   var f = faceoffs[eventId];
   if(!f) return '';
-  return '<div class="sl">'
+  return '<div class="fi fo">'
     + cutCorner(f.a, 'l') + cutCorner(f.b, 'r')
     + '<span class="vsx">VS</span>'
     + '<span class="cn l">' + esc(f.an || '') + '</span>'
@@ -1026,44 +1020,77 @@ function faceoffSlide(eventId){
     + '</div>';
 }
 
-/* What stands above the card, as slides that cycle: the event's posters
-   first, because somebody made those on purpose, then its main event — so
-   every card ends on who is actually fighting. No poster at all and the
-   faceoff is simply the only slide.
-
-   The stage sits at z-index -1 with its bottom edge 26px inside the card, so
-   all of it is BEHIND the white panel and cut off cleanly by it. */
+/* Everything the night has as a picture, fanned: its posters first, then the
+   main event's two corners. A night with no poster is the corners alone.
+   Card RENDERS are deliberately not here — the faceoff/stack/reel graphics are
+   for the broadcast, and in the app the live fighter-v-fighter is better,
+   because it is real HTML that pulls each photo at load and falls back to a
+   silhouette per fighter. */
 function stageHTML(eventId){
-  var slides = (posters[eventId] || []).slice(0, 3).map(function(u){
-    return '<div class="sl"><div class="pz" style="background-image:url(&quot;'
-         + esc(u).replace(/"/g, '%22') + '&quot;)"></div></div>';
+  var items = (posters[eventId] || []).slice(0, 3).map(function(u){
+    return '<img class="fi" src="' + esc(u) + '" alt="" onerror="this.remove()">';
   });
-  var fo = faceoffSlide(eventId);
-  if(fo) slides.push(fo);
-  if(!slides.length) return '<div class="stage"></div>';
-  return '<div class="stage">'
-    + slides.join('').replace('class="sl"', 'class="sl on"') + '</div>';
+  var fo = faceoffItem(eventId);
+  if(fo) items.push(fo);
+  return '<div class="stage">' + items.join('') + '</div>';
 }
 
-/* Only the FRONT card cycles. The other two sit at 46-66% opacity and rotated
-   away; animating those is motion at the edge of vision that nobody asked
-   for. One interval for the whole fan, cleared and restarted on every render
-   so rotating the hand cannot leave a second timer running. */
-var stageTimer = null;
+/* THE SHUFFLE, ported from the standby scene so both read the same.
+   depth 0 is the front; 1 and 2 sit right then left, leaning further and
+   dropping lower the deeper they go. `bump` above 1 slides the ones behind
+   further out — the stack OPENS, shows more of what is coming, then swaps. A
+   cut with nothing before it reads as the graphic glitching. */
+var fanTimer = null, fanAt = 0;
+var FAN_STEP = 30, FAN_DROP = 3, FAN_TILT = 5.5, FAN_HOLD = 4200, FAN_PEEK = 900, FAN_OPEN = 1.3;
+function depthOf(n){ return n === 0 ? 0 : Math.floor((n - 1) / 2) + 1; }
+
 function cycleStage(){
-  clearInterval(stageTimer);
-  stageTimer = null;
+  clearTimeout(fanTimer); fanTimer = null;
+  // Only the FRONT card of the hand fans. The two behind are rotated away at
+  // 46-66% opacity, and shuffling those is movement nobody asked for.
   var stage = document.querySelector('#fan .fc[data-pos="0"] .stage');
   if(!stage) return;
-  var slides = stage.querySelectorAll('.sl');
-  if(slides.length < 2) return;              // one slide is not a slideshow
-  var at = 0;
-  stageTimer = setInterval(function(){
-    if(!document.body.contains(stage)){ clearInterval(stageTimer); stageTimer = null; return; }
-    slides[at].classList.remove('on');
-    at = (at + 1) % slides.length;
-    slides[at].classList.add('on');
-  }, 3600);
+  var items = [].slice.call(stage.querySelectorAll('.fi'));
+  if(!items.length) return;
+  fanAt = 0;
+
+  function lay(bump){
+    items.forEach(function(el, n){
+      var slot = (n - fanAt + items.length) % items.length;
+      var depth = depthOf(slot);
+      var side = slot === 0 ? 0 : ((slot - 1) % 2 ? -1 : 1);
+      el.style.zIndex = String(20 - depth);
+      el.style.transform = 'translate(-50%,0)'
+        + ' translate(' + Math.round(side * depth * FAN_STEP * bump) + 'px,'
+                        + Math.round(depth * FAN_DROP * bump) + 'px)'
+        + ' rotate(' + (side * depth * FAN_TILT * bump).toFixed(2) + 'deg)';
+    });
+  }
+  lay(1);
+  if(items.length < 2) return;                 // one picture is not a shuffle
+
+  (function step(){
+    fanTimer = setTimeout(function(){
+      if(!document.body.contains(stage)) return;
+      lay(FAN_OPEN);                            // open …
+      fanTimer = setTimeout(function(){
+        if(!document.body.contains(stage)) return;
+        fanAt = (fanAt + 1) % items.length;     // … swap …
+        lay(1);                                 // … settle
+        step();
+      }, FAN_PEEK);
+    }, FAN_HOLD - FAN_PEEK);
+  })();
+}
+
+/* The soonest event still to come, whatever the hand is showing. */
+function nextUpcoming(){
+  var soon = null;
+  fanEvents.forEach(function(e){
+    if(eventIsOver(e)) return;
+    if(!soon || new Date(e.event_date) < new Date(soon.event_date)) soon = e;
+  });
+  return soon;
 }
 
 function renderFan(keepOrder){
@@ -1096,7 +1123,12 @@ function renderFan(keepOrder){
   dots.innerHTML = fanEvents.length > 1
     ? fanEvents.map(function(_,i){ return '<i class="'+(i===fanOrder[0]?'on':'')+'"></i>'; }).join('')
     : '';
-  setCountdown(fanEvents[fanOrder[0]]);
+  // THE COUNTDOWN DOES NOT FOLLOW THE HAND. It used to show whichever card
+  // was in front, so turning the fan to look at a past event started counting
+  // down to something that already happened. It is always the soonest event
+  // that has not started — the one number on this screen that has to mean the
+  // same thing every time you look at it.
+  setCountdown(nextUpcoming());
   cycleStage();
 }
 
