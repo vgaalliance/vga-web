@@ -1202,20 +1202,64 @@ function renderFan(keepOrder){
   cycleStage();
 }
 
-document.getElementById('fan').addEventListener('click', function(e){
-  var card = e.target.closest('.fc'); if(!card) return;
-  var pos = parseInt(card.getAttribute('data-pos'),10);
-  // Tapping a card behind the front one brings it forward; tapping the FRONT
-  // card opens that event's fight card.
-  if(pos === 0){ openSheet({ kind:'event', id: card.getAttribute('data-ev-id') }); return; }
-  for(var i=0;i<pos;i++) fanOrder.push(fanOrder.shift());
+/* Bring the card at `pos` to the front. Shared by the tap and the swipe so
+   they cannot drift apart. */
+function fanTo(pos){
+  if(!fanEvents.length) return;
+  pos = ((pos % fanEvents.length) + fanEvents.length) % fanEvents.length;
+  for(var i = 0; i < pos; i++) fanOrder.push(fanOrder.shift());
   document.querySelectorAll('#fan .fc').forEach(function(c){
-    c.setAttribute('data-pos', String(fanOrder.indexOf(parseInt(c.getAttribute('data-i'),10))));
+    c.setAttribute('data-pos', String(fanOrder.indexOf(parseInt(c.getAttribute('data-i'), 10))));
   });
   var lead = fanOrder[0];
-  document.querySelectorAll('#dots i').forEach(function(d,i){ d.classList.toggle('on', i === lead); });
-  setCountdown(fanEvents[lead]);
+  document.querySelectorAll('#dots i').forEach(function(d, i){ d.classList.toggle('on', i === lead); });
+  // NOT the card in front. The countdown is the next event's, always — turning
+  // the hand to a finished night must not start counting down to it.
+  setCountdown(nextUpcoming());
+  cycleStage();                       // the new front card gets the shuffle
+}
+
+document.getElementById('fan').addEventListener('click', function(e){
+  if(fanSwiped) return;               // a drag that ended on a card is not a tap
+  var card = e.target.closest('.fc'); if(!card) return;
+  var pos = parseInt(card.getAttribute('data-pos'), 10);
+  // Tapping the card behind brings it forward; tapping the FRONT card opens
+  // that event's fight card.
+  if(pos === 0){ openSheet({ kind:'event', id: card.getAttribute('data-ev-id') }); return; }
+  fanTo(pos);
 });
+
+/* SWIPE, because a fan of cards asks to be swiped and only answered to taps.
+   Pointer events cover touch and mouse in one path. The gesture is claimed
+   only once it is clearly horizontal — the panel behind this scrolls
+   vertically, and a fan that eats an upward flick makes the whole page feel
+   stuck. */
+var fanSwiped = false;
+(function(){
+  var el = document.getElementById('fan');
+  var x0 = 0, y0 = 0, down = false, decided = false;
+  var THRESH = 42;                    // far enough not to fire on a sloppy tap
+
+  el.addEventListener('pointerdown', function(e){
+    down = true; decided = false; fanSwiped = false;
+    x0 = e.clientX; y0 = e.clientY;
+  });
+  el.addEventListener('pointermove', function(e){
+    if(!down || decided) return;
+    var dx = e.clientX - x0, dy = e.clientY - y0;
+    if(Math.abs(dx) < THRESH && Math.abs(dy) < THRESH) return;
+    decided = true;
+    if(Math.abs(dy) > Math.abs(dx)) return;         // vertical: leave it to the scroll
+    fanSwiped = true;
+    fanTo(dx < 0 ? 1 : fanEvents.length - 1);       // left = next, right = back
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(function(t){
+    el.addEventListener(t, function(){ down = false; });
+  });
+  // The click that follows a drag has to be swallowed, or a swipe that lands on
+  // the front card opens the event sheet on top of the card you just turned to.
+  el.addEventListener('click', function(){ setTimeout(function(){ fanSwiped = false; }, 0); }, true);
+})();
 
 function setCountdown(ev){
   // A past event has nothing to count down to; showing 00:00:00:00 under a
