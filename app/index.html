@@ -135,11 +135,19 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    standing in for one. Only if the card is published; an unannounced card
    has no bout to draw, and the name block below is the last resort. */
 .fc .noposter{position:absolute;left:-2px;right:-2px;bottom:100%;height:140px;border-radius:6px 6px 0 0;
-  background:radial-gradient(92% 122% at 22% 4%,rgba(123,47,255,.6),transparent 60%),
-    radial-gradient(80% 110% at 88% 18%,rgba(236,72,153,.4),transparent 56%),
-    linear-gradient(160deg,#2A1650,#120E22);
-  box-shadow:0 10px 22px rgba(6,4,20,.6);overflow:hidden;
+  background:radial-gradient(90% 120% at 22% 2%,rgba(123,47,255,.5),transparent 58%),
+    radial-gradient(78% 106% at 88% 16%,rgba(236,72,153,.3),transparent 54%),
+    linear-gradient(162deg,#241540,#0E0B1A);
+  border:1px solid rgba(255,255,255,.14);border-bottom:none;
+  box-shadow:0 12px 26px rgba(6,4,20,.66);overflow:hidden;
   display:flex;align-items:flex-end;justify-content:center}
+/* the event's own name, set like a poster rather than a watermark */
+.fc .noposter .stamp{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:5px;padding:0 12px;text-align:center}
+.fc .noposter .stamp b{font-family:'Bebas Neue',sans-serif;font-size:27px;letter-spacing:.05em;
+  line-height:.95;color:#F4F1FB;text-shadow:0 2px 14px rgba(0,0,0,.7)}
+.fc .noposter .stamp s{text-decoration:none;font-family:'Space Mono',monospace;font-size:7px;
+  letter-spacing:.22em;text-transform:uppercase;color:rgba(200,185,240,.75)}
 .fc .noposter::after{content:'';position:absolute;inset:0;z-index:3;
   background:repeating-linear-gradient(0deg,transparent 0 2px,rgba(0,0,0,.16) 2px 4px)}
 .fc .noposter b{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:.06em;
@@ -735,7 +743,21 @@ var SB_OLD  = 'https://xwsbyxkjfqqrgbzxmmrn.supabase.co';
 var KEY_OLD = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3c2J5eGtqZnFxcmdienhtbXJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNjAyNDcsImV4cCI6MjA4NzkzNjI0N30.6amkt0zGMLT3_N3fKY6sMMTdaBr5eS7Ig-hAPvPCB4g';
 
 /* an event counts as live from its start time for this long */
-var LIVE_WINDOW_MS = 4 * 60 * 60 * 1000;
+/* A9 — a fight night regularly runs past four hours, and the bar vanishing
+   mid-broadcast is worse than it lingering after. Six. */
+var LIVE_WINDOW_MS = 6 * 60 * 60 * 1000;
+/* A1 — nothing in the data ages a scheduled event out. If nobody flips it to
+   completed, it stays the "next event" for ever with a countdown clamped to
+   00:00:00:00, which reads as a broken clock rather than as a past night.
+   After this long past its start, the app treats it as done regardless of
+   what the status column says. */
+var STALE_EVENT_MS = 8 * 60 * 60 * 1000;
+function eventIsOver(e){
+  if(!e) return false;
+  if(e.status === 'completed') return true;
+  var t = new Date(e.event_date).getTime();
+  return isFinite(t) && (Date.now() - t) > STALE_EVENT_MS;
+}
 
 function esc(s){ return String(s == null ? '' : s)
   .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -743,33 +765,66 @@ function esc(s){ return String(s == null ? '' : s)
 /* Every read goes through here. supabase-js resolves rather than throws on a
    failed query, and the raw REST equivalent is a non-2xx with a JSON body —
    either way an unchecked call silently renders "nothing". */
+/* Returns rows, or null on any failure. The HTTP status rides along on
+   q.status — a per-call object, NOT a shared property, because three reads
+   run concurrently at boot and a shared one gets overwritten before the
+   caller reads it. That is how "News isn't wired up yet" could appear for a
+   view that was fine. */
 async function q(path){
-  q.lastStatus = 0;
+  var st = { code: 0 };
+  q.status = st;
   try{
     var r = await fetch(SB + '/rest/v1/' + path, H);
-    q.lastStatus = r.status;
+    st.code = r.status;
     if(!r.ok){ console.warn('[uba] query failed', path, r.status); return null; }
     var j = await r.json();
-    return Array.isArray(j) ? j : null;
+    return Array.isArray(j) ? Object.assign(j, { _status: st.code }) : null;
   }catch(e){ console.warn('[uba] query error', path, e); return null; }
+}
+/* Same shape, but reports the status of a call that returned nothing. */
+async function qStatus(path){
+  var code = 0;
+  try{
+    var r = await fetch(SB + '/rest/v1/' + path, H);
+    code = r.status;
+    if(!r.ok) return { rows: null, code: code };
+    var j = await r.json();
+    return { rows: Array.isArray(j) ? j : null, code: code };
+  }catch(e){ return { rows: null, code: 0 }; }
 }
 
 /* The my_* views filter on the Discord ID inside the caller's JWT, so these
    reads must send the SESSION token, not the publishable key. Sending the
    anon key returns 401 — deliberately, since anon has no grant on them. */
-async function qMe(path){
+async function qMe(path, isRetry){
   if(!session) return null;
-  qMe.lastStatus = 0;
+  if(!isRetry) await ensureFreshSession();
+  if(!session) return null;
   try{
     var r = await fetch(SB + '/rest/v1/' + path, {
       headers: { apikey: KEY, Authorization: 'Bearer ' + session.access_token }
     });
-    qMe.lastStatus = r.status;
-    if(r.status === 401){ saveSession(null); me = null; return null; }
+    if(r.status === 401){
+      // One refresh, one retry. If that fails the session is genuinely gone.
+      if(!isRetry && await refreshSession()) return qMe(path, true);
+      signedOutUnexpectedly();
+      return null;
+    }
     if(!r.ok){ console.warn('[uba] me query failed', path, r.status); return null; }
     var j = await r.json();
     return Array.isArray(j) ? j : null;
   }catch(e){ console.warn('[uba] me query error', path, e); return null; }
+}
+
+/* A3 — clearing the session was not enough: You kept showing the name,
+   "Connected" and a Sign out button above a failure, so the app looked signed
+   in while nothing worked. Losing the session now takes the whole signed-in
+   UI down with it. */
+function signedOutUnexpectedly(){
+  if(!session && !me) return;
+  saveSession(null);
+  me = null; myFighter = null; myBout = null;
+  paintAvatar(); renderYou(); renderCards(); renderJoinSlot(); loadStrip();
 }
 
 var WC = { lightweight:'Lightweight', middleweight:'Middleweight',
@@ -876,7 +931,9 @@ async function loadPosters(ids){
 }
 
 async function loadHome(){
-  var evs = await q("events_public?select=id,name,type,status,event_date,stream_platform&status=eq.scheduled&order=event_date.asc&limit=3");
+  var evs = await q("events_public?select=id,name,type,status,event_date,stream_platform&status=eq.scheduled&order=event_date.asc&limit=5");
+  // Drop anything that has plainly already happened, whatever its status says.
+  if(evs) evs = evs.filter(function(e){ return !eventIsOver(e); }).slice(0, 3);
   if(evs && evs.length < 3){
     // One scheduled event leaves a hand of one. Backfill with what just
     // happened so the fan is always three deep and the past stays reachable.
@@ -892,8 +949,8 @@ async function loadHome(){
     fanEvents = evs;
     renderFan();
     var ids = evs.map(function(e){ return e.id; });
-    loadPosters(ids).then(renderFan);
-    loadFaceoffs(ids).then(renderFan);
+    loadPosters(ids).then(function(){ renderFan(true); });
+    loadFaceoffs(ids).then(function(){ renderFan(true); });
   }
   await Promise.all([loadLive(), loadRanks(), loadHomeNews(), loadStrip()]);
 }
@@ -916,7 +973,10 @@ function silhouetteSwap(img){
 }
 function faceoffHTML(eventId, eventName){
   var f = faceoffs[eventId];
-  if(!f) return '<b>' + esc((eventName || '?').slice(0, 3).toUpperCase()) + '</b>';
+  // No published card to draw from: set the event's own name like a poster.
+  // A three-letter watermark read as an empty box.
+  if(!f) return '<span class="stamp"><s>VGA Esports</s><b>'
+    + esc(eventName || 'Fight night') + '</b><s>Card to be announced</s></span>';
   return '<div class="fo">'
     + faceoffCorner(f.a, 'l')
     + faceoffCorner(f.b, 'r')
@@ -926,22 +986,26 @@ function faceoffHTML(eventId, eventName){
     + '</div>';
 }
 
-function renderFan(){
+function renderFan(keepOrder){
   var fan = document.getElementById('fan'), dots = document.getElementById('dots');
+  // A4 — art loads after the first paint, and re-rendering used to reset the
+  // hand. If the viewer has already rotated it, keep where they left it.
+  var prevOrder = keepOrder && fanOrder.length === fanEvents.length ? fanOrder.slice() : null;
   if(!fanEvents.length){
     fan.innerHTML = '<div class="empty" style="margin:10px 18px">No events scheduled yet.<br>Check back soon.</div>';
     dots.innerHTML = '';
     document.getElementById('cds').style.display = 'none';
     return;
   }
-  fanOrder = fanEvents.map(function(_,i){ return i; });
+  fanOrder = prevOrder || fanEvents.map(function(_,i){ return i; });
   fan.innerHTML = fanEvents.map(function(e,i){
+    var pos = fanOrder.indexOf(i);
     var when = new Date(e.event_date).toLocaleString('en-US',{ timeZone:'America/New_York',
       month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }).toUpperCase();
-    var done = e.status === 'completed';
+    var done = eventIsOver(e);
     var tag = done ? 'Result' : (i === 0 ? 'Next event' : (e.type === 'fight_night' ? 'Fight night' : 'Event'));
     var poster = posters[e.id];
-    return '<div class="fc" data-i="'+i+'" data-pos="'+i+'" data-ev-id="'+esc(e.id)+'">'
+    return '<div class="fc" data-i="'+i+'" data-pos="'+pos+'" data-ev-id="'+esc(e.id)+'">'
       + (poster
           ? '<img class="poster" src="'+esc(poster.url)+'" alt="" '
             + 'onerror="this.className=\'noposter\';this.replaceWith(Object.assign(document.createElement(\'div\'),{className:\'noposter\'}))">'
@@ -954,9 +1018,9 @@ function renderFan(){
       + '</div></div>';
   }).join('');
   dots.innerHTML = fanEvents.length > 1
-    ? fanEvents.map(function(_,i){ return '<i class="'+(i===0?'on':'')+'"></i>'; }).join('')
+    ? fanEvents.map(function(_,i){ return '<i class="'+(i===fanOrder[0]?'on':'')+'"></i>'; }).join('')
     : '';
-  setCountdown(fanEvents[0]);
+  setCountdown(fanEvents[fanOrder[0]]);
 }
 
 document.getElementById('fan').addEventListener('click', function(e){
@@ -977,7 +1041,7 @@ document.getElementById('fan').addEventListener('click', function(e){
 function setCountdown(ev){
   // A past event has nothing to count down to; showing 00:00:00:00 under a
   // finished card reads like a bug.
-  countdownTarget = (ev && ev.status !== 'completed') ? new Date(ev.event_date).getTime() : null;
+  countdownTarget = (ev && !eventIsOver(ev)) ? new Date(ev.event_date).getTime() : null;
   tickCountdown();
 }
 function tickCountdown(){
@@ -994,7 +1058,19 @@ function tickCountdown(){
   document.getElementById('cd-m').textContent = p(m);
   document.getElementById('cd-s').textContent = p(sec);
 }
-setInterval(tickCountdown, 1000);
+/* A10 — these ran forever, including with the app in the background, where
+   nobody can see the clock and the poll is pure battery. */
+var tickTimer = setInterval(tickCountdown, 1000);
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState === 'hidden'){
+    if(tickTimer){ clearInterval(tickTimer); tickTimer = null; }
+    if(stripTimer){ clearInterval(stripTimer); stripTimer = null; }
+  } else {
+    if(!tickTimer){ tickTimer = setInterval(tickCountdown, 1000); tickCountdown(); }
+    if(!stripTimer && !stripHeld && stripFaces.length > 1) stripTimer = setInterval(flipStrip, 7000);
+    loadLive();
+  }
+});
 
 /* the live bar — derived from time, because events have no 'live' status.
    An event counts as live from its start until LIVE_WINDOW_MS after it. */
@@ -1013,7 +1089,7 @@ async function loadLive(){
   document.getElementById('live-name').textContent = live.name;
   bar.classList.add('on');
 }
-setInterval(loadLive, 5 * 60 * 1000);
+setInterval(function(){ if(document.visibilityState === 'visible') loadLive(); }, 5 * 60 * 1000);
 
 /* ── THE STRIP ───────────────────────────────────────────────────────
    Priority: your own fight, then the feed, then the top headline. Whatever
@@ -1170,6 +1246,7 @@ async function loadRanks(){
   var el = document.getElementById('ranks');
   if(!el) return;
   var tab = rankTab;
+  el.dataset.tab = tab;                 // A6 — the guard below reads this
   if(rankCache[tab]){ paintRanks(el, tab, rankCache[tab]); return; }
   el.innerHTML = '<div class="skel"></div><div class="skel" style="width:70%"></div>';
 
@@ -1182,7 +1259,7 @@ async function loadRanks(){
     rows = await q("team_standings?select=team_name,team_slug,conference,match_wins,match_losses,"
       + "match_draws,bout_diff&order=match_wins.desc,bout_diff.desc&limit=10");
   }
-  if(el.dataset.tab && el.dataset.tab !== tab) return;
+  if(el.dataset.tab !== tab) return;   // a newer tab won while this was in flight
   if(!rows){
     retryHandlers['ranks'] = loadRanks;
     el.innerHTML = failHTML("Couldn't load the rankings.", 'ranks'); return;
@@ -1218,15 +1295,25 @@ function paintRanks(el, tab, rows){
 /* ═══ NEWS ═══════════════════════════════════════════════════════════
    Reads news_public, a view that does not exist yet. Until it is created
    both of these render an honest empty state rather than a blank space. */
-var newsCache = null, newsFailWasMissing = false;
+var newsCache = null, newsFailWasMissing = false, newsInFlight = null;
+/* A8 — loadHomeNews, loadStrip and loadNews all want this at boot and none
+   of them has resolved yet, so a plain cache check fired three identical
+   requests. The promise itself is the cache. */
 async function getNews(){
   if(newsCache !== null) return newsCache;
-  newsCache = await q("news_public?select=id,kicker,headline,body,reporter,posted_at,graphic_url&order=posted_at.desc&limit=25");
-  // 404 means the view genuinely is not there; anything else means the
-  // database was unreachable. Showing "not wired up yet" for an outage sends
-  // whoever reads it to build something that already exists.
-  newsFailWasMissing = (q.lastStatus === 404);
-  return newsCache;
+  if(newsInFlight) return newsInFlight;
+  newsInFlight = (async function(){
+    var res = await qStatus("news_public?select=id,kicker,headline,body,reporter,posted_at,graphic_url"
+      + "&order=posted_at.desc&limit=25");
+    // 404 means the view genuinely is not there; anything else means the
+    // database was unreachable. Saying "not wired up yet" for an outage sends
+    // whoever reads it off to build something that already exists.
+    newsFailWasMissing = (res.code === 404);
+    newsCache = res.rows;
+    newsInFlight = null;
+    return newsCache;
+  })();
+  return newsInFlight;
 }
 function newsFailure(retryId){
   if(newsFailWasMissing){
@@ -1671,6 +1758,44 @@ function saveSession(s){
   session = s;
   try{ s ? localStorage.setItem('uba.session', JSON.stringify(s)) : localStorage.removeItem('uba.session'); }catch(e){}
 }
+/* A2 — Supabase's JWT lasts 3600s. The refresh token was being STORED and
+   never spent, so everybody was signed out after an hour with no explanation
+   and no way to tell from the UI. Refreshed ahead of expiry and again on any
+   401, with a single in-flight guard so a burst of parallel reads cannot
+   trigger a burst of refreshes. */
+var refreshInFlight = null;
+async function refreshSession(){
+  if(!session || !session.refresh_token) return false;
+  if(refreshInFlight) return refreshInFlight;
+  refreshInFlight = (async function(){
+    try{
+      var r = await fetch(SB + '/auth/v1/token?grant_type=refresh_token', {
+        method: 'POST',
+        headers: { apikey: KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: session.refresh_token })
+      });
+      if(!r.ok){ refreshInFlight = null; return false; }
+      var d = await r.json();
+      if(!d || !d.access_token){ refreshInFlight = null; return false; }
+      saveSession({
+        access_token: d.access_token,
+        refresh_token: d.refresh_token || session.refresh_token,
+        expires_at: Date.now() + ((d.expires_in || 3600) * 1000)
+      });
+      refreshInFlight = null;
+      return true;
+    }catch(e){ refreshInFlight = null; return false; }
+  })();
+  return refreshInFlight;
+}
+
+/* Renew before it bites rather than after. */
+async function ensureFreshSession(){
+  if(!session) return false;
+  if(session.expires_at && session.expires_at - Date.now() > 5 * 60 * 1000) return true;
+  return refreshSession();
+}
+
 function loadSession(){
   var s = readHashSession();
   if(s){ saveSession(s); return s; }
@@ -1678,7 +1803,9 @@ function loadSession(){
     var raw = localStorage.getItem('uba.session');
     if(!raw) return null;
     var p = JSON.parse(raw);
-    if(p && p.expires_at && p.expires_at > Date.now()) { session = p; return p; }
+    // Keep an EXPIRED session if it still carries a refresh token — throwing
+    // it away is what made people sign in again every hour.
+    if(p && (p.expires_at > Date.now() || p.refresh_token)) { session = p; return p; }
     localStorage.removeItem('uba.session');
   }catch(e){}
   return null;
