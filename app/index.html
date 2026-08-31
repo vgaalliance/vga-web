@@ -144,7 +144,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 
    If neither exists the space is simply empty, because an empty space reads
    better than a filled rectangle apologising for itself. */
-.fanw{position:relative;margin:4px 0 0;display:flow-root;--peek:92px;padding-top:var(--peek)}
+.fanw{position:relative;margin:4px 0 0;display:flow-root;--peek:150px;padding-top:var(--peek)}
 .fc{position:absolute;top:0;left:50%;width:216px;margin-left:-108px;
   border-radius:0 0 14px 14px;color:#16131F;cursor:pointer;
   transition:transform .34s cubic-bezier(.34,1.3,.5,1),opacity .34s}
@@ -182,41 +182,58 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    of the card the way a hand of cards opens out of a fist. */
 .fc .stage{position:absolute;left:50%;bottom:calc(100% - 30px);width:0;height:0;
   z-index:-1;pointer-events:none}
-.fc .stage .fi{position:absolute;left:0;bottom:0;height:132px;width:auto;
-  transform-origin:50% 100%;
-  transition:transform .5s cubic-bezier(.32,.9,.35,1)}
-.fc .stage img.fi{border-radius:4px;box-shadow:0 8px 20px rgba(4,2,14,.7)}
 
-/* the fighter-v-fighter item: same box as a poster, and NO plate behind it */
-.fc .stage .fo{width:96px}
-/* ONE ITEM IS NOT A FAN. With no poster there is nothing to stack against, so
-   the faceoff stops pretending to be a card in a hand and takes the whole
-   width of the card instead — two fighters spread evenly, the VS between them.
-   Fanning a single item just made it a small thing sitting off-centre. */
-.fc .stage.solo .fo{width:216px}
-.fc .stage.solo .fo .vsx{font-size:21px;top:10%}
-.fc .stage.solo .fo .cn{font-size:8.5px;max-width:40%}
-.fc .stage.solo .fo .cn.l{left:6px}
-.fc .stage.solo .fo .cn.r{right:6px}
-/* NEVER give a photo a height AND a max-width. The browser honours both and
-   squashes the image between them — which is what was stretching kayvon, who
-   stands wide. A fixed box plus object-fit:contain cannot distort anything. */
-.fc .stage .fo .cut{position:absolute;bottom:0;height:94%;width:44%;
+/* ONLY THE FRONT CARD SHOWS ITS FACEOFF. The faceoff is card-WIDTH by
+   definition, so on a card scaled to .86, rotated seven degrees and shoved
+   sideways, its two fighters sit at the edges of a box wider than the card
+   still looks — and they hang off the side of the stack looking detached from
+   everything. Posters do not do this: they are narrow and centred, so they
+   stay. A hand of cards shows the top card's face and the others' edges. */
+.fc:not([data-pos="0"]) .stage .fo{display:none}
+
+/* max-width:none is LOAD-BEARING. The stage is a zero-WIDTH point, so any
+   stylesheet carrying `img{max-width:100%}` resolves that to max-width:0 and
+   collapses every poster to nothing. It cost an evening to find once. */
+.fc .stage .pz{position:absolute;left:0;bottom:0;height:150px;width:auto;max-width:none;
+  transform-origin:50% 100%;border-radius:4px;box-shadow:0 8px 20px rgba(4,2,14,.7);
+  transition:transform .5s cubic-bezier(.32,.9,.35,1),opacity .45s}
+.fc .stage .pz.gone{opacity:0}
+
+/* a night nothing is known about yet — no poster, no bouts */
+.fc .stage .soon{position:absolute;left:0;bottom:0;width:112px;height:150px;
+  transform:translate(-50%,0);border-radius:4px;overflow:hidden;
+  background:linear-gradient(168deg,#3A2F72 0%,#1B1440 62%,#120E2C 100%);
+  border:1px solid rgba(167,139,250,.42);box-shadow:0 8px 20px rgba(4,2,14,.7);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;padding:12px 10px}
+.fc .stage .soon .sm{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.16em;color:#C3A6FF;line-height:1}
+.fc .stage .soon .sb{font-family:'Bebas Neue',sans-serif;font-size:20px;line-height:.98;letter-spacing:.03em;
+  color:#F2EEFF;text-align:center}
+.fc .stage .soon .se{font-family:'Space Mono',monospace;font-size:6.5px;letter-spacing:.18em;
+  text-transform:uppercase;color:rgba(190,178,232,.7);border-top:1px solid rgba(255,255,255,.16);
+  padding-top:7px;width:100%;text-align:center}
+
+/* THE FACEOFF — always the full width of the card, never in the stack */
+.fc .stage .fo{position:absolute;left:0;bottom:0;width:216px;height:150px;
+  transform:translate(-50%,0);transition:opacity .45s}
+.fc .stage .fo.gone{opacity:0}
+/* never a height AND a max-width on a photo — the browser honours both and
+   squashes it between them. A box plus object-fit cannot distort. */
+.fc .stage .fo .cut{position:absolute;bottom:0;height:96%;width:46%;
   object-fit:contain;object-position:bottom center;
-  filter:drop-shadow(0 4px 12px rgba(4,2,14,.8))}
-.fc .stage .fo .cut.l{left:2%}
-.fc .stage .fo .cut.r{right:2%;transform:scaleX(-1)}
-.fc .stage .fo .sil{position:absolute;bottom:0;height:82%;width:34%;fill:rgba(190,175,235,.36)}
-.fc .stage .fo .sil.l{left:7%}
-.fc .stage .fo .sil.r{right:7%}
-.fc .stage .fo .vsx{position:absolute;left:50%;top:16%;transform:translateX(-50%);
-  font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:.09em;color:#F4F1FB;
-  text-shadow:0 2px 12px rgba(0,0,0,.95)}
-.fc .stage .fo .cn{position:absolute;bottom:2px;font-family:'Barlow',sans-serif;font-weight:700;
-  font-size:7.5px;letter-spacing:.04em;text-transform:uppercase;color:#F4F1FB;
-  text-shadow:0 1px 8px rgba(0,0,0,.95);max-width:48%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fc .stage .fo .cn.l{left:-4px}
-.fc .stage .fo .cn.r{right:-4px;text-align:right}
+  filter:drop-shadow(0 4px 14px rgba(4,2,14,.85))}
+.fc .stage .fo .cut.l{left:0}
+.fc .stage .fo .cut.r{right:0;transform:scaleX(-1)}
+.fc .stage .fo .sil{position:absolute;bottom:0;height:84%;width:38%;fill:rgba(190,175,235,.34)}
+.fc .stage .fo .sil.l{left:4%}
+.fc .stage .fo .sil.r{right:4%}
+.fc .stage .fo .vsx{position:absolute;left:50%;top:12%;transform:translateX(-50%);
+  font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.09em;color:#F4F1FB;
+  text-shadow:0 2px 14px rgba(0,0,0,.95)}
+.fc .stage .fo .cn{position:absolute;bottom:3px;font-family:'Barlow',sans-serif;font-weight:700;
+  font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:#F4F1FB;
+  text-shadow:0 1px 8px rgba(0,0,0,.95);max-width:42%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fc .stage .fo .cn.l{left:4px}
+.fc .stage .fo .cn.r{right:4px;text-align:right}
 .fc .past{position:absolute;right:8px;top:6px;z-index:5;font-family:'Space Mono',monospace;
   font-size:7px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#EDEAF6;
   background:rgba(10,8,20,.8);padding:3px 7px;border-radius:3px}
@@ -1157,7 +1174,7 @@ function silhouetteSwap(img){
 function faceoffItem(eventId){
   var f = faceoffs[eventId];
   if(!f) return '';
-  return '<div class="fi fo">'
+  return '<div class="fo">'
     + cutCorner(f.a, 'l') + cutCorner(f.b, 'r')
     + '<span class="vsx">VS</span>'
     + '<span class="cn l">' + esc(f.an || '') + '</span>'
@@ -1171,15 +1188,23 @@ function faceoffItem(eventId){
    for the broadcast, and in the app the live fighter-v-fighter is better,
    because it is real HTML that pulls each photo at load and falls back to a
    silhouette per fighter. */
-function stageHTML(eventId){
-  var items = (posters[eventId] || []).slice(0, 3).map(function(u){
-    return '<img class="fi" src="' + esc(u) + '" alt="" onerror="this.remove()">';
-  });
+/* Nothing is known about this night — no poster, and no bouts published. */
+function soonItem(name){
+  return '<div class="soon"><div class="sm">VGA</div>'
+       + '<div class="sb">Card<br>dropping<br>soon</div>'
+       + '<div class="se">' + esc(name || '') + '</div></div>';
+}
+
+/* Posters fan; a poster that 404s removes itself and the rest fan, because
+   there is no gap to fill. The faceoff is NOT one of them — it is the full
+   width of the card and never joins the stack. */
+function stageHTML(eventId, eventName){
+  var art = (posters[eventId] || []).slice(0, 3).map(function(u){
+    return '<img class="pz" src="' + esc(u) + '" alt="" onerror="this.remove()">';
+  }).join('');
   var fo = faceoffItem(eventId);
-  if(fo) items.push(fo);
-  // `solo` widens the single item to the card. See the CSS note.
-  return '<div class="stage' + (items.length === 1 ? ' solo' : '') + '">'
-       + items.join('') + '</div>';
+  if(!art && !fo) return '<div class="stage">' + soonItem(eventName) + '</div>';
+  return '<div class="stage">' + art + fo + '</div>';
 }
 
 /* THE SHUFFLE, ported from the standby scene so both read the same.
@@ -1197,7 +1222,7 @@ function cycleStage(){
   // 46-66% opacity, and shuffling those is movement nobody asked for.
   var stage = document.querySelector('#fan .fc[data-pos="0"] .stage');
   if(!stage) return;
-  var items = [].slice.call(stage.querySelectorAll('.fi'));
+  var items = [].slice.call(stage.querySelectorAll('.pz'));
   if(!items.length) return;
   fanAt = 0;
 
@@ -1274,7 +1299,7 @@ function renderFan(keepOrder){
             : done ? 'Result'
             : (i === 0 ? 'Next event' : (e.type === 'fight_night' ? 'Fight night' : 'Event'));
     return '<div class="fc" data-i="'+i+'" data-pos="'+pos+'" data-ev-id="'+esc(e.id)+'">'
-      + stageHTML(e.id)
+      + stageHTML(e.id, e.name)
       + (done ? '<span class="past">Final</span>' : '')
       + (eventIsLive(e) ? '<span class="shine"></span>' : '')
       + '<div class="foil"></div><div class="in">'
