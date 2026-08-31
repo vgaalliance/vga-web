@@ -51,7 +51,11 @@
 
   // status per team: 'in' (through) · 'bye' (through on the Spring-champ bye) ·
   // 'playin' (has to win one) · 'out' (only reachable via rule 3)
-  function picture(standings, sim, springChamp){
+  /* `won` — the names of teams that have already WON a play-in. A seat whose
+     play-in has been fought is not a coin flip any more, and drawing it as one
+     is the poster telling a team that beat somebody last Friday that it might
+     not be here. Left out, everything behaves as it did. */
+  function picture(standings, sim, springChamp, won){
     const champ = springChamp===undefined ? SPRING_CHAMP : springChamp
     const rows=project(standings, sim)
     const confs={}
@@ -81,8 +85,17 @@
       order.forEach(k=>{ const b=confs[k].slice(2); if(b[0]&&b[1]) playin.push([b[0],b[1]]) })
     }
 
+    // Which play-in each result settles, in the same order as `playin`. It does
+    // NOT touch `status` or `seeds`: winning a play-in fills seat 5 or 6, it
+    // does not make a team one of the four seeded on regular-season record, and
+    // feeding it into `seeds` would hand it a top-4 seed it never earned.
+    const wonSet=new Set(won||[])
+    const playinWon=playin.map(m=>m.map(t=>t.team_name).find(n=>wonSet.has(n))||null)
+    playin.forEach((m,i)=>{ if(playinWon[i]) m.forEach(t=>{
+      if(t.team_name!==playinWon[i]) status[t.team_name]='out' }) })
+
     const seeds=rows.filter(t=>status[t.team_name]==='in'||status[t.team_name]==='bye').sort(cmp)
-    return { confs, order, status, playin, seeds, byeTeam }
+    return { confs, order, status, playin, playinWon, seeds, byeTeam }
   }
 
   // One remaining match, two branches, each played out at all three possible
@@ -192,7 +205,11 @@
   function seats(p){
     const out=[]
     ;(p.seeds||[]).forEach(t=>out.push({seed:out.length+1, name:t.team_name, team:t, from:null}))
-    ;(p.playin||[]).forEach(m=>out.push({seed:out.length+1, name:null, from:[m[0].team_name,m[1].team_name]}))
+    ;(p.playin||[]).forEach((m,i)=>{
+      const w=(p.playinWon||[])[i]
+      out.push({seed:out.length+1, name:w||null, from:[m[0].team_name,m[1].team_name],
+                fromPlayin:true, team:w?(m.find(t=>t.team_name===w)||null):null})
+    })
     while(out.length<6) out.push({seed:out.length+1, name:null, from:null})
     return out.slice(0,6)
   }
@@ -201,14 +218,26 @@
 
   function bracket(p){
     const s=seats(p), at=n=>s[n-1], ref=t=>({ref:t})
-    const PI=(p.playin||[]).map((m,i)=>'PI'+(i+1))   // winners round 1 cannot run before the play-in
+    // Winners round 1 cannot run before the play-in — but only before the ONE
+    // play-in that fills ITS seat. Seats are handed out in order, seeds first,
+    // so the nth unnamed seat is the nth play-in match. Keeping this specific
+    // is what lets a round-1 match share a night with the OTHER conference's
+    // play-in, which is exactly the Sep 4 card: seat 6 was settled on Aug 28,
+    // seat 5 is fought that evening, and only W2 waits on it.
+    // Count EVERY play-in seat, settled or not — the nth play-in seat is PIn.
+    // Counting only the unsettled ones renumbers them the moment one is played:
+    // with seat 5 still open and seat 6 fought, seat 5 would claim PI1's slot.
+    const piOf={}; let piI=0
+    s.forEach(x=>{ if(x.fromPlayin){ piI++; if(!x.name) piOf[x.seed]='PI'+piI } })
+    const needPI=n=>piOf[n]?[piOf[n]]:[]
     return {
       seats:s,
-      playin:(p.playin||[]).map(m=>({conf:m[0].conference, a:{name:m[0].team_name}, b:{name:m[1].team_name}})),
+      playin:(p.playin||[]).map((m,i)=>({conf:m[0].conference, a:{name:m[0].team_name}, b:{name:m[1].team_name},
+                                         won:(p.playinWon||[])[i]||null})),
       wb:[
         { round:'WINNERS · ROUND 1', ms:[
-          {id:'W1', needs:PI, a:at(3), b:at(6)},
-          {id:'W2', needs:PI, a:at(4), b:at(5)}] },
+          {id:'W1', needs:needPI(6), a:at(3), b:at(6)},
+          {id:'W2', needs:needPI(5), a:at(4), b:at(5)}] },
         { round:'WINNERS · SEMIS',   ms:[
           {id:'S1', needs:['W2'], a:at(1), b:ref('WINNER 4/5')},
           {id:'S2', needs:['W1'], a:at(2), b:ref('WINNER 3/6')}] },
@@ -256,22 +285,30 @@
   }
 
   /* ── the playoff calendar ──────────────────────────────────────────────
-     Locked with the founder 2026-08-22: PLAY-IN on the Friday, then two
-     weekends of bracket, five matches a week, Friday and Saturday. Ten bracket
-     matches plus the two play-ins is twelve, and this is the only split of
-     them that keeps every night's matches downstream of the nights before it —
-     which is what `nights()` returns and what the test checks. Dates are here
-     rather than in the DB because nothing is scheduled yet: teams are unknown
-     until the play-in is played. The graphic prefers REAL rows the moment they
-     exist in team_matches.
+     RESCHEDULED with the founder 2026-08-30: FRIDAY, SATURDAY AND SUNDAY of
+     two weekends — Sep 4-5-6 and Sep 11-12-13 — instead of Friday/Saturday.
+     Both play-ins were fought on Aug 28, so six bracket nights carry ten
+     bracket matches and NO NIGHT RUNS A MATCH FED BY THE MATCH BEFORE IT: the
+     losers semi and the winners final share the Friday, the losers final has
+     the Saturday, the grand final has the Sunday to itself. Nobody in this
+     tournament is asked to fight twice in one evening.
 
-     If the calendar moves, move it here and in docs/ubae-plan.md together. */
+     Dates are here rather than in the DB because nothing is scheduled yet:
+     teams are unknown until each night is played. The graphic prefers REAL
+     rows the moment they exist in team_matches.
+
+     If the calendar moves, move it here, in docs/ubae-plan.md, in the
+     ubae_playoff_nights seed in db/001_schema.sql and in MATCHES in
+     bot/src/lib/playoff-path.js together — the bot asks fighters off that
+     table and labels their nights off that bracket. */
   const NIGHTS=[
     { date:'2026-08-28', label:'PLAY-IN NIGHT',   ids:['PI1','PI2'] },
-    { date:'2026-09-04', label:'BRACKET OPENS',   ids:['W1','W2','L1'] },
+    { date:'2026-09-04', label:'WINNERS ROUND 1', ids:['W1','W2'] },
     { date:'2026-09-05', label:'WINNERS SEMIS',   ids:['S1','S2'] },
-    { date:'2026-09-11', label:'ELIMINATION NIGHT', ids:['L2','LS','WF'] },
-    { date:'2026-09-12', label:'FINALS',          ids:['LF','GF'] },
+    { date:'2026-09-06', label:'LOSERS R1 + R2',  ids:['L1','L2'] },
+    { date:'2026-09-11', label:'LOSERS SEMI + WINNERS FINAL', ids:['LS','WF'] },
+    { date:'2026-09-12', label:'LOSERS FINAL',    ids:['LF'] },
+    { date:'2026-09-13', label:'GRAND FINAL',     ids:['GF'] },
   ]
 
   // The calendar with each night's matches named, and every match checked
@@ -375,7 +412,11 @@
         ms,
         // What this week COSTS you, in one line. The round names say what the
         // match is called; this says what it means.
-        stake: g.isPI ? 'TWO SURVIVE · TWO GO HOME'
+        // The play-in card counts what is actually on it: conference A's play-in
+        // was pushed to the Sep 4 card, so Aug 28 is one match, not two, and a
+        // card that says TWO of anything is describing a night that did not
+        // happen.
+        stake: g.isPI ? (ms.length > 1 ? 'TWO SURVIVE · TWO GO HOME' : 'ONE SURVIVES · ONE GOES HOME')
              : ms.some(m=>m.id==='GF') ? 'THE TITLE'
              : 'FIRST LOSS PUTS YOU IN THE ELIMINATION BRACKET',
       }
