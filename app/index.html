@@ -334,6 +334,53 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .sheet .bout .via{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;
   text-transform:uppercase;color:#F5C842;flex-shrink:0}
 
+/* article inside a sheet */
+.sheet .artgfx{position:relative;height:200px;overflow:hidden;background:linear-gradient(158deg,#241844,#120E22)}
+.sheet .artgfx img{width:100%;height:100%;object-fit:cover;display:block}
+.sheet .kick{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;
+  color:#C3A6FF;margin:18px 18px 8px}
+.sheet h3.head{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:30px;line-height:1.05;
+  text-transform:uppercase;margin:0 18px;letter-spacing:.005em}
+.sheet .by{display:flex;align-items:center;gap:10px;margin:13px 18px 0;padding-bottom:14px;
+  border-bottom:1px solid rgba(255,255,255,.12)}
+.sheet .by .av2{width:26px;height:26px;border-radius:50%;background:linear-gradient(140deg,#5B4A90,#2A2450)}
+.sheet .by .who{font-size:13.5px;font-weight:600}
+.sheet .by .when{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:#8F86AF;margin-left:auto}
+.sheet .body p{font-size:16px;line-height:1.62;color:#DAD5EC;margin:14px 18px 0}
+
+/* fight card inside a sheet */
+.sheet .evhead{padding:calc(18px + env(safe-area-inset-top)) 18px 16px;position:relative}
+.sheet .evhead .kick{margin:0 0 8px}
+.sheet .evhead h3{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:.03em;line-height:1;font-weight:400}
+.sheet .evhead .when{font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:#B7AEDC;margin-top:8px}
+.seg{font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.2em;
+  text-transform:uppercase;color:#ADA4D6;margin:20px 18px 10px}
+.seg::before{content:'// ';color:#A78BFA}
+.bout2{margin:0 16px 9px;border-radius:13px;background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.11);padding:12px 14px}
+.bout2.title{border-color:rgba(245,200,66,.34);background:linear-gradient(150deg,rgba(245,200,66,.09),rgba(255,255,255,.05))}
+.bout2 .tag{font-family:'Space Mono',monospace;font-size:7.5px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:#F5C842;margin-bottom:8px;display:block}
+.bout2 .vs{display:flex;align-items:center;gap:10px}
+.bout2 .side{flex:1;min-width:0;font-size:16.5px;font-weight:600}
+.bout2 .side.b{text-align:right}
+.bout2 .side.lost{color:#7E7699;font-weight:400}
+.bout2 .mid2{flex-shrink:0;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;
+  text-transform:uppercase;color:#6E6688}
+.bout2 .mid2.done{color:#F5C842;font-weight:700}
+.bout2 .wcl{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:#7E7699;margin-top:9px}
+
+/* something went wrong, with a way out */
+.fail{margin:0 18px;padding:20px 16px;text-align:center;border:1px dashed rgba(255,255,255,.16);
+  border-radius:13px}
+.fail p{font-size:14px;color:#B3AAD2;line-height:1.5}
+.fail button{margin-top:13px;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;
+  letter-spacing:.13em;text-transform:uppercase;color:#C3A6FF;border:1px solid rgba(167,139,250,.4);
+  border-radius:10px;padding:11px 20px}
+
 /* the bar */
 .bar{position:fixed;left:0;right:0;bottom:0;height:calc(78px + env(safe-area-inset-bottom));
   padding-bottom:env(safe-area-inset-bottom);display:flex;align-items:flex-start;
@@ -474,8 +521,10 @@ function esc(s){ return String(s == null ? '' : s)
    failed query, and the raw REST equivalent is a non-2xx with a JSON body —
    either way an unchecked call silently renders "nothing". */
 async function q(path){
+  q.lastStatus = 0;
   try{
     var r = await fetch(SB + '/rest/v1/' + path, H);
+    q.lastStatus = r.status;
     if(!r.ok){ console.warn('[uba] query failed', path, r.status); return null; }
     var j = await r.json();
     return Array.isArray(j) ? j : null;
@@ -530,8 +579,14 @@ var fanEvents = [], fanOrder = [0,1,2], countdownTarget = null;
 
 async function loadHome(){
   var evs = await q("events_public?select=id,name,type,status,event_date,stream_platform&status=eq.scheduled&order=event_date.asc&limit=3");
-  fanEvents = evs || [];
-  renderFan();
+  if(!evs){
+    retryHandlers['home'] = loadHome;
+    document.getElementById('fan').innerHTML = failHTML("Couldn't load what's next.", 'home');
+    document.getElementById('cds').style.display = 'none';
+  } else {
+    fanEvents = evs;
+    renderFan();
+  }
   await Promise.all([loadLive(), loadResults(), loadChamps(), loadHomeNews()]);
 }
 
@@ -548,7 +603,7 @@ function renderFan(){
     var when = new Date(e.event_date).toLocaleString('en-US',{ timeZone:'America/New_York',
       month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }).toUpperCase();
     var tag = i === 0 ? 'Next event' : (e.type === 'fight_night' ? 'Fight night' : 'Event');
-    return '<div class="fc" data-i="'+i+'" data-pos="'+i+'">'
+    return '<div class="fc" data-i="'+i+'" data-pos="'+i+'" data-ev-id="'+esc(e.id)+'">'
       + '<div class="foil"></div><div class="art"></div><div class="in">'
       + '<span class="rar">'+esc(tag)+'</span>'
       + '<div class="nm">'+esc(e.name)+'</div>'
@@ -564,7 +619,9 @@ function renderFan(){
 document.getElementById('fan').addEventListener('click', function(e){
   var card = e.target.closest('.fc'); if(!card) return;
   var pos = parseInt(card.getAttribute('data-pos'),10);
-  if(pos === 0) return;
+  // Tapping a card behind the front one brings it forward; tapping the FRONT
+  // card opens that event's fight card.
+  if(pos === 0){ openSheet({ kind:'event', id: card.getAttribute('data-ev-id') }); return; }
   for(var i=0;i<pos;i++) fanOrder.push(fanOrder.shift());
   document.querySelectorAll('#fan .fc').forEach(function(c){
     c.setAttribute('data-pos', String(fanOrder.indexOf(parseInt(c.getAttribute('data-i'),10))));
@@ -613,12 +670,14 @@ setInterval(loadLive, 5 * 60 * 1000);
 async function loadResults(){
   var el = document.getElementById('results');
   var ev = await q("events_public?select=id,name,event_date&status=eq.completed&order=event_date.desc&limit=1");
-  if(!ev || !ev.length){ el.innerHTML = '<div class="empty">No results yet.</div>'; return; }
+  if(!ev){ retryHandlers['results'] = loadResults;
+    el.innerHTML = failHTML("Couldn't load the last results.", 'results'); return; }
+  if(!ev.length){ el.innerHTML = '<div class="empty">No results yet.</div>'; return; }
   var e = ev[0];
   var bouts = await q("event_matches?select=bout_number,method,fighter_a_name,fighter_b_name,winner_corner,status"
     + "&event_id=eq." + e.id + "&status=eq.completed&order=bout_number.asc&limit=4");
   if(!bouts || !bouts.length){ el.innerHTML = '<div class="empty">Results for '+esc(e.name)+' aren\'t posted yet.</div>'; return; }
-  el.innerHTML = '<div class="res"><div class="ev">'+esc(e.name)+' &middot; '+esc(dstr(e.event_date))+'</div>'
+  el.innerHTML = '<div class="res" data-event="'+esc(e.id)+'"><div class="ev">'+esc(e.name)+' &middot; '+esc(dstr(e.event_date))+'</div>'
     + bouts.map(function(b){
         var aWon = b.winner_corner === 'a';
         var w = aWon ? b.fighter_a_name : b.fighter_b_name;
@@ -635,7 +694,9 @@ async function loadChamps(){
   // weight-class names with the real ones, so they read as duplicates.
   var t = await q("titles_public?select=name,weight_class,kind,holder_name,holder_slug,held_since,is_interim,sort,league,level"
     + "&league=eq.UBA&level=eq.pro&is_interim=eq.false&order=sort.asc");
-  if(!t || !t.length){ el.innerHTML = '<div class="empty">No titles yet.</div>'; return; }
+  if(!t){ retryHandlers['champs'] = loadChamps;
+    el.innerHTML = failHTML("Couldn't load the champions.", 'champs'); return; }
+  if(!t.length){ el.innerHTML = '<div class="empty">No titles yet.</div>'; return; }
   var doubles = {};
   t.forEach(function(x){ if(x.holder_name) doubles[x.holder_name] = (doubles[x.holder_name]||0)+1; });
   el.innerHTML = t.map(function(x){
@@ -657,24 +718,31 @@ async function loadChamps(){
 /* ═══ NEWS ═══════════════════════════════════════════════════════════
    Reads news_public, a view that does not exist yet. Until it is created
    both of these render an honest empty state rather than a blank space. */
-var newsCache = null;
+var newsCache = null, newsFailWasMissing = false;
 async function getNews(){
   if(newsCache !== null) return newsCache;
   newsCache = await q("news_public?select=id,kicker,headline,body,reporter,posted_at,graphic_url&order=posted_at.desc&limit=25");
+  // 404 means the view genuinely is not there; anything else means the
+  // database was unreachable. Showing "not wired up yet" for an outage sends
+  // whoever reads it to build something that already exists.
+  newsFailWasMissing = (q.lastStatus === 404);
   return newsCache;
 }
-function newsMissing(){
-  return '<div class="empty"><b>News isn\'t wired up yet.</b><br>'
-    + 'It needs a <code>news_public</code> view over posts with status = posted, '
-    + 'and the graphic storage bucket made publicly readable.</div>';
+function newsFailure(retryId){
+  if(newsFailWasMissing){
+    return '<div class="empty"><b>News isn\'t wired up yet.</b><br>'
+      + 'It needs a <code>news_public</code> view over posts with status = posted.</div>';
+  }
+  return failHTML("Couldn't load the news.", retryId);
 }
 async function loadHomeNews(){
   var el = document.getElementById('home-news');
   var rows = await getNews();
-  if(!rows){ el.innerHTML = newsMissing(); return; }
+  if(!rows){ retryHandlers['homenews'] = function(){ newsCache = null; loadHomeNews(); };
+    el.innerHTML = newsFailure('homenews'); return; }
   if(!rows.length){ el.innerHTML = '<div class="empty">No news posted yet.</div>'; return; }
   el.innerHTML = rows.slice(0,3).map(function(n){
-    return '<div class="nw"><span class="th"></span><div>'
+    return '<div class="nw" data-news="'+esc(n.id)+'"><span class="th"></span><div>'
       + (n.kicker ? '<div class="k">'+esc(n.kicker)+'</div>' : '')
       + '<div class="h">'+esc(n.headline)+'</div>'
       + '<div class="d">'+esc(dstr(n.posted_at))+'</div></div></div>';
@@ -683,11 +751,12 @@ async function loadHomeNews(){
 async function loadNews(){
   var el = document.getElementById('news-body');
   var rows = await getNews();
-  if(!rows){ el.innerHTML = newsMissing(); return; }
+  if(!rows){ retryHandlers['news'] = function(){ newsCache = null; loadNews(); };
+    el.innerHTML = newsFailure('news'); return; }
   if(!rows.length){ el.innerHTML = '<div class="empty">No news posted yet.</div>'; return; }
   document.getElementById('news-count').textContent = rows.length + ' posts';
   var lead = rows[0], rest = rows.slice(1);
-  var html = '<div class="lead"><div class="gfx">'
+  var html = '<div class="lead" data-news="'+esc(lead.id)+'"><div class="gfx">'
     + (lead.graphic_url ? '<img src="'+esc(lead.graphic_url)+'" alt="'+esc(lead.headline)+'">'
         : '<span class="bar"></span>'
           + (lead.kicker ? '<span class="k">'+esc(lead.kicker)+'</span>' : '')
@@ -698,7 +767,7 @@ async function loadNews(){
   html += rest.map(function(n){
     var first = (n.body||'').split('\n').filter(Boolean)[0] || '';
     if(first.length > 130) first = first.slice(0,130).replace(/\s+\S*$/,'') + '…';
-    return '<div class="wrow">'
+    return '<div class="wrow" data-news="'+esc(n.id)+'">'
       + (n.kicker ? '<div class="k">'+esc(n.kicker)+'</div>' : '')
       + '<div class="h">'+esc(n.headline)+'</div>'
       + (first ? '<div class="b">'+esc(first)+'</div>' : '')
@@ -717,8 +786,9 @@ async function loadFighters(){
     + "headline_draws,rank,is_champion,profile_photo_url,team,nickname,status"
     + "&status=eq.active&order=rank.asc.nullslast&limit=600");
   if(!rows){
+    retryHandlers['fighters'] = function(){ allFighters = null; loadFighters(); };
     document.getElementById('f-grid').innerHTML =
-      '<div class="empty" style="grid-column:span 2">Couldn\'t load fighters. Pull down to retry.</div>';
+      '<div style="grid-column:span 2">' + failHTML("Couldn't reach the league database.", 'fighters') + '</div>';
     return;
   }
   allFighters = rows;
@@ -792,51 +862,110 @@ document.getElementById('f-search').addEventListener('input', function(){
 });
 document.getElementById('f-more').addEventListener('click', function(){ fShown += 40; renderFighters(); });
 
-/* ═══ FIGHTER SHEET ══════════════════════════════════════════════════ */
-var sheetOpen = false;
+/* ═══ SHEETS ═════════════════════════════════════════════════════════
+   One element, a stack of entries. A fighter can be opened from inside an
+   event, and the phone's back gesture unwinds one layer at a time instead
+   of dumping you out of the app — which is what a single-entry sheet did.
+   ═══════════════════════════════════════════════════════════════════════ */
+var sheetStack = [];
 
-document.addEventListener('click', function(e){
-  var link = e.target.closest('[data-slug]');
-  if(!link) return;
-  var slug = link.getAttribute('data-slug');
-  if(!slug) return;
-  // Only intercept a plain tap. Cmd/ctrl-click and middle-click still open
-  // the real page, and long-press-to-share still sees the href.
-  if(e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;
-  e.preventDefault();
-  openFighter(slug);
-});
+function sheetEl(){ return document.getElementById('sheet'); }
+
+function hashFor(entry){
+  return entry.kind === 'fighter' ? '#f/' + entry.id
+       : entry.kind === 'news'    ? '#n/' + entry.id
+       : entry.kind === 'event'   ? '#e/' + entry.id : '';
+}
+
+function openSheet(entry){
+  var el = sheetEl();
+  sheetStack.push(entry);
+  history.pushState({ depth: sheetStack.length }, '', hashFor(entry));
+  el.classList.add('live');
+  el.scrollTop = 0;
+  el.setAttribute('aria-hidden','false');
+  void el.offsetHeight;
+  el.classList.add('shown');
+  renderSheet(entry);
+}
 
 function closeSheet(){
-  if(!sheetOpen) return;
-  var el = document.getElementById('sheet');
-  sheetOpen = false;
+  var el = sheetEl();
+  sheetStack = [];
   el.classList.remove('shown');
   el.setAttribute('aria-hidden','true');
-  setTimeout(function(){ if(!sheetOpen) el.classList.remove('live'); }, 220);
+  setTimeout(function(){ if(!sheetStack.length) el.classList.remove('live'); }, 220);
 }
-window.addEventListener('popstate', function(){ if(sheetOpen) closeSheet(); });
 
-async function openFighter(slug){
+window.addEventListener('popstate', function(){
+  if(!sheetStack.length) return;
+  sheetStack.pop();
+  if(sheetStack.length){ sheetEl().scrollTop = 0; renderSheet(sheetStack[sheetStack.length - 1]); }
+  else closeSheet();
+});
+
+function backButton(){
+  return '<button class="back" data-sheet-back aria-label="Back"><svg><use href="#i-back"/></svg></button>';
+}
+document.addEventListener('click', function(e){
+  if(e.target.closest('[data-sheet-back]')) history.back();
+});
+
+/* a failure that says so, and offers a way out */
+function failHTML(msg, retryId){
+  return '<div class="fail"><p>'+esc(msg)+'</p>'
+    + '<button data-retry="'+esc(retryId)+'">Try again</button></div>';
+}
+var retryHandlers = {};
+document.addEventListener('click', function(e){
+  var b = e.target.closest('[data-retry]');
+  if(!b) return;
+  var fn = retryHandlers[b.getAttribute('data-retry')];
+  if(fn) fn();
+});
+
+function renderSheet(entry){
+  if(entry.kind === 'fighter') return renderFighter(entry.id);
+  if(entry.kind === 'news')    return renderArticle(entry.id);
+  if(entry.kind === 'event')   return renderEvent(entry.id);
+}
+
+/* what opens a sheet */
+document.addEventListener('click', function(e){
+  if(e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;
+  var f = e.target.closest('[data-slug]');
+  if(f && f.getAttribute('data-slug')){ e.preventDefault(); openSheet({kind:'fighter', id:f.getAttribute('data-slug')}); return; }
+  var n = e.target.closest('[data-news]');
+  if(n){ e.preventDefault(); openSheet({kind:'news', id:n.getAttribute('data-news')}); return; }
+  var ev = e.target.closest('[data-event]');
+  if(ev){ e.preventDefault(); openSheet({kind:'event', id:ev.getAttribute('data-event')}); return; }
+});
+
+/* ── fighter ── */
+async function renderFighter(slug){
+  var body = document.getElementById('sheet-body');
   var f = (allFighters || []).filter(function(x){ return x.slug === slug; })[0];
   if(!f){
     var got = await q("fighter_cards?select=id,display_name,slug,weight_class,headline_wins,"
-      + "headline_losses,headline_draws,headline_ko_wins,rank,is_champion,profile_photo_url,team,"
-      + "nickname,country,gym,stance,height,reach&slug=eq." + encodeURIComponent(slug) + "&limit=1");
-    f = got && got[0];
+      + "headline_losses,headline_draws,rank,is_champion,profile_photo_url,team,"
+      + "nickname,country,gym&slug=eq." + encodeURIComponent(slug) + "&limit=1");
+    if(!got){
+      retryHandlers['fighter'] = function(){ renderFighter(slug); };
+      body.innerHTML = '<div class="evhead">'+backButton()+'</div>' + failHTML("Couldn't load that fighter.", 'fighter');
+      return;
+    }
+    f = got[0];
   }
-  if(!f) return;
+  if(!f){ body.innerHTML = '<div class="evhead">'+backButton()+'</div>'
+    + '<div class="empty">That fighter no longer exists.</div>'; return; }
 
-  var el = document.getElementById('sheet');
-  var body = document.getElementById('sheet-body');
   var art = f.profile_photo_url
     ? '<span class="init">'+esc(initials(f.display_name))+'</span>'
       + '<img src="'+esc(f.profile_photo_url)+'" alt="" onerror="this.remove()">'
     : '<span class="init">'+esc(initials(f.display_name))+'</span>';
 
   body.innerHTML =
-      '<div class="hero">' + art
-    + '<button class="back" id="sheet-back" aria-label="Back"><svg><use href="#i-back"/></svg></button>'
+      '<div class="hero">' + art + backButton()
     + '<div class="name">'
     + (f.is_champion ? '<span class="bt">Champion</span>' : '')
     + '<h2>'+esc(f.display_name)+'</h2>'
@@ -850,44 +979,140 @@ async function openFighter(slug){
     + '</div>'
     + '<dl class="meta">'
     + '<dt>Division</dt><dd>'+esc(wc(f.weight_class))+'</dd>'
-    + (f.team ? '<dt>Team</dt><dd>'+esc(f.team)+'</dd>' : '<dt>Team</dt><dd>Free agent</dd>')
+    + '<dt>Team</dt><dd>'+esc(f.team || 'Free agent')+'</dd>'
     + (f.country ? '<dt>From</dt><dd>'+esc(f.country)+'</dd>' : '')
     + (f.gym ? '<dt>Gym</dt><dd>'+esc(f.gym)+'</dd>' : '')
     + '</dl>'
     + '<div class="lab"><b>Fights</b><i></i></div>'
     + '<div id="sheet-bouts"><div class="skel"></div><div class="skel" style="width:70%"></div></div>';
 
-  el.classList.add('live');
-  el.scrollTop = 0;
-  el.setAttribute('aria-hidden','false');
-  sheetOpen = true;
-  void el.offsetHeight;            // force layout so the transform transitions
-  el.classList.add('shown');
-  // A history entry, so the phone's back gesture closes the sheet instead of
-  // leaving the app.
-  history.pushState({ sheet: slug }, '', '#f/' + slug);
-  document.getElementById('sheet-back').addEventListener('click', function(){ history.back(); });
-
   loadBouts(f);
 }
 
 async function loadBouts(f){
   var el = document.getElementById('sheet-bouts');
-  if(!el) return;
-  if(!f.id){ el.innerHTML = '<div class="empty">No fight history.</div>'; return; }
+  if(!el || !f.id){ if(el) el.innerHTML = '<div class="empty">No fight history.</div>'; return; }
   var rows = await q("fighter_matches?select=won,method,opponent_name,opponent_slug,event_name,"
     + "event_date,status,is_title_fight&fighter_id=eq." + f.id
-    + "&status=eq.completed&order=event_date.desc.nullslast&limit=12");
+    + "&status=eq.completed&order=event_date.desc.nullslast&limit=15");
   if(!el.isConnected) return;
-  if(!rows || !rows.length){ el.innerHTML = '<div class="empty">No fights recorded yet.</div>'; return; }
+  if(!rows){
+    retryHandlers['bouts'] = function(){ loadBouts(f); };
+    el.innerHTML = failHTML("Couldn't load the fight history.", 'bouts'); return;
+  }
+  if(!rows.length){ el.innerHTML = '<div class="empty">No fights recorded yet.</div>'; return; }
   el.innerHTML = rows.map(function(b){
-    return '<div class="bout">'
+    return '<div class="bout"'+(b.opponent_slug ? ' data-slug="'+esc(b.opponent_slug)+'"' : '')+'>'
       + '<span class="wl '+(b.won?'w':'l')+'">'+(b.won?'W':'L')+'</span>'
       + '<div class="mid"><div class="op">'+esc(b.opponent_name || 'Unknown')+'</div>'
       + '<div class="ev">'+esc(b.event_name || '')+(b.event_date ? ' · '+esc(dstr(b.event_date)) : '')
       + (b.is_title_fight ? ' · title' : '')+'</div></div>'
       + '<span class="via">'+esc((b.method||'').toUpperCase())+'</span></div>';
   }).join('');
+}
+
+/* ── news article ── */
+async function renderArticle(id){
+  var body = document.getElementById('sheet-body');
+  var got = (newsCache || []).filter(function(n){ return String(n.id) === String(id); });
+  var n = got[0];
+  if(!n){
+    var rows = await q("news_public?select=id,kicker,headline,body,reporter,posted_at,graphic_url"
+      + "&id=eq." + encodeURIComponent(id) + "&limit=1");
+    if(!rows){
+      retryHandlers['article'] = function(){ renderArticle(id); };
+      body.innerHTML = '<div class="evhead">'+backButton()+'</div>' + failHTML("Couldn't load that story.", 'article');
+      return;
+    }
+    n = rows[0];
+  }
+  if(!n){ body.innerHTML = '<div class="evhead">'+backButton()+'</div>'
+    + '<div class="empty">That story is no longer posted.</div>'; return; }
+
+  var paras = String(n.body || '').split(/\n{2,}|\n/).filter(function(x){ return x.trim(); });
+  body.innerHTML =
+      '<div class="artgfx">'
+    + (n.graphic_url ? '<img src="'+esc(n.graphic_url)+'" alt="'+esc(n.headline)+'" onerror="this.remove()">' : '')
+    + backButton() + '</div>'
+    + (n.kicker ? '<div class="kick">'+esc(n.kicker)+'</div>' : '<div style="height:14px"></div>')
+    + '<h3 class="head">'+esc(n.headline)+'</h3>'
+    + '<div class="by"><span class="av2"></span><span class="who">'+esc(n.reporter || 'UBA')+'</span>'
+    + '<span class="when">'+esc(dstr(n.posted_at))+'</span></div>'
+    + '<div class="body">' + paras.map(function(t){ return '<p>'+esc(t)+'</p>'; }).join('') + '</div>'
+    + '<div class="foot">UBA Esports</div>';
+}
+
+/* ── the fight card for one event ── */
+var SEGS = { main_card:'Main card', undercard:'Undercard', prelim:'Prelims', prelims:'Prelims',
+  featured:'Featured', early_prelims:'Early prelims' };
+async function renderEvent(id){
+  var body = document.getElementById('sheet-body');
+  var evs = await q("events_public?select=id,name,type,status,event_date,stream_platform&id=eq."
+    + encodeURIComponent(id) + "&limit=1");
+  if(!evs){
+    retryHandlers['event'] = function(){ renderEvent(id); };
+    body.innerHTML = '<div class="evhead">'+backButton()+'</div>' + failHTML("Couldn't load that event.", 'event');
+    return;
+  }
+  var e = evs[0];
+  if(!e){ body.innerHTML = '<div class="evhead">'+backButton()+'</div>'
+    + '<div class="empty">That event is gone.</div>'; return; }
+
+  var when = new Date(e.event_date).toLocaleString('en-US',{ timeZone:'America/New_York',
+    weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+
+  body.innerHTML = '<div class="evhead">' + backButton()
+    + '<div style="height:34px"></div>'
+    + '<div class="kick">'+esc(e.status === 'completed' ? 'Result' : 'Fight card')+'</div>'
+    + '<h3>'+esc(e.name)+'</h3>'
+    + '<div class="when">'+esc(when)+' ET'+(e.stream_platform ? ' · '+esc(e.stream_platform) : '')+'</div>'
+    + '</div><div id="ev-bouts"><div class="skel"></div><div class="skel" style="width:70%"></div></div>';
+
+  loadCard(e);
+}
+
+async function loadCard(e){
+  var el = document.getElementById('ev-bouts');
+  if(!el) return;
+  // event_matches is card-gated: an unpublished card returns nothing at all,
+  // which is the point — so an empty result is "not announced", not an error.
+  var rows = await q("event_matches?select=bout_number,card_segment,weight_class,bout_level,"
+    + "is_title_fight,title_name,status,method,fighter_a_name,fighter_a_slug,fighter_b_name,"
+    + "fighter_b_slug,winner_corner&event_id=eq." + e.id + "&order=bout_number.asc");
+  if(!el.isConnected) return;
+  if(!rows){
+    retryHandlers['card'] = function(){ loadCard(e); };
+    el.innerHTML = failHTML("Couldn't load the card.", 'card'); return;
+  }
+  if(!rows.length){
+    el.innerHTML = '<div class="empty"><b>The card isn\'t announced yet.</b><br>'
+      + 'Bouts appear here the moment it is published.</div>'; return;
+  }
+  var order = ['main_card','featured','undercard','prelims'];
+  var groups = {};
+  rows.forEach(function(b){ (groups[b.card_segment || 'undercard'] = groups[b.card_segment || 'undercard'] || []).push(b); });
+  var keys = order.filter(function(k){ return groups[k]; })
+    .concat(Object.keys(groups).filter(function(k){ return order.indexOf(k) === -1; }));
+
+  el.innerHTML = keys.map(function(k){
+    return '<div class="seg">'+esc(SEGS[k] || k.replace(/_/g,' '))+'</div>'
+      + groups[k].map(function(b){
+          var done = b.status === 'completed' && b.winner_corner;
+          var aLost = done && b.winner_corner === 'b';
+          var bLost = done && b.winner_corner === 'a';
+          var midTxt = done ? (b.method || 'result').toUpperCase() : 'vs';
+          return '<div class="bout2'+(b.is_title_fight?' title':'')+'">'
+            + (b.is_title_fight ? '<span class="tag">'+esc(b.title_name || 'Title fight')+'</span>' : '')
+            + '<div class="vs">'
+            + '<span class="side'+(aLost?' lost':'')+'"'+(b.fighter_a_slug?' data-slug="'+esc(b.fighter_a_slug)+'"':'')+'>'+esc(b.fighter_a_name || 'TBA')+'</span>'
+            + '<span class="mid2'+(done?' done':'')+'">'+esc(midTxt)+'</span>'
+            + '<span class="side b'+(bLost?' lost':'')+'"'+(b.fighter_b_slug?' data-slug="'+esc(b.fighter_b_slug)+'"':'')+'>'+esc(b.fighter_b_name || 'TBA')+'</span>'
+            + '</div>'
+            + '<div class="wcl">'+esc(wc(b.weight_class) || 'Catch weight')
+            + (b.bout_level && b.bout_level !== 'pro' ? ' · '+esc(b.bout_level) : '')+'</div>'
+            + '</div>';
+        }).join('');
+  }).join('') + '<div class="foot">'+rows.length+' bouts</div>';
 }
 
 /* ═══ AUTH — Discord, via Supabase ═══════════════════════════════════
@@ -1046,7 +1271,9 @@ function installHint(){
   installHint();
 
   var hash = (location.hash || '').replace('#','');
-  if(hash.indexOf('f/') === 0){ goTab('fighters'); openFighter(hash.slice(2)); }
+  if(hash.indexOf('f/') === 0){ goTab('fighters'); openSheet({kind:'fighter', id:hash.slice(2)}); }
+  else if(hash.indexOf('n/') === 0){ goTab('news'); openSheet({kind:'news', id:hash.slice(2)}); }
+  else if(hash.indexOf('e/') === 0){ openSheet({kind:'event', id:hash.slice(2)}); }
   else if(panels[hash] && hash !== 'home') goTab(hash);
 
   await loadHome();
