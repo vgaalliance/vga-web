@@ -105,42 +105,54 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .livebar .go{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.13em;
   text-transform:uppercase;border:1px solid rgba(255,255,255,.5);border-radius:7px;padding:7px 11px;flex-shrink:0}
 
-/* ── the fan ── */
-/* No fixed height and nothing measured. The FRONT card sits in normal flow,
-   so the wrapper is exactly as tall as the card whatever the font does; only
-   the two cards behind it are absolutely positioned. Measuring offsetHeight
-   here ran before the webfont landed on a real phone, which left the wrapper
-   short and the card overlapping the countdown. */
-.fanw{position:relative;margin:6px 0 0;display:flow-root}
-.fc{position:absolute;top:0;left:50%;width:224px;margin-left:-112px;border-radius:15px;overflow:hidden;
-  background:linear-gradient(168deg,#F8F6FC 0%,#E5E0F2 100%);color:#16131F;cursor:pointer;
+/* ── the fan ─────────────────────────────────────────────────────────
+   The card is the WHITE PANEL. The poster is a separate printed thing
+   standing up out of it, anchored so its bottom edge sits on the panel's top
+   edge and the rest spills above the card — the same idea as the poster fan
+   on the standby screen, where the front one sits in normal flow and sets
+   the size while the ones behind lean out from underneath it.
+
+   So .fc must NOT clip: the poster deliberately overflows it. Only the panel
+   carries the radius, and the foil is the seam between the two. */
+/* --lift is the room the posters stand up into. The front card is in normal
+   flow so the padding puts it below that room automatically — but the two
+   leaning cards are ABSOLUTE, and padding does not move an absolutely
+   positioned child. Their top has to carry --lift itself or their posters
+   anchor to the very top of the box and shoot straight through the header. */
+.fanw{position:relative;margin:4px 0 0;display:flow-root;--lift:150px;padding-top:var(--lift)}
+.fc{position:absolute;top:0;left:50%;width:216px;margin-left:-108px;
+  border-radius:0 0 14px 14px;background:linear-gradient(168deg,#F8F6FC 0%,#E5E0F2 100%);
+  color:#16131F;cursor:pointer;
   transition:transform .34s cubic-bezier(.34,1.3,.5,1),opacity .34s}
-.fc .foil{height:5px;background:linear-gradient(90deg,#F5C842,#EC4899,#7B2FFF,#22D3EE,#F5C842)}
-.fc .art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
-.fc .art::after{z-index:2}
-.fc .past{position:absolute;right:9px;top:9px;z-index:3;font-family:'Space Mono',monospace;
-  font-size:7px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#EDEAF6;
-  background:rgba(10,8,20,.72);padding:3px 7px;border-radius:3px}
-.fc .art{height:104px;position:relative;overflow:hidden;background:
-  radial-gradient(92% 122% at 24% 8%,rgba(123,47,255,.55),transparent 62%),
-  radial-gradient(80% 110% at 86% 34%,rgba(236,72,153,.34),transparent 58%),
-  linear-gradient(160deg,#2A1650,#120E22)}
-.fc .art::after{content:'';position:absolute;inset:0;
+.fc .poster{position:absolute;left:-2px;right:-2px;bottom:100%;display:block;width:calc(100% + 4px);
+  height:auto;border-radius:6px 6px 0 0;
+  filter:drop-shadow(0 10px 22px rgba(6,4,20,.6))}
+/* No poster yet: the same silhouette, drawn rather than photographed, so a
+   card without art is short of a picture and not short of a shape. */
+.fc .noposter{position:absolute;left:-2px;right:-2px;bottom:100%;height:140px;border-radius:6px 6px 0 0;
+  background:radial-gradient(92% 122% at 24% 8%,rgba(123,47,255,.55),transparent 62%),
+    radial-gradient(80% 110% at 86% 34%,rgba(236,72,153,.34),transparent 58%),
+    linear-gradient(160deg,#2A1650,#120E22);
+  box-shadow:0 10px 22px rgba(6,4,20,.6);overflow:hidden;
+  display:flex;align-items:center;justify-content:center}
+.fc .noposter::after{content:'';position:absolute;inset:0;
   background:repeating-linear-gradient(0deg,transparent 0 2px,rgba(0,0,0,.16) 2px 4px)}
-.fc .in{padding:12px 14px 14px}
+.fc .noposter b{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:.06em;
+  color:rgba(200,185,240,.3);position:relative;z-index:2}
+.fc .past{position:absolute;right:6px;top:-132px;z-index:4;font-family:'Space Mono',monospace;
+  font-size:7px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#EDEAF6;
+  background:rgba(10,8,20,.78);padding:3px 7px;border-radius:3px}
+.fc .foil{height:4px;background:linear-gradient(90deg,#F5C842,#EC4899,#7B2FFF,#22D3EE,#F5C842)}
+.fc .in{padding:11px 13px 13px}
 .fc .rar{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.15em;
   text-transform:uppercase;padding:3px 7px;border-radius:3px;display:inline-block;
   color:#7A5A00;background:linear-gradient(90deg,#FBEFC2,#F3DE94);border:1px solid #E2C871}
-.fc .nm{font-family:'Bebas Neue',sans-serif;font-size:25px;line-height:.98;letter-spacing:.02em;margin-top:9px}
-.fc .mt{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.08em;color:#5C5670;margin-top:7px}
+.fc .nm{font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:.98;letter-spacing:.02em;margin-top:8px}
+.fc .mt{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.08em;color:#5C5670;margin-top:6px}
 .fc[data-pos="0"]{position:relative;top:0;left:auto;margin:0 auto;z-index:3;transform:none;opacity:1;
-  box-shadow:0 0 0 1px rgba(255,255,255,.18),0 20px 46px rgba(6,4,20,.66)}
-.fc[data-pos="1"]{top:4px;z-index:2;transform:rotate(6.5deg) translateX(48px) scale(.94);opacity:.72;
-  box-shadow:0 12px 30px rgba(6,4,20,.55)}
-.fc[data-pos="2"]{top:9px;z-index:1;transform:rotate(-7deg) translateX(-50px) scale(.9);opacity:.54;
-  box-shadow:0 12px 30px rgba(6,4,20,.55)}
-/* The wrapper is sized by the FRONT card, but the two behind it are rotated,
-   so their lower corners hang below it. The dots need to clear that. */
+  box-shadow:0 16px 34px rgba(6,4,20,.6)}
+.fc[data-pos="1"]{top:calc(var(--lift) + 10px);z-index:2;transform:rotate(6.5deg) translateX(50px) scale(.9);opacity:.66}
+.fc[data-pos="2"]{top:calc(var(--lift) + 16px);z-index:1;transform:rotate(-7deg) translateX(-52px) scale(.86);opacity:.46}
 .dotsn{display:flex;gap:6px;justify-content:center;margin:20px 0 16px;min-height:6px}
 .dotsn i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.22);display:block;transition:background .2s}
 .dotsn i.on{background:#A78BFA;box-shadow:0 0 8px rgba(167,139,250,.9)}
@@ -783,10 +795,12 @@ function renderFan(){
     var tag = done ? 'Result' : (i === 0 ? 'Next event' : (e.type === 'fight_night' ? 'Fight night' : 'Event'));
     var poster = posters[e.id];
     return '<div class="fc" data-i="'+i+'" data-pos="'+i+'" data-ev-id="'+esc(e.id)+'">'
-      + '<div class="foil"></div><div class="art">'
-      + (poster ? '<img src="'+esc(poster.url)+'" alt="" onerror="this.remove()">' : '')
+      + (poster
+          ? '<img class="poster" src="'+esc(poster.url)+'" alt="" '
+            + 'onerror="this.className=\'noposter\';this.replaceWith(Object.assign(document.createElement(\'div\'),{className:\'noposter\'}))">'
+          : '<div class="noposter"><b>'+esc((e.name||'?').slice(0,3).toUpperCase())+'</b></div>')
       + (done ? '<span class="past">Final</span>' : '')
-      + '</div><div class="in">'
+      + '<div class="foil"></div><div class="in">'
       + '<span class="rar">'+esc(tag)+'</span>'
       + '<div class="nm">'+esc(e.name)+'</div>'
       + '<div class="mt">'+esc(when)+' ET</div>'
