@@ -475,6 +475,20 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .bout2 .wcl{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;
   color:#7E7699;margin-top:9px}
 
+/* the pool on a bout — pari-mutuel, so the multiplier is pool / that side */
+.pool{margin-top:11px;padding-top:10px;border-top:1px solid rgba(255,255,255,.09)}
+.pool .bar2{height:6px;border-radius:4px;overflow:hidden;display:flex;background:rgba(255,255,255,.1)}
+.pool .bar2 i{display:block;height:100%}
+.pool .bar2 .a{background:#A78BFA}
+.pool .bar2 .b{background:#F5C842}
+.pool .nums{display:flex;align-items:baseline;gap:8px;margin-top:7px;
+  font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.06em}
+.pool .nums .la{color:#C3A6FF}
+.pool .nums .lb{color:#F5C842;margin-left:auto;text-align:right}
+.pool .nums .mid3{color:#7E7699;font-size:8px;letter-spacing:.11em;text-transform:uppercase}
+.pool .none{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:#6E6688}
+
 /* something went wrong, with a way out */
 .fail{margin:0 18px;padding:20px 16px;text-align:center;border:1px dashed rgba(255,255,255,.16);
   border-radius:13px}
@@ -1295,6 +1309,16 @@ async function loadCard(e){
     el.innerHTML = '<div class="empty"><b>The card isn\'t announced yet.</b><br>'
       + 'Bouts appear here the moment it is published.</div>'; return;
   }
+  // Pools come from bet_pools_public, which only carries OPEN and LOCKED
+  // markets — locked on purpose, because a market locks when the bout starts
+  // and that is exactly when the pool is most worth showing. Settled markets
+  // drop out, so this is empty except around a live card. That is correct,
+  // not a failure, so nothing is rendered when there is nothing.
+  var pools = {};
+  var poolRows = await q("bet_pools_public?select=match_id,side_a,side_b,total_a,total_b,pool,bets"
+    + "&event_id=eq." + e.id);
+  if(poolRows) poolRows.forEach(function(r){ pools[r.match_id] = r; });
+
   var order = ['main_card','featured','undercard','prelims'];
   var groups = {};
   rows.forEach(function(b){ (groups[b.card_segment || 'undercard'] = groups[b.card_segment || 'undercard'] || []).push(b); });
@@ -1320,9 +1344,30 @@ async function loadCard(e){
             + '</div>'
             + '<div class="wcl">'+esc(wc(b.weight_class) || 'Catch weight')
             + (b.bout_level && b.bout_level !== 'pro' ? ' · '+esc(b.bout_level) : '')+'</div>'
+            + poolHTML(pools[b.match_id])
             + '</div>';
         }).join('');
   }).join('') + '<div class="foot">'+rows.length+' bouts</div>';
+}
+
+/* Pari-mutuel with no rake: back a side and you take a share of the WHOLE
+   pot, so the multiplier is pool / that side's total. It moves as people
+   bet, which is why it is drawn as a split bar rather than fixed odds. */
+function poolHTML(p){
+  if(!p) return '';
+  var a = Number(p.total_a || 0), b = Number(p.total_b || 0), tot = a + b;
+  if(!tot){
+    return '<div class="pool"><div class="none">Betting open · no bets yet</div></div>';
+  }
+  var pa = Math.round(a / tot * 100);
+  var mult = function(side){ return side > 0 ? '×' + (tot / side).toFixed(2) : '—'; };
+  return '<div class="pool">'
+    + '<div class="bar2"><i class="a" style="width:'+pa+'%"></i><i class="b" style="width:'+(100-pa)+'%"></i></div>'
+    + '<div class="nums">'
+    + '<span class="la">'+a.toLocaleString()+' · '+mult(a)+'</span>'
+    + '<span class="mid3">'+Number(p.bets||0)+' bets · '+tot.toLocaleString()+' VC</span>'
+    + '<span class="lb">'+mult(b)+' · '+b.toLocaleString()+'</span>'
+    + '</div></div>';
 }
 
 /* ═══ AUTH — Discord, via Supabase ═══════════════════════════════════
@@ -1605,6 +1650,38 @@ function installHint(){
   });
 }
 
+/* TEMPORARY — open the app with ?diag to print what the device actually
+   reports. The tab bar has been "not at the bottom" through three fixes and
+   every one of them was a guess; this replaces guessing with numbers.
+   Delete this block once the bar is right. */
+function showDiag(){
+  if(location.search.indexOf('diag') === -1) return;
+  var probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;bottom:0;height:0;padding-bottom:env(safe-area-inset-bottom)';
+  document.body.appendChild(probe);
+  var inset = probe.getBoundingClientRect().height;
+  probe.remove();
+  var bar = document.querySelector('.bar').getBoundingClientRect();
+  var standalone = window.matchMedia('(display-mode: standalone)').matches || !!navigator.standalone;
+  var d = document.createElement('div');
+  d.style.cssText = 'position:fixed;left:8px;right:8px;bottom:70px;z-index:99;'
+    + 'background:#000;color:#0f0;font:11px/1.5 monospace;padding:10px;border-radius:8px;'
+    + 'white-space:pre;border:1px solid #0f0';
+  d.textContent =
+      'standalone   ' + standalone + '\n'
+    + 'innerHeight  ' + window.innerHeight + '\n'
+    + 'screen.h     ' + screen.height + '\n'
+    + 'visualVP.h   ' + (window.visualViewport ? Math.round(window.visualViewport.height) : 'n/a') + '\n'
+    + 'safe-bottom  ' + inset + '\n'
+    + 'bar.top      ' + Math.round(bar.top) + '\n'
+    + 'bar.bottom   ' + Math.round(bar.bottom) + '\n'
+    + 'bar.height   ' + Math.round(bar.height) + '\n'
+    + 'GAP BELOW    ' + Math.round(window.innerHeight - bar.bottom) + '\n'
+    + 'dpr          ' + window.devicePixelRatio;
+  d.addEventListener('click', function(){ d.remove(); });
+  document.body.appendChild(d);
+}
+
 /* ═══ boot ═══════════════════════════════════════════════════════════ */
 (async function(){
   loadSession();
@@ -1615,6 +1692,7 @@ function installHint(){
   renderCards();
   renderJoinSlot();
   installHint();
+  showDiag();
 
   var hash = (location.hash || '').replace('#','');
   if(hash.indexOf('f/') === 0){ goTab('fighters'); openSheet({kind:'fighter', id:hash.slice(2)}); }
