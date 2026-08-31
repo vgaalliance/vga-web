@@ -12,11 +12,16 @@
    opens one is redirected straight to the profile; a crawler stops at the
    tags and renders the card.
 
-   Run:  node app/build-fighter-pages.mjs        (from the vga-web root)
-   Re-run whenever records or champions change — the tags are a snapshot.
+   Run:   node app/build-fighter-pages.mjs           writes the files
+   Check: node app/build-fighter-pages.mjs --check   reports drift, writes nothing
+
+   The tags are a SNAPSHOT. A fighter wins on Saturday and their page keeps
+   unfurling the old record until this is re-run, with nothing anywhere to say
+   so — which is why --check exists. It exits 1 when a rebuild would change
+   something, so it can sit in a pre-push check instead of being remembered.
    ═══════════════════════════════════════════════════════════════════════ */
 
-import { writeFile, mkdir, readdir, unlink } from 'node:fs/promises';
+import { writeFile, readFile, mkdir, readdir, unlink } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -119,6 +124,32 @@ const titles = await get(
 );
 const belts = {};
 for (const t of titles) if (t.holder_slug) belts[t.holder_slug] = (belts[t.holder_slug] ?? 0) + 1;
+
+const CHECK = process.argv.includes('--check');
+
+if (CHECK) {
+  let missing = 0, stale = 0, orphan = 0;
+  const expected = new Set();
+  for (const f of fighters) {
+    if (!f.slug) continue;
+    expected.add(`${f.slug}.html`);
+    const want = page(f, belts[f.slug] ?? 0);
+    let have;
+    try { have = await readFile(join(OUT, `${f.slug}.html`), 'utf8'); }
+    catch { missing++; console.log(`MISSING  ${f.slug}`); continue; }
+    if (have !== want) { stale++; console.log(`STALE    ${f.slug}`); }
+  }
+  for (const existing of await readdir(OUT).catch(() => [])) {
+    if (existing.endsWith('.html') && !expected.has(existing)) {
+      orphan++; console.log(`ORPHAN   ${existing}`);
+    }
+  }
+  const bad = missing + stale + orphan;
+  console.log(bad
+    ? `\nDRIFT: ${missing} missing, ${stale} stale, ${orphan} orphaned — run without --check`
+    : `OK — all ${expected.size} fighter pages match live data`);
+  process.exit(bad ? 1 : 0);
+}
 
 await mkdir(OUT, { recursive: true });
 
