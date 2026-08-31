@@ -135,13 +135,13 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .fc .stage{position:absolute;left:0;right:0;bottom:calc(100% - 26px);
   height:calc(var(--peek) + 26px);z-index:-1;pointer-events:none}
 
-/* posters: up to three, fanned, only their tops visible */
-.fc .stage .pz{position:absolute;top:0;bottom:0;left:50%;width:78px;margin-left:-39px;
-  border-radius:5px 5px 0 0;background-size:cover;background-position:50% 22%;
-  background-color:#2A2450;box-shadow:0 -3px 12px rgba(4,2,14,.55)}
-.fc .stage .pz.p0{z-index:3}
-.fc .stage .pz.p1{z-index:2;transform:translateX(48px) rotate(6deg)}
-.fc .stage .pz.p2{z-index:1;transform:translateX(-48px) rotate(-6deg)}
+/* The peek is a SLIDESHOW, not a row: one slide at a time, crossfading —
+   poster 1, poster 2, poster 3, then the main event's two corners. */
+.fc .stage .sl{position:absolute;inset:0;opacity:0;transition:opacity .55s ease}
+.fc .stage .sl.on{opacity:1}
+.fc .stage .pz{position:absolute;top:0;bottom:0;left:50%;width:152px;margin-left:-76px;
+  border-radius:6px 6px 0 0;background-size:cover;background-position:50% 22%;
+  background-color:#2A2450;box-shadow:0 -3px 14px rgba(4,2,14,.6)}
 
 /* no poster: the two corners peek instead, nothing behind them */
 .fc .stage .cut{position:absolute;bottom:0;height:100%;width:auto;
@@ -919,9 +919,12 @@ async function loadPosters(ids){
   if(!ids.length) return;
   var rows = await q("graphic_assets?select=key,url&key=like.card-*");
   if(!rows) return;
-  // Up to THREE per event, leaning like the standby fan. Ordered so the
-  // strongest cut leads; anything unrecognised sorts last rather than being
-  // dropped, because a poster nobody named is still a poster.
+  // Every poster is stored TWICE: the animation under its own key, and a
+  // still under `<key>-thumb`. Prefer the thumb — the animations are 4-11MB
+  // each and the home screen drew three of them, which is 22MB to paint a
+  // postage stamp and did not arrive before somebody had scrolled past. Fall
+  // back to the full file when a thumb has not been rendered yet, so an event
+  // from before thumbnails existed still shows its poster.
   var rank = { faceoff:0, 'faceoff-0':1, 'faceoff-1':2, stack:3, reel:4 };
   var found = {};
   rows.forEach(function(r){
@@ -929,11 +932,20 @@ async function loadPosters(ids){
     if(!m) return;
     var id = m[1], variant = m[2];
     if(ids.indexOf(id) === -1) return;
-    (found[id] = found[id] || []).push({ url:r.url, score: rank[variant] != null ? rank[variant] : 9 });
+    var isThumb = /-thumb$/.test(variant);
+    if(isThumb) variant = variant.slice(0, -6);
+    var bag = found[id] = found[id] || {};
+    var slot = bag[variant] = bag[variant] ||
+      { score: rank[variant] != null ? rank[variant] : 9 };
+    if(isThumb) slot.thumb = r.url; else slot.full = r.url;
   });
   Object.keys(found).forEach(function(id){
-    posters[id] = found[id].sort(function(a,b){ return a.score - b.score; })
-                           .slice(0,3).map(function(x){ return x.url; });
+    posters[id] = Object.keys(found[id])
+      .map(function(v){ return found[id][v]; })
+      .sort(function(x, y){ return x.score - y.score; })
+      .slice(0, 3)
+      .map(function(x){ return x.thumb || x.full; })
+      .filter(Boolean);
   });
 }
 
@@ -980,24 +992,55 @@ function silhouetteSwap(img){
   img.outerHTML = SILHOUETTE.replace('class="sil"', 'class="sil ' + side + '"');
 }
 
-function stageHTML(eventId){
-  var pz = posters[eventId];
-  if(pz && pz.length){
-    return '<div class="stage">' + pz.slice(0,3).map(function(u, i){
-      return '<div class="pz p' + i + '" style="background-image:url(&quot;'
-           + esc(u).replace(/"/g,'%22') + '&quot;)"></div>';
-    }).join('') + '</div>';
-  }
+function faceoffSlide(eventId){
   var f = faceoffs[eventId];
-  if(f){
-    return '<div class="stage">'
-      + cutCorner(f.a, 'l') + cutCorner(f.b, 'r')
-      + '<span class="vsx">VS</span>'
-      + '<span class="cn l">' + esc(f.an || '') + '</span>'
-      + '<span class="cn r">' + esc(f.bn || '') + '</span>'
-      + '</div>';
-  }
-  return '<div class="stage"></div>';
+  if(!f) return '';
+  return '<div class="sl">'
+    + cutCorner(f.a, 'l') + cutCorner(f.b, 'r')
+    + '<span class="vsx">VS</span>'
+    + '<span class="cn l">' + esc(f.an || '') + '</span>'
+    + '<span class="cn r">' + esc(f.bn || '') + '</span>'
+    + '</div>';
+}
+
+/* What stands above the card, as slides that cycle: the event's posters
+   first, because somebody made those on purpose, then its main event — so
+   every card ends on who is actually fighting. No poster at all and the
+   faceoff is simply the only slide.
+
+   The stage sits at z-index -1 with its bottom edge 26px inside the card, so
+   all of it is BEHIND the white panel and cut off cleanly by it. */
+function stageHTML(eventId){
+  var slides = (posters[eventId] || []).slice(0, 3).map(function(u){
+    return '<div class="sl"><div class="pz" style="background-image:url(&quot;'
+         + esc(u).replace(/"/g, '%22') + '&quot;)"></div></div>';
+  });
+  var fo = faceoffSlide(eventId);
+  if(fo) slides.push(fo);
+  if(!slides.length) return '<div class="stage"></div>';
+  return '<div class="stage">'
+    + slides.join('').replace('class="sl"', 'class="sl on"') + '</div>';
+}
+
+/* Only the FRONT card cycles. The other two sit at 46-66% opacity and rotated
+   away; animating those is motion at the edge of vision that nobody asked
+   for. One interval for the whole fan, cleared and restarted on every render
+   so rotating the hand cannot leave a second timer running. */
+var stageTimer = null;
+function cycleStage(){
+  clearInterval(stageTimer);
+  stageTimer = null;
+  var stage = document.querySelector('#fan .fc[data-pos="0"] .stage');
+  if(!stage) return;
+  var slides = stage.querySelectorAll('.sl');
+  if(slides.length < 2) return;              // one slide is not a slideshow
+  var at = 0;
+  stageTimer = setInterval(function(){
+    if(!document.body.contains(stage)){ clearInterval(stageTimer); stageTimer = null; return; }
+    slides[at].classList.remove('on');
+    at = (at + 1) % slides.length;
+    slides[at].classList.add('on');
+  }, 3600);
 }
 
 function renderFan(keepOrder){
@@ -1031,6 +1074,7 @@ function renderFan(keepOrder){
     ? fanEvents.map(function(_,i){ return '<i class="'+(i===fanOrder[0]?'on':'')+'"></i>'; }).join('')
     : '';
   setCountdown(fanEvents[fanOrder[0]]);
+  cycleStage();
 }
 
 document.getElementById('fan').addEventListener('click', function(e){
