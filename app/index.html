@@ -933,7 +933,7 @@ async function loadFaceoffs(ids){
 
 async function loadPosters(ids){
   if(!ids.length) return;
-  var rows = await q("graphic_assets?select=key,url&key=like.card-*");
+  var rows = await q("graphic_assets?select=key,url&or=(key.like.card-*,key.like.poster-*)");
   if(!rows) return;
   // Every poster is stored TWICE: the animation under its own key, and a
   // still under `<key>-thumb`. Prefer the thumb — the animations are 4-11MB
@@ -941,18 +941,25 @@ async function loadPosters(ids){
   // postage stamp and did not arrive before somebody had scrolled past. Fall
   // back to the full file when a thumb has not been rendered yet, so an event
   // from before thumbnails existed still shows its poster.
-  var rank = { faceoff:0, 'faceoff-0':1, 'faceoff-1':2, stack:3, reel:4 };
+  // TWO different things are called a poster here and they are not the same.
+  // `poster-<event>-<n>` is an ACTUAL fight poster somebody designed for the
+  // night. `card-<event>-<variant>` is a graphic the renderer drew — the
+  // faceoff, the stack, the reel. The real poster wins every time and the
+  // renders are only what fills the fan when nobody made one, which is why
+  // the real ones sort ahead of every card variant.
+  var rank = { faceoff:10, 'faceoff-0':11, 'faceoff-1':12, stack:13, reel:14 };
   var found = {};
   rows.forEach(function(r){
-    var m = /^card-([0-9a-f-]{36})-(.+)$/.exec(r.key);
+    var m = /^(card|poster)-([0-9a-f-]{36})-(.+)$/.exec(r.key);
     if(!m) return;
-    var id = m[1], variant = m[2];
+    var kind = m[1], id = m[2], variant = m[3];
     if(ids.indexOf(id) === -1) return;
     var isThumb = /-thumb$/.test(variant);
     if(isThumb) variant = variant.slice(0, -6);
     var bag = found[id] = found[id] || {};
-    var slot = bag[variant] = bag[variant] ||
-      { score: rank[variant] != null ? rank[variant] : 9 };
+    var slot = bag[kind + ':' + variant] = bag[kind + ':' + variant] ||
+      { score: kind === 'poster' ? (parseInt(variant, 10) || 9)
+                                 : (rank[variant] != null ? rank[variant] : 19) };
     if(isThumb) slot.thumb = r.url; else slot.full = r.url;
   });
   Object.keys(found).forEach(function(id){
