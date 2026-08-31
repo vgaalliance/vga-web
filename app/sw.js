@@ -15,7 +15,7 @@
    old app until they clear site data.
    ═══════════════════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'uba-v3';
+const CACHE_VERSION = 'uba-v5';
 const SHELL = [
   './',
   './index.html',

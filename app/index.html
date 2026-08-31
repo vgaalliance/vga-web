@@ -31,11 +31,17 @@
    raised in the centre. Design locked with founder 2026-08-30.
    ═══════════════════════════════════════════════════════════════════════ */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overflow:hidden}
-body{
+/* The ground lives on html, not body, for two reasons. Safari paints the
+   strip past the body — the home-indicator area and any rubber-band
+   overscroll — from html, and an unpainted html shows there as a WHITE BAR.
+   And because the tab panels are the things that scroll, html never moves,
+   so the gradient stays put without background-attachment:fixed, which is
+   unreliable on iOS. Body stays transparent so this shows through. */
+html{height:100%;background:#0C0916;
+  background-image:linear-gradient(180deg,#3B3568 0%,#2A2450 26%,#191434 55%,#0C0916 100%);
+  background-repeat:no-repeat;background-size:100% 100%}
+body{height:100%;overflow:hidden;background:transparent;
   color:#EDEAF6;font-family:'Barlow',system-ui,sans-serif;-webkit-font-smoothing:antialiased;
-  background:linear-gradient(180deg,#3B3568 0%,#2A2450 26%,#191434 55%,#0C0916 100%);
-  background-attachment:fixed;
 }
 a{color:inherit;text-decoration:none}
 button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
@@ -86,8 +92,13 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   text-transform:uppercase;border:1px solid rgba(255,255,255,.5);border-radius:7px;padding:7px 11px;flex-shrink:0}
 
 /* ── the fan ── */
-.fanw{position:relative;height:280px;margin:6px 0 0;transition:height .2s}
-.fc{position:absolute;left:50%;width:224px;margin-left:-112px;border-radius:15px;overflow:hidden;
+/* No fixed height and nothing measured. The FRONT card sits in normal flow,
+   so the wrapper is exactly as tall as the card whatever the font does; only
+   the two cards behind it are absolutely positioned. Measuring offsetHeight
+   here ran before the webfont landed on a real phone, which left the wrapper
+   short and the card overlapping the countdown. */
+.fanw{position:relative;margin:6px 0 0;display:flow-root}
+.fc{position:absolute;top:0;left:50%;width:224px;margin-left:-112px;border-radius:15px;overflow:hidden;
   background:linear-gradient(168deg,#F8F6FC 0%,#E5E0F2 100%);color:#16131F;cursor:pointer;
   transition:transform .34s cubic-bezier(.34,1.3,.5,1),opacity .34s}
 .fc .foil{height:5px;background:linear-gradient(90deg,#F5C842,#EC4899,#7B2FFF,#22D3EE,#F5C842)}
@@ -103,7 +114,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   color:#7A5A00;background:linear-gradient(90deg,#FBEFC2,#F3DE94);border:1px solid #E2C871}
 .fc .nm{font-family:'Bebas Neue',sans-serif;font-size:25px;line-height:.98;letter-spacing:.02em;margin-top:9px}
 .fc .mt{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.08em;color:#5C5670;margin-top:7px}
-.fc[data-pos="0"]{top:0;z-index:3;transform:none;opacity:1;
+.fc[data-pos="0"]{position:relative;top:0;left:auto;margin:0 auto;z-index:3;transform:none;opacity:1;
   box-shadow:0 0 0 1px rgba(255,255,255,.18),0 20px 46px rgba(6,4,20,.66)}
 .fc[data-pos="1"]{top:4px;z-index:2;transform:rotate(6.5deg) translateX(48px) scale(.94);opacity:.72;
   box-shadow:0 12px 30px rgba(6,4,20,.55)}
@@ -449,7 +460,6 @@ async function loadHome(){
 function renderFan(){
   var fan = document.getElementById('fan'), dots = document.getElementById('dots');
   if(!fanEvents.length){
-    fan.style.height = 'auto';
     fan.innerHTML = '<div class="empty" style="margin:10px 18px">No events scheduled yet.<br>Check back soon.</div>';
     dots.innerHTML = '';
     document.getElementById('cds').style.display = 'none';
@@ -470,22 +480,8 @@ function renderFan(){
   dots.innerHTML = fanEvents.length > 1
     ? fanEvents.map(function(_,i){ return '<i class="'+(i===0?'on':'')+'"></i>'; }).join('')
     : '';
-  sizeFan();
   setCountdown(fanEvents[0]);
 }
-
-/* The cards are absolutely positioned, so the wrapper needs an explicit
-   height — and with only one scheduled event a fixed 280px leaves a hole. */
-function sizeFan(){
-  var fan = document.getElementById('fan');
-  var cards = fan.querySelectorAll('.fc');
-  if(!cards.length) return;
-  var tall = 0;
-  cards.forEach(function(c){ tall = Math.max(tall, c.offsetHeight); });
-  fan.style.height = (tall + (cards.length > 1 ? 22 : 10)) + 'px';
-}
-window.addEventListener('resize', sizeFan);
-document.fonts && document.fonts.ready.then(sizeFan);
 
 document.getElementById('fan').addEventListener('click', function(e){
   var card = e.target.closest('.fc'); if(!card) return;
