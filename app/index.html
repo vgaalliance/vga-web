@@ -1984,7 +1984,24 @@ function showDiag(){
   loadFighters();
 
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('./sw.js').catch(function(e){ console.warn('[uba] sw', e); });
+    /* The shell is cache-first, so a visit shows the version that was stored
+       LAST time — you always see one build behind, and closing the app once
+       is not enough because the new worker only takes over after that load.
+       skipWaiting + claim in sw.js hand control over immediately; this
+       reloads the page the moment that happens so what is on screen is what
+       was just deployed. Guarded so it can only ever fire once per load. */
+    var swReloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function(){
+      if(swReloaded) return;
+      swReloaded = true;
+      location.reload();
+    });
+    navigator.serviceWorker.register('./sw.js').then(function(reg){
+      // and check for a new build every time the app is brought forward
+      document.addEventListener('visibilitychange', function(){
+        if(document.visibilityState === 'visible') reg.update().catch(function(){});
+      });
+    }).catch(function(e){ console.warn('[uba] sw', e); });
   }
 })();
 </script>
