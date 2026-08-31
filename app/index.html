@@ -73,7 +73,7 @@ body{height:100%;overflow:hidden;background:#1A1533;
    such gap. Both html and body also carry the solid ground as a floor, so
    even if this element fails to paint, nothing is ever white. */
 #ground{position:fixed;left:0;right:0;top:0;height:100dvh;min-height:100%;z-index:0;
-  pointer-events:none;
+  pointer-events:none;opacity:.995;   /* same Safari 26 workaround — see .bar */
   background:linear-gradient(180deg,#3B3568 0%,#2A2450 26%,#191434 55%,#0C0916 100%)}
 .panel{z-index:1}
 a{color:inherit;text-decoration:none}
@@ -705,7 +705,18 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .bar{position:fixed;left:0;right:0;bottom:calc(-1 * var(--barpush, 0px));
   display:flex;align-items:stretch;
   background:#1A1533;border-top:1px solid rgba(255,255,255,.16);
-  padding-bottom:env(safe-area-inset-bottom,0px);z-index:20}
+  padding-bottom:env(safe-area-inset-bottom,0px);z-index:20;
+  /* THE SAFARI 26 FIXED-OVERLAY BUG, and the documented workaround for it.
+     WebKit 26 composites a position:fixed element with a FULLY OPAQUE
+     background down a different path from a transparent one, and that path
+     leaves a gap at the bottom of the screen — the element reports the right
+     box in Web Inspector and paints short. Opacity below 1 puts it back on the
+     transparent path and it covers the screen. .995 is visually identical to
+     1 and is the whole fix.
+     Apple fixed this in Safari 26.1 ("Fixed a bottom gap appearing on layouts
+     with viewport-sized fixed containers on iOS", 3 Nov 2025), so this line is
+     only load-bearing on 26.0. It costs nothing to leave in. */
+  opacity:.995}
 .bar button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
   height:54px;color:#8B83AC}
 .bar button.on{color:#EDEAF6}
