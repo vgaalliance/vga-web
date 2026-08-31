@@ -285,37 +285,30 @@
   }
 
   /* ── the playoff calendar ──────────────────────────────────────────────
-     RESCHEDULED with the founder 2026-08-30: the bracket now runs FRIDAY,
-     SATURDAY AND SUNDAY of two weekends — Sep 4-5-6 and Sep 11-12-13 — instead
-     of Friday/Saturday only. Six bracket nights for ten bracket matches, so
-     every round gets room and nobody is asked to fight twice in a night except
-     once, on Sep 12.
+     RESCHEDULED with the founder 2026-08-30: FRIDAY, SATURDAY AND SUNDAY of
+     two weekends — Sep 4-5-6 and Sep 11-12-13 — instead of Friday/Saturday.
+     Both play-ins were fought on Aug 28, so six bracket nights carry ten
+     bracket matches and NO NIGHT RUNS A MATCH FED BY THE MATCH BEFORE IT: the
+     losers semi and the winners final share the Friday, the losers final has
+     the Saturday, the grand final has the Sunday to itself. Nobody in this
+     tournament is asked to fight twice in one evening.
 
-     The play-in is SPLIT across two nights and that is not a typo. PI2
-     (conference B, The 5 Great Kage v Ring Reapers) was played on Aug 28; PI1
-     (conference A, Sheath Elite v jUnC) was not, so it opens Sep 4. It can
-     share that night with W1 because W1 is seed 3 v seat 6 and seat 6 is the
-     conference B winner — already decided. W2 is the one that waits on it, and
-     it is on the Saturday.
+     Dates are here rather than in the DB because nothing is scheduled yet:
+     teams are unknown until each night is played. The graphic prefers REAL
+     rows the moment they exist in team_matches.
 
-     Ten bracket matches plus the two play-ins is twelve, and every night's
-     matches stay downstream of the nights before it — which is what `nights()`
-     returns and what the test checks. Dates are here rather than in the DB
-     because nothing is scheduled yet: teams are unknown until each night is
-     played. The graphic prefers REAL rows the moment they exist in
-     team_matches.
-
-     If the calendar moves, move it here, in docs/ubae-plan.md and in the
-     ubae_playoff_nights seed in db/001_schema.sql together — the bot asks
-     fighters off that table and check-code-drift.sh 18 compares the two. */
+     If the calendar moves, move it here, in docs/ubae-plan.md, in the
+     ubae_playoff_nights seed in db/001_schema.sql and in MATCHES in
+     bot/src/lib/playoff-path.js together — the bot asks fighters off that
+     table and labels their nights off that bracket. */
   const NIGHTS=[
-    { date:'2026-08-28', label:'PLAY-IN NIGHT',          ids:['PI2'] },
-    { date:'2026-09-04', label:'PLAY-IN + BRACKET OPENS', ids:['PI1','W1'] },
-    { date:'2026-09-05', label:'WINNERS R1 + FIRST SEMI', ids:['W2','S2'] },
-    { date:'2026-09-06', label:'SECOND SEMI + LOSERS R1', ids:['S1','L1'] },
-    { date:'2026-09-11', label:'LOSERS R2 + WINNERS FINAL', ids:['L2','WF'] },
-    { date:'2026-09-12', label:'ELIMINATION NIGHT',      ids:['LS','LF'] },
-    { date:'2026-09-13', label:'GRAND FINAL',            ids:['GF'] },
+    { date:'2026-08-28', label:'PLAY-IN NIGHT',   ids:['PI1','PI2'] },
+    { date:'2026-09-04', label:'WINNERS ROUND 1', ids:['W1','W2'] },
+    { date:'2026-09-05', label:'WINNERS SEMIS',   ids:['S1','S2'] },
+    { date:'2026-09-06', label:'LOSERS R1 + R2',  ids:['L1','L2'] },
+    { date:'2026-09-11', label:'LOSERS SEMI + WINNERS FINAL', ids:['LS','WF'] },
+    { date:'2026-09-12', label:'LOSERS FINAL',    ids:['LF'] },
+    { date:'2026-09-13', label:'GRAND FINAL',     ids:['GF'] },
   ]
 
   // The calendar with each night's matches named, and every match checked

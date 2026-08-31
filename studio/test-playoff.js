@@ -165,7 +165,7 @@ console.log('\nUBAe playoff picture\n')
 {
   const b=P.bracket(P.picture(SUMMER))
   const ns=P.nights(b)
-  eq(ns.map(n=>n.ms.length),[1,2,2,2,2,2,1],'the played play-in, then two matches a night until the grand final stands alone')
+  eq(ns.map(n=>n.ms.length),[2,2,2,2,2,1,1],'both play-ins, then two a night until the last two nights stand alone')
   eq(ns.map(n=>n.date),
      ['2026-08-28','2026-09-04','2026-09-05','2026-09-06','2026-09-11','2026-09-12','2026-09-13'],
      'friday-saturday-sunday, two weekends, season ending Sun Sep 13')
@@ -173,13 +173,13 @@ console.log('\nUBAe playoff picture\n')
   // The rescheduled play-in is the reason Sep 4 has two matches and Aug 28 has
   // one: conference A never played theirs. W1 can still open that night because
   // seat 6 is conference B's winner, which Aug 28 already decided.
-  eq(ns[0].ms.map(m=>m.id),['PI2'],'Aug 28 kept only the play-in that was actually fought')
-  eq(ns[1].ms.map(m=>m.id),['PI1','W1'],'the outstanding play-in opens Sep 4, ahead of the round 1 that does not wait on it')
-  eq(ns[2].ms.map(m=>m.id)[0],'W2','and the round 1 that DOES wait on it is the next night')
+  eq(ns[0].ms.map(m=>m.id),['PI1','PI2'],'both play-ins were fought on the same night')
+  eq(ns[1].ms.map(m=>m.id),['W1','W2'],'and the bracket opens with a whole round')
 
-  // One back-to-back in the whole tournament, and it is not on finals night.
+  // What six bracket nights buys, and the reason for the Sundays: NOBODY is
+  // asked to fight twice in one evening, anywhere in the tournament.
   eq(ns.filter(n=>n.ms.some(m=>(m.needs||[]).some(d=>n.ms.some(x=>x.id===d)))).map(n=>n.date),
-     ['2026-09-12'],'only elimination night runs a match fed by the match before it')
+     [],'no night runs a match fed by the match before it')
 
   const all=ns.reduce((a,n)=>a.concat(n.ms.map(m=>m.id)),[])
   eq(all.length,12,'two play-ins plus ten bracket matches, all scheduled')
@@ -235,12 +235,9 @@ console.log('\nUBAe playoff picture\n')
   eq(w.length, 3, 'play-in week, then two weekends of bracket')
   eq(w.map(x=>x.title), ['PLAY-IN WEEK','PLAYOFFS · WEEK 1','PLAYOFFS · WEEK 2'], 'and they are named that way')
   eq(w.map(x=>x.dates.length), [1,3,3], 'a weekend is one card — Friday, Saturday and Sunday together')
-  eq(w.map(x=>x.ms.length), [1,6,5], 'every match on the calendar is on exactly one card')
+  eq(w.map(x=>x.ms.length), [2,6,4], 'every match on the calendar is on exactly one card')
   eq(w[2].ms.some(m=>m.id==='GF'), true, 'the last week holds the grand final')
-  // Conference A's play-in moved onto the Sep 4 card, so the play-in night is
-  // one match and says so — a card promising two of anything is describing a
-  // night that did not happen.
-  eq(w.map(x=>x.stake), ['ONE SURVIVES · ONE GOES HOME',
+  eq(w.map(x=>x.stake), ['TWO SURVIVE · TWO GO HOME',
                          'FIRST LOSS PUTS YOU IN THE ELIMINATION BRACKET',
                          'THE TITLE'], 'each week says what it costs, in words')
 
@@ -265,6 +262,8 @@ console.log('\nUBAe playoff picture\n')
   // OPEN seats would have handed seat 5 conference B's match.
   eq(b.wb[0].ms.find(m=>m.id==='W2').needs,['PI1'],'the open round 1 still waits on ITS play-in')
   eq(b.wb[0].ms.find(m=>m.id==='W1').needs,[],'and the settled one waits on nothing')
+  eq(P.bracket(P.picture(SUMMER, null, undefined, ['Ring Reapers','UKFC UNCS']))
+      .wb[0].ms.every(m=>!m.needs.length), true, 'both settled: round 1 waits on nothing at all')
 
   // Winning a play-in fills seat 6. It does NOT make you seed 4.
   eq(s.slice(0,4).map(x=>x.name),
@@ -273,7 +272,7 @@ console.log('\nUBAe playoff picture\n')
   eq(p.status['The 5 Great Kage'],'out','and the team that lost it is out')
 
   const ns=P.nights(b)
-  eq(ns.map(n=>n.ms.length),[1,2,2,2,2,2,1],'the calendar is unchanged by a result')
+  eq(ns.map(n=>n.ms.length),[2,2,2,2,2,1,1],'the calendar is unchanged by a result')
 }
 
 console.log(`\n${n-bad}/${n} passed${bad?` — ${bad} FAILED`:''}\n`)
