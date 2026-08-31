@@ -280,6 +280,37 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#8F86AF;
   border:1px solid rgba(255,255,255,.14);border-radius:11px;padding:12px 0;width:calc(100% - 36px)}
 
+/* A3 — the screens know who is looking.
+   "Fight in the UBA" is right for a fan and slightly insulting to somebody
+   who already fights, so the same slot carries different content per person. */
+.mybout{margin:20px 18px 4px;border-radius:15px;overflow:hidden;
+  border:1px solid rgba(245,200,66,.32);
+  background:linear-gradient(150deg,rgba(245,200,66,.15),rgba(245,200,66,.04))}
+.mybout .top2{display:flex;align-items:center;gap:9px;padding:12px 16px 0}
+.mybout .k{font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.18em;
+  text-transform:uppercase;color:#F5C842}
+.mybout .locked{margin-left:auto;font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:#B7AEDC;border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:3px 8px}
+.mybout .vs2{display:flex;align-items:center;gap:12px;padding:11px 16px 0}
+.mybout .who2{flex:1;min-width:0}
+.mybout .who2 .lbl2{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:#9990B4}
+.mybout .who2 .nm2{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.02em;line-height:1;margin-top:3px}
+.mybout .who2.opp{text-align:right}
+.mybout .x{font-family:'Space Mono',monospace;font-size:10px;color:#F5C842;flex-shrink:0}
+.mybout .when2{padding:12px 16px 14px;margin-top:11px;border-top:1px solid rgba(255,255,255,.12);
+  display:flex;align-items:baseline;gap:10px}
+.mybout .when2 .d2{flex:1;font-size:14px;font-weight:600}
+.mybout .when2 .go3{font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.13em;
+  text-transform:uppercase;color:#F5C842}
+.bout2.you{border-color:rgba(245,200,66,.5);box-shadow:0 0 0 1px rgba(245,200,66,.2)}
+.bout2 .youtag{font-family:'Space Mono',monospace;font-size:7px;font-weight:700;letter-spacing:.13em;
+  text-transform:uppercase;color:#3A2A00;background:#F5C842;padding:2px 6px;border-radius:3px;margin-left:6px}
+.mini.mine{box-shadow:0 0 0 2px #F5C842,0 5px 15px rgba(6,4,20,.5)}
+.mini .mineTag{position:absolute;left:5px;top:9px;z-index:3;font-family:'Space Mono',monospace;
+  font-size:6.5px;font-weight:700;letter-spacing:.1em;color:#3A2A00;background:#F5C842;
+  border-radius:9px;padding:2px 5px}
+
 /* wallet + binder */
 .bal{margin:14px 18px 0;padding:16px 17px;border-radius:15px;
   background:linear-gradient(150deg,rgba(245,200,66,.16),rgba(245,200,66,.05));
@@ -522,11 +553,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
     <div><b id="cd-m">--</b><s>min</s></div><div><b id="cd-s">--</b><s>sec</s></div>
   </div>
   <div class="install" id="install"></div>
-  <div class="join">
-    <div class="h">FIGHT IN THE UBA</div>
-    <div class="s">Sign up to get on a card.</div>
-    <a class="b" href="../registration-mobile.html">Register</a>
-  </div>
+  <div id="join-slot"></div>
   <div class="lab"><b>Results</b><i></i></div>
   <div id="results"><div class="skel"></div><div class="skel" style="width:60%"></div></div>
   <div class="lab"><b>Champions</b><i></i></div>
@@ -850,6 +877,49 @@ async function loadChamps(){
       + '<div class="n">'+esc(x.holder_name)+dbl+'</div></div>'
       + '<span class="since">Since '+esc(dstr(x.held_since))+'</span></a>';
   }).join('');
+}
+
+/* The same slot, three different people:
+     - not signed in, or signed in and not a fighter  -> come and fight
+     - a fighter with a bout coming                   -> that bout
+     - a fighter with nothing booked                  -> get on the next card */
+function renderJoinSlot(){
+  var el = document.getElementById('join-slot');
+  if(!el) return;
+
+  if(myBout){
+    var when = new Date(myBout.event_date).toLocaleString('en-US',{ timeZone:'America/New_York',
+      weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+    el.innerHTML = '<div class="mybout" data-event="'+esc(myBout.event_id)+'">'
+      + '<div class="top2"><span class="k">'
+      + esc(myBout.is_title_fight ? (myBout.title_name || 'Title fight') : 'Your next fight')
+      + '</span>'
+      // The card being unpublished is WHY this row exists, so it says so
+      // rather than looking like the app is ahead of the announcement.
+      + (myBout.card_published ? '' : '<span class="locked">Card not announced</span>')
+      + '</div>'
+      + '<div class="vs2">'
+      + '<div class="who2"><div class="lbl2">You</div><div class="nm2">'+esc(myBout.my_name)+'</div></div>'
+      + '<span class="x">VS</span>'
+      + '<div class="who2 opp"><div class="lbl2">Opponent</div><div class="nm2">'
+      + esc(myBout.opponent_name || 'TBA')+'</div></div>'
+      + '</div>'
+      + '<div class="when2"><span class="d2">'+esc(myBout.event_name)+' · '+esc(when)+' ET</span>'
+      + '<span class="go3">Details</span></div></div>';
+    return;
+  }
+
+  if(myFighter){
+    el.innerHTML = '<div class="join"><div class="h">NOT ON THE NEXT CARD</div>'
+      + '<div class="s">You\'re registered as '+esc(myFighter.fighter_name)
+      + '. Sign up to be matched on the next one.</div>'
+      + '<a class="b" href="../registration-mobile.html">Sign up</a></div>';
+    return;
+  }
+
+  el.innerHTML = '<div class="join"><div class="h">FIGHT IN THE UBA</div>'
+    + '<div class="s">Sign up to get on a card.</div>'
+    + '<a class="b" href="../registration-mobile.html">Register</a></div>';
 }
 
 /* ═══ NEWS ═══════════════════════════════════════════════════════════
@@ -1234,12 +1304,15 @@ async function loadCard(e){
   el.innerHTML = keys.map(function(k){
     return '<div class="seg">'+esc(SEGS[k] || k.replace(/_/g,' '))+'</div>'
       + groups[k].map(function(b){
+          var mine = myFighter && (b.fighter_a_slug === myFighter.fighter_slug
+                                || b.fighter_b_slug === myFighter.fighter_slug);
           var done = b.status === 'completed' && b.winner_corner;
           var aLost = done && b.winner_corner === 'b';
           var bLost = done && b.winner_corner === 'a';
           var midTxt = done ? (b.method || 'result').toUpperCase() : 'vs';
-          return '<div class="bout2'+(b.is_title_fight?' title':'')+'">'
+          return '<div class="bout2'+(b.is_title_fight?' title':'')+(mine?' you':'')+'">'
             + (b.is_title_fight ? '<span class="tag">'+esc(b.title_name || 'Title fight')+'</span>' : '')
+            + (mine ? '<span class="youtag">Your bout</span>' : '')
             + '<div class="vs">'
             + '<span class="side'+(aLost?' lost':'')+'"'+(b.fighter_a_slug?' data-slug="'+esc(b.fighter_a_slug)+'"':'')+'>'+esc(b.fighter_a_name || 'TBA')+'</span>'
             + '<span class="mid2'+(done?' done':'')+'">'+esc(midTxt)+'</span>'
@@ -1290,7 +1363,22 @@ function signIn(){
   var back = location.origin + location.pathname;
   location.href = SB + '/auth/v1/authorize?provider=discord&redirect_to=' + encodeURIComponent(back);
 }
-function signOut(){ saveSession(null); me = null; renderYou(); renderCards(); paintAvatar(); }
+function signOut(){
+  saveSession(null); me = null; myFighter = null; myBout = null;
+  renderYou(); renderCards(); paintAvatar(); renderJoinSlot();
+}
+
+/* Who is looking, resolved once at boot and after sign-in. Every screen that
+   changes per person reads these two rather than querying again. */
+async function loadWhoAmI(){
+  myFighter = null; myBout = null;
+  if(!me) return;
+  var prof = await qMe("my_profile?select=fighter_slug,fighter_name&limit=1");
+  if(prof && prof.length && prof[0].fighter_slug) myFighter = prof[0];
+  if(!myFighter) return;
+  var bout = await qMe("my_next_bout?select=*&order=event_date.asc&limit=1");
+  if(bout && bout.length) myBout = bout[0];
+}
 async function fetchMe(){
   if(!session) return null;
   try{
@@ -1301,7 +1389,7 @@ async function fetchMe(){
     return await r.json();
   }catch(e){ return null; }
 }
-var me = null;
+var me = null, myFighter = null, myBout = null;
 function paintAvatar(){
   var el = document.getElementById('disc-av');
   var url = me && me.user_metadata && (me.user_metadata.avatar_url || me.user_metadata.picture);
@@ -1467,7 +1555,9 @@ function renderBinder(){
           ? '<span class="init">'+esc(initials(c.display_name))+'</span>'
             + '<img src="'+esc(c.photo_url)+'" alt="" loading="lazy" onerror="this.remove()">'
           : '<span class="init">'+esc(initials(c.display_name))+'</span>';
-        return '<div class="mini"'+(c.fighter_slug?' data-slug="'+esc(c.fighter_slug)+'"':'')+'>'
+        var isMe = myFighter && c.fighter_slug === myFighter.fighter_slug;
+        return '<div class="mini'+(isMe?' mine':'')+'"'+(c.fighter_slug?' data-slug="'+esc(c.fighter_slug)+'"':'')+'>'
+          + (isMe ? '<span class="mineTag">You</span>' : '')
           + (Number(c.qty) > 1 ? '<span class="qty">&times;'+c.qty+'</span>' : '')
           + '<div class="foil"></div><div class="art">'+art+'</div>'
           + '<div class="in"><div class="n">'+esc(c.display_name)+'</div>'
@@ -1519,9 +1609,11 @@ function installHint(){
 (async function(){
   loadSession();
   if(session) me = await fetchMe();
+  await loadWhoAmI();
   paintAvatar();
   renderYou();
   renderCards();
+  renderJoinSlot();
   installHint();
 
   var hash = (location.hash || '').replace('#','');
