@@ -67,7 +67,9 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   scrollbar-width:none;display:none}
 .panel::-webkit-scrollbar{display:none}
 .panel.live{display:block}
-.pad{padding-bottom:calc(70px + env(safe-area-inset-bottom))}
+/* Just clears the bar. This used to be much larger, which put a field of
+   nothing under the last row when you scrolled to the end. */
+.pad{padding-bottom:58px}
 .wrapmax{max-width:520px;margin:0 auto}
 
 /* shared furniture */
@@ -127,18 +129,39 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .fc .poster{position:absolute;left:-2px;right:-2px;bottom:100%;display:block;width:calc(100% + 4px);
   height:auto;border-radius:6px 6px 0 0;
   filter:drop-shadow(0 10px 22px rgba(6,4,20,.6))}
-/* No poster yet: the same silhouette, drawn rather than photographed, so a
-   card without art is short of a picture and not short of a shape. */
+/* No rendered poster: BUILD one. The fighters' photos are transparent
+   cut-outs, so a faceoff can be composed live from the main event's two
+   corners — which is a real poster for that night rather than a placeholder
+   standing in for one. Only if the card is published; an unannounced card
+   has no bout to draw, and the name block below is the last resort. */
 .fc .noposter{position:absolute;left:-2px;right:-2px;bottom:100%;height:140px;border-radius:6px 6px 0 0;
-  background:radial-gradient(92% 122% at 24% 8%,rgba(123,47,255,.55),transparent 62%),
-    radial-gradient(80% 110% at 86% 34%,rgba(236,72,153,.34),transparent 58%),
+  background:radial-gradient(92% 122% at 22% 4%,rgba(123,47,255,.6),transparent 60%),
+    radial-gradient(80% 110% at 88% 18%,rgba(236,72,153,.4),transparent 56%),
     linear-gradient(160deg,#2A1650,#120E22);
   box-shadow:0 10px 22px rgba(6,4,20,.6);overflow:hidden;
-  display:flex;align-items:center;justify-content:center}
-.fc .noposter::after{content:'';position:absolute;inset:0;
+  display:flex;align-items:flex-end;justify-content:center}
+.fc .noposter::after{content:'';position:absolute;inset:0;z-index:3;
   background:repeating-linear-gradient(0deg,transparent 0 2px,rgba(0,0,0,.16) 2px 4px)}
 .fc .noposter b{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:.06em;
-  color:rgba(200,185,240,.3);position:relative;z-index:2}
+  color:rgba(200,185,240,.3);position:relative;z-index:2;align-self:center}
+/* the built faceoff */
+.fc .fo{position:absolute;inset:0;z-index:1}
+.fc .fo img{position:absolute;bottom:0;height:112%;width:auto;max-width:none;
+  filter:drop-shadow(0 6px 14px rgba(0,0,0,.55))}
+.fc .fo img.l{left:-14%}
+.fc .fo img.r{right:-14%;transform:scaleX(-1)}
+/* the stand-in when a corner has no cut-out */
+.fc .fo .sil{position:absolute;bottom:0;height:104%;width:auto;fill:rgba(200,185,240,.26)}
+.fc .fo .sil.l{left:2%}
+.fc .fo .sil.r{right:2%}
+.fc .fo .vs{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);z-index:2;
+  font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.06em;color:#fff;
+  text-shadow:0 2px 10px rgba(0,0,0,.8)}
+.fc .fo .nmr{position:absolute;bottom:5px;z-index:2;font-family:'Barlow',sans-serif;font-weight:700;
+  font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:#F4F1FB;
+  text-shadow:0 1px 6px rgba(0,0,0,.9);max-width:44%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fc .fo .nmr.l{left:7px}
+.fc .fo .nmr.r{right:7px;text-align:right}
 .fc .past{position:absolute;right:6px;top:-132px;z-index:4;font-family:'Space Mono',monospace;
   font-size:7px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#EDEAF6;
   background:rgba(10,8,20,.78);padding:3px 7px;border-radius:3px}
@@ -510,26 +533,22 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   border-radius:10px;padding:11px 20px}
 
 /* the bar */
-/* THE BAR, and the bug that took four passes.
+/* THE BAR. Five passes, so here is the whole history in one place.
 
-   `bottom: 0` on a standalone iPhone lands at the bottom of the LAYOUT
-   viewport, which sits about 34pt above the real screen bottom. So the bar
-   floated there and the page background showed underneath it — the "whole
-   other thing below the nav bar".
+   78px + the FULL safe-area inset  -> read as a bar floating over a dead band
+   62px + 60% of the inset          -> still empty-looking
+   58px + none                      -> reported as "something below the bar"
+   52px + the full inset again      -> reported as WORSE, thicker empty space
 
-   Both complaints were this one bug from opposite sides. WITH safe-area
-   padding the background covered the strip, but the icons sat at the top of
-   a tall box and it read as empty. WITHOUT it the box was tight and the
-   strip reappeared as a band below the bar.
+   That last result is the useful one: adding the inset back made the empty
+   space GROW, which means bottom:0 already reaches the physical screen edge
+   on the device. There is no uncovered strip to cover — the inset was pure
+   added height. So: no inset reserve, the shortest sane bar, icons centred.
 
-   The fix is both at once, which is what every native tab bar does:
-     · the BACKGROUND extends through the safe area (padding-bottom)
-     · the CONTENT box stays short and the icons are CENTRED in it
-   Nothing can show below the bar because the bar reaches the screen edge,
-   and nothing looks empty because the icons are not pinned to the top. */
-.bar{position:fixed;left:0;right:0;bottom:0;
-  height:calc(52px + env(safe-area-inset-bottom));
-  padding-bottom:env(safe-area-inset-bottom);
+   If a band still appears below this, the cause is NOT the safe area and the
+   ?diag readout is the only way to find it. Do not add padding back on a
+   hunch — that is what made it worse. */
+.bar{position:fixed;left:0;right:0;bottom:0;height:50px;
   display:flex;align-items:center;
   background:rgba(10,8,20,.92);border-top:1px solid rgba(255,255,255,.1);
   -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);z-index:20}
@@ -539,12 +558,12 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    and read as the bar floating with a gap beneath it. #ground plus the dark
    html/body are what keep anything from showing white; the bar needs nothing. */
 .bar button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-  height:52px;color:#8B83AC}
+  height:50px;color:#8B83AC}
 .bar button.on{color:#EDEAF6}
 .bar em{font-style:normal;font-family:'Space Mono',monospace;font-size:8px;font-weight:700;
   letter-spacing:.08em;text-transform:uppercase}
 .bar .midbtn{justify-content:flex-start}
-.bar .midbtn .disc{width:50px;height:50px;border-radius:50%;margin-top:-22px;display:flex;align-items:center;
+.bar .midbtn .disc{width:48px;height:48px;border-radius:50%;margin-top:-20px;display:flex;align-items:center;
   justify-content:center;background:linear-gradient(160deg,#8B5CF6,#6D28D9);border:3px solid #16112A;
   box-shadow:0 6px 20px rgba(109,40,217,.55);color:#fff;transition:transform .15s;overflow:hidden}
 .bar .midbtn.on .disc{transform:scale(1.06)}
@@ -743,6 +762,43 @@ var posters = {};
 /* Event posters are already rendered for the broadcast and live in
    graphic_assets under card-<event_id>-<variant>. faceoff is the landscape
    one, so it crops best into the card's art strip. */
+var faceoffs = {};
+
+/* For an event with no rendered poster, compose one from the main event's two
+   corners. event_matches is card-gated, so an unannounced card returns
+   nothing and the event simply keeps the name block — which is correct: there
+   is no bout to draw yet. */
+async function loadFaceoffs(ids){
+  if(!ids.length) return;
+  var bouts = await q("event_matches?select=event_id,bout_number,fighter_a_name,fighter_a_slug,"
+    + "fighter_b_name,fighter_b_slug&event_id=in.(" + ids.join(',') + ")&order=bout_number.asc");
+  if(!bouts || !bouts.length) return;
+  var main = {};
+  bouts.forEach(function(b){ if(!main[b.event_id]) main[b.event_id] = b; });
+  var slugs = [];
+  Object.keys(main).forEach(function(k){
+    [main[k].fighter_a_slug, main[k].fighter_b_slug].forEach(function(sl){
+      if(sl && slugs.indexOf(sl) === -1) slugs.push(sl);
+    });
+  });
+  if(!slugs.length) return;
+  var ph = await q("fighter_cards?select=slug,photo_url&slug=in.(" + slugs.join(',') + ")");
+  if(!ph) return;
+  var byslug = {};
+  ph.forEach(function(f){ if(f.photo_url) byslug[f.slug] = f.photo_url; });
+  Object.keys(main).forEach(function(k){
+    var m = main[k];
+    // A missing photo gets a silhouette rather than killing the faceoff.
+    // Only 90 of 445 fighters have a cut-out, so "both corners or nothing"
+    // would mean almost no built posters at all.
+    faceoffs[k] = {
+      a: byslug[m.fighter_a_slug] || null,
+      b: byslug[m.fighter_b_slug] || null,
+      an: m.fighter_a_name, bn: m.fighter_b_name
+    };
+  });
+}
+
 async function loadPosters(ids){
   if(!ids.length) return;
   var rows = await q("graphic_assets?select=key,url&key=like.card-*");
@@ -774,9 +830,39 @@ async function loadHome(){
   } else {
     fanEvents = evs;
     renderFan();
-    loadPosters(evs.map(function(e){ return e.id; })).then(renderFan);
+    var ids = evs.map(function(e){ return e.id; });
+    loadPosters(ids).then(renderFan);
+    loadFaceoffs(ids).then(renderFan);
   }
   await Promise.all([loadLive(), loadResults(), loadChamps(), loadHomeNews()]);
+}
+
+
+/* A faceoff built from the main event's two corners. A corner with no
+   cut-out gets a silhouette rather than killing the whole graphic — only 90
+   of 445 fighters have a photo, so "both or nothing" would mean almost no
+   built posters at all. Falls back to the event's initials when there is no
+   published card to draw from. */
+var SILHOUETTE = "<svg class=\"sil\" viewBox=\"0 0 60 100\" preserveAspectRatio=\"xMidYMax meet\"><circle cx=\"30\" cy=\"21\" r=\"14\"/><path d=\"M30 38c-14 0-24 9-26 22l-4 40h60l-4-40c-2-13-12-22-26-22z\"/></svg>";
+function faceoffCorner(url, side){
+  if(!url) return SILHOUETTE.replace('class="sil"', 'class="sil ' + side + '"');
+  return '<img class="' + side + '" src="' + esc(url) + '" alt="" '
+       + 'data-side="' + side + '" onerror="silhouetteSwap(this)">';
+}
+function silhouetteSwap(img){
+  var side = img.getAttribute('data-side') || 'l';
+  img.outerHTML = SILHOUETTE.replace('class="sil"', 'class="sil ' + side + '"');
+}
+function faceoffHTML(eventId, eventName){
+  var f = faceoffs[eventId];
+  if(!f) return '<b>' + esc((eventName || '?').slice(0, 3).toUpperCase()) + '</b>';
+  return '<div class="fo">'
+    + faceoffCorner(f.a, 'l')
+    + faceoffCorner(f.b, 'r')
+    + '<span class="vs">VS</span>'
+    + '<span class="nmr l">' + esc(f.an || '') + '</span>'
+    + '<span class="nmr r">' + esc(f.bn || '') + '</span>'
+    + '</div>';
 }
 
 function renderFan(){
@@ -798,7 +884,7 @@ function renderFan(){
       + (poster
           ? '<img class="poster" src="'+esc(poster.url)+'" alt="" '
             + 'onerror="this.className=\'noposter\';this.replaceWith(Object.assign(document.createElement(\'div\'),{className:\'noposter\'}))">'
-          : '<div class="noposter"><b>'+esc((e.name||'?').slice(0,3).toUpperCase())+'</b></div>')
+          : '<div class="noposter">' + faceoffHTML(e.id, e.name) + '</div>')
       + (done ? '<span class="past">Final</span>' : '')
       + '<div class="foil"></div><div class="in">'
       + '<span class="rar">'+esc(tag)+'</span>'
