@@ -966,6 +966,58 @@ async function loadPosters(ids){
   });
 }
 
+/* UBAe NIGHTS ARE NOT EVENTS, and deliberately so.
+
+   They live in `team_matches`, not `events`. Putting them in `events` would
+   break the project's own rule — a new league adds tables, it does not bend the
+   core ones — and it would make rows that every other system misreads: `events`
+   drives `event_matches`, the card_published gate, the bet markets and the
+   renderers, and a UBAe row has none of those, so each of them would show an
+   empty card. That failure is already sitting in the database: "UBAe Week 1"
+   exists as an event, typed fight_night, with zero matches.
+
+   So the app reads `team_matches_public`, which is already anon-readable and
+   already carries both team names, the date, the stage and the round, and
+   shapes it like an event only for the fan's benefit. Nothing is written. */
+async function loadUbae(){
+  var ms = await q("team_matches_public?select=id,match_date,status,team_a_name,team_b_name,stage,round_label"
+    + "&status=eq.scheduled&order=match_date.asc&limit=3");
+  if(!ms || !ms.length) return [];
+  // ONE fighter per team, and it has to be the same rule every time: the best
+  // UBAe record on the roster. Not "whoever has a photo" — picking a worse
+  // fighter because a better one never uploaded one is the card telling a lie
+  // about who the team's best is. A star with no photo gets a silhouette, the
+  // same as anywhere else in the app.
+  var recs = await queryStars();
+  return ms.map(function(m){
+    var a = recs[m.team_a_name] || null, b = recs[m.team_b_name] || null;
+    var id = 'tm:' + m.id;
+    if(a || b) faceoffs[id] = {
+      a: a && a.photo_thumb_url, b: b && b.photo_thumb_url,
+      an: a ? a.stage_name : m.team_a_name, bn: b ? b.stage_name : m.team_b_name
+    };
+    return { id: id, ubae: true, status: m.status, event_date: m.match_date,
+             name: m.team_a_name + ' vs ' + m.team_b_name,
+             type: m.stage === 'playoff' ? 'UBAe playoff' : 'UBAe',
+             round: m.round_label || '' };
+  });
+}
+
+var ubaeStars = null;
+async function queryStars(){
+  if(ubaeStars) return ubaeStars;
+  var rows = await q("ubae_fighter_records?select=stage_name,wins,losses,current_team,photo_thumb_url");
+  var best = {};
+  (rows || []).forEach(function(r){
+    if(!r.current_team) return;
+    var cur = best[r.current_team];
+    if(!cur || r.wins > cur.wins || (r.wins === cur.wins && r.losses < cur.losses))
+      best[r.current_team] = r;
+  });
+  ubaeStars = best;
+  return best;
+}
+
 async function loadHome(){
   var evs = await q("events_public?select=id,name,type,status,event_date,stream_platform&status=eq.scheduled&order=event_date.asc&limit=5");
   // Drop anything that has plainly already happened, whatever its status says.
@@ -977,6 +1029,18 @@ async function loadHome(){
       + "&status=eq.completed&order=event_date.desc&limit=" + (3 - evs.length));
     if(past) evs = evs.concat(past);
   }
+  // UBAe nights sit in the same hand, ordered with everything else by date —
+  // a playoff night is a night the league is on, and hiding it because it
+  // lives in a different table is a filing detail leaking onto the screen.
+  var ub = await loadUbae();
+  if(evs && ub.length){
+    evs = evs.concat(ub).sort(function(x, y){
+      var xo = eventIsOver(x), yo = eventIsOver(y);
+      if(xo !== yo) return xo ? 1 : -1;            // still to come, first
+      return xo ? new Date(y.event_date) - new Date(x.event_date)
+                : new Date(x.event_date) - new Date(y.event_date);
+    }).slice(0, 3);
+  }
   if(!evs){
     retryHandlers['home'] = loadHome;
     document.getElementById('fan').innerHTML = failHTML("Couldn't load what's next.", 'home');
@@ -984,7 +1048,11 @@ async function loadHome(){
   } else {
     fanEvents = evs;
     renderFan();
-    var ids = evs.map(function(e){ return e.id; });
+    // REAL event ids only. A UBAe night's id is `tm:<uuid>`, and one of those
+    // inside `event_id=in.(...)` is not a uuid — PostgREST rejects the whole
+    // query, so a single UBAe card in the hand silently stripped the faceoff
+    // off every real event beside it. Their faceoffs are built in loadUbae().
+    var ids = evs.filter(function(e){ return !e.ubae; }).map(function(e){ return e.id; });
     loadPosters(ids).then(function(){ renderFan(true); });
     loadFaceoffs(ids).then(function(){ renderFan(true); });
   }
@@ -1110,7 +1178,9 @@ function renderFan(keepOrder){
     var when = new Date(e.event_date).toLocaleString('en-US',{ timeZone:'America/New_York',
       month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }).toUpperCase();
     var done = eventIsOver(e);
-    var tag = done ? 'Result' : (i === 0 ? 'Next event' : (e.type === 'fight_night' ? 'Fight night' : 'Event'));
+    var tag = e.ubae ? (e.round || e.type)
+            : done ? 'Result'
+            : (i === 0 ? 'Next event' : (e.type === 'fight_night' ? 'Fight night' : 'Event'));
     return '<div class="fc" data-i="'+i+'" data-pos="'+pos+'" data-ev-id="'+esc(e.id)+'">'
       + stageHTML(e.id)
       + (done ? '<span class="past">Final</span>' : '')
