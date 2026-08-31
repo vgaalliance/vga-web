@@ -166,13 +166,26 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 
 /* the fighter-v-fighter item: same box as a poster, and NO plate behind it */
 .fc .stage .fo{width:96px}
-.fc .stage .fo .cut{position:absolute;bottom:0;height:88%;width:auto;max-width:58%;
+/* ONE ITEM IS NOT A FAN. With no poster there is nothing to stack against, so
+   the faceoff stops pretending to be a card in a hand and takes the whole
+   width of the card instead — two fighters spread evenly, the VS between them.
+   Fanning a single item just made it a small thing sitting off-centre. */
+.fc .stage.solo .fo{width:216px}
+.fc .stage.solo .fo .vsx{font-size:21px;top:10%}
+.fc .stage.solo .fo .cn{font-size:8.5px;max-width:40%}
+.fc .stage.solo .fo .cn.l{left:6px}
+.fc .stage.solo .fo .cn.r{right:6px}
+/* NEVER give a photo a height AND a max-width. The browser honours both and
+   squashes the image between them — which is what was stretching kayvon, who
+   stands wide. A fixed box plus object-fit:contain cannot distort anything. */
+.fc .stage .fo .cut{position:absolute;bottom:0;height:94%;width:44%;
+  object-fit:contain;object-position:bottom center;
   filter:drop-shadow(0 4px 12px rgba(4,2,14,.8))}
-.fc .stage .fo .cut.l{left:-6px}
-.fc .stage .fo .cut.r{right:-6px;transform:scaleX(-1)}
-.fc .stage .fo .sil{position:absolute;bottom:0;height:80%;width:auto;fill:rgba(190,175,235,.36)}
-.fc .stage .fo .sil.l{left:0}
-.fc .stage .fo .sil.r{right:0}
+.fc .stage .fo .cut.l{left:2%}
+.fc .stage .fo .cut.r{right:2%;transform:scaleX(-1)}
+.fc .stage .fo .sil{position:absolute;bottom:0;height:82%;width:34%;fill:rgba(190,175,235,.36)}
+.fc .stage .fo .sil.l{left:7%}
+.fc .stage .fo .sil.r{right:7%}
 .fc .stage .fo .vsx{position:absolute;left:50%;top:16%;transform:translateX(-50%);
   font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:.09em;color:#F4F1FB;
   text-shadow:0 2px 12px rgba(0,0,0,.95)}
@@ -189,7 +202,8 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .fc .rar{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.15em;
   text-transform:uppercase;padding:3px 7px;border-radius:3px;display:inline-block;
   color:#7A5A00;background:linear-gradient(90deg,#FBEFC2,#F3DE94);border:1px solid #E2C871}
-.fc .nm{font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:.98;letter-spacing:.02em;margin-top:8px}
+.fc .nm{font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:.98;letter-spacing:.02em;margin-top:8px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fc .mt{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.08em;color:#5C5670;margin-top:6px}
 .fc[data-pos="0"]{position:relative;top:0;left:auto;margin:0 auto;z-index:3;transform:none;opacity:1;
   box-shadow:0 16px 34px rgba(6,4,20,.6)}
@@ -997,10 +1011,21 @@ async function loadUbae(){
       an: a ? a.stage_name : m.team_a_name, bn: b ? b.stage_name : m.team_b_name
     };
     return { id: id, ubae: true, status: m.status, event_date: m.match_date,
-             name: m.team_a_name + ' vs ' + m.team_b_name,
+             name: shortTeam(m.team_a_name) + ' v ' + shortTeam(m.team_b_name),
              type: m.stage === 'playoff' ? 'UBAe playoff' : 'UBAe',
              round: m.round_label || '' };
   });
+}
+
+/* Team names are typed for a standings table, not for a 216px card. "UKFC
+   UNCS vs Ring Reapers" does not fit on one line at 24px and wrapping it makes
+   the card taller than every other card in the hand. Drop the words that carry
+   no information and keep the part people actually say. */
+function shortTeam(n){
+  return String(n || '')
+    .replace(/^(Team|UKFC|The)\s+/i, '')
+    .replace(/\s+(Esports|Club|Gym)$/i, '')
+    .trim();
 }
 
 var ubaeStars = null;
@@ -1100,7 +1125,9 @@ function stageHTML(eventId){
   });
   var fo = faceoffItem(eventId);
   if(fo) items.push(fo);
-  return '<div class="stage">' + items.join('') + '</div>';
+  // `solo` widens the single item to the card. See the CSS note.
+  return '<div class="stage' + (items.length === 1 ? ' solo' : '') + '">'
+       + items.join('') + '</div>';
 }
 
 /* THE SHUFFLE, ported from the standby scene so both read the same.
