@@ -69,7 +69,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .panel.live{display:block}
 /* Just clears the bar. This used to be much larger, which put a field of
    nothing under the last row when you scrolled to the end. */
-.pad{padding-bottom:58px}
+.pad{padding-bottom:calc(62px + env(safe-area-inset-bottom,0px))}
 .wrapmax{max-width:520px;margin:0 auto}
 
 /* shared furniture */
@@ -121,46 +121,45 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 
    If neither exists the space is simply empty, because an empty space reads
    better than a filled rectangle apologising for itself. */
-.fanw{position:relative;margin:4px 0 0;display:flow-root;--lift:158px;padding-top:var(--lift)}
+.fanw{position:relative;margin:4px 0 0;display:flow-root;--peek:60px;padding-top:var(--peek)}
 .fc{position:absolute;top:0;left:50%;width:216px;margin-left:-108px;
   border-radius:0 0 14px 14px;background:linear-gradient(168deg,#F8F6FC 0%,#E5E0F2 100%);
   color:#16131F;cursor:pointer;
   transition:transform .34s cubic-bezier(.34,1.3,.5,1),opacity .34s}
 
-/* the stage the art stands on — no background of its own, ever */
-.fc .stage{position:absolute;left:-16px;right:-16px;bottom:100%;height:var(--lift);
-  pointer-events:none}
+/* Each card carries its OWN art, tucked BEHIND it and peeking above the top
+   edge — z-index:-1 puts it under the card's own background, and the stage's
+   bottom sits 26px INSIDE the card so the card cleanly cuts it off. Only
+   --peek shows. This is per-card: the second and third cards in the fan each
+   peek their own posters, they do not share one stage. */
+.fc .stage{position:absolute;left:0;right:0;bottom:calc(100% - 26px);
+  height:calc(var(--peek) + 26px);z-index:-1;pointer-events:none}
 
-/* posters: up to three, leaning */
-.fc .stage .pz{position:absolute;bottom:0;left:50%;width:190px;transform-origin:50% 100%;
-  border-radius:4px;display:block;
-  filter:drop-shadow(0 10px 20px rgba(4,2,14,.75))}
-.fc .stage .pz.p0{margin-left:-95px;z-index:3}
-.fc .stage .pz.p1{margin-left:-95px;z-index:2;transform:rotate(7deg) translateX(30px) scale(.93)}
-.fc .stage .pz.p2{margin-left:-95px;z-index:1;transform:rotate(-7.5deg) translateX(-30px) scale(.9)}
+/* posters: up to three, fanned, only their tops visible */
+.fc .stage .pz{position:absolute;top:0;bottom:0;left:50%;width:78px;margin-left:-39px;
+  border-radius:5px 5px 0 0;background-size:cover;background-position:50% 22%;
+  background-color:#2A2450;box-shadow:0 -3px 12px rgba(4,2,14,.55)}
+.fc .stage .pz.p0{z-index:3}
+.fc .stage .pz.p1{z-index:2;transform:translateX(48px) rotate(6deg)}
+.fc .stage .pz.p2{z-index:1;transform:translateX(-48px) rotate(-6deg)}
 
-/* cut-out faceoff: two fighters, nothing behind them */
+/* no poster: the two corners peek instead, nothing behind them */
 .fc .stage .cut{position:absolute;bottom:0;height:100%;width:auto;
-  filter:drop-shadow(0 8px 16px rgba(4,2,14,.8))}
-.fc .stage .cut.l{left:2px}
-.fc .stage .cut.r{right:2px;transform:scaleX(-1)}
-.fc .stage .sil{position:absolute;bottom:0;height:88%;width:auto;fill:rgba(190,175,235,.34);
-  filter:drop-shadow(0 8px 16px rgba(4,2,14,.6))}
-.fc .stage .sil.l{left:8px}
-.fc .stage .sil.r{right:8px}
-.fc .stage .vsx{position:absolute;left:50%;bottom:44%;transform:translateX(-50%);z-index:4;
-  font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.1em;color:#F4F1FB;
+  filter:drop-shadow(0 4px 12px rgba(4,2,14,.75))}
+.fc .stage .cut.l{left:16px}
+.fc .stage .cut.r{right:16px;transform:scaleX(-1)}
+.fc .stage .sil{position:absolute;bottom:0;height:94%;width:auto;fill:rgba(190,175,235,.34)}
+.fc .stage .sil.l{left:22px}
+.fc .stage .sil.r{right:22px}
+.fc .stage .vsx{position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:4;
+  font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:.1em;color:#F4F1FB;
   text-shadow:0 2px 12px rgba(0,0,0,.9)}
-.fc .stage .cn{position:absolute;bottom:2px;z-index:4;font-family:'Barlow',sans-serif;font-weight:700;
-  font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:#F4F1FB;
-  text-shadow:0 1px 8px rgba(0,0,0,.95);max-width:42%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fc .stage .cn.l{left:10px}
-.fc .stage .cn.r{right:10px;text-align:right}
-/* nothing to show — the event's name, set plainly, no plate */
-.fc .stage .bare{position:absolute;left:0;right:0;bottom:6px;text-align:center;
-  font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.05em;color:rgba(244,241,251,.9);
-  text-shadow:0 2px 14px rgba(0,0,0,.8);padding:0 10px}
-.fc .past{position:absolute;right:8px;top:-16px;z-index:5;font-family:'Space Mono',monospace;
+/* nothing at all: the event name peeks instead of an empty gap */
+.fc .stage .bare{position:absolute;left:0;right:0;top:16px;text-align:center;
+  font-family:'Bebas Neue',sans-serif;font-size:21px;letter-spacing:.05em;color:rgba(244,241,251,.85);
+  text-shadow:0 2px 14px rgba(0,0,0,.8);padding:0 10px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fc .past{position:absolute;right:8px;top:6px;z-index:5;font-family:'Space Mono',monospace;
   font-size:7px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#EDEAF6;
   background:rgba(10,8,20,.8);padding:3px 7px;border-radius:3px}
 .fc .foil{height:4px;background:linear-gradient(90deg,#F5C842,#EC4899,#7B2FFF,#22D3EE,#F5C842)}
@@ -172,8 +171,8 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .fc .mt{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.08em;color:#5C5670;margin-top:6px}
 .fc[data-pos="0"]{position:relative;top:0;left:auto;margin:0 auto;z-index:3;transform:none;opacity:1;
   box-shadow:0 16px 34px rgba(6,4,20,.6)}
-.fc[data-pos="1"]{top:calc(var(--lift) + 10px);z-index:2;transform:rotate(6.5deg) translateX(50px) scale(.9);opacity:.66}
-.fc[data-pos="2"]{top:calc(var(--lift) + 16px);z-index:1;transform:rotate(-7deg) translateX(-52px) scale(.86);opacity:.46}
+.fc[data-pos="1"]{top:calc(var(--peek) + 10px);z-index:2;transform:rotate(6.5deg) translateX(50px) scale(.9);opacity:.66}
+.fc[data-pos="2"]{top:calc(var(--peek) + 16px);z-index:1;transform:rotate(-7deg) translateX(-52px) scale(.86);opacity:.46}
 .dotsn{display:flex;gap:6px;justify-content:center;margin:20px 0 16px;min-height:6px}
 .dotsn i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.22);display:block;transition:background .2s}
 .dotsn i.on{background:#A78BFA;box-shadow:0 0 8px rgba(167,139,250,.9)}
@@ -582,32 +581,37 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   border-radius:10px;padding:11px 20px}
 
 /* the bar */
-/* THE BAR. Five passes, so here is the whole history in one place.
+/* THE BAR. Six passes. Five of them changed the HEIGHT, which was never the
+   problem, and the sixth is the one that matters.
 
-   78px + the FULL safe-area inset  -> read as a bar floating over a dead band
-   62px + 60% of the inset          -> still empty-looking
-   58px + none                      -> reported as "something below the bar"
-   52px + the full inset again      -> reported as WORSE, thicker empty space
+     78px + full inset  -> "a bar floating over a dead band"
+     62px + 60% inset   -> still empty-looking
+     58px + no inset    -> "something below the bar"
+     52px + full inset  -> "worse, thicker empty space"
+     50px + no inset    -> "even thicker empty space"
 
-   That last result is the useful one: adding the inset back made the empty
-   space GROW, which means bottom:0 already reaches the physical screen edge
-   on the device. There is no uncovered strip to cover — the inset was pure
-   added height. So: no inset reserve, the shortest sane bar, icons centred.
+   Five different heights, one identical complaint. That rules the height out.
 
-   If a band still appears below this, the cause is NOT the safe area and the
-   ?diag readout is the only way to find it. Do not add padding back on a
-   hunch — that is what made it worse. */
-.bar{position:fixed;left:0;right:0;bottom:0;height:50px;
-  display:flex;align-items:center;
-  background:rgba(10,8,20,.92);border-top:1px solid rgba(255,255,255,.1);
-  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);z-index:20}
-/* The bar's own padding-bottom IS the safe area, so its background already
-   covers the home-indicator strip. An earlier version added a big box-shadow
-   as an extra floor under it — that painted a solid block well below the bar
-   and read as the bar floating with a gap beneath it. #ground plus the dark
-   html/body are what keep anything from showing white; the bar needs nothing. */
+   The actual cause is COLOUR. The bar was rgba(10,8,20,.92) blurred over
+   #ground, whose bottom stop is #0C0916. Composited, the bar reads as
+   rgb(10,8,20) sitting on rgb(12,9,22) — a difference of two points per
+   channel, invisible on any screen. So the bar had a bright 1px line at its
+   TOP and no perceptible edge at its BOTTOM: the icons looked like they were
+   floating on the page, and every pixel of bar beneath them read as a
+   separate black strip under the nav. Changing the height just moved how
+   much of that invisible strip there was.
+
+   So: one SOLID colour, clearly lighter than the ground, no blur. The bar now
+   has a visible bottom edge because the bar is visibly a different surface.
+   The safe-area inset is padding on that same solid colour, which is why it
+   is safe to keep this time — on a device with a home indicator the strip is
+   visibly part of the bar instead of a gap beneath it. */
+.bar{position:fixed;left:0;right:0;bottom:0;
+  display:flex;align-items:stretch;
+  background:#1A1533;border-top:1px solid rgba(255,255,255,.16);
+  padding-bottom:env(safe-area-inset-bottom,0px);z-index:20}
 .bar button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-  height:50px;color:#8B83AC}
+  height:54px;color:#8B83AC}
 .bar button.on{color:#EDEAF6}
 .bar em{font-style:normal;font-family:'Space Mono',monospace;font-size:8px;font-weight:700;
   letter-spacing:.08em;text-transform:uppercase}
@@ -970,11 +974,12 @@ function silhouetteSwap(img){
   img.outerHTML = SILHOUETTE.replace('class="sil"', 'class="sil ' + side + '"');
 }
 
-function stageHTML(eventId, eventName){
+function stageHTML(eventId){
   var pz = posters[eventId];
   if(pz && pz.length){
-    return '<div class="stage">' + pz.map(function(u, i){
-      return '<img class="pz p' + i + '" src="' + esc(u) + '" alt="" onerror="this.remove()">';
+    return '<div class="stage">' + pz.slice(0,3).map(function(u, i){
+      return '<div class="pz p' + i + '" style="background-image:url(&quot;'
+           + esc(u).replace(/"/g,'%22') + '&quot;)"></div>';
     }).join('') + '</div>';
   }
   var f = faceoffs[eventId];
@@ -982,11 +987,9 @@ function stageHTML(eventId, eventName){
     return '<div class="stage">'
       + cutCorner(f.a, 'l') + cutCorner(f.b, 'r')
       + '<span class="vsx">VS</span>'
-      + '<span class="cn l">' + esc(f.an || '') + '</span>'
-      + '<span class="cn r">' + esc(f.bn || '') + '</span>'
       + '</div>';
   }
-  return '<div class="stage"><div class="bare">' + esc(eventName || 'Fight night') + '</div></div>';
+  return '<div class="stage"></div>';
 }
 
 function renderFan(keepOrder){
@@ -1008,7 +1011,7 @@ function renderFan(keepOrder){
     var done = eventIsOver(e);
     var tag = done ? 'Result' : (i === 0 ? 'Next event' : (e.type === 'fight_night' ? 'Fight night' : 'Event'));
     return '<div class="fc" data-i="'+i+'" data-pos="'+pos+'" data-ev-id="'+esc(e.id)+'">'
-      + stageHTML(e.id, e.name)
+      + stageHTML(e.id)
       + (done ? '<span class="past">Final</span>' : '')
       + '<div class="foil"></div><div class="in">'
       + '<span class="rar">'+esc(tag)+'</span>'
