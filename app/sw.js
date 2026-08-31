@@ -15,7 +15,7 @@
    old app until they clear site data.
    ═══════════════════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'uba-v31';
+const CACHE_VERSION = 'uba-v32';
 const SHELL = [
   './',
   './index.html',
@@ -66,6 +66,12 @@ self.addEventListener('fetch', event => {
     );
     return;
   }
+
+  // A7 — the 445 generated fighter pages are a SNAPSHOT that gets rebuilt.
+  // Caching them cache-first froze whichever version a viewer happened to
+  // open, for ever, and grew the cache without bound. They are cheap, they
+  // redirect immediately, and they must never be stale: network only.
+  if (url.pathname.includes('/app/f/')) return;
 
   // Anything else on our own origin: cache first, then network, and fall
   // back to the shell for a navigation so a deep link still opens offline.
