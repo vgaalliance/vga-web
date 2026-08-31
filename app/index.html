@@ -42,7 +42,26 @@
    And because the tab panels are the things that scroll, html never moves,
    so the gradient stays put without background-attachment:fixed, which is
    unreliable on iOS. Body stays transparent so this shows through. */
-html{height:100%;background:#0C0916}
+/* THE CANVAS IS THE BAR'S COLOUR, and that is the point.
+
+   Measured off a real iPhone screenshot: the bar renders exactly as coded —
+   88pt, being 54pt of content plus the 34pt home-indicator inset, in #1A1533 —
+   and then there are 47pt of #0C0916 beneath it, one flat colour with nothing
+   drawn in it. That band is HTML's background propagated to the canvas, in
+   space the layout viewport does not cover, so `position:fixed;bottom:0` can
+   never reach it and no amount of padding on the bar will fill it. Five passes
+   spent changing the bar's height were all chasing the wrong thing.
+
+   The cause is upstream — most likely the app being launched somewhere that
+   reserves toolbar space, or a home-screen copy installed before
+   viewport-fit=cover was in this file, which iOS caches at install time. Both
+   are fixed by re-adding the icon, not by CSS.
+
+   But whatever is short-changing the viewport, the canvas underneath it is
+   paintable, and painting it the BAR's colour makes that band read as the bar
+   rather than as a gap beneath it. #ground covers the whole viewport from
+   top:0, so this colour can only ever show in the strip below. */
+html{height:100%;background:#1A1533}
 body{height:100%;overflow:hidden;background:#0C0916;
   color:#EDEAF6;font-family:'Barlow',system-ui,sans-serif;-webkit-font-smoothing:antialiased;
 }
