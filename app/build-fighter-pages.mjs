@@ -76,10 +76,10 @@ function page(f, beltCount) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${esc(title)} · UBA Esports</title>
+<title>${esc(title)} · VGA Esports</title>
 <meta name="description" content="${esc(desc)}">
 
-<meta property="og:site_name" content="UBA Esports">
+<meta property="og:site_name" content="VGA Esports">
 <meta property="og:type" content="profile">
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(desc)}">
