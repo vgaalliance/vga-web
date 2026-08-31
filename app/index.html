@@ -37,12 +37,21 @@
    And because the tab panels are the things that scroll, html never moves,
    so the gradient stays put without background-attachment:fixed, which is
    unreliable on iOS. Body stays transparent so this shows through. */
-html{height:100%;background:#0C0916;
-  background-image:linear-gradient(180deg,#3B3568 0%,#2A2450 26%,#191434 55%,#0C0916 100%);
-  background-repeat:no-repeat;background-size:100% 100%}
-body{height:100%;overflow:hidden;background:transparent;
+html{height:100%;background:#0C0916}
+body{height:100%;overflow:hidden;background:#0C0916;
   color:#EDEAF6;font-family:'Barlow',system-ui,sans-serif;-webkit-font-smoothing:antialiased;
 }
+/* The gradient is a REAL ELEMENT, not a background on html or body.
+   Relying on background propagation is what put a white strip under the tab
+   bar on a standalone iPhone: the propagated canvas background is sized to
+   the layout viewport, which excludes the home-indicator safe area, and iOS
+   paints whatever is left over white. An element pinned with 100dvh has no
+   such gap. Both html and body also carry the solid ground as a floor, so
+   even if this element fails to paint, nothing is ever white. */
+#ground{position:fixed;left:0;right:0;top:0;height:100dvh;min-height:100%;z-index:0;
+  pointer-events:none;
+  background:linear-gradient(180deg,#3B3568 0%,#2A2450 26%,#191434 55%,#0C0916 100%)}
+.panel{z-index:1}
 a{color:inherit;text-decoration:none}
 button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 :focus-visible{outline:2px solid #C3A6FF;outline-offset:2px}
@@ -266,11 +275,73 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .install.on{display:block}
 .install b{color:#EDEAF6;font-weight:600}
 
+/* ── the fighter sheet ──────────────────────────────────────────────────
+   An in-app screen, not a link out. Tapping a card used to navigate to
+   f/<slug>.html, which redirects to the old profile page — outside the
+   app's scope, so iOS wrapped it in browser chrome with a URL bar and a
+   Done button. The cards keep their href so long-press-to-share and the
+   Discord unfurl still work; the tap is intercepted and lands here. */
+.sheet{position:fixed;inset:0;z-index:30;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;
+  background:#151030;display:none;transform:translateY(14px);
+  transition:transform .22s ease}
+/* NOTE: opacity is deliberately not animated here. It used to fade in from 0
+   on a class added inside requestAnimationFrame — and rAF does not fire while
+   the page is backgrounded, so the sheet could open fully transparent with
+   its class correctly applied and no way to tell. Only transform animates
+   now, so a sheet that never gets a frame is simply visible and unslid. */
+.sheet::-webkit-scrollbar{display:none}
+.sheet.live{display:block}
+.sheet.shown{transform:none}
+.sheet .hero{position:relative;height:340px;overflow:hidden;
+  background:radial-gradient(90% 120% at 26% 10%,rgba(123,47,255,.5),transparent 62%),
+    linear-gradient(160deg,#2A1650,#120E22)}
+.sheet .hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center}
+.sheet .hero .init{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',sans-serif;font-size:96px;color:rgba(200,185,240,.28)}
+.sheet .hero::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(21,16,48,.45) 0%,transparent 26%,rgba(21,16,48,.9) 100%)}
+.sheet .back{position:absolute;top:calc(14px + env(safe-area-inset-top));left:14px;z-index:4;
+  width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:rgba(10,8,20,.6);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#EDEAF6}
+.sheet .back svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sheet .name{position:absolute;left:18px;right:18px;bottom:14px;z-index:3}
+.sheet .name .bt{display:inline-block;font-family:'Space Mono',monospace;font-size:8px;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;color:#3A2A00;
+  background:linear-gradient(90deg,#F5C842,#DDA91C);padding:3px 8px;border-radius:3px;margin-bottom:8px}
+.sheet .name h2{font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:.02em;line-height:.96;font-weight:400}
+.sheet .name .nick{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:#C3A6FF;margin-top:6px}
+.sheet .stats{display:flex;gap:8px;margin:16px 16px 0}
+.sheet .stats div{flex:1;text-align:center;background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.12);border-radius:11px;padding:11px 0}
+.sheet .stats b{display:block;font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1}
+.sheet .stats s{display:block;text-decoration:none;font-family:'Space Mono',monospace;font-size:7.5px;
+  letter-spacing:.11em;text-transform:uppercase;color:#9990B4;margin-top:4px}
+.sheet .meta{margin:16px 18px 0;display:grid;grid-template-columns:auto 1fr;gap:9px 16px;font-size:14px}
+.sheet .meta dt{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:#8F86AF;padding-top:3px}
+.sheet .meta dd{font-weight:600}
+.sheet .bout{display:flex;align-items:center;gap:12px;margin:0 18px;padding:12px 0;
+  border-bottom:1px solid rgba(255,255,255,.08)}
+.sheet .bout .wl{width:26px;height:26px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;
+  justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:15px}
+.sheet .bout .wl.w{background:rgba(74,222,128,.16);color:#6EE7B7}
+.sheet .bout .wl.l{background:rgba(232,54,43,.16);color:#F19C96}
+.sheet .bout .mid{flex:1;min-width:0}
+.sheet .bout .op{font-size:15.5px;font-weight:600}
+.sheet .bout .ev{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.09em;
+  text-transform:uppercase;color:#8F86AF;margin-top:3px}
+.sheet .bout .via{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;
+  text-transform:uppercase;color:#F5C842;flex-shrink:0}
+
 /* the bar */
 .bar{position:fixed;left:0;right:0;bottom:0;height:calc(78px + env(safe-area-inset-bottom));
   padding-bottom:env(safe-area-inset-bottom);display:flex;align-items:flex-start;
   background:rgba(10,8,20,.92);border-top:1px solid rgba(255,255,255,.1);
-  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);z-index:20}
+  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);z-index:20;
+  /* an opaque floor behind the translucent bar, so the safe-area strip it
+     covers can never show through to anything lighter */
+  box-shadow:0 40px 0 40px #0A0814}
 .bar button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
   height:62px;padding-top:10px;color:#8B83AC}
 .bar button.on{color:#EDEAF6}
@@ -289,6 +360,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 </style>
 </head>
 <body>
+<div id="ground"></div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.5 10.6 12 3.8l8.5 6.8V20a.9.9 0 0 1-.9.9h-4.8v-6h-5.6v6H4.4a.9.9 0 0 1-.9-.9z"/></symbol>
@@ -301,6 +373,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   <symbol id="i-game" viewBox="0 0 24 24"><rect x="2.6" y="7" width="18.8" height="10.4" rx="4.2"/><path d="M7.4 10.6v3.2M5.8 12.2H9"/><circle cx="16" cy="11.6" r=".9"/><circle cx="18.2" cy="13.8" r=".9"/></symbol>
   <symbol id="i-book" viewBox="0 0 24 24"><path d="M4.4 4.6h9a3.6 3.6 0 0 1 3.6 3.6v11.4a2.8 2.8 0 0 0-2.8-2.2H4.4z"/><path d="M19.6 4.6h-2.2v14.6a2.8 2.8 0 0 1 2.2-1z"/></symbol>
   <symbol id="i-wallet" viewBox="0 0 24 24"><rect x="3.2" y="6" width="17.6" height="12.6" rx="2.4"/><path d="M3.2 10h17.6"/><circle cx="16.8" cy="14.2" r="1.1"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M14.5 5.5 8 12l6.5 6.5"/></symbol>
   <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 16.4V11a6 6 0 1 0-12 0v5.4L4.4 18.4h15.2z"/><path d="M10 21.2a2.4 2.4 0 0 0 4 0"/></symbol>
 </svg>
 
@@ -366,6 +439,9 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 
 <!-- ═══ CARDS ═══ -->
 <section class="panel" id="p-cards"><div class="pad wrapmax" id="cards-body"></div></section>
+
+<!-- ═══ FIGHTER SHEET — an in-app screen, never a link out ═══ -->
+<section class="sheet" id="sheet" aria-hidden="true"><div class="pad" id="sheet-body"></div></section>
 
 <!-- ═══ THE BAR ═══ -->
 <nav class="bar">
@@ -567,7 +643,8 @@ async function loadChamps(){
         + '<div class="mid"><div class="dv">'+esc(div)+'</div><div class="n">Vacant</div></div></div>';
     }
     var dbl = doubles[x.holder_name] > 1 ? '<em>'+doubles[x.holder_name]+'× CHAMP</em>' : '';
-    return '<a class="ch" href="./f/'+encodeURIComponent(x.holder_slug||'')+'.html">'
+    return '<a class="ch" data-slug="'+esc(x.holder_slug||'')+'"'
+      + ' href="./f/'+encodeURIComponent(x.holder_slug||'')+'.html">'
       + '<span class="belt"><svg><use href="#i-belt"/></svg></span>'
       + '<div class="mid"><div class="dv">'+esc(div)+'</div>'
       + '<div class="n">'+esc(x.holder_name)+dbl+'</div></div>'
@@ -634,7 +711,7 @@ var allFighters = null, fFilter = 'all', fQuery = '', fShown = 40;
 
 async function loadFighters(){
   if(allFighters) return;
-  var rows = await q("fighter_cards?select=display_name,slug,weight_class,headline_wins,headline_losses,"
+  var rows = await q("fighter_cards?select=id,display_name,slug,weight_class,headline_wins,headline_losses,"
     + "headline_draws,rank,is_champion,profile_photo_url,team,nickname,status"
     + "&status=eq.active&order=rank.asc.nullslast&limit=600");
   if(!rows){
@@ -685,7 +762,8 @@ function renderFighters(){
       : ini;
     var belt = f.is_champion ? '<span class="bt">Champ</span>' : '';
     var rk = f.rank != null ? '<em>&middot; P4P '+f.rank+'</em>' : '<em>&middot; Unranked</em>';
-    return '<a class="fcard'+(f.is_champion?' champ':'')+'" href="./f/'+encodeURIComponent(f.slug||'')+'.html">'
+    return '<a class="fcard'+(f.is_champion?' champ':'')+'" data-slug="'+esc(f.slug||'')+'"'
+      + ' href="./f/'+encodeURIComponent(f.slug||'')+'.html">'
       + '<div class="foil"></div><div class="art">'+belt+art+'</div>'
       + '<div class="in"><div class="n">'+esc(f.display_name)+'</div>'
       + '<div class="w">'+esc(wc(f.weight_class))+'</div>'
@@ -711,6 +789,104 @@ document.getElementById('f-search').addEventListener('input', function(){
   fQuery = this.value.trim(); fShown = 40; renderFighters();
 });
 document.getElementById('f-more').addEventListener('click', function(){ fShown += 40; renderFighters(); });
+
+/* ═══ FIGHTER SHEET ══════════════════════════════════════════════════ */
+var sheetOpen = false;
+
+document.addEventListener('click', function(e){
+  var link = e.target.closest('[data-slug]');
+  if(!link) return;
+  var slug = link.getAttribute('data-slug');
+  if(!slug) return;
+  // Only intercept a plain tap. Cmd/ctrl-click and middle-click still open
+  // the real page, and long-press-to-share still sees the href.
+  if(e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;
+  e.preventDefault();
+  openFighter(slug);
+});
+
+function closeSheet(){
+  if(!sheetOpen) return;
+  var el = document.getElementById('sheet');
+  sheetOpen = false;
+  el.classList.remove('shown');
+  el.setAttribute('aria-hidden','true');
+  setTimeout(function(){ if(!sheetOpen) el.classList.remove('live'); }, 220);
+}
+window.addEventListener('popstate', function(){ if(sheetOpen) closeSheet(); });
+
+async function openFighter(slug){
+  var f = (allFighters || []).filter(function(x){ return x.slug === slug; })[0];
+  if(!f){
+    var got = await q("fighter_cards?select=id,display_name,slug,weight_class,headline_wins,"
+      + "headline_losses,headline_draws,headline_ko_wins,rank,is_champion,profile_photo_url,team,"
+      + "nickname,country,gym,stance,height,reach&slug=eq." + encodeURIComponent(slug) + "&limit=1");
+    f = got && got[0];
+  }
+  if(!f) return;
+
+  var el = document.getElementById('sheet');
+  var body = document.getElementById('sheet-body');
+  var art = f.profile_photo_url
+    ? '<span class="init">'+esc(initials(f.display_name))+'</span>'
+      + '<img src="'+esc(f.profile_photo_url)+'" alt="" onerror="this.remove()">'
+    : '<span class="init">'+esc(initials(f.display_name))+'</span>';
+
+  body.innerHTML =
+      '<div class="hero">' + art
+    + '<button class="back" id="sheet-back" aria-label="Back"><svg><use href="#i-back"/></svg></button>'
+    + '<div class="name">'
+    + (f.is_champion ? '<span class="bt">Champion</span>' : '')
+    + '<h2>'+esc(f.display_name)+'</h2>'
+    + (f.nickname ? '<div class="nick">"'+esc(f.nickname)+'"</div>' : '')
+    + '</div></div>'
+    + '<div class="stats">'
+    + '<div><b>'+(f.headline_wins||0)+'</b><s>wins</s></div>'
+    + '<div><b>'+(f.headline_losses||0)+'</b><s>losses</s></div>'
+    + '<div><b>'+(f.headline_draws||0)+'</b><s>draws</s></div>'
+    + '<div><b>'+(f.rank != null ? f.rank : '—')+'</b><s>p4p</s></div>'
+    + '</div>'
+    + '<dl class="meta">'
+    + '<dt>Division</dt><dd>'+esc(wc(f.weight_class))+'</dd>'
+    + (f.team ? '<dt>Team</dt><dd>'+esc(f.team)+'</dd>' : '<dt>Team</dt><dd>Free agent</dd>')
+    + (f.country ? '<dt>From</dt><dd>'+esc(f.country)+'</dd>' : '')
+    + (f.gym ? '<dt>Gym</dt><dd>'+esc(f.gym)+'</dd>' : '')
+    + '</dl>'
+    + '<div class="lab"><b>Fights</b><i></i></div>'
+    + '<div id="sheet-bouts"><div class="skel"></div><div class="skel" style="width:70%"></div></div>';
+
+  el.classList.add('live');
+  el.scrollTop = 0;
+  el.setAttribute('aria-hidden','false');
+  sheetOpen = true;
+  void el.offsetHeight;            // force layout so the transform transitions
+  el.classList.add('shown');
+  // A history entry, so the phone's back gesture closes the sheet instead of
+  // leaving the app.
+  history.pushState({ sheet: slug }, '', '#f/' + slug);
+  document.getElementById('sheet-back').addEventListener('click', function(){ history.back(); });
+
+  loadBouts(f);
+}
+
+async function loadBouts(f){
+  var el = document.getElementById('sheet-bouts');
+  if(!el) return;
+  if(!f.id){ el.innerHTML = '<div class="empty">No fight history.</div>'; return; }
+  var rows = await q("fighter_matches?select=won,method,opponent_name,opponent_slug,event_name,"
+    + "event_date,status,is_title_fight&fighter_id=eq." + f.id
+    + "&status=eq.completed&order=event_date.desc.nullslast&limit=12");
+  if(!el.isConnected) return;
+  if(!rows || !rows.length){ el.innerHTML = '<div class="empty">No fights recorded yet.</div>'; return; }
+  el.innerHTML = rows.map(function(b){
+    return '<div class="bout">'
+      + '<span class="wl '+(b.won?'w':'l')+'">'+(b.won?'W':'L')+'</span>'
+      + '<div class="mid"><div class="op">'+esc(b.opponent_name || 'Unknown')+'</div>'
+      + '<div class="ev">'+esc(b.event_name || '')+(b.event_date ? ' · '+esc(dstr(b.event_date)) : '')
+      + (b.is_title_fight ? ' · title' : '')+'</div></div>'
+      + '<span class="via">'+esc((b.method||'').toUpperCase())+'</span></div>';
+  }).join('');
+}
 
 /* ═══ AUTH — Discord, via Supabase ═══════════════════════════════════
    Raw endpoints rather than supabase-js, matching how every other page
@@ -868,7 +1044,8 @@ function installHint(){
   installHint();
 
   var hash = (location.hash || '').replace('#','');
-  if(panels[hash] && hash !== 'home') goTab(hash);
+  if(hash.indexOf('f/') === 0){ goTab('fighters'); openFighter(hash.slice(2)); }
+  else if(panels[hash] && hash !== 'home') goTab(hash);
 
   await loadHome();
   loadNews();
