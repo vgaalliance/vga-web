@@ -220,6 +220,17 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .fc .past{position:absolute;right:8px;top:6px;z-index:5;font-family:'Space Mono',monospace;
   font-size:7px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#EDEAF6;
   background:rgba(10,8,20,.8);padding:3px 7px;border-radius:3px}
+/* A LIGHT PASSES OVER THE CARD THAT IS ON RIGHT NOW. Only that one — a
+   shimmer on every card is wallpaper, on one card it is a signal. It rides
+   above the panel and below the text, and it is clipped to the card so it
+   cannot streak across the posters behind. */
+.fc .shine{position:absolute;inset:0;z-index:1;border-radius:0 0 14px 14px;overflow:hidden;
+  pointer-events:none}
+.fc .shine::after{content:'';position:absolute;top:-40%;bottom:-40%;width:38%;left:-45%;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.72),transparent);
+  transform:skewX(-16deg);animation:cardshine 3.6s ease-in-out infinite}
+@keyframes cardshine{0%{left:-45%}55%,100%{left:118%}}
+@media (prefers-reduced-motion:reduce){.fc .shine{display:none}}
 .fc .foil{height:4px;background:linear-gradient(90deg,#F5C842,#EC4899,#7B2FFF,#22D3EE,#F5C842)}
 .fc .in{padding:11px 13px 13px}
 .fc .rar{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.15em;
@@ -1219,14 +1230,27 @@ function cycleStage(){
   })();
 }
 
-/* The soonest event still to come, whatever the hand is showing. */
+/* The soonest event that has NOT STARTED, whatever the hand is showing.
+   "Not over" was the wrong test: a night that is on right now is not over, so
+   the clock counted down to a moment already past and sat on 00:00:00:00 next
+   to a LIVE banner — four zeros reading as a broken clock. A show in progress
+   has no countdown; the banner is the thing saying it is on. */
 function nextUpcoming(){
-  var soon = null;
+  var soon = null, now = Date.now();
   fanEvents.forEach(function(e){
     if(eventIsOver(e)) return;
-    if(!soon || new Date(e.event_date) < new Date(soon.event_date)) soon = e;
+    var t = new Date(e.event_date).getTime();
+    if(!isFinite(t) || t <= now) return;            // already started
+    if(!soon || t < new Date(soon.event_date).getTime()) soon = e;
   });
   return soon;
+}
+
+/* Is this event on right now? Same window the live banner uses. */
+function eventIsLive(e){
+  if(!e || e.status === 'completed') return false;
+  var t = new Date(e.event_date).getTime();
+  return isFinite(t) && t <= Date.now() && Date.now() - t < LIVE_WINDOW_MS;
 }
 
 function renderFan(keepOrder){
@@ -1252,6 +1276,7 @@ function renderFan(keepOrder){
     return '<div class="fc" data-i="'+i+'" data-pos="'+pos+'" data-ev-id="'+esc(e.id)+'">'
       + stageHTML(e.id)
       + (done ? '<span class="past">Final</span>' : '')
+      + (eventIsLive(e) ? '<span class="shine"></span>' : '')
       + '<div class="foil"></div><div class="in">'
       + '<span class="rar">'+esc(tag)+'</span>'
       + '<div class="nm">'+esc(e.name)+'</div>'
