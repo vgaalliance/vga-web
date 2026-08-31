@@ -88,7 +88,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .panel.live{display:block}
 /* Just clears the bar. This used to be much larger, which put a field of
    nothing under the last row when you scrolled to the end. */
-.pad{padding-bottom:calc(62px + env(safe-area-inset-bottom,0px))}
+.pad{padding-bottom:calc(62px + env(safe-area-inset-bottom,0px) + var(--barpush, 0px))}
 .wrapmax{max-width:520px;margin:0 auto}
 
 /* shared furniture */
@@ -702,7 +702,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    The safe-area inset is padding on that same solid colour, which is why it
    is safe to keep this time — on a device with a home indicator the strip is
    visibly part of the bar instead of a gap beneath it. */
-.bar{position:fixed;left:0;right:0;bottom:0;
+.bar{position:fixed;left:0;right:0;bottom:calc(-1 * var(--barpush, 0px));
   display:flex;align-items:stretch;
   background:#1A1533;border-top:1px solid rgba(255,255,255,.16);
   padding-bottom:env(safe-area-inset-bottom,0px);z-index:20}
@@ -1385,6 +1385,33 @@ function setCountdown(ev){
   countdownTarget = (ev && !eventIsOver(ev)) ? new Date(ev.event_date).getTime() : null;
   tickCountdown();
 }
+/* THE BAR IS PUT WHERE THE SCREEN ACTUALLY ENDS.
+   `position:fixed; bottom:0` resolves against the LAYOUT VIEWPORT, and on this
+   phone that viewport is 797pt while the screen is 844 — so the bar's bottom
+   edge lands 47pt up and no height, padding or safe-area inset can reach the
+   rest. Five passes of arithmetic on the bar's height were all working on the
+   wrong number, and painting the gap the bar's colour only hid the seam; the
+   icons still floated 92pt off the bottom.
+   screen.height is the one measure that knows how tall the screen is. The
+   difference between it and innerHeight IS the shortfall, and the bar is
+   pushed down by exactly that.
+   ONLY WHEN INSTALLED. In a browser that difference is real chrome — a URL bar,
+   a toolbar — and shoving the nav under it would hide it completely. */
+function seatBar(){
+  var standalone = matchMedia('(display-mode: standalone)').matches || !!navigator.standalone;
+  var gap = 0;
+  if(standalone && screen && screen.height){
+    gap = Math.round(screen.height - window.innerHeight);
+    // a sane shortfall only. Anything bigger is not this bug and guessing at
+    // it would push the bar off the screen entirely.
+    if(!(gap > 0 && gap <= 120)) gap = 0;
+  }
+  document.documentElement.style.setProperty('--barpush', gap + 'px');
+}
+seatBar();
+addEventListener('resize', seatBar);
+addEventListener('orientationchange', function(){ setTimeout(seatBar, 250); });
+
 function tickCountdown(){
   var box = document.getElementById('cds');
   if(!countdownTarget){ box.style.display='none'; return; }
