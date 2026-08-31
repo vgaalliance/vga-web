@@ -1150,14 +1150,41 @@ const FAN_PEEK = 1600    // the stack opens for this long before it swaps
 const FAN_OPEN = 1.28    // how far the ones behind slide out while it is open
 async function mountPoster(){
   const fan = document.getElementById('promoFan'); if(!fan) return
+  // THE DATABASE FIRST. Posters live in graphic_assets keyed
+  // `poster-<event_id>-<n>`, which is the same place the mobile app reads
+  // them, so one upload feeds both. They used to live only as files here,
+  // which meant adding a poster was two jobs and forgetting the second one
+  // was silent — the app simply never showed it.
+  //
+  // The FULL file, not the `-thumb` beside it: this is a 1640px broadcast row,
+  // and the thumbnail exists for a 152px peek on a phone.
   try{
-    const r = await fetch(POSTER_INDEX, {cache:'no-store'})
-    if(r.ok){
-      const list = await r.json()
-      if(Array.isArray(list)) posterList = list.filter(n => typeof n === 'string' && n)
-        .map(n => n.startsWith('assets/') ? n : 'assets/' + n)
+    const { data:evs } = await sb.from('events_public').select('id')
+      .eq('status','scheduled').gte('event_date', FUTURE()).order('event_date').limit(1)
+    if(evs && evs[0]){
+      const { data:gs } = await sb.from('graphic_assets').select('key,url')
+        .like('key', 'poster-' + evs[0].id + '-%')
+      if(gs) posterList = gs
+        .filter(g => !/-thumb$/.test(g.key))
+        .sort((a, b) => (parseInt(a.key.split('-').pop(), 10) || 99)
+                      - (parseInt(b.key.split('-').pop(), 10) || 99))
+        .map(g => g.url)
     }
   }catch(e){}
+
+  // THE FILES, still, when the database has nothing for tonight or cannot be
+  // reached. This runs in OBS during a show: a poster scene that goes empty
+  // because Supabase blinked is worse than one showing a file from the folder.
+  if(!posterList.length){
+    try{
+      const r = await fetch(POSTER_INDEX, {cache:'no-store'})
+      if(r.ok){
+        const list = await r.json()
+        if(Array.isArray(list)) posterList = list.filter(n => typeof n === 'string' && n)
+          .map(n => n.startsWith('assets/') ? n : 'assets/' + n)
+      }
+    }catch(e){}
+  }
   if(!posterList.length) posterList = PROMO_POSTER.slice()
 
   // Loaded before ANY of them is drawn: a poster that 404s must not leave a gap
