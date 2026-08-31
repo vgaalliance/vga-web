@@ -114,7 +114,11 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   border-radius:13px;font-size:14px;color:#8F86AF;line-height:1.5}
 
 /* ── the live bar ── */
+/* The safe-area padding has to come AFTER the shorthand, or the shorthand
+   resets it — which is how the red bar ended up under the clock and the 5G
+   icon on a notched phone. */
 .livebar{display:none;align-items:center;gap:10px;margin:0 0 2px;padding:11px 18px;
+  padding-top:calc(11px + env(safe-area-inset-top,0px));
   background:linear-gradient(90deg,#C22B22,#E8362B);color:#fff}
 .livebar.on{display:flex}
 .livebar .dot{width:8px;height:8px;border-radius:50%;background:#fff;flex-shrink:0;
@@ -1051,13 +1055,22 @@ var ubaeStars = null;
 async function queryStars(){
   if(ubaeStars) return ubaeStars;
   var rows = await q("ubae_fighter_records?select=stage_name,wins,losses,current_team,photo_thumb_url");
-  var best = {};
+  // BEST RECORD AMONG THE FIGHTERS YOU CAN ACTUALLY SEE. Picking purely on
+  // record put Gold-E-Lockz and Yiz on the card, and neither has uploaded a
+  // photo — so UNCS v Reapers drew two grey silhouettes and told nobody
+  // anything. A team's best photographed fighter is still one of its best
+  // fighters; an empty faceoff is worth nothing at all. Only if NOBODY on the
+  // roster has a photo does it fall back to the best record and a silhouette.
+  var best = {}, bestAny = {};
+  function better(a, b){
+    return !b || a.wins > b.wins || (a.wins === b.wins && a.losses < b.losses);
+  }
   (rows || []).forEach(function(r){
     if(!r.current_team) return;
-    var cur = best[r.current_team];
-    if(!cur || r.wins > cur.wins || (r.wins === cur.wins && r.losses < cur.losses))
-      best[r.current_team] = r;
+    if(better(r, bestAny[r.current_team])) bestAny[r.current_team] = r;
+    if(r.photo_thumb_url && better(r, best[r.current_team])) best[r.current_team] = r;
   });
+  Object.keys(bestAny).forEach(function(t){ if(!best[t]) best[t] = bestAny[t]; });
   ubaeStars = best;
   return best;
 }
