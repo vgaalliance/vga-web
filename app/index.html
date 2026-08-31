@@ -315,6 +315,57 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#8F86AF;
   border:1px solid rgba(255,255,255,.14);border-radius:11px;padding:12px 0;width:calc(100% - 36px)}
 
+/* ── THE STRIP ───────────────────────────────────────────────────────
+   One slot under the countdown carrying whatever is most true for you, in
+   priority order: your own fight, then the feed, then the top headline. The
+   angled tab names which, and is the same shape every time so the eye learns
+   one thing rather than three.
+
+   It flips on a slow timer and STOPS the moment you touch it. A slot that
+   changes while you are reading it is worse than one that picks. */
+.strip{position:relative;margin:13px 16px 0;height:58px;border-radius:11px;overflow:hidden;
+  display:flex;align-items:center;cursor:pointer;
+  background:rgba(10,5,20,.55);border:1px solid rgba(168,85,247,.26);border-left:2px solid #A855F7}
+.strip.mine{background:linear-gradient(90deg,rgba(245,200,66,.15),rgba(10,5,20,.55));
+  border-color:rgba(245,200,66,.3);border-left-color:#F5C842}
+.strip .face{position:absolute;inset:0;display:flex;align-items:center;
+  transition:transform .42s cubic-bezier(.4,0,.2,1),opacity .3s ease}
+.strip .face.out{transform:rotateX(-90deg);opacity:0}
+.strip .face.in{transform:rotateX(0);opacity:1}
+.strip .body{flex:1;min-width:0;padding:0 12px}
+.strip .k{font-family:'Space Mono',monospace;font-size:7px;font-weight:700;letter-spacing:.19em;
+  text-transform:uppercase;color:#C3A6FF}
+.strip.mine .k{color:#F5C842}
+.strip .v{font-size:14px;font-weight:600;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.strip .v b{color:#C3A6FF;font-weight:700}
+.strip .v .x{font-family:'Space Mono',monospace;font-size:9px;color:#F5C842;margin:0 6px}
+.strip .tab{position:relative;flex-shrink:0;align-self:stretch;display:flex;align-items:center;
+  padding:0 13px 0 21px;overflow:hidden;
+  background:linear-gradient(135deg,rgba(167,139,250,.34),rgba(167,139,250,.14));
+  clip-path:polygon(16px 0, 100% 0, 100% 100%, 0 100%)}
+.strip.mine .tab{background:linear-gradient(135deg,rgba(245,200,66,.34),rgba(245,200,66,.12))}
+.strip .tab span{font-family:'Space Mono',monospace;font-size:7.5px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:#EDEAF6;white-space:nowrap;position:relative;z-index:2}
+.strip .tab::after{content:'';position:absolute;top:-60%;left:-140%;width:60%;height:220%;z-index:1;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.32),transparent);
+  transform:rotate(18deg);animation:sweep 3.4s ease-in-out infinite}
+@keyframes sweep{0%{left:-140%}55%{left:180%}100%{left:180%}}
+
+/* ── rankings, as the body of home ── */
+.rtabs{display:flex;gap:15px;margin:0 18px 8px}
+.rtabs button{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:#7E7699;padding-bottom:5px;border-bottom:2px solid transparent}
+.rtabs button.on{color:#C3A6FF;border-bottom-color:#A78BFA}
+.rrow{display:flex;align-items:center;gap:10px;margin:0 16px;padding:9px 10px;border-radius:8px}
+.rrow.champ{background:linear-gradient(90deg,rgba(245,200,66,.12),transparent);border-left:2px solid #F5C842}
+.rrow .no{font-family:'Space Mono',monospace;font-size:9.5px;color:#7E7699;width:24px;flex-shrink:0}
+.rrow .n{flex:1;font-size:15.5px;font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rrow.champ .n{color:#F5C842}
+.rrow .n sup{font-family:'Space Mono',monospace;font-size:7px;color:#F5C842;margin-left:4px;vertical-align:super}
+.rrow .rec{font-family:'Space Mono',monospace;font-size:10.5px;color:#6EE7B7;font-variant-numeric:tabular-nums;flex-shrink:0}
+.rrow .rec em{font-style:normal;color:#F19C96}
+.rrow .rec i{font-style:normal;color:#7E7699}
+
 /* A3 — the screens know who is looking.
    "Fight in the UBA" is right for a fan and slightly insulting to somebody
    who already fights, so the same slot carries different content per person. */
@@ -606,12 +657,15 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
     <div><b id="cd-d">--</b><s>days</s></div><div><b id="cd-h">--</b><s>hrs</s></div>
     <div><b id="cd-m">--</b><s>min</s></div><div><b id="cd-s">--</b><s>sec</s></div>
   </div>
+  <div class="strip" id="strip" aria-live="polite"></div>
   <div class="install" id="install"></div>
+  <div class="lab"><b>Rankings</b><i></i><a data-goto="fighters">View all</a></div>
+  <div class="rtabs" id="rtabs">
+    <button data-r="p4p" class="on">Fighters</button>
+    <button data-r="teams">Teams</button>
+  </div>
+  <div id="ranks"><div class="skel"></div><div class="skel" style="width:70%"></div></div>
   <div id="join-slot"></div>
-  <div class="lab"><b>Results</b><i></i></div>
-  <div id="results"><div class="skel"></div><div class="skel" style="width:60%"></div></div>
-  <div class="lab"><b>Champions</b><i></i></div>
-  <div id="champs"><div class="skel"></div><div class="skel" style="width:70%"></div></div>
   <div class="lab"><b>Latest</b><i></i><a data-goto="news">News</a></div>
   <div id="home-news"><div class="skel"></div></div>
   <div class="foot">discord.gg/uba &middot; ubaesports.com</div>
@@ -672,6 +726,13 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 var SB  = 'https://emzlivoykbhhjcugupit.supabase.co';
 var KEY = 'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF';
 var H   = { headers: { apikey: KEY, Authorization: 'Bearer ' + KEY } };
+
+/* The VGA feed is the ONE read still living in the old Supabase project —
+   fighter_messages only ever existed there. It is deliberately isolated to
+   this pair so the dependency is obvious, and every failure path falls
+   through to news rather than showing an empty bar. */
+var SB_OLD  = 'https://xwsbyxkjfqqrgbzxmmrn.supabase.co';
+var KEY_OLD = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3c2J5eGtqZnFxcmdienhtbXJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNjAyNDcsImV4cCI6MjA4NzkzNjI0N30.6amkt0zGMLT3_N3fKY6sMMTdaBr5eS7Ig-hAPvPCB4g';
 
 /* an event counts as live from its start time for this long */
 var LIVE_WINDOW_MS = 4 * 60 * 60 * 1000;
@@ -834,7 +895,7 @@ async function loadHome(){
     loadPosters(ids).then(renderFan);
     loadFaceoffs(ids).then(renderFan);
   }
-  await Promise.all([loadLive(), loadResults(), loadChamps(), loadHomeNews()]);
+  await Promise.all([loadLive(), loadRanks(), loadHomeNews(), loadStrip()]);
 }
 
 
@@ -954,53 +1015,98 @@ async function loadLive(){
 }
 setInterval(loadLive, 5 * 60 * 1000);
 
-async function loadResults(){
-  var el = document.getElementById('results');
-  var ev = await q("events_public?select=id,name,event_date&status=eq.completed&order=event_date.desc&limit=1");
-  if(!ev){ retryHandlers['results'] = loadResults;
-    el.innerHTML = failHTML("Couldn't load the last results.", 'results'); return; }
-  if(!ev.length){ el.innerHTML = '<div class="empty">No results yet.</div>'; return; }
-  var e = ev[0];
-  var bouts = await q("event_matches?select=bout_number,method,fighter_a_name,fighter_b_name,winner_corner,status"
-    + "&event_id=eq." + e.id + "&status=eq.completed&order=bout_number.asc&limit=4");
-  if(!bouts || !bouts.length){ el.innerHTML = '<div class="empty">Results for '+esc(e.name)+' aren\'t posted yet.</div>'; return; }
-  el.innerHTML = '<div class="res" data-event="'+esc(e.id)+'"><div class="ev">'+esc(e.name)+' &middot; '+esc(dstr(e.event_date))+'</div>'
-    + bouts.map(function(b){
-        var aWon = b.winner_corner === 'a';
-        var w = aWon ? b.fighter_a_name : b.fighter_b_name;
-        var l = aWon ? b.fighter_b_name : b.fighter_a_name;
-        var via = (b.method || '').toUpperCase().slice(0,3) || '—';
-        return '<div class="rr"><span class="w">'+esc(w)+'</span><span class="via">'+esc(via)
-             + '</span><span class="l">'+esc(l)+'</span></div>';
-      }).join('') + '</div>';
+/* ── THE STRIP ───────────────────────────────────────────────────────
+   Priority: your own fight, then the feed, then the top headline. Whatever
+   is available becomes a face; the strip flips between them on a slow timer
+   and stops permanently the first time you touch it. */
+var stripFaces = [], stripAt = 0, stripTimer = null, stripHeld = false;
+
+async function loadStrip(){
+  var el = document.getElementById('strip');
+  if(!el) return;
+  stripFaces = [];
+
+  if(myBout){
+    var when = new Date(myBout.event_date).toLocaleString('en-US',{ timeZone:'America/New_York',
+      weekday:'short', month:'short', day:'numeric' });
+    stripFaces.push({ mine:true, tab:'Next card',
+      k: (myBout.is_title_fight ? (myBout.title_name || 'Title fight') : 'Your next fight')
+         + ' · ' + when + (myBout.card_published ? '' : ' · not announced'),
+      v: esc(myBout.my_name) + '<span class="x">VS</span>' + esc(myBout.opponent_name || 'TBA'),
+      go: function(){ openSheet({ kind:'event', id: myBout.event_id }); } });
+  }
+
+  var feed = await loadFeedMessages();
+  if(feed && feed.length){
+    feed.slice(0,3).forEach(function(m){
+      stripFaces.push({ tab:'Feed', k:'VGA Feed',
+        v: '<b>' + esc(m.who) + '</b> · ' + esc(m.msg) });
+    });
+  }
+
+  var news = await getNews();
+  if(news && news.length){
+    stripFaces.push({ tab:'News', k:'Latest',
+      v: esc(news[0].headline),
+      go: function(){ openSheet({ kind:'news', id: news[0].id }); } });
+  }
+
+  if(!stripFaces.length){
+    stripFaces.push({ tab:'VGA', k:'The league', v:'Fight cards, rankings and the collection.' });
+  }
+  stripAt = 0;
+  paintStrip();
+  if(stripFaces.length > 1 && !stripTimer) stripTimer = setInterval(flipStrip, 7000);
 }
 
-async function loadChamps(){
-  var el = document.getElementById('champs');
-  // level=pro only. The four GFL amateur belts are all vacant and share
-  // weight-class names with the real ones, so they read as duplicates.
-  var t = await q("titles_public?select=name,weight_class,kind,holder_name,holder_slug,held_since,is_interim,sort,league,level"
-    + "&league=eq.UBA&level=eq.pro&is_interim=eq.false&order=sort.asc");
-  if(!t){ retryHandlers['champs'] = loadChamps;
-    el.innerHTML = failHTML("Couldn't load the champions.", 'champs'); return; }
-  if(!t.length){ el.innerHTML = '<div class="empty">No titles yet.</div>'; return; }
-  var doubles = {};
-  t.forEach(function(x){ if(x.holder_name) doubles[x.holder_name] = (doubles[x.holder_name]||0)+1; });
-  el.innerHTML = t.map(function(x){
-    var div = x.weight_class ? wc(x.weight_class) : x.name.replace(/ Title$/,'');
-    if(!x.holder_name){
-      return '<div class="ch vac"><span class="belt"><svg><use href="#i-belt"/></svg></span>'
-        + '<div class="mid"><div class="dv">'+esc(div)+'</div><div class="n">Vacant</div></div></div>';
-    }
-    var dbl = doubles[x.holder_name] > 1 ? '<em>'+doubles[x.holder_name]+'× CHAMP</em>' : '';
-    return '<a class="ch" data-slug="'+esc(x.holder_slug||'')+'"'
-      + ' href="./f/'+encodeURIComponent(x.holder_slug||'')+'.html">'
-      + '<span class="belt"><svg><use href="#i-belt"/></svg></span>'
-      + '<div class="mid"><div class="dv">'+esc(div)+'</div>'
-      + '<div class="n">'+esc(x.holder_name)+dbl+'</div></div>'
-      + '<span class="since">Since '+esc(dstr(x.held_since))+'</span></a>';
-  }).join('');
+/* The feed is the only thing in the app reading the OLD project. Any failure
+   at all is silent and simply contributes no faces. */
+async function loadFeedMessages(){
+  try{
+    var r = await fetch(SB_OLD + '/rest/v1/fighter_messages?select=*&active=eq.true'
+      + '&order=created_at.desc&limit=6',
+      { headers: { apikey: KEY_OLD, Authorization: 'Bearer ' + KEY_OLD } });
+    if(!r.ok) return null;
+    var d = await r.json();
+    if(!Array.isArray(d)) return null;
+    return d.map(function(m){
+      return { who: m.fighter_name || m.name || 'VGA', msg: m.message || m.text || '' };
+    }).filter(function(m){ return m.msg; });
+  }catch(e){ return null; }
 }
+
+function paintStrip(){
+  var el = document.getElementById('strip');
+  if(!el || !stripFaces.length) return;
+  var f = stripFaces[stripAt];
+  el.classList.toggle('mine', !!f.mine);
+  el.innerHTML = '<div class="face in">'
+    + '<div class="body"><div class="k">' + esc(f.k) + '</div><div class="v">' + f.v + '</div></div>'
+    + '<div class="tab"><span>' + esc(f.tab) + '</span></div></div>';
+}
+
+function flipStrip(){
+  if(stripHeld || stripFaces.length < 2) return;
+  var el = document.getElementById('strip');
+  var face = el && el.querySelector('.face');
+  if(!face) return;
+  face.classList.remove('in'); face.classList.add('out');
+  setTimeout(function(){
+    stripAt = (stripAt + 1) % stripFaces.length;
+    paintStrip();
+  }, 260);
+}
+
+document.addEventListener('click', function(e){
+  var st = e.target.closest('#strip');
+  if(!st) return;
+  // Touching it stops the rotation for good — a slot that moves under your
+  // finger is worse than one that picked.
+  stripHeld = true;
+  if(stripTimer){ clearInterval(stripTimer); stripTimer = null; }
+  var f = stripFaces[stripAt];
+  if(f && f.go) f.go();
+});
 
 /* The same slot, three different people:
      - not signed in, or signed in and not a fighter  -> come and fight
@@ -1010,10 +1116,11 @@ function renderJoinSlot(){
   var el = document.getElementById('join-slot');
   if(!el) return;
 
-  if(myBout){
-    var when = new Date(myBout.event_date).toLocaleString('en-US',{ timeZone:'America/New_York',
-      weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
-    el.innerHTML = '<div class="mybout" data-event="'+esc(myBout.event_id)+'">'
+  // Your bout lives in the strip now, so this slot is only ever the
+  // recruiting ask — and it disappears entirely for somebody already booked.
+  if(myBout){ el.innerHTML = ''; return; }
+  if(false){
+    el.innerHTML = '<div class="mybout">'
       + '<div class="top2"><span class="k">'
       + esc(myBout.is_title_fight ? (myBout.title_name || 'Title fight') : 'Your next fight')
       + '</span>'
@@ -1043,6 +1150,69 @@ function renderJoinSlot(){
   el.innerHTML = '<div class="join"><div class="h">FIGHT IN THE UBA</div>'
     + '<div class="s">Sign up to get on a card.</div>'
     + '<a class="b" href="../registration-mobile.html">Register</a></div>';
+}
+
+/* ── RANKINGS, the body of home ──────────────────────────────────────
+   Two tabs off one section: the pound-for-pound order with records, and the
+   UBAe standings. Champions carry a gold rule and a c, which is what let the
+   separate champions rail go — the mark says it in place. */
+var rankTab = 'p4p', rankCache = {};
+
+document.getElementById('rtabs').addEventListener('click', function(e){
+  var b = e.target.closest('button'); if(!b) return;
+  this.querySelectorAll('button').forEach(function(x){ x.classList.remove('on'); });
+  b.classList.add('on');
+  rankTab = b.getAttribute('data-r');
+  loadRanks();
+});
+
+async function loadRanks(){
+  var el = document.getElementById('ranks');
+  if(!el) return;
+  var tab = rankTab;
+  if(rankCache[tab]){ paintRanks(el, tab, rankCache[tab]); return; }
+  el.innerHTML = '<div class="skel"></div><div class="skel" style="width:70%"></div>';
+
+  var rows;
+  if(tab === 'p4p'){
+    rows = await q("fighter_cards?select=display_name,slug,rank,is_champion,headline_wins,"
+      + "headline_losses,headline_draws,weight_class&status=eq.active&rank=not.is.null"
+      + "&order=rank.asc&limit=10");
+  } else {
+    rows = await q("team_standings?select=team_name,team_slug,conference,match_wins,match_losses,"
+      + "match_draws,bout_diff&order=match_wins.desc,bout_diff.desc&limit=10");
+  }
+  if(el.dataset.tab && el.dataset.tab !== tab) return;
+  if(!rows){
+    retryHandlers['ranks'] = loadRanks;
+    el.innerHTML = failHTML("Couldn't load the rankings.", 'ranks'); return;
+  }
+  rankCache[tab] = rows;
+  paintRanks(el, tab, rows);
+}
+
+function paintRanks(el, tab, rows){
+  if(!rows.length){ el.innerHTML = '<div class="empty">Nothing ranked yet.</div>'; return; }
+  if(tab === 'p4p'){
+    el.innerHTML = rows.map(function(f){
+      var rec = (f.headline_wins||0) + '-<em>' + (f.headline_losses||0) + '</em>'
+        + (f.headline_draws ? '-<i>' + f.headline_draws + '</i>' : '');
+      return '<a class="rrow'+(f.is_champion?' champ':'')+'" data-slug="'+esc(f.slug||'')+'"'
+        + ' href="./f/'+encodeURIComponent(f.slug||'')+'.html">'
+        + '<span class="no">#'+f.rank+'</span>'
+        + '<span class="n">'+esc(f.display_name)+(f.is_champion?'<sup>c</sup>':'')+'</span>'
+        + '<span class="rec">'+rec+'</span></a>';
+    }).join('');
+  } else {
+    el.innerHTML = rows.map(function(t, i){
+      var rec = (t.match_wins||0) + '-<em>' + (t.match_losses||0) + '</em>';
+      var diff = Number(t.bout_diff||0);
+      return '<div class="rrow">'
+        + '<span class="no">'+(i+1)+'</span>'
+        + '<span class="n">'+esc(t.team_name)+'</span>'
+        + '<span class="rec">'+rec+' <i>'+(diff>0?'+':'')+diff+'</i></span></div>';
+    }).join('');
+  }
 }
 
 /* ═══ NEWS ═══════════════════════════════════════════════════════════
