@@ -121,7 +121,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 
    If neither exists the space is simply empty, because an empty space reads
    better than a filled rectangle apologising for itself. */
-.fanw{position:relative;margin:4px 0 0;display:flow-root;--peek:60px;padding-top:var(--peek)}
+.fanw{position:relative;margin:4px 0 0;display:flow-root;--peek:92px;padding-top:var(--peek)}
 .fc{position:absolute;top:0;left:50%;width:216px;margin-left:-108px;
   border-radius:0 0 14px 14px;background:linear-gradient(168deg,#F8F6FC 0%,#E5E0F2 100%);
   color:#16131F;cursor:pointer;
@@ -151,9 +151,15 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .fc .stage .sil{position:absolute;bottom:0;height:94%;width:auto;fill:rgba(190,175,235,.34)}
 .fc .stage .sil.l{left:22px}
 .fc .stage .sil.r{right:22px}
-.fc .stage .vsx{position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:4;
-  font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:.1em;color:#F4F1FB;
+.fc .stage .vsx{position:absolute;left:50%;top:26px;transform:translateX(-50%);z-index:4;
+  font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:.1em;color:#F4F1FB;
   text-shadow:0 2px 12px rgba(0,0,0,.9)}
+/* names sit just above the card's top edge, inside the peek */
+.fc .stage .cn{position:absolute;bottom:30px;z-index:4;font-family:'Barlow',sans-serif;font-weight:700;
+  font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:#F4F1FB;
+  text-shadow:0 1px 8px rgba(0,0,0,.95);max-width:44%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fc .stage .cn.l{left:8px}
+.fc .stage .cn.r{right:8px;text-align:right}
 /* nothing at all: the event name peeks instead of an empty gap */
 .fc .stage .bare{position:absolute;left:0;right:0;top:16px;text-align:center;
   font-family:'Bebas Neue',sans-serif;font-size:21px;letter-spacing:.05em;color:rgba(244,241,251,.85);
@@ -892,10 +898,10 @@ async function loadFaceoffs(ids){
     });
   });
   if(!slugs.length) return;
-  var ph = await q("fighter_cards?select=slug,photo_url&slug=in.(" + slugs.join(',') + ")");
+  var ph = await q("fighter_cards?select=slug,profile_photo_url&slug=in.(" + slugs.join(',') + ")");
   if(!ph) return;
   var byslug = {};
-  ph.forEach(function(f){ if(f.photo_url) byslug[f.slug] = f.photo_url; });
+  ph.forEach(function(f){ if(f.profile_photo_url) byslug[f.slug] = f.profile_photo_url; });
   Object.keys(main).forEach(function(k){
     var m = main[k];
     // A missing photo gets a silhouette rather than killing the faceoff.
@@ -987,6 +993,8 @@ function stageHTML(eventId){
     return '<div class="stage">'
       + cutCorner(f.a, 'l') + cutCorner(f.b, 'r')
       + '<span class="vsx">VS</span>'
+      + '<span class="cn l">' + esc(f.an || '') + '</span>'
+      + '<span class="cn r">' + esc(f.bn || '') + '</span>'
       + '</div>';
   }
   return '<div class="stage"></div>';
