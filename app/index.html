@@ -275,6 +275,65 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#8F86AF;
   border:1px solid rgba(255,255,255,.14);border-radius:11px;padding:12px 0;width:calc(100% - 36px)}
 
+/* wallet + binder */
+.bal{margin:14px 18px 0;padding:16px 17px;border-radius:15px;
+  background:linear-gradient(150deg,rgba(245,200,66,.16),rgba(245,200,66,.05));
+  border:1px solid rgba(245,200,66,.3)}
+.bal .k{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:#F5C842}
+.bal .v{font-family:'Bebas Neue',sans-serif;font-size:40px;line-height:1;margin-top:6px;
+  font-variant-numeric:tabular-nums}
+.bal .v em{font-style:normal;font-size:17px;color:#C7BEE4;margin-left:7px}
+.tx{display:flex;align-items:center;gap:12px;margin:0 18px;padding:11px 0;
+  border-bottom:1px solid rgba(255,255,255,.08)}
+.tx .amt{font-family:'Space Mono',monospace;font-size:14px;font-weight:700;flex-shrink:0;
+  font-variant-numeric:tabular-nums;width:76px}
+.tx .amt.up{color:#6EE7B7}
+.tx .amt.dn{color:#F19C96}
+.tx .why{flex:1;font-size:14.5px;min-width:0}
+.tx .when{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.09em;
+  text-transform:uppercase;color:#7E7699;flex-shrink:0}
+.myrow{display:flex;align-items:center;gap:13px;margin:0 18px;padding:13px 0;
+  border-bottom:1px solid rgba(255,255,255,.08)}
+.myrow .av3{width:42px;height:42px;border-radius:12px;flex-shrink:0;overflow:hidden;
+  background:linear-gradient(150deg,#7B6AA8,#3A2E63)}
+.myrow .av3 img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block}
+.myrow .t{font-size:16.5px;font-weight:600}
+.myrow .s{font-size:13px;color:#8F86AF;margin-top:2px}
+.myrow .go2{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:#C3A6FF;flex-shrink:0}
+
+.bstat{display:flex;gap:9px;margin:2px 17px 0}
+.bstat div{flex:1;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.13);
+  border-radius:11px;padding:11px 0;text-align:center}
+.bstat b{display:block;font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1;font-variant-numeric:tabular-nums}
+.bstat s{display:block;text-decoration:none;font-family:'Space Mono',monospace;font-size:7px;
+  letter-spacing:.11em;text-transform:uppercase;color:#9990B4;margin-top:4px}
+.bgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin:0 17px}
+.mini{border-radius:11px;overflow:hidden;background:linear-gradient(168deg,#F8F6FC,#E5E0F2);
+  color:#16131F;box-shadow:0 5px 15px rgba(6,4,20,.5);position:relative}
+.mini .foil{height:4px;background:linear-gradient(90deg,#F5C842,#EC4899,#7B2FFF,#22D3EE,#F5C842)}
+.mini .art{height:74px;position:relative;overflow:hidden;background:
+  radial-gradient(90% 120% at 26% 10%,rgba(123,47,255,.5),transparent 62%),linear-gradient(160deg,#2A1650,#120E22)}
+.mini .art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center}
+.mini .art .init{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',sans-serif;font-size:24px;color:rgba(200,185,240,.34)}
+.mini .qty{position:absolute;right:5px;top:9px;z-index:3;font-family:'Space Mono',monospace;
+  font-size:7px;font-weight:700;color:#EDEAF6;background:rgba(10,8,20,.8);border-radius:9px;padding:2px 6px}
+.mini .in{padding:7px 8px 8px}
+.mini .n{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.02em;line-height:1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini .m2{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+.mini .rar2{font-family:'Space Mono',monospace;font-size:6.5px;font-weight:700;letter-spacing:.09em;
+  text-transform:uppercase;padding:2px 5px;border-radius:3px}
+.r-common{color:#4F4A5E;background:#DEDAE8}
+.r-uncommon{color:#1B5E43;background:#CFEBDE}
+.r-rare{color:#1B4F6B;background:#CDE7F3}
+.r-mystic{color:#4C1D95;background:#E3D6FB}
+.r-legendary{color:#7A5A00;background:linear-gradient(90deg,#FBEFC2,#F3DE94)}
+.r-prismatic{color:#5B1A5E;background:linear-gradient(90deg,#FBE3F5,#DCC7F5,#C7E7F5)}
+.mini .gr{font-family:'Space Mono',monospace;font-size:7.5px;font-weight:700;color:#6B6580}
+
 /* install hint */
 .install{display:none;margin:14px 18px 0;padding:13px 15px;border-radius:13px;
   background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);
@@ -546,6 +605,24 @@ async function q(path){
     var j = await r.json();
     return Array.isArray(j) ? j : null;
   }catch(e){ console.warn('[uba] query error', path, e); return null; }
+}
+
+/* The my_* views filter on the Discord ID inside the caller's JWT, so these
+   reads must send the SESSION token, not the publishable key. Sending the
+   anon key returns 401 — deliberately, since anon has no grant on them. */
+async function qMe(path){
+  if(!session) return null;
+  qMe.lastStatus = 0;
+  try{
+    var r = await fetch(SB + '/rest/v1/' + path, {
+      headers: { apikey: KEY, Authorization: 'Bearer ' + session.access_token }
+    });
+    qMe.lastStatus = r.status;
+    if(r.status === 401){ saveSession(null); me = null; return null; }
+    if(!r.ok){ console.warn('[uba] me query failed', path, r.status); return null; }
+    var j = await r.json();
+    return Array.isArray(j) ? j : null;
+  }catch(e){ console.warn('[uba] me query error', path, e); return null; }
 }
 
 var WC = { lightweight:'Lightweight', middleweight:'Middleweight',
@@ -1259,12 +1336,66 @@ function renderYou(){
     + '<div class="me"><span class="av">'
     + (m.avatar_url ? '<img src="'+esc(m.avatar_url)+'" alt="">' : '')
     + '</span><div><div class="nm">'+esc(name)+'</div>'
-    + '<div class="sub">Connected &middot; '+esc((me.email||'discord').split('@')[0])+'</div></div></div>'
-    + '<div class="lab"><b>Coming next</b><i></i></div>'
-    + perk('i-book','Your binder','Needs the my_cards view')
-    + perk('i-wallet','Your wallet','Needs the my_wallet view')
-    + perk('i-fighters','Your fighter','Matched on your Discord ID')
+    + '<div class="sub" id="me-sub">Connected</div></div></div>'
+    + '<div id="me-body"><div class="skel"></div><div class="skel" style="width:60%"></div></div>'
     + '<button class="signout" id="btn-signout">Sign out</button>';
+  loadMe();
+}
+
+async function loadMe(){
+  var el = document.getElementById('me-body');
+  if(!el) return;
+  var rows = await qMe("my_profile?select=*&limit=1");
+  if(!el.isConnected) return;
+  if(!rows){
+    retryHandlers['me'] = loadMe;
+    el.innerHTML = failHTML("Couldn't load your profile.", 'me'); return;
+  }
+  if(!rows.length){
+    el.innerHTML = '<div class="empty"><b>No league account matched.</b><br>'
+      + 'This Discord account has never used the bot, so there is nothing to show yet. '
+      + 'Run any command in the server and it will appear here.</div>';
+    return;
+  }
+  var p = rows[0];
+  var sub = document.getElementById('me-sub');
+  if(sub) sub.textContent = p.display_name ? 'Connected · ' + p.display_name : 'Connected';
+
+  var html = '<div class="bal"><div class="k">Your balance</div>'
+    + '<div class="v">'+Number(p.vc_balance||0).toLocaleString()+'<em>VC</em></div></div>';
+
+  if(p.fighter_slug){
+    html += '<div class="lab"><b>Your fighter</b><i></i></div>'
+      + '<div class="myrow" data-slug="'+esc(p.fighter_slug)+'">'
+      + '<span class="av3">'+(p.photo_thumb_url || p.photo_url
+          ? '<img src="'+esc(p.photo_thumb_url || p.photo_url)+'" alt="" onerror="this.remove()">' : '')+'</span>'
+      + '<div style="flex:1"><div class="t">'+esc(p.fighter_name)+'</div>'
+      + '<div class="s">'+esc(wc(p.weight_class))+(p.is_champion ? ' · Champion' : '')+'</div></div>'
+      + '<span class="go2">View</span></div>';
+  } else {
+    html += '<div class="lab"><b>Your fighter</b><i></i></div>'
+      + '<div class="empty">You don\'t have a fighter yet. Run <b>/register</b> in the server.</div>';
+  }
+
+  html += '<div class="lab"><b>Recent VC</b><i></i></div><div id="me-vc"><div class="skel"></div></div>';
+  el.innerHTML = html;
+  loadVC();
+}
+
+async function loadVC(){
+  var el = document.getElementById('me-vc');
+  if(!el) return;
+  var rows = await qMe("my_vc_history?select=*&limit=12");
+  if(!el.isConnected) return;
+  if(!rows){ retryHandlers['vc'] = loadVC; el.innerHTML = failHTML("Couldn't load your VC history.", 'vc'); return; }
+  if(!rows.length){ el.innerHTML = '<div class="empty">No VC movement yet.</div>'; return; }
+  el.innerHTML = rows.map(function(t){
+    var up = Number(t.amount) >= 0;
+    return '<div class="tx"><span class="amt '+(up?'up':'dn')+'">'
+      + (up?'+':'') + Number(t.amount).toLocaleString() + '</span>'
+      + '<span class="why">'+esc(t.reason || 'Adjustment')+'</span>'
+      + '<span class="when">'+esc(dstr(t.created_at))+'</span></div>';
+  }).join('');
 }
 
 function renderCards(){
@@ -1278,12 +1409,75 @@ function renderCards(){
       + perk('i-game','Daily training','Level up and earn VC');
     return;
   }
-  el.innerHTML = '<div class="top"><div class="ttl">CARDS</div><div class="vcchip">Signed in</div></div>'
-    + '<div class="empty" style="margin-top:12px"><b>Your binder is next to build.</b><br>'
-    + 'It needs a <code>my_cards</code> view that filters prints to your Discord ID.</div>'
-    + '<div class="lab"><b>Sets</b><i></i></div><div id="setlist"><div class="skel"></div></div>';
-  loadSets();
+  el.innerHTML = '<div class="top"><div class="ttl">CARDS</div>'
+    + '<div class="vcchip" id="cards-vc">&nbsp;</div></div>'
+    + '<div id="binder"><div class="skel"></div><div class="skel" style="width:60%"></div></div>';
+  loadBinder();
 }
+
+var binderCards = null, binderSet = 'all';
+
+async function loadBinder(){
+  var el = document.getElementById('binder');
+  if(!el) return;
+  var rows = await qMe("my_cards?select=*&order=qty.desc");
+  if(!el.isConnected) return;
+  if(!rows){ retryHandlers['binder'] = loadBinder; el.innerHTML = failHTML("Couldn't open your binder.", 'binder'); return; }
+  binderCards = rows;
+
+  var prof = await qMe("my_profile?select=vc_balance&limit=1");
+  var chip = document.getElementById('cards-vc');
+  if(chip && prof && prof.length) chip.textContent = Number(prof[0].vc_balance||0).toLocaleString() + ' VC';
+
+  if(!rows.length){
+    el.innerHTML = '<div class="empty"><b>Your binder is empty.</b><br>'
+      + 'Open a pack in the server and your cards land here.</div>';
+    return;
+  }
+  renderBinder();
+}
+
+function renderBinder(){
+  var el = document.getElementById('binder');
+  if(!el || !binderCards) return;
+  var prints = binderCards.reduce(function(n,c){ return n + Number(c.qty||0); }, 0);
+  var rare = binderCards.filter(function(c){
+    return ['legendary','prismatic','mystic'].indexOf(c.rarity) > -1; }).length;
+  var sets = [];
+  binderCards.forEach(function(c){ if(c.set_name && sets.indexOf(c.set_name) === -1) sets.push(c.set_name); });
+
+  var list = binderSet === 'all' ? binderCards
+    : binderCards.filter(function(c){ return c.set_name === binderSet; });
+
+  el.innerHTML = '<div class="bstat">'
+      + '<div><b>'+prints+'</b><s>prints</s></div>'
+      + '<div><b>'+binderCards.length+'</b><s>unique</s></div>'
+      + '<div><b>'+rare+'</b><s>rare+</s></div></div>'
+    + '<div class="lab"><b>My binder</b><i></i><s>'+list.length+' shown</s></div>'
+    + '<div class="chips" id="binder-chips"><span class="'+(binderSet==='all'?'on':'')+'" data-set="all">All</span>'
+      + sets.map(function(x){ return '<span class="'+(binderSet===x?'on':'')+'" data-set="'+esc(x)+'">'+esc(x)+'</span>'; }).join('')
+      + '</div>'
+    + '<div class="bgrid">' + list.map(function(c){
+        var art = c.photo_url
+          ? '<span class="init">'+esc(initials(c.display_name))+'</span>'
+            + '<img src="'+esc(c.photo_url)+'" alt="" loading="lazy" onerror="this.remove()">'
+          : '<span class="init">'+esc(initials(c.display_name))+'</span>';
+        return '<div class="mini"'+(c.fighter_slug?' data-slug="'+esc(c.fighter_slug)+'"':'')+'>'
+          + (Number(c.qty) > 1 ? '<span class="qty">&times;'+c.qty+'</span>' : '')
+          + '<div class="foil"></div><div class="art">'+art+'</div>'
+          + '<div class="in"><div class="n">'+esc(c.display_name)+'</div>'
+          + '<div class="m2"><span class="rar2 r-'+esc(c.rarity||'common')+'">'+esc(c.rarity||'')+'</span>'
+          + '<span class="gr">'+(c.best_grade != null ? c.best_grade : '')+'</span></div></div></div>';
+      }).join('') + '</div>';
+
+  var chips = document.getElementById('binder-chips');
+  if(chips) chips.addEventListener('click', function(e){
+    var c = e.target.closest('span'); if(!c) return;
+    binderSet = c.getAttribute('data-set'); renderBinder();
+    panels.cards.scrollTop = 0;
+  });
+}
+
 async function loadSets(){
   var el = document.getElementById('setlist'); if(!el) return;
   var rows = await q("card_sets_public?select=name,code,status,set_size");
