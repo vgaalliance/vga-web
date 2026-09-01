@@ -815,7 +815,15 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
      So: pad by whatever the inset still needs AFTER the dead strip, and on a
      device with no dead strip (--deadstrip 0) this is the full inset exactly
      as before. */
-  padding-bottom:max(0px, calc(env(safe-area-inset-bottom,0px) - var(--deadstrip,0px)));
+  /* THE STANDARD iOS TAB BAR: the icons sit ABOVE the home-indicator inset
+     and the bar's background carries on through it to the screen edge. That
+     dark strip under the labels is the point, not a defect — it is what keeps
+     a tappable row clear of the swipe-up gesture, and it is why every app
+     with a bottom bar has one.
+     The deadstrip subtraction is gone. It was correct while the bar could not
+     reach the bottom and something else was already covering that band; now
+     that it does reach, subtracting left the labels jammed against the edge. */
+  padding-bottom:env(safe-area-inset-bottom,0px);
   z-index:20;
   /* THE SAFARI 26 FIXED-OVERLAY BUG, and the documented workaround for it.
      WebKit 26 composites a position:fixed element with a FULLY OPAQUE
