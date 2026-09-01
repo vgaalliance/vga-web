@@ -109,8 +109,15 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .brand{font-family:'Bebas Neue',sans-serif;font-size:23px;letter-spacing:.11em}
 .brand span{color:#C3A6FF}
 .ttl{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.08em}
+/* "Season 2" said nothing — season 2 of what. It names the LEAGUES instead,
+   and turns between them so both get said without needing two chips. */
 .szn{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;
-  color:#CFC8F0;border:1px solid rgba(255,255,255,.22);border-radius:3px;padding:4px 9px}
+  color:#CFC8F0;border:1px solid rgba(255,255,255,.22);border-radius:3px;padding:4px 9px;
+  min-width:52px;text-align:center;overflow:hidden}
+.szn span{display:inline-block;transition:transform .34s cubic-bezier(.4,0,.2,1),opacity .34s}
+.szn span.out{transform:translateY(-110%);opacity:0}
+.szn span.in{transform:translateY(110%);opacity:0;transition:none}
+@media (prefers-reduced-motion:reduce){.szn span{transition:none}}
 /* The whole recruiting ask is now this one pill. It routes to You, which is
    where signing in and registering already live — rather than a strip on Home
    repeating a pitch the You tab makes properly. */
@@ -298,7 +305,25 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .cds{display:flex;gap:7px;margin:0 18px}
 .cds div{flex:1;text-align:center;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);
   border-radius:10px;padding:9px 0}
-.cds b{display:block;font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1;font-variant-numeric:tabular-nums}
+.cds b{display:block;font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1;
+  font-variant-numeric:tabular-nums;transform-origin:50% 0}
+/* the split-flap: the new number drops in from above and settles */
+.cds b.flip{animation:flap .34s cubic-bezier(.34,1.2,.5,1)}
+@keyframes flap{
+  0%{transform:translateY(-58%) rotateX(72deg);opacity:0}
+  55%{transform:translateY(0) rotateX(-9deg);opacity:1}
+  100%{transform:translateY(0) rotateX(0)}
+}
+/* and the tile lights as it lands */
+.cds div.lit{animation:tilelit .5s ease-out}
+@keyframes tilelit{
+  0%{background:rgba(195,166,255,.34);border-color:rgba(195,166,255,.6)}
+  100%{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.14)}
+}
+@media (prefers-reduced-motion:reduce){
+  .cds b.flip{animation:none}
+  .cds div.lit{animation:none}
+}
 .cds s{display:block;text-decoration:none;font-family:'Space Mono',monospace;font-size:7.5px;
   letter-spacing:.11em;text-transform:uppercase;color:#B7AEDC;margin-top:3px}
 
@@ -467,7 +492,17 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 @keyframes sweep{0%{left:-140%}55%{left:180%}100%{left:180%}}
 
 /* ── rankings, as the body of home ── */
-.rtabs{display:flex;gap:15px;margin:0 18px 8px}
+.rbar{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:0 16px 8px}
+.rtabs{display:flex;gap:13px;min-width:0;overflow-x:auto;scrollbar-width:none}
+.rtabs::-webkit-scrollbar{display:none}
+/* GFL has divisional rankings but no pound-for-pound list, so P4P is not
+   offered there rather than offered and empty. */
+.rtabs button[data-r="p4p"].hide{display:none}
+.rleague{display:flex;flex-shrink:0;border:1px solid rgba(255,255,255,.16);border-radius:20px;overflow:hidden}
+.rleague button{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.1em;
+  padding:5px 10px;color:#7E7699}
+.rleague button.on{background:#A78BFA;color:#1A1430}
+.rtabs-old{display:flex;gap:15px;margin:0 18px 8px}
 .rtabs button{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.14em;
   text-transform:uppercase;color:#7E7699;padding-bottom:5px;border-bottom:2px solid transparent}
 .rtabs button.on{color:#C3A6FF;border-bottom-color:#A78BFA}
@@ -792,7 +827,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   </div>
   <div class="top"><div class="brand">VGA <span>ESPORTS</span></div>
     <button class="signin" id="home-signin" data-goto="you">Sign in</button>
-    <div class="szn" id="home-szn" hidden>Season 2</div></div>
+    <div class="szn" id="home-szn" hidden><span id="szn-txt">UBA</span></div></div>
   <div class="fanw" id="fan"></div>
   <div class="dotsn" id="dots"></div>
   <div class="cds" id="cds">
@@ -802,9 +837,18 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   <div class="strip" id="strip" aria-live="polite"></div>
   <div class="install" id="install"></div>
   <div class="lab"><b>Rankings</b><i></i><a data-goto="fighters">View all</a></div>
-  <div class="rtabs" id="rtabs">
-    <button data-r="p4p" class="on">Fighters</button>
-    <button data-r="teams">Teams</button>
+  <div class="rbar">
+    <div class="rtabs" id="rtabs">
+      <button data-r="p4p" class="on">P4P</button>
+      <button data-r="lightweight">LW</button>
+      <button data-r="middleweight">MW</button>
+      <button data-r="light_heavyweight">LHW</button>
+      <button data-r="heavyweight">HW</button>
+    </div>
+    <div class="rleague" id="rleague">
+      <button data-l="pro" class="on">UBA</button>
+      <button data-l="amateur">GFL</button>
+    </div>
   </div>
   <div id="ranks"><div class="skel"></div><div class="skel" style="width:70%"></div></div>
   <div id="join-slot"></div>
@@ -1364,6 +1408,26 @@ function renderFan(keepOrder){
   // card that is over — the reason it was pinned to the next event before.
   setCountdown(fanEvents[fanOrder[0]]);
   cycleStage();
+  teaseFan();
+}
+
+/* NOBODY KNOWS THE HAND MOVES. Three seconds after it settles, it turns
+   itself once and comes back — long enough that the app has finished loading
+   and you are looking at it, short enough that you connect the movement to
+   the cards. Once per session, never again, and never if you have already
+   touched it: a fan that keeps twitching at somebody who knows how it works
+   is just noise. */
+var teased = false, teaseTimer = null;
+function teaseFan(){
+  if(teased || fanEvents.length < 2) return;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  clearTimeout(teaseTimer);
+  teaseTimer = setTimeout(function(){
+    if(teased || !document.querySelector('#fan .fc')) return;
+    teased = true;
+    fanTo(1);                                  // deal one forward …
+    setTimeout(function(){ fanTo(fanEvents.length - 1); }, 900);   // … and back
+  }, 3000);
 }
 
 /* Bring the card at `pos` to the front. Shared by the tap and the swipe so
@@ -1380,6 +1444,10 @@ function fanTo(pos){
   setCountdown(fanEvents[lead]);   // the clock is the card you turned to
   cycleStage();                       // the new front card gets the shuffle
 }
+
+document.getElementById('fan').addEventListener('pointerdown', function(){
+  teased = true; clearTimeout(teaseTimer);   // they found it themselves
+}, true);
 
 document.getElementById('fan').addEventListener('click', function(e){
   if(fanSwiped) return;               // a drag that ended on a card is not a tap
@@ -1500,10 +1568,28 @@ function tickCountdown(){
   var s = Math.floor(diff/1000);
   var d = Math.floor(s/86400), h = Math.floor(s%86400/3600), m = Math.floor(s%3600/60), sec = s%60;
   function p(n){ return String(n).padStart(2,'0'); }
-  document.getElementById('cd-d').textContent = p(d);
-  document.getElementById('cd-h').textContent = p(h);
-  document.getElementById('cd-m').textContent = p(m);
-  document.getElementById('cd-s').textContent = p(sec);
+  // Only a digit that CHANGED flips. Re-running the animation on all four
+  // every second would be a strobe, and the whole point is that the hour
+  // turning over is worth noticing.
+  flipTo('cd-d', p(d)); flipTo('cd-h', p(h));
+  flipTo('cd-m', p(m)); flipTo('cd-s', p(sec));
+}
+
+/* An old split-flap board: the number drops out, the new one drops in, and
+   the tile lights for a moment as it lands. */
+function flipTo(id, val){
+  var el = document.getElementById(id);
+  if(!el || el.textContent === val) return;
+  el.classList.remove('flip');
+  void el.offsetWidth;                       // restart the animation
+  el.textContent = val;
+  el.classList.add('flip');
+  var tile = el.parentNode;
+  if(tile){
+    tile.classList.remove('lit');
+    void tile.offsetWidth;
+    tile.classList.add('lit');
+  }
 }
 /* A10 — these ran forever, including with the app in the background, where
    nobody can see the clock and the poll is pure battery. */
@@ -1636,12 +1722,32 @@ document.addEventListener('click', function(e){
      - a fighter with a bout coming                   -> that bout
      - a fighter with nothing booked                  -> get on the next card */
 /* Signed out shows the Sign in pill; signed in shows the season chip back. */
+/* The chip turns UBA -> GFL -> UBA, slow enough to read and to ignore. */
+var sznAt = 0, sznTimer = null;
+var SZN = ['UBA','GFL'];
+function startSznRotate(){
+  clearInterval(sznTimer);
+  var el = document.getElementById('szn-txt');
+  if(!el) return;
+  sznTimer = setInterval(function(){
+    if(!document.body.contains(el)) return;
+    el.classList.add('out');
+    setTimeout(function(){
+      sznAt = (sznAt + 1) % SZN.length;
+      el.textContent = SZN[sznAt];
+      el.classList.remove('out'); el.classList.add('in');
+      requestAnimationFrame(function(){ el.classList.remove('in'); });
+    }, 340);
+  }, 4200);
+}
+
 function renderHomeHeader(){
   var pill = document.getElementById('home-signin');
   var szn  = document.getElementById('home-szn');
   if(!pill || !szn) return;
   pill.hidden = !!me;
   szn.hidden  = !me;
+  if(!szn.hidden) startSznRotate(); else clearInterval(sznTimer);
 }
 
 function renderJoinSlot(){
@@ -1683,8 +1789,13 @@ function renderJoinSlot(){
    Two tabs off one section: the pound-for-pound order with records, and the
    UBAe standings. Champions carry a gold rule and a c, which is what let the
    separate champions rail go — the mark says it in place. */
-var rankTab = 'p4p', rankCache = {};
+var rankTab = 'p4p', rankLeague = 'pro', rankCache = {};
 
+/* UBA is the pro league, GFL the amateur one — that is the only thing
+   separating them in the data, and rankings_public carries both. GFL has
+   divisional rankings but NO pound-for-pound list, so P4P is hidden rather
+   than offered and empty; switching to GFL on P4P drops you into lightweight.
+   Teams are gone: UBAe finishes after next week. */
 document.getElementById('rtabs').addEventListener('click', function(e){
   var b = e.target.closest('button'); if(!b) return;
   this.querySelectorAll('button').forEach(function(x){ x.classList.remove('on'); });
@@ -1693,54 +1804,57 @@ document.getElementById('rtabs').addEventListener('click', function(e){
   loadRanks();
 });
 
+document.getElementById('rleague').addEventListener('click', function(e){
+  var b = e.target.closest('button'); if(!b) return;
+  this.querySelectorAll('button').forEach(function(x){ x.classList.remove('on'); });
+  b.classList.add('on');
+  rankLeague = b.getAttribute('data-l');
+  applyLeague();
+  loadRanks();
+});
+
+function applyLeague(){
+  var p4p = document.querySelector('.rtabs button[data-r="p4p"]');
+  var gfl = rankLeague === 'amateur';
+  p4p.classList.toggle('hide', gfl);
+  if(gfl && rankTab === 'p4p'){
+    rankTab = 'lightweight';
+    document.querySelectorAll('.rtabs button').forEach(function(x){
+      x.classList.toggle('on', x.getAttribute('data-r') === rankTab);
+    });
+  }
+}
+
 async function loadRanks(){
   var el = document.getElementById('ranks');
   if(!el) return;
-  var tab = rankTab;
-  el.dataset.tab = tab;                 // A6 — the guard below reads this
-  if(rankCache[tab]){ paintRanks(el, tab, rankCache[tab]); return; }
+  var key = rankLeague + ':' + rankTab;
+  el.dataset.tab = key;                 // A6 — the guard below reads this
+  if(rankCache[key]){ paintRanks(el, rankCache[key]); return; }
   el.innerHTML = '<div class="skel"></div><div class="skel" style="width:70%"></div>';
 
-  var rows;
-  if(tab === 'p4p'){
-    rows = await q("fighter_cards?select=display_name,slug,rank,is_champion,headline_wins,"
-      + "headline_losses,headline_draws,weight_class&status=eq.active&rank=not.is.null"
-      + "&order=rank.asc&limit=10");
-  } else {
-    rows = await q("team_standings?select=team_name,team_slug,conference,match_wins,match_losses,"
-      + "match_draws,bout_diff&order=match_wins.desc,bout_diff.desc&limit=10");
-  }
-  if(el.dataset.tab !== tab) return;   // a newer tab won while this was in flight
+  var qs = "rankings_public?select=rank,fighter_name,fighter_slug,weight_class"
+    + "&level=eq." + rankLeague + "&order=rank.asc&limit=15"
+    + (rankTab === 'p4p' ? "&scope=eq.overall"
+                         : "&scope=eq.weight_class&weight_class=eq." + rankTab);
+  var rows = await q(qs);
+  if(el.dataset.tab !== key) return;   // a newer tab won while this was in flight
   if(!rows){
     retryHandlers['ranks'] = loadRanks;
     el.innerHTML = failHTML("Couldn't load the rankings.", 'ranks'); return;
   }
-  rankCache[tab] = rows;
-  paintRanks(el, tab, rows);
+  rankCache[key] = rows;
+  paintRanks(el, rows);
 }
 
-function paintRanks(el, tab, rows){
-  if(!rows.length){ el.innerHTML = '<div class="empty">Nothing ranked yet.</div>'; return; }
-  if(tab === 'p4p'){
-    el.innerHTML = rows.map(function(f){
-      var rec = (f.headline_wins||0) + '-<em>' + (f.headline_losses||0) + '</em>'
-        + (f.headline_draws ? '-<i>' + f.headline_draws + '</i>' : '');
-      return '<a class="rrow'+(f.is_champion?' champ':'')+'" data-slug="'+esc(f.slug||'')+'"'
-        + ' href="./f/'+encodeURIComponent(f.slug||'')+'.html">'
-        + '<span class="no">#'+f.rank+'</span>'
-        + '<span class="n">'+esc(f.display_name)+(f.is_champion?'<sup>c</sup>':'')+'</span>'
-        + '<span class="rec">'+rec+'</span></a>';
-    }).join('');
-  } else {
-    el.innerHTML = rows.map(function(t, i){
-      var rec = (t.match_wins||0) + '-<em>' + (t.match_losses||0) + '</em>';
-      var diff = Number(t.bout_diff||0);
-      return '<div class="rrow">'
-        + '<span class="no">'+(i+1)+'</span>'
-        + '<span class="n">'+esc(t.team_name)+'</span>'
-        + '<span class="rec">'+rec+' <i>'+(diff>0?'+':'')+diff+'</i></span></div>';
-    }).join('');
-  }
+function paintRanks(el, rows){
+  if(!rows.length){ el.innerHTML = '<div class="empty">Nothing ranked here yet.</div>'; return; }
+  el.innerHTML = rows.map(function(f){
+    return '<a class="rrow" data-slug="'+esc(f.fighter_slug||'')+'"'
+      + ' href="./f/'+encodeURIComponent(f.fighter_slug||'')+'.html">'
+      + '<span class="no">#'+f.rank+'</span>'
+      + '<span class="n">'+esc(f.fighter_name)+'</span></a>';
+  }).join('');
 }
 
 /* ═══ NEWS ═══════════════════════════════════════════════════════════
