@@ -1045,11 +1045,10 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    is CSS: a foil sheen across it, a tear strip near the top, the set's colour
    and the card count. The point of a pack is that it is closed — a row of
    text with a button beside it is a to-do item, not something to open. */
-.sealed{display:flex;align-items:center;gap:14px;margin:2px 16px 0}
 .wrapper{width:78px;height:104px;flex-shrink:0;border-radius:7px;position:relative;overflow:hidden;
   background:linear-gradient(150deg,var(--pk),rgba(10,7,20,.92) 78%);
-  border:1px solid rgba(255,255,255,.3);box-shadow:0 8px 20px rgba(0,0,0,.6);cursor:pointer}
-.wrapper.big{width:96px;height:128px}
+  border:1px solid rgba(255,255,255,.3);box-shadow:0 8px 20px rgba(0,0,0,.6);cursor:pointer;
+  transition:transform .12s}
 .wrapper .foil{position:absolute;inset:0;
   background:repeating-linear-gradient(118deg,rgba(255,255,255,.17) 0 2px,transparent 2px 7px)}
 .wrapper .tear{position:absolute;left:0;right:0;top:14px;height:5px;
@@ -1061,20 +1060,16 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .wrapper .cnt{position:absolute;right:-4px;top:-4px;min-width:19px;height:19px;border-radius:10px;
   background:#1A1533;border:1px solid var(--pk);color:var(--pk);font-family:'Space Mono',monospace;
   font-size:8.5px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px}
-.sealed .sm{flex:1;min-width:0}
-.sealed .sn{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:19px;line-height:1;
-  text-transform:uppercase;letter-spacing:.02em}
-.sealed .ss{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.1em;
-  text-transform:uppercase;color:#C0A85E;margin-top:6px}
-.sealed .act.rip{margin-top:12px;width:100%}
 .act.rip{flex:none;padding:9px 16px;background:linear-gradient(90deg,#F5C842,#D6A81F);color:#2A1F00}
 
-/* anything else sealed, small, beside it */
-.sealrail{display:flex;gap:10px;margin:12px 16px 0;overflow-x:auto;scrollbar-width:none}
+/* every sealed pack, one row, newest first */
+.sealrail{display:flex;gap:10px;margin:2px 16px 0;overflow-x:auto;scrollbar-width:none;
+  -webkit-overflow-scrolling:touch}
 .sealrail::-webkit-scrollbar{display:none}
 .sealrail .sw{flex-shrink:0;width:78px;cursor:pointer}
 .sealrail .cap{display:block;font-family:'Space Mono',monospace;font-size:6px;letter-spacing:.1em;
   text-transform:uppercase;color:#8B83AC;margin-top:6px;line-height:1.4}
+.sealrail .sw:active .wrapper{transform:translateY(1px) scale(.98)}
 
 .bstat em{font-style:normal;font-size:13px;color:#8B83AC}
 /* The set chips. There was never a base rule for these — only `.chips
@@ -4186,23 +4181,16 @@ function packsHTML(){
   binderPacks.forEach(function(i){ (by[i.name] = by[i.name] || []).push(i); });
   var names = Object.keys(by).sort(function(a,b){
     return String(by[b][0].acquired_at || '').localeCompare(String(by[a][0].acquired_at || '')); });
-  var lead = by[names[0]], rest = names.slice(1);
-
-  return '<div class="lab"><b>Unopened</b><i></i><s>'+binderPacks.length+'</s></div>'
-    + '<div class="sealed">'
-      + wrapperHTML(lead[0], lead.length, true)
-      + '<div class="sm"><div class="sn">'+esc(lead[0].name)+'</div>'
-        + '<div class="ss">'+packSize(lead[0].name)+' cards'
-        + (lead.length > 1 ? ' \u00b7 '+lead.length+' sealed' : '')+'</div>'
-        + '<button class="act rip" data-rip="'+esc(lead[0].player_item_id)+'">Rip it</button></div>'
-    + '</div>'
-    + (rest.length
-        ? '<div class="sealrail">' + rest.map(function(n){
-            return '<div class="sw" data-rip="'+esc(by[n][0].player_item_id)+'">'
-              + wrapperHTML(by[n][0], by[n].length, false)
-              + '<span class="cap">'+esc(shortPack(n))+'</span></div>';
-          }).join('') + '</div>'
-        : '');
+  /* ONE ROW. A lead pack with a rail underneath split the same thing in two
+     and made the newest look like a different kind of object. They are all
+     sealed packs; they line up. Newest first, and the whole wrapper is the
+     button — a pack you tap to open needs no button beside it saying so. */
+  return '<div class="lab"><b>Unopened</b><i></i><s>tap to rip</s></div>'
+    + '<div class="sealrail">' + names.map(function(n){
+        return '<div class="sw" data-rip="'+esc(by[n][0].player_item_id)+'">'
+          + wrapperHTML(by[n][0], by[n].length)
+          + '<span class="cap">'+esc(shortPack(n))+'</span></div>';
+      }).join('') + '</div>';
 }
 
 /* The wrapper itself. Colour comes from the set the pack belongs to, so two
@@ -4224,10 +4212,8 @@ function packSize(name){
 function shortPack(name){
   return String(name || '').replace(/ (Pack|Box|Single)$/i, '');
 }
-function wrapperHTML(item, count, big){
-  var c = packColour(item.name);
-  return '<div class="wrapper'+(big ? ' big' : '')+'" style="--pk:'+c+'"'
-    + (big ? ' data-rip="'+esc(item.player_item_id)+'"' : '') + '>'
+function wrapperHTML(item, count){
+  return '<div class="wrapper" style="--pk:'+packColour(item.name)+'">'
     + '<span class="foil"></span><span class="tear"></span>'
     + '<span class="sz">'+packSize(item.name)+'<em>cards</em></span>'
     + (count > 1 ? '<span class="cnt">&times;'+count+'</span>' : '')
