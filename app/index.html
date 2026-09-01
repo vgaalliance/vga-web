@@ -658,6 +658,54 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .mrail .cp{display:block;font-family:'Space Mono',monospace;font-size:6.5px;letter-spacing:.1em;
   text-transform:uppercase;color:#7E7699;margin-top:6px;line-height:1.4}
 
+/* ── THINGS THAT WRITE ────────────────────────────────────────────────
+   Every button here spends something or commits you to something, so they
+   are the only filled buttons in the app. Everything else is a row or an
+   outline; when a control is solid, it does something you cannot undo by
+   pressing back. */
+.acts{display:flex;gap:8px;margin:11px 0 0}
+.acts.one{margin:10px 16px 0}
+.act{flex:1;border-radius:9px;padding:11px 0;text-align:center;
+  font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;cursor:pointer;border:1px solid transparent}
+.act.yes{background:linear-gradient(90deg,#6EE7B7,#37B98C);color:#06281D}
+.act.mid{background:none;border-color:rgba(245,200,66,.5);color:#F5C842}
+.act.buy{flex:none;margin-top:7px;padding:8px 16px;
+  background:linear-gradient(90deg,#F5C842,#D6A81F);color:#2A1F00}
+.act.pick{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.18);color:#EFEAFF;
+  font-size:10px;letter-spacing:.06em;text-transform:none;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.act.pick.on{background:linear-gradient(90deg,#A78BFA,#7C5CE0);border-color:transparent;color:#150F2E}
+.act.place{flex:none;padding:11px 18px;background:linear-gradient(90deg,#F5C842,#D6A81F);color:#2A1F00;
+  max-width:60%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.act:active{transform:translateY(1px)}
+.act[disabled],.act.working{opacity:.55;pointer-events:none}
+
+.picks{display:flex;gap:8px;margin-top:11px}
+.picks.off{display:block;text-align:center;font-family:'Space Mono',monospace;font-size:8px;
+  letter-spacing:.12em;text-transform:uppercase;color:#7E7699;padding:9px 0 2px}
+.stake{margin-top:9px;padding-top:9px;border-top:1px solid rgba(255,255,255,.1)}
+.chipsr{display:flex;gap:6px;margin-bottom:8px}
+.chipb{flex:1;border-radius:7px;padding:7px 0;font-family:'Space Mono',monospace;font-size:9px;
+  font-weight:700;color:#C3A6FF;background:rgba(167,139,250,.14);
+  border:1px solid rgba(167,139,250,.3);cursor:pointer}
+.stakerow{display:flex;gap:8px}
+.stakerow .amt{flex:1;min-width:0;border-radius:9px;padding:10px 12px;
+  background:rgba(0,0,0,.32);border:1px solid rgba(255,255,255,.18);color:#EFEAFF;
+  font-family:'Space Mono',monospace;font-size:14px;font-variant-numeric:tabular-nums}
+.stakerow .amt::placeholder{color:#6E6688}
+
+/* The server's own words, not a guess at them. A refusal ("betting is locked",
+   "over the daily limit") is information, so it gets the same slot as a win. */
+#toast{position:fixed;left:16px;right:16px;z-index:60;
+  bottom:calc(74px + env(safe-area-inset-bottom,0px));
+  padding:13px 15px;border-radius:12px;font-size:14px;font-weight:600;line-height:1.4;
+  background:linear-gradient(150deg,#2F2A55,#1B1638);border:1px solid rgba(110,231,183,.45);
+  color:#EFEAFF;box-shadow:0 12px 34px rgba(4,2,14,.6);
+  opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .2s,transform .2s}
+#toast.live{opacity:1;transform:none}
+#toast.bad{border-color:rgba(241,156,150,.5)}
+
 /* SHOP — a price list, not a checkout. */
 .shp{display:flex;align-items:flex-start;gap:12px;margin:0 16px 8px;padding:12px 14px;
   border-radius:12px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.11)}
@@ -666,7 +714,8 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .shp .s{font-size:13px;color:#8F86AF;margin-top:4px;line-height:1.45}
 .shp .stk{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.12em;
   text-transform:uppercase;color:#C0A85E;margin-top:6px}
-.shp .pr{flex-shrink:0;font-family:'Space Mono',monospace;font-size:15px;font-weight:700;
+.shp .prw{flex-shrink:0;text-align:right}
+.shp .pr{font-family:'Space Mono',monospace;font-size:15px;font-weight:700;
   color:#F5C842;font-variant-numeric:tabular-nums}
 .shp .pr em{font-style:normal;font-size:7.5px;letter-spacing:.1em;color:#B39B4E;margin-left:4px}
 
@@ -1295,6 +1344,52 @@ async function qMe(path, isRetry){
     var j = await r.json();
     return Array.isArray(j) ? j : null;
   }catch(e){ console.warn('[uba] me query error', path, e); return null; }
+}
+
+/* ── THE WRITE PATH ───────────────────────────────────────────────────
+   Every write goes through an `app_*` RPC. The page NEVER sends a player id:
+   the function derives it from the JWT, so a page that lies about who it is
+   cannot spend somebody else's VC. Verified from outside — all six answer 401
+   to anonymous.
+
+   The functions return (ok, message, ...) rather than throwing, so a refusal
+   ("betting is locked", "over the daily limit") arrives as text to show the
+   person instead of a stack trace. A transport failure is turned into the
+   same shape here, so a caller only ever handles one. */
+async function rpc(fn, args){
+  if(!session) return { ok:false, message:'Sign in first.' };
+  if(!(await ensureFreshSession())) return { ok:false, message:'Your session expired. Sign in again.' };
+  try{
+    var r = await fetch(SB + '/rest/v1/rpc/' + fn, {
+      method:'POST',
+      headers:{ apikey: KEY, Authorization:'Bearer ' + session.access_token,
+                'Content-Type':'application/json' },
+      body: JSON.stringify(args || {})
+    });
+    var j = null;
+    try{ j = await r.json(); }catch(e){}
+    if(!r.ok) return { ok:false, message:(j && j.message) || ('Could not save that (' + r.status + ').') };
+    var row = Array.isArray(j) ? j[0] : j;
+    return row || { ok:false, message:'No answer from the server.' };
+  }catch(e){ return { ok:false, message:'No connection. Try again.' }; }
+}
+
+/* Buttons that write must not be pressable twice while the first press is in
+   flight — a double-tap on a pack is a pack you cannot get back. */
+function busy(btn, on, label){
+  if(!btn) return;
+  btn.disabled = !!on;
+  btn.classList.toggle('working', !!on);
+  if(on){ btn.dataset.was = btn.textContent; btn.textContent = label || 'Working…'; }
+  else if(btn.dataset.was){ btn.textContent = btn.dataset.was; delete btn.dataset.was; }
+}
+function toast(msg, bad){
+  var t = document.getElementById('toast');
+  if(!t){ t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.className = 'live' + (bad ? ' bad' : '');
+  clearTimeout(window.__toastT);
+  window.__toastT = setTimeout(function(){ t.className = ''; }, 3200);
 }
 
 /* A3 — clearing the session was not enough: You kept showing the name,
@@ -3042,6 +3137,89 @@ document.addEventListener('click', function(e){
   if(e.target.closest('[data-game]')) location.href = '../game/index.html';
 });
 
+/* EVERY WRITE IN ONE PLACE. Each one disables its own button first, shows what
+   the server actually said, and re-reads the screen it changed — never guesses
+   the new state, because a screen that assumes it worked is how somebody ends
+   up believing they accepted a fight they did not. */
+document.addEventListener('click', async function(e){
+  var b;
+
+  if((b = e.target.closest('[data-answer]'))){
+    busy(b, true, 'Saving…');
+    var r = await rpc('app_answer_offer',
+      { p_offer_id: b.getAttribute('data-offer'), p_answer: b.getAttribute('data-answer') });
+    busy(b, false);
+    toast(r.ok ? (b.getAttribute('data-answer') === 'accepted'
+                    ? 'Accepted. The league office can see it.'
+                    : 'Marked tentative.')
+               : r.message, !r.ok);
+    if(r.ok){ renderOffers(); loadMe(); }
+    return;
+  }
+
+  if((b = e.target.closest('[data-sign]'))){
+    busy(b, true, 'Signing…');
+    var r2 = await rpc('app_accept_contract', { p_contract_id: b.getAttribute('data-sign') });
+    busy(b, false);
+    toast(r2.ok ? 'Signed. ' + String(r2.tier || '').toUpperCase() + ' is your deal now.' : r2.message, !r2.ok);
+    if(r2.ok){ renderMyContract(); loadMe(); }
+    return;
+  }
+
+  if((b = e.target.closest('[data-buy]'))){
+    busy(b, true, '…');
+    var r3 = await rpc('app_buy_shop_item', { p_item_id: b.getAttribute('data-buy') });
+    busy(b, false);
+    toast(r3.ok ? (r3.message || 'Bought.') + ' Balance ' + Number(r3.new_balance||0).toLocaleString() + ' VC'
+                : r3.message, !r3.ok);
+    if(r3.ok){ renderShop(); loadMe(); }
+    return;
+  }
+
+  /* Picking a corner does NOT place anything — it opens the stake row. Two
+     taps to spend VC is deliberate; one tap is how a scroll becomes a bet. */
+  if((b = e.target.closest('[data-bet]'))){
+    var mid = b.getAttribute('data-bet'), side = b.getAttribute('data-side');
+    var box = document.getElementById('stake-' + mid);
+    if(!box) return;
+    var same = box.getAttribute('data-side') === side && !box.hidden;
+    box.parentNode.querySelectorAll('.pick').forEach(function(x){ x.classList.remove('on'); });
+    if(same){ box.hidden = true; box.removeAttribute('data-side'); return; }
+    b.classList.add('on');
+    box.setAttribute('data-side', side);
+    box.hidden = false;
+    box.innerHTML = '<div class="chipsr">'
+      + [100,500,1000,5000].map(function(v){
+          return '<button class="chipb" data-stake="'+v+'">'+v.toLocaleString()+'</button>'; }).join('')
+      + '</div>'
+      + '<div class="stakerow">'
+      + '<input class="amt" type="number" inputmode="numeric" min="1" step="1" placeholder="VC" '
+      + 'aria-label="Amount in VC">'
+      + '<button class="act place" data-place="'+esc(mid)+'">On ' + esc(b.textContent) + '</button>'
+      + '</div>';
+    return;
+  }
+
+  if((b = e.target.closest('[data-stake]'))){
+    var inp = b.closest('.stake').querySelector('.amt');
+    if(inp) inp.value = b.getAttribute('data-stake');
+    return;
+  }
+
+  if((b = e.target.closest('[data-place]'))){
+    var box2 = b.closest('.stake');
+    var amt = Math.floor(Number(box2.querySelector('.amt').value || 0));
+    if(!(amt > 0)){ toast('Enter an amount first.', true); return; }
+    busy(b, true, 'Placing…');
+    var r4 = await rpc('app_place_bet',
+      { p_match_id: b.getAttribute('data-place'), p_side: box2.getAttribute('data-side'), p_amount: amt });
+    busy(b, false);
+    toast(r4.ok ? 'Bet placed. Balance ' + Number(r4.new_balance||0).toLocaleString() + ' VC' : r4.message, !r4.ok);
+    if(r4.ok){ renderBetting(); loadMe(); }
+    return;
+  }
+});
+
 /* THE CAREER NUMBERS. Rank, record and the form bar are public — they come
    from fighter_cards and fighter_matches, not from a my_* view — so this is
    the same data anybody could read about you, arranged for you. */
@@ -3170,11 +3348,13 @@ async function renderShop(){
           + '<div style="flex:1;min-width:0"><div class="t">'+esc(r.name)+'</div>'
           + (r.description ? '<div class="s">'+esc(r.description)+'</div>' : '')
           + (r.stock !== null ? '<div class="stk">'+(out ? 'Sold out' : Number(r.stock)+' left')+'</div>' : '')
-          + '</div><div class="pr">'+Number(r.vc_price||0).toLocaleString()+'<em>VC</em></div></div>';
+          + '</div><div class="prw"><div class="pr">'+Number(r.vc_price||0).toLocaleString()+'<em>VC</em></div>'
+          + (out ? '' : '<button class="act buy" data-buy="'+esc(r.id)+'">Buy</button>')
+          + '</div></div>';
       }).join('');
   }).join('')
-  + '<div class="doit">Buy with <b>/buy</b> in the server, or from the shop board. '
-  + 'This app shows the prices, it does not take payment.</div>';
+  + '<div class="doit">Bought here or in Discord, it is the same wallet and the same stock. '
+  + 'Gifting stays in the server \u2014 <b>/buy</b> with a recipient.</div>';
 }
 
 /* ── WALLET ── the balance, and every move behind it. */
@@ -3252,8 +3432,10 @@ async function renderMyContract(){
   var html = '';
   if(offered){
     html += '<div class="lab"><b>Offered to you</b><i></i></div>' + terms(offered, 'offer')
-      + '<div class="doit">Answer it in the Discord DM the matchmakers sent, '
-      + 'or run <b>/contract</b> in the server. Nothing is signed from this app.</div>';
+      + '<div class="acts one"><button class="act yes" data-sign="'+esc(offered.contract_id)+'">'
+      + 'Sign this deal</button></div>'
+      + '<div class="doit">Signing here retires your current deal in the same step. '
+      + 'To <b>decline</b>, use the Discord DM — that one goes to a human.</div>';
   }
   if(active){
     html += '<div class="lab"><b>'+(offered ? 'Current deal' : 'Your deal')+'</b><i></i></div>' + terms(active);
@@ -3289,11 +3471,15 @@ async function renderOffers(){
       + (o.scheduled_rounds ? ' \u00b7 ' + o.scheduled_rounds + ' rounds' : '')
       + (o.is_title_fight ? ' \u00b7 ' + esc(o.title_name || 'Title fight') : '')
       + (o.card_published ? '' : ' \u00b7 card not announced')+'</div>'
+      + '<div class="acts">'
+      + '<button class="act yes" data-answer="accepted" data-offer="'+esc(o.offer_id)+'">Accept</button>'
+      + '<button class="act mid" data-answer="tentative" data-offer="'+esc(o.offer_id)+'">Tentative</button>'
+      + '</div>'
       + '<button class="ofrgo" data-event="'+esc(o.event_id)+'">See the card</button>'
       + '</div>';
   }).join('')
-  + '<div class="doit">Accept or decline from the Discord DM you were sent, '
-  + 'or run <b>/offers</b> in the server. This app can show them, not answer them.</div>';
+  + '<div class="doit">To <b>decline</b>, use the Discord DM. Declining pulls you off a '
+  + 'built card, so it goes to a human in the league office rather than through here.</div>';
 }
 
 /* BETTING. Read-only until the write path exists — the app has no way to
@@ -3330,8 +3516,16 @@ async function renderBetting(){
       + '<i class="a" style="width:'+pa+'%"></i><i class="b" style="width:'+(100-pa)+'%"></i></div>'
       + '<div class="nums"><span class="la">'+a.toLocaleString()+' · '+mult(a)+'</span>'
       + '<span class="mid3">'+Number(r.bets||0)+' bets</span>'
-      + '<span class="lb">'+mult(b)+' · '+b.toLocaleString()+'</span></div></div></div>';
-  }).join('') + '<div class="foot">Reading only &middot; betting opens from Discord</div>';
+      + '<span class="lb">'+mult(b)+' · '+b.toLocaleString()+'</span></div></div>'
+      + (me ? '<div class="picks">'
+          + '<button class="act pick" data-bet="'+esc(r.match_id)+'" data-side="a">'
+          + esc(r.side_a||'A')+'</button>'
+          + '<button class="act pick" data-bet="'+esc(r.match_id)+'" data-side="b">'
+          + esc(r.side_b||'B')+'</button></div>'
+          + '<div class="stake" id="stake-'+esc(r.match_id)+'" hidden></div>'
+        : '<div class="picks off">Sign in on the You tab to bet</div>')
+      + '</div>';
+  }).join('') + '<div class="foot">Pari-mutuel &middot; no rake &middot; pools lock at the first bell</div>';
 }
 
 function renderCards(){
