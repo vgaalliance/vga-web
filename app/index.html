@@ -288,6 +288,9 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   opacity:.94;filter:brightness(.58) saturate(.8) blur(1.6px)}
 .fc[data-pos="2"]{top:calc(var(--peek) + 16px);z-index:1;transform:rotate(-7deg) translateX(-52px) scale(.86);
   opacity:.9;filter:brightness(.38) saturate(.7) blur(3px)}
+/* A hand is three cards deep however many are in the deck. Everything past
+   the third is dealt but not shown, and swiping rotates it forward. */
+.fc:not([data-pos="0"]):not([data-pos="1"]):not([data-pos="2"]){display:none}
 .dotsn{display:flex;gap:6px;justify-content:center;margin:20px 0 16px;min-height:6px}
 .dotsn i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.22);display:block;transition:background .2s}
 .dotsn i.on{background:#A78BFA;box-shadow:0 0 8px rgba(167,139,250,.9)}
@@ -1154,9 +1157,12 @@ async function queryStars(){
 }
 
 async function loadHome(){
-  var evs = await q("events_public?select=id,name,type,status,event_date,stream_platform&status=eq.scheduled&order=event_date.asc&limit=5");
+  // EVERY scheduled event, not the next three. The hand still shows three at
+  // a time — swiping rotates the rest through it — so a fourth event widens
+  // the deck rather than the screen.
+  var evs = await q("events_public?select=id,name,type,status,event_date,stream_platform&status=eq.scheduled&order=event_date.asc&limit=40");
   // Drop anything that has plainly already happened, whatever its status says.
-  if(evs) evs = evs.filter(function(e){ return !eventIsOver(e); }).slice(0, 3);
+  if(evs) evs = evs.filter(function(e){ return !eventIsOver(e); });
   if(evs && evs.length < 3){
     // One scheduled event leaves a hand of one. Backfill with what just
     // happened so the fan is always three deep and the past stays reachable.
@@ -1174,7 +1180,7 @@ async function loadHome(){
       if(xo !== yo) return xo ? 1 : -1;            // still to come, first
       return xo ? new Date(y.event_date) - new Date(x.event_date)
                 : new Date(x.event_date) - new Date(y.event_date);
-    }).slice(0, 3);
+    });
   }
   if(!evs){
     retryHandlers['home'] = loadHome;
@@ -1352,12 +1358,11 @@ function renderFan(keepOrder){
   dots.innerHTML = fanEvents.length > 1
     ? fanEvents.map(function(_,i){ return '<i class="'+(i===fanOrder[0]?'on':'')+'"></i>'; }).join('')
     : '';
-  // THE COUNTDOWN DOES NOT FOLLOW THE HAND. It used to show whichever card
-  // was in front, so turning the fan to look at a past event started counting
-  // down to something that already happened. It is always the soonest event
-  // that has not started — the one number on this screen that has to mean the
-  // same thing every time you look at it.
-  setCountdown(nextUpcoming());
+  // THE COUNTDOWN FOLLOWS THE HAND. Turn to a card and the clock is that
+  // event's. setCountdown hides the block entirely for anything already
+  // started or finished, which is what stops it reading 00:00:00:00 under a
+  // card that is over — the reason it was pinned to the next event before.
+  setCountdown(fanEvents[fanOrder[0]]);
   cycleStage();
 }
 
@@ -1372,9 +1377,7 @@ function fanTo(pos){
   });
   var lead = fanOrder[0];
   document.querySelectorAll('#dots i').forEach(function(d, i){ d.classList.toggle('on', i === lead); });
-  // NOT the card in front. The countdown is the next event's, always — turning
-  // the hand to a finished night must not start counting down to it.
-  setCountdown(nextUpcoming());
+  setCountdown(fanEvents[lead]);   // the clock is the card you turned to
   cycleStage();                       // the new front card gets the shuffle
 }
 
@@ -1423,7 +1426,10 @@ var fanSwiped = false;
 function setCountdown(ev){
   // A past event has nothing to count down to; showing 00:00:00:00 under a
   // finished card reads like a bug.
-  countdownTarget = (ev && !eventIsOver(ev)) ? new Date(ev.event_date).getTime() : null;
+  // Not just "not over" — NOT STARTED. A night in progress has nothing to
+  // count down to, and four zeros under it reads as a broken clock.
+  var t = ev ? new Date(ev.event_date).getTime() : NaN;
+  countdownTarget = (ev && !eventIsOver(ev) && isFinite(t) && t > Date.now()) ? t : null;
   tickCountdown();
 }
 /* THE BAR IS PUT WHERE THE SCREEN ACTUALLY ENDS.
