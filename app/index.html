@@ -1409,15 +1409,20 @@ function setCountdown(ev){
    ONLY WHEN INSTALLED. In a browser that difference is real chrome — a URL bar,
    a toolbar — and shoving the nav under it would hide it completely. */
 function seatBar(){
+  // OFF. This pushed the bar down by screen.height - innerHeight, which was
+  // built on the theory that the viewport was short. It was not: the cause is
+  // the Safari 26 fixed-overlay PAINT bug, handled by the opacity rule on
+  // .bar. With that fix in, the background reaches the bottom of the screen —
+  // and this push then carried the bar's CONTENTS past it, which is why the
+  // five labels came back cut in half along one line.
+  //
+  // Two corrections for one fault is one correction too many. The measurement
+  // is kept because it costs nothing and `?diag` prints it, but it no longer
+  // moves anything.
   var standalone = matchMedia('(display-mode: standalone)').matches || !!navigator.standalone;
-  var gap = 0;
-  if(standalone && screen && screen.height){
-    gap = Math.round(screen.height - window.innerHeight);
-    // a sane shortfall only. Anything bigger is not this bug and guessing at
-    // it would push the bar off the screen entirely.
-    if(!(gap > 0 && gap <= 120)) gap = 0;
-  }
-  document.documentElement.style.setProperty('--barpush', gap + 'px');
+  window.__barShortfall = (standalone && screen && screen.height)
+    ? Math.round(screen.height - window.innerHeight) : 0;
+  document.documentElement.style.setProperty('--barpush', '0px');
 }
 seatBar();
 addEventListener('resize', seatBar);
