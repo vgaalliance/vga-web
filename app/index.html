@@ -61,8 +61,21 @@
    paintable, and painting it the BAR's colour makes that band read as the bar
    rather than as a gap beneath it. #ground covers the whole viewport from
    top:0, so this colour can only ever show in the strip below. */
-html{height:100%;background:#1A1533}
-body{height:100%;overflow:hidden;background:#1A1533;
+/* TWO DOCUMENTED iOS WORKAROUNDS, both about position:fixed resolving against
+   the wrong box in a standalone PWA.
+
+   min-height: calc(100% + env(safe-area-inset-top)) on HTML is the known fix
+   for fixed elements sitting shifted in an installed iOS web app — the
+   initial containing block is derived from a layout viewport that does not
+   include the inset, and this forces it to.
+
+   height: -webkit-fill-available on BODY is the other half, and is what
+   Tailwind adopted for the same family of bugs: 100% and 100vh both resolve
+   to a height that is not what is on screen in iOS, while fill-available asks
+   the browser for the box it actually has. The plain 100% stays first as the
+   fallback for anything that does not know the keyword. */
+html{height:100%;min-height:calc(100% + env(safe-area-inset-top));background:#1A1533}
+body{height:100%;height:-webkit-fill-available;overflow:hidden;background:#1A1533;
   color:#EDEAF6;font-family:'Barlow',system-ui,sans-serif;-webkit-font-smoothing:antialiased;
 }
 /* The gradient is a REAL ELEMENT, not a background on html or body.
