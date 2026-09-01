@@ -1650,15 +1650,11 @@ function renderJoinSlot(){
     return;
   }
 
-  if(myFighter){
-    el.innerHTML = '<div class="join"><div class="h">NOT ON THE NEXT CARD</div>'
-      + '<div class="s">You\'re registered as '+esc(myFighter.fighter_name)
-      + '. Sign up to be matched on the next one.</div>'
-      + '<a class="b" href="../registration-mobile.html">Sign up</a></div>';
-    return;
-  }
-  // Nobody signed in, or signed in without a fighter: no strip. The Sign in
-  // pill in the header carries it, and You says what to do next.
+  // NO STRIP, EVER. Telling a registered fighter to "sign up to be matched"
+  // every single time they open the app is nagging, not information — they
+  // already did the thing it is asking for. Signing in lives in the header
+  // pill; signing up for a card lives in You, next to their own record where
+  // it means something.
   el.innerHTML = '';
 }
 
@@ -2538,6 +2534,8 @@ function showDiag(){
   renderYou();
   renderCards();
   renderJoinSlot();
+  renderHomeHeader();   // <- boot is where `me` gets set; without this the
+                        //    Sign in pill stayed up for signed-in people
   installHint();
   showDiag();
 
