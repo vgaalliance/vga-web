@@ -1041,17 +1041,40 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .slabw.unowned .slab{box-shadow:0 6px 14px rgba(0,0,0,.4)}
 .slabw.unowned .fx{display:none}
 
-/* unopened packs, first thing on the screen because ripping is the point */
-.packs{display:flex;flex-direction:column;gap:8px;margin:2px 16px 4px}
-.pack{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:12px;
-  background:linear-gradient(90deg,rgba(245,200,66,.16),rgba(245,200,66,.03));
-  border:1px solid rgba(245,200,66,.36)}
-.pack .pk{flex:1;min-width:0;display:flex;align-items:center;gap:7px}
-.pack .pn{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;
-  text-transform:uppercase;letter-spacing:.02em;min-width:0;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pack .pc{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;color:#F5C842;flex-shrink:0}
+/* A SEALED PACK, DRAWN. There is no pack art in the database, so the wrapper
+   is CSS: a foil sheen across it, a tear strip near the top, the set's colour
+   and the card count. The point of a pack is that it is closed — a row of
+   text with a button beside it is a to-do item, not something to open. */
+.sealed{display:flex;align-items:center;gap:14px;margin:2px 16px 0}
+.wrapper{width:78px;height:104px;flex-shrink:0;border-radius:7px;position:relative;overflow:hidden;
+  background:linear-gradient(150deg,var(--pk),rgba(10,7,20,.92) 78%);
+  border:1px solid rgba(255,255,255,.3);box-shadow:0 8px 20px rgba(0,0,0,.6);cursor:pointer}
+.wrapper.big{width:96px;height:128px}
+.wrapper .foil{position:absolute;inset:0;
+  background:repeating-linear-gradient(118deg,rgba(255,255,255,.17) 0 2px,transparent 2px 7px)}
+.wrapper .tear{position:absolute;left:0;right:0;top:14px;height:5px;
+  background:repeating-linear-gradient(90deg,rgba(10,7,20,.85) 0 3px,transparent 3px 6px)}
+.wrapper .sz{position:absolute;left:6px;bottom:6px;font-family:'Bebas Neue',sans-serif;
+  font-size:21px;line-height:.9;text-shadow:0 1px 5px rgba(0,0,0,.85)}
+.wrapper .sz em{font-style:normal;display:block;font-family:'Space Mono',monospace;font-size:5px;
+  letter-spacing:.13em;color:rgba(255,255,255,.85);margin-top:2px}
+.wrapper .cnt{position:absolute;right:-4px;top:-4px;min-width:19px;height:19px;border-radius:10px;
+  background:#1A1533;border:1px solid var(--pk);color:var(--pk);font-family:'Space Mono',monospace;
+  font-size:8.5px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px}
+.sealed .sm{flex:1;min-width:0}
+.sealed .sn{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:19px;line-height:1;
+  text-transform:uppercase;letter-spacing:.02em}
+.sealed .ss{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:#C0A85E;margin-top:6px}
+.sealed .act.rip{margin-top:12px;width:100%}
 .act.rip{flex:none;padding:9px 16px;background:linear-gradient(90deg,#F5C842,#D6A81F);color:#2A1F00}
+
+/* anything else sealed, small, beside it */
+.sealrail{display:flex;gap:10px;margin:12px 16px 0;overflow-x:auto;scrollbar-width:none}
+.sealrail::-webkit-scrollbar{display:none}
+.sealrail .sw{flex-shrink:0;width:78px;cursor:pointer}
+.sealrail .cap{display:block;font-family:'Space Mono',monospace;font-size:6px;letter-spacing:.1em;
+  text-transform:uppercase;color:#8B83AC;margin-top:6px;line-height:1.4}
 
 .bstat em{font-style:normal;font-size:13px;color:#8B83AC}
 /* The set chips. There was never a base rule for these — only `.chips
@@ -4011,14 +4034,11 @@ function renderBinder(){
         + '<div class="s">'+(binderAll.length - owned)+' to go \u00b7 '
         + done+' of '+sets.length+' sets done \u00b7 '+prints+' prints</div></div>'
       + '</div>'
-      + '<div class="brs">' + sets.slice(0,4).map(function(x){
-          var p = Math.round(x.have / (x.cards.length||1) * 100);
-          return '<div class="br"><div class="bl"><span>'+esc(x.code)+'</span>'
-            + '<span>'+x.have+'/'+x.cards.length+'</span></div>'
-            + '<div class="bt"><i style="width:'+p+'%'
-            + (x.have === x.cards.length ? ';background:#6EE7B7' : '')+'"></i></div></div>';
-        }).join('') + '</div>'
     + '</div>';
+  /* The per-set bars are gone. They repeated what every shelf heading already
+     says two inches below, and they said it in set CODES — "S2-TB", "UBAE26-SPR"
+     — which are database keys, not names anybody reads. One number that goes
+     up is the job; the shelves carry the detail. */
 
   if(binderPacks && binderPacks.length) html += packsHTML();
 
@@ -4153,19 +4173,65 @@ function bars(seed){
   return out;
 }
 
+/* A SEALED PACK SHOULD LOOK SEALED. A row of text with a button is a to-do
+   item; the whole reason a pack is worth anything is that it is closed. The
+   wrapper is drawn — foil sheen, a tear strip, the set's colour and how many
+   cards are inside — because there is no pack art in the database either.
+
+   The newest one leads at full size. Any others sit beside it as a rail,
+   small, because a shelf of sealed packs is a thing people like looking at
+   and a list of them is not. */
 function packsHTML(){
   var by = {};
   binderPacks.forEach(function(i){ (by[i.name] = by[i.name] || []).push(i); });
-  var names = Object.keys(by);
+  var names = Object.keys(by).sort(function(a,b){
+    return String(by[b][0].acquired_at || '').localeCompare(String(by[a][0].acquired_at || '')); });
+  var lead = by[names[0]], rest = names.slice(1);
+
   return '<div class="lab"><b>Unopened</b><i></i><s>'+binderPacks.length+'</s></div>'
-    + '<div class="packs">' + names.map(function(n){
-        var row = by[n];
-        return '<div class="pack">'
-          + '<div class="pk"><span class="pn">'+esc(n)+'</span>'
-          + (row.length > 1 ? '<span class="pc">&times;'+row.length+'</span>' : '') + '</div>'
-          + '<button class="act rip" data-rip="'+esc(row[0].player_item_id)+'">Rip it</button>'
-          + '</div>';
-      }).join('') + '</div>';
+    + '<div class="sealed">'
+      + wrapperHTML(lead[0], lead.length, true)
+      + '<div class="sm"><div class="sn">'+esc(lead[0].name)+'</div>'
+        + '<div class="ss">'+packSize(lead[0].name)+' cards'
+        + (lead.length > 1 ? ' \u00b7 '+lead.length+' sealed' : '')+'</div>'
+        + '<button class="act rip" data-rip="'+esc(lead[0].player_item_id)+'">Rip it</button></div>'
+    + '</div>'
+    + (rest.length
+        ? '<div class="sealrail">' + rest.map(function(n){
+            return '<div class="sw" data-rip="'+esc(by[n][0].player_item_id)+'">'
+              + wrapperHTML(by[n][0], by[n].length, false)
+              + '<span class="cap">'+esc(shortPack(n))+'</span></div>';
+          }).join('') + '</div>'
+        : '');
+}
+
+/* The wrapper itself. Colour comes from the set the pack belongs to, so two
+   sealed packs from different sets never look the same in a stack. */
+var SETC = { 'first edition':'#4FB8F0', 'gfl':'#FF6EC7', 'throwback':'#F5C842',
+             'spring':'#5FD98A', 'mystery':'#B08BFA' };
+function packColour(name){
+  var n = String(name || '').toLowerCase();
+  if(n.indexOf('first edition') > -1) return SETC['first edition'];
+  if(n.indexOf('gfl') > -1)           return SETC['gfl'];
+  if(n.indexOf('spring') > -1)        return SETC.spring;
+  if(n.indexOf('throwback') > -1)     return SETC.throwback;
+  return SETC.mystery;
+}
+function packSize(name){
+  var n = String(name || '').toLowerCase();
+  return n.indexOf('box') > -1 ? 15 : n.indexOf('single') > -1 ? 1 : 5;
+}
+function shortPack(name){
+  return String(name || '').replace(/ (Pack|Box|Single)$/i, '');
+}
+function wrapperHTML(item, count, big){
+  var c = packColour(item.name);
+  return '<div class="wrapper'+(big ? ' big' : '')+'" style="--pk:'+c+'"'
+    + (big ? ' data-rip="'+esc(item.player_item_id)+'"' : '') + '>'
+    + '<span class="foil"></span><span class="tear"></span>'
+    + '<span class="sz">'+packSize(item.name)+'<em>cards</em></span>'
+    + (count > 1 ? '<span class="cnt">&times;'+count+'</span>' : '')
+    + '</div>';
 }
 
 /* Foil costs nothing when it is not on screen. */
