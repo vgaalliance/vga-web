@@ -98,6 +98,12 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .ttl{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.08em}
 .szn{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;
   color:#CFC8F0;border:1px solid rgba(255,255,255,.22);border-radius:3px;padding:4px 9px}
+/* The whole recruiting ask is now this one pill. It routes to You, which is
+   where signing in and registering already live — rather than a strip on Home
+   repeating a pitch the You tab makes properly. */
+.signin{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:#1A1430;background:linear-gradient(100deg,#C3A6FF,#A78BFA);
+  border-radius:20px;padding:6px 13px;box-shadow:0 3px 12px rgba(139,92,246,.4)}
 .vcchip{display:flex;align-items:center;gap:6px;font-family:'Space Mono',monospace;font-size:11px;
   font-weight:700;color:#F5C842;border:1px solid rgba(245,200,66,.3);border-radius:20px;padding:5px 12px}
 .lab{display:flex;align-items:center;gap:9px;margin:20px 18px 11px}
@@ -768,7 +774,9 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
     <span class="txt"><span class="k">Live now</span><span class="n" id="live-name"></span></span>
     <a class="go" id="live-go" href="https://youtube.com/vgaglobal" target="_blank" rel="noopener">Watch</a>
   </div>
-  <div class="top"><div class="brand">VGA <span>ESPORTS</span></div><div class="szn">Season 2</div></div>
+  <div class="top"><div class="brand">VGA <span>ESPORTS</span></div>
+    <button class="signin" id="home-signin" data-goto="you">Sign in</button>
+    <div class="szn" id="home-szn" hidden>Season 2</div></div>
   <div class="fanw" id="fan"></div>
   <div class="dotsn" id="dots"></div>
   <div class="cds" id="cds">
@@ -934,7 +942,7 @@ function signedOutUnexpectedly(){
   if(!session && !me) return;
   saveSession(null);
   me = null; myFighter = null; myBout = null;
-  paintAvatar(); renderYou(); renderCards(); renderJoinSlot(); loadStrip();
+  paintAvatar(); renderYou(); renderCards(); renderJoinSlot(); renderHomeHeader(); loadStrip();
 }
 
 var WC = { lightweight:'Lightweight', middleweight:'Middleweight',
@@ -1606,6 +1614,15 @@ document.addEventListener('click', function(e){
      - not signed in, or signed in and not a fighter  -> come and fight
      - a fighter with a bout coming                   -> that bout
      - a fighter with nothing booked                  -> get on the next card */
+/* Signed out shows the Sign in pill; signed in shows the season chip back. */
+function renderHomeHeader(){
+  var pill = document.getElementById('home-signin');
+  var szn  = document.getElementById('home-szn');
+  if(!pill || !szn) return;
+  pill.hidden = !!me;
+  szn.hidden  = !me;
+}
+
 function renderJoinSlot(){
   var el = document.getElementById('join-slot');
   if(!el) return;
@@ -1640,10 +1657,9 @@ function renderJoinSlot(){
       + '<a class="b" href="../registration-mobile.html">Sign up</a></div>';
     return;
   }
-
-  el.innerHTML = '<div class="join"><div class="h">FIGHT IN THE UBA</div>'
-    + '<div class="s">Sign up to get on a card.</div>'
-    + '<a class="b" href="../registration-mobile.html">Register</a></div>';
+  // Nobody signed in, or signed in without a fighter: no strip. The Sign in
+  // pill in the header carries it, and You says what to do next.
+  el.innerHTML = '';
 }
 
 /* ── RANKINGS, the body of home ──────────────────────────────────────
@@ -2234,7 +2250,7 @@ function signIn(){
 }
 function signOut(){
   saveSession(null); me = null; myFighter = null; myBout = null;
-  renderYou(); renderCards(); paintAvatar(); renderJoinSlot();
+  renderYou(); renderCards(); paintAvatar(); renderJoinSlot(); renderHomeHeader();
 }
 
 /* Who is looking, resolved once at boot and after sign-in. Every screen that
@@ -2289,7 +2305,12 @@ function renderYou(){
       + perk('i-wallet','Your wallet','VC balance and where it went')
       + perk('i-fighters','Your fighter','Record, next bout, your own card')
       + perk('i-game','Training progress','Level, streak and VC earned')
-      + perk('i-bell','Fight night alerts','Sent as a Discord DM');
+      + perk('i-bell','Fight night alerts','Sent as a Discord DM')
+      + '<div class="lab"><b>Want to fight?</b><i></i></div>'
+      + '<div class="join"><div class="h">FIGHT IN THE UBA</div>'
+      + '<div class="s">Sign in first so your fighter is tied to your Discord, '
+      + 'then register to get matched on a card.</div>'
+      + '<a class="b" href="../registration-mobile.html">Register</a></div>';
     return;
   }
   var m = me.user_metadata || {};
