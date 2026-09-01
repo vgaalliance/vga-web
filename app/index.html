@@ -88,7 +88,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .panel.live{display:block}
 /* Just clears the bar. This used to be much larger, which put a field of
    nothing under the last row when you scrolled to the end. */
-.pad{padding-bottom:calc(62px + env(safe-area-inset-bottom,0px) + var(--barpush, 0px))}
+.pad{padding-bottom:calc(62px + env(safe-area-inset-bottom,0px))}
 .wrapmax{max-width:520px;margin:0 auto}
 
 /* shared furniture */
@@ -705,7 +705,16 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .bar{position:fixed;left:0;right:0;bottom:calc(-1 * var(--barpush, 0px));
   display:flex;align-items:stretch;
   background:#1A1533;border-top:1px solid rgba(255,255,255,.16);
-  padding-bottom:env(safe-area-inset-bottom,0px);z-index:20;
+  /* THE SAFE AREA, ONCE — NOT TWICE. Below this bar sits a dead strip the
+     page cannot paint into but which is colour-matched to it, and on this
+     phone that strip is 47pt: already more than the 34pt home-indicator inset.
+     Padding the bar by the inset ON TOP of that made the dark band 135pt tall
+     with the labels floating 92pt up, which is the "why is it so thick".
+     So: pad by whatever the inset still needs AFTER the dead strip, and on a
+     device with no dead strip (--deadstrip 0) this is the full inset exactly
+     as before. */
+  padding-bottom:max(0px, calc(env(safe-area-inset-bottom,0px) - var(--deadstrip,0px)));
+  z-index:20;
   /* THE SAFARI 26 FIXED-OVERLAY BUG, and the documented workaround for it.
      WebKit 26 composites a position:fixed element with a FULLY OPAQUE
      background down a different path from a transparent one, and that path
@@ -1420,8 +1429,13 @@ function seatBar(){
   // is kept because it costs nothing and `?diag` prints it, but it no longer
   // moves anything.
   var standalone = matchMedia('(display-mode: standalone)').matches || !!navigator.standalone;
-  window.__barShortfall = (standalone && screen && screen.height)
+  var dead = (standalone && screen && screen.height)
     ? Math.round(screen.height - window.innerHeight) : 0;
+  if(!(dead > 0 && dead <= 120)) dead = 0;
+  window.__barShortfall = dead;
+  // The strip below the bar that the page cannot paint into. The bar stops
+  // padding for a safe area this already covers.
+  document.documentElement.style.setProperty('--deadstrip', dead + 'px');
   document.documentElement.style.setProperty('--barpush', '0px');
 }
 seatBar();
