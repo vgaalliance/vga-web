@@ -1429,9 +1429,29 @@ function seatBar(){
   // is kept because it costs nothing and `?diag` prints it, but it no longer
   // moves anything.
   var standalone = matchMedia('(display-mode: standalone)').matches || !!navigator.standalone;
-  var dead = (standalone && screen && screen.height)
-    ? Math.round(screen.height - window.innerHeight) : 0;
+  // MEASURE THE DEAD STRIP TWO WAYS, because the whole fix rests on seeing it
+  // and one source alone is a single point of failure. screen.height is the
+  // physical display; 100lvh is the LARGE viewport, the page's height with all
+  // chrome retracted. Either one being bigger than innerHeight reveals the
+  // shortfall, so take whichever sees it.
+  var lvh = 0;
+  try{
+    var probe = document.createElement('div');
+    probe.style.cssText = 'position:fixed;left:0;top:0;width:0;height:100lvh;'
+                        + 'visibility:hidden;pointer-events:none';
+    document.body.appendChild(probe);
+    lvh = Math.round(probe.getBoundingClientRect().height);
+    probe.remove();
+  }catch(e){}
+  var dead = 0;
+  if(standalone){
+    dead = Math.max(
+      screen && screen.height ? Math.round(screen.height - window.innerHeight) : 0,
+      lvh ? lvh - window.innerHeight : 0
+    );
+  }
   if(!(dead > 0 && dead <= 120)) dead = 0;
+  window.__barLvh = lvh;
   window.__barShortfall = dead;
   // The strip below the bar that the page cannot paint into. The bar stops
   // padding for a safe area this already covers.
@@ -2473,6 +2493,8 @@ function showDiag(){
     + 'white-space:pre;border:1px solid #0f0';
   d.textContent =
       'standalone   ' + standalone + '\n'
+    + 'lvh          ' + (window.__barLvh || 0) + '\n'
+    + 'DEAD STRIP   ' + (window.__barShortfall || 0) + '\n'
     + 'innerHeight  ' + window.innerHeight + '\n'
     + 'screen.h     ' + screen.height + '\n'
     + 'visualVP.h   ' + (window.visualViewport ? Math.round(window.visualViewport.height) : 'n/a') + '\n'
