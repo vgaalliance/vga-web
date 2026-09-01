@@ -3442,13 +3442,30 @@ async function loadWhoAmI(){
   var bout = await qMe("my_next_bout?select=*&order=event_date.asc&limit=1");
   if(bout && bout.length) myBout = bout[0];
 }
-async function fetchMe(){
+/* This is the only call that DELETES a session, and it was the only one that
+   never renewed one first. loadSession() keeps an expired session on purpose
+   when it still carries a refresh token — then this ran two lines later at
+   boot, sent the dead JWT to /auth/v1/user, got a 401 and wiped localStorage,
+   spending nothing. Every reload an hour after signing in was a sign-in. Same
+   root cause as A2; that fix reached q() and rpc() and never reached boot.
+   Renew first, and treat a 401 as "try the refresh token" rather than as
+   proof the session is gone — the tokens rotate, and a stale access token is
+   the expected state on a cold load, not a failure. */
+async function fetchMe(isRetry){
   if(!session) return null;
+  if(!isRetry && !(await ensureFreshSession())) { saveSession(null); return null; }
   try{
     var r = await fetch(SB + '/auth/v1/user', {
       headers:{ apikey: KEY, Authorization: 'Bearer ' + session.access_token }
     });
-    if(!r.ok){ saveSession(null); return null; }
+    if(r.status === 401 && !isRetry){
+      if(await refreshSession()) return fetchMe(true);
+      saveSession(null); return null;
+    }
+    /* Anything that is not a 401 is the SERVER having a bad day, not you being
+       signed out. Wiping the session on a 500 or an offline fetch is how a
+       thirty-second outage becomes a sign-in for everybody who reloaded. */
+    if(!r.ok) return null;
     return await r.json();
   }catch(e){ return null; }
 }
@@ -5043,7 +5060,7 @@ function showDiag(){
 /* ═══ boot ═══════════════════════════════════════════════════════════ */
 (async function(){
   loadSession();
-  if(session) me = await fetchMe();
+  if(session) me = await fetchMe();   /* renews the token itself — see fetchMe */
   await loadWhoAmI();
   paintAvatar();
   renderYou();
