@@ -550,7 +550,127 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#9990B4}
 .evrow.live .est{color:#FFB4AE}
 
-/* ── THE HUB, inside You ──────────────────────────────────────────────
+/* ── MY CAREER ────────────────────────────────────────────────────────
+   One block that says who you are in the league, then rooms. The rank gets
+   the biggest type on the screen because it is the number a fighter actually
+   chases; the name sits beside it rather than above it, so the two read as
+   one identity instead of a heading and a stat. */
+.crd{margin:4px 14px 0;border-radius:16px;position:relative;overflow:hidden;
+  background:linear-gradient(155deg,#4C3F8A 0%,#2A2150 46%,#171130 100%);
+  border:1px solid rgba(245,200,66,.38)}
+.crd:before{content:'';position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(115deg,transparent 0 22px,rgba(255,255,255,.03) 22px 24px)}
+.crd .glow{position:absolute;right:-46px;top:-46px;width:190px;height:190px;border-radius:50%;
+  background:radial-gradient(circle,rgba(245,200,66,.3),transparent 68%)}
+.crd .cin{position:relative;padding:15px}
+.crd .crt{display:flex;align-items:flex-start;gap:13px}
+.crd .rnk{text-align:center;flex-shrink:0;min-width:52px}
+.crd .rnk .h{font-family:'Space Mono',monospace;font-size:6.5px;letter-spacing:.2em;color:#C0A85E}
+.crd .rnk .num{font-family:'Bebas Neue',sans-serif;font-size:60px;line-height:.8;color:#F5C842;
+  text-shadow:0 0 24px rgba(245,200,66,.4)}
+.crd .rnk .of{font-family:'Space Mono',monospace;font-size:6.5px;letter-spacing:.14em;
+  color:#C0A85E;margin-top:4px}
+/* An unranked fighter still has a record, so the column changes what it shows
+   rather than going blank — a blank slot reads as a bug. */
+.crd .rnk.unranked .num{font-size:34px;line-height:1.4}
+.crd .rnk.fan .ava{width:52px;height:52px;border-radius:50%;overflow:hidden;margin-top:6px;
+  background:linear-gradient(150deg,#7B6AA8,#3A2E63)}
+.crd .rnk.fan .ava img{width:100%;height:100%;object-fit:cover;display:block}
+.crd .who{flex:1;min-width:0;padding-top:2px}
+.crd .nm4{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:30px;
+  text-transform:uppercase;letter-spacing:.02em;line-height:.98;
+  overflow-wrap:anywhere}
+.crd .sub4{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:#B7AEDC;margin-top:6px}
+.crd .chips{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+.crd .chip{font-family:'Space Mono',monospace;font-size:6.5px;font-weight:700;letter-spacing:.13em;
+  text-transform:uppercase;border-radius:20px;padding:4px 8px;color:#2A1F00;
+  background:linear-gradient(90deg,#F5C842,#D6A81F)}
+.crd .chip.p{background:none;color:#C3A6FF;border:1px solid rgba(167,139,250,.5)}
+.crd .chip.g{background:none;color:#6EE7B7;border:1px solid rgba(110,231,183,.45)}
+.crd .fbar{display:flex;gap:3px;margin-top:12px}
+.crd .fbar i{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.14)}
+.crd .fbar i.w{background:#6EE7B7}
+.crd .fbar i.l{background:#F19C96}
+.crd .fbar i.d{background:#8B83AC}
+.crd .fbl{display:flex;justify-content:space-between;margin-top:6px;
+  font-family:'Space Mono',monospace;font-size:6.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:#B7AEDC}
+
+/* THE TWIN STRIPS — dark glass with one lit edge, and the count as the red
+   dot everybody's phone already trained them to look for. 44px, because the
+   first version was 104px tall to say two words. */
+.twin{display:flex;gap:8px;margin:0 14px}
+.twin .tw{flex:1;min-width:0;border-radius:11px;overflow:hidden;position:relative;
+  background:rgba(12,8,25,.8);border:1px solid rgba(255,255,255,.1);cursor:pointer}
+.twin .tw:before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;z-index:3}
+.twin .tw.g:before{background:#F5C842;box-shadow:0 0 16px 2px rgba(245,200,66,.7)}
+.twin .tw.p:before{background:#A78BFA;box-shadow:0 0 16px 2px rgba(167,139,250,.65)}
+.twin .core{display:flex;align-items:center;gap:10px;padding:10px 12px 10px 13px}
+.twin .tic{width:28px;height:28px;border-radius:8px;flex-shrink:0;display:flex;
+  align-items:center;justify-content:center;font-size:14px;position:relative}
+.twin .tw.g .tic{background:rgba(245,200,66,.18)}
+.twin .tw.p .tic{background:rgba(167,139,250,.18)}
+.twin .tic .dot{position:absolute;right:-5px;top:-5px;min-width:16px;height:16px;border-radius:8px;
+  background:#E8362B;color:#fff;font-family:'Space Mono',monospace;font-size:8px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;padding:0 4px;
+  box-shadow:0 0 0 2.5px rgba(12,8,25,.98)}
+.twin .bd{min-width:0}
+.twin .t{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;
+  text-transform:uppercase;letter-spacing:.04em;line-height:1}
+.twin .s{font-family:'Space Mono',monospace;font-size:6.5px;color:#8B83AC;margin-top:4px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* THE ROOMS. The number on the right is the point: it turns a menu into a
+   dashboard, so the screen can be read without opening anything. */
+.mrow{display:flex;align-items:center;gap:12px;margin:0 14px 7px;padding:12px 14px;border-radius:12px;
+  background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.11);cursor:pointer}
+.mrow .mic{width:32px;height:32px;border-radius:9px;flex-shrink:0;background:rgba(167,139,250,.2);
+  display:flex;align-items:center;justify-content:center;font-size:15px}
+.mrow .t{font-size:14.5px;font-weight:600}
+.mrow .s{font-family:'Space Mono',monospace;font-size:7.5px;color:#7E7699;margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow .rr{margin-left:auto;display:flex;align-items:center;gap:9px;flex-shrink:0}
+.mrow .rr .v{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:#F5C842;
+  font-variant-numeric:tabular-nums}
+.mrow .rr .v.g{color:#6EE7B7}
+.mrow .rr .v.q{color:#8B83AC;font-size:9px}
+.mrow .rr .c{color:#6E6688;font-size:19px}
+
+/* WHAT YOU ARE IN — real posters, and a play badge when there is a VOD. */
+.mrail{display:flex;gap:8px;margin:0 14px;overflow-x:auto;scrollbar-width:none;
+  -webkit-overflow-scrolling:touch}
+.mrail::-webkit-scrollbar{display:none}
+.mrail .mt{width:96px;flex-shrink:0;display:block;color:inherit;text-decoration:none}
+.mrail .th{display:block;height:128px;border-radius:9px;position:relative;overflow:hidden;
+  border:1px solid rgba(255,255,255,.14);background:#221B3F}
+.mrail .th.noart{background:linear-gradient(160deg,#4C3F8A,#221C44)}
+.mrail .th img{width:100%;height:100%;object-fit:cover;display:block}
+.mrail .th:after{content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,transparent 46%,rgba(8,5,18,.9))}
+.mrail .nm3{position:absolute;left:7px;right:7px;bottom:7px;z-index:2;
+  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;line-height:1;
+  text-transform:uppercase;letter-spacing:.02em}
+.mrail .pl{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;
+  width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.55);
+  border:1.5px solid rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;
+  font-size:10px;padding-left:2px}
+.mrail .cp{display:block;font-family:'Space Mono',monospace;font-size:6.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:#7E7699;margin-top:6px;line-height:1.4}
+
+/* SHOP — a price list, not a checkout. */
+.shp{display:flex;align-items:flex-start;gap:12px;margin:0 16px 8px;padding:12px 14px;
+  border-radius:12px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.11)}
+.shp.out{opacity:.5}
+.shp .t{font-size:15px;font-weight:600}
+.shp .s{font-size:13px;color:#8F86AF;margin-top:4px;line-height:1.45}
+.shp .stk{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:#C0A85E;margin-top:6px}
+.shp .pr{flex-shrink:0;font-family:'Space Mono',monospace;font-size:15px;font-weight:700;
+  color:#F5C842;font-variant-numeric:tabular-nums}
+.shp .pr em{font-style:normal;font-size:7.5px;letter-spacing:.1em;color:#B39B4E;margin-left:4px}
+
+/* ── the old hub, still used by the Wallet / Contract / Offers sheets ──────────────────────────────────────────────
    Order is the design: what needs an answer, then who you are, then the
    rooms. Everything below the fighter is a row, so the screen stays one
    scan deep no matter how much a person accumulates. */
@@ -2220,7 +2340,8 @@ function hashFor(entry){
        : entry.kind === 'events'  ? '#events'
        : entry.kind === 'wallet'   ? '#wallet'
        : entry.kind === 'contract' ? '#contract'
-       : entry.kind === 'offers'   ? '#offers' : '';
+       : entry.kind === 'offers'   ? '#offers'
+       : entry.kind === 'shop'     ? '#shop' : '';
 }
 
 function openSheet(entry){
@@ -2278,6 +2399,7 @@ function renderSheet(entry){
   if(entry.kind === 'wallet')   return renderWallet();
   if(entry.kind === 'contract') return renderMyContract();
   if(entry.kind === 'offers')   return renderOffers();
+  if(entry.kind === 'shop')     return renderShop();
 }
 
 /* what opens a sheet */
@@ -2769,27 +2891,29 @@ function renderYou(){
   }
   var m = me.user_metadata || {};
   var name = m.full_name || m.name || m.user_name || 'Signed in';
-  el.innerHTML = '<div class="top"><div class="ttl">YOU</div><div class="szn">Discord</div></div>'
-    + '<div class="me"><span class="av">'
-    + (m.avatar_url ? '<img src="'+esc(m.avatar_url)+'" alt="">' : '')
-    + '</span><div style="flex:1;min-width:0"><div class="nm">'+esc(name)+'</div>'
-    + '<div class="sub" id="me-sub">Connected</div></div>'
-    + '<span class="vcpill" id="me-vcpill">&nbsp;</span></div>'
-    + '<div id="me-body"><div class="skel"></div><div class="skel" style="width:60%"></div></div>'
+  el.innerHTML = '<div class="top"><div class="ttl">MY CAREER</div>'
+    + '<div class="szn" id="me-szn">Discord</div></div>'
+    + '<div id="me-body"><div class="skel" style="height:96px"></div>'
+    + '<div class="skel" style="width:60%"></div></div>'
     + '<button class="signout" id="btn-signout">Sign out</button>';
+  window.__meName = name;
+  window.__meAvatar = m.avatar_url || '';
   loadMe();
 }
 
-/* ── THE HUB ──────────────────────────────────────────────────────────
-   You is not a profile page, it is the desk everything personal opens from.
-   Four reads go out together — profile, what is waiting on you, contract,
-   training — and each is allowed to fail on its own: a dead my_game must not
-   cost you your record, so every section is written from whatever came back
-   rather than from one all-or-nothing payload.
+/* ── MY CAREER ────────────────────────────────────────────────────────
+   The tab is a hub, not a profile. One career block that says who you are
+   in the league, one strip for anything unanswered, then a list of rooms —
+   each carrying its own live number on the right, so the whole screen can be
+   read without tapping anything.
 
-   Nothing here writes. There is no member write path in this app yet, so the
-   rows that need an answer say WHERE to answer instead of showing a button
-   that cannot work. A dead Accept is worse than an honest pointer. */
+   Every value here comes from a table that already exists. There is no
+   overall rating, no attributes and no skill points: those would have to be
+   invented, and an invented number on a career screen is a number nobody can
+   argue with or improve. Rank, record, purse, counts — all real.
+
+   Seven reads go out together and each is unpacked on its own, because a dead
+   shop must not cost somebody their record. */
 var myContract = null, myOffers = null, myGame = null;
 
 async function loadMe(){
@@ -2799,7 +2923,10 @@ async function loadMe(){
     qMe("my_profile?select=*&limit=1"),
     qMe("my_offers?select=*&order=event_date.asc"),
     qMe("my_contract?select=*"),
-    qMe("my_game?select=*&limit=1")
+    qMe("my_game?select=*&limit=1"),
+    qMe("my_cards?select=qty"),
+    q("bet_pools_public?select=match_id"),
+    q("shop_public?select=id")
   ]);
   if(!el.isConnected) return;
   var rows = got[0];
@@ -2807,10 +2934,13 @@ async function loadMe(){
   myContract = (got[2] || []).filter(function(c){ return c.status === 'active'; })[0] || null;
   var offered = (got[2] || []).filter(function(c){ return c.status === 'offered'; })[0] || null;
   myGame     = (got[3] || [])[0] || null;
+  var cardQty = (got[4] || []).reduce(function(a, r){ return a + Number(r.qty || 0); }, 0);
+  var pools   = (got[5] || []).length;
+  var shopN   = (got[6] || []).length;
 
   if(!rows){
     retryHandlers['me'] = loadMe;
-    el.innerHTML = failHTML("Couldn't load your profile.", 'me'); return;
+    el.innerHTML = failHTML("Couldn't load your career.", 'me'); return;
   }
   if(!rows.length){
     el.innerHTML = '<div class="empty"><b>No league account matched.</b><br>'
@@ -2819,114 +2949,232 @@ async function loadMe(){
     return;
   }
   var p = rows[0];
-  var sub = document.getElementById('me-sub');
-  if(sub) sub.textContent = p.display_name ? 'Connected \u00b7 ' + p.display_name : 'Connected';
-  var pill = document.getElementById('me-vcpill');
-  if(pill) pill.innerHTML = Number(p.vc_balance||0).toLocaleString() + '<em>VC</em>';
+  var szn = document.getElementById('me-szn');
+  if(szn) szn.textContent = Number(p.vc_balance || 0).toLocaleString() + ' VC';
 
-  var html = '';
+  /* THE CAREER BLOCK. A fan has no fighter, so the same block carries a
+     different left-hand column rather than an empty ring where a rank goes. */
+  var html = '<div class="crd"><span class="glow"></span><div class="cin"><div class="crt">';
+  if(p.fighter_slug){
+    html += '<div class="rnk" id="me-rank"><div class="h">RANKED</div>'
+      + '<div class="num">&mdash;</div><div class="of">&nbsp;</div></div>';
+  } else {
+    html += '<div class="rnk fan"><div class="h">MEMBER</div>'
+      + '<div class="ava">' + (window.__meAvatar
+          ? '<img src="'+esc(window.__meAvatar)+'" alt="">' : '') + '</div></div>';
+  }
+  html += '<div class="who"><div class="nm4">'
+    + esc(p.fighter_name || p.display_name || window.__meName || 'Signed in') + '</div>'
+    + '<div class="sub4" id="me-sub4">'
+    + esc(p.fighter_slug ? wc(p.weight_class) : 'Fan account')
+    + '</div><div class="chips" id="me-chips"></div></div></div>'
+    + '<div id="me-form"></div></div></div>';
 
-  /* Anything waiting on YOU goes first and goes loud. It is the only reason
-     to open this screen on a day nothing else changed. */
-  var waiting = myOffers.length + (offered ? 1 : 0);
-  if(waiting){
-    html += '<div class="wait"><div class="hd">'
-      + '<svg><use href="#i-bell"/></svg>' + waiting + (waiting === 1 ? ' thing' : ' things')
-      + ' waiting on you</div>';
+  /* ANYTHING UNANSWERED, and nothing at all when there is nothing. An empty
+     panel that says "you're all caught up" is furniture; this block earns its
+     space by only existing when it has something to say. */
+  if(myOffers.length || offered){
+    html += '<div class="lab"><b>Needs you now</b><i></i></div><div class="twin">';
     if(myOffers.length){
-      html += '<div class="wrow" data-hub="offers"><div><div class="t">'
-        + myOffers.length + (myOffers.length === 1 ? ' fight offer' : ' fight offers')
-        + '</div><div class="s">' + esc(myOffers.map(function(o){ return o.event_name; })
-            .filter(function(v,i,a){ return a.indexOf(v) === i; }).slice(0,2).join(' \u00b7 '))
-        + '</div></div><span class="chev2">&rsaquo;</span></div>';
+      var evs = myOffers.map(function(o){ return o.event_name; })
+        .filter(function(v,i,a){ return a.indexOf(v) === i; }).slice(0,2).join(' \u00b7 ');
+      html += '<div class="tw g" data-hub="offers"><div class="core">'
+        + '<span class="tic">\u270D\uFE0F<b class="dot">' + myOffers.length + '</b></span>'
+        + '<div class="bd"><div class="t">' + (myOffers.length === 1 ? 'Offer' : 'Offers')
+        + '</div><div class="s">' + esc(evs) + '</div></div></div></div>';
     }
     if(offered){
-      html += '<div class="wrow" data-hub="contract"><div><div class="t">Contract offered</div>'
-        + '<div class="s">' + esc(String(offered.tier || 'New terms').toUpperCase())
-        + ' \u00b7 ' + Number(offered.show_pct||0) + '% show</div></div>'
-        + '<span class="chev2">&rsaquo;</span></div>';
+      html += '<div class="tw p" data-hub="contract"><div class="core">'
+        + '<span class="tic">\uD83D\uDCDC<b class="dot">1</b></span>'
+        + '<div class="bd"><div class="t">Contract</div><div class="s">'
+        + esc(String(offered.tier || 'New terms')) + ' offered</div></div></div></div>';
     }
     html += '</div>';
   }
 
-  /* Your fighter, as the record rather than as a name. */
-  if(p.fighter_slug){
-    html += '<div class="lab"><b>Your fighter</b><i></i></div>'
-      + '<div class="fcard" data-slug="'+esc(p.fighter_slug)+'">'
-      + '<span class="av3">'+(p.photo_thumb_url || p.photo_url
-          ? '<img src="'+esc(p.photo_thumb_url || p.photo_url)+'" alt="" onerror="this.remove()">' : '')+'</span>'
-      + '<div class="fmeta"><div class="t">'+esc(p.fighter_name)
-      + (p.is_champion ? '<sup>CHAMP</sup>' : '')+'</div>'
-      + '<div class="rec2" id="me-rec">'+esc(wc(p.weight_class))+'</div></div>'
-      + '<span class="chev2">&rsaquo;</span></div>';
-  } else {
-    html += '<div class="lab"><b>Your fighter</b><i></i></div>'
-      + '<div class="empty">You don\'t have a fighter yet. Run <b>/register</b> in the server.</div>';
-  }
-
-  /* The next bout, if there is one. Same block Home uses, kept short here. */
-  if(myBout){
-    var when = new Date(myBout.event_date).toLocaleString('en-US',{ timeZone:'America/New_York',
-      weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
-    html += '<div class="lab"><b>Next fight</b><i></i></div>'
-      + '<div class="nxt" data-event="'+esc(myBout.event_id)+'">'
-      + '<div class="k2">'+esc(myBout.is_title_fight ? (myBout.title_name || 'Title fight') : myBout.event_name)
-      + (myBout.card_published ? '' : ' \u00b7 not announced')+'</div>'
-      + '<div class="vs3">'+esc(myBout.my_name)+'<i>VS</i>'+esc(myBout.opponent_name || 'TBA')+'</div>'
-      + '<div class="s">'+esc(when)+' ET</div></div>';
-  }
-
-  /* Everything else is one tap away rather than stacked on this screen. */
+  /* THE ROOMS. Each carries its live number, so the list is a dashboard. */
   html += '<div class="lab"><b>Everything else</b><i></i></div>'
-    + hubRow('i-cards','cards','Binder','Your collection, sets and packs', true)
-    + hubRow('i-wallet','wallet','Wallet',
-        Number(p.vc_balance||0).toLocaleString() + ' VC \u00b7 where it went')
-    + hubRow('i-belt','contract','Contract', myContract
-        ? String(myContract.tier || 'Signed').toUpperCase()
-          + (myContract.guaranteed_fights
-              ? ' \u00b7 ' + Number(myContract.fights_used||0) + ' of '
-                + myContract.guaranteed_fights + ' fights used' : '')
-        : 'No contract on file')
-    + hubRow('i-game','game','Training', myGame
-        ? 'Level ' + Number(myGame.level||1)
-          + (myGame.streak ? ' \u00b7 ' + myGame.streak + '-day streak' : '')
-          + (myGame.vc_earned_total ? ' \u00b7 ' + Number(myGame.vc_earned_total).toLocaleString() + ' VC earned' : '')
-        : 'Tap in daily, earn VC');
+    + mrow('\uD83C\uDCCF','cards','Your cards',
+        cardQty ? cardQty + ' owned' : 'Nothing yet',
+        cardQty ? String(cardQty) : '0', '', true)
+    + mrow('\uD83D\uDED2','shop','Shop',
+        shopN + (shopN === 1 ? ' item' : ' items') + ' for sale',
+        Number(p.vc_balance||0).toLocaleString(), 'g')
+    + mrow('\uD83C\uDFB2','betting','Betting',
+        pools ? pools + (pools === 1 ? ' pool open' : ' pools open') : 'No market open',
+        pools ? String(pools) : '\u2014', '', true)
+    + mrow('\uD83D\uDCB0','wallet','Wallet','Purses, bonuses, every move',
+        Number(p.vc_balance||0).toLocaleString() + ' VC', 'q')
+    + mrow('\uD83C\uDFAE','game','Training',
+        myGame ? 'Level ' + Number(myGame.level||1)
+                 + (myGame.streak ? ' \u00b7 ' + myGame.streak + '-day streak' : '')
+               : 'Tap in daily, earn VC',
+        myGame ? 'LVL ' + Number(myGame.level||1) : 'NEW', 'q');
 
+  if(myContract){
+    html += mrow('\uD83C\uDFC5','contract','Contract',
+      String(myContract.tier || 'Signed').toUpperCase()
+        + (myContract.guaranteed_fights
+            ? ' \u00b7 ' + Number(myContract.fights_used||0) + ' of '
+              + myContract.guaranteed_fights + ' fights used' : ''),
+      String(myContract.tier || '').toUpperCase(), 'q');
+  }
+
+  html += '<div id="me-media"></div>';
   el.innerHTML = html;
-  if(p.fighter_slug) loadMyRecord(p.fighter_slug);
+  if(p.fighter_slug) loadCareer(p.fighter_slug);
 }
 
-/* One row. `goto` sends it to a tab, otherwise it opens a sheet — except the
-   game, which is a different app on the same site. */
-function hubRow(icon, target, title, sub, isTab){
+/* One room. Tabs go to a tab, everything else opens a sheet, and the game is
+   a different app on the same site. */
+function mrow(icon, target, title, sub, val, cls, isTab){
   var attr = target === 'game' ? 'data-game="1"'
            : isTab ? 'data-goto="'+esc(target)+'"'
            : 'data-hub="'+esc(target)+'"';
-  return '<div class="hubrow" '+attr+'>'
-    + '<span class="ico"><svg><use href="#'+icon+'"/></svg></span>'
-    + '<div style="min-width:0"><div class="t">'+esc(title)+'</div>'
+  return '<div class="mrow" '+attr+'>'
+    + '<span class="mic">'+icon+'</span>'
+    + '<div style="flex:1;min-width:0"><div class="t">'+esc(title)+'</div>'
     + '<div class="s">'+esc(sub)+'</div></div>'
-    + '<span class="chev2">&rsaquo;</span></div>';
+    + '<span class="rr"><span class="v '+(cls||'')+'">'+esc(val)+'</span>'
+    + '<span class="c">&rsaquo;</span></span></div>';
 }
 document.addEventListener('click', function(e){
   if(e.target.closest('[data-game]')) location.href = '../game/index.html';
 });
 
-/* The record is public — fighter_cards already carries it, so this does not
-   need a my_* view and stays right even for a fighter with no contract. */
-async function loadMyRecord(slug){
-  var el = document.getElementById('me-rec');
-  if(!el) return;
-  var r = await q("fighter_cards?select=wins,losses,draws,ko_wins,weight_class,rank,scope"
-    + "&slug=eq." + encodeURIComponent(slug) + "&limit=1");
-  if(!el.isConnected || !r || !r.length) return;
-  var f = r[0];
-  el.innerHTML = '<b>'+Number(f.wins||0)+'</b>-<em>'+Number(f.losses||0)+'</em>-<i>'
-    + Number(f.draws||0)+'</i>'
-    + (f.ko_wins ? '<span class="dot">\u00b7</span>'+f.ko_wins+' KO' : '')
-    + '<span class="dot">\u00b7</span>'+esc(wc(f.weight_class))
-    + (f.rank ? '<span class="dot">\u00b7</span>#'+f.rank : '');
+/* THE CAREER NUMBERS. Rank, record and the form bar are public — they come
+   from fighter_cards and fighter_matches, not from a my_* view — so this is
+   the same data anybody could read about you, arranged for you. */
+async function loadCareer(slug){
+  var card = await q("fighter_cards?select=id,wins,losses,draws,ko_wins,weight_class,rank,scope,"
+    + "contract_tier,is_champion&slug=eq." + encodeURIComponent(slug) + "&limit=1");
+  if(!card || !card.length) return;
+  var f = card[0];
+
+  var sub4 = document.getElementById('me-sub4');
+  if(sub4) sub4.textContent = wc(f.weight_class) + (f.is_champion ? ' \u00b7 CHAMPION' : '');
+
+  var chips = document.getElementById('me-chips');
+  if(chips){
+    chips.innerHTML =
+      (f.contract_tier ? '<span class="chip">'+esc(String(f.contract_tier))+'</span>' : '')
+      + '<span class="chip p">' + Number(f.wins||0) + '-' + Number(f.losses||0)
+        + '-' + Number(f.draws||0) + '</span>'
+      + (f.ko_wins ? '<span class="chip g">' + f.ko_wins + ' KO</span>' : '');
+  }
+
+  /* The rank needs a denominator or it means nothing — #12 of 41 is a
+     position, #12 on its own is a number. */
+  var rk = document.getElementById('me-rank');
+  if(rk){
+    if(f.rank){
+      rk.querySelector('.num').textContent = f.rank;
+      var peers = await q("rankings_public?select=rank&level=eq.pro&scope=eq.weight_class"
+        + "&weight_class=eq." + encodeURIComponent(f.weight_class));
+      var of = rk.querySelector('.of');
+      if(of) of.textContent = peers && peers.length ? 'OF ' + peers.length : '\u00a0';
+    } else {
+      rk.classList.add('unranked');
+      rk.querySelector('.h').textContent = 'RECORD';
+      rk.querySelector('.num').textContent = Number(f.wins||0) + '-' + Number(f.losses||0);
+      rk.querySelector('.of').textContent = 'UNRANKED';
+    }
+  }
+
+  var hist = await q("fighter_matches?select=won,method,event_name,event_date,vod_link,status"
+    + "&fighter_id=eq." + encodeURIComponent(f.id) + "&order=event_date.desc&limit=40");
+  if(!hist) return;
+  var done = hist.filter(function(m){ return m.status === 'completed'; });
+
+  /* The form bar reads left-to-right in time order, which is the opposite of
+     the query, so it is reversed once here rather than sorted twice. */
+  var form = document.getElementById('me-form');
+  if(form && done.length){
+    var last = done.slice(0, 9).reverse();
+    form.innerHTML = '<div class="fbar">' + last.map(function(m){
+        return '<i class="' + (m.won === true ? 'w' : m.won === false ? 'l' : 'd') + '"></i>';
+      }).join('') + '</div>'
+      + '<div class="fbl"><span>Last ' + last.length
+        + (last.length === 1 ? ' fight' : ' fights') + '</span>'
+      + '<span>' + done.length + ' career</span></div>';
+  }
+  loadMyMedia(done);
+}
+
+/* WHAT YOU ARE IN. A poster or a VOD only counts if you were on that card,
+   so this is driven by your own fight history rather than by the calendar. */
+async function loadMyMedia(fights){
+  var el = document.getElementById('me-media');
+  if(!el || !fights.length) return;
+  var names = fights.map(function(m){ return m.event_name; })
+    .filter(function(v,i,a){ return v && a.indexOf(v) === i; }).slice(0, 12);
+  if(!names.length) return;
+  var inList = names.map(function(n){ return '"' + String(n).replace(/"/g,'') + '"'; }).join(',');
+  var evs = await q("events_public?select=id,name,event_date,vod_link&name=in.(" + encodeURIComponent(inList) + ")");
+  if(!el.isConnected || !evs || !evs.length) return;
+  await loadPosters(evs.map(function(e){ return e.id; }));
+  if(!el.isConnected) return;
+
+  var byName = {};
+  evs.forEach(function(e){ byName[e.name] = e; });
+  var seen = {}, items = [];
+  fights.forEach(function(m){
+    var e = byName[m.event_name];
+    if(!e || seen[e.id]) return;
+    seen[e.id] = 1;
+    var art = (posters[e.id] || [])[0];
+    var vod = m.vod_link || e.vod_link;
+    if(!art && !vod) return;
+    items.push({ id: e.id, name: e.name, art: art, vod: vod,
+      when: dstr(e.event_date, { year: 'numeric' }) });
+  });
+  if(!items.length) return;
+
+  el.innerHTML = '<div class="lab"><b>You\'re in these</b><i></i><s>'
+      + items.length + (items.length === 1 ? ' asset' : ' assets') + '</s></div>'
+    + '<div class="mrail">' + items.slice(0, 8).map(function(it){
+        return '<a class="mt"' + (it.vod
+              ? ' href="' + esc(it.vod) + '" target="_blank" rel="noopener"' : '')
+          + (it.vod ? '' : ' data-event="' + esc(it.id) + '"') + '>'
+          + '<span class="th' + (it.art ? '' : ' noart') + '">'
+          + (it.art ? '<img src="' + esc(it.art) + '" alt="" onerror="this.remove()">' : '')
+          + (it.vod ? '<span class="pl">\u25B6</span>' : '')
+          + '<span class="nm3">' + esc(it.name) + '</span></span>'
+          + '<span class="cp">' + (it.vod ? 'VOD' : 'Poster') + ' \u00b7 ' + esc(it.when) + '</span>'
+          + '</a>';
+      }).join('') + '</div>';
+}
+
+/* ── SHOP ── the price list, read-only. Buying happens in Discord. */
+async function renderShop(){
+  var body = document.getElementById('sheet-body');
+  body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'
+    + '<div class="kick">Spend your VC</div><h3>Shop</h3></div>'
+    + '<div id="shp"><div class="skel"></div><div class="skel" style="width:60%"></div></div>';
+  var el = document.getElementById('shp');
+  var rows = await q("shop_public?select=*&order=category.asc,vc_price.asc");
+  if(!el.isConnected) return;
+  if(!rows){ retryHandlers['shp'] = renderShop;
+    el.innerHTML = failHTML("Couldn't load the shop.", 'shp'); return; }
+  if(!rows.length){ el.innerHTML = '<div class="empty">Nothing is for sale right now.</div>'; return; }
+  var cats = [];
+  rows.forEach(function(r){
+    var c = r.category || 'Other';
+    if(cats.indexOf(c) === -1) cats.push(c);
+  });
+  el.innerHTML = cats.map(function(c){
+    return '<div class="lab"><b>'+esc(c)+'</b><i></i></div>'
+      + rows.filter(function(r){ return (r.category || 'Other') === c; }).map(function(r){
+        var out = r.stock !== null && Number(r.stock) <= 0;
+        return '<div class="shp'+(out?' out':'')+'">'
+          + '<div style="flex:1;min-width:0"><div class="t">'+esc(r.name)+'</div>'
+          + (r.description ? '<div class="s">'+esc(r.description)+'</div>' : '')
+          + (r.stock !== null ? '<div class="stk">'+(out ? 'Sold out' : Number(r.stock)+' left')+'</div>' : '')
+          + '</div><div class="pr">'+Number(r.vc_price||0).toLocaleString()+'<em>VC</em></div></div>';
+      }).join('');
+  }).join('')
+  + '<div class="doit">Buy with <b>/buy</b> in the server, or from the shop board. '
+  + 'This app shows the prices, it does not take payment.</div>';
 }
 
 /* ── WALLET ── the balance, and every move behind it. */
