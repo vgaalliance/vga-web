@@ -492,6 +492,51 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 @keyframes sweep{0%{left:-140%}55%{left:180%}100%{left:180%}}
 
 /* ── rankings, as the body of home ── */
+/* ── the fight card sheet, design B ─────────────────────────────────── */
+.watchbtn{display:block;margin:12px 0 0;text-align:center;background:#E8362B;color:#fff;
+  border-radius:7px;padding:11px 0;font-family:'Space Mono',monospace;font-size:9.5px;
+  font-weight:700;letter-spacing:.16em;text-transform:uppercase}
+.bout3{position:relative;padding:15px 12px 0;border-bottom:1px solid rgba(255,255,255,.09)}
+.bout3.you{background:linear-gradient(90deg,rgba(167,139,250,.12),transparent)}
+.youtag{position:absolute;right:10px;top:10px;font-family:'Space Mono',monospace;font-size:6.5px;
+  font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#1A1430;background:#C3A6FF;
+  padding:3px 7px;border-radius:3px}
+.wc4{text-align:center;font-family:'Space Mono',monospace;font-size:8px;font-weight:700;
+  letter-spacing:.16em;text-transform:uppercase;color:#9990B4}
+.duo2{display:grid;grid-template-columns:1fr 52px 1fr;align-items:end;margin-top:10px}
+.pw2{height:118px;position:relative;display:flex;align-items:flex-end;justify-content:center;cursor:pointer}
+.pw2 .cut2{height:100%;width:auto;max-width:none;object-fit:contain;object-position:bottom center}
+.pw2 .cut2.flip{transform:scaleX(-1)}
+.pw2 .sil2{height:86%;width:auto;fill:rgba(190,175,235,.3)}
+.pw2.win::after{content:'';position:absolute;left:16%;right:16%;bottom:-4px;height:3px;
+  border-radius:2px;background:#6EE7B7}
+.vsx2{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#7E7699;text-align:center;
+  padding-bottom:36px;letter-spacing:.06em}
+.nms2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.nms2 b{font-family:'Bebas Neue',sans-serif;font-size:20px;line-height:1.05;letter-spacing:.02em;
+  text-align:center;cursor:pointer}
+.nms2 b.win{color:#6EE7B7}
+.recs2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:3px}
+.recs2 s{text-decoration:none;font-family:'Space Mono',monospace;font-size:9px;text-align:center;
+  color:#8B83AC;display:block}
+.tape2{max-height:0;overflow:hidden;transition:max-height .34s ease}
+.bout3.open .tape2{max-height:320px}
+.tr2{display:grid;grid-template-columns:1fr 92px 1fr;align-items:center;padding:7px 0;
+  border-top:1px solid rgba(255,255,255,.07)}
+.tr2 b{font-size:14px;font-weight:600}
+.tr2 b.l{text-align:right;padding-right:12px;color:#F19C96}
+.tr2 b.r{text-align:left;padding-left:12px;color:#8FC6FF}
+.tr2 s{text-decoration:none;text-align:center;font-family:'Space Mono',monospace;font-size:7.5px;
+  font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#6E6688}
+.notape{padding:10px 0;text-align:center;font-family:'Space Mono',monospace;font-size:8px;
+  letter-spacing:.08em;color:#6E6688}
+.more2{display:flex;align-items:center;justify-content:center;gap:7px;padding:10px 0 11px;
+  font-family:'Space Mono',monospace;font-size:7.5px;font-weight:700;letter-spacing:.16em;
+  text-transform:uppercase;color:#7E7699;cursor:pointer}
+.more2 i{font-style:normal;transition:transform .3s}
+.bout3.open .more2 i{transform:rotate(180deg)}
+@media (prefers-reduced-motion:reduce){.tape2{transition:none}.more2 i{transition:none}}
+
 .rbar{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:0 16px 8px}
 .rtabs{display:flex;gap:13px;min-width:0;overflow-x:auto;scrollbar-width:none}
 .rtabs::-webkit-scrollbar{display:none}
@@ -2091,6 +2136,10 @@ document.addEventListener('click', function(e){
   if(n){ e.preventDefault(); openSheet({kind:'news', id:n.getAttribute('data-news')}); return; }
   var ev = e.target.closest('[data-event]');
   if(ev){ e.preventDefault(); openSheet({kind:'event', id:ev.getAttribute('data-event')}); return; }
+  var bt = e.target.closest('[data-bout]');
+  if(bt && !e.target.closest('[data-slug]') && !e.target.closest('a')){
+    bt.classList.toggle('open'); return;
+  }
 });
 
 /* ── fighter ── */
@@ -2218,6 +2267,8 @@ async function renderEvent(id){
     + '<div class="kick">'+esc(e.status === 'completed' ? 'Result' : 'Fight card')+'</div>'
     + '<h3>'+esc(e.name)+'</h3>'
     + '<div class="when">'+esc(when)+' ET'+(e.stream_platform ? ' · '+esc(e.stream_platform) : '')+'</div>'
+    + '<a class="watchbtn" href="https://youtube.com/vgaglobal" target="_blank" rel="noopener">'
+    + (e.status === 'completed' ? 'Watch the replay' : 'Watch the event') + '</a>'
     + '</div><div id="ev-bouts"><div class="skel"></div><div class="skel" style="width:70%"></div></div>';
 
   loadCard(e);
@@ -2250,35 +2301,104 @@ async function loadCard(e){
     + "&event_id=eq." + e.id);
   if(poolRows) poolRows.forEach(function(r){ pools[r.match_id] = r; });
 
+  // EVERY fighter on the card, once. The tape needs their record, reach and
+  // stance, and the bout needs their cut-out; one query covers both rather
+  // than one per bout.
+  var slugs = [];
+  rows.forEach(function(b){
+    [b.fighter_a_slug, b.fighter_b_slug].forEach(function(sl){
+      if(sl && slugs.indexOf(sl) === -1) slugs.push(sl);
+    });
+  });
+  var tape = {};
+  if(slugs.length){
+    var fs = await q("fighter_cards?select=slug,profile_photo_url,headline_wins,headline_losses,"
+      + "headline_draws,height,reach,stance,country,headline_ko_wins&slug=in.(" + slugs.join(',') + ")");
+    if(fs) fs.forEach(function(f){ tape[f.slug] = f; });
+  }
+  if(!el.isConnected) return;
+
   var order = ['main_card','featured','undercard','prelims'];
   var groups = {};
   rows.forEach(function(b){ (groups[b.card_segment || 'undercard'] = groups[b.card_segment || 'undercard'] || []).push(b); });
   var keys = order.filter(function(k){ return groups[k]; })
     .concat(Object.keys(groups).filter(function(k){ return order.indexOf(k) === -1; }));
 
+  // DESIGN B: the UFC bout with the tale of the tape folded away behind it.
+  // The main event opens by default so the pattern is obvious without a
+  // caption telling anyone to tap.
+  var boutSeen = 0;
   el.innerHTML = keys.map(function(k){
     return '<div class="seg">'+esc(SEGS[k] || k.replace(/_/g,' '))+'</div>'
       + groups[k].map(function(b){
           var mine = myFighter && (b.fighter_a_slug === myFighter.fighter_slug
                                 || b.fighter_b_slug === myFighter.fighter_slug);
           var done = b.status === 'completed' && b.winner_corner;
-          var aLost = done && b.winner_corner === 'b';
-          var bLost = done && b.winner_corner === 'a';
-          var midTxt = done ? (b.method || 'result').toUpperCase() : 'vs';
-          return '<div class="bout2'+(b.is_title_fight?' title':'')+(mine?' you':'')+'">'
-            + (b.is_title_fight ? '<span class="tag">'+esc(b.title_name || 'Title fight')+'</span>' : '')
+          var A = tape[b.fighter_a_slug] || {}, Bf = tape[b.fighter_b_slug] || {};
+          var first = (boutSeen++ === 0) ? ' open' : '';
+          return '<div class="bout3'+(mine?' you':'')+first+'" data-bout>'
             + (mine ? '<span class="youtag">Your bout</span>' : '')
-            + '<div class="vs">'
-            + '<span class="side'+(aLost?' lost':'')+'"'+(b.fighter_a_slug?' data-slug="'+esc(b.fighter_a_slug)+'"':'')+'>'+esc(b.fighter_a_name || 'TBA')+'</span>'
-            + '<span class="mid2'+(done?' done':'')+'">'+esc(midTxt)+'</span>'
-            + '<span class="side b'+(bLost?' lost':'')+'"'+(b.fighter_b_slug?' data-slug="'+esc(b.fighter_b_slug)+'"':'')+'>'+esc(b.fighter_b_name || 'TBA')+'</span>'
+            + '<div class="wc4">'
+            + esc(b.is_title_fight ? (b.title_name || 'Title fight')
+                                   : (wc(b.weight_class) || 'Catch weight')) + '</div>'
+            + '<div class="duo2">'
+            + corner(A, b.fighter_a_slug, done && b.winner_corner === 'a', '')
+            + '<span class="vsx2">' + (done ? esc((b.method||'').toUpperCase() || 'RESULT') : 'VS') + '</span>'
+            + corner(Bf, b.fighter_b_slug, done && b.winner_corner === 'b', 'flip')
             + '</div>'
-            + '<div class="wcl">'+esc(wc(b.weight_class) || 'Catch weight')
-            + (b.bout_level && b.bout_level !== 'pro' ? ' · '+esc(b.bout_level) : '')+'</div>'
+            + '<div class="nms2">'
+            + '<b class="' + (done && b.winner_corner === 'a' ? 'win' : '') + '"'
+            + (b.fighter_a_slug ? ' data-slug="'+esc(b.fighter_a_slug)+'"' : '') + '>'
+            + esc(b.fighter_a_name || 'TBA') + '</b>'
+            + '<b class="' + (done && b.winner_corner === 'b' ? 'win' : '') + '"'
+            + (b.fighter_b_slug ? ' data-slug="'+esc(b.fighter_b_slug)+'"' : '') + '>'
+            + esc(b.fighter_b_name || 'TBA') + '</b></div>'
+            + '<div class="recs2"><s>'+rec(A)+'</s><s>'+rec(Bf)+'</s></div>'
             + poolHTML(pools[b.match_id])
+            + '<div class="tape2">' + tapeRows(A, Bf) + '</div>'
+            + '<div class="more2"><span>Tale of the tape</span><i>&#9662;</i></div>'
             + '</div>';
         }).join('');
   }).join('') + '<div class="foot">'+rows.length+' bouts</div>';
+}
+
+function rec(f){
+  if(f.headline_wins == null) return '&mdash;';
+  return (f.headline_wins||0) + '-' + (f.headline_losses||0)
+       + (f.headline_draws ? '-' + f.headline_draws : '');
+}
+function corner(f, slug, won, flip){
+  var inner = f.profile_photo_url
+    ? '<img class="cut2 ' + flip + '" src="' + esc(f.profile_photo_url) + '" alt="">'
+    : '<svg class="sil2" viewBox="0 0 60 100" preserveAspectRatio="xMidYMax meet">'
+      + '<circle cx="30" cy="21" r="14"/>'
+      + '<path d="M30 38c-14 0-24 9-26 22l-4 40h60l-4-40c-2-13-12-22-26-22z"/></svg>';
+  return '<span class="pw2' + (won ? ' win' : '') + '"'
+       + (slug ? ' data-slug="' + esc(slug) + '"' : '') + '>' + inner + '</span>';
+}
+/* Height comes back in inches. A row where NEITHER fighter has the value is
+   left out entirely rather than printed as two dashes — most of the roster
+   has no reach or stance, and six empty rows is not a tale of the tape. */
+function inches(v){
+  var n = Number(v); if(!isFinite(n) || !n) return null;
+  return Math.floor(n/12) + "' " + (n%12) + '"';
+}
+function tapeRows(A, B){
+  var rows = [
+    ['Record', rec(A) === '&mdash;' ? null : rec(A), rec(B) === '&mdash;' ? null : rec(B)],
+    ['Height', inches(A.height), inches(B.height)],
+    ['Reach',  A.reach ? Math.round(A.reach)+'"' : null, B.reach ? Math.round(B.reach)+'"' : null],
+    ['Stance', A.stance, B.stance],
+    ['By KO',  A.headline_ko_wins != null ? String(A.headline_ko_wins) : null,
+               B.headline_ko_wins != null ? String(B.headline_ko_wins) : null],
+    ['From',   A.country, B.country]
+  ].filter(function(r){ return r[1] || r[2]; });
+  if(!rows.length) return '<div class="notape">No tape on either corner yet.</div>';
+  return rows.map(function(r){
+    return '<div class="tr2"><b class="l">'+esc(r[1] || '—')+'</b>'
+         + '<s>'+esc(r[0])+'</s>'
+         + '<b class="r">'+esc(r[2] || '—')+'</b></div>';
+  }).join('');
 }
 
 /* Pari-mutuel with no rake: back a side and you take a share of the WHOLE
