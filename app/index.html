@@ -846,10 +846,6 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .bout2.you{border-color:rgba(245,200,66,.5);box-shadow:0 0 0 1px rgba(245,200,66,.2)}
 .bout2 .youtag{font-family:'Space Mono',monospace;font-size:7px;font-weight:700;letter-spacing:.13em;
   text-transform:uppercase;color:#3A2A00;background:#F5C842;padding:2px 6px;border-radius:3px;margin-left:6px}
-.mini.mine{box-shadow:0 0 0 2px #F5C842,0 5px 15px rgba(6,4,20,.5)}
-.mini .mineTag{position:absolute;left:5px;top:9px;z-index:3;font-family:'Space Mono',monospace;
-  font-size:6.5px;font-weight:700;letter-spacing:.1em;color:#3A2A00;background:#F5C842;
-  border-radius:9px;padding:2px 5px}
 
 /* wallet + binder */
 .bal{margin:14px 18px 0;padding:16px 17px;border-radius:15px;
@@ -1065,29 +1061,12 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   text-transform:uppercase;color:var(--c);margin-top:4px}
 #reveal .rvgo{margin-top:18px;width:100%}
 
-.mini{border-radius:11px;overflow:hidden;background:linear-gradient(168deg,#F8F6FC,#E5E0F2);
-  color:#16131F;box-shadow:0 5px 15px rgba(6,4,20,.5);position:relative}
-.mini .foil{height:4px;background:linear-gradient(90deg,#F5C842,#EC4899,#7B2FFF,#22D3EE,#F5C842)}
-.mini .art{height:74px;position:relative;overflow:hidden;background:
-  radial-gradient(90% 120% at 26% 10%,rgba(123,47,255,.5),transparent 62%),linear-gradient(160deg,#2A1650,#120E22)}
-.mini .art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center}
-.mini .art .init{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  font-family:'Bebas Neue',sans-serif;font-size:24px;color:rgba(200,185,240,.34)}
-.mini .qty{position:absolute;right:5px;top:9px;z-index:3;font-family:'Space Mono',monospace;
-  font-size:7px;font-weight:700;color:#EDEAF6;background:rgba(10,8,20,.8);border-radius:9px;padding:2px 6px}
-.mini .in{padding:7px 8px 8px}
-.mini .n{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.02em;line-height:1;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mini .m2{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
-.mini .rar2{font-family:'Space Mono',monospace;font-size:6.5px;font-weight:700;letter-spacing:.09em;
-  text-transform:uppercase;padding:2px 5px;border-radius:3px}
-.r-common{color:#4F4A5E;background:#DEDAE8}
-.r-uncommon{color:#1B5E43;background:#CFEBDE}
-.r-rare{color:#1B4F6B;background:#CDE7F3}
-.r-mystic{color:#4C1D95;background:#E3D6FB}
-.r-legendary{color:#7A5A00;background:linear-gradient(90deg,#FBEFC2,#F3DE94)}
-.r-prismatic{color:#5B1A5E;background:linear-gradient(90deg,#FBE3F5,#DCC7F5,#C7E7F5)}
-.mini .gr{font-family:'Space Mono',monospace;font-size:7.5px;font-weight:700;color:#6B6580}
+/* `.mini` was the binder tile before the slab replaced it. It rendered ZERO
+   times after that rewrite — and its six rarity PILL rules were bare
+   `.r-legendary{background:...}` declarations, which the slab wrapper also
+   carries. So a dead tile was painting a pale gradient behind every slab and
+   tinting its text brown. Third class collision this week, and the first one
+   a check caught instead of an eye: checks/check-css-collisions.mjs. */
 
 /* install hint */
 .install{display:none;margin:14px 18px 0;padding:13px 15px;border-radius:13px;
