@@ -670,6 +670,9 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   text-transform:uppercase;cursor:pointer;border:1px solid transparent}
 .act.yes{background:linear-gradient(90deg,#6EE7B7,#37B98C);color:#06281D}
 .act.mid{background:none;border-color:rgba(245,200,66,.5);color:#F5C842}
+/* Never filled. Decline is the one button here that takes something away, so
+   it stays quieter than the two beside it rather than competing with them. */
+.act.no{background:none;border-color:rgba(241,156,150,.45);color:#F19C96}
 .act.buy{flex:none;margin-top:7px;padding:8px 16px;
   background:linear-gradient(90deg,#F5C842,#D6A81F);color:#2A1F00}
 .act.pick{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.18);color:#EFEAFF;
@@ -3145,15 +3148,31 @@ document.addEventListener('click', async function(e){
   var b;
 
   if((b = e.target.closest('[data-answer]'))){
+    /* Accept and tentative are freely changeable, so they go straight through.
+       Declining takes you OFF a built card and the matchmakers act on it, so it
+       gets the one confirm in the app. */
+    if(b.getAttribute('data-answer') === 'declined'
+       && !confirm('Decline this fight? The matchmakers will replace you on the card.')) return;
     busy(b, true, 'Saving…');
     var r = await rpc('app_answer_offer',
       { p_offer_id: b.getAttribute('data-offer'), p_answer: b.getAttribute('data-answer') });
     busy(b, false);
-    toast(r.ok ? (b.getAttribute('data-answer') === 'accepted'
-                    ? 'Accepted. The league office can see it.'
-                    : 'Marked tentative.')
+    var ans = b.getAttribute('data-answer');
+    toast(r.ok ? (ans === 'accepted' ? 'Accepted. The league office can see it.'
+                : ans === 'declined' ? 'Declined. You are off this card.'
+                : 'Marked tentative.')
                : r.message, !r.ok);
     if(r.ok){ renderOffers(); loadMe(); }
+    return;
+  }
+
+  if((b = e.target.closest('[data-decline]'))){
+    if(!confirm('Turn down this contract? It cannot be re-opened from the app.')) return;
+    busy(b, true, '…');
+    var r0 = await rpc('app_decline_contract', { p_contract_id: b.getAttribute('data-decline') });
+    busy(b, false);
+    toast(r0.ok ? 'Turned down. You keep your current deal.' : r0.message, !r0.ok);
+    if(r0.ok){ renderMyContract(); loadMe(); }
     return;
   }
 
@@ -3432,10 +3451,12 @@ async function renderMyContract(){
   var html = '';
   if(offered){
     html += '<div class="lab"><b>Offered to you</b><i></i></div>' + terms(offered, 'offer')
-      + '<div class="acts one"><button class="act yes" data-sign="'+esc(offered.contract_id)+'">'
-      + 'Sign this deal</button></div>'
-      + '<div class="doit">Signing here retires your current deal in the same step. '
-      + 'To <b>decline</b>, use the Discord DM — that one goes to a human.</div>';
+      + '<div class="acts">'
+      + '<button class="act yes" data-sign="'+esc(offered.contract_id)+'">Sign it</button>'
+      + '<button class="act no" data-decline="'+esc(offered.contract_id)+'">Turn it down</button>'
+      + '</div>'
+      + '<div class="doit">Signing retires your current deal in the same step. Turning it down '
+      + 'changes nothing — you keep the deal you have, and it cannot be re-opened from here.</div>';
   }
   if(active){
     html += '<div class="lab"><b>'+(offered ? 'Current deal' : 'Your deal')+'</b><i></i></div>' + terms(active);
@@ -3474,12 +3495,13 @@ async function renderOffers(){
       + '<div class="acts">'
       + '<button class="act yes" data-answer="accepted" data-offer="'+esc(o.offer_id)+'">Accept</button>'
       + '<button class="act mid" data-answer="tentative" data-offer="'+esc(o.offer_id)+'">Tentative</button>'
+      + '<button class="act no" data-answer="declined" data-offer="'+esc(o.offer_id)+'">Decline</button>'
       + '</div>'
       + '<button class="ofrgo" data-event="'+esc(o.event_id)+'">See the card</button>'
       + '</div>';
   }).join('')
-  + '<div class="doit">To <b>decline</b>, use the Discord DM. Declining pulls you off a '
-  + 'built card, so it goes to a human in the league office rather than through here.</div>';
+  + '<div class="doit">Answering here is the same as answering the DM — one row, one answer. '
+  + 'Declining takes you off the card, and the matchmakers see it straight away.</div>';
 }
 
 /* BETTING. Read-only until the write path exists — the app has no way to
