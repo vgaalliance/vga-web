@@ -891,7 +891,46 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    301px on a 363px grid before this: lopsided AND overflowing, while
    text-overflow:ellipsis quietly did nothing because the box never had to
    shrink. */
+/* One shelf per set, scrolled sideways. A grid sorts by nothing a collector
+   cares about; a shelf is the set, in order, ending in the pack that fills it. */
+.shelf{display:flex;gap:11px;margin:0 15px;padding:2px 0 4px;overflow-x:auto;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.shelf::-webkit-scrollbar{display:none}
+.shelf .slabw{width:152px;flex-shrink:0}
 .bgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 13px;margin:0 15px}
+
+/* THE CHASE — one number that goes up, and the four bars under it. Without
+   this the shelves are a gallery; with it they are a scoreboard. */
+.chase{margin:4px 16px 2px;padding:15px 16px;border-radius:16px;
+  background:linear-gradient(155deg,rgba(167,139,250,.2),rgba(20,14,38,.9));
+  border:1px solid rgba(167,139,250,.35)}
+.chase .cr{display:flex;align-items:center;gap:15px}
+.chase .ring{width:62px;height:62px;border-radius:50%;flex-shrink:0;position:relative;display:block}
+.chase .ring i{position:absolute;inset:6px;border-radius:50%;background:#211A3D;
+  display:flex;align-items:center;justify-content:center;font-style:normal;
+  font-family:'Bebas Neue',sans-serif;font-size:19px;color:#C3A6FF}
+.chase .cn{flex:1;min-width:0}
+.chase .big{font-family:'Bebas Neue',sans-serif;font-size:31px;line-height:1}
+.chase .big em{font-style:normal;font-size:16px;color:#8B83AC}
+.chase .cn .s{font-family:'Space Mono',monospace;font-size:7.5px;color:#B0A4D8;margin-top:5px;
+  line-height:1.5}
+.chase .brs{margin-top:14px;display:flex;flex-direction:column;gap:7px}
+.chase .bl{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;
+  font-size:6.5px;letter-spacing:.1em;text-transform:uppercase;color:#B0A4D8;margin-bottom:4px}
+.chase .bt{height:5px;border-radius:3px;background:rgba(0,0,0,.4);overflow:hidden}
+.chase .bt i{display:block;height:100%;background:#A78BFA;border-radius:3px}
+
+/* the pack at the end of a shelf — it names the holes it can close */
+.shelfbuy{display:flex;align-items:center;gap:11px;margin:9px 16px 4px;padding:10px 12px;
+  border-radius:12px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12)}
+.shelfbuy .nm{flex:1;min-width:0;font-size:14px;font-weight:600}
+.shelfbuy .nm s{display:block;text-decoration:none;font-family:'Space Mono',monospace;
+  font-size:7px;color:#7E7699;margin-top:3px}
+.shelfbuy.hot{border-color:rgba(245,200,66,.4);background:rgba(245,200,66,.1)}
+.shelfbuy.hot .nm s{color:#C0A85E}
+.shelfbuy.done{display:block;text-align:center;font-family:'Space Mono',monospace;font-size:8px;
+  font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#6EE7B7;
+  border-color:rgba(110,231,183,.4);background:rgba(110,231,183,.08)}
 
 .r-common   {--c:#8A82A6;--c2:#5C5578;--glow:rgba(138,130,166,.28)}
 .r-uncommon {--c:#5FD98A;--c2:#2E8C55;--glow:rgba(95,217,138,.32)}
@@ -1431,7 +1470,19 @@ async function q(path){
   try{
     var r = await fetch(SB + '/rest/v1/' + path, H);
     st.code = r.status;
-    if(!r.ok){ console.warn('[uba] query failed', path, r.status); return null; }
+    if(!r.ok){
+      /* A 400 here is almost always a column that is not in the view, and it
+         has now cost three separate bugs — each one reading on screen as "no
+         data" rather than as a mistake, because a failed query and an empty
+         result are the same `null` to every caller.
+         `shop_public` without `created_at`, then without `effect_kind`, and
+         `fighter_cards.photo_url` before that. So a 4xx says what it asked
+         for and what came back, loudly, instead of a shrug. */
+      var why = '';
+      try{ why = (await r.clone().json()).message || ''; }catch(e){}
+      console.error('[uba] QUERY FAILED ' + r.status + ' — ' + path + (why ? ' — ' + why : ''));
+      return null;
+    }
     var j = await r.json();
     return Array.isArray(j) ? Object.assign(j, { _status: st.code }) : null;
   }catch(e){ console.warn('[uba] query error', path, e); return null; }
@@ -3858,7 +3909,7 @@ async function renderBetting(){
    3. NOTHING ANIMATES OFF SCREEN. The prism grating is a running animation on
       every card; a hundred of them is a warm phone for no reason. An observer
       turns the foil on as a card scrolls in and off as it leaves. */
-var binderCards = null, binderAll = null, binderSet = 'all', binderPacks = null;
+var binderCards = null, binderAll = null, binderSet = 'all', binderPacks = null, binderShop = null;
 var foilWatcher = null;
 
 function renderCards(){
@@ -3886,7 +3937,8 @@ async function loadBinder(){
     qMe("my_cards?select=*"),
     q("cards_public?select=*"),
     qMe("my_items?select=*&order=acquired_at.desc"),
-    qMe("my_profile?select=vc_balance&limit=1")
+    qMe("my_profile?select=vc_balance&limit=1"),
+    q("shop_public?select=id,name,vc_price,effect_kind")
   ]);
   if(!el.isConnected) return;
   if(!got[0] || !got[1]){
@@ -3896,6 +3948,8 @@ async function loadBinder(){
   binderCards = got[0];
   binderAll   = got[1];
   binderPacks = (got[2] || []).filter(function(i){
+    return i.effect_kind === 'pack' || i.effect_kind === 'crate'; });
+  binderShop = (got[4] || []).filter(function(i){
     return i.effect_kind === 'pack' || i.effect_kind === 'crate'; });
 
   var chip = document.getElementById('cards-vc');
@@ -3911,60 +3965,130 @@ function renderBinder(){
   var el = document.getElementById('binder');
   if(!el || !binderAll) return;
 
-  /* Merge the checklist with what you hold. The checklist is the spine — a
-     card you have never seen still gets a slot, because the empty slot is the
-     reason to open a pack. */
   var mine = {};
   (binderCards || []).forEach(function(c){ mine[c.card_id] = c; });
-
   var prints = (binderCards || []).reduce(function(n,c){ return n + Number(c.qty||0); }, 0);
   var owned  = (binderCards || []).length;
+  var pct    = binderAll.length ? Math.round(owned / binderAll.length * 100) : 0;
 
+  /* Group by SET, because that is how a card collection is organised in every
+     game that has ever done this well — and because it puts the pack you can
+     buy next to the specific hole it fills. "Fills 13 gaps" is a reason to
+     spend 2,500 VC; "First Edition Pack, 2,500 VC" is a price tag. */
   var sets = [];
   binderAll.forEach(function(c){
-    if(!c.set_code) return;
-    var hit = sets.filter(function(x){ return x.code === c.set_code; })[0];
-    if(!hit){ hit = { code:c.set_code, name:c.set_name || c.set_code, total:0, have:0 }; sets.push(hit); }
-    hit.total++;
+    var code = c.set_code || 'OTHER';
+    var hit = sets.filter(function(x){ return x.code === code; })[0];
+    if(!hit){ hit = { code:code, name:c.set_name || code, cards:[], have:0 }; sets.push(hit); }
+    hit.cards.push(c);
     if(mine[c.card_id]) hit.have++;
   });
-  var done = sets.filter(function(x){ return x.have === x.total; }).length;
-
-  var list = binderAll.filter(function(c){
-    return binderSet === 'all' || c.set_code === binderSet; });
-  list.sort(function(a,b){
-    var oa = mine[a.card_id] ? 0 : 1, ob = mine[b.card_id] ? 0 : 1;
-    if(oa !== ob) return oa - ob;                                  // yours first
-    var ra = RAR.indexOf(b.rarity), rb = RAR.indexOf(a.rarity);
-    if(ra !== rb) return ra - rb;                                  // rarest first
-    return String(a.name||'').localeCompare(String(b.name||''));
+  sets.forEach(function(x){
+    /* Yours first, then rarest, so a shelf opens on what you are proudest of
+       and trails off into what you are missing. */
+    x.cards.sort(function(a,b){
+      var oa = mine[a.card_id] ? 0 : 1, ob = mine[b.card_id] ? 0 : 1;
+      if(oa !== ob) return oa - ob;
+      var ra = RAR.indexOf(b.rarity), rb = RAR.indexOf(a.rarity);
+      if(ra !== rb) return ra - rb;
+      return String(a.name||'').localeCompare(String(b.name||''));
+    });
   });
+  /* Closest to finished first — the shelf you are most likely to act on. */
+  sets.sort(function(a,b){
+    return (b.have / (b.cards.length||1)) - (a.have / (a.cards.length||1)); });
+  var done = sets.filter(function(x){ return x.have === x.cards.length; }).length;
 
-  var pk = binderPacks && binderPacks.length ? packsHTML() : '';
+  /* Which set is the best next buy: most complete WITHOUT being finished. */
+  var closest = sets.filter(function(x){ return x.have < x.cards.length; })[0];
 
-  el.innerHTML = pk
-    + '<div class="bstat">'
-      + '<div><b>'+prints+'</b><s>prints</s></div>'
-      + '<div><b>'+owned+'<em>/'+binderAll.length+'</em></b><s>unique</s></div>'
-      + '<div><b>'+done+'<em>/'+sets.length+'</em></b><s>sets done</s></div></div>'
-    + '<div class="chips" id="binder-chips">'
-      + '<span class="'+(binderSet==='all'?'on':'')+'" data-set="all">All '
-        + owned + '/' + binderAll.length + '</span>'
-      + sets.map(function(x){
-          return '<span class="'+(binderSet===x.code?'on':'')+(x.have===x.total?' full':'')
-            + '" data-set="'+esc(x.code)+'">'+esc(x.code)+' '+x.have+'/'+x.total+'</span>'; }).join('')
+  var html = ''
+    + '<div class="chase">'
+      + '<div class="cr">'
+        + '<span class="ring" style="background:conic-gradient(#A78BFA 0 '+pct+'%,rgba(255,255,255,.1) '+pct+'% 100%)">'
+        + '<i>'+pct+'%</i></span>'
+        + '<div class="cn"><div class="big">'+owned+'<em>/'+binderAll.length+'</em></div>'
+        + '<div class="s">'+(binderAll.length - owned)+' to go \u00b7 '
+        + done+' of '+sets.length+' sets done \u00b7 '+prints+' prints</div></div>'
       + '</div>'
-    + '<div class="bgrid">' + list.map(function(c){
-        return slabHTML(c, mine[c.card_id]); }).join('') + '</div>'
-    + '<div class="foot">Tap a card to open it &middot; every print is graded 1 to 10</div>';
+      + '<div class="brs">' + sets.slice(0,4).map(function(x){
+          var p = Math.round(x.have / (x.cards.length||1) * 100);
+          return '<div class="br"><div class="bl"><span>'+esc(x.code)+'</span>'
+            + '<span>'+x.have+'/'+x.cards.length+'</span></div>'
+            + '<div class="bt"><i style="width:'+p+'%'
+            + (x.have === x.cards.length ? ';background:#6EE7B7' : '')+'"></i></div></div>';
+        }).join('') + '</div>'
+    + '</div>';
 
-  var chips = document.getElementById('binder-chips');
-  if(chips) chips.addEventListener('click', function(e){
-    var c = e.target.closest('span'); if(!c) return;
-    binderSet = c.getAttribute('data-set'); renderBinder();
-    panels.cards.scrollTop = 0;
+  if(binderPacks && binderPacks.length) html += packsHTML();
+
+  /* One shelf per set: the cards, then the pack that fills them. */
+  html += sets.map(function(x){
+    var missing = x.cards.length - x.have;
+    return '<div class="lab"><b>'+esc(x.name)+'</b><i></i><s>'+x.have+' / '+x.cards.length+'</s></div>'
+      + '<div class="shelf">' + x.cards.map(function(c){
+          return slabHTML(c, mine[c.card_id]); }).join('') + '</div>'
+      + shelfBuy(x, missing);
+  }).join('')
+  + '<div class="foot">Tap a card to open it &middot; every print is graded 1 to 10</div>';
+
+  el.innerHTML = html;
+  /* A sideways scroll moves cards in and out of view without the panel
+     scrolling at all, so the shelves have to say when they move. */
+  el.querySelectorAll('.shelf').forEach(function(sh){
+    var t = null;
+    sh.addEventListener('scroll', function(){
+      clearTimeout(t); t = setTimeout(watchFoil, 90);
+    }, { passive: true });
   });
   watchFoil();
+}
+
+/* The pack that fills THIS shelf. It says how many holes it can close, which
+   is the only number that makes a price mean anything. If you already hold
+   one sealed, the row offers to rip instead of to buy — you do not need to be
+   sold something you own. */
+function shelfBuy(set, missing){
+  var fits = setMatcher(set);
+  var sealed = (binderPacks || []).filter(function(i){
+    return fits(String(i.name || '').toLowerCase()); });
+  var forSale = (binderShop || []).filter(function(i){
+    var n = String(i.name || '').toLowerCase();
+    return fits(n) && n.indexOf('single') === -1; })
+    .sort(function(a,b){ return a.vc_price - b.vc_price; })[0];
+
+  if(!missing) return '<div class="shelfbuy done">Set complete</div>';
+  if(sealed.length){
+    return '<div class="shelfbuy hot"><div class="nm">'+esc(sealed[0].name)
+      + '<s>'+sealed.length+' sealed \u00b7 '+missing+' still missing</s></div>'
+      + '<button class="act rip" data-rip="'+esc(sealed[0].player_item_id)+'">Rip it</button></div>';
+  }
+  if(!forSale) return '';
+  return '<div class="shelfbuy"><div class="nm">'+esc(forSale.name)
+    + '<s>'+missing+' of these you don\'t own yet</s></div>'
+    + '<button class="act buy" data-buy="'+esc(forSale.id)+'">'
+    + Number(forSale.vc_price||0).toLocaleString()+' VC</button></div>';
+}
+
+/* Shop items are named for their set in prose ("GFL Throwback 1 Pack"), not
+   by set_code, so matching is on a word rather than a key. Crude, and it has
+   to be: effect_data carries the real link and effect_data is deliberately not
+   published. If a set is ever renamed this goes quiet rather than wrong. */
+/* Two sets have "Throwback" in the name — "Throwback: The Ring Era" and "GFL
+   Throwback 1" — so a substring test put the GFL pack on the Ring Era shelf
+   and on its own. A match returns a test, not a word, and the plain Throwback
+   one has to say what it is NOT. */
+function setMatcher(set){
+  var n = String(set.name || '').toLowerCase();
+  if(n.indexOf('first edition') > -1)
+    return function(x){ return x.indexOf('first edition') > -1; };
+  if(n.indexOf('gfl') > -1)
+    return function(x){ return x.indexOf('gfl') > -1; };
+  if(n.indexOf('throwback') > -1)
+    return function(x){ return x.indexOf('throwback') > -1 && x.indexOf('gfl') === -1; };
+  if(n.indexOf('spring') > -1)
+    return function(x){ return x.indexOf('spring') > -1; };
+  return function(){ return false; };
 }
 
 /* One slab. `have` is the my_cards row when you own it, undefined when you do
@@ -4055,17 +4179,26 @@ function watchFoil(){
      dead foil for a beat — and in a backgrounded tab it never reports at all,
      which is exactly how this looked broken under test. The observer keeps it
      right from here; this is only the opening state. */
-  var h = window.innerHeight || 900;
+  var h = window.innerHeight || 900, w = window.innerWidth || 400;
   all.forEach(function(f){
     var r = f.getBoundingClientRect();
-    f.classList.toggle('lit', r.bottom > -140 && r.top < h + 140);
+    /* BOTH axes. The grid only ever scrolled vertically, so a vertical-only
+       test was right by accident; the shelves scroll sideways, and a card
+       parked off the right edge still has a perfectly normal `top`. That lit
+       98 foils out of 107 — the exact thing the observer exists to prevent. */
+    f.classList.toggle('lit',
+      r.bottom > -140 && r.top < h + 140 && r.right > -60 && r.left < w + 60);
   });
 
   if(!('IntersectionObserver' in window)) return;
+  /* No `root`: the shelves are their own horizontal scrollers inside the
+     panel, and pinning the root to the panel measures only the vertical one.
+     The viewport is the thing that actually decides whether somebody can see
+     a card. */
   foilWatcher = new IntersectionObserver(function(rows){
     rows.forEach(function(r){ r.target.classList.toggle('lit', r.isIntersecting); });
-  }, { root: panels.cards, rootMargin: '140px 0px' });
-  document.querySelectorAll('.bgrid .fx').forEach(function(f){ foilWatcher.observe(f); });
+  }, { rootMargin: '140px 60px' });
+  all.forEach(function(f){ foilWatcher.observe(f); });
 }
 
 async function loadSets(){
