@@ -108,29 +108,30 @@ a{color:inherit;text-decoration:none}
    behaving like the rest. */
 button:active,
 .fc:active, .pw2:active, .nms2 b:active, .more2:active, .evrow:active,
-.twin .tw:active, .bpill:active, .betback:active, .act:active, .chipb:active,
+.twin .tw:active, .bpill:active, .betback:active, .chipb:active,
 .slabw:active, .chips span:active,
 .brec:active, .evbet:active, .nw:active, .wrow:active, .lead:active,
+.rrow:active, .mrow:active, .watchbtn:active, .signin:active,
 #tear .tapopen:active, #tear .tclose:active, #tear .scard:active{
   transform:scale(.97);
-  background-color:rgba(255,255,255,.09);
+  filter:brightness(1.28);
   box-shadow:inset 0 2px 9px rgba(0,0,0,.45)}
 /* Pills are small, so the same scale reads as nothing. */
 .chips span:active, .betback:active, .chipb:active{transform:scale(.93)}
+/* The fighter tile is the most-tapped thing in the app -- 445 of them -- and
+   it is the one LIGHT surface: a lavender-to-white gradient. Brightening it
+   does nothing you can see, so it darkens instead. It also has no
+   `cursor:pointer` because it is an <a>, which is exactly how it was missed
+   on the first pass: scanning for cursor:pointer finds no link in the app. */
+.fcard:active{transform:scale(.97);filter:brightness(.93);box-shadow:none}
 /* .bhero runs the riding/pays-out tint on a keyframe animation, and an
-   animation beats a plain declaration -- a background here would simply never
-   apply. Shape and shadow carry it instead. */
-.bhero:active{transform:scale(.985);box-shadow:inset 0 2px 12px rgba(0,0,0,.5)}
-/* Fast in, so the press lands with the finger. Wrapped in :where() on purpose:
-   it has ZERO specificity, so it adds a transition to these elements and can
-   never win an argument with their real rules -- and, just as importantly, it
-   is not a second bare `.lead{...}` declaration. Written flat it was exactly
-   the shape checks/check-css-collisions.mjs exists to catch, and it caught it. */
-:where(button, .fc, .pw2, .nms2 b, .more2, .evrow, .twin .tw, .bpill, .betback,
-  .act, .chipb, .slabw, .sealrail .sw, .chips span, .bhero, .brec, .evbet, .nw,
-  .wrow, .lead){transition:transform .1s ease, background-color .1s ease, box-shadow .1s ease}
+   animation beats a plain declaration -- a background here would never apply.
+   filter is a separate property, so it lands on top of the animation. */
+.bhero:active{transform:scale(.985);filter:brightness(1.2);
+  box-shadow:inset 0 2px 12px rgba(0,0,0,.5)}
 @media (prefers-reduced-motion:reduce){
-  button:active, .fc:active, .slabw:active, .evbet:active, .bhero:active{transform:none}}
+  button:active, .fc:active, .fcard:active, .slabw:active, .evbet:active,
+  .bhero:active, .rrow:active, .mrow:active{transform:none}}
 
 button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 :focus-visible{outline:2px solid #C3A6FF;outline-offset:2px}
@@ -904,7 +905,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 /* Combined 2026-09-01: the shared press block also targets .act:active with a
    scale, and this rule sits later at the same specificity, so it silently won
    and the scale never applied. Both live here now rather than in two places. */
-.act:active{transform:translateY(1px) scale(.94)}
+.act:active{transform:translateY(1px) scale(.94);filter:brightness(1.28)}
 .act[disabled],.act.working{opacity:.55;pointer-events:none}
 
 .picks{display:flex;gap:8px;margin-top:11px}
@@ -1777,8 +1778,62 @@ async function q(path){
       return null;
     }
     var j = await r.json();
-    return Array.isArray(j) ? Object.assign(j, { _status: st.code }) : null;
+    if(!Array.isArray(j)) return null;
+    cachePut(path, j);
+    return Object.assign(j, { _status: st.code });
   }catch(e){ console.warn('[uba] query error', path, e); return null; }
+}
+
+/* ── LAST KNOWN GOOD ───────────────────────────────────────────────────
+   Every open showed a skeleton, even when nothing had changed since the last
+   one. On a phone that is the loudest remaining tell that this is a web page:
+   a real app has yesterday's screen on it before the network answers.
+
+   PUBLIC READS ONLY. `qMe` is deliberately not cached — a stale VC balance or
+   a settled bet still showing as riding is worse than a skeleton, because a
+   skeleton is honestly empty and a wrong number is confidently wrong.
+
+   Stale is served at ANY age under a week, because it is replaced within the
+   same second by the live answer; past a week it is dropped rather than shown,
+   for the case where somebody opens the app offline after a month away. */
+var CACHE_PREFIX = 'uba.c.';
+var CACHE_MAX_AGE = 7 * 24 * 3600 * 1000;
+var CACHE_MAX_BYTES = 260000;   /* one payload. localStorage is ~5MB total. */
+
+function cacheKey(path){
+  /* Paths carry commas, brackets and equals; a hash keeps keys short and makes
+     the whole cache trivially clearable by prefix. */
+  var h = 0, i;
+  for(i = 0; i < path.length; i++){ h = ((h << 5) - h + path.charCodeAt(i)) | 0; }
+  return CACHE_PREFIX + (h >>> 0).toString(36) + '.' + path.length;
+}
+function cachePut(path, rows){
+  try{
+    var body = JSON.stringify({ t: Date.now(), d: rows });
+    if(body.length > CACHE_MAX_BYTES) return;
+    localStorage.setItem(cacheKey(path), body);
+  }catch(e){
+    /* Out of quota, or storage is off (private window, blocked site data).
+       Drop OUR keys and give up quietly — the app works without any of this. */
+    try{
+      Object.keys(localStorage).forEach(function(k){
+        if(k.indexOf(CACHE_PREFIX) === 0) localStorage.removeItem(k); });
+    }catch(e2){}
+  }
+}
+/* Synchronous on purpose: the caller paints with it before it awaits anything,
+   which is the entire point. */
+function cached(path){
+  try{
+    var raw = localStorage.getItem(cacheKey(path));
+    if(!raw) return null;
+    var o = JSON.parse(raw);
+    if(!o || !Array.isArray(o.d)) return null;
+    if(Date.now() - (o.t || 0) > CACHE_MAX_AGE){
+      localStorage.removeItem(cacheKey(path)); return null;
+    }
+    return o.d;
+  }catch(e){ return null; }
 }
 /* Same shape, but reports the status of a call that returned nothing. */
 async function qStatus(path){
@@ -1788,6 +1843,7 @@ async function qStatus(path){
     code = r.status;
     if(!r.ok) return { rows: null, code: code };
     var j = await r.json();
+    if(Array.isArray(j)) cachePut(path, j);
     return { rows: Array.isArray(j) ? j : null, code: code };
   }catch(e){ return { rows: null, code: 0 }; }
 }
@@ -2765,12 +2821,13 @@ var newsCache = null, newsFailWasMissing = false, newsInFlight = null;
 /* A8 — loadHomeNews, loadStrip and loadNews all want this at boot and none
    of them has resolved yet, so a plain cache check fired three identical
    requests. The promise itself is the cache. */
+var NEWS_PATH = "news_public?select=id,kicker,headline,body,reporter,posted_at,graphic_url"
+  + "&order=posted_at.desc&limit=25";
 async function getNews(){
   if(newsCache !== null) return newsCache;
   if(newsInFlight) return newsInFlight;
   newsInFlight = (async function(){
-    var res = await qStatus("news_public?select=id,kicker,headline,body,reporter,posted_at,graphic_url"
-      + "&order=posted_at.desc&limit=25");
+    var res = await qStatus(NEWS_PATH);
     // 404 means the view genuinely is not there; anything else means the
     // database was unreachable. Saying "not wired up yet" for an outage sends
     // whoever reads it off to build something that already exists.
@@ -2803,10 +2860,24 @@ async function loadHomeNews(){
 }
 async function loadNews(){
   var el = document.getElementById('news-body');
+  /* Yesterday's wire, instantly, then today's over the top of it. */
+  var seed = cached(NEWS_PATH);
+  var painted = false;
+  if(seed && seed.length){ paintNews(seed); painted = true; }
   var rows = await getNews();
-  if(!rows){ retryHandlers['news'] = function(){ newsCache = null; loadNews(); };
-    el.innerHTML = newsFailure('news'); return; }
+  if(!rows){
+    retryHandlers['news'] = function(){ newsCache = null; loadNews(); };
+    /* Do not replace a painted wire with a failure box. Old news beats no
+       news, and the retry is still there the next time the tab is opened. */
+    if(!painted) el.innerHTML = newsFailure('news');
+    return;
+  }
   if(!rows.length){ el.innerHTML = '<div class="empty">No news posted yet.</div>'; return; }
+  paintNews(rows);
+}
+function paintNews(rows){
+  var el = document.getElementById('news-body');
+  if(!el) return;
   document.getElementById('news-count').textContent = rows.length + ' posts';
   var lead = rows[0], rest = rows.slice(1);
   var html = '<div class="lead" data-news="'+esc(lead.id)+'"><div class="gfx">'
@@ -2839,9 +2910,15 @@ var allFighters = null, fFilter = 'all', fQuery = '', fShown = 40, fLevel = 'pro
 
 async function loadFighters(){
   if(allFighters) return;
-  var rows = await q("fighter_cards?select=id,display_name,slug,weight_class,headline_wins,headline_losses,"
+  var path = "fighter_cards?select=id,display_name,slug,weight_class,headline_wins,headline_losses,"
     + "headline_draws,rank,is_champion,profile_photo_url,team,nickname,status,level"
-    + "&status=eq.active&order=rank.asc.nullslast&limit=600");
+    + "&status=eq.active&order=rank.asc.nullslast&limit=600";
+  /* Paint yesterday's roster before asking for today's. 445 tiles is the
+     longest wait in the app and the list barely moves week to week. */
+  var seed = cached(path);
+  if(seed && seed.length){ allFighters = seed; fLabel(); renderFighters(); }
+  var rows = await q(path);
+  if(!rows && allFighters) return;   /* offline, and the cached grid is up */
   if(!rows){
     retryHandlers['fighters'] = function(){ allFighters = null; loadFighters(); };
     document.getElementById('f-grid').innerHTML =
