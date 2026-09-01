@@ -396,6 +396,13 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .stick button{flex-shrink:0;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.11em;
   text-transform:uppercase;color:#B7AEDC;border:1px solid rgba(255,255,255,.16);border-radius:20px;padding:6px 12px}
 .stick button.on{background:#A78BFA;color:#1A1430;border-color:#A78BFA;font-weight:700}
+/* The league toggle rides the same sticky bar as the weight-class chips but is
+   a different KIND of control: the chips narrow a list, this one changes which
+   list you are in. Segmented and boxed so it does not read as a seventh chip. */
+.fleague{display:inline-flex;flex-shrink:0;margin-right:4px;border-radius:20px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.2)}
+.fleague button{border:0;border-radius:0;padding:6px 11px}
+.fleague button.on{background:#F5C842;color:#2A1F00;border-color:#F5C842}
 .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 17px}
 .fcard{border-radius:13px;overflow:hidden;background:linear-gradient(168deg,#F8F6FC,#E5E0F2);
   color:#16131F;box-shadow:0 6px 18px rgba(6,4,20,.5);display:block}
@@ -722,56 +729,16 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   color:#F5C842;font-variant-numeric:tabular-nums}
 .shp .pr em{font-style:normal;font-size:7.5px;letter-spacing:.1em;color:#B39B4E;margin-left:4px}
 
-/* ── the old hub, still used by the Wallet / Contract / Offers sheets ──────────────────────────────────────────────
-   Order is the design: what needs an answer, then who you are, then the
-   rooms. Everything below the fighter is a row, so the screen stays one
-   scan deep no matter how much a person accumulates. */
-.me .vcpill{flex-shrink:0;align-self:center;font-family:'Space Mono',monospace;font-size:13px;
-  font-weight:700;color:#F5C842;font-variant-numeric:tabular-nums}
-.me .vcpill em{font-style:normal;font-size:7.5px;letter-spacing:.1em;color:#B39B4E;margin-left:3px}
-
-/* anything waiting on you — the only reason to open You on a quiet day */
-.wait{margin:16px 16px 2px;border-radius:14px;overflow:hidden;
-  border:1px solid rgba(245,200,66,.34);
-  background:linear-gradient(150deg,rgba(245,200,66,.15),rgba(245,200,66,.03))}
-.wait .hd{display:flex;align-items:center;gap:7px;padding:11px 14px 9px;
-  font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.15em;
-  text-transform:uppercase;color:#F5C842}
-.wait .hd svg{width:13px;height:13px;stroke:#F5C842;fill:none;stroke-width:1.8}
-.wait .wrow{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;
-  border-top:1px solid rgba(245,200,66,.2)}
-.wait .wrow .t{font-size:15px;font-weight:600}
-.wait .wrow .s{font-family:'Space Mono',monospace;font-size:7.5px;color:#B3A375;margin-top:3px}
-.wait .wrow .chev2{margin-left:auto;color:#C0A85E;font-size:20px}
-
-/* your fighter, led by the record */
-.fcard{display:flex;align-items:center;gap:12px;margin:0 16px 8px;padding:12px 14px;border-radius:13px;
-  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);cursor:pointer}
-.fcard .av3{width:46px;height:46px;border-radius:11px;flex-shrink:0;overflow:hidden;
-  background:linear-gradient(150deg,#6E5D9C,#332A57)}
-.fcard .av3 img{width:100%;height:100%;object-fit:cover;display:block}
-.fcard .fmeta{flex:1;min-width:0}
-.fcard .t{font-family:'Bebas Neue',sans-serif;font-size:23px;letter-spacing:.03em;line-height:1}
-.fcard .t sup{font-family:'Space Mono',monospace;font-size:6.5px;letter-spacing:.1em;color:#F5C842;
-  margin-left:5px;vertical-align:super}
-.fcard .rec2{font-family:'Space Mono',monospace;font-size:10px;color:#8B83AC;margin-top:5px;
-  font-variant-numeric:tabular-nums}
-.fcard .rec2 b{color:#6EE7B7;font-weight:700}
-.fcard .rec2 em{font-style:normal;color:#F19C96}
-.fcard .rec2 i{font-style:normal;color:#9990B4}
-.fcard .rec2 .dot{margin:0 5px;color:#544C72}
-.fcard .chev2{color:#6E6688;font-size:20px}
-
-/* next fight, the short form — Home carries the loud one */
-.nxt{margin:0 16px 8px;padding:12px 14px;border-radius:13px;cursor:pointer;
-  border:1px solid rgba(245,200,66,.28);
-  background:linear-gradient(150deg,rgba(245,200,66,.12),rgba(245,200,66,.02))}
-.nxt .k2{font-family:'Space Mono',monospace;font-size:7.5px;font-weight:700;letter-spacing:.15em;
-  text-transform:uppercase;color:#F5C842}
-.nxt .vs3,.ofr .vs3{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.02em;
+/* ── the sheets You opens: Wallet, Contract, Offers ───────────────────
+   The S2 hub's own CSS used to sit here — .wait, .nxt, .hubrow, and a second
+   `.fcard`. The MY CAREER rewrite replaced all of that markup and left the
+   rules behind, where the orphaned `.fcard` quietly won every tile in the
+   FIGHTERS grid: same class name, defined later, so `display:flex` and a dark
+   background landed on 445 fighter cards and the photos stopped showing.
+   Dead CSS is not free when the name is already taken. */
+.ofr .vs3{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.02em;
   line-height:1.05;margin-top:6px}
-.nxt .vs3 i{font-style:normal;font-family:'Space Mono',monospace;font-size:9px;color:#9990B4;margin:0 8px}
-.nxt .s,.ofr .s{font-family:'Space Mono',monospace;font-size:8px;color:#8B83AC;margin-top:5px}
+.ofr .s{font-family:'Space Mono',monospace;font-size:8px;color:#8B83AC;margin-top:5px}
 
 /* wallet */
 .bigbal{margin:2px 16px 4px;padding:18px 16px;border-radius:15px;text-align:center;
@@ -824,16 +791,6 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .doit{margin:10px 16px 0;padding:12px 14px;border-radius:11px;font-size:13px;line-height:1.5;
   color:#B7AEDC;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.24)}
 .doit b{color:#E6DEFF;font-family:'Space Mono',monospace;font-size:11.5px}
-
-/* a hub row inside You — one line, opens a whole screen */
-.hubrow{display:flex;align-items:center;gap:12px;margin:0 16px 8px;padding:13px 14px;border-radius:12px;
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);cursor:pointer}
-.hubrow .ico{width:34px;height:34px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;
-  justify-content:center;background:rgba(167,139,250,.2)}
-.hubrow .ico svg{width:18px;height:18px;stroke:#C3A6FF;fill:none;stroke-width:1.8}
-.hubrow .t{font-size:15px;font-weight:600}
-.hubrow .s{font-family:'Space Mono',monospace;font-size:7.5px;color:#7E7699;margin-top:3px}
-.hubrow .chev2{margin-left:auto;color:#6E6688;font-size:20px}
 
 .rbar{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:0 16px 8px}
 .rtabs{display:flex;gap:13px;min-width:0;overflow-x:auto;scrollbar-width:none}
@@ -1226,6 +1183,9 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
     <input id="f-search" type="search" placeholder="Name, nickname or team" autocomplete="off" aria-label="Search fighters">
   </div>
   <div class="stick" id="f-chips">
+    <span class="fleague" id="f-league">
+      <button data-l="pro" class="on">UBA</button><button data-l="amateur">GFL</button>
+    </span>
     <button data-f="all" class="on">All</button>
     <button data-f="p4p">P4P</button>
     <button data-f="champ">Champions</button>
@@ -2338,12 +2298,16 @@ async function loadNews(){
 }
 
 /* ═══ FIGHTERS ═══════════════════════════════════════════════════════ */
-var allFighters = null, fFilter = 'all', fQuery = '', fShown = 40;
+/* UBA and GFL are the same table: every fighter row is league 'UBA', and what
+   separates the two leagues is `level` — pro is UBA, amateur is GFL. 87 active
+   pros against 360 amateurs, which is why an unfiltered list read as mostly
+   strangers to anybody who follows the pro league. */
+var allFighters = null, fFilter = 'all', fQuery = '', fShown = 40, fLevel = 'pro';
 
 async function loadFighters(){
   if(allFighters) return;
   var rows = await q("fighter_cards?select=id,display_name,slug,weight_class,headline_wins,headline_losses,"
-    + "headline_draws,rank,is_champion,profile_photo_url,team,nickname,status"
+    + "headline_draws,rank,is_champion,profile_photo_url,team,nickname,status,level"
     + "&status=eq.active&order=rank.asc.nullslast&limit=600");
   if(!rows){
     retryHandlers['fighters'] = function(){ allFighters = null; loadFighters(); };
@@ -2352,11 +2316,11 @@ async function loadFighters(){
     return;
   }
   allFighters = rows;
-  document.getElementById('f-count').textContent = rows.length + ' active';
+  fLabel();
   renderFighters();
 }
 function filteredFighters(){
-  var list = allFighters || [];
+  var list = (allFighters || []).filter(function(f){ return f.level === fLevel; });
   if(fFilter === 'p4p')        list = list.filter(function(f){ return f.rank != null; });
   else if(fFilter === 'champ') list = list.filter(function(f){ return f.is_champion; });
   else if(fFilter !== 'all')   list = list.filter(function(f){ return f.weight_class === fFilter; });
@@ -2405,15 +2369,48 @@ function renderFighters(){
   more.style.display = list.length > fShown ? 'block' : 'none';
   document.getElementById('f-foot').textContent = 'Showing ' + Math.min(fShown, list.length) + ' of ' + list.length;
 }
+/* Two groups of buttons live in the same sticky row, so the handler has to
+   clear only the group that was clicked. Clearing every button in the bar —
+   which is what the single-group version did — would drop the league toggle's
+   own highlight the moment somebody picked a weight class, and the bar would
+   stop saying which league you are looking at. */
+function fLabel(){
+  document.getElementById('f-lab').textContent =
+    (fLevel === 'amateur' ? 'GFL · ' : '')
+    + (fFilter === 'p4p' ? 'Pound for pound' : fFilter === 'champ' ? 'Champions'
+       : fFilter === 'all' ? 'All fighters' : wc(fFilter));
+  document.getElementById('f-sub').textContent = fFilter === 'all' ? 'Ranked first' : '';
+  var n = (allFighters || []).filter(function(f){ return f.level === fLevel; }).length;
+  document.getElementById('f-count').textContent =
+    n + ' ' + (fLevel === 'amateur' ? 'GFL' : 'UBA');
+}
 document.getElementById('f-chips').addEventListener('click', function(e){
   var b = e.target.closest('button'); if(!b) return;
-  this.querySelectorAll('button').forEach(function(x){ x.classList.remove('on'); });
-  b.classList.add('on');
-  fFilter = b.getAttribute('data-f'); fShown = 40;
-  document.getElementById('f-lab').textContent =
-    fFilter === 'p4p' ? 'Pound for pound' : fFilter === 'champ' ? 'Champions'
-    : fFilter === 'all' ? 'All fighters' : wc(fFilter);
-  document.getElementById('f-sub').textContent = fFilter === 'all' ? 'Ranked first' : '';
+
+  if(b.hasAttribute('data-l')){
+    if(fLevel === b.getAttribute('data-l')) return;
+    fLevel = b.getAttribute('data-l');
+    document.getElementById('f-league').querySelectorAll('button')
+      .forEach(function(x){ x.classList.toggle('on', x === b); });
+    /* GFL is ranked by division and has no pound-for-pound list, so the chip
+       is hidden there rather than offered and empty — and a filter that just
+       became impossible falls back to All rather than showing nothing. */
+    var p4p = this.querySelector('button[data-f="p4p"]');
+    var gfl = fLevel === 'amateur';
+    if(p4p) p4p.hidden = gfl;
+    if(gfl && fFilter === 'p4p'){
+      fFilter = 'all';
+      this.querySelectorAll('button[data-f]').forEach(function(x){
+        x.classList.toggle('on', x.getAttribute('data-f') === 'all'); });
+    }
+  } else {
+    this.querySelectorAll('button[data-f]').forEach(function(x){ x.classList.remove('on'); });
+    b.classList.add('on');
+    fFilter = b.getAttribute('data-f');
+  }
+
+  fShown = 40;
+  fLabel();
   renderFighters();
   panels.fighters.scrollTop = 0;
 });
@@ -3092,6 +3089,18 @@ async function loadMe(){
 
   /* THE ROOMS. Each carries its live number, so the list is a dashboard. */
   html += '<div class="lab"><b>Everything else</b><i></i></div>'
+    + mrow('\u270D\uFE0F','offers','Fight offers',
+        myOffers.length ? myOffers.length + (myOffers.length === 1 ? ' waiting on you' : ' waiting on you')
+                        : 'Nothing waiting',
+        myOffers.length ? String(myOffers.length) : '—', myOffers.length ? '' : 'q')
+    + mrow('\uD83C\uDFC5','contract','Contract', myContract
+        ? String(myContract.tier || 'Signed').toUpperCase()
+          + (myContract.guaranteed_fights
+              ? ' \u00b7 ' + Number(myContract.fights_used||0) + ' of '
+                + myContract.guaranteed_fights + ' fights used' : '')
+        : (offered ? 'A deal is on the table' : 'No contract on file'),
+        myContract ? String(myContract.tier || '').toUpperCase() : (offered ? 'OFFER' : '—'),
+        myContract ? 'q' : (offered ? '' : 'q'))
     + mrow('\uD83C\uDCCF','cards','Your cards',
         cardQty ? cardQty + ' owned' : 'Nothing yet',
         cardQty ? String(cardQty) : '0', '', true)
@@ -3108,15 +3117,6 @@ async function loadMe(){
                  + (myGame.streak ? ' \u00b7 ' + myGame.streak + '-day streak' : '')
                : 'Tap in daily, earn VC',
         myGame ? 'LVL ' + Number(myGame.level||1) : 'NEW', 'q');
-
-  if(myContract){
-    html += mrow('\uD83C\uDFC5','contract','Contract',
-      String(myContract.tier || 'Signed').toUpperCase()
-        + (myContract.guaranteed_fights
-            ? ' \u00b7 ' + Number(myContract.fights_used||0) + ' of '
-              + myContract.guaranteed_fights + ' fights used' : ''),
-      String(myContract.tier || '').toUpperCase(), 'q');
-  }
 
   html += '<div id="me-media"></div>';
   el.innerHTML = html;
