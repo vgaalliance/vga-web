@@ -885,7 +885,186 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .bstat b{display:block;font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1;font-variant-numeric:tabular-nums}
 .bstat s{display:block;text-decoration:none;font-family:'Space Mono',monospace;font-size:7px;
   letter-spacing:.11em;text-transform:uppercase;color:#9990B4;margin-top:4px}
-.bgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin:0 17px}
+/* ── THE BINDER ───────────────────────────────────────────────────────
+   Two columns, not three. The slab's label carries a set line, a name, a
+   barcode and a grade column; at a third of the screen none of that survives,
+   and a slab you cannot read is just a rectangle. */
+/* minmax(0,1fr), NOT 1fr. A grid track's default minimum is min-content, and
+   the label's name line is `white-space:nowrap` — so a long card name pushes
+   its own column wider and the two stop matching. Measured 239px against
+   301px on a 363px grid before this: lopsided AND overflowing, while
+   text-overflow:ellipsis quietly did nothing because the box never had to
+   shrink. */
+.bgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 13px;margin:0 15px}
+
+.r-common   {--c:#8A82A6;--c2:#5C5578;--glow:rgba(138,130,166,.28)}
+.r-uncommon {--c:#5FD98A;--c2:#2E8C55;--glow:rgba(95,217,138,.32)}
+.r-rare     {--c:#4FB8F0;--c2:#1E6FA8;--glow:rgba(79,184,240,.38)}
+.r-mystic   {--c:#B08BFA;--c2:#6B3FD0;--glow:rgba(176,139,250,.45)}
+.r-legendary{--c:#F5C842;--c2:#B8860B;--glow:rgba(245,200,66,.5)}
+.r-prismatic{--c:#FF6EC7;--c2:#4FE3D0;--glow:rgba(255,110,199,.45)}
+
+.slabw{position:relative;cursor:pointer}
+/* the fan — two ghosts, never more, however many you hold */
+.slabw .gh{position:absolute;inset:0;border-radius:11px;background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.16);z-index:0}
+.slabw .gh.g2{transform:rotate(-3.5deg) translate(-4px,3px)}
+.slabw .gh.g3{transform:rotate(3.5deg) translate(4px,5px);opacity:.7}
+.slabw .qty{position:absolute;right:-5px;top:-5px;z-index:9;min-width:22px;height:22px;
+  border-radius:11px;background:#1A1533;border:1px solid var(--c);color:var(--c);
+  font-family:'Space Mono',monospace;font-size:9px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;padding:0 5px;
+  box-shadow:0 2px 8px rgba(0,0,0,.6)}
+
+.slab{position:relative;z-index:1;border-radius:11px;padding:7px 7px 10px;
+  background:linear-gradient(158deg,rgba(230,238,255,.20),rgba(190,205,235,.07) 42%,rgba(255,255,255,.13));
+  border:1px solid rgba(226,236,255,.34);
+  box-shadow:0 12px 26px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.55),
+             inset 1px 0 0 rgba(255,255,255,.2),inset -1px 0 0 rgba(255,255,255,.2)}
+.slab:before{content:'';position:absolute;left:10px;right:10px;top:1px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent)}
+
+/* P2 — the label, with the purple stroke around it AND before the grade */
+.slab .plate{display:flex;align-items:stretch;margin-bottom:7px;border-radius:3px;
+  background:linear-gradient(180deg,#FCFBFF,#E7E5F1);border:2px solid #A78BFA;
+  box-shadow:0 2px 7px rgba(0,0,0,.45),0 0 12px -3px rgba(167,139,250,.55)}
+.slab .plate .txt{flex:1;min-width:0;padding:4px 6px 4px 7px}
+.slab .plate .l1{font-family:'Space Mono',monospace;font-size:5px;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;color:#6B4FC8;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slab .plate .l2{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;
+  line-height:1;text-transform:uppercase;letter-spacing:.02em;color:#12101C;margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slab .plate .l3{display:flex;align-items:flex-end;gap:4px;margin-top:3px}
+.slab .plate .l3 span{font-family:'Space Mono',monospace;font-size:4.5px;letter-spacing:.1em;
+  color:#6B6580;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slab .plate .l3 .miss{color:#9A93B0;font-style:italic;letter-spacing:.08em}
+.slab .plate .bars{display:flex;gap:1px;align-items:flex-end;height:8px;flex-shrink:0}
+.slab .plate .bars i{display:block;width:1px;background:#12101C}
+.slab .plate .side{width:34px;flex-shrink:0;border-left:2px solid #A78BFA;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3px 0;
+  background:linear-gradient(180deg,#F4F1FF,#E2DDF4)}
+.slab .plate .side b{font-family:'Bebas Neue',sans-serif;font-size:19px;line-height:.8;color:#12101C}
+.slab .plate .side b.dash{color:#B0A9C4}
+.slab .plate .side i{font-style:normal;font-family:'Space Mono',monospace;font-size:4px;
+  font-weight:700;letter-spacing:.12em;color:#6B4FC8;margin-top:2px}
+
+.slab .well{border-radius:6px;padding:2px;background:rgba(6,4,14,.5);
+  box-shadow:inset 0 2px 7px rgba(0,0,0,.75)}
+.slab .inner{position:relative;border-radius:4px;overflow:hidden;aspect-ratio:5/7;
+  background:linear-gradient(165deg,var(--c2),#0B0818);
+  border:2px solid var(--c);box-shadow:0 0 14px var(--glow)}
+.slab .inner img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  object-position:top center;display:block}
+.slab .noart{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  padding:10px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;
+  font-size:17px;line-height:1;text-transform:uppercase;color:#fff;
+  text-shadow:0 2px 12px rgba(0,0,0,.9)}
+.slab .scrim{position:absolute;inset:0;z-index:2;
+  background:linear-gradient(180deg,transparent 48%,rgba(6,4,14,.94))}
+.slab .cfoot{position:absolute;left:7px;right:7px;bottom:6px;z-index:6}
+.slab .cfoot .n{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;
+  line-height:1;text-transform:uppercase;letter-spacing:.02em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slab .cfoot .p{font-family:'Space Mono',monospace;font-size:5.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--c);margin-top:3px}
+
+/* THE PRISM GRATING. Real holo foil is a fine diagonal grating that splits
+   light; the lines are always there and a moving band decides where they
+   catch. It only runs while `.lit` is on, which an IntersectionObserver
+   grants as a card scrolls in — a hundred running animations is a warm phone
+   and nobody is looking at ninety of them. */
+@keyframes drift{0%{background-position:0 0,0 0}100%{background-position:200px -280px,-120px 168px}}
+@keyframes band{0%{-webkit-mask-position:120% 0;mask-position:120% 0}
+                100%{-webkit-mask-position:-40% 0;mask-position:-40% 0}}
+.fx{position:absolute;inset:0;z-index:4;pointer-events:none;border-radius:2px;opacity:0;
+  background-image:
+    repeating-linear-gradient(112deg,rgba(255,110,199,.30) 0px,rgba(255,209,102,.30) 3px,
+      rgba(126,231,135,.30) 6px,rgba(79,227,208,.30) 9px,rgba(123,140,255,.30) 12px,
+      rgba(255,110,199,.30) 15px),
+    repeating-linear-gradient(68deg,rgba(255,255,255,.10) 0px,rgba(255,255,255,0) 2px,
+      rgba(255,255,255,.10) 4px);
+  mix-blend-mode:color-dodge;
+  -webkit-mask-image:linear-gradient(105deg,transparent 22%,#000 44%,#000 56%,transparent 78%);
+  mask-image:linear-gradient(105deg,transparent 22%,#000 44%,#000 56%,transparent 78%);
+  -webkit-mask-size:260% 100%;mask-size:260% 100%}
+.fx.lit{animation:drift 9s linear infinite, band 4.6s ease-in-out infinite}
+.r-common   .fx.lit{opacity:.16}
+.r-uncommon .fx.lit{opacity:.26}
+.r-rare     .fx.lit{opacity:.42}
+.r-mystic   .fx.lit{opacity:.62}
+.r-legendary .fx.lit{opacity:.8;filter:saturate(.4) sepia(.5) hue-rotate(-14deg) brightness(1.3)}
+.r-prismatic .fx.lit{opacity:1;filter:saturate(1.5)}
+@media (prefers-reduced-motion:reduce){
+  /* the grating stays, the movement goes — it still looks like foil */
+  .fx.lit{animation:none;opacity:.3}
+}
+
+/* A card you do not hold keeps its NAME and its rarity colour and loses
+   everything that would be a lie — no grade, no serial, no print number. */
+.slabw.unowned{opacity:.42;filter:saturate(.35)}
+.slabw.unowned .slab{box-shadow:0 6px 14px rgba(0,0,0,.4)}
+.slabw.unowned .fx{display:none}
+
+/* unopened packs, first thing on the screen because ripping is the point */
+.packs{display:flex;flex-direction:column;gap:8px;margin:2px 16px 4px}
+.pack{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:12px;
+  background:linear-gradient(90deg,rgba(245,200,66,.16),rgba(245,200,66,.03));
+  border:1px solid rgba(245,200,66,.36)}
+.pack .pk{flex:1;min-width:0;display:flex;align-items:center;gap:7px}
+.pack .pn{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;
+  text-transform:uppercase;letter-spacing:.02em;min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pack .pc{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;color:#F5C842;flex-shrink:0}
+.act.rip{flex:none;padding:9px 16px;background:linear-gradient(90deg,#F5C842,#D6A81F);color:#2A1F00}
+
+.bstat em{font-style:normal;font-size:13px;color:#8B83AC}
+/* The set chips. There was never a base rule for these — only `.chips
+   span.full` existed, a state of something with no styling, so every chip ran
+   into the next one as a single string of text. */
+.chips{display:flex;gap:7px;margin:12px 15px 10px;overflow-x:auto;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.chips::-webkit-scrollbar{display:none}
+.chips span{flex-shrink:0;cursor:pointer;font-family:'Space Mono',monospace;font-size:8.5px;
+  font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#B7AEDC;
+  border:1px solid rgba(255,255,255,.16);border-radius:20px;padding:6px 11px;white-space:nowrap}
+.chips span.on{background:#A78BFA;color:#1A1430;border-color:#A78BFA}
+.chips span.full{border-color:rgba(110,231,183,.5);color:#6EE7B7}
+.chips span.on.full{background:#6EE7B7;color:#06281D;border-color:#6EE7B7}
+.cardbig{max-width:270px;margin:2px auto 4px}
+.cardbig .slabw{cursor:default}
+.cardbig .slab .plate .l2{font-size:16px}
+.cardbig .slab .cfoot .n{font-size:18px}
+
+/* THE REVEAL. One card at a time, because a list of five is a receipt. */
+#reveal{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;
+  background:rgba(4,2,12,.93);-webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);
+  opacity:0;pointer-events:none;transition:opacity .24s}
+#reveal.live{opacity:1;pointer-events:auto}
+#reveal .rvin{width:min(78vw,260px);text-align:center}
+#reveal .rvk{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.2em;
+  text-transform:uppercase;color:#C3A6FF;margin-bottom:12px}
+@keyframes pop{0%{transform:scale(.82) rotate(-4deg);opacity:0}
+               60%{transform:scale(1.03) rotate(1deg);opacity:1}
+               100%{transform:scale(1) rotate(0)}}
+#reveal .rvcard{animation:pop .42s cubic-bezier(.2,1.1,.4,1) both}
+#reveal .inner{position:relative;border-radius:10px;overflow:hidden;aspect-ratio:5/7;
+  background:linear-gradient(165deg,var(--c2),#0B0818);
+  border:3px solid var(--c);box-shadow:0 0 44px var(--glow),0 20px 50px rgba(0,0,0,.7)}
+#reveal .inner img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  object-position:top center;display:block}
+#reveal .noart{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  padding:20px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;
+  font-size:28px;line-height:1;text-transform:uppercase;color:#fff;
+  text-shadow:0 2px 14px rgba(0,0,0,.9)}
+#reveal .scrim{position:absolute;inset:0;z-index:2;
+  background:linear-gradient(180deg,transparent 48%,rgba(6,4,14,.94))}
+#reveal .cfoot{position:absolute;left:12px;right:12px;bottom:11px;z-index:6;text-align:left}
+#reveal .cfoot .n{font-family:'Bebas Neue',sans-serif;font-size:26px;line-height:1;letter-spacing:.02em}
+#reveal .cfoot .p{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--c);margin-top:4px}
+#reveal .rvgo{margin-top:18px;width:100%}
+
 .mini{border-radius:11px;overflow:hidden;background:linear-gradient(168deg,#F8F6FC,#E5E0F2);
   color:#16131F;box-shadow:0 5px 15px rgba(6,4,20,.5);position:relative}
 .mini .foil{height:4px;background:linear-gradient(90deg,#F5C842,#EC4899,#7B2FFF,#22D3EE,#F5C842)}
@@ -2467,7 +2646,8 @@ function hashFor(entry){
        : entry.kind === 'wallet'   ? '#wallet'
        : entry.kind === 'contract' ? '#contract'
        : entry.kind === 'offers'   ? '#offers'
-       : entry.kind === 'shop'     ? '#shop' : '';
+       : entry.kind === 'shop'     ? '#shop'
+       : entry.kind === 'card'     ? '#c/' + entry.id : '';
 }
 
 function openSheet(entry){
@@ -2535,6 +2715,7 @@ function renderSheet(entry){
   if(entry.kind === 'contract') return renderMyContract();
   if(entry.kind === 'offers')   return renderOffers();
   if(entry.kind === 'shop')     return renderShop();
+  if(entry.kind === 'card')     return renderCard(entry.id);
 }
 
 /* what opens a sheet */
@@ -2547,6 +2728,10 @@ document.addEventListener('click', function(e){
   var ev = e.target.closest('[data-event]');
   if(ev){ e.preventDefault(); openSheet({kind:'event', id:ev.getAttribute('data-event')}); return; }
   if(e.target.closest('[data-all-events]')){ openSheet({kind:'events'}); return; }
+  var cd = e.target.closest('[data-card]');
+  if(cd && !e.target.closest('[data-rip]')){
+    e.preventDefault(); openSheet({kind:'card', id: cd.getAttribute('data-card')}); return;
+  }
   var hb = e.target.closest('[data-hub]');
   if(hb){ e.preventDefault(); openSheet({kind: hb.getAttribute('data-hub')}); return; }
   var bt = e.target.closest('[data-bout]');
@@ -3378,6 +3563,97 @@ async function loadMyMedia(fights){
       }).join('') + '</div>';
 }
 
+/* ── ONE CARD, big ── the same slab at full size, plus what only matters
+   when you are looking at a single print: every grade you hold, the lowest
+   number, and how many exist at all. */
+async function renderCard(cardId){
+  var body = document.getElementById('sheet-body');
+  var card = (binderAll || []).filter(function(c){ return c.card_id === cardId; })[0];
+  var have = (binderCards || []).filter(function(c){ return c.card_id === cardId; })[0];
+  if(!card){
+    var rows = await q("cards_public?select=*&card_id=eq." + encodeURIComponent(cardId) + "&limit=1");
+    card = rows && rows[0];
+  }
+  if(!card){ body.innerHTML = '<div class="evhead">' + backButton() + '</div>'
+    + failHTML("That card no longer exists.", 'card'); return; }
+
+  var total = card.prints_made || card.max_prints;
+  body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'
+      + '<div class="kick">' + esc(card.set_name || card.set_code || '') + '</div>'
+      + '<h3>' + esc(card.name || 'Card') + '</h3></div>'
+    + '<div class="cardbig">' + slabHTML(card, have, true) + '</div>'
+    + '<div class="lab"><b>The print</b><i></i></div>'
+    + '<div class="deal"><div class="grid">'
+      + '<div><span class="k">Rarity</span><span class="v">' + esc(card.rarity || '') + '</span></div>'
+      + '<div><span class="k">In circulation</span><span class="v">' + (total || '\u2014') + '</span></div>'
+      + '<div><span class="k">You hold</span><span class="v">' + (have ? have.qty : 0) + '</span></div>'
+      + '<div><span class="k">Best grade</span><span class="v">'
+        + (have && have.best_grade != null ? 'PSA ' + have.best_grade : '\u2014') + '</span></div>'
+      + '<div><span class="k">Lowest number</span><span class="v">'
+        + (have && have.lowest_print != null ? '#' + have.lowest_print : '\u2014') + '</span></div>'
+      + '<div><span class="k">Set</span><span class="v">' + esc(card.set_code || '\u2014') + '</span></div>'
+    + '</div></div>'
+    + (card.fighter_slug
+        ? '<div class="lab"><b>The fighter</b><i></i></div>'
+          + '<div class="mrow" data-slug="' + esc(card.fighter_slug) + '">'
+          + '<span class="mic">\uD83E\uDD4A</span><div style="flex:1"><div class="t">'
+          + esc(card.name) + '</div><div class="s">See their record and next fight</div></div>'
+          + '<span class="rr"><span class="c">&rsaquo;</span></span></div>'
+        : '')
+    + (have ? '' : '<div class="doit">You do not hold this one. It comes out of '
+        + esc(card.set_name || 'its set') + ' packs \u2014 the Shop sells them.</div>');
+  watchFoil();
+}
+
+/* RIPPING A PACK. app_open_pack owns the odds and the pity counter; this only
+   asks, then shows what came back one card at a time. The reveal IS the
+   product, so the pulls are staged rather than dumped as a list. */
+document.addEventListener('click', async function(e){
+  var b = e.target.closest('[data-rip]');
+  if(!b) return;
+  busy(b, true, 'Ripping…');
+  var r = await rpc('app_open_pack', { p_player_item_id: b.getAttribute('data-rip') });
+  busy(b, false);
+  if(!r.ok){ toast(r.message || 'That pack could not be opened.', true); return; }
+  showPulls(r.pulls, r.pity_hit);
+  loadBinder();
+});
+
+function showPulls(pulls, pity){
+  var list = Array.isArray(pulls) ? pulls : [];
+  var el = document.getElementById('reveal');
+  if(!el){ el = document.createElement('div'); el.id = 'reveal'; document.body.appendChild(el); }
+  if(!list.length){ toast('The pack was empty. The league office has a bug to fix.', true); return; }
+
+  var i = 0;
+  function paint(){
+    var c = list[i] || {};
+    var r = c.rarity || 'common';
+    el.innerHTML = '<div class="rvin">'
+      + '<div class="rvk">' + (i + 1) + ' of ' + list.length
+        + (pity && i === list.length - 1 ? ' \u00b7 pity pull' : '') + '</div>'
+      + '<div class="rvcard r-' + esc(r) + '"><div class="inner">'
+        + (c.photo_url ? '<img src="' + esc(c.photo_url) + '" alt="">'
+                       : '<div class="noart">' + esc(c.name || c.display_name || 'Card') + '</div>')
+        + '<span class="scrim"></span><span class="fx lit"></span>'
+        + '<div class="cfoot"><div class="n">' + esc(c.name || c.display_name || 'Card') + '</div>'
+        + '<div class="p">' + esc(r) + (c.print_number ? ' \u00b7 #' + c.print_number : '')
+        + (c.grade != null ? ' \u00b7 PSA ' + c.grade : '') + '</div></div>'
+      + '</div></div>'
+      + '<button class="act yes rvgo">' + (i < list.length - 1 ? 'Next' : 'Done') + '</button>'
+      + '</div>';
+    void el.offsetWidth;
+    el.classList.add('live');
+  }
+  el.onclick = function(ev){
+    if(!ev.target.closest('.rvgo')) return;
+    i++;
+    if(i >= list.length){ el.classList.remove('live'); setTimeout(function(){ el.innerHTML = ''; }, 240); return; }
+    paint();
+  };
+  paint();
+}
+
 /* ── SHOP ── the price list, read-only. Buying happens in Discord. */
 async function renderShop(){
   var body = document.getElementById('sheet-body');
@@ -3586,79 +3862,122 @@ async function renderBetting(){
   }).join('') + '<div class="foot">Pari-mutuel &middot; no rake &middot; pools lock at the first bell</div>';
 }
 
+/* ── THE BINDER ───────────────────────────────────────────────────────
+   Every card is a graded slab: a purple-stroked label carrying set, name,
+   serial and barcode, with the grade in its own stroked column — the shape a
+   PSA label has, because the league already grades every print 1-10 and
+   nothing was showing it.
+
+   Three things this screen has to get right that a plain grid does not:
+
+   1. THE CHECKLIST. cards_public lists all 107 cards; my_cards lists the ones
+      you hold. What you are MISSING is the whole point of a binder, so the
+      two are merged and the gaps render dark-but-named rather than absent.
+   2. DUPLICATES ARE A FAN, CAPPED AT THREE. Somebody in this league owns 44
+      copies of one card. A fan of 44 is not a fan, it is a stack — three
+      visible, the rest a count on the back one.
+   3. NOTHING ANIMATES OFF SCREEN. The prism grating is a running animation on
+      every card; a hundred of them is a warm phone for no reason. An observer
+      turns the foil on as a card scrolls in and off as it leaves. */
+var binderCards = null, binderAll = null, binderSet = 'all', binderPacks = null;
+var foilWatcher = null;
+
 function renderCards(){
   var el = document.getElementById('cards-body');
   if(!me){
     el.innerHTML = '<div class="top"><div class="ttl">CARDS</div></div>'
       + gateHTML('OPEN YOUR BINDER', 'Your collection is already waiting — sign in to see it.')
       + '<div class="lab"><b>What\'s in there</b><i></i></div>'
-      + perk('i-cards','13,256 prints minted','Across 113 collectors')
-      + perk('i-book','4 open sets','First Edition, Throwback, UBAe Spring, GFL TB1')
-      + perk('i-game','Daily training','Level up and earn VC');
+      + perk('i-cards','107 cards across 4 sets','Every print graded 1 to 10')
+      + perk('i-book','Six rarities','Common through prismatic — only 3 prismatics exist')
+      + perk('i-game','Rip packs here','The reveal, one card at a time');
     return;
   }
   el.innerHTML = '<div class="top"><div class="ttl">CARDS</div>'
     + '<div class="vcchip" id="cards-vc">&nbsp;</div></div>'
-    + '<div id="binder"><div class="skel"></div><div class="skel" style="width:60%"></div></div>';
+    + '<div id="binder"><div class="skel" style="height:120px"></div>'
+    + '<div class="skel" style="width:60%"></div></div>';
   loadBinder();
 }
-
-var binderCards = null, binderSet = 'all';
 
 async function loadBinder(){
   var el = document.getElementById('binder');
   if(!el) return;
-  var rows = await qMe("my_cards?select=*&order=qty.desc");
+  var got = await Promise.all([
+    qMe("my_cards?select=*"),
+    q("cards_public?select=*"),
+    qMe("my_items?select=*&order=acquired_at.desc"),
+    qMe("my_profile?select=vc_balance&limit=1")
+  ]);
   if(!el.isConnected) return;
-  if(!rows){ retryHandlers['binder'] = loadBinder; el.innerHTML = failHTML("Couldn't open your binder.", 'binder'); return; }
-  binderCards = rows;
-
-  var prof = await qMe("my_profile?select=vc_balance&limit=1");
-  var chip = document.getElementById('cards-vc');
-  if(chip && prof && prof.length) chip.textContent = Number(prof[0].vc_balance||0).toLocaleString() + ' VC';
-
-  if(!rows.length){
-    el.innerHTML = '<div class="empty"><b>Your binder is empty.</b><br>'
-      + 'Open a pack in the server and your cards land here.</div>';
-    return;
+  if(!got[0] || !got[1]){
+    retryHandlers['binder'] = loadBinder;
+    el.innerHTML = failHTML("Couldn't open your binder.", 'binder'); return;
   }
+  binderCards = got[0];
+  binderAll   = got[1];
+  binderPacks = (got[2] || []).filter(function(i){
+    return i.effect_kind === 'pack' || i.effect_kind === 'crate'; });
+
+  var chip = document.getElementById('cards-vc');
+  if(chip && got[3] && got[3].length)
+    chip.textContent = Number(got[3][0].vc_balance||0).toLocaleString() + ' VC';
+
   renderBinder();
 }
 
+var RAR = ['common','uncommon','rare','mystic','legendary','prismatic'];
+
 function renderBinder(){
   var el = document.getElementById('binder');
-  if(!el || !binderCards) return;
-  var prints = binderCards.reduce(function(n,c){ return n + Number(c.qty||0); }, 0);
-  var rare = binderCards.filter(function(c){
-    return ['legendary','prismatic','mystic'].indexOf(c.rarity) > -1; }).length;
+  if(!el || !binderAll) return;
+
+  /* Merge the checklist with what you hold. The checklist is the spine — a
+     card you have never seen still gets a slot, because the empty slot is the
+     reason to open a pack. */
+  var mine = {};
+  (binderCards || []).forEach(function(c){ mine[c.card_id] = c; });
+
+  var prints = (binderCards || []).reduce(function(n,c){ return n + Number(c.qty||0); }, 0);
+  var owned  = (binderCards || []).length;
+
   var sets = [];
-  binderCards.forEach(function(c){ if(c.set_name && sets.indexOf(c.set_name) === -1) sets.push(c.set_name); });
+  binderAll.forEach(function(c){
+    if(!c.set_code) return;
+    var hit = sets.filter(function(x){ return x.code === c.set_code; })[0];
+    if(!hit){ hit = { code:c.set_code, name:c.set_name || c.set_code, total:0, have:0 }; sets.push(hit); }
+    hit.total++;
+    if(mine[c.card_id]) hit.have++;
+  });
+  var done = sets.filter(function(x){ return x.have === x.total; }).length;
 
-  var list = binderSet === 'all' ? binderCards
-    : binderCards.filter(function(c){ return c.set_name === binderSet; });
+  var list = binderAll.filter(function(c){
+    return binderSet === 'all' || c.set_code === binderSet; });
+  list.sort(function(a,b){
+    var oa = mine[a.card_id] ? 0 : 1, ob = mine[b.card_id] ? 0 : 1;
+    if(oa !== ob) return oa - ob;                                  // yours first
+    var ra = RAR.indexOf(b.rarity), rb = RAR.indexOf(a.rarity);
+    if(ra !== rb) return ra - rb;                                  // rarest first
+    return String(a.name||'').localeCompare(String(b.name||''));
+  });
 
-  el.innerHTML = '<div class="bstat">'
+  var pk = binderPacks && binderPacks.length ? packsHTML() : '';
+
+  el.innerHTML = pk
+    + '<div class="bstat">'
       + '<div><b>'+prints+'</b><s>prints</s></div>'
-      + '<div><b>'+binderCards.length+'</b><s>unique</s></div>'
-      + '<div><b>'+rare+'</b><s>rare+</s></div></div>'
-    + '<div class="lab"><b>My binder</b><i></i><s>'+list.length+' shown</s></div>'
-    + '<div class="chips" id="binder-chips"><span class="'+(binderSet==='all'?'on':'')+'" data-set="all">All</span>'
-      + sets.map(function(x){ return '<span class="'+(binderSet===x?'on':'')+'" data-set="'+esc(x)+'">'+esc(x)+'</span>'; }).join('')
+      + '<div><b>'+owned+'<em>/'+binderAll.length+'</em></b><s>unique</s></div>'
+      + '<div><b>'+done+'<em>/'+sets.length+'</em></b><s>sets done</s></div></div>'
+    + '<div class="chips" id="binder-chips">'
+      + '<span class="'+(binderSet==='all'?'on':'')+'" data-set="all">All '
+        + owned + '/' + binderAll.length + '</span>'
+      + sets.map(function(x){
+          return '<span class="'+(binderSet===x.code?'on':'')+(x.have===x.total?' full':'')
+            + '" data-set="'+esc(x.code)+'">'+esc(x.code)+' '+x.have+'/'+x.total+'</span>'; }).join('')
       + '</div>'
     + '<div class="bgrid">' + list.map(function(c){
-        var art = c.photo_url
-          ? '<span class="init">'+esc(initials(c.display_name))+'</span>'
-            + '<img src="'+esc(c.photo_url)+'" alt="" loading="lazy" onerror="this.remove()">'
-          : '<span class="init">'+esc(initials(c.display_name))+'</span>';
-        var isMe = myFighter && c.fighter_slug === myFighter.fighter_slug;
-        return '<div class="mini'+(isMe?' mine':'')+'"'+(c.fighter_slug?' data-slug="'+esc(c.fighter_slug)+'"':'')+'>'
-          + (isMe ? '<span class="mineTag">You</span>' : '')
-          + (Number(c.qty) > 1 ? '<span class="qty">&times;'+c.qty+'</span>' : '')
-          + '<div class="foil"></div><div class="art">'+art+'</div>'
-          + '<div class="in"><div class="n">'+esc(c.display_name)+'</div>'
-          + '<div class="m2"><span class="rar2 r-'+esc(c.rarity||'common')+'">'+esc(c.rarity||'')+'</span>'
-          + '<span class="gr">'+(c.best_grade != null ? c.best_grade : '')+'</span></div></div></div>';
-      }).join('') + '</div>';
+        return slabHTML(c, mine[c.card_id]); }).join('') + '</div>'
+    + '<div class="foot">Tap a card to open it &middot; every print is graded 1 to 10</div>';
 
   var chips = document.getElementById('binder-chips');
   if(chips) chips.addEventListener('click', function(e){
@@ -3666,6 +3985,108 @@ function renderBinder(){
     binderSet = c.getAttribute('data-set'); renderBinder();
     panels.cards.scrollTop = 0;
   });
+  watchFoil();
+}
+
+/* One slab. `have` is the my_cards row when you own it, undefined when you do
+   not — an unowned card keeps its name and its rarity colour and loses
+   everything that would be a lie: no grade, no serial, no print number. */
+function slabHTML(card, have, big){
+  var r = card.rarity || 'common';
+  var qty = have ? Number(have.qty||0) : 0;
+  var grade = have && have.best_grade != null ? have.best_grade : null;
+  var print = have && have.lowest_print != null ? have.lowest_print : null;
+  var total = card.prints_made || card.max_prints || null;
+  var serial = 'VGA-' + String(print != null ? print : 0).padStart(4,'0');
+
+  /* The fan: two ghosts behind the slab, never more, and the count on top. */
+  var fan = '';
+  if(qty > 1){
+    fan = '<span class="gh g2"></span>' + (qty > 2 ? '<span class="gh g3"></span>' : '');
+  }
+
+  var art = have && card.photo_url
+    ? '<img src="'+esc(card.photo_url)+'" alt="" loading="lazy" onerror="this.remove()">'
+    : '<div class="noart">'+esc(card.name || 'Card')+'</div>';
+
+  return '<div class="slabw'+(have ? '' : ' unowned')+' r-'+esc(r)+'"'
+      + ' data-card="'+esc(card.card_id)+'">'
+    + fan
+    + '<div class="slab">'
+      + '<div class="plate">'
+        + '<div class="txt">'
+          + '<div class="l1">'+esc(card.set_code || '')+' &middot; '+esc(r)+'</div>'
+          + '<div class="l2">'+esc(card.name || 'Card')+'</div>'
+          + '<div class="l3">' + (have
+              ? '<span class="bars">'+bars(card.card_id)+'</span><span>'+esc(serial)
+                + (print != null && total ? ' &middot; #'+print+'/'+total : '') + '</span>'
+              : '<span class="miss">Not in your binder</span>') + '</div>'
+        + '</div>'
+        + '<div class="side">' + (grade != null
+            ? '<b>'+grade+'</b><i>PSA</i>' : '<b class="dash">&ndash;</b><i>&nbsp;</i>') + '</div>'
+      + '</div>'
+      + '<div class="well"><div class="inner">' + art
+        + '<span class="scrim"></span><span class="fx"></span>'
+        + '<div class="cfoot"><div class="n">'+esc(card.name || 'Card')+'</div>'
+        + '<div class="p">' + (have
+            ? (print != null ? '#'+print+(total ? ' / '+total : '') : 'Owned')
+            : (total ? total + ' in circulation' : 'Unreleased')) + '</div></div>'
+      + '</div></div>'
+    + '</div>'
+    + (qty > 1 ? '<span class="qty">&times;'+qty+'</span>' : '')
+    + '</div>';
+}
+
+/* A barcode that is the same every time for a given card and different between
+   cards — a random one would re-roll on every render and flicker. */
+function bars(seed){
+  var h = 0, str = String(seed);
+  for(var i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) & 0xffff;
+  var out = '';
+  for(var j = 0; j < 12; j++){
+    h = (h * 1103515245 + 12345) & 0x7fffffff;
+    out += '<i style="height:'+(3 + (h % 6))+'px"></i>';
+  }
+  return out;
+}
+
+function packsHTML(){
+  var by = {};
+  binderPacks.forEach(function(i){ (by[i.name] = by[i.name] || []).push(i); });
+  var names = Object.keys(by);
+  return '<div class="lab"><b>Unopened</b><i></i><s>'+binderPacks.length+'</s></div>'
+    + '<div class="packs">' + names.map(function(n){
+        var row = by[n];
+        return '<div class="pack">'
+          + '<div class="pk"><span class="pn">'+esc(n)+'</span>'
+          + (row.length > 1 ? '<span class="pc">&times;'+row.length+'</span>' : '') + '</div>'
+          + '<button class="act rip" data-rip="'+esc(row[0].player_item_id)+'">Rip it</button>'
+          + '</div>';
+      }).join('') + '</div>';
+}
+
+/* Foil costs nothing when it is not on screen. */
+function watchFoil(){
+  if(foilWatcher) foilWatcher.disconnect();
+  var all = document.querySelectorAll('.fx');
+  if(!all.length) return;
+
+  /* Light what is on screen RIGHT NOW, synchronously. An IntersectionObserver
+     reports on a later frame, so the first cards would otherwise render with
+     dead foil for a beat — and in a backgrounded tab it never reports at all,
+     which is exactly how this looked broken under test. The observer keeps it
+     right from here; this is only the opening state. */
+  var h = window.innerHeight || 900;
+  all.forEach(function(f){
+    var r = f.getBoundingClientRect();
+    f.classList.toggle('lit', r.bottom > -140 && r.top < h + 140);
+  });
+
+  if(!('IntersectionObserver' in window)) return;
+  foilWatcher = new IntersectionObserver(function(rows){
+    rows.forEach(function(r){ r.target.classList.toggle('lit', r.isIntersecting); });
+  }, { root: panels.cards, rootMargin: '140px 0px' });
+  document.querySelectorAll('.bgrid .fx').forEach(function(f){ foilWatcher.observe(f); });
 }
 
 async function loadSets(){
