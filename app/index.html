@@ -613,6 +613,10 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .twin .tw:before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;z-index:3}
 .twin .tw.g:before{background:#F5C842;box-shadow:0 0 16px 2px rgba(245,200,66,.7)}
 .twin .tw.p:before{background:#A78BFA;box-shadow:0 0 16px 2px rgba(167,139,250,.65)}
+/* Nothing waiting: same strip, same place, lit edge dimmed and no red count.
+   It reads as a door that happens to be quiet, not as an error. */
+.twin .tw.quiet{opacity:.62}
+.twin .tw.quiet:before{box-shadow:none;opacity:.5}
 .twin .core{display:flex;align-items:center;gap:10px;padding:10px 12px 10px 13px}
 .twin .tic{width:28px;height:28px;border-radius:8px;flex-shrink:0;display:flex;
   align-items:center;justify-content:center;font-size:14px;position:relative}
@@ -1398,18 +1402,45 @@ document.querySelectorAll('.bar button').forEach(function(b){
   tabBtns[n] = b;
   b.addEventListener('click', function(){ goTab(n); });
 });
-function goTab(name){
+/* A TAB CHANGE IS A HISTORY ENTRY. It used to be replaceState, which meant
+   moving between tabs left NO entry to come back to — so pressing back after
+   tapping a row that switches tab walked straight out of the app. The phone
+   navigated away, the shell reloaded, and every screen came back blank. That
+   is the "everything becomes empty" bug: nothing was cleared, the page was
+   simply gone.
+
+   pushState now, except when the move IS a back button — `fromHistory` stops
+   a popstate from pushing the entry it just consumed, which would trap you. */
+function goTab(name, fromHistory){
   if(!panels[name]) return;
-  if(name === currentTab){ panels[name].scrollTop = 0; return; }
+  if(name === currentTab){
+    if(!fromHistory) panels[name].scrollTop = 0;
+    return;
+  }
+  /* NOT EVERY PANEL HAS A NAV BUTTON. Cards gave up its slot in the bar when
+     the five tabs were chosen, but kept its panel so `data-goto="cards"` still
+     opens the binder. goTab assumed the two always came in pairs and did
+     `tabBtns[name].classList.add('on')` on an undefined — which THREW, halfway
+     through the switch, after the old panel had already lost `.live` and
+     before the new one gained it.
+
+     The result was a screen with no live panel at all and a dead handler: tap
+     the binder from You, press back, and every tab is blank. Nothing was
+     cleared — the function died mid-swap. */
   scrollMem[currentTab] = panels[currentTab].scrollTop;
   panels[currentTab].classList.remove('live');
-  tabBtns[currentTab].classList.remove('on');
+  if(tabBtns[currentTab]) tabBtns[currentTab].classList.remove('on');
   currentTab = name;
   panels[name].classList.add('live');
-  tabBtns[name].classList.add('on');
+  if(tabBtns[name]) tabBtns[name].classList.add('on');
   panels[name].scrollTop = scrollMem[name] || 0;
   if(name === 'betting') renderBetting();
-  history.replaceState(null,'','#'+name);
+  /* Cards lives under You, so the bar keeps You lit while you are in it —
+     otherwise the bar shows nothing selected and the app looks lost. */
+  if(!tabBtns[name] && tabBtns.you) tabBtns.you.classList.add('on');
+  if(fromHistory) return;
+  if(history.state && history.state.tab) history.pushState({ tab: name }, '', '#' + name);
+  else history.replaceState({ tab: name }, '', '#' + name);
 }
 document.addEventListener('click', function(e){
   var g = e.target.closest('[data-goto]');
@@ -2459,11 +2490,20 @@ function closeSheet(){
   setTimeout(function(){ if(!sheetStack.length) el.classList.remove('live'); }, 220);
 }
 
+/* Back unwinds ONE layer at a time: the top sheet first, then the tab you came
+   from. Sheets are checked first because a sheet is always on top of a tab. */
 window.addEventListener('popstate', function(){
-  if(!sheetStack.length) return;
-  sheetStack.pop();
-  if(sheetStack.length){ sheetEl().scrollTop = 0; renderSheet(sheetStack[sheetStack.length - 1]); }
-  else closeSheet();
+  if(sheetStack.length){
+    sheetStack.pop();
+    if(sheetStack.length){ sheetEl().scrollTop = 0; renderSheet(sheetStack[sheetStack.length - 1]); }
+    else closeSheet();
+    return;
+  }
+  /* No sheet open, so this is a tab move. Read where we landed rather than
+     assuming — the entry may be several steps back after a fast swipe. */
+  var h = (location.hash || '').replace('#','');
+  if(panels[h]) goTab(h, true);
+  else if(currentTab !== 'home') goTab('home', true);
 });
 
 function backButton(){
@@ -3065,42 +3105,38 @@ async function loadMe(){
     + '</div><div class="chips" id="me-chips"></div></div></div>'
     + '<div id="me-form"></div></div></div>';
 
-  /* ANYTHING UNANSWERED, and nothing at all when there is nothing. An empty
-     panel that says "you're all caught up" is furniture; this block earns its
-     space by only existing when it has something to say. */
-  if(myOffers.length || offered){
-    html += '<div class="lab"><b>Needs you now</b><i></i></div><div class="twin">';
-    if(myOffers.length){
-      var evs = myOffers.map(function(o){ return o.event_name; })
-        .filter(function(v,i,a){ return a.indexOf(v) === i; }).slice(0,2).join(' \u00b7 ');
-      html += '<div class="tw g" data-hub="offers"><div class="core">'
-        + '<span class="tic">\u270D\uFE0F<b class="dot">' + myOffers.length + '</b></span>'
-        + '<div class="bd"><div class="t">' + (myOffers.length === 1 ? 'Offer' : 'Offers')
-        + '</div><div class="s">' + esc(evs) + '</div></div></div></div>';
-    }
-    if(offered){
-      html += '<div class="tw p" data-hub="contract"><div class="core">'
-        + '<span class="tic">\uD83D\uDCDC<b class="dot">1</b></span>'
-        + '<div class="bd"><div class="t">Contract</div><div class="s">'
-        + esc(String(offered.tier || 'New terms')) + ' offered</div></div></div></div>';
-    }
-    html += '</div>';
-  }
+  /* THE TWO STRIPS ARE PERMANENT. They were conditional at first — the idea
+     being that a panel saying "you're all caught up" is furniture. That was
+     wrong for this screen: the top of My Career has to be the SAME SHAPE every
+     time you open it, or you cannot learn where anything is. A card that moves
+     depending on your week is a card you re-read every week.
+
+     What changes is the state, not the presence: a red count when something
+     needs an answer, a muted strip when it does not. */
+  var pending = myOffers.length, hasOffer = !!offered;
+  html += '<div class="lab"><b>'
+    + (pending || hasOffer ? 'Needs you now' : 'Your fights and deal')
+    + '</b><i></i></div><div class="twin">';
+
+  var evs = myOffers.map(function(o){ return o.event_name; })
+    .filter(function(v,i,a){ return a.indexOf(v) === i; }).slice(0, 2).join(' \u00b7 ');
+  html += '<div class="tw g' + (pending ? '' : ' quiet') + '" data-hub="offers"><div class="core">'
+    + '<span class="tic">\u270D\uFE0F' + (pending ? '<b class="dot">' + pending + '</b>' : '') + '</span>'
+    + '<div class="bd"><div class="t">' + (pending === 1 ? 'Offer' : 'Offers') + '</div>'
+    + '<div class="s">' + (pending ? esc(evs) : 'Nothing waiting') + '</div></div></div></div>';
+
+  html += '<div class="tw p' + (hasOffer ? '' : ' quiet') + '" data-hub="contract"><div class="core">'
+    + '<span class="tic">\uD83D\uDCDC' + (hasOffer ? '<b class="dot">1</b>' : '') + '</span>'
+    + '<div class="bd"><div class="t">Contract</div><div class="s">'
+    + (hasOffer ? esc(String(offered.tier || 'New terms')) + ' offered'
+       : myContract ? esc(String(myContract.tier || 'Signed')) + ' \u00b7 active'
+       : 'None on file')
+    + '</div></div></div></div></div>';
 
   /* THE ROOMS. Each carries its live number, so the list is a dashboard. */
+  /* Offers and Contract are NOT repeated here — they are the two strips above,
+     always present, so a row for each would be the same door twice. */
   html += '<div class="lab"><b>Everything else</b><i></i></div>'
-    + mrow('\u270D\uFE0F','offers','Fight offers',
-        myOffers.length ? myOffers.length + (myOffers.length === 1 ? ' waiting on you' : ' waiting on you')
-                        : 'Nothing waiting',
-        myOffers.length ? String(myOffers.length) : '—', myOffers.length ? '' : 'q')
-    + mrow('\uD83C\uDFC5','contract','Contract', myContract
-        ? String(myContract.tier || 'Signed').toUpperCase()
-          + (myContract.guaranteed_fights
-              ? ' \u00b7 ' + Number(myContract.fights_used||0) + ' of '
-                + myContract.guaranteed_fights + ' fights used' : '')
-        : (offered ? 'A deal is on the table' : 'No contract on file'),
-        myContract ? String(myContract.tier || '').toUpperCase() : (offered ? 'OFFER' : '—'),
-        myContract ? 'q' : (offered ? '' : 'q'))
     + mrow('\uD83C\uDCCF','cards','Your cards',
         cardQty ? cardQty + ' owned' : 'Nothing yet',
         cardQty ? String(cardQty) : '0', '', true)
@@ -3711,6 +3747,11 @@ function showDiag(){
                         //    Sign in pill stayed up for signed-in people
   installHint();
   showDiag();
+
+  /* Seat a state object on the entry the app opened with. Without it the first
+     goTab has no history.state to recognise and would replace the very entry
+     that back needs to return to. */
+  history.replaceState({ tab: currentTab }, '', location.hash || '#home');
 
   var hash = (location.hash || '').replace('#','');
   if(hash.indexOf('f/') === 0){ goTab('fighters'); openSheet({kind:'fighter', id:hash.slice(2)}); }
