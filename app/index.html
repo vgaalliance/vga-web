@@ -1089,35 +1089,98 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .cardbig .slab .plate .l2{font-size:16px}
 .cardbig .slab .cfoot .n{font-size:18px}
 
-/* THE REVEAL. One card at a time, because a list of five is a receipt. */
-#reveal{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;
-  background:rgba(4,2,12,.93);-webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);
-  opacity:0;pointer-events:none;transition:opacity .24s}
-#reveal.live{opacity:1;pointer-events:auto}
-#reveal .rvin{width:min(78vw,260px);text-align:center}
-#reveal .rvk{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.2em;
-  text-transform:uppercase;color:#C3A6FF;margin-bottom:12px}
-@keyframes pop{0%{transform:scale(.82) rotate(-4deg);opacity:0}
-               60%{transform:scale(1.03) rotate(1deg);opacity:1}
-               100%{transform:scale(1) rotate(0)}}
-#reveal .rvcard{animation:pop .42s cubic-bezier(.2,1.1,.4,1) both}
-#reveal .inner{position:relative;border-radius:10px;overflow:hidden;aspect-ratio:5/7;
-  background:linear-gradient(165deg,var(--c2),#0B0818);
-  border:3px solid var(--c);box-shadow:0 0 44px var(--glow),0 20px 50px rgba(0,0,0,.7)}
-#reveal .inner img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
-  object-position:top center;display:block}
-#reveal .noart{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  padding:20px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;
-  font-size:28px;line-height:1;text-transform:uppercase;color:#fff;
-  text-shadow:0 2px 14px rgba(0,0,0,.9)}
-#reveal .scrim{position:absolute;inset:0;z-index:2;
-  background:linear-gradient(180deg,transparent 48%,rgba(6,4,14,.94))}
-#reveal .cfoot{position:absolute;left:12px;right:12px;bottom:11px;z-index:6;text-align:left}
-#reveal .cfoot .n{font-family:'Bebas Neue',sans-serif;font-size:26px;line-height:1;letter-spacing:.02em}
-#reveal .cfoot .p{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--c);margin-top:4px}
-#reveal .rvgo{margin-top:18px;width:100%}
+/* ── TEARING, AND WHAT COMES OUT ──────────────────────────────────────
+   Full screen, because this is the one moment in the app that deserves it. */
+#tear{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;
+  background:radial-gradient(120% 70% at 50% 18%,rgba(167,139,250,.16),transparent 62%),
+             rgba(5,3,14,.96);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  opacity:0;transition:opacity .24s;touch-action:none}
+#tear.live{display:flex}
+#tear.shown{opacity:1}
+#tear .tin,#tear .sin{width:min(360px,92vw);position:relative;display:flex;flex-direction:column;
+  align-items:center}
 
+/* the pack, big */
+#tear .tk{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.2em;
+  text-transform:uppercase;color:#C3A6FF;margin-bottom:26px;text-align:center}
+#tear .tpack{width:200px;height:266px;position:relative}
+#tear .tguts{position:absolute;left:14px;right:14px;top:24px;bottom:12px;z-index:0;display:flex;
+  gap:4px;justify-content:center}
+#tear .tguts i{display:block;flex:1;max-width:32px;height:184px;border-radius:3px;
+  background:linear-gradient(180deg,#F4F1FF,#B9B2D6);box-shadow:0 2px 8px rgba(0,0,0,.5)}
+#tear .tbody{position:absolute;inset:0;z-index:2;border-radius:10px;overflow:hidden;
+  clip-path:polygon(0 var(--cut,0px),4% calc(var(--cut,0px) + 8px),10% var(--cut,0px),
+    16% calc(var(--cut,0px) + 8px),22% var(--cut,0px),28% calc(var(--cut,0px) + 8px),
+    34% var(--cut,0px),40% calc(var(--cut,0px) + 8px),46% var(--cut,0px),
+    52% calc(var(--cut,0px) + 8px),58% var(--cut,0px),64% calc(var(--cut,0px) + 8px),
+    70% var(--cut,0px),76% calc(var(--cut,0px) + 8px),82% var(--cut,0px),
+    88% calc(var(--cut,0px) + 8px),94% var(--cut,0px),100% calc(var(--cut,0px) + 8px),
+    100% 100%,0 100%)}
+#tear .tskin{position:absolute;inset:0;border-radius:10px;
+  background:linear-gradient(150deg,var(--pk),rgba(10,7,20,.92) 78%);
+  border:1px solid rgba(255,255,255,.3)}
+#tear .tskin:after{content:'';position:absolute;inset:0;border-radius:10px;
+  background:repeating-linear-gradient(118deg,rgba(255,255,255,.17) 0 2px,transparent 2px 7px)}
+#tear .tsz{position:absolute;left:12px;bottom:12px;z-index:3;font-family:'Bebas Neue',sans-serif;
+  font-size:34px;line-height:.9;text-shadow:0 2px 8px rgba(0,0,0,.85)}
+#tear .tsz em{font-style:normal;display:block;font-family:'Space Mono',monospace;font-size:6.5px;
+  letter-spacing:.14em;color:rgba(255,255,255,.85);margin-top:3px}
+#tear .ttop{position:absolute;left:0;right:0;top:0;height:40px;z-index:5;overflow:hidden;
+  border-radius:10px 10px 0 0;will-change:transform,opacity;
+  background:linear-gradient(150deg,var(--pk),rgba(60,20,50,.95));
+  border:1px solid rgba(255,255,255,.3);border-bottom:0;
+  clip-path:polygon(0 0,100% 0,100% 74%,94% 100%,88% 74%,82% 100%,76% 74%,70% 100%,64% 74%,
+    58% 100%,52% 74%,46% 100%,40% 74%,34% 100%,28% 74%,22% 100%,16% 74%,10% 100%,4% 74%,0 100%)}
+#tear .ttop:after{content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(118deg,rgba(255,255,255,.17) 0 2px,transparent 2px 7px)}
+#tear .tnotch{position:absolute;left:0;right:0;top:17px;height:6px;z-index:7;pointer-events:none;
+  background:repeating-linear-gradient(90deg,rgba(10,7,20,.9) 0 3px,transparent 3px 6px)}
+#tear .tgrab{position:absolute;left:-18px;right:-18px;top:-12px;height:64px;z-index:9;
+  cursor:grab;touch-action:none}
+#tear .thint{margin-top:30px;font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:#8B83AC;transition:opacity .3s;pointer-events:none;text-align:center}
+#tear .tapopen{pointer-events:auto;font-family:'Space Mono',monospace;font-size:8.5px;
+  font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#C3A6FF;background:none;
+  border:0;border-bottom:1px solid rgba(167,139,250,.5);cursor:pointer;padding:0 0 2px;margin-left:6px}
+#tear .tclose{margin-top:26px;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.14em;
+  text-transform:uppercase;color:#6B6588;background:none;border:0;cursor:pointer;padding:8px}
+
+/* the spread */
+#tear .skick{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.2em;
+  text-transform:uppercase;color:#C3A6FF;margin-bottom:16px}
+#tear .sfan{position:relative;width:100%;height:330px}
+#tear .scard{position:absolute;left:50%;top:52%;width:126px;margin:-88px 0 0 -63px;
+  border-radius:9px;overflow:hidden;aspect-ratio:5/7;cursor:pointer;will-change:transform;
+  background:linear-gradient(165deg,var(--c2),#0B0818);border:2px solid var(--c);
+  box-shadow:0 10px 26px rgba(0,0,0,.65);
+  transition:transform .46s cubic-bezier(.2,.9,.25,1),box-shadow .3s,opacity .3s}
+#tear .scard.up{box-shadow:0 0 52px var(--glow),0 20px 40px rgba(0,0,0,.75)}
+#tear .snm{position:absolute;left:0;right:0;top:38%;text-align:center;padding:0 8px;
+  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;line-height:1;
+  text-transform:uppercase;text-shadow:0 2px 12px rgba(0,0,0,.9)}
+#tear .sft{position:absolute;left:8px;right:8px;bottom:8px;font-family:'Space Mono',monospace;
+  font-size:5.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--c)}
+#tear .shit{position:absolute;right:5px;top:5px;z-index:5;font-family:'Space Mono',monospace;
+  font-size:5px;font-weight:700;letter-spacing:.12em;color:#0C0916;background:var(--c);
+  border-radius:3px;padding:2px 4px}
+#tear .scard.holo:after{content:'';position:absolute;inset:0;z-index:3;pointer-events:none;
+  background:repeating-linear-gradient(112deg,rgba(255,110,199,.3) 0,rgba(255,209,102,.3) 3px,
+    rgba(126,231,135,.3) 6px,rgba(79,227,208,.3) 9px,rgba(123,140,255,.3) 12px,rgba(255,110,199,.3) 15px);
+  mix-blend-mode:color-dodge;animation:drift 7s linear infinite;opacity:.7}
+#tear .sdock{width:100%;padding:0 4px}
+#tear .sdn{font-family:'Bebas Neue',sans-serif;font-size:28px;line-height:1;letter-spacing:.02em}
+#tear .sdm{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.14em;
+  text-transform:uppercase;color:#8B83AC;margin-top:5px}
+#tear .sdots{display:flex;gap:6px;margin:9px 0 14px}
+#tear .sdots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.22);
+  transition:background .2s,transform .2s}
+#tear .sdots i.on{background:#F5C842;transform:scale(1.35)}
+#tear .sdone{width:100%}
+@media (prefers-reduced-motion:reduce){
+  #tear .scard{transition:opacity .2s}
+  #tear .scard.holo:after{animation:none;opacity:.35}
+}
 /* `.mini` was the binder tile before the slab replaced it. It rendered ZERO
    times after that rewrite — and its six rarity PILL rules were bare
    `.r-legendary{background:...}` declarations, which the slab wrapper also
@@ -3654,52 +3717,232 @@ async function renderCard(cardId){
 }
 
 /* RIPPING A PACK. app_open_pack owns the odds and the pity counter; this only
-   asks, then shows what came back one card at a time. The reveal IS the
-   product, so the pulls are staged rather than dumped as a list. */
-document.addEventListener('click', async function(e){
+   asks, then hands the pulls to the spread. */
+document.addEventListener('click', function(e){
   var b = e.target.closest('[data-rip]');
   if(!b) return;
-  busy(b, true, 'Ripping…');
-  var r = await rpc('app_open_pack', { p_player_item_id: b.getAttribute('data-rip') });
-  busy(b, false);
-  if(!r.ok){ toast(r.message || 'That pack could not be opened.', true); return; }
-  showPulls(r.pulls, r.pity_hit);
-  loadBinder();
+  var id = b.getAttribute('data-rip');
+  var pack = (binderPacks || []).filter(function(i){ return i.player_item_id === id; })[0];
+  openTear(id, pack ? pack.name : 'Pack');
 });
 
-function showPulls(pulls, pity){
-  var list = Array.isArray(pulls) ? pulls : [];
-  var el = document.getElementById('reveal');
-  if(!el){ el = document.createElement('div'); el.id = 'reveal'; document.body.appendChild(el); }
-  if(!list.length){ toast('The pack was empty. The league office has a bug to fix.', true); return; }
+/* ── TEARING A PACK ───────────────────────────────────────────────────
+   The pack does not open when you tap it. It opens when you tear it, and the
+   tear tracks your finger — that is the whole point of a sealed pack and the
+   only moment in this app that is worth an animation.
 
-  var i = 0;
+   app_open_pack fires on COMPLETION, never on drag start: it marks the item
+   used and mints prints, so a pack abandoned halfway has to stay sealed. The
+   cost is a short wait after the tear, which the overlay says out loud. If the
+   call fails the pack RESEALS rather than sitting torn open over nothing. */
+function openTear(itemId, name){
+  var el = document.getElementById('tear');
+  if(!el){ el = document.createElement('div'); el.id = 'tear'; document.body.appendChild(el); }
+  var colour = packColour(name), size = packSize(name);
+
+  el.innerHTML = '<div class="tin">'
+    + '<div class="tk" id="tk">' + esc(name) + '</div>'
+    + '<div class="tpack" style="--pk:' + colour + '">'
+      + '<div class="tguts">' + Array.from({length: Math.min(size,5)})
+          .map(function(){ return '<i></i>'; }).join('') + '</div>'
+      + '<div class="tbody" id="tb"><div class="tskin"></div>'
+        + '<span class="tsz">' + size + '<em>cards</em></span></div>'
+      + '<div class="ttop" id="tt"></div><span class="tnotch"></span>'
+      + '<div class="tgrab" id="tg"></div>'
+    + '</div>'
+    + '<div class="thint" id="th">Drag the strip across &rarr;</div>'
+    + '<button class="tclose" id="tx">Not now</button>'
+    + '</div>';
+  el.classList.add('live');
+  void el.offsetWidth;
+  el.classList.add('shown');
+  wireTear(itemId);
+  document.getElementById('tx').onclick = closeTear;
+}
+function closeTear(){
+  var el = document.getElementById('tear');
+  if(!el) return;
+  el.classList.remove('shown');
+  setTimeout(function(){ el.classList.remove('live'); el.innerHTML = ''; }, 240);
+}
+
+/* Z3: eased, and a flick finishes it. The tear is redrawn once per frame
+   rather than once per pointer event — several of those fire between frames
+   and repainting on each is what read as rough. */
+function wireTear(itemId){
+  var top = document.getElementById('tt'), body = document.getElementById('tb'),
+      grab = document.getElementById('tg'), hint = document.getElementById('th'),
+      kick = document.getElementById('tk');
+  var DIST = 200, SNAP = 0.62;
+  var target = 0, shown = 0, dragging = false, x0 = 0, raf = null, opened = false;
+  var lastX = 0, lastT = 0, vel = 0;
+
   function paint(){
-    var c = list[i] || {};
-    var r = c.rarity || 'common';
-    el.innerHTML = '<div class="rvin">'
-      + '<div class="rvk">' + (i + 1) + ' of ' + list.length
-        + (pity && i === list.length - 1 ? ' \u00b7 pity pull' : '') + '</div>'
-      + '<div class="rvcard r-' + esc(r) + '"><div class="inner">'
-        + (c.photo_url ? '<img src="' + esc(c.photo_url) + '" alt="">'
-                       : '<div class="noart">' + esc(c.name || c.display_name || 'Card') + '</div>')
-        + '<span class="scrim"></span><span class="fx lit"></span>'
-        + '<div class="cfoot"><div class="n">' + esc(c.name || c.display_name || 'Card') + '</div>'
-        + '<div class="p">' + esc(r) + (c.print_number ? ' \u00b7 #' + c.print_number : '')
-        + (c.grade != null ? ' \u00b7 PSA ' + c.grade : '') + '</div></div>'
-      + '</div></div>'
-      + '<button class="act yes rvgo">' + (i < list.length - 1 ? 'Next' : 'Done') + '</button>'
-      + '</div>';
-    void el.offsetWidth;
-    el.classList.add('live');
+    var e = shown * shown * (3 - 2 * shown);
+    top.style.transform = 'translate3d(' + (shown * 240) + 'px,' + (-e * 34) + 'px,0) rotate('
+      + (e * 18) + 'deg)';
+    top.style.opacity = String(1 - shown * 0.5);
+    body.style.setProperty('--cut', (e * 32) + 'px');
   }
-  el.onclick = function(ev){
-    if(!ev.target.closest('.rvgo')) return;
-    i++;
-    if(i >= list.length){ el.classList.remove('live'); setTimeout(function(){ el.innerHTML = ''; }, 240); return; }
+  function loop(){
+    shown += (target - shown) * 0.18;
+    if(Math.abs(target - shown) < 0.001) shown = target;
     paint();
-  };
-  paint();
+    raf = (dragging || Math.abs(target - shown) > 0.001) ? requestAnimationFrame(loop) : null;
+  }
+  function kickRaf(){ if(!raf) raf = requestAnimationFrame(loop); }
+
+  grab.addEventListener('pointerdown', function(ev){
+    if(opened) return;
+    dragging = true; x0 = ev.clientX; lastX = ev.clientX; lastT = performance.now(); vel = 0;
+    try{ grab.setPointerCapture(ev.pointerId); }catch(e){}
+    hint.style.opacity = '.2'; kickRaf();
+  });
+  grab.addEventListener('pointermove', function(ev){
+    if(!dragging) return;
+    var now = performance.now(), dt = now - lastT;
+    if(dt > 0){ vel = (ev.clientX - lastX) / dt; lastX = ev.clientX; lastT = now; }
+    target = Math.max(0, Math.min(1, (ev.clientX - x0) / DIST));
+    kickRaf();
+    if(target >= 1) finish();
+  });
+  function up(){
+    if(!dragging) return;
+    dragging = false;
+    if(target >= SNAP || (vel > 0.9 && target > 0.12)) finish();
+    else { target = 0; kickRaf(); }
+  }
+  grab.addEventListener('pointerup', up);
+  grab.addEventListener('pointercancel', up);
+
+  /* Undiscoverable gesture, so it offers a way through after a few seconds. */
+  setTimeout(function(){
+    if(opened || !document.getElementById('th')) return;
+    hint.innerHTML = 'Drag the strip across &rarr; <button class="tapopen">or tap to open</button>';
+    var t = hint.querySelector('.tapopen');
+    if(t){ hint.style.pointerEvents = 'auto'; t.onclick = finish; }
+  }, 3200);
+
+  async function finish(){
+    if(opened) return;
+    opened = true; dragging = false;
+    if(raf){ cancelAnimationFrame(raf); raf = null; }
+    top.style.transition = 'transform .42s cubic-bezier(.3,0,.2,1),opacity .42s';
+    top.style.transform = 'translate3d(320px,-96px,0) rotate(42deg)';
+    top.style.opacity = '0';
+    body.style.setProperty('--cut', '32px');
+    hint.textContent = 'Opening\u2026';
+    var r = await rpc('app_open_pack', { p_player_item_id: itemId });
+    if(!r.ok){
+      /* Reseal. A torn pack that never opened is worse than an error. */
+      opened = false;
+      top.style.transition = 'transform .3s,opacity .3s';
+      top.style.transform = ''; top.style.opacity = '1';
+      body.style.setProperty('--cut', '0px');
+      shown = 0; target = 0;
+      hint.textContent = 'Drag the strip across \u2192';
+      toast(r.message || 'That pack could not be opened.', true);
+      return;
+    }
+    kick.textContent = r.message === 'god' ? 'God pack' : 'Opened';
+    setTimeout(function(){ showSpread(r.pulls, r.pity_hit); }, 240);
+    loadBinder();
+  }
+}
+
+/* ── THE SPREAD ── every card lands at once, the best pull comes forward,
+   and the hand stays put while you go through it. An earlier cut re-laid the
+   fan around whichever card was active, which threw the others off to one
+   side; a real hand does not rearrange when you pull a card out of it. */
+var RSORT = ['common','uncommon','rare','mystic','legendary','prismatic'];
+function showSpread(pulls, pity){
+  var list = (Array.isArray(pulls) ? pulls : []).map(function(c){
+    return { n: c.fighter || c.name || c.display_name || 'Card',
+             r: String(c.rarity || 'common'),
+             p: c.print != null ? '#' + c.print : '',
+             g: c.grade };
+  });
+  var el = document.getElementById('tear');
+  if(!list.length){ toast('The pack came back empty. The league office has a bug.', true);
+    closeTear(); return; }
+
+  var active = 0;
+  list.forEach(function(c, i){
+    if(RSORT.indexOf(c.r) > RSORT.indexOf(list[active].r)) active = i; });
+  var bestIdx = active;
+
+  el.innerHTML = '<div class="sin">'
+    + '<div class="skick" id="sk">' + list.length + (list.length === 1 ? ' card' : ' cards')
+      + (pity ? ' \u00b7 pity pull' : '') + '</div>'
+    + '<div class="sfan" id="sf">' + list.map(function(c){
+        var holo = RSORT.indexOf(c.r) >= 3;
+        return '<div class="scard r-' + esc(c.r) + (holo ? ' holo' : '') + '">'
+          + (holo ? '<span class="shit">' + esc(c.r) + '</span>' : '')
+          + '<div class="snm">' + esc(c.n) + '</div>'
+          + '<div class="sft">' + esc(c.p) + (c.g != null ? ' \u00b7 PSA ' + c.g : '') + '</div></div>';
+      }).join('') + '</div>'
+    + '<div class="sdock"><div><div class="sdn" id="sdn"></div>'
+      + '<div class="sdm" id="sdm"></div>'
+      + '<div class="sdots" id="sdots">' + list.map(function(){ return '<i></i>'; }).join('') + '</div></div>'
+      + '<button class="act yes sdone" id="sdone">Into the binder</button></div>'
+    + '</div>';
+
+  var cards = [].slice.call(el.querySelectorAll('.scard'));
+  function slot(i){
+    var pos = i - (list.length - 1) / 2;
+    return { x: pos * 48, y: Math.abs(pos) * 11, rot: pos * 7.5 };
+  }
+  function layout(){
+    cards.forEach(function(c, i){
+      var sl = slot(i);
+      if(i === active){
+        c.classList.add('up');
+        c.style.transform = 'translate(' + (sl.x * 0.18) + 'px,-74px) rotate(0deg) scale(1.4)';
+        c.style.opacity = '1'; c.style.zIndex = 20;
+      } else {
+        c.classList.remove('up');
+        c.style.transform = 'translate(' + sl.x + 'px,' + sl.y + 'px) rotate(' + sl.rot + 'deg) scale(.92)';
+        c.style.opacity = String(0.82 - Math.abs(i - active) * 0.07);
+        c.style.zIndex = 10 - Math.abs(i - active);
+      }
+    });
+    var c = list[active];
+    document.getElementById('sdn').textContent = c.n;
+    document.getElementById('sdm').textContent = c.r + (c.p ? ' \u00b7 ' + c.p : '')
+      + (c.g != null ? ' \u00b7 PSA ' + c.g : '');
+    [].slice.call(el.querySelectorAll('.sdots i')).forEach(function(d, i){
+      d.classList.toggle('on', i === active); });
+  }
+  function setActive(i){ active = Math.max(0, Math.min(list.length - 1, i)); layout(); }
+
+  cards.forEach(function(c, i){
+    c.style.transform = 'translate(0,120px) rotate(0deg) scale(.55)';
+    c.style.opacity = '0';
+    c.addEventListener('click', function(){ setActive(i); });
+    setTimeout(function(){
+      var sl = slot(i);
+      c.style.opacity = '1';
+      c.style.transform = 'translate(' + sl.x + 'px,' + sl.y + 'px) rotate(' + sl.rot + 'deg) scale(.92)';
+    }, 70 + i * 85);
+  });
+  setTimeout(function(){
+    document.getElementById('sk').textContent = list.length === 1 ? 'Your card' : 'Best pull';
+    setActive(bestIdx);
+  }, 70 + list.length * 85 + 240);
+
+  /* swipe the hand */
+  var fan = document.getElementById('sf'), x0 = null;
+  fan.addEventListener('pointerdown', function(e){ x0 = e.clientX; });
+  fan.addEventListener('pointermove', function(e){
+    if(x0 === null) return;
+    var dx = e.clientX - x0;
+    if(Math.abs(dx) > 46){ setActive(active + (dx < 0 ? 1 : -1)); x0 = e.clientX; }
+  });
+  function end(){ x0 = null; }
+  fan.addEventListener('pointerup', end);
+  fan.addEventListener('pointercancel', end);
+
+  document.getElementById('sdone').onclick = function(){ closeTear(); loadBinder(); };
 }
 
 /* ── SHOP ── the price list, read-only. Buying happens in Discord. */
@@ -3938,7 +4181,7 @@ function renderCards(){
       + '<div class="lab"><b>What\'s in there</b><i></i></div>'
       + perk('i-cards','107 cards across 4 sets','Every print graded 1 to 10')
       + perk('i-book','Six rarities','Common through prismatic — only 3 prismatics exist')
-      + perk('i-game','Rip packs here','The reveal, one card at a time');
+      + perk('i-game','Rip packs here','Tear the wrapper, see what fell out');
     return;
   }
   el.innerHTML = '<div class="top"><div class="ttl">CARDS</div>'
