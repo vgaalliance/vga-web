@@ -90,6 +90,48 @@ body{height:100%;height:-webkit-fill-available;overflow:hidden;background:#1A153
   background:linear-gradient(180deg,#3B3568 0%,#2A2450 26%,#191434 55%,#0C0916 100%)}
 .panel{z-index:1}
 a{color:inherit;text-decoration:none}
+
+/* ── PRESSED ────────────────────────────────────────────────────────────
+   Line 38 turns off -webkit-tap-highlight-color for the whole app, which is
+   the right first move -- the grey box phones draw is ugly -- but nothing
+   ever drew the replacement, so every tap in the app was silently dead. A
+   phone gives no other confirmation: there is no cursor, no hover, and iOS
+   will not let a web app vibrate. The press IS the feedback.
+
+   Press-in rather than a wash: it reads as physical, which is what a native
+   list row does. Scale is small on purpose -- big enough to see at a glance,
+   small enough that it never looks like the layout moved.
+
+   `:active` beats a bare class on specificity, so this block wins wherever it
+   sits in the file and cannot be silently undone by a later rule. Grouped
+   here, in one place, so the next tappable thing is one selector away from
+   behaving like the rest. */
+button:active,
+.fc:active, .pw2:active, .nms2 b:active, .more2:active, .evrow:active,
+.twin .tw:active, .bpill:active, .betback:active, .act:active, .chipb:active,
+.slabw:active, .chips span:active,
+.brec:active, .evbet:active, .nw:active, .wrow:active, .lead:active,
+#tear .tapopen:active, #tear .tclose:active, #tear .scard:active{
+  transform:scale(.97);
+  background-color:rgba(255,255,255,.09);
+  box-shadow:inset 0 2px 9px rgba(0,0,0,.45)}
+/* Pills are small, so the same scale reads as nothing. */
+.chips span:active, .betback:active, .chipb:active{transform:scale(.93)}
+/* .bhero runs the riding/pays-out tint on a keyframe animation, and an
+   animation beats a plain declaration -- a background here would simply never
+   apply. Shape and shadow carry it instead. */
+.bhero:active{transform:scale(.985);box-shadow:inset 0 2px 12px rgba(0,0,0,.5)}
+/* Fast in, so the press lands with the finger. Wrapped in :where() on purpose:
+   it has ZERO specificity, so it adds a transition to these elements and can
+   never win an argument with their real rules -- and, just as importantly, it
+   is not a second bare `.lead{...}` declaration. Written flat it was exactly
+   the shape checks/check-css-collisions.mjs exists to catch, and it caught it. */
+:where(button, .fc, .pw2, .nms2 b, .more2, .evrow, .twin .tw, .bpill, .betback,
+  .act, .chipb, .slabw, .sealrail .sw, .chips span, .bhero, .brec, .evbet, .nw,
+  .wrow, .lead){transition:transform .1s ease, background-color .1s ease, box-shadow .1s ease}
+@media (prefers-reduced-motion:reduce){
+  button:active, .fc:active, .slabw:active, .evbet:active, .bhero:active{transform:none}}
+
 button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 :focus-visible{outline:2px solid #C3A6FF;outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -859,7 +901,10 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .act.pick.on{background:linear-gradient(90deg,#A78BFA,#7C5CE0);border-color:transparent;color:#150F2E}
 .act.place{flex:none;padding:11px 18px;background:linear-gradient(90deg,#F5C842,#D6A81F);color:#2A1F00;
   max-width:60%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.act:active{transform:translateY(1px)}
+/* Combined 2026-09-01: the shared press block also targets .act:active with a
+   scale, and this rule sits later at the same specificity, so it silently won
+   and the scale never applied. Both live here now rather than in two places. */
+.act:active{transform:translateY(1px) scale(.94)}
 .act[disabled],.act.working{opacity:.55;pointer-events:none}
 
 .picks{display:flex;gap:8px;margin-top:11px}
@@ -5059,6 +5104,11 @@ function showDiag(){
 
 /* ═══ boot ═══════════════════════════════════════════════════════════ */
 (async function(){
+  /* iOS fires :active only if SOMETHING is listening for touch. Without this
+     one empty listener every pressed state above is dead on iPhone and works
+     fine on Android, which is the worst version of the bug: it looks fixed on
+     the machine you tested it on. */
+  document.addEventListener('touchstart', function(){}, { passive: true });
   loadSession();
   if(session) me = await fetchMe();   /* renews the token itself — see fetchMe */
   await loadWhoAmI();
