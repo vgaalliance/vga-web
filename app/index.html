@@ -1426,10 +1426,12 @@ var fanSwiped = false;
 function setCountdown(ev){
   // A past event has nothing to count down to; showing 00:00:00:00 under a
   // finished card reads like a bug.
-  // Not just "not over" — NOT STARTED. A night in progress has nothing to
-  // count down to, and four zeros under it reads as a broken clock.
+  // THE CLOCK IS ALWAYS THERE, and it reads 00:00:00:00 on a card whose event
+  // has been and gone. Hiding it was the wrong call: the four boxes vanishing
+  // as you swipe onto a past card is a bigger jolt than four zeros, and zeros
+  // say the plain thing — this one has already happened.
   var t = ev ? new Date(ev.event_date).getTime() : NaN;
-  countdownTarget = (ev && !eventIsOver(ev) && isFinite(t) && t > Date.now()) ? t : null;
+  countdownTarget = isFinite(t) ? t : null;
   tickCountdown();
 }
 /* THE BAR IS PUT WHERE THE SCREEN ACTUALLY ENDS.
