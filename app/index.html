@@ -6350,7 +6350,37 @@ function wirePullToRefresh(){
 }
 
 /* ═══ boot ═══════════════════════════════════════════════════════════ */
+/* THE UPDATE CHECK RUNS BEFORE ANY AWAIT, on purpose.
+   The shell is cache-first, so a visit shows the version stored LAST time —
+   you see one build behind, and closing the app once is not enough because
+   the new worker only takes over after that load. skipWaiting + claim in
+   sw.js hand control over immediately, and controllerchange reloads the page
+   the moment it happens.
+
+   This used to sit at the BOTTOM of boot, after `await loadHome()` and two
+   other awaited round trips, and `reg.update()` was wired only to
+   visibilitychange — so an app opened and never backgrounded never asked
+   whether a new build existed, and on a slow load the check was minutes late.
+   It registers first and asks on this load now. */
+function registerWorker(){
+  if(!('serviceWorker' in navigator)) return;
+  var swReloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function(){
+    if(swReloaded) return;
+    swReloaded = true;
+    location.reload();
+  });
+  navigator.serviceWorker.register('./sw.js').then(function(reg){
+    reg.update().catch(function(){});          // ask on THIS load, not the next
+    document.addEventListener('visibilitychange', function(){
+      if(document.visibilityState === 'visible') reg.update().catch(function(){});
+    });
+  }).catch(function(e){ console.warn('[uba] sw', e); });
+}
+
 (async function(){
+  registerWorker();
+
   /* iOS fires :active only if SOMETHING is listening for touch. Without this
      one empty listener every pressed state above is dead on iPhone and works
      fine on Android, which is the worst version of the bug: it looks fixed on
@@ -6396,27 +6426,6 @@ function wirePullToRefresh(){
   await loadHome();
   loadNews();
   loadFighters();
-
-  if('serviceWorker' in navigator){
-    /* The shell is cache-first, so a visit shows the version that was stored
-       LAST time — you always see one build behind, and closing the app once
-       is not enough because the new worker only takes over after that load.
-       skipWaiting + claim in sw.js hand control over immediately; this
-       reloads the page the moment that happens so what is on screen is what
-       was just deployed. Guarded so it can only ever fire once per load. */
-    var swReloaded = false;
-    navigator.serviceWorker.addEventListener('controllerchange', function(){
-      if(swReloaded) return;
-      swReloaded = true;
-      location.reload();
-    });
-    navigator.serviceWorker.register('./sw.js').then(function(reg){
-      // and check for a new build every time the app is brought forward
-      document.addEventListener('visibilitychange', function(){
-        if(document.visibilityState === 'visible') reg.update().catch(function(){});
-      });
-    }).catch(function(e){ console.warn('[uba] sw', e); });
-  }
 })();
 </script>
 </body>
