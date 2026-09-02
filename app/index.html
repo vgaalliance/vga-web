@@ -5191,18 +5191,26 @@ function showSpread(pulls, pity){
     setActive(bestIdx);
   }, 70 + list.length * 85 + 240);
 
-  /* swipe the hand, or tap a card. `moved` is what keeps the two apart: the
-     click that follows a swipe would otherwise land on wherever the finger
-     stopped and undo the swipe. */
-  var x0 = null, lastX = 0, moved = 0;
-  fan.addEventListener('pointerdown', function(e){ x0 = e.clientX; lastX = e.clientX; moved = 0; });
+  /* Swipe the hand, or tap a card. Two things were wrong on a real finger.
+
+     DIRECTION. Dragging right moved the selection LEFT -- content-drag, like
+     hauling the hand sideways. On a fan where the chosen card pops UP, a
+     person reads the drag as pushing a cursor, so the selection now follows
+     the finger: drag right, the next card to the RIGHT comes up.
+
+     TAP RELIABILITY. The tap/swipe split used to sum every pixel of jitter
+     (`moved`), and a touch never holds perfectly still -- so an ordinary tap
+     could cross the threshold, be judged a swipe, and select nothing. It is a
+     flag now: only an actual 46px swipe step sets it, so a still-ish tap is
+     always a tap. */
+  var x0 = null, swiped = false;
+  fan.addEventListener('pointerdown', function(e){ x0 = e.clientX; swiped = false; });
   fan.addEventListener('pointermove', function(e){
     if(x0 === null) return;
-    moved += Math.abs(e.clientX - lastX); lastX = e.clientX;
     var dx = e.clientX - x0;
-    if(Math.abs(dx) > 46){ setActive(active + (dx < 0 ? 1 : -1)); x0 = e.clientX; }
+    if(Math.abs(dx) > 46){ setActive(active + (dx < 0 ? -1 : 1)); x0 = e.clientX; swiped = true; }
   });
-  fan.addEventListener('click', function(e){ if(moved <= 8) setActive(hit(e.clientX)); });
+  fan.addEventListener('click', function(e){ if(!swiped) setActive(hit(e.clientX)); });
   function end(){ x0 = null; }
   fan.addEventListener('pointerup', end);
   fan.addEventListener('pointercancel', end);
