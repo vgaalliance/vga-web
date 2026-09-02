@@ -132,6 +132,9 @@ a{color:inherit;text-decoration:none}
    would contradict the card the tap actually selects. */
 /* Pills are small, so the same scale reads as nothing. */
 .chips span:active, .betback:active, .chipb:active{transform:scale(.93);filter:brightness(1.28)}
+/* The price cell IS the pick control, so it presses like one. It is not an
+   `.act`, so the shared button rule above does not reach it. */
+.tape .pays .pick:active{filter:brightness(1.3)}
 /* .bhero runs the riding/pays-out tint on a keyframe animation, and an
    animation beats a plain declaration. filter is a separate property, so it
    still lands. */
@@ -939,36 +942,66 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#C3A6FF;background:none;
   border:1px solid rgba(167,139,250,.35);border-radius:20px;padding:7px 13px;cursor:pointer}
 
-/* level two — one bout's board */
-.board{margin:0 16px 10px;border-radius:12px;overflow:hidden;
+/* level two — one bout's board, drawn as a TALE OF THE TAPE.
+   It used to be two list rows: name, a 64px stub bar, a number. Three things
+   changed and each is load-bearing.
+
+   1. ONE SHARED SPLIT BAR. A pari-mutuel market is a ratio between two
+      corners, and two separate bars is the one shape that cannot show a
+      ratio — you had to read both percentages and subtract. One bar, cut
+      where the money is, says 63/37 without a digit being read.
+   2. THE PRICE IS THE BUTTON. The pays-now figure and the pick control were
+      two different objects an inch apart, so you read a number and then
+      pressed something else. They are the same cell now. Still two taps to
+      spend: pressing a corner opens the stake row, it does not place.
+   3. THE NAMES GET THE ROOM. 17px condensed to 25px Bebas. This is the
+      betting page of a fighting app and the fighters were the smallest type
+      on it. */
+.tape{margin:0 16px 10px;border-radius:14px;overflow:hidden;
   background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12)}
-.board.mine{border-color:rgba(110,231,183,.4)}
-.board .bh{display:flex;align-items:center;gap:7px;padding:8px 12px;background:rgba(0,0,0,.25);
+.tape.mine{border-color:rgba(110,231,183,.4)}
+.tape .th{display:flex;align-items:center;gap:6px;padding:7px 12px;background:rgba(0,0,0,.25);
   font-family:'Space Mono',monospace;font-size:6.5px;font-weight:700;letter-spacing:.15em;
   text-transform:uppercase;color:#8B83AC}
-.board .bh s{margin-left:auto;text-decoration:none}
-.brow{display:flex;align-items:center;gap:9px;padding:9px 12px;position:relative;
-  border-top:1px solid rgba(255,255,255,.07)}
-.brow.yours{background:linear-gradient(90deg,rgba(110,231,183,.14),transparent)}
-.brow.yours:before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#6EE7B7}
-.brow .who{flex:1;min-width:0;font-family:'Barlow Condensed',sans-serif;font-weight:700;
-  font-size:17px;text-transform:uppercase;letter-spacing:.02em;
+.tape .th s{margin-left:auto;text-decoration:none;color:#B9B2D6;white-space:nowrap}
+.tape .cor{display:flex;padding:12px 12px 0;gap:10px}
+.tape .cor > div{flex:1;min-width:0}
+.tape .cor .rt{text-align:right}
+/* Names ellipsize rather than wrap. A wrapped name changes the card's height
+   on one side only, and the two corners stop lining up — which is the whole
+   reason this reads as a head-to-head. */
+.tape .nm{font-family:'Bebas Neue',sans-serif;font-size:25px;line-height:.94;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.brow .pcts{width:64px;flex-shrink:0}
-.brow .pb{height:4px;border-radius:2px;background:rgba(0,0,0,.45);overflow:hidden}
-.brow .pb i{display:block;height:100%;background:#A78BFA;border-radius:2px}
-.brow .pn{font-family:'Space Mono',monospace;font-size:6px;color:#8B83AC;margin-top:3px;text-align:right}
-.brow .odd{width:62px;flex-shrink:0;text-align:right;font-family:'Space Mono',monospace;
-  font-size:13px;font-weight:700;color:#6EE7B7;font-variant-numeric:tabular-nums}
-.brow .odd em{font-style:normal;display:block;font-size:5.5px;letter-spacing:.1em;color:#5F5880}
-.board .stakeline{padding:7px 12px 9px;border-top:1px solid rgba(110,231,183,.22);
+.tape .rec{font-family:'Space Mono',monospace;font-size:7px;color:#7E7699;margin-top:4px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tape .split{display:flex;height:9px;margin:11px 12px 0;border-radius:5px;overflow:hidden;
+  background:rgba(0,0,0,.4)}
+.tape .split i{display:block;height:100%}
+.tape .split .sa{background:linear-gradient(90deg,#E8362B,#FF7A63)}
+.tape .split .sb{background:linear-gradient(90deg,#7C5CE0,#A78BFA)}
+.tape .pct{display:flex;justify-content:space-between;margin:5px 12px 0;
+  font-family:'Space Mono',monospace;font-size:6.5px;letter-spacing:.1em;color:#7E7699}
+.tape .pays{display:flex;margin:9px 0 0;border-top:1px solid rgba(255,255,255,.07)}
+.tape .pays .pick{flex:1;min-width:0;padding:11px 8px;text-align:left}
+.tape .pays .pick + .pick{border-left:1px solid rgba(255,255,255,.07);text-align:right}
+.tape .pays b{display:block;font-family:'Space Mono',monospace;font-size:17px;font-weight:700;
+  color:#6EE7B7;line-height:1;font-variant-numeric:tabular-nums}
+.tape .pays s{display:block;text-decoration:none;font-family:'Space Mono',monospace;font-size:6px;
+  letter-spacing:.13em;text-transform:uppercase;color:#5F5880;margin-top:5px}
+.tape .pays .pick.on{background:linear-gradient(180deg,rgba(167,139,250,.22),transparent)}
+.tape .pays .pick.on b,.tape .pays .pick.on s{color:#C3A6FF}
+.tape .stakeline{padding:7px 12px 8px;border-top:1px solid rgba(110,231,183,.22);
   background:rgba(110,231,183,.07);display:flex;align-items:center;gap:9px;
   font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.1em;
   text-transform:uppercase;color:#8FD9BE}
-.board .stakeline b{color:#6EE7B7;font-size:10px}
-.board .stakeline s{margin-left:auto;text-decoration:none;color:#6EE7B7;font-size:10px}
-.board .picks{padding:9px 12px 11px;border-top:1px dashed rgba(255,255,255,.1)}
-.board .stake{padding:0 12px 11px}
+.tape .stakeline b{color:#6EE7B7;font-size:10px}
+.tape .stakeline s{margin-left:auto;text-decoration:none;color:#6EE7B7;font-size:10px}
+/* Beats the bare `.stake` rule further down on specificity, so the drawer
+   sits flush inside the card rather than carrying that rule's top margin. */
+.tape .stake{margin-top:0;padding:10px 12px 12px;border-top:1px solid rgba(167,139,250,.3);
+  background:rgba(167,139,250,.09)}
+/* Signed out, the prices still show — they just stop being buttons. */
+.tape .picks.off{margin-top:0;padding:9px 12px 11px;border-top:1px solid rgba(255,255,255,.07)}
 
 /* the sheet */
 .summ{display:flex;gap:8px;margin:16px 16px 4px}
@@ -1010,10 +1043,9 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .act.no{background:none;border-color:rgba(241,156,150,.45);color:#F19C96}
 .act.buy{flex:none;margin-top:7px;padding:8px 16px;
   background:linear-gradient(90deg,#F5C842,#D6A81F);color:#2A1F00}
-.act.pick{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.18);color:#EFEAFF;
-  font-size:10px;letter-spacing:.06em;text-transform:none;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.act.pick.on{background:linear-gradient(90deg,#A78BFA,#7C5CE0);border-color:transparent;color:#150F2E}
+/* `.act.pick` used to be the corner button that sat under the board's two
+   rows. The price cell is the pick control now (see `.tape .pays`), so those
+   two rules are gone rather than left to rot — nothing emits the class. */
 .act.place{flex:none;padding:11px 18px;background:linear-gradient(90deg,#F5C842,#D6A81F);color:#2A1F00;
   max-width:60%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* Combined 2026-09-01: the shared press block also targets .act:active with a
@@ -4660,7 +4692,10 @@ document.addEventListener('click', async function(e){
       + '<div class="stakerow">'
       + '<input class="amt" type="number" inputmode="numeric" min="1" step="1" placeholder="VC" '
       + 'aria-label="Amount in VC">'
-      + '<button class="act place" data-place="'+esc(mid)+'">On ' + esc(b.textContent) + '</button>'
+      /* The label comes from data-name, not textContent: the pick control is
+         the price cell now, so its text is "2.71×Pays now". */
+      + '<button class="act place" data-place="'+esc(mid)+'">On '
+      + esc(b.getAttribute('data-name') || 'this side') + '</button>'
       + '</div>';
     return;
   }
@@ -5905,45 +5940,83 @@ function renderBetEvent(eventId){
   el.innerHTML = '<button class="betback" data-bback>&lsaquo; All cards</button>'
     + '<div class="lab"><b>'+esc(ps[0].event_name)+'</b><i></i><s>'
     + ps.length+(ps.length===1?' market':' markets')+'</s></div>'
-    + ps.map(function(r){ return boardHTML(r); }).join('')
+    + ps.map(function(r, i){ return boardHTML(r, i); }).join('')
     + '<div class="foot">Your stake shows on the side you backed &middot; prices move until the bell</div>';
   var bk = el.querySelector('[data-bback]');
   if(bk) bk.onclick = function(){ loadBetting(); };
 }
 
-function boardHTML(r){
+/* `billing` is the bout's position in the sorted card, not a stored field \u2014
+   index 0 is the main event because renderBetEvent sorts by bout number
+   descending. Deriving it beats reading `card_segment`, which only says
+   main_card / prelim / undercard and so cannot name the top of the bill. */
+function boardHTML(r, billing){
   var a = Number(r.total_a||0), b = Number(r.total_b||0), tot = a + b;
-  var pa = tot ? Math.round(a/tot*100) : 50;
-  var pays = function(x){ return x > 0 ? (tot/x).toFixed(2) : '\u2014'; };
+  var pa = tot ? Math.round(a/tot*100) : 50, pb = 100 - pa;
+  var pays = function(x){ return x > 0 ? (tot/x).toFixed(2) + '\u00d7' : '\u2014'; };
   var mine = (myBets || []).filter(function(x){
     return x.match_id === r.match_id && x.state !== 'settled'; });
-  var onA = mine.filter(function(x){ return x.pick_name === r.side_a; })
-    .reduce(function(n,x){ return n + Number(x.amount||0); }, 0);
-  var onB = mine.filter(function(x){ return x.pick_name === r.side_b; })
-    .reduce(function(n,x){ return n + Number(x.amount||0); }, 0);
+  var staked = function(name){
+    return mine.filter(function(x){ return x.pick_name === name; })
+      .reduce(function(n,x){ return n + Number(x.amount||0); }, 0); };
+  var onA = staked(r.side_a), onB = staked(r.side_b);
 
-  function row(name, amt, pct, total, side){
-    return '<div class="brow'+(amt ? ' yours' : '')+'">'
-      + '<span class="who">'+esc(name || side.toUpperCase())+'</span>'
-      + '<span class="pcts"><span class="pb"><i style="width:'+pct+'%"></i></span>'
-      + '<span class="pn">'+pct+'%</span></span>'
-      + '<span class="odd">'+pays(total)+'<em>pays now</em></span></div>'
-      + (amt ? '<div class="stakeline">you have <b>'+amt.toLocaleString()+'</b> here'
-          + '<s>&rarr; '+Math.round(amt * (total > 0 ? tot/total : 1)).toLocaleString()+'</s></div>' : '');
+  /* The header line, most specific part first. Every piece is optional
+     because a catch-weight bout has no division worth naming and a card can
+     be published before the billing is settled. */
+  var head = ['Bout ' + (r.bout_number || '\u2014')];
+  if(billing === 0)      head.push('Main event');
+  else if(billing === 1) head.push('Co-main');
+  if(r.is_title_fight)   head.push('Title');
+  var div = wc(r.weight_class);
+  if(div && r.weight_class !== 'catch_weight') head.push(div);
+
+  /* 19 of 467 fighters have no fighter_cards row, so a record can be missing
+     entirely \u2014 and 0-0 is a real record, not a missing one. Each piece is
+     tested on its own rather than the line being all-or-nothing. */
+  function rec(w, l, rank, champ){
+    var bits = [];
+    if(w !== null && w !== undefined) bits.push(Number(w||0) + '\u2013' + Number(l||0));
+    if(champ)     bits.push('CHAMP');
+    else if(rank) bits.push('#' + rank);
+    return bits.join(' \u00b7 ');
+  }
+  var recA = rec(r.wins_a, r.losses_a, r.rank_a, r.champ_a);
+  var recB = rec(r.wins_b, r.losses_b, r.rank_b, r.champ_b);
+
+  /* The price cell and the pick control are one object. `data-name` carries
+     the label the stake row's button needs \u2014 reading it off textContent would
+     pick up the price and the caption too. */
+  function cell(side, name, total, amt){
+    var inner = '<b>'+pays(total)+'</b><s>'+(amt ? 'Yours \u00b7 pays now' : 'Pays now')+'</s>';
+    if(!me) return '<span class="pick">'+inner+'</span>';
+    return '<button class="pick" data-bet="'+esc(r.match_id)+'" data-side="'+side+'" '
+      + 'data-name="'+esc(name || side.toUpperCase())+'">'+inner+'</button>';
+  }
+  function stakeline(amt, name, total){
+    if(!amt) return '';
+    return '<div class="stakeline">you have <b>'+amt.toLocaleString()+'</b> on '
+      + esc(name || 'this side')
+      + '<s>&rarr; '+Math.round(amt * (total > 0 ? tot/total : 1)).toLocaleString()+'</s></div>';
   }
 
-  return '<div class="board'+(mine.length ? ' mine' : '')+'">'
-    + '<div class="bh"><span>Bout '+(r.bout_number || '\u2014')+'</span>'
-    + '<s>'+Number(r.pool||0).toLocaleString()+' VC \u00b7 '+Number(r.bets||0)+' bets</s></div>'
-    + row(r.side_a, onA, pa, a, 'a')
-    + row(r.side_b, onB, 100 - pa, b, 'b')
-    + (me ? '<div class="picks">'
-        + '<button class="act pick" data-bet="'+esc(r.match_id)+'" data-side="a">'
-        + esc(r.side_a||'A')+'</button>'
-        + '<button class="act pick" data-bet="'+esc(r.match_id)+'" data-side="b">'
-        + esc(r.side_b||'B')+'</button></div>'
-        + '<div class="stake" id="stake-'+esc(r.match_id)+'" hidden></div>'
-      : '<div class="picks off">Sign in on the You tab to bet</div>')
+  return '<div class="tape'+(mine.length ? ' mine' : '')+'">'
+    + '<div class="th"><span>'+esc(head.join(' \u00b7 '))+'</span>'
+    + '<s>'+Number(r.pool||0).toLocaleString()+' VC \u00b7 '+Number(r.bets||0)
+      + (Number(r.bets||0) === 1 ? ' bet' : ' bets')+'</s></div>'
+    + '<div class="cor">'
+      + '<div><div class="nm">'+esc(r.side_a || 'A')+'</div>'
+      + (recA ? '<div class="rec">'+esc(recA)+'</div>' : '') + '</div>'
+      + '<div class="rt"><div class="nm">'+esc(r.side_b || 'B')+'</div>'
+      + (recB ? '<div class="rec">'+esc(recB)+'</div>' : '') + '</div></div>'
+    + '<div class="split"><i class="sa" style="width:'+pa+'%"></i>'
+      + '<i class="sb" style="width:'+pb+'%"></i></div>'
+    + '<div class="pct"><span>'+pa+'% \u00b7 '+a.toLocaleString()+'</span>'
+      + '<span>'+b.toLocaleString()+' \u00b7 '+pb+'%</span></div>'
+    + '<div class="pays">'+cell('a', r.side_a, a, onA)+cell('b', r.side_b, b, onB)+'</div>'
+    + (me ? '<div class="stake" id="stake-'+esc(r.match_id)+'" hidden></div>'
+          : '<div class="picks off">Sign in on the You tab to bet</div>')
+    + stakeline(onA, r.side_a, a) + stakeline(onB, r.side_b, b)
     + '</div>';
 }
 
