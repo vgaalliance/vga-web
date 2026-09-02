@@ -437,7 +437,31 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 
 /* news */
 .nw{display:flex;gap:12px;margin:0 18px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)}
-.nw .th{width:54px;height:54px;border-radius:10px;flex-shrink:0;background:linear-gradient(150deg,#3E2F6B,#1B1533)}
+/* THE THUMB WAS ALWAYS AN EMPTY BOX. It has been a bare gradient since the
+   row was written — no image was ever put in it, on Home or in the wire, even
+   though 21 of 22 stories carry a graphic and 9 carry a photograph.
+
+   THE STORY GRAPHIC IS THE WRONG SOURCE, which is why this is not simply
+   "render graphic_url". Those are finished news CARDS, 1100x908, and a square
+   crop of one is a chunk of body copy — a picture of text, at 54px. The
+   PHOTOGRAPH is the picture; the card is the layout around it.
+
+   With no photograph the tile carries the VGA mark instead. A story without
+   art is common and an empty violet square reads as an image that failed to
+   load, which is exactly how this was reported. */
+.nw .th{width:54px;height:54px;border-radius:10px;flex-shrink:0;overflow:hidden;
+  background:linear-gradient(150deg,#3E2F6B,#1B1533)}
+.nw .th img{width:100%;height:100%;object-fit:cover;display:block}
+.th.mark{background:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MCA4MCIgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIj4KPGRlZnM+CiAgPGZpbHRlciBpZD0ic29mdCIgeD0iLTYwJSIgeT0iLTYwJSIgd2lkdGg9IjIyMCUiIGhlaWdodD0iMjIwJSI+CiAgICA8ZmVHYXVzc2lhbkJsdXIgc3RkRGV2aWF0aW9uPSIzLjQiLz48L2ZpbHRlcj4KICA8ZmlsdGVyIGlkPSJtaXN0IiB4PSItNzAlIiB5PSItNzAlIiB3aWR0aD0iMjQwJSIgaGVpZ2h0PSIyNDAlIj4KICAgIDxmZUdhdXNzaWFuQmx1ciBzdGREZXZpYXRpb249IjciLz48L2ZpbHRlcj4KICA8ZmlsdGVyIGlkPSJmdXp6IiB4PSItNDAlIiB5PSItNDAlIiB3aWR0aD0iMTgwJSIgaGVpZ2h0PSIxODAlIj4KICAgIDxmZUdhdXNzaWFuQmx1ciBzdGREZXZpYXRpb249IjAuOSIvPjwvZmlsdGVyPgogIDxyYWRpYWxHcmFkaWVudCBpZD0iY29yZSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjQTk4QkZGIiBzdG9wLW9wYWNpdHk9Ii41Ii8+CiAgICA8c3RvcCBvZmZzZXQ9Ii41NSIgc3RvcC1jb2xvcj0iI0E5OEJGRiIgc3RvcC1vcGFjaXR5PSIuMTYiLz4KICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0E5OEJGRiIgc3RvcC1vcGFjaXR5PSIwIi8+PC9yYWRpYWxHcmFkaWVudD4KICA8IS0tIFRoZSB0dWJlLiBTY2FubGluZXMgbGl2ZSBJTlNJREUgdGhlIGhhbG8sIHNvIHRoZSBnbG93IHJlYWRzIGFzIGxpZ2h0IG9uCiAgICAgICBhIHNjcmVlbiBpbnN0ZWFkIG9mIGxpZ2h0IGluIGEgcm9vbS4gLS0+CiAgPHBhdHRlcm4gaWQ9InNjYW4iIHdpZHRoPSIxIiBoZWlnaHQ9IjIuMiIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CiAgICA8cmVjdCB3aWR0aD0iMSIgaGVpZ2h0PSIxLjEiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iLjkyIi8+CiAgICA8cmVjdCB5PSIxLjEiIHdpZHRoPSIxIiBoZWlnaHQ9IjEuMSIgZmlsbD0iI2ZmZiIgZmlsbC1vcGFjaXR5PSIuMzQiLz48L3BhdHRlcm4+CiAgPG1hc2sgaWQ9InR1YmUiPjxyZWN0IHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCIgZmlsbD0idXJsKCNzY2FuKSIvPjwvbWFzaz4KPC9kZWZzPgo8IS0tIDEuIHRoZSByb29tIGdsb3cgLS0+CjxjaXJjbGUgY3g9IjQwIiBjeT0iNDAiIHI9IjMwIiBmaWxsPSJ1cmwoI2NvcmUpIi8+CjwhLS0gMi4gdGhlIGhhbG86IHRoZSBtYXJrIGl0c2VsZiwgYmxvd24gb3V0IGFuZCBibHVycmVkLCBiZWhpbmQgZXZlcnl0aGluZyAtLT4KPGcgbWFzaz0idXJsKCN0dWJlKSIgZmlsdGVyPSJ1cmwoI21pc3QpIiBvcGFjaXR5PSIuNTUiPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDUyLjMyLDQwLjAwKSByb3RhdGUoMTgwLjAwKSI+PHBhdGggZD0iTSAwLC0xNC43MCBDIDMuOTIsLTguMDkgNS4zMiwxLjQ3IDAsOC4wOSBDIC01LjMyLDEuNDcgLTMuOTIsLTguMDkgMCwtMTQuNzAgWiIgZmlsbD0iI0E5OEJGRiIgZmlsbC1vcGFjaXR5PSIwLjgiIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIwIiBzdHJva2Utb3BhY2l0eT0iMC44Ii8+PC9nPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDQzLjgxLDUxLjcyKSByb3RhdGUoMjUyLjAwKSI+PHBhdGggZD0iTSAwLC0xNC43MCBDIDMuOTIsLTguMDkgNS4zMiwxLjQ3IDAsOC4wOSBDIC01LjMyLDEuNDcgLTMuOTIsLTguMDkgMCwtMTQuNzAgWiIgZmlsbD0iI0E5OEJGRiIgZmlsbC1vcGFjaXR5PSIwLjgiIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIwIiBzdHJva2Utb3BhY2l0eT0iMC44Ii8+PC9nPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDMwLjAzLDQ3LjI0KSByb3RhdGUoMzI0LjAwKSI+PHBhdGggZD0iTSAwLC0xNC43MCBDIDMuOTIsLTguMDkgNS4zMiwxLjQ3IDAsOC4wOSBDIC01LjMyLDEuNDcgLTMuOTIsLTguMDkgMCwtMTQuNzAgWiIgZmlsbD0iI0E5OEJGRiIgZmlsbC1vcGFjaXR5PSIwLjgiIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIwIiBzdHJva2Utb3BhY2l0eT0iMC44Ii8+PC9nPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDMwLjAzLDMyLjc2KSByb3RhdGUoMzk2LjAwKSI+PHBhdGggZD0iTSAwLC0xNC43MCBDIDMuOTIsLTguMDkgNS4zMiwxLjQ3IDAsOC4wOSBDIC01LjMyLDEuNDcgLTMuOTIsLTguMDkgMCwtMTQuNzAgWiIgZmlsbD0iI0E5OEJGRiIgZmlsbC1vcGFjaXR5PSIwLjgiIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIwIiBzdHJva2Utb3BhY2l0eT0iMC44Ii8+PC9nPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDQzLjgxLDI4LjI4KSByb3RhdGUoNDY4LjAwKSI+PHBhdGggZD0iTSAwLC0xNC43MCBDIDMuOTIsLTguMDkgNS4zMiwxLjQ3IDAsOC4wOSBDIC01LjMyLDEuNDcgLTMuOTIsLTguMDkgMCwtMTQuNzAgWiIgZmlsbD0iI0E5OEJGRiIgZmlsbC1vcGFjaXR5PSIwLjgiIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIwIiBzdHJva2Utb3BhY2l0eT0iMC44Ii8+PC9nPjwvZz4KPCEtLSAzLiBUSEUgUFJJU00uIFR3byBvZmZzZXQgY29waWVzLCB3YXJtIG9uZSB3YXkgYW5kIGNvb2wgdGhlIG90aGVyLCBlYWNoCiAgICAgICAgYmx1cnJlZCDigJQgdGhpcyBpcyB0aGUgY2hyb21hdGljIGZyaW5nZSwgYW5kIGJha2luZyBpdCBoZXJlIG1lYW5zIGl0CiAgICAgICAgY29zdHMgbm90aGluZyBhdCBydW50aW1lLiBBIENTUyBmaWx0ZXIgd291bGQgcmUtcnVuIGV2ZXJ5IGZyYW1lLiAtLT4KPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTEuMSwtMC43KSIgZmlsdGVyPSJ1cmwoI3NvZnQpIiBvcGFjaXR5PSIuNSI+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNTIuMzIsNDAuMDApIHJvdGF0ZSgxODAuMDApIj48cGF0aCBkPSJNIDAsLTE0LjcwIEMgMy45MiwtOC4wOSA1LjMyLDEuNDcgMCw4LjA5IEMgLTUuMzIsMS40NyAtMy45MiwtOC4wOSAwLC0xNC43MCBaIiBmaWxsPSIjRkY2RkI0IiBmaWxsLW9wYWNpdHk9IjAuNyIgc3Ryb2tlPSJub25lIiBzdHJva2Utd2lkdGg9IjAiIHN0cm9rZS1vcGFjaXR5PSIwLjciLz48L2c+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNDMuODEsNTEuNzIpIHJvdGF0ZSgyNTIuMDApIj48cGF0aCBkPSJNIDAsLTE0LjcwIEMgMy45MiwtOC4wOSA1LjMyLDEuNDcgMCw4LjA5IEMgLTUuMzIsMS40NyAtMy45MiwtOC4wOSAwLC0xNC43MCBaIiBmaWxsPSIjRkY2RkI0IiBmaWxsLW9wYWNpdHk9IjAuNyIgc3Ryb2tlPSJub25lIiBzdHJva2Utd2lkdGg9IjAiIHN0cm9rZS1vcGFjaXR5PSIwLjciLz48L2c+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMzAuMDMsNDcuMjQpIHJvdGF0ZSgzMjQuMDApIj48cGF0aCBkPSJNIDAsLTE0LjcwIEMgMy45MiwtOC4wOSA1LjMyLDEuNDcgMCw4LjA5IEMgLTUuMzIsMS40NyAtMy45MiwtOC4wOSAwLC0xNC43MCBaIiBmaWxsPSIjRkY2RkI0IiBmaWxsLW9wYWNpdHk9IjAuNyIgc3Ryb2tlPSJub25lIiBzdHJva2Utd2lkdGg9IjAiIHN0cm9rZS1vcGFjaXR5PSIwLjciLz48L2c+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMzAuMDMsMzIuNzYpIHJvdGF0ZSgzOTYuMDApIj48cGF0aCBkPSJNIDAsLTE0LjcwIEMgMy45MiwtOC4wOSA1LjMyLDEuNDcgMCw4LjA5IEMgLTUuMzIsMS40NyAtMy45MiwtOC4wOSAwLC0xNC43MCBaIiBmaWxsPSIjRkY2RkI0IiBmaWxsLW9wYWNpdHk9IjAuNyIgc3Ryb2tlPSJub25lIiBzdHJva2Utd2lkdGg9IjAiIHN0cm9rZS1vcGFjaXR5PSIwLjciLz48L2c+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNDMuODEsMjguMjgpIHJvdGF0ZSg0NjguMDApIj48cGF0aCBkPSJNIDAsLTE0LjcwIEMgMy45MiwtOC4wOSA1LjMyLDEuNDcgMCw4LjA5IEMgLTUuMzIsMS40NyAtMy45MiwtOC4wOSAwLC0xNC43MCBaIiBmaWxsPSIjRkY2RkI0IiBmaWxsLW9wYWNpdHk9IjAuNyIgc3Ryb2tlPSJub25lIiBzdHJva2Utd2lkdGg9IjAiIHN0cm9rZS1vcGFjaXR5PSIwLjciLz48L2c+PC9nPgo8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxLjEsMC43KSIgIGZpbHRlcj0idXJsKCNzb2Z0KSIgb3BhY2l0eT0iLjUiPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDUyLjMyLDQwLjAwKSByb3RhdGUoMTgwLjAwKSI+PHBhdGggZD0iTSAwLC0xNC43MCBDIDMuOTIsLTguMDkgNS4zMiwxLjQ3IDAsOC4wOSBDIC01LjMyLDEuNDcgLTMuOTIsLTguMDkgMCwtMTQuNzAgWiIgZmlsbD0iIzZGRThGRiIgZmlsbC1vcGFjaXR5PSIwLjciIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIwIiBzdHJva2Utb3BhY2l0eT0iMC43Ii8+PC9nPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDQzLjgxLDUxLjcyKSByb3RhdGUoMjUyLjAwKSI+PHBhdGggZD0iTSAwLC0xNC43MCBDIDMuOTIsLTguMDkgNS4zMiwxLjQ3IDAsOC4wOSBDIC01LjMyLDEuNDcgLTMuOTIsLTguMDkgMCwtMTQuNzAgWiIgZmlsbD0iIzZGRThGRiIgZmlsbC1vcGFjaXR5PSIwLjciIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIwIiBzdHJva2Utb3BhY2l0eT0iMC43Ii8+PC9nPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDMwLjAzLDQ3LjI0KSByb3RhdGUoMzI0LjAwKSI+PHBhdGggZD0iTSAwLC0xNC43MCBDIDMuOTIsLTguMDkgNS4zMiwxLjQ3IDAsOC4wOSBDIC01LjMyLDEuNDcgLTMuOTIsLTguMDkgMCwtMTQuNzAgWiIgZmlsbD0iIzZGRThGRiIgZmlsbC1vcGFjaXR5PSIwLjciIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIwIiBzdHJva2Utb3BhY2l0eT0iMC43Ii8+PC9nPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDMwLjAzLDMyLjc2KSByb3RhdGUoMzk2LjAwKSI+PHBhdGggZD0iTSAwLC0xNC43MCBDIDMuOTIsLTguMDkgNS4zMiwxLjQ3IDAsOC4wOSBDIC01LjMyLDEuNDcgLTMuOTIsLTguMDkgMCwtMTQuNzAgWiIgZmlsbD0iIzZGRThGRiIgZmlsbC1vcGFjaXR5PSIwLjciIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIwIiBzdHJva2Utb3BhY2l0eT0iMC43Ii8+PC9nPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDQzLjgxLDI4LjI4KSByb3RhdGUoNDY4LjAwKSI+PHBhdGggZD0iTSAwLC0xNC43MCBDIDMuOTIsLTguMDkgNS4zMiwxLjQ3IDAsOC4wOSBDIC01LjMyLDEuNDcgLTMuOTIsLTguMDkgMCwtMTQuNzAgWiIgZmlsbD0iIzZGRThGRiIgZmlsbC1vcGFjaXR5PSIwLjciIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIwIiBzdHJva2Utb3BhY2l0eT0iMC43Ii8+PC9nPjwvZz4KPCEtLSA0LiB0aGUgbmVvbiB0dWJlIGl0c2VsZjogYSBzb2Z0IHN0cm9rZSwgdGhlbiBhIGhvdCB0aGluIG9uZSBvbiB0b3AgLS0+CjxnIGZpbHRlcj0idXJsKCNzb2Z0KSIgb3BhY2l0eT0iLjgiPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDUyLjMyLDQwLjAwKSByb3RhdGUoMTgwLjAwKSI+PHBhdGggZD0iTSAwLC0xNC43MCBDIDMuOTIsLTguMDkgNS4zMiwxLjQ3IDAsOC4wOSBDIC01LjMyLDEuNDcgLTMuOTIsLTguMDkgMCwtMTQuNzAgWiIgZmlsbD0ibm9uZSIgZmlsbC1vcGFjaXR5PSIwLjU1IiBzdHJva2U9IiNBOThCRkYiIHN0cm9rZS13aWR0aD0iMi42IiBzdHJva2Utb3BhY2l0eT0iMC41NSIvPjwvZz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSg0My44MSw1MS43Mikgcm90YXRlKDI1Mi4wMCkiPjxwYXRoIGQ9Ik0gMCwtMTQuNzAgQyAzLjkyLC04LjA5IDUuMzIsMS40NyAwLDguMDkgQyAtNS4zMiwxLjQ3IC0zLjkyLC04LjA5IDAsLTE0LjcwIFoiIGZpbGw9Im5vbmUiIGZpbGwtb3BhY2l0eT0iMC41NSIgc3Ryb2tlPSIjQTk4QkZGIiBzdHJva2Utd2lkdGg9IjIuNiIgc3Ryb2tlLW9wYWNpdHk9IjAuNTUiLz48L2c+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMzAuMDMsNDcuMjQpIHJvdGF0ZSgzMjQuMDApIj48cGF0aCBkPSJNIDAsLTE0LjcwIEMgMy45MiwtOC4wOSA1LjMyLDEuNDcgMCw4LjA5IEMgLTUuMzIsMS40NyAtMy45MiwtOC4wOSAwLC0xNC43MCBaIiBmaWxsPSJub25lIiBmaWxsLW9wYWNpdHk9IjAuNTUiIHN0cm9rZT0iI0E5OEJGRiIgc3Ryb2tlLXdpZHRoPSIyLjYiIHN0cm9rZS1vcGFjaXR5PSIwLjU1Ii8+PC9nPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDMwLjAzLDMyLjc2KSByb3RhdGUoMzk2LjAwKSI+PHBhdGggZD0iTSAwLC0xNC43MCBDIDMuOTIsLTguMDkgNS4zMiwxLjQ3IDAsOC4wOSBDIC01LjMyLDEuNDcgLTMuOTIsLTguMDkgMCwtMTQuNzAgWiIgZmlsbD0ibm9uZSIgZmlsbC1vcGFjaXR5PSIwLjU1IiBzdHJva2U9IiNBOThCRkYiIHN0cm9rZS13aWR0aD0iMi42IiBzdHJva2Utb3BhY2l0eT0iMC41NSIvPjwvZz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSg0My44MSwyOC4yOCkgcm90YXRlKDQ2OC4wMCkiPjxwYXRoIGQ9Ik0gMCwtMTQuNzAgQyAzLjkyLC04LjA5IDUuMzIsMS40NyAwLDguMDkgQyAtNS4zMiwxLjQ3IC0zLjkyLC04LjA5IDAsLTE0LjcwIFoiIGZpbGw9Im5vbmUiIGZpbGwtb3BhY2l0eT0iMC41NSIgc3Ryb2tlPSIjQTk4QkZGIiBzdHJva2Utd2lkdGg9IjIuNiIgc3Ryb2tlLW9wYWNpdHk9IjAuNTUiLz48L2c+PC9nPgo8ZyBmaWx0ZXI9InVybCgjZnV6eikiPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDUyLjMyLDQwLjAwKSByb3RhdGUoMTgwLjAwKSI+PHBhdGggZD0iTSAwLC0xNC43MCBDIDMuOTIsLTguMDkgNS4zMiwxLjQ3IDAsOC4wOSBDIC01LjMyLDEuNDcgLTMuOTIsLTguMDkgMCwtMTQuNzAgWiIgZmlsbD0ibm9uZSIgZmlsbC1vcGFjaXR5PSIwLjc1IiBzdHJva2U9IiNGMkZGRkIiIHN0cm9rZS13aWR0aD0iMS4wIiBzdHJva2Utb3BhY2l0eT0iMC43NSIvPjwvZz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSg0My44MSw1MS43Mikgcm90YXRlKDI1Mi4wMCkiPjxwYXRoIGQ9Ik0gMCwtMTQuNzAgQyAzLjkyLC04LjA5IDUuMzIsMS40NyAwLDguMDkgQyAtNS4zMiwxLjQ3IC0zLjkyLC04LjA5IDAsLTE0LjcwIFoiIGZpbGw9Im5vbmUiIGZpbGwtb3BhY2l0eT0iMC43NSIgc3Ryb2tlPSIjRjJGRkZCIiBzdHJva2Utd2lkdGg9IjEuMCIgc3Ryb2tlLW9wYWNpdHk9IjAuNzUiLz48L2c+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMzAuMDMsNDcuMjQpIHJvdGF0ZSgzMjQuMDApIj48cGF0aCBkPSJNIDAsLTE0LjcwIEMgMy45MiwtOC4wOSA1LjMyLDEuNDcgMCw4LjA5IEMgLTUuMzIsMS40NyAtMy45MiwtOC4wOSAwLC0xNC43MCBaIiBmaWxsPSJub25lIiBmaWxsLW9wYWNpdHk9IjAuNzUiIHN0cm9rZT0iI0YyRkZGQiIgc3Ryb2tlLXdpZHRoPSIxLjAiIHN0cm9rZS1vcGFjaXR5PSIwLjc1Ii8+PC9nPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDMwLjAzLDMyLjc2KSByb3RhdGUoMzk2LjAwKSI+PHBhdGggZD0iTSAwLC0xNC43MCBDIDMuOTIsLTguMDkgNS4zMiwxLjQ3IDAsOC4wOSBDIC01LjMyLDEuNDcgLTMuOTIsLTguMDkgMCwtMTQuNzAgWiIgZmlsbD0ibm9uZSIgZmlsbC1vcGFjaXR5PSIwLjc1IiBzdHJva2U9IiNGMkZGRkIiIHN0cm9rZS13aWR0aD0iMS4wIiBzdHJva2Utb3BhY2l0eT0iMC43NSIvPjwvZz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSg0My44MSwyOC4yOCkgcm90YXRlKDQ2OC4wMCkiPjxwYXRoIGQ9Ik0gMCwtMTQuNzAgQyAzLjkyLC04LjA5IDUuMzIsMS40NyAwLDguMDkgQyAtNS4zMiwxLjQ3IC0zLjkyLC04LjA5IDAsLTE0LjcwIFoiIGZpbGw9Im5vbmUiIGZpbGwtb3BhY2l0eT0iMC43NSIgc3Ryb2tlPSIjRjJGRkZCIiBzdHJva2Utd2lkdGg9IjEuMCIgc3Ryb2tlLW9wYWNpdHk9IjAuNzUiLz48L2c+PC9nPgo8Y2lyY2xlIGN4PSI0MCIgY3k9IjQwIiByPSIyLjUyIiBmaWxsPSJub25lIiBzdHJva2U9IiNGMkZGRkIiIHN0cm9rZS1vcGFjaXR5PSIuOCIKICBzdHJva2Utd2lkdGg9IjEiIGZpbHRlcj0idXJsKCNmdXp6KSIvPgo8L3N2Zz4=') no-repeat center/62% auto,linear-gradient(150deg,#3E2F6B,#1B1533)}
+/* The wire's stories get the same picture the videos beside them get, at the
+   same size. The lead card used to be the only place a story's art appeared;
+   when that was replaced by the next-card poster, article imagery stopped
+   appearing anywhere at all. */
+.wrow.art{display:flex;gap:11px;align-items:flex-start}
+.wrow.art .wth{width:104px;height:59px;border-radius:8px;overflow:hidden;flex-shrink:0;
+  background:linear-gradient(150deg,#3E2F6B,#1B1533)}
+.wrow.art .wth img{width:100%;height:100%;object-fit:cover;display:block}
+.wrow.art .wb{flex:1;min-width:0}
 /* The placeholder row. Same box as a real .nw, so the page is already the
    right height before the news arrives and nothing under it moves. */
 /* 96px is the measured height of a real row with a kicker and a headline that
@@ -3544,7 +3568,7 @@ var newsCache = null, newsFailWasMissing = false, newsInFlight = null;
 /* A8 — loadHomeNews, loadStrip and loadNews all want this at boot and none
    of them has resolved yet, so a plain cache check fired three identical
    requests. The promise itself is the cache. */
-var NEWS_PATH = "news_public?select=id,kicker,headline,body,reporter,posted_at,graphic_url"
+var NEWS_PATH = "news_public?select=id,kicker,headline,body,reporter,posted_at,graphic_url,photo_url"
   + "&order=posted_at.desc&limit=25";
 async function getNews(){
   if(newsCache !== null) return newsCache;
@@ -3568,6 +3592,15 @@ function newsFailure(retryId){
   }
   return failHTML("Couldn't load the news.", retryId);
 }
+/* One rule for both places a story is listed, so they cannot drift: the
+   photograph if there is one, the mark if there is not, never an empty box. */
+function newsThumb(n, cls){
+  return n.photo_url
+    ? '<span class="' + cls + '"><img src="' + esc(n.photo_url) + '" alt=""'
+      + ' loading="lazy" decoding="async"></span>'
+    : '<span class="' + cls + ' mark"></span>';
+}
+
 async function loadHomeNews(){
   var el = document.getElementById('home-news');
   var rows = await getNews();
@@ -3575,7 +3608,7 @@ async function loadHomeNews(){
     el.innerHTML = newsFailure('homenews'); return; }
   if(!rows.length){ el.innerHTML = '<div class="empty">No news posted yet.</div>'; return; }
   el.innerHTML = rows.slice(0,3).map(function(n){
-    return '<div class="nw" data-news="'+esc(n.id)+'"><span class="th"></span><div>'
+    return '<div class="nw" data-news="'+esc(n.id)+'">' + newsThumb(n, 'th') + '<div>'
       + (n.kicker ? '<div class="k">'+esc(n.kicker)+'</div>' : '')
       + '<div class="h">'+esc(n.headline)+'</div>'
       + '<div class="d">'+esc(dstr(n.posted_at))+'</div></div></div>';
@@ -3816,11 +3849,14 @@ function paintNews(rows){
     var a = f.it;
     var first = (a.body || '').split('\n').filter(Boolean)[0] || '';
     if(first.length > 130) first = first.slice(0, 130).replace(/\s+\S*$/, '') + '\u2026';
-    return '<div class="wrow" data-news="' + esc(a.id) + '">'
+    return '<div class="wrow art" data-news="' + esc(a.id) + '">'
+      + newsThumb(a, 'wth')
+      + '<div class="wb">'
       + (a.kicker ? '<div class="k">' + esc(a.kicker) + '</div>' : '')
       + '<div class="h">' + esc(a.headline) + '</div>'
       + (first ? '<div class="b">' + esc(first) + '</div>' : '')
-      + '<div class="d">' + esc(a.reporter || 'UBA') + ' \u00b7 ' + esc(dstr(a.posted_at)) + '</div></div>';
+      + '<div class="d">' + esc(a.reporter || 'UBA') + ' \u00b7 ' + esc(dstr(a.posted_at))
+      + '</div></div></div>';
   }).join('');
 
   html += '<div class="foot">End of the wire &middot; ' + rows.length + ' posts'
