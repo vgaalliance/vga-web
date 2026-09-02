@@ -143,6 +143,32 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   scrollbar-width:none;display:none}
 .panel::-webkit-scrollbar{display:none}
 .panel.live{display:block}
+
+/* ── PULL TO REFRESH ────────────────────────────────────────────────────
+   The only way to get fresh data used to be closing the app and reopening
+   it, which is not a thing anyone thinks to do -- and it matters more now
+   that a tab paints from cache, because a stale screen looks exactly like a
+   current one.
+
+   `overscroll-behavior-y:contain` stops the drag chaining up to the document
+   and triggering the BROWSER's own reload on Android, which would throw away
+   the whole app rather than refetch a tab. */
+.panel{overscroll-behavior-y:contain}
+.ptr{position:absolute;left:0;right:0;top:0;height:0;display:flex;
+  align-items:flex-end;justify-content:center;pointer-events:none;z-index:40;
+  overflow:hidden}
+.ptr .dial{width:30px;height:30px;margin-bottom:9px;border-radius:50%;
+  background:rgba(26,21,51,.94);border:1px solid rgba(167,139,250,.5);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 5px 16px rgba(6,4,20,.55)}
+.ptr .dial svg{width:15px;height:15px;stroke:#C3A6FF;fill:none;stroke-width:2.2;
+  stroke-linecap:round;stroke-linejoin:round;transition:transform .12s ease}
+.ptr.ready .dial{border-color:#6EE7B7}
+.ptr.ready .dial svg{stroke:#6EE7B7;transform:rotate(180deg)}
+.ptr.spin .dial svg{animation:ptrspin .7s linear infinite;transform:none}
+@keyframes ptrspin{to{transform:rotate(360deg)}}
+.panel.snapback{transition:transform .22s cubic-bezier(.3,0,.2,1)}
+.panel.snapback .ptr{transition:height .22s cubic-bezier(.3,0,.2,1)}
 /* Just clears the bar. This used to be much larger, which put a field of
    nothing under the last row when you scrolled to the end. */
 .pad{padding-bottom:calc(62px + env(safe-area-inset-bottom,0px))}
@@ -5200,6 +5226,96 @@ function showDiag(){
   document.body.appendChild(d);
 }
 
+/* ── PULL TO REFRESH ───────────────────────────────────────────────────
+   One entry per tab: forget what is held in memory, then load it again. The
+   localStorage cache is deliberately NOT cleared -- q() always goes to the
+   network anyway, so a refresh is already a real refetch, and clearing it
+   would only mean the next cold open has nothing to paint. */
+var REFRESH = {
+  home: function(){ return Promise.all([loadHome(), loadLive(), loadStrip(),
+                                        loadRanks(), loadHomeNews()]); },
+  news: function(){ newsCache = null; newsInFlight = null; return loadNews(); },
+  you:  function(){ return loadMe().then(function(){ renderYou(); }); },
+  fighters: function(){ allFighters = null; return loadFighters(); },
+  betting:  function(){ betPools = null; myBets = null; return renderBetting(); },
+  cards:    function(){ binderCards = null; binderAll = null; return renderCards(); }
+};
+
+function wirePullToRefresh(){
+  var TRIGGER = 64, MAX = 96, RESIST = 0.5;
+  var startY = 0, pulling = false, dist = 0, busy = false, panel = null, ind = null;
+
+  function indicatorFor(p){
+    var el = p.querySelector('.ptr');
+    if(!el){
+      el = document.createElement('div');
+      el.className = 'ptr';
+      el.innerHTML = '<div class="dial"><svg viewBox="0 0 24 24">'
+        + '<path d="M12 5v14M6 13l6 6 6-6"/></svg></div>';
+      /* The panel scrolls, so the indicator has to sit in a spot that scrolls
+         with it and be pinned to the very top of the content. */
+      p.insertBefore(el, p.firstChild);
+    }
+    return el;
+  }
+  function reset(animate){
+    if(animate){
+      panel.classList.add('snapback');
+      setTimeout(function(){
+        if(panel){ panel.classList.remove('snapback'); panel.style.transform = ''; }
+      }, 240);
+    } else if(panel){ panel.style.transform = ''; }
+    if(ind){ ind.style.height = ''; ind.classList.remove('ready','spin'); }
+    pulling = false; dist = 0;
+  }
+
+  document.addEventListener('touchstart', function(e){
+    if(busy || e.touches.length !== 1) return;
+    /* A sheet has its own scroller on top of the panel; pulling there should
+       do nothing rather than refresh whatever is behind it. */
+    var sheet = document.getElementById('sheet');
+    if(sheet && sheet.classList.contains('live')) return;
+    var p = document.querySelector('.panel.live');
+    if(!p || p.scrollTop > 0) return;
+    if(!REFRESH[currentTab]) return;
+    panel = p; ind = indicatorFor(p);
+    startY = e.touches[0].clientY; pulling = true; dist = 0;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', function(e){
+    if(!pulling || busy) return;
+    var dy = e.touches[0].clientY - startY;
+    /* Dragging back UP is a normal scroll, so hand it back rather than fight it. */
+    if(dy <= 0 || panel.scrollTop > 0){ reset(false); return; }
+    e.preventDefault();                       /* needs passive:false */
+    dist = Math.min(dy * RESIST, MAX);
+    panel.style.transform = 'translateY(' + dist + 'px)';
+    ind.style.height = dist + 'px';
+    ind.classList.toggle('ready', dist >= TRIGGER);
+  }, { passive: false });
+
+  document.addEventListener('touchend', function(){
+    if(!pulling || busy) return;
+    if(dist < TRIGGER){ reset(true); return; }
+    busy = true; pulling = false;
+    var p = panel, i = ind, tab = currentTab;
+    i.classList.remove('ready'); i.classList.add('spin');
+    p.style.transform = 'translateY(56px)';
+    i.style.height = '56px';
+    var done = function(){
+      busy = false;
+      panel = p; ind = i;
+      reset(true);
+    };
+    /* Never leave the spinner up. A refresher that throws still has to give
+       the screen back -- the failure is already reported by the loader's own
+       retry box. */
+    var out;
+    try{ out = REFRESH[tab](); }catch(e){ out = null; }
+    Promise.resolve(out).then(function(){ setTimeout(done, 260); }, function(){ setTimeout(done, 260); });
+  }, { passive: true });
+}
+
 /* ═══ boot ═══════════════════════════════════════════════════════════ */
 (async function(){
   /* iOS fires :active only if SOMETHING is listening for touch. Without this
@@ -5207,6 +5323,7 @@ function showDiag(){
      fine on Android, which is the worst version of the bug: it looks fixed on
      the machine you tested it on. */
   document.addEventListener('touchstart', function(){}, { passive: true });
+  wirePullToRefresh();
   loadSession();
   if(session) me = await fetchMe();   /* renews the token itself — see fetchMe */
   await loadWhoAmI();
