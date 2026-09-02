@@ -1659,11 +1659,16 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .bar .midbtn{position:relative}
 /* Sized for the BLOOM, not the resting flower. At rest it uses the middle of
    this box; on a refresh it opens most of the way to the edges. */
-.bar .midbtn .discbloom{position:absolute;left:50%;top:-49px;width:112px;height:112px;
-  margin-left:-56px;pointer-events:none;z-index:0;opacity:.95}
-/* The disc rides ON TOP of its own flower. z-index:-1 put the canvas behind
-   the bar's solid background, which is a perfectly good way to draw something
-   nobody can see. */
+/* THE EDGE. The refresh used to be a ring around the You button, which meant
+   the app's answer to a gesture lived inside one 48px control -- and the
+   gesture starts at the top of the screen, nowhere near it. A band rising off
+   the bottom edge is the whole width of the phone, so it registers wherever
+   you happen to be looking.
+
+   It sits UNDER the bar's own surface and over the page, so the light appears
+   to come out from behind the bar rather than being drawn on top of it. */
+.bar .edgeglow{position:absolute;left:0;right:0;bottom:100%;width:100%;height:120px;
+  pointer-events:none;z-index:0;display:block}
 .bar .midbtn .disc{position:relative;z-index:1}
 .bar .midbtn .disc img{width:100%;height:100%;object-fit:cover}
 /* Lower than the other labels: the You button hangs above the bar, so a
@@ -1780,10 +1785,10 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 <section class="sheet" id="sheet" aria-hidden="true"><div class="pad" id="sheet-body"></div></section>
 
 <!-- ═══ THE BAR ═══ -->
-<nav class="bar">
+<nav class="bar"><canvas class="edgeglow" id="disc-bloom"></canvas>
   <button data-tab="home" class="on"><svg class="ic"><use href="#i-home"/></svg><em>Home</em></button>
   <button data-tab="news"><svg class="ic"><use href="#i-news"/></svg><em>News</em></button>
-  <button data-tab="you" class="midbtn"><canvas class="discbloom" id="disc-bloom"></canvas><span class="disc" id="disc-av"><svg class="ic big"><use href="#i-user"/></svg></span><em>You</em></button>
+  <button data-tab="you" class="midbtn"><span class="disc" id="disc-av"><svg class="ic big"><use href="#i-user"/></svg></span><em>You</em></button>
   <button data-tab="fighters"><svg class="ic"><use href="#i-fighters"/></svg><em>Fighters</em></button>
   <button data-tab="betting"><svg class="ic"><use href="#i-bet"/></svg><em>Betting</em></button>
 </nav>
@@ -5292,58 +5297,59 @@ var REFRESH = {
   cards:    function(){ binderCards = null; binderAll = null; return renderCards(); }
 };
 
-/* ── THE HALO ───────────────────────────────────────────────────────────
-   N3, CHROMA SPLIT. One ring, drawn three times and pulled apart -- the
-   misregistered-tube look, where the aberration IS the design rather than a
-   garnish on top of something else. Nothing petal-shaped: at 48px the button
-   eats the middle of any flower, so all that ever showed was the ring anyway.
+/* ── THE EDGE ───────────────────────────────────────────────────────────
+   A band of light that rises out of the bottom edge of the screen when you
+   pull. It replaced a ring around the You button for one reason: the gesture
+   begins at the TOP of the phone and a 48px control at the bottom is not
+   where anyone is looking. The full width of the screen is.
 
-   THE SPLIT GROWS WITH THE PULL, and that is what keeps it usable. Pure R/G/B
-   at rest, screen-blended, converges to WHITE wherever the three overlap --
-   which is the whole ring -- so a permanently-split halo is a permanently
-   grey one. At rest this is a violet ring with a hairline of colour on each
-   edge; the channels separate as you drag and fly apart on the refresh. Brand
-   colour when it is furniture, full CRT when it is an event.
+   Still the chroma split -- the misregistered-tube look -- but along a line
+   rather than a circle: a violet band, then red / green / blue copies offset
+   vertically and screen-blended over it. The split GROWS WITH THE PULL,
+   because pure R/G/B screen-blended converges to white wherever all three
+   overlap; permanently split is permanently grey. At rest it is a violet hair
+   along the bar, and the channels come apart as you drag.
 
-   A ring is rotationally symmetric, so spinning it is invisible. The sweep --
-   one brighter arc travelling round -- is what makes it alive at rest. */
+   Drawn with vertical gradients that fade to nothing, so the band has no top
+   edge to catch on -- it is light leaking from behind the bar, not a shape
+   sitting above it. */
 var discPull = function(){}, discBloom = function(){}, discHold = function(){};
 
 function startDiscBloom(){
   var cv = document.getElementById('disc-bloom');
   if(!cv || !cv.getContext) return;
-  var S = 112, C = S/2, BTN = 27;      /* the You button's radius */
+  var H = 120, W = 0;
   var ctx = cv.getContext('2d');
   var dpr = Math.min(window.devicePixelRatio || 1, 2);
-  cv.width = S*dpr; cv.height = S*dpr; ctx.scale(dpr, dpr);
 
-  var IDLE = 0.16;
-  var si = IDLE, target = IDLE, vel = 0, sweep = 0, bloom = 0, t = 0, held = false;
-  var TAU = Math.PI*2;
+  function size(){
+    var w = Math.max(1, Math.round(cv.clientWidth || window.innerWidth));
+    if(w === W) return;
+    W = w; cv.width = W*dpr; cv.height = H*dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  size();
+  window.addEventListener('resize', size, { passive: true });
 
-  discPull  = function(f){ if(!held) target = IDLE + Math.max(0, Math.min(1, f)) * (0.74 - IDLE); };
+  var IDLE = 0.10;
+  var si = IDLE, target = IDLE, vel = 0, bloom = 0, t = 0, held = false;
+
+  discPull  = function(f){ if(!held) target = IDLE + Math.max(0, Math.min(1, f)) * (0.78 - IDLE); };
   discBloom = function(){ target = 1; bloom = 1; };
-  /* Press and hold the button and the ring winds open and STAYS open; let go
-     and it fires. Charge and release, so a long press is rewarded rather than
-     being the same as a tap -- and a tap is just a very short charge, which is
-     why one gesture covers both. */
-  discHold  = function(on){
-    held = !!on;
-    if(on){ target = 1; }
-    else  { discBloom(); }
-  };
+  /* Press and hold the You button and the edge winds up and STAYS up; let go
+     and it fires. A tap is just a very short charge, which is why one gesture
+     covers both. */
+  discHold  = function(on){ held = !!on; if(on){ target = 1; } else { discBloom(); } };
 
-  /* A soft neon ring: the same circle stroked three times, widest and faintest
-     first, so no edge is ever hard. */
-  function ring(r, ox, oy, w, col, a){
-    var pass = [[w*2.8, 0.10], [w*1.7, 0.22], [w, 0.46]];
-    for(var k = 0; k < 3; k++){
-      ctx.beginPath();
-      ctx.arc(C + ox, C + oy, r, 0, TAU);
-      ctx.lineWidth = pass[k][0];
-      ctx.strokeStyle = col(a * pass[k][1]);
-      ctx.stroke();
-    }
+  /* One band: a vertical gradient that is brightest at the bar and gone by the
+     top, so it never has an edge of its own. */
+  function band(oy, col, a, hgt){
+    var g = ctx.createLinearGradient(0, H - hgt + oy, 0, H + oy);
+    g.addColorStop(0,    col(0));
+    g.addColorStop(0.55, col(a * 0.35));
+    g.addColorStop(1,    col(a));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, H - hgt + oy, W, hgt);
   }
   var violet = function(a){ return 'hsla(272,100%,72%,' + a.toFixed(3) + ')'; };
   var red    = function(a){ return 'rgba(255,45,45,'   + a.toFixed(3) + ')'; };
@@ -5357,63 +5363,45 @@ function startDiscBloom(){
     t++;
 
     if(bloom > 0){ bloom = Math.max(0, bloom - 0.014); if(bloom === 0 && !held) target = IDLE; }
-    /* Spring, not a lerp: stiffer going up than coming down, so it opens with
-       intent and closes lazily. The asymmetry is the broadcast clock's. */
+    /* Spring, not a lerp: stiffer going up than coming down, so it rises with
+       intent and settles lazily. The asymmetry is the broadcast clock's. */
     var stiff = si < target ? 0.020 : 0.006, damp = si < target ? 0.68 : 0.60;
     vel = (vel + (target - si) * stiff) * damp;
     si = Math.max(0, Math.min(1, si + vel));
-    sweep += 0.010 + si*0.030 + bloom*0.05;
 
-    /* The trail, and the only way to fade a TRANSPARENT canvas: destination-out
-       lowers the alpha of what is there. A dark fill paints a box. */
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.fillStyle = 'rgba(0,0,0,0.22)';
-    ctx.fillRect(0, 0, S, S);
-    ctx.globalCompositeOperation = 'source-over';
+    ctx.clearRect(0, 0, W, H);
 
-    /* ON the button's edge, not around it. At 1.12x the ring floated 6px clear
-       and read as a second, larger object; the button is drawn over the top of
-       this canvas, so a ring INSIDE its radius is mostly hidden and what shows
-       is the soft outer half bleeding past the edge -- the button glowing
-       rather than wearing something. 0.94x with a fatter stroke: tucked
-       further under, and heavier so the part that does show still reads. It
-       only leaves the edge on a pull. */
-    var r  = BTN*0.94 + si*6;
-    var w  = 3.2 + si*6;
-    var a  = 0.34 + si*0.42 + bloom*0.24;
-    var dx = 0.9 + si*3.4 + bloom*6.5;      /* how far the channels are pulled apart */
+    var hgt = 5 + si*74 + bloom*26;                 /* how far up it reaches */
+    var a   = 0.16 + si*0.42 + bloom*0.22;
+    var dy  = 1 + si*7 + bloom*13;                  /* channel separation */
 
-    /* The body of the ring, in the brand's violet. */
-    ring(r, 0, 0, w, violet, a);
+    band(0, violet, a, hgt);
 
-    /* The fringes. They are faint until the pull separates them, so at rest
-       this is a violet ring with coloured edges rather than a grey one. */
-    var f = (0.16 + si*0.5 + bloom*0.34) * a;
     ctx.save(); ctx.globalCompositeOperation = 'screen';
-    ring(r, -dx, 0,        w*0.85, red,   f);
-    ring(r,  0,  -dx*0.42, w*0.85, green, f*0.72);
-    ring(r,  dx, 0,        w*0.85, blue,  f);
+    var f = (0.14 + si*0.46 + bloom*0.32) * a;
+    band(-dy,      red,   f, hgt);
+    band(0,        green, f * 0.7, hgt);
+    band( dy*0.7,  blue,  f, hgt);
     ctx.restore();
 
-    /* The sweep -- one brighter arc travelling round. A ring is rotationally
-       symmetric, so without this nothing would read as moving. */
+    /* A slow travelling brightness, so a flat band still reads as alive. */
     ctx.save(); ctx.globalCompositeOperation = 'screen';
-    ctx.beginPath();
-    ctx.arc(C, C, r, sweep, sweep + 0.85);
-    ctx.lineWidth = w*1.5; ctx.lineCap = 'round';
-    ctx.strokeStyle = 'hsla(' + (272 + Math.sin(t*0.01)*40) + ',100%,84%,'
-      + (0.16 + si*0.30 + bloom*0.3).toFixed(3) + ')';
-    ctx.stroke();
+    var cx = (Math.sin(t * 0.006) * 0.5 + 0.5) * W;
+    var g = ctx.createRadialGradient(cx, H, 0, cx, H, W * 0.42);
+    g.addColorStop(0, 'hsla(' + (272 + Math.sin(t*0.01)*44) + ',100%,84%,'
+      + (0.10 + si*0.26 + bloom*0.24).toFixed(3) + ')');
+    g.addColorStop(1, 'hsla(272,100%,84%,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, H - hgt, W, hgt);
     ctx.restore();
 
-    /* Scanlines ERASE, for the same reason the trail does -- a dark fill would
-       draw a box on a transparent canvas. Always on, faintly; the refresh just
-       turns them up. */
+    /* Scanlines ERASE rather than paint black -- this canvas is transparent
+       over the page, so a dark fill would draw a box. Always on faintly; the
+       refresh turns them up. */
     ctx.save();
     ctx.globalCompositeOperation = 'destination-out';
-    ctx.globalAlpha = 0.10 + si*0.12 + bloom*0.16;
+    ctx.globalAlpha = 0.10 + si*0.14 + bloom*0.18;
     ctx.fillStyle = '#000';
-    for(var y = 0; y < S; y += 3) ctx.fillRect(0, y, S, 1.2);
+    for(var y = H - hgt; y < H; y += 3) ctx.fillRect(0, y, W, 1.2);
     ctx.restore();
   })();
 }
