@@ -1645,8 +1645,8 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .bar .midbtn{position:relative}
 /* Sized for the BLOOM, not the resting flower. At rest it uses the middle of
    this box; on a refresh it opens most of the way to the edges. */
-.bar .midbtn .discbloom{position:absolute;left:50%;top:-58px;width:130px;height:130px;
-  margin-left:-65px;pointer-events:none;z-index:0;opacity:.95}
+.bar .midbtn .discbloom{position:absolute;left:50%;top:-49px;width:112px;height:112px;
+  margin-left:-56px;pointer-events:none;z-index:0;opacity:.95}
 /* The disc rides ON TOP of its own flower. z-index:-1 put the canvas behind
    the bar's solid background, which is a perfectly good way to draw something
    nobody can see. */
@@ -5292,7 +5292,7 @@ var discPull = function(){}, discBloom = function(){};
 function startDiscBloom(){
   var cv = document.getElementById('disc-bloom');
   if(!cv || !cv.getContext) return;
-  var S = 130, R = 36, C = S/2;
+  var S = 112, R = 30, C = S/2;
   var ctx = cv.getContext('2d');
   var dpr = Math.min(window.devicePixelRatio || 1, 2);
   cv.width = S*dpr; cv.height = S*dpr; ctx.scale(dpr, dpr);
@@ -5336,7 +5336,12 @@ function startDiscBloom(){
     ctx.globalCompositeOperation = 'source-over';
 
     var ringR = R * 0.72;
-    var ew = R * (0.34 + si*0.06), eh = R * (0.42 + si*0.46);
+    /* SLENDER. The broadcast card's petal is R*0.34 wide against R*0.42-0.88
+       long -- up to 0.8 as wide as it is long, which reads as a fan at 30px
+       even though it is right at 40px behind a wordmark. Narrowed to 0.26 and
+       lengthened to 0.48 so the ratio sits near 0.45: the same shape, actually
+       legible as five petals at the size it is drawn here. */
+    var ew = R * (0.26 + si*0.05), eh = R * (0.48 + si*0.44);
 
     for(var p = 0; p < 5; p++){
       var ang = (p/5)*Math.PI*2 + spin;
