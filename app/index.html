@@ -1148,11 +1148,12 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .rcol{min-width:0;padding:0 1px}
 .rdh{font-family:'Space Mono',monospace;font-size:6.5px;font-weight:700;letter-spacing:.14em;
   color:#A78BFA;text-align:center;padding-bottom:5px;border-bottom:1px solid rgba(167,139,250,.28)}
-.rch{display:flex;align-items:center;gap:3px;padding:4px 3px;margin-bottom:2px;min-width:0;
-  border-bottom:1px solid rgba(245,200,66,.32)}
+.rch{display:flex;align-items:center;gap:3px;padding:4px 3px 4px 8px;margin-bottom:2px;min-width:0;
+  position:relative;background:rgba(245,200,66,.07);
+  border-bottom:1px solid rgba(245,200,66,.22)}
 .rch .rnm{font-size:11px;font-weight:700;color:#FFE8A0}
 .rvac .rft{color:#8A7546;font-weight:600;font-style:italic}
-.rkrow{display:flex;align-items:center;gap:3px;padding:3px 3px;min-width:0}
+.rkrow{display:flex;align-items:center;gap:3px;padding:3px 3px;min-width:0;position:relative}
 .rkrow.z{background:rgba(255,255,255,.028)}
 .rnm{flex:1;min-width:0;font-size:11px;font-weight:600;line-height:1.15}
 /* The name is scaled, the SLOT is not. fitRankNames widens this inner block
@@ -1163,23 +1164,30 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   transform-origin:left center}
 .rkrow.bmf .rnm{color:#FFE8A0;font-weight:700}
 
-/* The one gold thing on the screen: a champion's row, and the BMF holder's row
-   wherever in the list they happen to sit. No emoji, no belt glyph -- the
-   shimmer is the mark. */
-@keyframes rkSheen{0%{background-position:-160% 0}60%,100%{background-position:260% 0}}
-/* The tint is a flat background and the sweep is an OVERLAY, which is not
-   fussiness. Animating background-position on the row itself needs
-   background-repeat:no-repeat or the oversized gradient TILES, and a tile
-   boundary crossing the row draws a hard vertical seam through the champion's
-   name -- visible on Lama and Boady before this was split in two. The overlay
-   can be no-repeat because its edges are transparent, so nothing is left
-   uncovered when it sweeps off. */
-.rgold{position:relative;background:rgba(245,200,66,.11)}
-.rgold::after{content:'';position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(100deg,transparent 36%,rgba(255,235,175,.26) 50%,transparent 64%);
-  background-size:300% 100%;background-repeat:no-repeat;
-  animation:rkSheen 5.2s ease-in-out infinite}
-
+/* THE CHAMPION'S MARK IS A STRAP, NOT A HIGHLIGHT — and the light runs DOWN
+   it, not across the row.
+ 
+   The first version washed the whole row in gold and swept a highlight across
+   it. Two things were wrong with that. A row-wide wash reads as "this row is
+   selected", which is a UI state, not a title; and all four columns swept in
+   lockstep, because they share one animation and all start at page load, so
+   the board pulsed like a progress bar. A belt is a physical object hanging
+   at the left of the name, so the strap is the object and the light is a
+   reflection travelling down it — and each column is delayed by its index, so
+   they catch the light in sequence.
+ 
+   The BMF strap does NOT move. There is one animated thing per board and the
+   champion has it; a second sweeping strap halfway down the middleweight
+   column competes with it and neither reads as special. */
+@keyframes rkSheen{0%{background-position:0 -160%}60%,100%{background-position:0 260%}}
+.rch::before{content:'';position:absolute;left:0;top:2px;bottom:2px;width:2.5px;border-radius:2px;
+  background:linear-gradient(180deg,#8A6A20 0%,#8A6A20 30%,#FFF6D8 46%,#FFE9A8 54%,
+    #8A6A20 70%,#8A6A20 100%);
+  background-size:100% 300%;animation:rkSheen 4.4s ease-in-out infinite;
+  animation-delay:var(--rkd,0ms)}
+.rkrow.bmf{padding-left:8px}
+.rkrow.bmf::before{content:'';position:absolute;left:0;top:2px;bottom:2px;width:2.5px;
+  border-radius:2px;background:#C9A227}
 /* Every one of these is r-prefixed for a reason: `.nw` is ALREADY the news
    row's class, a bare rule with its own padding, and `<i class="rmv nw">`
    picked it up -- one row of the heavyweight column grew to 31px and squeezed
@@ -3024,17 +3032,18 @@ function paintRanks(el, data){
 
   el.innerHTML = '<div class="rgrid">' + RANK_DIVS.map(function(d){
     var list = (byWc[d.k] || []).slice().sort(function(a, b){ return a.rank - b.rank; });
-    var h = '<div class="rcol"><div class="rdh">'+d.s+'</div>';
+    var h = '<div class="rcol" style="--rkd:'+(RANK_DIVS.indexOf(d) * 500)+'ms">'
+          + '<div class="rdh">'+d.s+'</div>';
     if(titles){
       var t = champ[d.k];
       h += t && t.holder_name
-        ? rankRowHTML(t.holder_slug, 'rch rgold', t.holder_name + (t.is_interim ? ' (int)' : ''),
+        ? rankRowHTML(t.holder_slug, 'rch', t.holder_name + (t.is_interim ? ' (int)' : ''),
                       '', '<i class="rmv"></i>')
         : rankRowHTML(null, 'rch', 'Vacant', 'rvac', '<i class="rmv"></i>');
     }
     h += list.map(function(f, i){
       var gold = bmf && f.fighter_slug === bmf;
-      var cls = 'rkrow' + (i % 2 ? ' z' : '') + (gold ? ' bmf rgold' : '');
+      var cls = 'rkrow' + (i % 2 ? ' z' : '') + (gold ? ' bmf' : '');
       return rankRowHTML(f.fighter_slug, cls, f.fighter_name, '', rankMoveHTML(f));
     }).join('');
     return h + '</div>';
@@ -3747,9 +3756,14 @@ async function loadCard(e){
     .concat(Object.keys(groups).filter(function(k){ return order.indexOf(k) === -1; }));
 
   // DESIGN B: the UFC bout with the tale of the tape folded away behind it.
-  // The main event opens by default so the pattern is obvious without a
-  // caption telling anyone to tap.
-  var boutSeen = 0;
+  //
+  // NOTHING IS OPEN ON ARRIVAL. The first bout used to open itself, on the
+  // theory that one worked example teaches the pattern without a caption. It
+  // does not read that way: the card opens with ONE bout twice the height of
+  // every other, which looks like a layout bug rather than an invitation, and
+  // the row it pushes down is the rest of the card. The chevron plus the
+  // words "Tale of the tape" are the affordance; they do not need a
+  // demonstration.
   el.innerHTML = keys.map(function(k){
     return '<div class="seg">'+esc(SEGS[k] || k.replace(/_/g,' '))+'</div>'
       + groups[k].map(function(b){
@@ -3757,8 +3771,7 @@ async function loadCard(e){
                                 || b.fighter_b_slug === myFighter.fighter_slug);
           var done = b.status === 'completed' && b.winner_corner;
           var A = tape[b.fighter_a_slug] || {}, Bf = tape[b.fighter_b_slug] || {};
-          var first = (boutSeen++ === 0) ? ' open' : '';
-          return '<div class="bout3'+(mine?' you':'')+first+'" data-bout>'
+          return '<div class="bout3'+(mine?' you':'')+'" data-bout>'
             + (mine ? '<span class="youtag">Your bout</span>' : '')
             + '<div class="wc4">'
             + esc(b.is_title_fight ? (b.title_name || 'Title fight')
