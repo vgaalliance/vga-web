@@ -154,36 +154,25 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    and triggering the BROWSER's own reload on Android, which would throw away
    the whole app rather than refetch a tab. */
 .panel{overscroll-behavior-y:contain}
-/* MATERIAL'S PATTERN, not iOS's. Android's SwipeRefreshLayout slides a
-   circular indicator down OVER the content and the content itself never moves;
-   Twitter and Instagram do the same. iOS moves the list, but iOS can do that
-   because the OS drives the scroll view's own overscroll -- a web app faking
-   it has to translate the panel by hand, and then the content RE-RENDERS
-   underneath while it is held down, which is the two-or-three-jumps effect.
+/* THE PULL. The page DOES move again -- holding still read as stuck, and a
+   pull that moves nothing is a gesture with no answer. What made it jerk
+   before was never the movement: it was animating a HEIGHT, writing styles
+   faster than the screen paints, and above all HOLDING the page down while
+   the refresh re-rendered underneath it. So the page follows your finger and
+   then comes straight back, and the refresh runs with everything at rest --
+   where a content swap cannot be seen moving. Nothing is ever held.
 
-   Nothing moves the page any more. Nothing to snap back, and a refresh that
-   changes the content's height is invisible because the content never left. */
-.ptr{position:absolute;left:0;right:0;top:0;height:0;
-  display:flex;align-items:flex-start;justify-content:center;
+   The indicator is the VGA flower, the same petal engine as the broadcast
+   tale-of-the-tape and the website's ambient field, drawn on a canvas. */
+.ptr{position:absolute;left:0;right:0;top:-78px;height:78px;
+  display:flex;align-items:center;justify-content:center;
   pointer-events:none;z-index:40}
-.ptr .dial{width:28px;height:28px;opacity:0;
-  transform:translateY(-40px) scale(.7);
+.ptr canvas{width:78px;height:78px;display:block;opacity:0;
   will-change:transform,opacity}
-.ptr .dial svg{width:28px;height:28px;display:block;
-  filter:drop-shadow(0 2px 7px rgba(6,4,20,.85))}
-.ptr .dial circle{fill:none;stroke-width:2.4;stroke-linecap:round;
-  transform:rotate(-90deg);transform-origin:50% 50%}
-.ptr .dial .track{stroke:rgba(255,255,255,.16)}
-.ptr .dial .arc{stroke:#C3A6FF;stroke-dasharray:69.1;stroke-dashoffset:69.1}
-/* Complete. Nothing else changes -- the full circle is the whole message. */
-.ptr.ready .dial .arc{stroke:#EFEAFF}
-.ptr.spin .dial svg{animation:ptrspin .8s linear infinite}
-.ptr.spin .dial .arc{stroke:#C3A6FF;stroke-dasharray:18 52;stroke-dashoffset:0}
-.ptr.spin .dial .track{stroke:rgba(255,255,255,.1)}
-@keyframes ptrspin{to{transform:rotate(360deg)}}
-.panel.snapback{transition:transform .26s cubic-bezier(.22,.9,.28,1)}
-.panel.snapback .ptr .dial{transition:transform .26s cubic-bezier(.22,.9,.28,1),
-  opacity .2s ease}
+/* Easing belongs on the way BACK only -- while the finger is down both the
+   page and the flower track it with no lag, so the class is off during a drag. */
+.ptr.ease canvas{transition:transform .34s cubic-bezier(.22,.9,.28,1),opacity .3s ease}
+.panel.ptrback{transition:transform .34s cubic-bezier(.22,.9,.28,1)}
 /* Just clears the bar. This used to be much larger, which put a field of
    nothing under the last row when you scrolled to the end. */
 .pad{padding-bottom:calc(62px + env(safe-area-inset-bottom,0px))}
@@ -1654,6 +1643,18 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   justify-content:center;background:linear-gradient(160deg,#8B5CF6,#6D28D9);border:3px solid #16112A;
   box-shadow:0 6px 20px rgba(109,40,217,.55);color:#fff;transition:transform .15s;overflow:hidden}
 .bar .midbtn.on .disc{transform:scale(1.06)}
+/* THE FLOWER FIELD, behind the You button. Same petal engine as the broadcast
+   tale-of-the-tape and the website's ambient field, so the app is not a
+   different-looking product from the thing on the stream. It sits BEHIND the
+   disc and outside it, which is why the disc keeps its own overflow:hidden and
+   this does not. */
+.bar .midbtn{position:relative}
+.bar .midbtn .discbloom{position:absolute;left:50%;top:-34px;width:74px;height:74px;
+  margin-left:-37px;pointer-events:none;z-index:0;opacity:.9}
+/* The disc rides ON TOP of its own flower. z-index:-1 put the canvas behind
+   the bar's solid background, which is a perfectly good way to draw something
+   nobody can see. */
+.bar .midbtn .disc{position:relative;z-index:1}
 .bar .midbtn .disc img{width:100%;height:100%;object-fit:cover}
 .bar .midbtn em{margin-top:3px;color:#C3A6FF}
 .ic{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:block}
@@ -1770,7 +1771,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 <nav class="bar">
   <button data-tab="home" class="on"><svg class="ic"><use href="#i-home"/></svg><em>Home</em></button>
   <button data-tab="news"><svg class="ic"><use href="#i-news"/></svg><em>News</em></button>
-  <button data-tab="you" class="midbtn"><span class="disc" id="disc-av"><svg class="ic big"><use href="#i-user"/></svg></span><em>You</em></button>
+  <button data-tab="you" class="midbtn"><canvas class="discbloom" id="disc-bloom" width="132" height="132"></canvas><span class="disc" id="disc-av"><svg class="ic big"><use href="#i-user"/></svg></span><em>You</em></button>
   <button data-tab="fighters"><svg class="ic"><use href="#i-fighters"/></svg><em>Fighters</em></button>
   <button data-tab="betting"><svg class="ic"><use href="#i-bet"/></svg><em>Betting</em></button>
 </nav>
@@ -5266,17 +5267,97 @@ var REFRESH = {
   cards:    function(){ binderCards = null; binderAll = null; return renderCards(); }
 };
 
-function wirePullToRefresh(){
-  /* TRIGGER is where the circle completes. HOLD is where the dial rests while
-     it refreshes. TOP is where it starts, off the top edge. */
-  var TRIGGER = 62, HOLD = 52, MAX = 78, TOP = -40;
-  var startY = 0, pulling = false, dist = 0, busy = false;
-  var panel = null, ind = null, dial = null, arc = null;
-  var frame = 0, pending = 0;
+/* ── THE FLOWER ─────────────────────────────────────────────────────────
+   Lifted from studio/tale-of-the-tape.html, which lifted it from home.html's
+   ambient field. Five petals, each a soft stack of three discs, plus a core
+   and a hot centre. Kept identical on purpose: the app, the website and the
+   broadcast should not each have their own flower.
 
-  /* Asymptotic resistance rather than a flat multiplier: the first pixels
-     track the finger almost 1:1 and it stiffens toward MAX, so the pull has a
-     felt END instead of running away. */
+   `acid` is the pull-to-refresh's own addition -- the petals are drawn three
+   times at increasing offsets in red / green / blue with `screen` compositing,
+   which is chromatic aberration, the thing that makes a CRT look like a CRT.
+   At rest it is 0 and this is exactly the site's flower. */
+function paintFlower(cx, x, y, r, hue, ph, a, acid){
+  if(a < 0.005) return;
+  var A = function(v){ return a * v; };
+  var pass = acid > 0.01
+    ? [[-acid*3.2, 0, 'rgba(255,40,40,'], [0, 0, 'rgba(40,255,120,'], [acid*3.2, 0, 'rgba(60,90,255,']]
+    : [[0, 0, null]];
+  cx.save();
+  if(acid > 0.01) cx.globalCompositeOperation = 'screen';
+  for(var k = 0; k < pass.length; k++){
+    var ox = pass[k][0], tint = pass[k][2];
+    for(var pI = 0; pI < 5; pI++){
+      var ang = (pI/5)*Math.PI*2 + ph;
+      var px = x + Math.cos(ang)*r*0.8 + ox, py = y + Math.sin(ang)*r*0.8;
+      var h2 = (hue + pI*6) % 360, pr = r*0.34;
+      var ring = function(rad, light, al){
+        cx.beginPath(); cx.arc(px, py, rad, 0, Math.PI*2);
+        cx.fillStyle = tint ? tint + A(al).toFixed(3) + ')'
+                            : 'hsla(' + h2 + ',100%,' + light + '%,' + A(al) + ')';
+        cx.fill();
+      };
+      ring(pr*2.4, 65, 0.10); ring(pr*1.5, 74, 0.25); ring(pr, 80, 0.48);
+    }
+  }
+  cx.restore();
+  cx.beginPath(); cx.arc(x, y, r*0.38, 0, Math.PI*2);
+  cx.fillStyle = 'hsla(' + ((hue+160)%360) + ',80%,80%,' + A(0.42) + ')'; cx.fill();
+  if(a > 0.10){
+    cx.beginPath(); cx.arc(x, y, r*0.15, 0, Math.PI*2);
+    cx.fillStyle = 'hsla(' + hue + ',70%,92%,' + ((a-0.10)/0.90) + ')'; cx.fill();
+  }
+}
+
+/* Ambient field behind the You button. Three flowers on the tape's violet
+   band, opening and closing on their own clocks so it never reads as a static
+   texture. Paused whenever the tab is hidden -- an animation nobody is looking
+   at is a battery bill. */
+function startDiscBloom(){
+  var cv = document.getElementById('disc-bloom');
+  if(!cv || !cv.getContext) return;
+  var cx = cv.getContext('2d'), dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var W = 66, H = 66;
+  cv.width = W*dpr; cv.height = H*dpr; cx.scale(dpr, dpr);
+  var rnd = function(a,b){ return a + Math.random()*(b-a); };
+  var fl = [], i;
+  for(i = 0; i < 3; i++){
+    fl.push({ x: rnd(14, W-14), y: rnd(14, H-14), r: rnd(9, 15),
+      hue: rnd(262, 300), ph: rnd(0, Math.PI*2),
+      spin: (Math.random()<0.5?1:-1)*rnd(0.004, 0.011),
+      life: rnd(0, 1), spd: rnd(0.0016, 0.0034), dir: 1 });
+  }
+  var t = 0;
+  (function loop(){
+    requestAnimationFrame(loop);
+    if(document.hidden) return;
+    t++;
+    cx.clearRect(0, 0, W, H);
+    fl.forEach(function(f){
+      f.ph += f.spin;
+      f.life += f.spd * f.dir;
+      if(f.life >= 1){ f.life = 1; f.dir = -1; }
+      if(f.life <= 0){
+        f.life = 0; f.dir = 1;
+        f.x = rnd(14, W-14); f.y = rnd(14, H-14); f.hue = rnd(262, 300);
+      }
+      paintFlower(cx, f.x, f.y, f.r, f.hue, f.ph,
+        Math.pow(f.life, 1.6) * 0.5, 0);
+    });
+  })();
+}
+
+function wirePullToRefresh(){
+  /* TRIGGER is where the flower is fully open. MAX is as far as the page can
+     be dragged. There is deliberately no HOLD -- see the note in the CSS. */
+  var TRIGGER = 72, MAX = 108;
+  var startY = 0, pulling = false, dist = 0, busy = false;
+  var panel = null, ind = null, cvs = null, cx = null, dpr = 1;
+  var frame = 0, pending = 0;
+  var bloom = 0, spin = 0, hue = 276, raf = 0;
+
+  /* Asymptotic resistance: the first pixels track the finger almost 1:1 and it
+     stiffens toward MAX, so the pull has a felt end instead of running away. */
   function resist(dy){ return MAX * (1 - Math.exp(-dy / (MAX * 0.85))); }
 
   function indicatorFor(p){
@@ -5284,21 +5365,40 @@ function wirePullToRefresh(){
     if(!el){
       el = document.createElement('div');
       el.className = 'ptr';
-      /* r=11 -> circumference 69.1, which is the dasharray in the CSS. */
-      el.innerHTML = '<div class="dial"><svg viewBox="0 0 28 28">'
-        + '<circle class="track" cx="14" cy="14" r="11"/>'
-        + '<circle class="arc" cx="14" cy="14" r="11"/></svg></div>';
+      el.innerHTML = '<canvas></canvas>';
       p.insertBefore(el, p.firstChild);
     }
     return el;
   }
-  function place(y, pct){
-    dial.style.transform = 'translateY(' + y.toFixed(1) + 'px) scale('
-      + (0.7 + 0.3 * pct).toFixed(3) + ')';
-    dial.style.opacity = Math.min(pct * 1.7, 1).toFixed(2);
-    if(arc) arc.style.strokeDashoffset = (69.1 * (1 - pct)).toFixed(1);
+  /* One flower, drawn every frame it is visible. `open` is the pull fraction:
+     the petals grow out of the core and it spins faster the closer you get, so
+     "far enough" is a SHAPE rather than a colour -- which also means it still
+     reads for anyone who cannot separate the colours. */
+  function draw(open, acid){
+    if(!cx) return;
+    cx.clearRect(0, 0, 78, 78);
+    if(open <= 0.01 && bloom <= 0.01) return;
+    var r = 5 + open * 13 + bloom * 7;
+    var a = Math.min(open * 1.4, 1) * (0.88 + bloom * 0.12);
+    paintFlower(cx, 39, 39, r, (hue + bloom * 90) % 360, spin, a, acid);
+    /* Scanlines, over the top, only while it is blooming. A CRT is the lines
+       as much as the colour fringing, and at rest they would just be dirt. */
+    if(acid > 0.02){
+      cx.save(); cx.globalAlpha = 0.16 * acid; cx.fillStyle = '#000';
+      for(var y = 0; y < 78; y += 3) cx.fillRect(0, y, 78, 1.4);
+      cx.restore();
+    }
   }
-  /* ONE write per frame, and only transform / opacity / dashoffset -- none of
+  function place(y, scale, opacity){
+    cvs.style.transform = 'translateY(' + y.toFixed(1) + 'px) scale(' + scale.toFixed(3) + ')';
+    cvs.style.opacity = opacity.toFixed(2);
+  }
+  function ease(on){
+    ind.classList.toggle('ease', !!on);
+    if(panel) panel.classList.toggle('ptrback', !!on);
+  }
+
+  /* ONE write per frame, and only transform / opacity / canvas -- none of
      which touches layout. touchmove fires faster than the screen paints, so
      writing straight from the handler queues work the compositor throws away. */
   function schedule(d){
@@ -5306,23 +5406,45 @@ function wirePullToRefresh(){
     if(frame) return;
     frame = requestAnimationFrame(function(){
       frame = 0;
-      var pct = Math.min(pending / TRIGGER, 1);
-      place(TOP + pending, pct);
+      var open = Math.min(pending / TRIGGER, 1);
+      panel.style.transform = 'translateY(' + pending.toFixed(1) + 'px)';
+      place(pending, 0.72 + 0.28 * open, Math.min(open * 1.7, 1));
+      spin += 0.02 + open * 0.10;
+      draw(open, 0);
       ind.classList.toggle('ready', pending >= TRIGGER);
     });
   }
-  function ease(on){ ind.classList.toggle('ease', !!on); }
-  function retract(then){
+
+  /* The bloom: the flower opens hard, the colours split into red/green/blue,
+     the scanlines come up, and it fades -- while the page is ALREADY on its
+     way back. Nothing waits for the refresh, so a slow query can never turn
+     into a stuck screen. */
+  function burst(){
+    var t0 = 0;
+    if(raf) cancelAnimationFrame(raf);
+    (function step(){
+      raf = requestAnimationFrame(step);
+      t0 += 1/60;
+      bloom = t0 < 0.18 ? t0/0.18 : Math.max(0, 1 - (t0-0.18)/0.62);
+      spin += 0.22 * (0.35 + bloom);
+      draw(1, Math.pow(bloom, 0.7));
+      cvs.style.opacity = Math.min(1, bloom * 2.2).toFixed(2);
+      if(t0 > 0.85){
+        cancelAnimationFrame(raf); raf = 0; bloom = 0; draw(0, 0);
+        cvs.style.opacity = '0'; cvs.style.transform = '';
+      }
+    })();
+  }
+  function retract(){
     if(frame){ cancelAnimationFrame(frame); frame = 0; }
-    var i = ind, d = dial, a = arc;
     ease(true);
-    d.style.transform = ''; d.style.opacity = '';
+    panel.style.transform = '';
+    if(!raf) place(0, 0.72, 0);
+    var p = panel, i = ind;
     setTimeout(function(){
-      i.classList.remove('ready','spin','ease');
-      d.style.willChange = '';
-      if(a) a.style.strokeDashoffset = '';
-      if(then) then();
-    }, 320);
+      p.classList.remove('ptrback'); i.classList.remove('ready','ease');
+      p.style.transform = ''; p.style.willChange = '';
+    }, 380);
   }
   function letGo(){ pulling = false; dist = 0; }
 
@@ -5335,12 +5457,17 @@ function wirePullToRefresh(){
     var p = document.querySelector('.panel.live');
     if(!p || p.scrollTop > 0) return;
     if(!REFRESH[currentTab]) return;
-    panel = p; ind = indicatorFor(p);
-    dial = ind.firstChild; arc = ind.querySelector('.arc');
-    /* Promote the layer BEFORE the first move -- promoting mid-gesture is its
-       own stutter -- and take the easing off so the dial tracks the finger. */
-    dial.style.willChange = 'transform,opacity';
+    panel = p; ind = indicatorFor(p); cvs = ind.firstChild;
+    if(!cx){
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      cvs.width = 78*dpr; cvs.height = 78*dpr;
+      cx = cvs.getContext('2d'); cx.scale(dpr, dpr);
+    }
+    /* Promote the layers BEFORE the first move; promoting mid-gesture is its
+       own stutter. Easing off so the page tracks the finger with no lag. */
+    panel.style.willChange = 'transform';
     ease(false);
+    hue = 262 + Math.random()*38;
     startY = e.touches[0].clientY; pulling = true; dist = 0;
   }, { passive: true });
 
@@ -5358,19 +5485,15 @@ function wirePullToRefresh(){
     if(!pulling || busy) return;
     if(dist < TRIGGER){ retract(); letGo(); return; }
     busy = true; letGo();
-    if(frame){ cancelAnimationFrame(frame); frame = 0; }
-    var i = ind, tab = currentTab;
-    i.classList.remove('ready'); i.classList.add('spin');
-    ease(true);
-    place(TOP + HOLD, 1);                     /* ease to the rest, never snap */
-    var done = function(){ retract(function(){ busy = false; }); };
-    /* Never leave the spinner up. A refresher that throws still has to give
-       the screen back -- the failure is already reported by the loader's own
-       retry box. */
+    var tab = currentTab;
+    burst();          /* the flower blooms where it is */
+    retract();        /* and the page is already going back */
+    /* The refresh runs against a page at REST, so whatever it re-renders
+       cannot be seen moving. A refresher that throws still has to release the
+       gesture -- the failure is already reported by the loader's own retry box. */
     var out;
     try{ out = REFRESH[tab](); }catch(e){ out = null; }
-    Promise.resolve(out).then(function(){ setTimeout(done, 420); },
-                             function(){ setTimeout(done, 420); });
+    Promise.resolve(out).then(function(){ busy = false; }, function(){ busy = false; });
   }, { passive: true });
 }
 
@@ -5382,6 +5505,7 @@ function wirePullToRefresh(){
      the machine you tested it on. */
   document.addEventListener('touchstart', function(){}, { passive: true });
   wirePullToRefresh();
+  startDiscBloom();
   loadSession();
   if(session) me = await fetchMe();   /* renews the token itself — see fetchMe */
   await loadWhoAmI();
