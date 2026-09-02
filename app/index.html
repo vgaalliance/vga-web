@@ -1059,6 +1059,13 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .shp .stk{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.12em;
   text-transform:uppercase;color:#C0A85E;margin-top:6px}
 .shp .prw{flex-shrink:0;text-align:right}
+/* The price box sits where the price does, so setting one and reading one
+   are the same column. 84px holds 1,000,000 without the digits wrapping. */
+.shp .pin{width:84px;margin-top:7px;padding:7px 8px;border-radius:8px;text-align:right;
+  font-family:'Space Mono',monospace;font-size:13px;background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.18);color:#EFEAFF;-moz-appearance:textfield}
+.shp .pin::-webkit-outer-spin-button,.shp .pin::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.shp .pin:focus{outline:none;border-color:rgba(167,139,250,.7)}
 .shp .pr{font-family:'Space Mono',monospace;font-size:15px;font-weight:700;
   color:#F5C842;font-variant-numeric:tabular-nums}
 .shp .pr em{font-style:normal;font-size:7.5px;letter-spacing:.1em;color:#B39B4E;margin-left:4px}
@@ -3827,6 +3834,8 @@ function renderSheet(entry){
   if(entry.kind === 'contract') return renderMyContract();
   if(entry.kind === 'offers')   return renderOffers();
   if(entry.kind === 'shop')     return renderShop();
+  if(entry.kind === 'market')   return renderMarket();
+  if(entry.kind === 'shelf')    return renderShelf();
   if(entry.kind === 'card')     return renderCard(entry.id);
   if(entry.kind === 'mybets')   return renderMyBets();
 }
@@ -4382,7 +4391,9 @@ async function loadMe(){
     qMe("my_game?select=*&limit=1"),
     qMe("my_cards?select=qty"),
     q("bet_pools_public?select=match_id"),
-    q("shop_public?select=id")
+    q("shop_public?select=id"),
+    q("market_public?select=listing_id"),
+    qMe("my_listings?select=listing_id")
   ]);
   if(!el.isConnected) return;
   var rows = got[0];
@@ -4393,6 +4404,8 @@ async function loadMe(){
   var cardQty = (got[4] || []).reduce(function(a, r){ return a + Number(r.qty || 0); }, 0);
   var pools   = (got[5] || []).length;
   var shopN   = (got[6] || []).length;
+  var marketN = (got[7] || []).length;
+  var myListN = (got[8] || []).length;
 
   if(!rows){
     retryHandlers['me'] = loadMe;
@@ -4477,6 +4490,19 @@ async function loadMe(){
     + mrow('\uD83D\uDED2','shop','Shop',
         shopN + (shopN === 1 ? ' item' : ' items') + ' for sale',
         Number(p.vc_balance||0).toLocaleString(), 'g')
+    /* THE MARKET IS ITS OWN ROOM, not a section of the Shop. The Shop sells
+       sealed product at a fixed price the league sets; the Market is other
+       players' cards at prices they set. Same wallet, opposite direction --
+       one mints supply, the other only moves it. Putting them behind one door
+       would make "sold out" and "nobody is selling" read as the same fact. */
+    + mrow('\uD83C\uDFF7\uFE0F','market','Market',
+        marketN ? marketN + (marketN === 1 ? ' card for sale' : ' cards for sale')
+                : 'Nobody is selling yet',
+        marketN ? String(marketN) : '\u2014', marketN ? 'g' : '')
+    + mrow('\uD83D\uDCE6','shelf','My shelf',
+        myListN ? myListN + (myListN === 1 ? ' card listed' : ' cards listed')
+                : 'Sell a spare',
+        myListN ? String(myListN) : '\u2014', myListN ? 'q' : '')
     + mrow('\uD83C\uDFB2','betting','Betting',
         pools ? pools + (pools === 1 ? ' pool open' : ' pools open') : 'No market open',
         pools ? String(pools) : '\u2014', '', true)
@@ -4564,6 +4590,56 @@ document.addEventListener('click', async function(e){
     if(r3.ok){ renderShop(); loadMe(); }
     return;
   }
+
+  /* ── MARKET WRITES ────────────────────────────────────────────────────
+     All three re-read the screen from the server rather than patching the DOM.
+     Every one of them moves a real card and real VC, and a screen that assumes
+     it worked is how somebody ends up believing they sold a card they still
+     hold. */
+
+  /* LISTING. The only confirm in the market, and it is on the ONE case that is
+     hard to undo by accident: your last copy of a card. You can take a listing
+     down, but a sale is final, and "I meant to sell the spare" is the mistake
+     this catches. */
+  if((b = e.target.closest('[data-list]'))){
+    var pid = b.getAttribute('data-list');
+    var box = document.getElementById('pin-' + pid);
+    var price = Number(box && box.value);
+    if(!price || price < 100){ toast('Set a price of at least 100 VC.', true); if(box) box.focus(); return; }
+    if(b.getAttribute('data-only')
+       && !confirm('This is your only copy of ' + b.getAttribute('data-name') + '. List it anyway?')) return;
+    busy(b, true, '…');
+    var rl = await rpc('app_list_card', { p_print_id: pid, p_price: price });
+    busy(b, false);
+    toast(rl.ok ? 'Listed at ' + price.toLocaleString() + ' VC for 7 days.' : rl.message, !rl.ok);
+    if(rl.ok){ renderShelf(); loadMe(); }
+    return;
+  }
+
+  /* BUYING. Confirmed because it is final -- the card is yours and the VC is
+     gone, and there is no undo on the other side of it. */
+  if((b = e.target.closest('[data-mktbuy]'))){
+    var mp = Number(b.getAttribute('data-price') || 0);
+    if(!confirm('Buy ' + b.getAttribute('data-name') + ' for ' + mp.toLocaleString() + ' VC?')) return;
+    busy(b, true, '…');
+    var rb = await rpc('app_buy_listing', { p_offer_id: b.getAttribute('data-mktbuy') });
+    busy(b, false);
+    toast(rb.ok ? 'Bought ' + b.getAttribute('data-name') + '.' : rb.message, !rb.ok);
+    if(rb.ok){ renderMarket(); loadMe(); }
+    return;
+  }
+
+  /* TAKING ONE DOWN. No confirm: it is the undo. */
+  if((b = e.target.closest('[data-unlist]'))){
+    busy(b, true, '…');
+    var ru = await rpc('app_unlist', { p_offer_id: b.getAttribute('data-unlist') });
+    busy(b, false);
+    toast(ru.ok ? 'Taken down.' : ru.message, !ru.ok);
+    if(ru.ok){ renderShelf(); loadMe(); }
+    return;
+  }
+
+  if((b = e.target.closest('[data-signin]'))){ signIn(); return; }
 
   /* Picking a corner does NOT place anything — it opens the stake row. Two
      taps to spend VC is deliberate; one tap is how a scroll becomes a bet. */
@@ -4754,9 +4830,72 @@ async function renderCard(cardId){
           + esc(card.name) + '</div><div class="s">See their record and next fight</div></div>'
           + '<span class="rr"><span class="c">&rsaquo;</span></span></div>'
         : '')
+    + '<div id="cmkt"></div>'
     + (have ? '' : '<div class="doit">You do not hold this one. It comes out of '
         + esc(card.set_name || 'its set') + ' packs \u2014 the Shop sells them.</div>');
   watchFoil();
+  loadCardMarket(cardId, card.name);
+}
+
+/* ── WHAT A CARD IS WORTH ─────────────────────────────────────────────
+   Loaded AFTER the card is on screen, in its own block, because the card is
+   the thing you tapped and a price is an extra. A market read that is slow or
+   fails must never hold up the picture.
+
+   The headline number is the MEDIAN OF THE LAST FIVE sales, never the last
+   price, and the sale count is printed next to it at the same size. Two people
+   can move a card between them at any number they like -- one pair accounts for
+   3 of the first 37 settled trades here -- so a single sale must not be able to
+   set a price, and a price backed by one sale must not LOOK like a price backed
+   by twenty. Anything under 100 VC was never counted as a sale at all: a card
+   has already changed hands in this economy for 1 VC, which is a gift wearing a
+   trade's clothes. */
+async function loadCardMarket(cardId, cardName){
+  var el = document.getElementById('cmkt');
+  if(!el) return;
+  var got = await Promise.all([
+    q("card_market_public?select=*&card_id=eq." + encodeURIComponent(cardId) + "&limit=1"),
+    q("market_public?select=*&card_id=eq." + encodeURIComponent(cardId) + "&order=price.asc")
+  ]);
+  if(!el.isConnected) return;
+  var stat = (got[0] || [])[0] || {};
+  var asks = got[1] || [];
+  var sales = Number(stat.sales || 0);
+
+  var head = '<div class="lab"><b>The market \u00b7 '
+    + (sales ? sales + (sales === 1 ? ' sale' : ' sales') : 'no sales yet') + '</b><i></i></div>';
+
+  var box = '<div class="deal"><div class="grid">'
+    + '<div><span class="k">Usually goes for</span><span class="v">'
+      + (stat.price_typical != null ? Number(stat.price_typical).toLocaleString() + ' VC' : '\u2014') + '</span></div>'
+    + '<div><span class="k">Last sold</span><span class="v">'
+      + (stat.price_last != null ? Number(stat.price_last).toLocaleString() + ' VC' : '\u2014') + '</span></div>'
+    + '<div><span class="k">When</span><span class="v">'
+      + (stat.last_sold_at ? esc(dstr(stat.last_sold_at)) : '\u2014') + '</span></div>'
+    + '<div><span class="k">Cheapest now</span><span class="v">'
+      + (stat.lowest_ask != null ? Number(stat.lowest_ask).toLocaleString() + ' VC' : '\u2014') + '</span></div>'
+    + '</div></div>';
+
+  /* One sale is a number, not a price. Saying so costs a line and stops the
+     board being quoted as though it were a market. */
+  if(sales === 1){
+    box += '<div class="doit">One sale so far \u2014 that is a number, not a price yet.</div>';
+  } else if(!sales){
+    box += '<div class="doit">Nobody has sold one for VC yet, so there is no price to go on.</div>';
+  }
+
+  var list = '';
+  if(asks.length){
+    list = '<div class="lab"><b>For sale now \u00b7 ' + asks.length + '</b><i></i></div>'
+      + asks.map(function(r){
+          return '<div class="shp" data-hub="market"><div style="flex:1;min-width:0">'
+            + '<div class="t">#' + r.print_number + (r.grade != null ? ' \u00b7 PSA ' + r.grade : '') + '</div>'
+            + '<div class="s">' + esc(r.seller || 'someone') + '</div>'
+            + '</div><div class="prw"><div class="pr">' + Number(r.price||0).toLocaleString() + '<em>VC</em></div>'
+            + '<span class="c">&rsaquo;</span></div></div>';
+        }).join('');
+  }
+  el.innerHTML = head + box + list;
 }
 
 /* RIPPING A PACK. app_open_pack owns the odds and the pity counter; this only
@@ -5251,6 +5390,148 @@ async function renderShop(){
   + '<div class="doit">Bought here or in Discord, it is the same wallet and the same stock. '
   + 'Gifting stays in the server \u2014 <b>/buy</b> with a recipient.</div>';
 }
+
+/* ── THE MARKET ── other players' cards, at prices they set ────────────
+   Anon-readable on purpose. The board is a shop window: somebody who has not
+   signed in should be able to see that there is something worth signing in
+   for, and every field on it (card, set, print number, grade, seller name) is
+   already public elsewhere in this app.
+
+   BLOCK PRECEDENCE MATTERS, and it is: yours > signed out > can't afford.
+   Telling somebody they are short of VC for a card that is their own listing
+   sends them to grind for something they already have. */
+async function renderMarket(){
+  var body = document.getElementById('sheet-body');
+  body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'
+    + '<div class="kick">Player to player</div><h3>Market</h3></div>'
+    + '<div id="mkt"><div class="skel"></div><div class="skel" style="width:60%"></div></div>';
+  var el = document.getElementById('mkt');
+  var got = await Promise.all([
+    q("market_public?select=*&order=created_at.desc"),
+    me ? qMe("my_profile?select=vc_balance&limit=1") : Promise.resolve([]),
+    /* Which of these are MINE. Asked as a list of my own listing ids rather
+       than by comparing a player id, because the page is never given one --
+       app_me() lives in the database and the JWT carries a Discord id. */
+    me ? qMe("my_listings?select=listing_id") : Promise.resolve([])
+  ]);
+  if(!el.isConnected) return;
+  var rows = got[0];
+  if(!rows){ retryHandlers['mkt'] = renderMarket;
+    el.innerHTML = failHTML("Couldn't load the market.", 'mkt'); return; }
+  if(!rows.length){
+    el.innerHTML = '<div class="empty"><b>Nobody is selling right now.</b><br>'
+      + 'Listings last 7 days. Put a spare up from <b>My shelf</b> and it shows here.</div>';
+    return;
+  }
+  var bal = (got[1] && got[1].length) ? Number(got[1][0].vc_balance || 0) : null;
+  var minePlus = {};
+  (got[2] || []).forEach(function(r){ minePlus[r.listing_id] = true; });
+
+  /* Grouped by SET, because that is how somebody chasing a set shops. Ordered
+     cheapest first inside each group -- a board sorted by recency makes the
+     buyer read every row to find the price they were going to pick anyway. */
+  var sets = [];
+  rows.forEach(function(r){ if(sets.indexOf(r.set_name || r.set_code) === -1) sets.push(r.set_name || r.set_code); });
+
+  el.innerHTML = sets.map(function(sn){
+    var mine = rows.filter(function(r){ return (r.set_name || r.set_code) === sn; })
+                   .sort(function(a,b){ return Number(a.price) - Number(b.price); });
+    /* The count rides in the LABEL. `.lab i` is a 1px rule, not a slot -- text
+       put in it hangs under the divider at one pixel of height. */
+    return '<div class="lab"><b>' + esc(sn) + ' \u00b7 ' + mine.length + '</b><i></i></div>'
+      + mine.map(function(r){
+          var price = Number(r.price || 0);
+          var yours = !!minePlus[r.listing_id];
+          var bits = ['#' + r.print_number];
+          if(r.grade != null) bits.push('PSA ' + r.grade);
+          bits.push(esc(r.seller || 'someone'));
+          var btn;
+          if(yours)             btn = '<button class="act buy" disabled>Yours</button>';
+          else if(!me)          btn = '<button class="act buy" data-signin="1">Sign in</button>';
+          else if(bal !== null && bal < price)
+                                btn = '<button class="act buy" disabled>Short '
+                                      + (price - bal).toLocaleString() + '</button>';
+          else                  btn = '<button class="act buy" data-mktbuy="' + esc(r.listing_id)
+                                      + '" data-name="' + esc(r.name) + '" data-price="' + price + '">Buy</button>';
+          return '<div class="shp">'
+            + '<div style="flex:1;min-width:0">'
+            + '<div class="t">' + esc(r.name) + '</div>'
+            + '<div class="s">' + bits.join(' · ') + '</div>'
+            + '<div class="stk">' + esc(r.rarity || '') + '</div>'
+            + '</div><div class="prw"><div class="pr">' + price.toLocaleString() + '<em>VC</em></div>'
+            + btn + '</div></div>';
+        }).join('');
+  }).join('')
+  + '<div class="doit">Listings last <b>7 days</b>, then the card goes back to its owner. '
+  + 'The seller pays a <b>10%</b> tax on the sale — it is burned, not paid to anyone.</div>';
+}
+
+/* ── MY SHELF ── what you have listed, and what you could list ─────────
+   Not a shop of your own that other people browse. The board is one place and
+   everybody's cards are on it; this is the private page where you set prices,
+   which is why a seller nobody buys from is invisible here rather than an
+   empty storefront with their name over the door. */
+async function renderShelf(){
+  var body = document.getElementById('sheet-body');
+  body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'
+    + '<div class="kick">What you are selling</div><h3>My shelf</h3></div>'
+    + '<div id="shf"><div class="skel"></div><div class="skel" style="width:60%"></div></div>';
+  var el = document.getElementById('shf');
+  if(!me){ el.innerHTML = '<div class="empty">Sign in to sell a card.</div>'; return; }
+
+  var got = await Promise.all([
+    qMe("my_listings?select=*&order=created_at.desc"),
+    qMe("my_prints?select=*&order=set_code.asc,name.asc,print_number.asc")
+  ]);
+  if(!el.isConnected) return;
+  if(!got[0] || !got[1]){ retryHandlers['shf'] = renderShelf;
+    el.innerHTML = failHTML("Couldn't load your shelf.", 'shf'); return; }
+  var live = got[0], prints = got[1];
+
+  var html = '<div class="lab"><b>On sale \u00b7 ' + live.length + ' of 20</b><i></i></div>';
+  html += live.length ? live.map(function(r){
+      return '<div class="shp"><div style="flex:1;min-width:0">'
+        + '<div class="t">' + esc(r.name) + '</div>'
+        + '<div class="s">#' + r.print_number + (r.grade != null ? ' · PSA ' + r.grade : '')
+        + ' · ' + esc(r.set_code || '') + '</div>'
+        + '<div class="stk">ends ' + esc(dstr(r.expires_at)) + '</div>'
+        + '</div><div class="prw"><div class="pr">' + Number(r.price||0).toLocaleString() + '<em>VC</em></div>'
+        + '<button class="act buy" data-unlist="' + esc(r.listing_id) + '">Take down</button>'
+        + '</div></div>';
+    }).join('')
+    : '<div class="empty">Nothing listed. Pick a card below.</div>';
+
+  /* A card already in escrow is a card in a listing or a Discord trade. It is
+     shown rather than hidden, because a card that silently vanishes from your
+     own shelf reads as a card you lost. */
+  var free = prints.filter(function(r){ return !r.busy; });
+  html += '<div class="lab"><b>Your cards \u00b7 ' + free.length + '</b><i></i></div>';
+  html += free.length ? free.map(function(r){
+      var only = Number(r.you_own || 0) <= 1;
+      var suggested = r.price_typical ? Number(r.price_typical) : '';
+      return '<div class="shp"><div style="flex:1;min-width:0">'
+        + '<div class="t">' + esc(r.name) + '</div>'
+        + '<div class="s">#' + r.print_number + (r.grade != null ? ' · PSA ' + r.grade : '')
+        + ' · ' + esc(r.set_code || '') + '</div>'
+        + '<div class="stk">' + (only ? 'YOUR ONLY COPY'
+            : r.sales ? 'usually ' + Number(r.price_typical).toLocaleString() + ' VC'
+            : 'never sold') + '</div>'
+        + '</div><div class="prw">'
+        + '<input class="pin" type="number" inputmode="numeric" min="100" max="1000000" '
+        + 'placeholder="' + (suggested || '100') + '" value="' + suggested + '" '
+        + 'id="pin-' + esc(r.print_id) + '">'
+        + '<button class="act buy" data-list="' + esc(r.print_id) + '" '
+        + 'data-name="' + esc(r.name) + '" data-only="' + (only ? '1' : '') + '">List</button>'
+        + '</div></div>';
+    }).join('')
+    : '<div class="empty">No cards free to sell. Anything in a trade or already listed sits above.</div>';
+
+  el.innerHTML = html
+    + '<div class="doit">Lowest price is <b>100 VC</b> — below that it is a gift, and gifts belong in '
+    + '<b>/trade</b> where you can both see who you are giving it to. '
+    + 'The <b>10%</b> tax comes off what you receive.</div>';
+}
+
 
 /* ── WALLET ── the balance, and every move behind it. */
 async function renderWallet(){
