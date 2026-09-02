@@ -972,6 +972,33 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    reason this reads as a head-to-head. */
 .tape .nm{font-family:'Bebas Neue',sans-serif;font-size:25px;line-height:.94;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* The name of the fighter YOUR money is on catches a slow sheen. It is the
+   quietest possible "this one is yours" — the mint border and the foot line
+   already say it in words, and with every bout on a card backed those two
+   stop reading as marks at all (they become the wallpaper). A name that
+   moves survives that, because motion on one name out of eight is still one
+   name out of eight.
+
+   The gradient is 280% wide and the highlight sits off the text for most of
+   the cycle, so it sweeps once every ~6s rather than glittering. */
+.tape .nm.backed{
+  background:linear-gradient(100deg,#EDEAF6 0%,#EDEAF6 38%,#FFFFFF 46%,#CFF5E5 50%,
+    #FFFFFF 54%,#EDEAF6 62%,#EDEAF6 100%);
+  background-size:280% 100%;background-position:0 0;
+  -webkit-background-clip:text;background-clip:text;
+  animation:nmsheen 6s cubic-bezier(.5,0,.5,1) infinite}
+/* Painting the text transparent is what reveals the gradient — and it is what
+   makes the name INVISIBLE anywhere background-clip:text is not supported.
+   It only ever applies where the clip does, so the fallback is the plain name
+   in its ordinary colour rather than a blank corner. */
+@supports ((-webkit-background-clip:text) or (background-clip:text)){
+  .tape .nm.backed{-webkit-text-fill-color:transparent;color:transparent}
+}
+/* Rests at 0 0, which shows the flat stretch of the gradient — so when the
+   app's global reduced-motion rule kills the animation the name is simply
+   its normal colour, not frozen mid-sheen. */
+@keyframes nmsheen{0%{background-position:0 0}
+  46%,100%{background-position:100% 0}}
 .tape .rec{font-family:'Space Mono',monospace;font-size:7px;color:#7E7699;margin-top:4px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tape .split{display:flex;height:9px;margin:11px 12px 0;border-radius:5px;overflow:hidden;
@@ -6191,10 +6218,11 @@ function boardHTML(r, billing){
     + '<div class="th"><span>'+esc(head.join(' \u00b7 '))+'</span>'
     + '<s>'+Number(r.pool||0).toLocaleString()+' VC \u00b7 '+Number(r.bets||0)
       + (Number(r.bets||0) === 1 ? ' bet' : ' bets')+'</s></div>'
+    /* `backed` puts the sheen on the name your money is on — see .tape .nm.backed */
     + '<div class="cor">'
-      + '<div><div class="nm">'+esc(r.side_a || 'A')+'</div>'
+      + '<div><div class="nm'+(onA ? ' backed' : '')+'">'+esc(r.side_a || 'A')+'</div>'
       + (recA ? '<div class="rec">'+esc(recA)+'</div>' : '') + '</div>'
-      + '<div class="rt"><div class="nm">'+esc(r.side_b || 'B')+'</div>'
+      + '<div class="rt"><div class="nm'+(onB ? ' backed' : '')+'">'+esc(r.side_b || 'B')+'</div>'
       + (recB ? '<div class="rec">'+esc(recB)+'</div>' : '') + '</div></div>'
     + '<div class="split"><i class="sa" style="width:'+pa+'%"></i>'
       + '<i class="sb" style="width:'+pb+'%"></i></div>'
