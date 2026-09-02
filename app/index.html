@@ -1098,6 +1098,51 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   border:1px solid rgba(255,255,255,.18);color:#EFEAFF;-moz-appearance:textfield}
 .shp .pin::-webkit-outer-spin-button,.shp .pin::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .shp .pin:focus{outline:none;border-color:rgba(167,139,250,.7)}
+/* THE CARD MARKET — two swipe rows. The buy row is legible at a glance; the
+   sold row is deliberately half its size, because it is history you compare
+   against rather than something you act on. Sizes are the whole hierarchy
+   here, so they are not decoration: a sold card the same size as a live one
+   reads as buyable, and the first tap on it goes nowhere. */
+.mstrip{display:flex;gap:9px;margin:0 15px;padding:2px 0 4px;overflow-x:auto;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.mstrip::-webkit-scrollbar{display:none}
+.sublab{margin:13px 18px 7px;font-family:'Space Mono',monospace;font-size:7.5px;
+  letter-spacing:.16em;text-transform:uppercase;color:#7E7699}
+.mmini{width:82px;flex-shrink:0}
+.mmini .mart,.mtiny .mart{position:relative;overflow:hidden;aspect-ratio:5/7;
+  background:linear-gradient(165deg,var(--c2),#0B0818);border:1.5px solid var(--c)}
+.mmini .mart{border-radius:6px;box-shadow:0 0 10px var(--glow)}
+.mmini .mart img,.mtiny .mart img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.mmini .mnm{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  padding:5px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;
+  font-size:10px;line-height:1.05;text-transform:uppercase;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.9)}
+.mmini .psa{position:absolute;top:3px;right:3px;z-index:3;font-family:'Space Mono',monospace;
+  font-size:6.5px;font-weight:700;letter-spacing:.06em;padding:2px 4px;border-radius:4px;
+  background:rgba(8,5,20,.85);color:#E6DEFF;border:1px solid rgba(255,255,255,.22)}
+.mmini .mnum{position:absolute;left:3px;bottom:3px;z-index:3;font-family:'Space Mono',monospace;
+  font-size:6px;color:#CFC7EA;text-shadow:0 1px 4px #000}
+.mmini .mamt{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:#F5C842;
+  margin-top:6px;text-align:center;font-variant-numeric:tabular-nums}
+.mmini .mmeta{font-family:'Space Mono',monospace;font-size:6.5px;letter-spacing:.08em;
+  text-transform:uppercase;color:#8F86AF;text-align:center;margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mmini .act{display:block;width:100%;margin-top:5px;padding:5px 0;border-radius:6px;
+  font-size:7px;letter-spacing:.14em}
+.mtiny{width:44px;flex-shrink:0}
+.mtiny .mart{border-radius:4px;border-width:1px;filter:saturate(.4) brightness(.78)}
+.mtiny .mnm{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  padding:2px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;
+  font-size:6px;line-height:1;text-transform:uppercase;color:#fff;text-shadow:0 1px 5px rgba(0,0,0,.9)}
+.mtiny .g{position:absolute;top:2px;right:2px;z-index:3;font-family:'Space Mono',monospace;
+  font-size:5.5px;font-weight:700;padding:1px 3px;border-radius:3px;background:rgba(8,5,20,.85);color:#D8D0F0}
+.mtiny .mamt{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;color:#C9C2E4;
+  margin-top:4px;text-align:center;font-variant-numeric:tabular-nums}
+.mtiny .mmeta{font-family:'Space Mono',monospace;font-size:6px;letter-spacing:.06em;
+  text-transform:uppercase;color:#7E7699;text-align:center;margin-top:2px}
+.mnone{margin:0 18px;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.14em;
+  text-transform:uppercase;color:#6E6688;padding:9px 0}
+.deal .grid .v s{text-decoration:none;display:block;font-family:'Space Mono',monospace;
+  font-size:7px;letter-spacing:.1em;text-transform:uppercase;color:#8B83AC;margin-top:3px}
 .shp .pr{font-family:'Space Mono',monospace;font-size:15px;font-weight:700;
   color:#F5C842;font-variant-numeric:tabular-nums}
 .shp .pr em{font-style:normal;font-size:7.5px;letter-spacing:.1em;color:#B39B4E;margin-left:4px}
@@ -4967,7 +5012,7 @@ async function renderCard(cardId){
       + '<div><span class="k">Rarity</span><span class="v">' + esc(card.rarity || '') + '</span></div>'
       + '<div><span class="k">In circulation</span><span class="v">' + (total || '\u2014') + '</span></div>'
       + '<div><span class="k">You hold</span><span class="v">' + (have ? have.qty : 0) + '</span></div>'
-      + '<div><span class="k">Best grade</span><span class="v">'
+      + '<div><span class="k">Best grade</span><span class="v" id="cgrade">'
         + (have && have.best_grade != null ? 'PSA ' + have.best_grade : '\u2014') + '</span></div>'
       + '<div><span class="k">Lowest number</span><span class="v">'
         + (have && have.lowest_print != null ? '#' + have.lowest_print : '\u2014') + '</span></div>'
@@ -4984,68 +5029,88 @@ async function renderCard(cardId){
     + (have ? '' : '<div class="doit">You do not hold this one. It comes out of '
         + esc(card.set_name || 'its set') + ' packs \u2014 the Shop sells them.</div>');
   watchFoil();
+  /* The percentile is about YOUR copy, and only renderCard knows which that is. */
+  window.__cardBestGrade = (have && have.best_grade != null) ? Number(have.best_grade) : null;
   loadCardMarket(cardId, card.name);
 }
 
 /* ── WHAT A CARD IS WORTH ─────────────────────────────────────────────
-   Loaded AFTER the card is on screen, in its own block, because the card is
-   the thing you tapped and a price is an extra. A market read that is slow or
-   fails must never hold up the picture.
+   Two swipe rows, loaded AFTER the card is on screen: the card is the thing
+   you tapped and the market is an extra, so a slow read here must never hold
+   up the picture.
 
-   The headline number is the MEDIAN OF THE LAST FIVE sales, never the last
-   price, and the sale count is printed next to it at the same size. Two people
-   can move a card between them at any number they like -- one pair accounts for
-   3 of the first 37 settled trades here -- so a single sale must not be able to
-   set a price, and a price backed by one sale must not LOOK like a price backed
-   by twenty. Anything under 100 VC was never counted as a sale at all: a card
-   has already changed hands in this economy for 1 VC, which is a gift wearing a
-   trade's clothes. */
+   THE SIZES ARE THE HIERARCHY. For sale is 82px and carries a Buy; sold is
+   44px, greyed, and carries a date. Rendering history at the same size as a
+   live listing reads as buyable, and the first tap on it goes nowhere.
+
+   NO AVERAGE ACROSS GRADES IS SHOWN AS A HEADLINE. Measured on every sale
+   this economy has ever had: a PSA 2 went for 18,000 and a PSA 9 for 1,500 —
+   grade does not predict price here, people buy the fighter. So the honest
+   thing is comps, not a mean: show the actual cards, with their grade on
+   them, and let the reader compare. That is also what every real card market
+   does when volume is thin.
+
+   The one number kept is the grade PERCENTILE, folded into the Best grade
+   fact above rather than given a chart of its own — a ten-bar histogram to
+   deliver "yours beats 89% of them" is nine bars of decoration. */
 async function loadCardMarket(cardId, cardName){
   var el = document.getElementById('cmkt');
   if(!el) return;
   var got = await Promise.all([
-    q("card_market_public?select=*&card_id=eq." + encodeURIComponent(cardId) + "&limit=1"),
-    q("market_public?select=*&card_id=eq." + encodeURIComponent(cardId) + "&order=price.asc")
+    q("market_public?select=*&card_id=eq." + encodeURIComponent(cardId) + "&order=price.asc"),
+    q("card_sales_public?select=*&card_id=eq." + encodeURIComponent(cardId) + "&order=settled_at.desc&limit=12"),
+    q("card_grades_public?select=grade,n&card_id=eq." + encodeURIComponent(cardId))
   ]);
   if(!el.isConnected) return;
-  var stat = (got[0] || [])[0] || {};
-  var asks = got[1] || [];
-  var sales = Number(stat.sales || 0);
+  var asks = got[0] || [], sold = got[1] || [], grades = got[2] || [];
 
-  var head = '<div class="lab"><b>The market \u00b7 '
-    + (sales ? sales + (sales === 1 ? ' sale' : ' sales') : 'no sales yet') + '</b><i></i></div>';
-
-  var box = '<div class="deal"><div class="grid">'
-    + '<div><span class="k">Usually goes for</span><span class="v">'
-      + (stat.price_typical != null ? Number(stat.price_typical).toLocaleString() + ' VC' : '\u2014') + '</span></div>'
-    + '<div><span class="k">Last sold</span><span class="v">'
-      + (stat.price_last != null ? Number(stat.price_last).toLocaleString() + ' VC' : '\u2014') + '</span></div>'
-    + '<div><span class="k">When</span><span class="v">'
-      + (stat.last_sold_at ? esc(dstr(stat.last_sold_at)) : '\u2014') + '</span></div>'
-    + '<div><span class="k">Cheapest now</span><span class="v">'
-      + (stat.lowest_ask != null ? Number(stat.lowest_ask).toLocaleString() + ' VC' : '\u2014') + '</span></div>'
-    + '</div></div>';
-
-  /* One sale is a number, not a price. Saying so costs a line and stops the
-     board being quoted as though it were a market. */
-  if(sales === 1){
-    box += '<div class="doit">One sale so far \u2014 that is a number, not a price yet.</div>';
-  } else if(!sales){
-    box += '<div class="doit">Nobody has sold one for VC yet, so there is no price to go on.</div>';
+  /* Where your best copy sits against every copy in the game. Counting at or
+     ABOVE your grade, so "top 11%" means what it sounds like. */
+  var mine = document.getElementById('cgrade');
+  if(mine && grades.length && window.__cardBestGrade != null){
+    var tot = grades.reduce(function(a,g){ return a + Number(g.n||0); }, 0);
+    var atOrOver = grades.reduce(function(a,g){
+      return a + (Number(g.grade) >= window.__cardBestGrade ? Number(g.n||0) : 0); }, 0);
+    if(tot) mine.innerHTML = mine.innerHTML
+      + '<s>top ' + Math.max(1, Math.round(100 * atOrOver / tot)) + '%</s>';
   }
 
-  var list = '';
-  if(asks.length){
-    list = '<div class="lab"><b>For sale now \u00b7 ' + asks.length + '</b><i></i></div>'
-      + asks.map(function(r){
-          return '<div class="shp" data-hub="market"><div style="flex:1;min-width:0">'
-            + '<div class="t">#' + r.print_number + (r.grade != null ? ' \u00b7 PSA ' + r.grade : '') + '</div>'
-            + '<div class="s">' + esc(r.seller || 'someone') + '</div>'
-            + '</div><div class="prw"><div class="pr">' + Number(r.price||0).toLocaleString() + '<em>VC</em></div>'
-            + '<span class="c">&rsaquo;</span></div></div>';
-        }).join('');
+  function art(r, cls){
+    return '<div class="mart r-' + esc(r.rarity || 'common') + '">'
+      + (r.photo_url ? '<img src="' + esc(r.photo_url) + '" alt="">'
+                     : '<div class="' + cls + '">' + esc(r.name || cardName || '') + '</div>')
+      + '</div>';
   }
-  el.innerHTML = head + box + list;
+
+  var html = '<div class="lab"><b>The market</b><i></i></div>'
+    + '<div class="sublab">For sale' + (asks.length ? ' \u00b7 ' + asks.length : '') + '</div>';
+
+  html += asks.length
+    ? '<div class="mstrip">' + asks.map(function(r){
+        return '<div class="mmini">' + art(r, 'nm')
+          + '<span class="psa">' + (r.grade != null ? 'PSA ' + r.grade : '\u2014') + '</span>'
+          + '<span class="mnum">#' + r.print_number + '</span></div>'
+          + '<div class="mamt">' + Number(r.price||0).toLocaleString() + '</div>'
+          + '<div class="mmeta">' + esc(r.seller || 'someone') + '</div>'
+          + '<button class="act buy" data-mktbuy="' + esc(r.listing_id) + '" '
+          + 'data-name="' + esc(r.name) + '" data-price="' + Number(r.price||0) + '">Buy</button>'
+          + '</div>';
+      }).join('') + '</div>'
+    : '<div class="mnone">Nobody is selling this one</div>';
+
+  html += '<div class="sublab">Recently sold' + (sold.length ? ' \u00b7 ' + sold.length : '') + '</div>';
+  html += sold.length
+    ? '<div class="mstrip">' + sold.map(function(r){
+        return '<div class="mtiny">'
+          + '<div class="mart r-' + esc((asks[0] && asks[0].rarity) || 'common') + '">'
+          + '<div class="mnm">' + esc(cardName || '') + '</div>'
+          + '<span class="g">' + (r.grade != null ? r.grade : '?') + '</span></div>'
+          + '<div class="mamt">' + Number(r.price||0).toLocaleString() + '</div>'
+          + '<div class="mmeta">' + esc(dstr(r.settled_at)) + '</div></div>';
+      }).join('') + '</div>'
+    : '<div class="mnone">No sales yet</div>';
+
+  el.innerHTML = html;
 }
 
 /* RIPPING A PACK. app_open_pack owns the odds and the pity counter; this only
