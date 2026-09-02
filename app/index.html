@@ -1592,6 +1592,9 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .r-prismatic{--c:#FF6EC7;--c2:#4FE3D0;--glow:rgba(255,110,199,.45)}
 
 .slabw{position:relative;cursor:pointer}
+/* The hero on the card page is the subject, not a link to itself. */
+.cardbig .slabw{cursor:default}
+.cardbig .slabw:active{transform:none;filter:none}
 /* the fan — two ghosts, never more, however many you hold */
 .slabw .gh{position:absolute;inset:0;border-radius:11px;background:rgba(255,255,255,.1);
   border:1px solid rgba(255,255,255,.16);z-index:0}
@@ -4044,8 +4047,12 @@ document.addEventListener('click', function(e){
   if(e.target.closest('[data-all-events]')){ openSheet({kind:'events'}); return; }
   var be = e.target.closest('[data-bevent]');
   if(be){ e.preventDefault(); renderBetEvent(be.getAttribute('data-bevent')); return; }
+  /* A slab opens its card -- except the one ALREADY on the card page. slabHTML
+     is shared with the binder, so the hero carries the same data-card, and
+     tapping it pushed a second copy of the page you were looking at. Doing it
+     twice buried the back button under sheets that all look identical. */
   var cd = e.target.closest('[data-card]');
-  if(cd && !e.target.closest('[data-rip]')){
+  if(cd && !e.target.closest('[data-rip]') && !e.target.closest('.cardbig')){
     e.preventDefault(); openSheet({kind:'card', id: cd.getAttribute('data-card')}); return;
   }
   var hb = e.target.closest('[data-hub]');
