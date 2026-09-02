@@ -154,22 +154,23 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    and triggering the BROWSER's own reload on Android, which would throw away
    the whole app rather than refetch a tab. */
 .panel{overscroll-behavior-y:contain}
-/* The dial sits ABOVE the panel's top edge and rides in on a transform as the
-   panel is dragged down. The first version grew a container's HEIGHT instead,
-   which forces layout on every frame -- that was the jitter. Only `transform`
-   and `opacity` can be animated smoothly; everything else goes through layout
-   or paint and drops frames on a phone.
+/* MATERIAL'S PATTERN, not iOS's. Android's SwipeRefreshLayout slides a
+   circular indicator down OVER the content and the content itself never moves;
+   Twitter and Instagram do the same. iOS moves the list, but iOS can do that
+   because the OS drives the scroll view's own overscroll -- a web app faking
+   it has to translate the panel by hand, and then the content RE-RENDERS
+   underneath while it is held down, which is the two-or-three-jumps effect.
 
-   No overflow:hidden either. Clipping is what made the height necessary; with
-   the dial parked off the top it is simply out of view until the panel moves. */
-.ptr{position:absolute;left:0;right:0;top:-46px;height:46px;
-  display:flex;align-items:center;justify-content:center;
+   Nothing moves the page any more. Nothing to snap back, and a refresh that
+   changes the content's height is invisible because the content never left. */
+.ptr{position:absolute;left:0;right:0;top:0;height:0;
+  display:flex;align-items:flex-start;justify-content:center;
   pointer-events:none;z-index:40}
 .ptr .dial{width:28px;height:28px;opacity:0;
-  transform:translateY(0) scale(.7);
+  transform:translateY(-40px) scale(.7);
   will-change:transform,opacity}
 .ptr .dial svg{width:28px;height:28px;display:block;
-  filter:drop-shadow(0 2px 6px rgba(6,4,20,.8))}
+  filter:drop-shadow(0 2px 7px rgba(6,4,20,.85))}
 .ptr .dial circle{fill:none;stroke-width:2.4;stroke-linecap:round;
   transform:rotate(-90deg);transform-origin:50% 50%}
 .ptr .dial .track{stroke:rgba(255,255,255,.16)}
@@ -180,8 +181,6 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .ptr.spin .dial .arc{stroke:#C3A6FF;stroke-dasharray:18 52;stroke-dashoffset:0}
 .ptr.spin .dial .track{stroke:rgba(255,255,255,.1)}
 @keyframes ptrspin{to{transform:rotate(360deg)}}
-/* Easing belongs on the way BACK only -- during the drag the panel has to
-   track the finger with no lag at all, so the class is off while pulling. */
 .panel.snapback{transition:transform .26s cubic-bezier(.22,.9,.28,1)}
 .panel.snapback .ptr .dial{transition:transform .26s cubic-bezier(.22,.9,.28,1),
   opacity .2s ease}
@@ -2974,7 +2973,8 @@ var allFighters = null, fFilter = 'all', fQuery = '', fShown = 40, fLevel = 'pro
 async function loadFighters(){
   if(allFighters) return;
   var path = "fighter_cards?select=id,display_name,slug,weight_class,headline_wins,headline_losses,"
-    + "headline_draws,rank,is_champion,profile_photo_url,team,nickname,status,level"
+    + "headline_draws,rank,is_champion,profile_photo_url,profile_photo_thumb_url,"
+    + "team,nickname,status,level"
     + "&status=eq.active&order=rank.asc.nullslast&limit=600";
   /* Paint yesterday's roster before asking for today's. 445 tiles is the
      longest wait in the app and the list barely moves week to week. */
@@ -3025,9 +3025,18 @@ function renderFighters(){
     // The initials sit underneath the photo rather than instead of it, so a
     // photo that 404s falls back to something instead of a blank card.
     var ini = '<span class="init">'+esc(initials(f.display_name))+'</span>';
-    var art = f.profile_photo_url
-      ? ini + '<img src="'+esc(f.profile_photo_url)+'" alt="" loading="lazy" '
-            + 'onerror="this.remove()">'
+    /* THE THUMBNAIL, not the photo. These tiles are 98px tall and the full
+       images are ~2MB each against ~176KB for the thumb -- 11x. Ninety-two of
+       them is roughly 190MB of photographs to fill one screen of 98px boxes,
+       which is why the grid crawled. The thumbs have existed the whole time
+       and `fighter_cards` simply did not select the column.
+       `decoding="async"` keeps a big decode off the main thread, and the
+       explicit width/height means the browser reserves the box before the
+       bytes arrive rather than after. */
+    var src = f.profile_photo_thumb_url || f.profile_photo_url;
+    var art = src
+      ? ini + '<img src="'+esc(src)+'" alt="" loading="lazy" decoding="async" '
+            + 'width="180" height="98" onerror="this.remove()">'
       : ini;
     var belt = f.is_champion ? '<span class="bt">Champ</span>' : '';
     var rk = f.rank != null ? '<em>&middot; P4P '+f.rank+'</em>' : '<em>&middot; Unranked</em>';
@@ -5258,19 +5267,17 @@ var REFRESH = {
 };
 
 function wirePullToRefresh(){
-  /* TRIGGER is where the circle completes and where the dial STOPS moving.
-     HOLD is where the panel rests while it refreshes. MAX is as far as the
-     panel can ever be dragged. */
-  var TRIGGER = 64, HOLD = 56, MAX = 110;
+  /* TRIGGER is where the circle completes. HOLD is where the dial rests while
+     it refreshes. TOP is where it starts, off the top edge. */
+  var TRIGGER = 62, HOLD = 52, MAX = 78, TOP = -40;
   var startY = 0, pulling = false, dist = 0, busy = false;
   var panel = null, ind = null, dial = null, arc = null;
   var frame = 0, pending = 0;
 
-  /* Asymptotic resistance rather than a flat multiplier. The first pixels
+  /* Asymptotic resistance rather than a flat multiplier: the first pixels
      track the finger almost 1:1 and it stiffens toward MAX, so the pull has a
-     felt END instead of either running away with the page or stopping dead
-     against a clamp. */
-  function resist(dy){ return MAX * (1 - Math.exp(-dy / (MAX * 0.9))); }
+     felt END instead of running away. */
+  function resist(dy){ return MAX * (1 - Math.exp(-dy / (MAX * 0.85))); }
 
   function indicatorFor(p){
     var el = p.querySelector('.ptr');
@@ -5285,55 +5292,37 @@ function wirePullToRefresh(){
     }
     return el;
   }
-
-  /* ONE write per frame, and only transform/opacity/dashoffset -- none of
+  function place(y, pct){
+    dial.style.transform = 'translateY(' + y.toFixed(1) + 'px) scale('
+      + (0.7 + 0.3 * pct).toFixed(3) + ')';
+    dial.style.opacity = Math.min(pct * 1.7, 1).toFixed(2);
+    if(arc) arc.style.strokeDashoffset = (69.1 * (1 - pct)).toFixed(1);
+  }
+  /* ONE write per frame, and only transform / opacity / dashoffset -- none of
      which touches layout. touchmove fires faster than the screen paints, so
-     writing straight from the handler queues work the compositor then has to
-     throw away; that is what made it feel like it was snapping. */
+     writing straight from the handler queues work the compositor throws away. */
   function schedule(d){
     pending = d;
     if(frame) return;
     frame = requestAnimationFrame(function(){
       frame = 0;
-      var v = pending;
-      panel.style.transform = 'translateY(' + v.toFixed(1) + 'px)';
-      var ride = Math.min(v, TRIGGER);
-      var pct  = Math.min(v / TRIGGER, 1);
-      if(dial){
-        dial.style.transform = 'translateY(' + ride.toFixed(1) + 'px) scale('
-          + (0.7 + 0.3 * pct).toFixed(3) + ')';
-        dial.style.opacity = Math.min(pct * 1.6, 1).toFixed(2);
-      }
-      if(arc) arc.style.strokeDashoffset = (69.1 * (1 - pct)).toFixed(1);
-      ind.classList.toggle('ready', v >= TRIGGER);
+      var pct = Math.min(pending / TRIGGER, 1);
+      place(TOP + pending, pct);
+      ind.classList.toggle('ready', pending >= TRIGGER);
     });
   }
-
-  /* Animate to a resting place. Clearing the transform has to happen WHILE the
-     transition class is on -- an earlier version set it 240ms later, after the
-     class had already come off, so the panel sat still and then jumped. */
-  function settle(to, then){
-    if(!panel) return;
+  function ease(on){ ind.classList.toggle('ease', !!on); }
+  function retract(then){
     if(frame){ cancelAnimationFrame(frame); frame = 0; }
-    var p = panel, i = ind, d = dial, a = arc;
-    p.classList.add('snapback');
-    if(to > 0){
-      p.style.transform = 'translateY(' + to + 'px)';
-      if(d) d.style.transform = 'translateY(' + Math.min(to, TRIGGER) + 'px) scale(1)';
-    } else {
-      p.style.transform = '';
-      if(d){ d.style.transform = ''; d.style.opacity = ''; }
-    }
+    var i = ind, d = dial, a = arc;
+    ease(true);
+    d.style.transform = ''; d.style.opacity = '';
     setTimeout(function(){
-      p.classList.remove('snapback');
-      p.style.willChange = '';
-      if(to === 0){
-        i.classList.remove('ready','spin');
-        if(a) a.style.strokeDashoffset = '';
-        p.style.transform = '';
-      }
+      i.classList.remove('ready','spin','ease');
+      d.style.willChange = '';
+      if(a) a.style.strokeDashoffset = '';
       if(then) then();
-    }, 270);
+    }, 320);
   }
   function letGo(){ pulling = false; dist = 0; }
 
@@ -5348,11 +5337,10 @@ function wirePullToRefresh(){
     if(!REFRESH[currentTab]) return;
     panel = p; ind = indicatorFor(p);
     dial = ind.firstChild; arc = ind.querySelector('.arc');
-    /* Easing off while the finger is down, and the layer promoted before the
-       first move rather than during it -- promoting mid-gesture is its own
-       stutter. */
-    panel.classList.remove('snapback');
-    panel.style.willChange = 'transform';
+    /* Promote the layer BEFORE the first move -- promoting mid-gesture is its
+       own stutter -- and take the easing off so the dial tracks the finger. */
+    dial.style.willChange = 'transform,opacity';
+    ease(false);
     startY = e.touches[0].clientY; pulling = true; dist = 0;
   }, { passive: true });
 
@@ -5360,7 +5348,7 @@ function wirePullToRefresh(){
     if(!pulling || busy) return;
     var dy = e.touches[0].clientY - startY;
     /* Dragging back UP is a normal scroll, so hand it back rather than fight it. */
-    if(dy <= 0 || panel.scrollTop > 0){ settle(0); letGo(); return; }
+    if(dy <= 0 || panel.scrollTop > 0){ retract(); letGo(); return; }
     e.preventDefault();                       /* needs passive:false */
     dist = resist(dy);
     schedule(dist);
@@ -5368,19 +5356,21 @@ function wirePullToRefresh(){
 
   document.addEventListener('touchend', function(){
     if(!pulling || busy) return;
-    if(dist < TRIGGER){ settle(0); letGo(); return; }
+    if(dist < TRIGGER){ retract(); letGo(); return; }
     busy = true; letGo();
+    if(frame){ cancelAnimationFrame(frame); frame = 0; }
     var i = ind, tab = currentTab;
     i.classList.remove('ready'); i.classList.add('spin');
-    settle(HOLD);                             /* ease into the hold, never snap */
-    var done = function(){ settle(0, function(){ busy = false; }); };
+    ease(true);
+    place(TOP + HOLD, 1);                     /* ease to the rest, never snap */
+    var done = function(){ retract(function(){ busy = false; }); };
     /* Never leave the spinner up. A refresher that throws still has to give
        the screen back -- the failure is already reported by the loader's own
        retry box. */
     var out;
     try{ out = REFRESH[tab](); }catch(e){ out = null; }
-    Promise.resolve(out).then(function(){ setTimeout(done, 320); },
-                             function(){ setTimeout(done, 320); });
+    Promise.resolve(out).then(function(){ setTimeout(done, 420); },
+                             function(){ setTimeout(done, 420); });
   }, { passive: true });
 }
 
