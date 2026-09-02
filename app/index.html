@@ -651,7 +651,11 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .crd .glow{position:absolute;right:-46px;top:-46px;width:190px;height:190px;border-radius:50%;
   background:radial-gradient(circle,rgba(245,200,66,.3),transparent 68%)}
 .crd .cin{position:relative;padding:15px}
-.crd .crt{display:flex;align-items:flex-start;gap:13px}
+/* CENTRED, not top-aligned. The rank column is a 60px numeral and everything
+   beside it -- the name, the portrait -- is half that, so flex-start pinned
+   them to the top and left a void along the bottom edge of the pill under the
+   name and the face. Centring spends that space instead of leaving it. */
+.crd .crt{display:flex;align-items:center;gap:13px}
 .crd .rnk{text-align:center;flex-shrink:0;min-width:52px}
 .crd .rnk .h{font-family:'Space Mono',monospace;font-size:6.5px;letter-spacing:.2em;color:#C0A85E}
 .crd .rnk .num{font-family:'Bebas Neue',sans-serif;font-size:60px;line-height:.8;color:#F5C842;
@@ -678,7 +682,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   margin:-15px 0 0 -15px;stroke:rgba(233,226,255,.55);fill:none;stroke-width:1.7;
   stroke-linecap:round;stroke-linejoin:round}
 .crd.tap{cursor:pointer}
-.crd .who{flex:1;min-width:0;padding-top:2px}
+.crd .who{flex:1;min-width:0}
 .crd .nm4{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:30px;
   text-transform:uppercase;letter-spacing:.02em;line-height:.98;
   overflow-wrap:anywhere}
