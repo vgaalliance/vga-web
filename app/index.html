@@ -5263,140 +5263,104 @@ var REFRESH = {
   cards:    function(){ binderCards = null; binderAll = null; return renderCards(); }
 };
 
-/* ── THE MARK ───────────────────────────────────────────────────────────
-   The real one, ported from studio/tale-of-the-tape.html's `flowerTab`
-   ("SMEAR v2"). An earlier pass took the wrong flower out of that file: the
-   CORNER BLOOM, which is ambient wallpaper made of stacked discs. The mark is
-   a different object, and the note in that file is explicit about why the disc
-   version was rejected -- "a blur with no arrangement read as a smudge".
+/* ── THE HALO ───────────────────────────────────────────────────────────
+   Round petals, and quiet. The bezier mark from the broadcast card is right on
+   a 392px tab where it IS the logo; in a nav bar under a 48px button it was
+   competing with the button instead of framing it. So this is the round form
+   -- soft stacked discs, the same technique as the website's corner blooms --
+   sitting close around the disc as a halo you notice rather than look at.
 
-   What makes it the mark and not a glow:
-     - petals are TEARDROP BEZIERS pointing outward, not circles
-     - they sit on a ring at 0.72R, so nothing overlaps at the centre and the
-       middle stays open instead of blowing out white
-     - each petal is a blurred haze pass plus a gradient body, brightest along
-       its spine and gone at the edges, so it has shape with NO outline -- a
-       hairline stroke is what made the old mark read as drawn rather than lit
-     - the canvas NEVER fully clears. destination-out at 0.13 a frame lowers
-       the alpha of what is already there, so turning leaves a trail. A dark
-       fill would work on an opaque background and paint a black box here
-     - the centre is a stroked ring, never filled
-     - petals get LONGER as it opens (eh 0.42R -> 0.88R) and barely wider,
-       which is the opening motion; scaling the whole thing is not
+   Three things keep it subtle: it hugs the button (ring at 1.18x its radius,
+   so the glow starts where the button ends), the resting alpha is low, and the
+   spin is slow enough that the trail is a smear rather than motion. It only
+   stops being subtle on a refresh, which is the entire point of it being there.
 
-   `si` is 0..1 open. It idles at 0.28, rides the pull, and is thrown to 1 on a
-   refresh. */
+   The CRT is on the bloom only: petals drawn three times at increasing offsets
+   in red / green / blue with `screen` compositing -- chromatic aberration --
+   and scanlines that ERASE alpha rather than paint black, because this canvas
+   is transparent over the page and a dark fill would draw a visible box. */
 var PETAL_HUES = [268, 285, 258, 292, 276];
 var discPull = function(){}, discBloom = function(){};
 
 function startDiscBloom(){
   var cv = document.getElementById('disc-bloom');
   if(!cv || !cv.getContext) return;
-  var S = 112, R = 30, C = S/2;
+  var S = 112, C = S/2, BTN = 27;      /* the You button's radius */
   var ctx = cv.getContext('2d');
   var dpr = Math.min(window.devicePixelRatio || 1, 2);
   cv.width = S*dpr; cv.height = S*dpr; ctx.scale(dpr, dpr);
 
-  var IDLE = 0.28;
-  var si = IDLE, target = IDLE, vel = 0, spin = 0, bloom = 0, acid = 0;
+  var IDLE = 0.20;
+  var si = IDLE, target = IDLE, vel = 0, spin = 0, bloom = 0, acid = 0, t = 0;
 
-  discPull  = function(f){ target = IDLE + Math.max(0, Math.min(1, f)) * (0.82 - IDLE); };
+  discPull  = function(f){ target = IDLE + Math.max(0, Math.min(1, f)) * (0.72 - IDLE); };
   discBloom = function(){ target = 1; bloom = 1; acid = 1; };
 
-  function petal(x, y, ang, ew, eh){
-    ctx.save(); ctx.translate(x, y); ctx.rotate(ang + Math.PI/2);
-    ctx.beginPath();
-    ctx.moveTo(0, -eh);
-    ctx.bezierCurveTo(ew*0.72, -eh*0.52, ew*0.98, eh*0.12, 0, eh*0.58);
-    ctx.bezierCurveTo(-ew*0.98, eh*0.12, -ew*0.72, -eh*0.52, 0, -eh);
-    ctx.closePath(); ctx.restore();
+  /* One petal: three concentric discs, biggest and faintest first, so no edge
+     is ever fully opaque and it reads as lit rather than drawn. */
+  function petal(x, y, hue, a, tint){
+    var pr = 7.0 + si * 3.4;
+    [[2.2, 66, 0.10], [1.35, 76, 0.22], [0.8, 84, 0.40]].forEach(function(d){
+      ctx.beginPath(); ctx.arc(x, y, pr*d[0], 0, Math.PI*2);
+      ctx.fillStyle = tint ? tint + (a*d[2]).toFixed(3) + ')'
+                           : 'hsla(' + hue + ',100%,' + d[1] + '%,' + (a*d[2]).toFixed(3) + ')';
+      ctx.fill();
+    });
   }
 
   (function loop(){
     requestAnimationFrame(loop);
     /* An animation nobody is looking at is a battery bill. */
     if(document.hidden) return;
+    t++;
 
     if(bloom > 0){ bloom = Math.max(0, bloom - 0.013); if(bloom === 0) target = IDLE; }
     if(acid  > 0){ acid  = Math.max(0, acid - 0.022); }
     /* Spring, not a lerp: stiffer going up than coming down, so it opens with
-       intent and closes lazily. Same asymmetry the broadcast clock uses. */
+       intent and closes lazily. The asymmetry is the broadcast clock's. */
     var stiff = si < target ? 0.020 : 0.006, damp = si < target ? 0.68 : 0.60;
     vel = (vel + (target - si) * stiff) * damp;
     si = Math.max(0, Math.min(1, si + vel));
-    /* Spin rides the openness, which lengthens the trail exactly when the
-       flower is most open. The bloom term was 0.12 -- fast enough that each
-       petal's trail reached the next one and the five merged into a single
-       turning mass. Fast still, but the gaps survive. */
-    spin += 0.010 + si * 0.030 + bloom * 0.045;
+    spin += 0.004 + si * 0.016 + bloom * 0.030;
 
-    /* The trail. destination-out lowers what is already there; a dark fill
-       would paint a visible box on a transparent canvas. */
+    /* The trail, and the only way to fade a TRANSPARENT canvas: destination-out
+       lowers the alpha of what is there. A dark fill paints a box. */
     ctx.globalCompositeOperation = 'destination-out';
-    /* 0.13 is the card's value, on a mark twice this size with a slower turn.
-       Here it left a smear long enough to close the gaps between petals. */
-    ctx.fillStyle = 'rgba(0,0,0,0.19)';
+    ctx.fillStyle = 'rgba(0,0,0,0.20)';
     ctx.fillRect(0, 0, S, S);
     ctx.globalCompositeOperation = 'source-over';
 
-    /* The ring is pushed OUT to 0.88R. At 0.72R the inner half of every petal
-       sat under the You button, so all that showed was five pointed tips --
-       and five tips smeared by the trail read as a triangle, not a flower.
-       The broadcast card can use 0.72 because nothing covers its middle. */
-    var ringR = R * 0.88;
-    /* Aspect, tuned for THIS size. The card draws R*0.34 wide against
-       R*0.42-0.88 long; at 30px that is a fan when closed and a spike when
-       open. Wider base, and it lengthens less, so a petal stays a petal at
-       both ends of the range instead of turning into a needle. */
-    var ew = R * (0.30 + si*0.05), eh = R * (0.40 + si*0.26);
+    /* Hugs the button: the halo begins where the button ends. */
+    var ringR = BTN * 1.18 + si * 9;
+    var a = (0.30 + 0.04*Math.sin(t*0.02)) + si * 0.40 + bloom * 0.30;
 
-    for(var p = 0; p < 5; p++){
-      var ang = (p/5)*Math.PI*2 + spin;
-      var px = C + Math.cos(ang)*ringR, py = C + Math.sin(ang)*ringR;
-      var hue = (PETAL_HUES[p] + si*8 + bloom*70) % 360;
-
-      /* Outer haze -- the petal again, bigger and barely there. Does the job
-         the old hairline stroke did, without ever landing on a hard edge. */
-      ctx.save();
-      ctx.shadowBlur = 14 + si*16;
-      ctx.shadowColor = 'hsla(' + hue + ',100%,72%,0.5)';
-      petal(px, py, ang, ew*1.22, eh*1.12);
-      ctx.fillStyle = 'hsla(' + hue + ',95%,66%,' + (0.10 + si*0.05).toFixed(3) + ')';
-      ctx.fill();
-      ctx.restore();
-
-      /* Body -- brightest along the spine, gone at the edges. */
-      ctx.save();
-      petal(px, py, ang, ew, eh);
-      var g = ctx.createLinearGradient(px - Math.cos(ang)*eh, py - Math.sin(ang)*eh,
-                                       px + Math.cos(ang)*eh, py + Math.sin(ang)*eh);
-      g.addColorStop(0,    'hsla(' + hue + ',100%,86%,' + (0.42 + si*0.20).toFixed(3) + ')');
-      g.addColorStop(0.55, 'hsla(' + hue + ',100%,72%,' + (0.26 + si*0.14).toFixed(3) + ')');
-      g.addColorStop(1,    'hsla(' + ((hue+12)%360) + ',100%,62%,0.04)');
-      ctx.fillStyle = g; ctx.fill();
-      ctx.restore();
-    }
-
-    /* Centre: a thin ring only. Filling it is what sat white behind the
-       wordmark on the version this replaced. */
+    var lit = acid > 0.02;
+    var passes = lit
+      ? [[-acid*3.4, 'rgba(255,45,45,'], [0, 'rgba(45,255,130,'], [acid*3.4, 'rgba(70,100,255,']]
+      : [[0, null]];
+    /* SCREEN BLENDING SUMS TO WHITE. Three passes at full alpha take R, G and
+       B all to 255 wherever they overlap, which is most of the flower -- the
+       broadcast file hit exactly this and says so. Each pass is scaled down so
+       the three together land near the brightness of one, and what you get is
+       the colour SPLIT rather than a white blob. */
+    var passA = Math.min(a, 1) * (lit ? 0.42 : 1);
     ctx.save();
-    ctx.beginPath(); ctx.arc(C, C, R*0.20, 0, Math.PI*2);
-    ctx.strokeStyle = 'hsla(280,100%,86%,' + (0.35 + si*0.25).toFixed(3) + ')';
-    ctx.lineWidth = 1.2 + si*0.8;
-    ctx.shadowBlur = 10; ctx.shadowColor = 'hsla(280,100%,80%,0.7)';
-    ctx.stroke();
+    if(lit) ctx.globalCompositeOperation = 'screen';
+    for(var k = 0; k < passes.length; k++){
+      for(var p = 0; p < 5; p++){
+        var ang = (p/5)*Math.PI*2 + spin;
+        petal(C + Math.cos(ang)*ringR + passes[k][0], C + Math.sin(ang)*ringR,
+              (PETAL_HUES[p] + si*8 + bloom*60) % 360, passA, passes[k][1]);
+      }
+    }
     ctx.restore();
 
-    /* The CRT, on the refresh only -- scanlines at rest would just be dirt.
-       They ERASE alpha rather than paint black, for the same reason the trail
-       does: this canvas is transparent over the page, so a dark fill draws a
-       visible box around the mark instead of lines through it. That is the
-       exact mistake the broadcast file warns about, and it was made here
-       first time round. */
+    /* Scanlines ERASE, for the same reason the trail does. Bloom only -- at
+       rest they would just be dirt. */
     if(acid > 0.02){
       ctx.save();
       ctx.globalCompositeOperation = 'destination-out';
-      ctx.globalAlpha = 0.34 * acid; ctx.fillStyle = '#000';
+      ctx.globalAlpha = 0.22 * acid; ctx.fillStyle = '#000';
       for(var y = 0; y < S; y += 3) ctx.fillRect(0, y, S, 1.4);
       ctx.restore();
     }
