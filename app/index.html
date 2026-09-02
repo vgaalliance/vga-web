@@ -1995,12 +1995,12 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   </div>
   <div id="ranks"></div>
   <div id="join-slot"></div>
-  <div class="lab"><b id="nx-lab">Next card</b><i></i><a data-goto="events">All events</a></div>
-  <!-- Held at the poster's own height, not a token that says "loading". The
-       news rows this replaced moved everything under them ~220px when they
-       landed (measured 2026-09-01) and a skeleton exists to stop exactly
-       that, so it has to be the SHAPE of what is coming. -->
-  <div id="home-next"><div class="pv pvgh"></div></div>
+  <div class="lab"><b>Latest</b><i></i><a data-goto="news">News</a></div>
+  <!-- Three ghost rows, not one 14px bar. The real thing is three .nw rows
+       and everything under it moved ~220px when they landed -- measured
+       2026-09-01. A skeleton whose job is to hold the space has to be the
+       SHAPE of what is coming, not a token that says "loading". -->
+  <div id="home-news"><div class="nw gh"><span class="th"></span><div class="gb"><i></i><i class="w"></i></div></div><div class="nw gh"><span class="th"></span><div class="gb"><i></i><i class="w"></i></div></div><div class="nw gh"><span class="th"></span><div class="gb"><i></i><i class="w"></i></div></div></div>
   <div class="foot">discord.gg/uba &middot; ubaesports.com</div>
 </div></section>
 
@@ -2547,10 +2547,6 @@ async function loadHome(){
   } else {
     fanEvents = evs;
     renderFan();
-    /* Paint the poster now, with whatever is known — the names and photos
-       arrive on their own request and repaint it below. A block that waits for
-       the photographs is a block that is blank for the first second. */
-    renderNextEvent();
     // REAL event ids only. A UBAe night's id is `tm:<uuid>`, and one of those
     // inside `event_id=in.(...)` is not a uuid — PostgREST rejects the whole
     // query, so a single UBAe card in the hand silently stripped the faceoff
@@ -2559,7 +2555,7 @@ async function loadHome(){
     loadPosters(ids).then(function(){ renderFan(true); });
     loadFaceoffs(ids).then(function(){ renderFan(true); renderNextEvent(); });
   }
-  await Promise.all([loadLive(), loadRanks(), loadStrip()]);
+  await Promise.all([loadLive(), loadRanks(), loadHomeNews(), loadStrip()]);
 }
 
 
@@ -3355,6 +3351,20 @@ function newsFailure(retryId){
   }
   return failHTML("Couldn't load the news.", retryId);
 }
+async function loadHomeNews(){
+  var el = document.getElementById('home-news');
+  var rows = await getNews();
+  if(!rows){ retryHandlers['homenews'] = function(){ newsCache = null; loadHomeNews(); };
+    el.innerHTML = newsFailure('homenews'); return; }
+  if(!rows.length){ el.innerHTML = '<div class="empty">No news posted yet.</div>'; return; }
+  el.innerHTML = rows.slice(0,3).map(function(n){
+    return '<div class="nw" data-news="'+esc(n.id)+'"><span class="th"></span><div>'
+      + (n.kicker ? '<div class="k">'+esc(n.kicker)+'</div>' : '')
+      + '<div class="h">'+esc(n.headline)+'</div>'
+      + '<div class="d">'+esc(dstr(n.posted_at))+'</div></div></div>';
+  }).join('');
+}
+
 /* ── THE NEXT CARD ────────────────────────────────────────────────────
    Reads what home already has: fanEvents (every scheduled event, plus a past
    backfill when the schedule is thin) and faceoffs (bout 1 of each published
@@ -3424,8 +3434,17 @@ function cutout(url, flip){
       + '<path d="M30 38c-14 0-24 9-26 22l-4 40h60l-4-40c-2-13-12-22-26-22z"/></svg>';
 }
 
+/* Lives on the NEWS tab, between the watch deck and the wire. That is the
+   slot the newest story used to sit in, and it was the wire's own lead
+   repeated at a larger size — the wire is three inches below it. What the tab
+   was missing is the thing every other sports app puts second: the card that
+   has not happened yet.
+
+   The container is rendered by paintNews, so it does not exist at boot. Both
+   directions are covered: paintNews calls this when it draws, and loadHome
+   calls it again when the faceoffs land, whichever happens second. */
 function renderNextEvent(){
-  var el = document.getElementById('home-next');
+  var el = document.getElementById('news-next');
   if(!el) return;
   var lab = document.getElementById('nx-lab');
   var list = nextEventList();
@@ -3445,14 +3464,17 @@ function renderNextEvent(){
 /* Dots and a swipe, on the block itself. The tap-through to the event is the
    `[data-event]` handler that every other event row already uses, so a dot has
    to stop the event reaching it. */
-document.getElementById('home-next').addEventListener('click', function(e){
+/* Delegated from the tab body, not bound to the block: paintNews replaces
+   #news-next wholesale on every repaint, so a listener on the block itself is
+   thrown away the first time a video or a story lands. */
+document.getElementById('news-body').addEventListener('click', function(e){
   var d = e.target.closest('[data-nxi]'); if(!d) return;
   e.stopPropagation();
   nextIdx = +d.getAttribute('data-nxi');
   renderNextEvent();
 });
 (function(){
-  var el = document.getElementById('home-next'), x0 = null, y0 = null;
+  var el = document.getElementById('news-body'), x0 = null, y0 = null;
   if(!el) return;
   el.addEventListener('touchstart', function(e){
     x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
@@ -3464,6 +3486,7 @@ document.getElementById('home-next').addEventListener('click', function(e){
     /* Vertical wins ties: this block sits in a scrolling column and stealing a
        scroll to flip a poster is worse than missing a flip. */
     if(Math.abs(dx) < 42 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+    if(!e.target.closest('#news-next')) return;   // the deck owns its own swipe
     var n = nextEventList().rows.length;
     if(n < 2) return;
     nextIdx = (nextIdx + (dx < 0 ? 1 : n - 1)) % n;
@@ -3521,22 +3544,14 @@ function paintNews(rows){
     }
   }
 
-  /* THE LEAD STORY KEEPS ITS CARD. The deck taking the top of the tab is not a
-     reason to demote the writing to a row -- 21 of 22 posts carry a graphic,
-     and dropping the lead treatment threw every one of them away. Deck, then
-     the newest story at full size, then the mixed wire from the second story
-     down. */
-  var lead = rows[0];
-  if(lead){
-    html += '<div class="lab"><b>Latest</b><i></i></div>'
-      + '<div class="lead" data-news="'+esc(lead.id)+'"><div class="gfx">'
-      + (lead.graphic_url ? '<img src="'+esc(lead.graphic_url)+'" alt="'+esc(lead.headline)+'">'
-          : '<span class="bar"></span>'
-            + (lead.kicker ? '<span class="k">'+esc(lead.kicker)+'</span>' : '')
-            + '<span class="h">'+esc(lead.headline)+'</span>')
-      + '</div><div class="under"><div class="ld">'+esc(lead.reporter||'UBA')+' \u00b7 '
-      + esc(dstr(lead.posted_at))+'</div><div class="rd">Read</div></div></div>';
-  }
+  /* THE NEXT CARD TAKES THE SECOND SLOT, not the newest story.
+     The lead treatment was the wire's own first row printed again at a larger
+     size, three inches above itself, and the wire below already carries every
+     story in date order. What this tab had nowhere for is the thing every
+     sports app puts second: the card that has not happened yet. */
+  html += '<div class="lab"><b id="nx-lab">Next card</b><i></i>'
+        + '<a data-goto="events">All events</a></div>'
+        + '<div id="news-next"><div class="pv pvgh"></div></div>';
 
   html += '<div class="lab"><b>The wire</b><i></i>'
     + (vids.length ? '<s>newest first</s>' : '') + '</div>';
@@ -3547,7 +3562,9 @@ function paintNews(rows){
      ONE VIDEO BETWEEN ARTICLES -- videos already own the deck above, so the
      wire does not owe them the space. Any videos left over are simply not
      shown here; they are one swipe away. */
-  var arts = rows.slice(1), vq = vids.slice(), feed = [], v;   /* the lead is above */
+  /* From the FIRST story, not the second: nothing is printed above the wire
+     any more, so slicing one off silently dropped the newest post. */
+  var arts = rows.slice(), vq = vids.slice(), feed = [], v;
   while(arts.length){
     feed.push({ kind: 'a', it: arts.shift() });
     if(vq.length){ v = vq.shift(); feed.push({ kind: 'v', it: v }); }
@@ -3580,6 +3597,9 @@ function paintNews(rows){
   html += '<div class="foot">End of the wire &middot; ' + rows.length + ' posts'
     + (vids.length ? ' &middot; ' + vids.length + ' videos' : '') + '</div>';
   el.innerHTML = html;
+  /* #news-next only exists now. Its own data may already be in hand, or may
+     land later — loadHome calls this again either way. */
+  renderNextEvent();
 }
 
 /* ═══ FIGHTERS ═══════════════════════════════════════════════════════ */
@@ -6116,7 +6136,7 @@ function showDiag(){
    would only mean the next cold open has nothing to paint. */
 var REFRESH = {
   home: function(){ return Promise.all([loadHome(), loadLive(), loadStrip(),
-                                        loadRanks()]).then(renderNextEvent); },
+                                        loadRanks(), loadHomeNews()]); },
   news: function(){ newsCache = null; newsInFlight = null; return loadNews(); },
   you:  function(){ return loadMe().then(function(){ renderYou(); }); },
   fighters: function(){ allFighters = null; return loadFighters(); },
