@@ -678,9 +678,12 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    The silhouette fallback keeps its disc, because a lone icon floating with
    no frame reads as a missing image rather than a placeholder -- and 356 of
    448 fighters have no photo, so the fallback is the common case. */
+/* The bleed is DOWNWARD only. A negative top margin pushed this box above the
+   pill, and `contain` then fitted the figure into a box whose top was outside
+   the card -- so the head was cut even though nothing was asking it to be. */
 .crd .pfp{width:86px;flex-shrink:0;align-self:stretch;position:relative;
-  margin:-15px -8px -15px 0;min-height:96px}
-.crd .pfp img{position:absolute;right:0;bottom:0;width:100%;height:112%;
+  margin:0 -8px -15px 0;min-height:96px}
+.crd .pfp img{position:absolute;right:0;bottom:0;width:100%;height:100%;
   object-fit:contain;object-position:bottom center;display:block;
   filter:drop-shadow(0 6px 14px rgba(6,4,20,.6))}
 .crd .pfp.none{width:62px;height:62px;align-self:center;min-height:0;
