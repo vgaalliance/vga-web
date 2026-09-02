@@ -1120,29 +1120,82 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   color:#B7AEDC;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.24)}
 .doit b{color:#E6DEFF;font-family:'Space Mono',monospace;font-size:11.5px}
 
-.rbar{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:0 16px 8px}
-.rtabs{display:flex;gap:13px;min-width:0;overflow-x:auto;scrollbar-width:none}
-.rtabs::-webkit-scrollbar{display:none}
-/* GFL has divisional rankings but no pound-for-pound list, so P4P is not
-   offered there rather than offered and empty. */
-.rtabs button[data-r="p4p"].hide{display:none}
+/* ── THE RANKINGS BOARD, the body of home ────────────────────────────
+   Four divisions side by side, all fifteen ranked in each, champion on top.
+   This replaced four tabs showing one division at a time: the tabs meant three
+   quarters of the league was always a tap away, and nobody taps.
+
+   FIFTEEN FIT IN 4 COLUMNS, which is the whole reason this shape works. A
+   column is ~83px, leaving a ~50px name slot -- about eight characters. Only
+   5 of the 60 ranked names are longer than that, so the exception is handled
+   (see fitRankNames) rather than the layout being widened for it.
+
+   THE CHAMPION IS NOT RANKED. rankings_public never lists a belt holder among
+   the contenders, so the gold row on top is titles_public and adds a
+   sixteenth name rather than repeating the first. It comes from titles_public
+   and NOT fighters.is_champion, because that flag is a single boolean and
+   cannot say WHICH belt or that Killer Kam holds two -- he is the champion
+   row of both middleweight and light heavyweight (audit F76). */
+.rbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 16px 9px}
 .rleague{display:flex;flex-shrink:0;border:1px solid rgba(255,255,255,.16);border-radius:20px;overflow:hidden}
 .rleague button{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.1em;
-  padding:5px 10px;color:#7E7699}
+  text-transform:uppercase;color:#8B83AC;background:none;border:0;padding:5px 12px;cursor:pointer}
 .rleague button.on{background:#A78BFA;color:#1A1430}
-.rtabs-old{display:flex;gap:15px;margin:0 18px 8px}
-.rtabs button{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.14em;
-  text-transform:uppercase;color:#7E7699;padding-bottom:5px;border-bottom:2px solid transparent}
-.rtabs button.on{color:#C3A6FF;border-bottom-color:#A78BFA}
-.rrow{display:flex;align-items:center;gap:10px;margin:0 16px;padding:9px 10px;border-radius:8px}
-.rrow.champ{background:linear-gradient(90deg,rgba(245,200,66,.12),transparent);border-left:2px solid #F5C842}
-.rrow .no{font-family:'Space Mono',monospace;font-size:9.5px;color:#7E7699;width:24px;flex-shrink:0}
-.rrow .n{flex:1;font-size:15.5px;font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rrow.champ .n{color:#F5C842}
-.rrow .n sup{font-family:'Space Mono',monospace;font-size:7px;color:#F5C842;margin-left:4px;vertical-align:super}
-.rrow .rec{font-family:'Space Mono',monospace;font-size:10.5px;color:#6EE7B7;font-variant-numeric:tabular-nums;flex-shrink:0}
-.rrow .rec em{font-style:normal;color:#F19C96}
-.rrow .rec i{font-style:normal;color:#7E7699}
+.rasof{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:.1em;
+  text-transform:uppercase;color:#6E6688;text-decoration:none}
+
+.rgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 15px}
+.rcol{min-width:0;padding:0 1px}
+.rdh{font-family:'Space Mono',monospace;font-size:6.5px;font-weight:700;letter-spacing:.14em;
+  color:#A78BFA;text-align:center;padding-bottom:5px;border-bottom:1px solid rgba(167,139,250,.28)}
+.rch{display:flex;align-items:center;gap:3px;padding:4px 3px;margin-bottom:2px;min-width:0;
+  border-bottom:1px solid rgba(245,200,66,.32)}
+.rch .rnm{font-size:11px;font-weight:700;color:#FFE8A0}
+.rvac .rft{color:#8A7546;font-weight:600;font-style:italic}
+.rkrow{display:flex;align-items:center;gap:3px;padding:3px 3px;min-width:0}
+.rkrow.z{background:rgba(255,255,255,.028)}
+.rnm{flex:1;min-width:0;font-size:11px;font-weight:600;line-height:1.15}
+/* The name is scaled, the SLOT is not. fitRankNames widens this inner block
+   and scales it back down, so the ellipsis and the clip stay where the column
+   put them -- scaling .rnm itself would scale its own overflow box with it and
+   fit nothing extra, which is the bug this inner span exists to avoid. */
+.rft{display:block;width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  transform-origin:left center}
+.rkrow.bmf .rnm{color:#FFE8A0;font-weight:700}
+
+/* The one gold thing on the screen: a champion's row, and the BMF holder's row
+   wherever in the list they happen to sit. No emoji, no belt glyph -- the
+   shimmer is the mark. */
+@keyframes rkSheen{0%{background-position:-160% 0}60%,100%{background-position:260% 0}}
+/* The tint is a flat background and the sweep is an OVERLAY, which is not
+   fussiness. Animating background-position on the row itself needs
+   background-repeat:no-repeat or the oversized gradient TILES, and a tile
+   boundary crossing the row draws a hard vertical seam through the champion's
+   name -- visible on Lama and Boady before this was split in two. The overlay
+   can be no-repeat because its edges are transparent, so nothing is left
+   uncovered when it sweeps off. */
+.rgold{position:relative;background:rgba(245,200,66,.11)}
+.rgold::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(100deg,transparent 36%,rgba(255,235,175,.26) 50%,transparent 64%);
+  background-size:300% 100%;background-repeat:no-repeat;
+  animation:rkSheen 5.2s ease-in-out infinite}
+
+/* Every one of these is r-prefixed for a reason: `.nw` is ALREADY the news
+   row's class, a bare rule with its own padding, and `<i class="rmv nw">`
+   picked it up -- one row of the heavyweight column grew to 31px and squeezed
+   its own name slot from 63px to 27px. Nothing errored; it just looked wrong.
+   Four states, and "new" is deliberately not an arrow: prev_rank NULL means
+   the fighter was not on the previous board at all, so calling it a rise would
+   invent a move that never happened. */
+.rmv{display:inline-block;flex-shrink:0;width:6px;height:6px;position:relative}
+.rmv::after{content:'';position:absolute;left:0;top:50%}
+.rmv.rup::after{margin-top:-2px;border-left:3px solid transparent;border-right:3px solid transparent;
+  border-bottom:4.5px solid #4ADE80}
+.rmv.rdn::after{margin-top:-2px;border-left:3px solid transparent;border-right:3px solid transparent;
+  border-top:4.5px solid #FF6B6B}
+.rmv.rsm::after{margin-top:-1px;width:5px;height:1.5px;border-radius:2px;background:rgba(255,255,255,.16)}
+.rmv.rnew::after{margin-top:-2px;left:1px;width:4px;height:4px;border-radius:50%;background:#4ADE80}
+.rsk{display:block;height:9px;border-radius:3px;background:rgba(255,255,255,.07)}
 
 /* A3 — the screens know who is looking.
    "Fight in the UBA" is right for a fan and slightly insulting to somebody
@@ -1769,19 +1822,13 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   <div class="install" id="install"></div>
   <div class="lab"><b>Rankings</b><i></i><a data-goto="fighters">View all</a></div>
   <div class="rbar">
-    <div class="rtabs" id="rtabs">
-      <button data-r="p4p" class="on">P4P</button>
-      <button data-r="lightweight">LW</button>
-      <button data-r="middleweight">MW</button>
-      <button data-r="light_heavyweight">LHW</button>
-      <button data-r="heavyweight">HW</button>
-    </div>
+    <s class="rasof" id="r-asof"></s>
     <div class="rleague" id="rleague">
       <button data-l="pro" class="on">UBA</button>
       <button data-l="amateur">GFL</button>
     </div>
   </div>
-  <div id="ranks"><div class="skel"></div><div class="skel" style="width:70%"></div></div>
+  <div id="ranks"></div>
   <div id="join-slot"></div>
   <div class="lab"><b>Latest</b><i></i><a data-goto="news">News</a></div>
   <!-- Three ghost rows, not one 14px bar. The real thing is three .nw rows
@@ -2873,77 +2920,194 @@ function renderJoinSlot(){
   el.innerHTML = '';
 }
 
-/* ── RANKINGS, the body of home ──────────────────────────────────────
-   Two tabs off one section: the pound-for-pound order with records, and the
-   UBAe standings. Champions carry a gold rule and a c, which is what let the
-   separate champions rail go — the mark says it in place. */
-var rankTab = 'p4p', rankLeague = 'pro', rankCache = {};
+/* ── RANKINGS, the body of home ────────────────────────
+   All four divisions at once, fifteen deep, champion on top of each. One
+   toggle, and it is the only one: UBA is the pro league and GFL the amateur
+   one, which is the ONLY thing separating them in the data -- `league` reads
+   'UBA' on both, `level` is what differs, and a filter on league would return
+   the two leagues stacked together.
 
-/* UBA is the pro league, GFL the amateur one — that is the only thing
-   separating them in the data, and rankings_public carries both. GFL has
-   divisional rankings but NO pound-for-pound list, so P4P is hidden rather
-   than offered and empty; switching to GFL on P4P drops you into lightweight.
-   Teams are gone: UBAe finishes after next week. */
-document.getElementById('rtabs').addEventListener('click', function(e){
-  var b = e.target.closest('button'); if(!b) return;
-  this.querySelectorAll('button').forEach(function(x){ x.classList.remove('on'); });
-  b.classList.add('on');
-  rankTab = b.getAttribute('data-r');
-  loadRanks();
-});
+   P4P IS NOT HERE ANY MORE. Pound-for-pound is one list, not four, so it has
+   no column to sit in; it lives on the fighters tab behind its own chip, which
+   is also where it belongs when GFL is selected -- GFL is ranked by division
+   and has no pound-for-pound list at all. */
+var rankLeague = 'pro', rankCache = {};
+var RANK_DIVS = [
+  { k: 'lightweight',       s: 'LW'  },
+  { k: 'middleweight',      s: 'MW'  },
+  { k: 'light_heavyweight', s: 'LHW' },
+  { k: 'heavyweight',       s: 'HW'  }
+];
 
 document.getElementById('rleague').addEventListener('click', function(e){
   var b = e.target.closest('button'); if(!b) return;
   this.querySelectorAll('button').forEach(function(x){ x.classList.remove('on'); });
   b.classList.add('on');
   rankLeague = b.getAttribute('data-l');
-  applyLeague();
   loadRanks();
 });
 
-function applyLeague(){
-  var p4p = document.querySelector('.rtabs button[data-r="p4p"]');
-  var gfl = rankLeague === 'amateur';
-  p4p.classList.toggle('hide', gfl);
-  if(gfl && rankTab === 'p4p'){
-    rankTab = 'lightweight';
-    document.querySelectorAll('.rtabs button').forEach(function(x){
-      x.classList.toggle('on', x.getAttribute('data-r') === rankTab);
-    });
+/* The skeleton is the SHAPE of the board, not a token that says "loading".
+   Same grid, same row count, so the news block below does not move when the
+   names land -- the 274px shove measured on 2026-09-01 was exactly this. */
+function rankSkeleton(){
+  var rows = '';
+  for(var i = 0; i < 15; i++){
+    rows += '<div class="rkrow'+(i % 2 ? ' z' : '')+'"><span class="rnm"><b class="rsk"></b></span>'
+          + '<i class="rmv"></i></div>';
   }
+  var col = '<div class="rcol"><div class="rdh">&nbsp;</div>'
+          + '<div class="rch"><span class="rnm"><b class="rsk"></b></span><i class="rmv"></i></div>'
+          + rows + '</div>';
+  return '<div class="rgrid">' + col + col + col + col + '</div>';
 }
 
 async function loadRanks(){
   var el = document.getElementById('ranks');
   if(!el) return;
-  var key = rankLeague + ':' + rankTab;
+  var key = rankLeague;
   el.dataset.tab = key;                 // A6 — the guard below reads this
   if(rankCache[key]){ paintRanks(el, rankCache[key]); return; }
-  el.innerHTML = '<div class="skel"></div><div class="skel" style="width:70%"></div>';
+  el.innerHTML = rankSkeleton();
 
-  var qs = "rankings_public?select=rank,fighter_name,fighter_slug,weight_class"
-    + "&level=eq." + rankLeague + "&order=rank.asc&limit=15"
-    + (rankTab === 'p4p' ? "&scope=eq.overall"
-                         : "&scope=eq.weight_class&weight_class=eq." + rankTab);
-  var rows = await q(qs);
-  if(el.dataset.tab !== key) return;   // a newer tab won while this was in flight
-  if(!rows){
+  /* Two reads, one await. The board is useless without the rankings and only
+     poorer without the belts, so they are weighted differently below. */
+  var res = await Promise.all([
+    q("rankings_public?select=rank,prev_rank,fighter_name,fighter_slug,weight_class"
+      + "&level=eq." + rankLeague + "&scope=eq.weight_class&order=rank.asc&limit=200"),
+    q("titles_public?select=weight_class,kind,holder_name,holder_slug,is_interim"
+      + "&level=eq." + rankLeague + "&kind=neq.team")
+  ]);
+  if(el.dataset.tab !== key) return;    // a newer league won while this was in flight
+  if(!res[0]){
     retryHandlers['ranks'] = loadRanks;
     el.innerHTML = failHTML("Couldn't load the rankings.", 'ranks'); return;
   }
-  rankCache[key] = rows;
-  paintRanks(el, rows);
+  /* A FAILED TITLES READ MUST NOT INVENT A VACANCY. q() returns null for a
+     4xx and [] for "no belts", and those mean opposite things here: null
+     draws no champion row at all, [] draws four Vacant rows. Treating the
+     first as the second would tell the server the belts had been stripped. */
+  var data = { rows: res[0], titles: res[1] };
+  rankCache[key] = data;
+  paintRanks(el, data);
 }
 
-function paintRanks(el, rows){
-  if(!rows.length){ el.innerHTML = '<div class="empty">Nothing ranked here yet.</div>'; return; }
-  el.innerHTML = rows.map(function(f){
-    return '<a class="rrow" data-slug="'+esc(f.fighter_slug||'')+'"'
-      + ' href="./f/'+encodeURIComponent(f.fighter_slug||'')+'.html">'
-      + '<span class="no">#'+f.rank+'</span>'
-      + '<span class="n">'+esc(f.fighter_name)+'</span></a>';
-  }).join('');
+function rankMoveHTML(f){
+  if(f.prev_rank == null) return '<i class="rmv rnew" title="New this week"></i>';
+  if(f.prev_rank > f.rank) return '<i class="rmv rup" title="Up from #'+f.prev_rank+'"></i>';
+  if(f.prev_rank < f.rank) return '<i class="rmv rdn" title="Down from #'+f.prev_rank+'"></i>';
+  return '<i class="rmv rsm" title="Unchanged"></i>';
 }
+
+function rankRowHTML(slug, cls, name, extraNameCls, move){
+  var inner = '<span class="rnm '+(extraNameCls||'')+'"><b class="rft">'+esc(name)+'</b></span>' + move;
+  if(!slug) return '<div class="'+cls+'">'+inner+'</div>';
+  return '<a class="'+cls+'" data-slug="'+esc(slug)+'" href="./f/'
+       + encodeURIComponent(slug)+'.html">'+inner+'</a>';
+}
+
+function paintRanks(el, data){
+  var rows = data.rows, titles = data.titles;
+  if(!rows.length){ el.innerHTML = '<div class="empty">Nothing ranked here yet.</div>'; return; }
+
+  var byWc = {};
+  rows.forEach(function(r){ (byWc[r.weight_class] = byWc[r.weight_class] || []).push(r); });
+
+  /* The BMF belt has no weight class on purpose, so its holder is marked
+     WHERE THEY ALREADY ARE rather than given a row of their own -- Adonnis is
+     #2 at middleweight and stays there, in gold. */
+  var bmf = null, champ = {};
+  (titles || []).forEach(function(t){
+    if(t.kind === 'special' && t.holder_slug) bmf = t.holder_slug;
+    else if(t.weight_class) champ[t.weight_class] = t;
+  });
+
+  el.innerHTML = '<div class="rgrid">' + RANK_DIVS.map(function(d){
+    var list = (byWc[d.k] || []).slice().sort(function(a, b){ return a.rank - b.rank; });
+    var h = '<div class="rcol"><div class="rdh">'+d.s+'</div>';
+    if(titles){
+      var t = champ[d.k];
+      h += t && t.holder_name
+        ? rankRowHTML(t.holder_slug, 'rch rgold', t.holder_name + (t.is_interim ? ' (int)' : ''),
+                      '', '<i class="rmv"></i>')
+        : rankRowHTML(null, 'rch', 'Vacant', 'rvac', '<i class="rmv"></i>');
+    }
+    h += list.map(function(f, i){
+      var gold = bmf && f.fighter_slug === bmf;
+      var cls = 'rkrow' + (i % 2 ? ' z' : '') + (gold ? ' bmf rgold' : '');
+      return rankRowHTML(f.fighter_slug, cls, f.fighter_name, '', rankMoveHTML(f));
+    }).join('');
+    return h + '</div>';
+  }).join('') + '</div>';
+
+  var asof = document.getElementById('r-asof');
+  if(asof) asof.textContent = rows.length + ' ranked';
+  requestAnimationFrame(function(){ fitRankNames(el); });
+}
+
+/* SHRINK-TO-FIT, WITH A FLOOR. The name slot is ~50px, about eight
+   characters, and 5 of the 60 ranked names are longer: DirtiestJordan,
+   AngelicMessenger and TonyHungLow94 all fit once squeezed, and reading as
+   condensed type rather than being cut is worth the wobble.
+
+   THE SQUEEZE IS HORIZONTAL ONLY, which is what makes the floor as low as it
+   is. scaleX narrows the glyphs and leaves the cap height at 11px, so 0.6
+   reads as condensed type rather than as small type -- the first version set
+   the floor at 0.75 on the assumption that it shrank both, and ellipsed three
+   names that fit perfectly well once squeezed.
+
+   The floor still exists, because past a point condensed becomes illegible
+   rather than tight. At 0.6 exactly one of the 60 ranked names is still too
+   long -- `Xi "The Fat Dragon" Lee`, 23 characters -- and it takes the
+   ellipsis. */
+var RANK_FIT_FLOOR = 0.6;
+function fitRankNames(el){
+  var items = [];
+  /* Four passes, and the split is deliberate: every read happens before every
+     write, so 60 names cost two layouts instead of 60. */
+  el.querySelectorAll('.rnm').forEach(function(slot){
+    var t = slot.querySelector('.rft'); if(!t) return;
+    t.style.transform = ''; t.style.width = '';
+    items.push({ slot: slot, t: t, box: slot.clientWidth });
+  });
+  /* MEASURE WITH max-content, NOT scrollWidth. A block that is ALREADY
+     ellipsizing reports scrollWidth == clientWidth -- the text was cut before
+     anything measured it -- so the natural width has to be asked for outright.
+     Using scrollWidth made this a silent no-op at 430px wide while working at
+     375px, which is the worst shape a bug can take: correct on the phone it
+     was built on and cut on everybody else's. */
+  items.forEach(function(o){ o.t.style.width = 'max-content'; });
+  items.forEach(function(o){ o.need = o.t.getBoundingClientRect().width; });
+  items.forEach(function(o){
+    o.t.style.width = '';
+    if(!o.box || o.need <= o.box + 0.5) return;
+    var s = Math.max(RANK_FIT_FLOOR, (o.box / o.need) - 0.01);
+    o.t.style.width = (100 / s) + '%';
+    o.t.style.transform = 'scaleX(' + s.toFixed(3) + ')';
+  });
+}
+
+/* Barlow is a web font, and a name measured in the fallback is measured at the
+   wrong width -- usually narrower, so the squeeze that was needed never
+   happens. Re-run once the real face is in. */
+if(document.fonts && document.fonts.ready){
+  document.fonts.ready.then(function(){
+    var el = document.getElementById('ranks');
+    if(el && el.querySelector('.rgrid')) fitRankNames(el);
+  });
+}
+
+/* Widths change with the device and with a rotation, and a scale measured at
+   375px is wrong at 430px in both directions. Debounced because resize fires
+   continuously through an orientation change. */
+var rankFitTimer = null;
+window.addEventListener('resize', function(){
+  clearTimeout(rankFitTimer);
+  rankFitTimer = setTimeout(function(){
+    var el = document.getElementById('ranks');
+    if(el && el.querySelector('.rgrid')) fitRankNames(el);
+  }, 150);
+});
 
 /* ═══ NEWS ═══════════════════════════════════════════════════════════
    Reads news_public, a view that does not exist yet. Until it is created
