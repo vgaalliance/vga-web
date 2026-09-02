@@ -1126,6 +1126,63 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   color:#B7AEDC;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.24)}
 .doit b{color:#E6DEFF;font-family:'Space Mono',monospace;font-size:11.5px}
 
+/* ── THE NEXT CARD, where the news rows used to be ────────────────────
+   The wire lives on the News tab and had no business being repeated here in
+   three grey rows. What home owes somebody is the answer to "when is the next
+   one and who is on it", and that is a POSTER, not a list.
+
+   UPCOMING ONLY. A finished event never appears while anything is scheduled,
+   because the block's whole claim is "this is next" — the past card is the
+   fallback for an empty schedule, and it says so in its own label rather than
+   quietly looking like an announcement.
+
+   THE PHOTOS ARE OPTIONAL BY DESIGN. 355 of 448 fighters have none, so a
+   missing cut-out draws a silhouette and the poster still reads. A poster
+   that needs two photographs would almost never appear. */
+/* A FLOOR, because the states are different heights and this block flips
+   between them in place: an announced card is ~321px, a UBAe night ~288, and
+   an event with no card yet is 158. Without the floor, moving from the poster
+   to "card not announced" yanks 160px out from under the footer. */
+.pv{position:relative;margin:0 15px;border-radius:14px;overflow:hidden;min-height:300px;
+  display:flex;flex-direction:column;
+  border:1px solid rgba(255,255,255,.11);padding:16px 14px 0;text-align:center;
+  background:radial-gradient(120% 90% at 50% 0%,#3A2E6E 0%,#1A1436 52%,#0C0916 100%)}
+.pvgh{height:321px;background:rgba(255,255,255,.035)}
+.pv .glow{position:absolute;left:50%;top:-30%;width:160%;height:120%;transform:translateX(-50%);
+  background:radial-gradient(closest-side,rgba(167,139,250,.30),transparent 70%);pointer-events:none}
+.pv .eyeb{font-family:'Space Mono',monospace;font-size:7px;font-weight:700;letter-spacing:.2em;
+  text-transform:uppercase;color:#C3A6FF;position:relative}
+.pv .ttl{font-family:'Bebas Neue',sans-serif;font-size:44px;line-height:.94;letter-spacing:.01em;
+  margin-top:5px;position:relative}
+.pv .meta{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.13em;color:#B3A9D6;
+  margin-top:5px;position:relative}
+.pv .duo{display:grid;grid-template-columns:1fr 46px 1fr;align-items:end;margin-top:10px;position:relative}
+.pv .pw{display:flex;align-items:flex-end;justify-content:center;height:132px;position:relative}
+.pv .cut{height:100%;width:auto;max-width:none;object-fit:contain;object-position:bottom center}
+.pv .cut.flip{transform:scaleX(-1)}
+.pv .sil{height:84%;width:auto;fill:rgba(190,175,235,.26)}
+.pv .vs{font-family:'Bebas Neue',sans-serif;font-size:19px;color:#8A81A8;padding-bottom:44px}
+.pv .nms{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px;position:relative}
+.pv .nms b{font-family:'Bebas Neue',sans-serif;font-size:20px;line-height:1.02;letter-spacing:.02em;
+  overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.pv .recs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:2px;position:relative}
+.pv .recs s{text-decoration:none;font-family:'Space Mono',monospace;font-size:9px;color:#6EE7B7}
+.pv .wcl{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:.16em;text-transform:uppercase;
+  color:#8A81A8;margin-top:8px;position:relative}
+/* No card published yet is a REAL state, not a broken poster: GFL 7 is on the
+   schedule with no bouts, and saying so beats an empty pair of silhouettes. */
+.pv .tba{position:relative;flex:1;display:flex;align-items:center;justify-content:center;padding:16px 0;font-family:'Space Mono',monospace;font-size:8px;
+  letter-spacing:.13em;text-transform:uppercase;color:#8A81A8}
+.pvdots{display:flex;gap:5px;justify-content:center;padding:9px 0 10px;position:relative;margin-top:auto}
+.pvdots s{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.20);cursor:pointer}
+.pvdots s.on{background:#A78BFA}
+.pvnone{margin:0 15px;border-radius:14px;border:1px solid rgba(255,255,255,.11);
+  background:rgba(255,255,255,.035);padding:26px 15px;text-align:center}
+.pvnone .ring{width:34px;height:34px;border-radius:50%;border:1px dashed rgba(167,139,250,.5);
+  margin:0 auto 11px;display:flex;align-items:center;justify-content:center;color:#A78BFA;font-size:14px}
+.pvnone .ss{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.11em;color:#8A81A8;
+  margin-top:7px;line-height:1.8}
+
 /* ── THE RANKINGS BOARD, the body of home ────────────────────────────
    Four divisions side by side, all fifteen ranked in each, champion on top.
    This replaced four tabs showing one division at a time: the tabs meant three
@@ -1150,7 +1207,24 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .rasof{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:.1em;
   text-transform:uppercase;color:#6E6688;text-decoration:none}
 
+/* SIX DEEP, THEN A TAB. Fifteen fits, and fifteen was also 319px of ladder
+   before the news block — the top six plus the champion is the part anybody
+   reads standing up, and the rest is one tap away rather than a screen away.
+   The rows past six are RENDERED and hidden, not withheld: expanding must not
+   be able to fail, and a second request to open a list you are already looking
+   at is a spinner where a disclosure should be. */
 .rgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 15px}
+.rgrid.rfold .rkx{display:none}
+/* The tab hangs off the board's bottom-right corner like the dog-ear of a
+   page — no border on top, because the board's own edge is that border. It
+   costs no vertical band of its own and lands where a right thumb already is. */
+.rtabwrap{display:flex;justify-content:flex-end;margin:0 15px;position:relative;top:-1px}
+.rtab{font:inherit;cursor:pointer;border:1px solid rgba(167,139,250,.30);border-top:0;
+  background:rgba(167,139,250,.10);border-radius:0 0 9px 9px;padding:6px 13px 7px;
+  font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:#C3A6FF}
+.rtab i{font-style:normal;margin-left:3px;display:inline-block;transition:transform .25s}
+.rtab[aria-expanded="true"] i{transform:rotate(180deg)}
 .rcol{min-width:0;padding:0 1px}
 .rdh{font-family:'Space Mono',monospace;font-size:6.5px;font-weight:700;letter-spacing:.14em;
   color:#A78BFA;text-align:center;padding-bottom:5px;border-bottom:1px solid rgba(167,139,250,.28)}
@@ -1884,12 +1958,12 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   </div>
   <div id="ranks"></div>
   <div id="join-slot"></div>
-  <div class="lab"><b>Latest</b><i></i><a data-goto="news">News</a></div>
-  <!-- Three ghost rows, not one 14px bar. The real thing is three .nw rows
-       and everything under it moved ~220px when they landed -- measured
-       2026-09-01. A skeleton whose job is to hold the space has to be the
-       SHAPE of what is coming, not a token that says "loading". -->
-  <div id="home-news"><div class="nw gh"><span class="th"></span><div class="gb"><i></i><i class="w"></i></div></div><div class="nw gh"><span class="th"></span><div class="gb"><i></i><i class="w"></i></div></div><div class="nw gh"><span class="th"></span><div class="gb"><i></i><i class="w"></i></div></div></div>
+  <div class="lab"><b id="nx-lab">Next card</b><i></i><a data-goto="events">All events</a></div>
+  <!-- Held at the poster's own height, not a token that says "loading". The
+       news rows this replaced moved everything under them ~220px when they
+       landed (measured 2026-09-01) and a skeleton exists to stop exactly
+       that, so it has to be the SHAPE of what is coming. -->
+  <div id="home-next"><div class="pv pvgh"></div></div>
   <div class="foot">discord.gg/uba &middot; ubaesports.com</div>
 </div></section>
 
@@ -2254,7 +2328,8 @@ var faceoffs = {};
 async function loadFaceoffs(ids){
   if(!ids.length) return;
   var bouts = await q("event_matches?select=event_id,bout_number,fighter_a_name,fighter_a_slug,"
-    + "fighter_b_name,fighter_b_slug&event_id=in.(" + ids.join(',') + ")&order=bout_number.asc");
+    + "fighter_b_name,fighter_b_slug,weight_class,is_title_fight,title_name"
+    + "&event_id=in.(" + ids.join(',') + ")&order=bout_number.asc");
   if(!bouts || !bouts.length) return;
   var main = {};
   bouts.forEach(function(b){ if(!main[b.event_id]) main[b.event_id] = b; });
@@ -2265,10 +2340,17 @@ async function loadFaceoffs(ids){
     });
   });
   if(!slugs.length) return;
-  var ph = await q("fighter_cards?select=slug,profile_photo_url&slug=in.(" + slugs.join(',') + ")");
+  /* The RECORD comes along for the ride. The next-event poster wants it and
+     this is already the one query that resolves these exact fighters — a
+     second request for two more columns is a request for nothing. */
+  var ph = await q("fighter_cards?select=slug,profile_photo_url,headline_wins,headline_losses,"
+    + "headline_draws&slug=in.(" + slugs.join(',') + ")");
   if(!ph) return;
-  var byslug = {};
-  ph.forEach(function(f){ if(f.profile_photo_url) byslug[f.slug] = f.profile_photo_url; });
+  var byslug = {}, recs = {};
+  ph.forEach(function(f){
+    if(f.profile_photo_url) byslug[f.slug] = f.profile_photo_url;
+    recs[f.slug] = rec(f);
+  });
   Object.keys(main).forEach(function(k){
     var m = main[k];
     // A missing photo gets a silhouette rather than killing the faceoff.
@@ -2277,7 +2359,13 @@ async function loadFaceoffs(ids){
     faceoffs[k] = {
       a: byslug[m.fighter_a_slug] || null,
       b: byslug[m.fighter_b_slug] || null,
-      an: m.fighter_a_name, bn: m.fighter_b_name
+      an: m.fighter_a_name, bn: m.fighter_b_name,
+      ar: recs[m.fighter_a_slug], br: recs[m.fighter_b_slug],
+      /* Bout 1 IS the main event: the card counts DOWN from the top, so the
+         lowest number is the headline and the segments run main_card →
+         undercard → prelim as it rises. */
+      forWhat: m.is_title_fight ? (m.title_name || 'Title fight')
+                                : (wc(m.weight_class) || 'Catch weight')
     };
   });
 }
@@ -2422,15 +2510,19 @@ async function loadHome(){
   } else {
     fanEvents = evs;
     renderFan();
+    /* Paint the poster now, with whatever is known — the names and photos
+       arrive on their own request and repaint it below. A block that waits for
+       the photographs is a block that is blank for the first second. */
+    renderNextEvent();
     // REAL event ids only. A UBAe night's id is `tm:<uuid>`, and one of those
     // inside `event_id=in.(...)` is not a uuid — PostgREST rejects the whole
     // query, so a single UBAe card in the hand silently stripped the faceoff
     // off every real event beside it. Their faceoffs are built in loadUbae().
     var ids = evs.filter(function(e){ return !e.ubae; }).map(function(e){ return e.id; });
     loadPosters(ids).then(function(){ renderFan(true); });
-    loadFaceoffs(ids).then(function(){ renderFan(true); });
+    loadFaceoffs(ids).then(function(){ renderFan(true); renderNextEvent(); });
   }
-  await Promise.all([loadLive(), loadRanks(), loadHomeNews(), loadStrip()]);
+  await Promise.all([loadLive(), loadRanks(), loadStrip()]);
 }
 
 
@@ -2986,6 +3078,7 @@ function renderJoinSlot(){
    is also where it belongs when GFL is selected -- GFL is ranked by division
    and has no pound-for-pound list at all. */
 var rankLeague = 'pro', rankCache = {};
+var RANK_FOLD = 6;      // rows shown per division before the tab is pressed
 var RANK_DIVS = [
   { k: 'lightweight',       s: 'LW'  },
   { k: 'middleweight',      s: 'MW'  },
@@ -3006,14 +3099,15 @@ document.getElementById('rleague').addEventListener('click', function(e){
    names land -- the 274px shove measured on 2026-09-01 was exactly this. */
 function rankSkeleton(){
   var rows = '';
-  for(var i = 0; i < 15; i++){
+  for(var i = 0; i < RANK_FOLD; i++){
     rows += '<div class="rkrow'+(i % 2 ? ' z' : '')+'"><span class="rnm"><b class="rsk"></b></span>'
           + '<i class="rmv"></i></div>';
   }
   var col = '<div class="rcol"><div class="rdh">&nbsp;</div>'
           + '<div class="rch"><span class="rnm"><b class="rsk"></b></span><i class="rmv"></i></div>'
           + rows + '</div>';
-  return '<div class="rgrid">' + col + col + col + col + '</div>';
+  return '<div class="rgrid">' + col + col + col + col + '</div>'
+       + '<div class="rtabwrap"><button class="rtab" disabled>&nbsp;<i>&#9662;</i></button></div>';
 }
 
 async function loadRanks(){
@@ -3046,6 +3140,34 @@ async function loadRanks(){
   paintRanks(el, data);
 }
 
+/* The label says how many are hidden, but only when that number is the SAME
+   in every division — GFL's boards are not all fifteen deep, and "+9 each" on
+   a board where one division hides four is a small lie told four times. */
+function rankTabHTML(byWc){
+  var hidden = RANK_DIVS.map(function(d){
+    return Math.max(0, (byWc[d.k] || []).length - RANK_FOLD);
+  });
+  var most = Math.max.apply(null, hidden);
+  if(!most) return '';                       // nothing folded, no tab
+  var same = hidden.every(function(n){ return n === hidden[0]; });
+  var shut = same ? '+' + most + ' each' : 'Show all';
+  return '<div class="rtabwrap"><button class="rtab" id="rtab" aria-expanded="false"'
+       + ' aria-controls="ranks" data-shut="' + shut + '">' + shut
+       + ' <i>&#9662;</i></button></div>';
+}
+
+document.getElementById('ranks').addEventListener('click', function(e){
+  var b = e.target.closest('#rtab'); if(!b) return;
+  var grid = this.querySelector('.rgrid'); if(!grid) return;
+  var open = grid.classList.toggle('rfold') === false;
+  b.setAttribute('aria-expanded', open ? 'true' : 'false');
+  b.innerHTML = (open ? 'Show less' : b.dataset.shut) + ' <i>&#9662;</i>';
+  /* The folded rows were display:none, so they were never measured — a name
+     that needs squeezing gets its scale the first time it is actually on
+     screen, not before. */
+  if(open) fitRankNames(this);
+});
+
 function rankMoveHTML(f){
   if(f.prev_rank == null) return '<i class="rmv rnew" title="New this week"></i>';
   if(f.prev_rank > f.rank) return '<i class="rmv rup" title="Up from #'+f.prev_rank+'"></i>';
@@ -3076,7 +3198,7 @@ function paintRanks(el, data){
     else if(t.weight_class) champ[t.weight_class] = t;
   });
 
-  el.innerHTML = '<div class="rgrid">' + RANK_DIVS.map(function(d){
+  el.innerHTML = '<div class="rgrid rfold">' + RANK_DIVS.map(function(d){
     var list = (byWc[d.k] || []).slice().sort(function(a, b){ return a.rank - b.rank; });
     var h = '<div class="rcol" style="--rkd:'+(RANK_DIVS.indexOf(d) * 500)+'ms">'
           + '<div class="rdh">'+d.s+'</div>';
@@ -3089,11 +3211,12 @@ function paintRanks(el, data){
     }
     h += list.map(function(f, i){
       var gold = bmf && f.fighter_slug === bmf;
-      var cls = 'rkrow' + (i % 2 ? ' z' : '') + (gold ? ' bmf' : '');
+      var cls = 'rkrow' + (i % 2 ? ' z' : '') + (gold ? ' bmf' : '')
+              + (i >= RANK_FOLD ? ' rkx' : '');
       return rankRowHTML(f.fighter_slug, cls, f.fighter_name, '', rankMoveHTML(f));
     }).join('');
     return h + '</div>';
-  }).join('') + '</div>';
+  }).join('') + '</div>' + rankTabHTML(byWc);
 
   var asof = document.getElementById('r-asof');
   if(asof) asof.textContent = rows.length + ' ranked';
@@ -3195,19 +3318,122 @@ function newsFailure(retryId){
   }
   return failHTML("Couldn't load the news.", retryId);
 }
-async function loadHomeNews(){
-  var el = document.getElementById('home-news');
-  var rows = await getNews();
-  if(!rows){ retryHandlers['homenews'] = function(){ newsCache = null; loadHomeNews(); };
-    el.innerHTML = newsFailure('homenews'); return; }
-  if(!rows.length){ el.innerHTML = '<div class="empty">No news posted yet.</div>'; return; }
-  el.innerHTML = rows.slice(0,3).map(function(n){
-    return '<div class="nw" data-news="'+esc(n.id)+'"><span class="th"></span><div>'
-      + (n.kicker ? '<div class="k">'+esc(n.kicker)+'</div>' : '')
-      + '<div class="h">'+esc(n.headline)+'</div>'
-      + '<div class="d">'+esc(dstr(n.posted_at))+'</div></div></div>';
-  }).join('');
+/* ── THE NEXT CARD ────────────────────────────────────────────────────
+   Reads what home already has: fanEvents (every scheduled event, plus a past
+   backfill when the schedule is thin) and faceoffs (bout 1 of each published
+   card, which IS the main event — the card counts down from the top). No
+   request of its own.
+
+   THE ORDER OF THE THREE STATES IS THE WHOLE RULE:
+     1. anything still to come  -> the soonest, and you can flip to the rest
+     2. nothing to come         -> the last card that happened, labelled as such
+     3. nothing at all          -> a placeholder that says where the next one
+                                   gets announced
+   A past event may never appear above an upcoming one. The block's claim is
+   "this is next"; showing a finished card under that heading is the same lie
+   as an out-of-date scoreboard. */
+var nextIdx = 0;
+
+function nextEventList(){
+  var evs = fanEvents || [];
+  var soon = evs.filter(function(e){ return !eventIsOver(e); });
+  if(soon.length) return { rows: soon, past: false };
+  /* Newest-first for the past, because "last time out" means the most recent
+     one, not the oldest one still in the hand. */
+  var done = evs.slice().filter(eventIsOver).sort(function(x, y){
+    return new Date(y.event_date) - new Date(x.event_date); });
+  return { rows: done, past: true };
 }
+
+function posterHTML(e, past, i, n){
+  var f = faceoffs[e.id];
+  /* Everything on this app states event times in ET, because the league runs
+     to one clock and a local-time render makes two people disagree about when
+     the card starts. */
+  var when = new Date(e.event_date).toLocaleString('en-US', { timeZone: 'America/New_York',
+    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + ' ET';
+  var body = f
+    ? '<div class="duo">'
+      + '<span class="pw">' + cutout(f.a) + '</span>'
+      + '<span class="vs">VS</span>'
+      + '<span class="pw">' + cutout(f.b, 'flip') + '</span></div>'
+      + '<div class="nms"><b>' + esc(f.an || 'TBA') + '</b><b>' + esc(f.bn || 'TBA') + '</b></div>'
+      /* A UBAe night's faceoff is built by loadUbae() and carries neither a
+         record nor a weight class, because a team match has neither. Two
+         em-dashes under two names reads as data that failed to load; the row
+         is simply not drawn. */
+      + (f.ar || f.br
+          ? '<div class="recs"><s>' + (f.ar || '') + '</s><s>' + (f.br || '') + '</s></div>' : '')
+      + (f.forWhat ? '<div class="wcl">' + esc(f.forWhat) + '</div>' : '')
+    : '<div class="tba">Card not announced yet</div>';
+  var dots = n > 1
+    ? '<div class="pvdots">' + Array.apply(null, Array(n)).map(function(_, k){
+        return '<s class="' + (k === i ? 'on' : '') + '" data-nxi="' + k + '"></s>'; }).join('')
+      + '</div>'
+    : '<div class="pvdots"></div>';
+  return '<div class="pv" data-event="' + esc(e.id) + '"><div class="glow"></div>'
+    + '<div class="eyeb">' + (past ? 'Last time out' : 'Next event') + '</div>'
+    + '<div class="ttl">' + esc(e.name) + '</div>'
+    + '<div class="meta">' + esc(when) + '</div>'
+    + body + dots + '</div>';
+}
+
+/* A missing cut-out is the NORM, not a failure — see the CSS note. */
+function cutout(url, flip){
+  return url
+    ? '<img class="cut ' + (flip || '') + '" src="' + esc(url) + '" alt="">'
+    : '<svg class="sil" viewBox="0 0 60 100" preserveAspectRatio="xMidYMax meet">'
+      + '<circle cx="30" cy="21" r="14"/>'
+      + '<path d="M30 38c-14 0-24 9-26 22l-4 40h60l-4-40c-2-13-12-22-26-22z"/></svg>';
+}
+
+function renderNextEvent(){
+  var el = document.getElementById('home-next');
+  if(!el) return;
+  var lab = document.getElementById('nx-lab');
+  var list = nextEventList();
+  if(!list.rows.length){
+    if(lab) lab.textContent = 'Next card';
+    el.innerHTML = '<div class="pvnone"><div class="ring">&#9675;</div>'
+      + '<div class="eyeb">Nothing on the schedule</div>'
+      + '<div class="ss">The next card lands here the moment it is announced.'
+      + '<br>Signups open in Discord first.</div></div>';
+    return;
+  }
+  if(nextIdx >= list.rows.length) nextIdx = 0;
+  if(lab) lab.textContent = list.past ? 'Last time out' : 'Next card';
+  el.innerHTML = posterHTML(list.rows[nextIdx], list.past, nextIdx, list.rows.length);
+}
+
+/* Dots and a swipe, on the block itself. The tap-through to the event is the
+   `[data-event]` handler that every other event row already uses, so a dot has
+   to stop the event reaching it. */
+document.getElementById('home-next').addEventListener('click', function(e){
+  var d = e.target.closest('[data-nxi]'); if(!d) return;
+  e.stopPropagation();
+  nextIdx = +d.getAttribute('data-nxi');
+  renderNextEvent();
+});
+(function(){
+  var el = document.getElementById('home-next'), x0 = null, y0 = null;
+  if(!el) return;
+  el.addEventListener('touchstart', function(e){
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
+  }, { passive: true });
+  el.addEventListener('touchend', function(e){
+    if(x0 === null) return;
+    var dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+    x0 = null;
+    /* Vertical wins ties: this block sits in a scrolling column and stealing a
+       scroll to flip a poster is worse than missing a flip. */
+    if(Math.abs(dx) < 42 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+    var n = nextEventList().rows.length;
+    if(n < 2) return;
+    nextIdx = (nextIdx + (dx < 0 ? 1 : n - 1)) % n;
+    renderNextEvent();
+  }, { passive: true });
+})();
+
 var VIDEOS_PATH = 'videos_public?select=video_id,title,thumb_url,published_at,seen_at,event_name&limit=8';
 var newsVideos = null;
 
@@ -5853,7 +6079,7 @@ function showDiag(){
    would only mean the next cold open has nothing to paint. */
 var REFRESH = {
   home: function(){ return Promise.all([loadHome(), loadLive(), loadStrip(),
-                                        loadRanks(), loadHomeNews()]); },
+                                        loadRanks()]).then(renderNextEvent); },
   news: function(){ newsCache = null; newsInFlight = null; return loadNews(); },
   you:  function(){ return loadMe().then(function(){ renderYou(); }); },
   fighters: function(){ allFighters = null; return loadFighters(); },
