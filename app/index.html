@@ -122,8 +122,14 @@ a{color:inherit;text-decoration:none}
 .mrow:active, .twin .tw:active, .slabw:active,
 .bpill:active, .evbet:active, .brec:active,
 .signin:active, .watchbtn:active,
-#tear .tapopen:active, #tear .tclose:active, #tear .scard:active{
+#tear .tapopen:active, #tear .tclose:active{
   transform:scale(.97);filter:brightness(1.28)}
+/* `.scard` was in that list and could never fire: the layout writes an inline
+   transform on every card every frame, and inline beats a stylesheet rule.
+   It is gone rather than fixed -- the cards no longer take pointer events at
+   all (see the fan's hit(), further down), so a press on one is a press on
+   the hand, and lighting up whichever card the finger physically touched
+   would contradict the card the tap actually selects. */
 /* Pills are small, so the same scale reads as nothing. */
 .chips span:active, .betback:active, .chipb:active{transform:scale(.93);filter:brightness(1.28)}
 /* .bhero runs the riding/pays-out tint on a keyframe animation, and an
@@ -1120,6 +1126,63 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   color:#B7AEDC;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.24)}
 .doit b{color:#E6DEFF;font-family:'Space Mono',monospace;font-size:11.5px}
 
+/* ── THE NEXT CARD, where the news rows used to be ────────────────────
+   The wire lives on the News tab and had no business being repeated here in
+   three grey rows. What home owes somebody is the answer to "when is the next
+   one and who is on it", and that is a POSTER, not a list.
+
+   UPCOMING ONLY. A finished event never appears while anything is scheduled,
+   because the block's whole claim is "this is next" — the past card is the
+   fallback for an empty schedule, and it says so in its own label rather than
+   quietly looking like an announcement.
+
+   THE PHOTOS ARE OPTIONAL BY DESIGN. 355 of 448 fighters have none, so a
+   missing cut-out draws a silhouette and the poster still reads. A poster
+   that needs two photographs would almost never appear. */
+/* A FLOOR, because the states are different heights and this block flips
+   between them in place: an announced card is ~321px, a UBAe night ~288, and
+   an event with no card yet is 158. Without the floor, moving from the poster
+   to "card not announced" yanks 160px out from under the footer. */
+.pv{position:relative;margin:0 15px;border-radius:14px;overflow:hidden;min-height:300px;
+  display:flex;flex-direction:column;
+  border:1px solid rgba(255,255,255,.11);padding:16px 14px 0;text-align:center;
+  background:radial-gradient(120% 90% at 50% 0%,#3A2E6E 0%,#1A1436 52%,#0C0916 100%)}
+.pvgh{height:321px;background:rgba(255,255,255,.035)}
+.pv .glow{position:absolute;left:50%;top:-30%;width:160%;height:120%;transform:translateX(-50%);
+  background:radial-gradient(closest-side,rgba(167,139,250,.30),transparent 70%);pointer-events:none}
+.pv .eyeb{font-family:'Space Mono',monospace;font-size:7px;font-weight:700;letter-spacing:.2em;
+  text-transform:uppercase;color:#C3A6FF;position:relative}
+.pv .ttl{font-family:'Bebas Neue',sans-serif;font-size:44px;line-height:.94;letter-spacing:.01em;
+  margin-top:5px;position:relative}
+.pv .meta{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.13em;color:#B3A9D6;
+  margin-top:5px;position:relative}
+.pv .duo{display:grid;grid-template-columns:1fr 46px 1fr;align-items:end;margin-top:10px;position:relative}
+.pv .pw{display:flex;align-items:flex-end;justify-content:center;height:132px;position:relative}
+.pv .cut{height:100%;width:auto;max-width:none;object-fit:contain;object-position:bottom center}
+.pv .cut.flip{transform:scaleX(-1)}
+.pv .sil{height:84%;width:auto;fill:rgba(190,175,235,.26)}
+.pv .vs{font-family:'Bebas Neue',sans-serif;font-size:19px;color:#8A81A8;padding-bottom:44px}
+.pv .nms{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px;position:relative}
+.pv .nms b{font-family:'Bebas Neue',sans-serif;font-size:20px;line-height:1.02;letter-spacing:.02em;
+  overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.pv .recs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:2px;position:relative}
+.pv .recs s{text-decoration:none;font-family:'Space Mono',monospace;font-size:9px;color:#6EE7B7}
+.pv .wcl{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:.16em;text-transform:uppercase;
+  color:#8A81A8;margin-top:8px;position:relative}
+/* No card published yet is a REAL state, not a broken poster: GFL 7 is on the
+   schedule with no bouts, and saying so beats an empty pair of silhouettes. */
+.pv .tba{position:relative;flex:1;display:flex;align-items:center;justify-content:center;padding:16px 0;font-family:'Space Mono',monospace;font-size:8px;
+  letter-spacing:.13em;text-transform:uppercase;color:#8A81A8}
+.pvdots{display:flex;gap:5px;justify-content:center;padding:9px 0 10px;position:relative;margin-top:auto}
+.pvdots s{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.20);cursor:pointer}
+.pvdots s.on{background:#A78BFA}
+.pvnone{margin:0 15px;border-radius:14px;border:1px solid rgba(255,255,255,.11);
+  background:rgba(255,255,255,.035);padding:26px 15px;text-align:center}
+.pvnone .ring{width:34px;height:34px;border-radius:50%;border:1px dashed rgba(167,139,250,.5);
+  margin:0 auto 11px;display:flex;align-items:center;justify-content:center;color:#A78BFA;font-size:14px}
+.pvnone .ss{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.11em;color:#8A81A8;
+  margin-top:7px;line-height:1.8}
+
 /* ── THE RANKINGS BOARD, the body of home ────────────────────────────
    Four divisions side by side, all fifteen ranked in each, champion on top.
    This replaced four tabs showing one division at a time: the tabs meant three
@@ -1144,15 +1207,33 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .rasof{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:.1em;
   text-transform:uppercase;color:#6E6688;text-decoration:none}
 
+/* SIX DEEP, THEN A TAB. Fifteen fits, and fifteen was also 319px of ladder
+   before the news block — the top six plus the champion is the part anybody
+   reads standing up, and the rest is one tap away rather than a screen away.
+   The rows past six are RENDERED and hidden, not withheld: expanding must not
+   be able to fail, and a second request to open a list you are already looking
+   at is a spinner where a disclosure should be. */
 .rgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 15px}
+.rgrid.rfold .rkx{display:none}
+/* The tab hangs off the board's bottom-right corner like the dog-ear of a
+   page — no border on top, because the board's own edge is that border. It
+   costs no vertical band of its own and lands where a right thumb already is. */
+.rtabwrap{display:flex;justify-content:flex-end;margin:0 15px;position:relative;top:-1px}
+.rtab{font:inherit;cursor:pointer;border:1px solid rgba(167,139,250,.30);border-top:0;
+  background:rgba(167,139,250,.10);border-radius:0 0 9px 9px;padding:6px 13px 7px;
+  font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:#C3A6FF}
+.rtab i{font-style:normal;margin-left:3px;display:inline-block;transition:transform .25s}
+.rtab[aria-expanded="true"] i{transform:rotate(180deg)}
 .rcol{min-width:0;padding:0 1px}
 .rdh{font-family:'Space Mono',monospace;font-size:6.5px;font-weight:700;letter-spacing:.14em;
   color:#A78BFA;text-align:center;padding-bottom:5px;border-bottom:1px solid rgba(167,139,250,.28)}
-.rch{display:flex;align-items:center;gap:3px;padding:4px 3px;margin-bottom:2px;min-width:0;
-  border-bottom:1px solid rgba(245,200,66,.32)}
+.rch{display:flex;align-items:center;gap:3px;padding:4px 3px 4px 8px;margin-bottom:2px;min-width:0;
+  position:relative;background:rgba(245,200,66,.07);
+  border-bottom:1px solid rgba(245,200,66,.22)}
 .rch .rnm{font-size:11px;font-weight:700;color:#FFE8A0}
 .rvac .rft{color:#8A7546;font-weight:600;font-style:italic}
-.rkrow{display:flex;align-items:center;gap:3px;padding:3px 3px;min-width:0}
+.rkrow{display:flex;align-items:center;gap:3px;padding:3px 3px;min-width:0;position:relative}
 .rkrow.z{background:rgba(255,255,255,.028)}
 .rnm{flex:1;min-width:0;font-size:11px;font-weight:600;line-height:1.15}
 /* The name is scaled, the SLOT is not. fitRankNames widens this inner block
@@ -1163,23 +1244,30 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   transform-origin:left center}
 .rkrow.bmf .rnm{color:#FFE8A0;font-weight:700}
 
-/* The one gold thing on the screen: a champion's row, and the BMF holder's row
-   wherever in the list they happen to sit. No emoji, no belt glyph -- the
-   shimmer is the mark. */
-@keyframes rkSheen{0%{background-position:-160% 0}60%,100%{background-position:260% 0}}
-/* The tint is a flat background and the sweep is an OVERLAY, which is not
-   fussiness. Animating background-position on the row itself needs
-   background-repeat:no-repeat or the oversized gradient TILES, and a tile
-   boundary crossing the row draws a hard vertical seam through the champion's
-   name -- visible on Lama and Boady before this was split in two. The overlay
-   can be no-repeat because its edges are transparent, so nothing is left
-   uncovered when it sweeps off. */
-.rgold{position:relative;background:rgba(245,200,66,.11)}
-.rgold::after{content:'';position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(100deg,transparent 36%,rgba(255,235,175,.26) 50%,transparent 64%);
-  background-size:300% 100%;background-repeat:no-repeat;
-  animation:rkSheen 5.2s ease-in-out infinite}
-
+/* THE CHAMPION'S MARK IS A STRAP, NOT A HIGHLIGHT — and the light runs DOWN
+   it, not across the row.
+ 
+   The first version washed the whole row in gold and swept a highlight across
+   it. Two things were wrong with that. A row-wide wash reads as "this row is
+   selected", which is a UI state, not a title; and all four columns swept in
+   lockstep, because they share one animation and all start at page load, so
+   the board pulsed like a progress bar. A belt is a physical object hanging
+   at the left of the name, so the strap is the object and the light is a
+   reflection travelling down it — and each column is delayed by its index, so
+   they catch the light in sequence.
+ 
+   The BMF strap does NOT move. There is one animated thing per board and the
+   champion has it; a second sweeping strap halfway down the middleweight
+   column competes with it and neither reads as special. */
+@keyframes rkSheen{0%{background-position:0 -160%}60%,100%{background-position:0 260%}}
+.rch::before{content:'';position:absolute;left:0;top:2px;bottom:2px;width:2.5px;border-radius:2px;
+  background:linear-gradient(180deg,#8A6A20 0%,#8A6A20 30%,#FFF6D8 46%,#FFE9A8 54%,
+    #8A6A20 70%,#8A6A20 100%);
+  background-size:100% 300%;animation:rkSheen 4.4s ease-in-out infinite;
+  animation-delay:var(--rkd,0ms)}
+.rkrow.bmf{padding-left:8px}
+.rkrow.bmf::before{content:'';position:absolute;left:0;top:2px;bottom:2px;width:2.5px;
+  border-radius:2px;background:#C9A227}
 /* Every one of these is r-prefixed for a reason: `.nw` is ALREADY the news
    row's class, a bare rule with its own padding, and `<i class="rmv nw">`
    picked it up -- one row of the heavyweight column grew to 31px and squeezed
@@ -1481,19 +1569,44 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 /* the pack, big */
 #tear .tk{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.2em;
   text-transform:uppercase;color:#C3A6FF;margin-bottom:26px;text-align:center}
-#tear .tpack{width:200px;height:266px;position:relative}
+#tear .tpack{width:200px;height:266px;position:relative;perspective:820px}
 #tear .tguts{position:absolute;left:14px;right:14px;top:24px;bottom:12px;z-index:0;display:flex;
   gap:4px;justify-content:center}
 #tear .tguts i{display:block;flex:1;max-width:32px;height:184px;border-radius:3px;
   background:linear-gradient(180deg,#F4F1FF,#B9B2D6);box-shadow:0 2px 8px rgba(0,0,0,.5)}
-#tear .tbody{position:absolute;inset:0;z-index:2;border-radius:10px;overflow:hidden;
-  clip-path:polygon(0 var(--cut,0px),4% calc(var(--cut,0px) + 8px),10% var(--cut,0px),
-    16% calc(var(--cut,0px) + 8px),22% var(--cut,0px),28% calc(var(--cut,0px) + 8px),
-    34% var(--cut,0px),40% calc(var(--cut,0px) + 8px),46% var(--cut,0px),
-    52% calc(var(--cut,0px) + 8px),58% var(--cut,0px),64% calc(var(--cut,0px) + 8px),
-    70% var(--cut,0px),76% calc(var(--cut,0px) + 8px),82% var(--cut,0px),
-    88% calc(var(--cut,0px) + 8px),94% var(--cut,0px),100% calc(var(--cut,0px) + 8px),
-    100% 100%,0 100%)}
+/* the cards ride up when the pressure comes off the top of the pack */
+#tear .tguts{transition:transform .52s cubic-bezier(.18,.9,.3,1)}
+#tear .tguts.pop{transform:translateY(-7px)}
+/* what comes off a torn edge. Eight of them, gone in half a second. */
+#tear .fleck{position:absolute;width:3px;height:5px;z-index:8;pointer-events:none;
+  border-radius:1px;background:var(--fc,#fff);opacity:.9;
+  animation:flk .5s cubic-bezier(.2,.6,.35,1) forwards}
+@keyframes flk{to{transform:translate(var(--fx),var(--fy)) rotate(var(--fr));opacity:0}}
+/* THE TEAR IS ONE LINE, CUT TWICE. The pack keeps everything below it, the
+   flap keeps everything above it and to the left of the tear front, and both
+   clip-paths are generated from the same list of points every frame -- so the
+   two edges MATE, tooth for tooth, the way a real tear does.
+
+   Before this, the pack's edge was a fixed 18-tooth zigzag that slid straight
+   down, and the lid was a different fixed zigzag that slid sideways. Nothing
+   about the two shapes agreed, and the whole line arrived everywhere at once
+   -- which is the thing that read as cardboard. Foil does not part along its
+   whole length simultaneously; it gives at one point and the split RUNS. */
+#tear .tbody{position:absolute;inset:0;z-index:3;border-radius:10px;overflow:hidden;
+  clip-path:var(--body,none)}
+/* THE LIT EDGE. Torn foil shows a bright raw edge where the coating has
+   parted, and that single highlight is most of what says "metal" rather than
+   "board". It is drawn by OFFSET, not by a second shape: this layer is
+   clipped to the tear line itself and the pack above it is clipped to the
+   same line pushed down a couple of pixels, so what shows through is exactly
+   the cut -- every tooth, every fibre, with no second path to keep in sync. */
+#tear .trim{position:absolute;inset:0;z-index:2;border-radius:10px;
+  background:linear-gradient(94deg,#F6EFD6,#EFE7FF 22%,#B9A9E6 48%,#F3E4BE 74%,#EDE6FF);
+  clip-path:var(--rim,polygon(0 0,0 0,0 0))}
+/* and the dark the edge reads against. Without it the lit edge sat straight
+   on the white card backs and the two whites merged into one shape. */
+#tear .tshd{position:absolute;left:12px;right:12px;top:20px;height:62px;z-index:1;
+  pointer-events:none;background:linear-gradient(180deg,rgba(4,2,10,.74),rgba(4,2,10,.26) 48%,transparent)}
 #tear .tskin{position:absolute;inset:0;border-radius:10px;
   background:linear-gradient(150deg,var(--pk),rgba(10,7,20,.92) 78%);
   border:1px solid rgba(255,255,255,.3)}
@@ -1503,16 +1616,30 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   font-size:34px;line-height:.9;text-shadow:0 2px 8px rgba(0,0,0,.85)}
 #tear .tsz em{font-style:normal;display:block;font-family:'Space Mono',monospace;font-size:6.5px;
   letter-spacing:.14em;color:rgba(255,255,255,.85);margin-top:3px}
-#tear .ttop{position:absolute;left:0;right:0;top:0;height:40px;z-index:5;overflow:hidden;
-  border-radius:10px 10px 0 0;will-change:transform,opacity;
-  background:linear-gradient(150deg,var(--pk),rgba(60,20,50,.95));
-  border:1px solid rgba(255,255,255,.3);border-bottom:0;
-  clip-path:polygon(0 0,100% 0,100% 74%,94% 100%,88% 74%,82% 100%,76% 74%,70% 100%,64% 74%,
-    58% 100%,52% 74%,46% 100%,40% 74%,34% 100%,28% 74%,22% 100%,16% 74%,10% 100%,4% 74%,0 100%)}
-#tear .ttop:after{content:'';position:absolute;inset:0;
+/* THE FLAP is the same skin as the pack, at the same size, in the same place
+   -- so while it is still lying flat there is no seam to see. It only becomes
+   a separate object once the tear front has run past a piece of it. */
+#tear .tflap{position:absolute;inset:0;z-index:6;pointer-events:none;
+  will-change:transform,clip-path;border-radius:10px 10px 0 0;
+  background:linear-gradient(150deg,var(--pk),rgba(10,7,20,.92) 78%);
+  border-top:1px solid rgba(255,255,255,.3);
+  clip-path:var(--flap,polygon(0 0,0 0,0 0))}
+#tear .tflap:after{content:'';position:absolute;inset:0;border-radius:10px 10px 0 0;
   background:repeating-linear-gradient(118deg,rgba(255,255,255,.17) 0 2px,transparent 2px 7px)}
+/* the specular. A flat sheet turning in a light does not change brightness
+   evenly -- a band travels across it as the angle passes the light. --lit and
+   --sx are written every frame from the flap's own angle, so the highlight is
+   a consequence of the movement rather than a loop running beside it. */
+#tear .tflap:before{content:'';position:absolute;inset:0;z-index:2;border-radius:10px 10px 0 0;
+  background:linear-gradient(100deg,transparent 26%,
+    rgba(255,255,255,calc(.26 * var(--lit,0))) 43%,
+    rgba(255,255,255,calc(.66 * var(--lit,0))) 50%,
+    rgba(255,246,220,calc(.30 * var(--lit,0))) 57%,transparent 74%);
+  background-size:280% 100%;background-repeat:no-repeat;
+  background-position:calc(var(--sx,0) * 1%) 0}
 #tear .tnotch{position:absolute;left:0;right:0;top:17px;height:6px;z-index:7;pointer-events:none;
-  background:repeating-linear-gradient(90deg,rgba(10,7,20,.9) 0 3px,transparent 3px 6px)}
+  background:repeating-linear-gradient(90deg,rgba(10,7,20,.9) 0 3px,transparent 3px 6px);
+  transition:opacity .2s}
 #tear .tgrab{position:absolute;left:-18px;right:-18px;top:-12px;height:64px;z-index:9;
   cursor:grab;touch-action:none}
 #tear .thint{margin-top:30px;font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.16em;
@@ -1529,6 +1656,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 #tear .sfan{position:relative;width:100%;height:330px}
 #tear .scard{position:absolute;left:50%;top:52%;width:126px;margin:-88px 0 0 -63px;
   border-radius:9px;overflow:hidden;aspect-ratio:5/7;cursor:pointer;will-change:transform;
+  pointer-events:none;
   background:linear-gradient(165deg,var(--c2),#0B0818);border:2px solid var(--c);
   box-shadow:0 10px 26px rgba(0,0,0,.65);
   transition:transform .46s cubic-bezier(.2,.9,.25,1),box-shadow .3s,opacity .3s}
@@ -1830,12 +1958,12 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   </div>
   <div id="ranks"></div>
   <div id="join-slot"></div>
-  <div class="lab"><b>Latest</b><i></i><a data-goto="news">News</a></div>
-  <!-- Three ghost rows, not one 14px bar. The real thing is three .nw rows
-       and everything under it moved ~220px when they landed -- measured
-       2026-09-01. A skeleton whose job is to hold the space has to be the
-       SHAPE of what is coming, not a token that says "loading". -->
-  <div id="home-news"><div class="nw gh"><span class="th"></span><div class="gb"><i></i><i class="w"></i></div></div><div class="nw gh"><span class="th"></span><div class="gb"><i></i><i class="w"></i></div></div><div class="nw gh"><span class="th"></span><div class="gb"><i></i><i class="w"></i></div></div></div>
+  <div class="lab"><b id="nx-lab">Next card</b><i></i><a data-goto="events">All events</a></div>
+  <!-- Held at the poster's own height, not a token that says "loading". The
+       news rows this replaced moved everything under them ~220px when they
+       landed (measured 2026-09-01) and a skeleton exists to stop exactly
+       that, so it has to be the SHAPE of what is coming. -->
+  <div id="home-next"><div class="pv pvgh"></div></div>
   <div class="foot">discord.gg/uba &middot; ubaesports.com</div>
 </div></section>
 
@@ -2200,7 +2328,8 @@ var faceoffs = {};
 async function loadFaceoffs(ids){
   if(!ids.length) return;
   var bouts = await q("event_matches?select=event_id,bout_number,fighter_a_name,fighter_a_slug,"
-    + "fighter_b_name,fighter_b_slug&event_id=in.(" + ids.join(',') + ")&order=bout_number.asc");
+    + "fighter_b_name,fighter_b_slug,weight_class,is_title_fight,title_name"
+    + "&event_id=in.(" + ids.join(',') + ")&order=bout_number.asc");
   if(!bouts || !bouts.length) return;
   var main = {};
   bouts.forEach(function(b){ if(!main[b.event_id]) main[b.event_id] = b; });
@@ -2211,10 +2340,17 @@ async function loadFaceoffs(ids){
     });
   });
   if(!slugs.length) return;
-  var ph = await q("fighter_cards?select=slug,profile_photo_url&slug=in.(" + slugs.join(',') + ")");
+  /* The RECORD comes along for the ride. The next-event poster wants it and
+     this is already the one query that resolves these exact fighters — a
+     second request for two more columns is a request for nothing. */
+  var ph = await q("fighter_cards?select=slug,profile_photo_url,headline_wins,headline_losses,"
+    + "headline_draws&slug=in.(" + slugs.join(',') + ")");
   if(!ph) return;
-  var byslug = {};
-  ph.forEach(function(f){ if(f.profile_photo_url) byslug[f.slug] = f.profile_photo_url; });
+  var byslug = {}, recs = {};
+  ph.forEach(function(f){
+    if(f.profile_photo_url) byslug[f.slug] = f.profile_photo_url;
+    recs[f.slug] = rec(f);
+  });
   Object.keys(main).forEach(function(k){
     var m = main[k];
     // A missing photo gets a silhouette rather than killing the faceoff.
@@ -2223,7 +2359,13 @@ async function loadFaceoffs(ids){
     faceoffs[k] = {
       a: byslug[m.fighter_a_slug] || null,
       b: byslug[m.fighter_b_slug] || null,
-      an: m.fighter_a_name, bn: m.fighter_b_name
+      an: m.fighter_a_name, bn: m.fighter_b_name,
+      ar: recs[m.fighter_a_slug], br: recs[m.fighter_b_slug],
+      /* Bout 1 IS the main event: the card counts DOWN from the top, so the
+         lowest number is the headline and the segments run main_card →
+         undercard → prelim as it rises. */
+      forWhat: m.is_title_fight ? (m.title_name || 'Title fight')
+                                : (wc(m.weight_class) || 'Catch weight')
     };
   });
 }
@@ -2368,15 +2510,19 @@ async function loadHome(){
   } else {
     fanEvents = evs;
     renderFan();
+    /* Paint the poster now, with whatever is known — the names and photos
+       arrive on their own request and repaint it below. A block that waits for
+       the photographs is a block that is blank for the first second. */
+    renderNextEvent();
     // REAL event ids only. A UBAe night's id is `tm:<uuid>`, and one of those
     // inside `event_id=in.(...)` is not a uuid — PostgREST rejects the whole
     // query, so a single UBAe card in the hand silently stripped the faceoff
     // off every real event beside it. Their faceoffs are built in loadUbae().
     var ids = evs.filter(function(e){ return !e.ubae; }).map(function(e){ return e.id; });
     loadPosters(ids).then(function(){ renderFan(true); });
-    loadFaceoffs(ids).then(function(){ renderFan(true); });
+    loadFaceoffs(ids).then(function(){ renderFan(true); renderNextEvent(); });
   }
-  await Promise.all([loadLive(), loadRanks(), loadHomeNews(), loadStrip()]);
+  await Promise.all([loadLive(), loadRanks(), loadStrip()]);
 }
 
 
@@ -2932,6 +3078,7 @@ function renderJoinSlot(){
    is also where it belongs when GFL is selected -- GFL is ranked by division
    and has no pound-for-pound list at all. */
 var rankLeague = 'pro', rankCache = {};
+var RANK_FOLD = 6;      // rows shown per division before the tab is pressed
 var RANK_DIVS = [
   { k: 'lightweight',       s: 'LW'  },
   { k: 'middleweight',      s: 'MW'  },
@@ -2952,14 +3099,15 @@ document.getElementById('rleague').addEventListener('click', function(e){
    names land -- the 274px shove measured on 2026-09-01 was exactly this. */
 function rankSkeleton(){
   var rows = '';
-  for(var i = 0; i < 15; i++){
+  for(var i = 0; i < RANK_FOLD; i++){
     rows += '<div class="rkrow'+(i % 2 ? ' z' : '')+'"><span class="rnm"><b class="rsk"></b></span>'
           + '<i class="rmv"></i></div>';
   }
   var col = '<div class="rcol"><div class="rdh">&nbsp;</div>'
           + '<div class="rch"><span class="rnm"><b class="rsk"></b></span><i class="rmv"></i></div>'
           + rows + '</div>';
-  return '<div class="rgrid">' + col + col + col + col + '</div>';
+  return '<div class="rgrid">' + col + col + col + col + '</div>'
+       + '<div class="rtabwrap"><button class="rtab" disabled>&nbsp;<i>&#9662;</i></button></div>';
 }
 
 async function loadRanks(){
@@ -2992,6 +3140,34 @@ async function loadRanks(){
   paintRanks(el, data);
 }
 
+/* The label says how many are hidden, but only when that number is the SAME
+   in every division — GFL's boards are not all fifteen deep, and "+9 each" on
+   a board where one division hides four is a small lie told four times. */
+function rankTabHTML(byWc){
+  var hidden = RANK_DIVS.map(function(d){
+    return Math.max(0, (byWc[d.k] || []).length - RANK_FOLD);
+  });
+  var most = Math.max.apply(null, hidden);
+  if(!most) return '';                       // nothing folded, no tab
+  var same = hidden.every(function(n){ return n === hidden[0]; });
+  var shut = same ? '+' + most + ' each' : 'Show all';
+  return '<div class="rtabwrap"><button class="rtab" id="rtab" aria-expanded="false"'
+       + ' aria-controls="ranks" data-shut="' + shut + '">' + shut
+       + ' <i>&#9662;</i></button></div>';
+}
+
+document.getElementById('ranks').addEventListener('click', function(e){
+  var b = e.target.closest('#rtab'); if(!b) return;
+  var grid = this.querySelector('.rgrid'); if(!grid) return;
+  var open = grid.classList.toggle('rfold') === false;
+  b.setAttribute('aria-expanded', open ? 'true' : 'false');
+  b.innerHTML = (open ? 'Show less' : b.dataset.shut) + ' <i>&#9662;</i>';
+  /* The folded rows were display:none, so they were never measured — a name
+     that needs squeezing gets its scale the first time it is actually on
+     screen, not before. */
+  if(open) fitRankNames(this);
+});
+
 function rankMoveHTML(f){
   if(f.prev_rank == null) return '<i class="rmv rnew" title="New this week"></i>';
   if(f.prev_rank > f.rank) return '<i class="rmv rup" title="Up from #'+f.prev_rank+'"></i>';
@@ -3022,23 +3198,25 @@ function paintRanks(el, data){
     else if(t.weight_class) champ[t.weight_class] = t;
   });
 
-  el.innerHTML = '<div class="rgrid">' + RANK_DIVS.map(function(d){
+  el.innerHTML = '<div class="rgrid rfold">' + RANK_DIVS.map(function(d){
     var list = (byWc[d.k] || []).slice().sort(function(a, b){ return a.rank - b.rank; });
-    var h = '<div class="rcol"><div class="rdh">'+d.s+'</div>';
+    var h = '<div class="rcol" style="--rkd:'+(RANK_DIVS.indexOf(d) * 500)+'ms">'
+          + '<div class="rdh">'+d.s+'</div>';
     if(titles){
       var t = champ[d.k];
       h += t && t.holder_name
-        ? rankRowHTML(t.holder_slug, 'rch rgold', t.holder_name + (t.is_interim ? ' (int)' : ''),
+        ? rankRowHTML(t.holder_slug, 'rch', t.holder_name + (t.is_interim ? ' (int)' : ''),
                       '', '<i class="rmv"></i>')
         : rankRowHTML(null, 'rch', 'Vacant', 'rvac', '<i class="rmv"></i>');
     }
     h += list.map(function(f, i){
       var gold = bmf && f.fighter_slug === bmf;
-      var cls = 'rkrow' + (i % 2 ? ' z' : '') + (gold ? ' bmf rgold' : '');
+      var cls = 'rkrow' + (i % 2 ? ' z' : '') + (gold ? ' bmf' : '')
+              + (i >= RANK_FOLD ? ' rkx' : '');
       return rankRowHTML(f.fighter_slug, cls, f.fighter_name, '', rankMoveHTML(f));
     }).join('');
     return h + '</div>';
-  }).join('') + '</div>';
+  }).join('') + '</div>' + rankTabHTML(byWc);
 
   var asof = document.getElementById('r-asof');
   if(asof) asof.textContent = rows.length + ' ranked';
@@ -3140,19 +3318,122 @@ function newsFailure(retryId){
   }
   return failHTML("Couldn't load the news.", retryId);
 }
-async function loadHomeNews(){
-  var el = document.getElementById('home-news');
-  var rows = await getNews();
-  if(!rows){ retryHandlers['homenews'] = function(){ newsCache = null; loadHomeNews(); };
-    el.innerHTML = newsFailure('homenews'); return; }
-  if(!rows.length){ el.innerHTML = '<div class="empty">No news posted yet.</div>'; return; }
-  el.innerHTML = rows.slice(0,3).map(function(n){
-    return '<div class="nw" data-news="'+esc(n.id)+'"><span class="th"></span><div>'
-      + (n.kicker ? '<div class="k">'+esc(n.kicker)+'</div>' : '')
-      + '<div class="h">'+esc(n.headline)+'</div>'
-      + '<div class="d">'+esc(dstr(n.posted_at))+'</div></div></div>';
-  }).join('');
+/* ── THE NEXT CARD ────────────────────────────────────────────────────
+   Reads what home already has: fanEvents (every scheduled event, plus a past
+   backfill when the schedule is thin) and faceoffs (bout 1 of each published
+   card, which IS the main event — the card counts down from the top). No
+   request of its own.
+
+   THE ORDER OF THE THREE STATES IS THE WHOLE RULE:
+     1. anything still to come  -> the soonest, and you can flip to the rest
+     2. nothing to come         -> the last card that happened, labelled as such
+     3. nothing at all          -> a placeholder that says where the next one
+                                   gets announced
+   A past event may never appear above an upcoming one. The block's claim is
+   "this is next"; showing a finished card under that heading is the same lie
+   as an out-of-date scoreboard. */
+var nextIdx = 0;
+
+function nextEventList(){
+  var evs = fanEvents || [];
+  var soon = evs.filter(function(e){ return !eventIsOver(e); });
+  if(soon.length) return { rows: soon, past: false };
+  /* Newest-first for the past, because "last time out" means the most recent
+     one, not the oldest one still in the hand. */
+  var done = evs.slice().filter(eventIsOver).sort(function(x, y){
+    return new Date(y.event_date) - new Date(x.event_date); });
+  return { rows: done, past: true };
 }
+
+function posterHTML(e, past, i, n){
+  var f = faceoffs[e.id];
+  /* Everything on this app states event times in ET, because the league runs
+     to one clock and a local-time render makes two people disagree about when
+     the card starts. */
+  var when = new Date(e.event_date).toLocaleString('en-US', { timeZone: 'America/New_York',
+    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + ' ET';
+  var body = f
+    ? '<div class="duo">'
+      + '<span class="pw">' + cutout(f.a) + '</span>'
+      + '<span class="vs">VS</span>'
+      + '<span class="pw">' + cutout(f.b, 'flip') + '</span></div>'
+      + '<div class="nms"><b>' + esc(f.an || 'TBA') + '</b><b>' + esc(f.bn || 'TBA') + '</b></div>'
+      /* A UBAe night's faceoff is built by loadUbae() and carries neither a
+         record nor a weight class, because a team match has neither. Two
+         em-dashes under two names reads as data that failed to load; the row
+         is simply not drawn. */
+      + (f.ar || f.br
+          ? '<div class="recs"><s>' + (f.ar || '') + '</s><s>' + (f.br || '') + '</s></div>' : '')
+      + (f.forWhat ? '<div class="wcl">' + esc(f.forWhat) + '</div>' : '')
+    : '<div class="tba">Card not announced yet</div>';
+  var dots = n > 1
+    ? '<div class="pvdots">' + Array.apply(null, Array(n)).map(function(_, k){
+        return '<s class="' + (k === i ? 'on' : '') + '" data-nxi="' + k + '"></s>'; }).join('')
+      + '</div>'
+    : '<div class="pvdots"></div>';
+  return '<div class="pv" data-event="' + esc(e.id) + '"><div class="glow"></div>'
+    + '<div class="eyeb">' + (past ? 'Last time out' : 'Next event') + '</div>'
+    + '<div class="ttl">' + esc(e.name) + '</div>'
+    + '<div class="meta">' + esc(when) + '</div>'
+    + body + dots + '</div>';
+}
+
+/* A missing cut-out is the NORM, not a failure — see the CSS note. */
+function cutout(url, flip){
+  return url
+    ? '<img class="cut ' + (flip || '') + '" src="' + esc(url) + '" alt="">'
+    : '<svg class="sil" viewBox="0 0 60 100" preserveAspectRatio="xMidYMax meet">'
+      + '<circle cx="30" cy="21" r="14"/>'
+      + '<path d="M30 38c-14 0-24 9-26 22l-4 40h60l-4-40c-2-13-12-22-26-22z"/></svg>';
+}
+
+function renderNextEvent(){
+  var el = document.getElementById('home-next');
+  if(!el) return;
+  var lab = document.getElementById('nx-lab');
+  var list = nextEventList();
+  if(!list.rows.length){
+    if(lab) lab.textContent = 'Next card';
+    el.innerHTML = '<div class="pvnone"><div class="ring">&#9675;</div>'
+      + '<div class="eyeb">Nothing on the schedule</div>'
+      + '<div class="ss">The next card lands here the moment it is announced.'
+      + '<br>Signups open in Discord first.</div></div>';
+    return;
+  }
+  if(nextIdx >= list.rows.length) nextIdx = 0;
+  if(lab) lab.textContent = list.past ? 'Last time out' : 'Next card';
+  el.innerHTML = posterHTML(list.rows[nextIdx], list.past, nextIdx, list.rows.length);
+}
+
+/* Dots and a swipe, on the block itself. The tap-through to the event is the
+   `[data-event]` handler that every other event row already uses, so a dot has
+   to stop the event reaching it. */
+document.getElementById('home-next').addEventListener('click', function(e){
+  var d = e.target.closest('[data-nxi]'); if(!d) return;
+  e.stopPropagation();
+  nextIdx = +d.getAttribute('data-nxi');
+  renderNextEvent();
+});
+(function(){
+  var el = document.getElementById('home-next'), x0 = null, y0 = null;
+  if(!el) return;
+  el.addEventListener('touchstart', function(e){
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
+  }, { passive: true });
+  el.addEventListener('touchend', function(e){
+    if(x0 === null) return;
+    var dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+    x0 = null;
+    /* Vertical wins ties: this block sits in a scrolling column and stealing a
+       scroll to flip a poster is worse than missing a flip. */
+    if(Math.abs(dx) < 42 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+    var n = nextEventList().rows.length;
+    if(n < 2) return;
+    nextIdx = (nextIdx + (dx < 0 ? 1 : n - 1)) % n;
+    renderNextEvent();
+  }, { passive: true });
+})();
+
 var VIDEOS_PATH = 'videos_public?select=video_id,title,thumb_url,published_at,seen_at,event_name&limit=8';
 var newsVideos = null;
 
@@ -3747,9 +4028,14 @@ async function loadCard(e){
     .concat(Object.keys(groups).filter(function(k){ return order.indexOf(k) === -1; }));
 
   // DESIGN B: the UFC bout with the tale of the tape folded away behind it.
-  // The main event opens by default so the pattern is obvious without a
-  // caption telling anyone to tap.
-  var boutSeen = 0;
+  //
+  // NOTHING IS OPEN ON ARRIVAL. The first bout used to open itself, on the
+  // theory that one worked example teaches the pattern without a caption. It
+  // does not read that way: the card opens with ONE bout twice the height of
+  // every other, which looks like a layout bug rather than an invitation, and
+  // the row it pushes down is the rest of the card. The chevron plus the
+  // words "Tale of the tape" are the affordance; they do not need a
+  // demonstration.
   el.innerHTML = keys.map(function(k){
     return '<div class="seg">'+esc(SEGS[k] || k.replace(/_/g,' '))+'</div>'
       + groups[k].map(function(b){
@@ -3757,8 +4043,7 @@ async function loadCard(e){
                                 || b.fighter_b_slug === myFighter.fighter_slug);
           var done = b.status === 'completed' && b.winner_corner;
           var A = tape[b.fighter_a_slug] || {}, Bf = tape[b.fighter_b_slug] || {};
-          var first = (boutSeen++ === 0) ? ' open' : '';
-          return '<div class="bout3'+(mine?' you':'')+first+'" data-bout>'
+          return '<div class="bout3'+(mine?' you':'')+'" data-bout>'
             + (mine ? '<span class="youtag">Your bout</span>' : '')
             + '<div class="wc4">'
             + esc(b.is_title_fight ? (b.title_name || 'Title fight')
@@ -4446,9 +4731,10 @@ function openTear(itemId, name){
     + '<div class="tpack" style="--pk:' + colour + '">'
       + '<div class="tguts">' + Array.from({length: Math.min(size,5)})
           .map(function(){ return '<i></i>'; }).join('') + '</div>'
+      + '<div class="tshd"></div><div class="trim" id="tr"></div>'
       + '<div class="tbody" id="tb"><div class="tskin"></div>'
         + '<span class="tsz">' + size + '<em>cards</em></span></div>'
-      + '<div class="ttop" id="tt"></div><span class="tnotch"></span>'
+      + '<div class="tflap" id="tt"></div><span class="tnotch" id="tn"></span>'
       + '<div class="tgrab" id="tg"></div>'
     + '</div>'
     + '<div class="thint" id="th">Drag the strip across &rarr;</div>'
@@ -4467,31 +4753,143 @@ function closeTear(){
   setTimeout(function(){ el.classList.remove('live'); el.innerHTML = ''; }, 240);
 }
 
-/* Z3: eased, and a flick finishes it. The tear is redrawn once per frame
-   rather than once per pointer event — several of those fire between frames
-   and repainting on each is what read as rough. */
+/* THE TEAR. Redrawn once per frame rather than once per pointer event --
+   several of those fire between frames and repainting on each is what read
+   as rough.
+
+   The shape of the tear is generated, not written down. `line(front)` returns
+   the same list of points to both clip-paths, so the pack's new top edge and
+   the flap's bottom edge are the SAME edge; and the points only drop to full
+   depth BEHIND the front, so the split runs across the pack instead of the
+   whole lid arriving at once. The jitter is fixed per pack rather than random
+   per frame -- a tear that reshuffles its own teeth every frame boils. */
+var TEETH = 76, TDEPTH = 36, RIM = 1.8;
+/* A tear is something you FEEL, and on the hardware that can do it a tick per
+   few teeth is most of the difference. iOS does not implement it and never
+   throws either -- so this is silent there rather than broken. */
+function buzz(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(e){} }
+var JIT = (function(){                 /* deterministic, so the edge holds still */
+  var a = [], x = 0.4213;
+  for(var i = 0; i <= TEETH; i++){ x = (x * 9301 + 0.49297) % 1; a.push(x * 2 - 1); }
+  return a;
+})();
+/* THE FRONT RUNS PAST THE EDGE. `line` needs a window of W to take a point
+   from sealed to fully torn, so a front that stops at 1.0 leaves the last
+   sliver of the pack still standing at full height -- which showed as a step
+   up at the top right corner of a pack that was supposedly open. Progress is
+   scaled by OVER so the front is clear of the far edge exactly when the drag
+   completes. */
+var TW = 0.15, OVER = 1 + TW;
+/* front: 0..OVER across the pack. Returns [[xPercent, yPx], ...] left to right. */
+function line(front){
+  var pts = [], W = TW;
+  for(var i = 0; i <= TEETH; i++){
+    var t = i / TEETH;
+    var r = (front - t) / W;
+    var k = r <= 0 ? 0 : r >= 1 ? 1 : r * r * (3 - 2 * r);
+    /* fray peaks where the split is actually happening and settles behind it */
+    var fray = k * (1 - k) * 4;
+    /* Fine and hairy, not notched. The first cut used 46 big teeth and the
+       edge read as pinking shears through card; foil parts along a much finer
+       line with the occasional fibre left standing, which is the `spike`. */
+    var spike = (i % 9 === 3 || i % 13 === 7) ? JIT[i] * 3.1 : 0;
+    var y = TDEPTH * k + (JIT[i] * (1.05 + fray * 3.6) + spike) * k;
+    pts.push([t * 100, Math.max(0, y)]);
+  }
+  return pts;
+}
+function bodyPath(pts, drop){
+  var o = drop || 0;
+  var d = pts.map(function(p){ return p[0].toFixed(2) + '% ' + (p[1] + o).toFixed(2) + 'px'; });
+  return 'polygon(' + d.join(',') + ',100% 100%,0 100%)';
+}
+/* the lit edge only exists where the pack has actually been torn -- a bright
+   hairline across the sealed half would be a crimp that is not there. */
+function rimPath(pts, front){
+  var cut = Math.max(0, Math.min(1, front)) * 100, d = [];
+  for(var i = 0; i < pts.length; i++)
+    if(pts[i][0] <= cut + 2) d.push(pts[i][0].toFixed(2) + '% ' + pts[i][1].toFixed(2) + 'px');
+  if(d.length < 2) return 'polygon(0 0,0 0,0 0)';
+  d.push((cut + 2).toFixed(2) + '% 100%', '0% 100%');
+  return 'polygon(' + d.join(',') + ')';
+}
+/* everything above the line and behind the front — i.e. the piece that has
+   come away. Ahead of the front the two edges are the same line, so the flap
+   is simply not there yet. */
+function flapPath(pts, front){
+  var cut = Math.max(0, Math.min(1, front)) * 100, keep = [];
+  for(var i = 0; i < pts.length; i++) if(pts[i][0] <= cut) keep.push(pts[i]);
+  if(keep.length < 2) return 'polygon(0 0,0 0,0 0)';
+  var d = ['0% 0px', cut.toFixed(2) + '% 0px'];
+  for(var j = keep.length - 1; j >= 0; j--)
+    d.push(keep[j][0].toFixed(2) + '% ' + keep[j][1].toFixed(2) + 'px');
+  return 'polygon(' + d.join(',') + ')';
+}
+
 function wireTear(itemId){
   var top = document.getElementById('tt'), body = document.getElementById('tb'),
       grab = document.getElementById('tg'), hint = document.getElementById('th'),
-      kick = document.getElementById('tk');
-  var DIST = 200, SNAP = 0.62;
+      kick = document.getElementById('tk'), notch = document.getElementById('tn'),
+      rim = document.getElementById('tr');
+  /* the pack is 200 wide, so 200 was the full width of it -- most of the
+     screen on a small phone, and a drag that has to be restarted because the
+     thumb ran out of glass is the least foil-like thing there is. */
+  var DIST = Math.max(132, Math.min(200, (window.innerWidth || 360) * 0.56)), SNAP = 0.62;
   var target = 0, shown = 0, dragging = false, x0 = 0, raf = null, opened = false;
   var lastX = 0, lastT = 0, vel = 0;
 
+  /* TWO SPRINGS, NOT ONE LERP. `shown` is the tear front and is stiff, because
+     the split has to stay under the finger -- anything soft there feels like
+     lag, not like material. `flop` is the far end of the loose sheet and is
+     deliberately slack, so it trails the front and overshoots when the front
+     stops. Everything that makes the flap look like foil rather than a plank
+     is driven by the GAP between the two: the bend, the whip, the fold.
+
+     A single eased value could only ever move the flap as one rigid piece,
+     which is exactly what read as cardboard. */
+  var flop = 0, sv = 0, fv = 0, tPrev = 0, lastTick = 0;
+  function spring(p, v, to, k, c, dt){
+    v += ((to - p) * k - v * c) * dt;
+    return [p + v * dt, v];
+  }
   function paint(){
-    var e = shown * shown * (3 - 2 * shown);
-    top.style.transform = 'translate3d(' + (shown * 240) + 'px,' + (-e * 34) + 'px,0) rotate('
-      + (e * 18) + 'deg)';
-    top.style.opacity = String(1 - shown * 0.5);
-    body.style.setProperty('--cut', (e * 32) + 'px');
+    var prog = Math.max(0, Math.min(1, shown)), front = prog * OVER;
+    var pts = line(front);
+    body.style.clipPath = bodyPath(pts, RIM);
+    if(rim) rim.style.clipPath = rimPath(pts, front);
+    top.style.clipPath = flapPath(pts, front);
+    /* the flap hinges AT the tear front and swings up from there, which is
+       what a peel is. A rigid slide sideways is what a lid does. */
+    var lag = Math.max(-0.22, Math.min(0.28, shown - flop));
+    var hx = Math.min(1, front) * 200, lift = prog * 44 + lag * 78;
+    top.style.transformOrigin = hx.toFixed(1) + 'px ' + (TDEPTH * 0.55).toFixed(1) + 'px';
+    top.style.transform = 'rotate(' + lift.toFixed(2) + 'deg) skewX('
+      + (lag * -34).toFixed(2) + 'deg) scaleY(' + (1 - Math.abs(lag) * 0.16).toFixed(3) + ')';
+    /* the light: brightest as the sheet passes through the mid angles, and
+       the band travels across it as it turns. Past about 60 degrees you are
+       looking at the back of the foil, which is matte -- so it dims. */
+    var turn = Math.max(0, Math.min(1, lift / 60));
+    top.style.setProperty('--lit', (Math.sin(turn * Math.PI) * 0.85 + prog * 0.25).toFixed(3));
+    top.style.setProperty('--sx', (-8 + turn * 96).toFixed(1));
+    top.style.filter = 'brightness(' + (1 + turn * 0.16 - Math.max(0, turn - 0.8) * 1.1).toFixed(3)
+      + ') saturate(' + (1 - Math.max(0, turn - 0.7) * 0.9).toFixed(3) + ')';
+    if(notch) notch.style.opacity = String(Math.max(0, 1 - prog * 2.4));
+    var tick = Math.floor(prog * 9);
+    if(tick > lastTick){ lastTick = tick; if(dragging) buzz(7); }
+    else if(tick < lastTick) lastTick = tick;
   }
-  function loop(){
-    shown += (target - shown) * 0.18;
-    if(Math.abs(target - shown) < 0.001) shown = target;
+  function loop(ts){
+    var dt = tPrev ? Math.min(0.034, (ts - tPrev) / 1000) : 0.016;
+    tPrev = ts;
+    var a = spring(shown, sv, target, 460, 40, dt); shown = a[0]; sv = a[1];
+    var b = spring(flop, fv, shown, 132, 15, dt); flop = b[0]; fv = b[1];
+    var still = Math.abs(target - shown) < 0.0015 && Math.abs(sv) < 0.02
+             && Math.abs(shown - flop) < 0.0015 && Math.abs(fv) < 0.02;
+    if(still && !dragging){ shown = target; flop = target; sv = fv = 0; }
     paint();
-    raf = (dragging || Math.abs(target - shown) > 0.001) ? requestAnimationFrame(loop) : null;
+    raf = (!still && live()) || dragging ? requestAnimationFrame(loop) : (tPrev = 0, null);
   }
-  function kickRaf(){ if(!raf) raf = requestAnimationFrame(loop); }
+  function kickRaf(){ if(!raf){ tPrev = 0; raf = requestAnimationFrame(loop); } }
 
   grab.addEventListener('pointerdown', function(ev){
     if(opened) return;
@@ -4516,6 +4914,85 @@ function wireTear(itemId){
   grab.addEventListener('pointerup', up);
   grab.addEventListener('pointercancel', up);
 
+  /* THE FOLLOW-THROUGH. The last version ended the tear with one CSS
+     transition -- a fixed rotate-and-slide over 420ms, the same every time,
+     which threw away the speed the finger had just built and finished the
+     gesture on a note stiffer than the drag that led into it.
+
+     The flap now leaves under its own physics: it takes the drag's velocity
+     with it, tumbles, and flutters on the way out, because a sheet that
+     light does not travel in a straight line. The pack answers it -- the
+     cards ride up as the pressure comes off the top -- and a few flecks come
+     off the cut. */
+  var rel = null;
+  /* the overlay can be closed mid-flight; nothing below should keep running
+     against elements that are no longer on the page. */
+  function live(){
+    var e = document.getElementById('tear');
+    return !!e && e.classList.contains('live');
+  }
+  var CALM = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function release(v){
+    if(CALM){                       /* no throw, no tumble, no flecks */
+      top.style.transition = 'opacity .22s'; top.style.opacity = '0';
+      buzz(20); return;
+    }
+    /* the flick's speed is carried into the throw, but CLAMPED. `vel` is
+       pixels per millisecond off two pointer events, and two of those can
+       land a tenth of a millisecond apart -- which is a plausible reading on
+       a 120Hz screen and an absurd one to multiply a launch by. Unclamped it
+       threw the flap four thousand pixels and spun it fourteen times. */
+    var v0 = Math.max(0, Math.min(2.2, v || 0));
+    var ang = Math.max(0, Math.min(1, shown)) * 44,
+        vx = 90 + v0 * 120, vy = -210,
+        va = 110 + v0 * 90,
+        x = 0, y = 0, t = 0, pt = 0;
+    var guts = document.querySelector('#tear .tguts');
+    if(guts){ guts.classList.add('pop');
+      setTimeout(function(){ guts.classList.remove('pop'); }, 240); }
+    flecks();
+    buzz(26);
+    top.style.transformOrigin = '200px ' + (TDEPTH * 0.55).toFixed(1) + 'px';
+    /* real elapsed time, not a frame count: the same throw has to last the
+       same half-second on a 120Hz iPhone as on a 60Hz one. */
+    (function step(ts){
+      var dt = pt ? Math.min(0.034, (ts - pt) / 1000) : 0.016; pt = ts || 0;
+      t += dt;
+      vy += 1100 * dt;                          /* it is light, so it drops slowly */
+      x += vx * dt; y += vy * dt; ang += va * dt; va *= (1 - 1.0 * dt);
+      /* the flutter: a light sheet oscillates as it turns through the air */
+      var flut = Math.sin(t * 21) * 15 * Math.exp(-t * 3.4);
+      top.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px) rotate('
+        + ang.toFixed(1) + 'deg) skewX(' + flut.toFixed(1) + 'deg) scaleY('
+        + (1 - Math.abs(flut) * 0.008).toFixed(3) + ')';
+      /* past a quarter turn you are looking at the BACK of the foil, which is
+         matte -- so the printed face's sheen has to go with it. Without this
+         the strip tumbles through 140 degrees still lit like the front, which
+         is the one thing that gives away a flat sheet pretending to be one. */
+      var a = ((ang % 360) + 360) % 360, back = a > 90 && a < 270;
+      top.style.filter = back ? 'brightness(.58) saturate(.3)' : 'brightness(1.1)';
+      top.style.setProperty('--lit', back ? '0' : '0.5');
+      top.style.opacity = String(Math.max(0, 1 - Math.max(0, t - 0.16) * 3.1));
+      rel = (t < 0.62 && live()) ? requestAnimationFrame(step) : null;
+    })();
+  }
+  function flecks(){
+    var pack = document.querySelector('#tear .tpack');
+    if(!pack) return;
+    for(var i = 0; i < 8; i++){
+      var f = document.createElement('span');
+      f.className = 'fleck';
+      f.style.left = (10 + i * 24 + JIT[i * 5] * 8).toFixed(0) + 'px';
+      f.style.top = (TDEPTH - 4 + JIT[i * 3] * 5).toFixed(0) + 'px';
+      f.style.setProperty('--fx', (JIT[i * 7] * 46 + 14).toFixed(0) + 'px');
+      f.style.setProperty('--fy', (-38 - Math.abs(JIT[i * 2]) * 40).toFixed(0) + 'px');
+      f.style.setProperty('--fr', (JIT[i * 4] * 320).toFixed(0) + 'deg');
+      f.style.setProperty('--fc', i % 3 ? 'rgba(255,255,255,.9)' : 'var(--pk)');
+      pack.appendChild(f);
+      (function(el){ setTimeout(function(){ el.remove(); }, 560); })(f);
+    }
+  }
+
   /* Undiscoverable gesture, so it offers a way through after a few seconds. */
   setTimeout(function(){
     if(opened || !document.getElementById('th')) return;
@@ -4528,19 +5005,21 @@ function wireTear(itemId){
     if(opened) return;
     opened = true; dragging = false;
     if(raf){ cancelAnimationFrame(raf); raf = null; }
-    top.style.transition = 'transform .42s cubic-bezier(.3,0,.2,1),opacity .42s';
-    top.style.transform = 'translate3d(320px,-96px,0) rotate(42deg)';
-    top.style.opacity = '0';
-    body.style.setProperty('--cut', '32px');
+    var pts = line(OVER);
+    body.style.clipPath = bodyPath(pts, RIM);
+    if(rim) rim.style.clipPath = rimPath(pts, OVER);
+    top.style.clipPath = flapPath(pts, OVER);
+    release(vel);
     hint.textContent = 'Opening\u2026';
     var r = await rpc('app_open_pack', { p_player_item_id: itemId });
     if(!r.ok){
       /* Reseal. A torn pack that never opened is worse than an error. */
       opened = false;
-      top.style.transition = 'transform .3s,opacity .3s';
-      top.style.transform = ''; top.style.opacity = '1';
-      body.style.setProperty('--cut', '0px');
-      shown = 0; target = 0;
+      if(rel){ cancelAnimationFrame(rel); rel = null; }
+      top.style.transition = 'transform .34s cubic-bezier(.3,0,.2,1),opacity .34s';
+      top.style.transform = 'rotate(0deg)'; top.style.opacity = '1';
+      shown = 0; target = 0; flop = 0; sv = fv = 0; paint();
+      setTimeout(function(){ top.style.transition = ''; }, 360);
       hint.textContent = 'Drag the strip across \u2192';
       toast(r.message || 'That pack could not be opened.', true);
       return;
@@ -4589,9 +5068,34 @@ function showSpread(pulls, pity){
     + '</div>';
 
   var cards = [].slice.call(el.querySelectorAll('.scard'));
+  var fan = document.getElementById('sf');
+  var PITCH = 48, HALF = 58;   /* slot spacing, and half a card at resting scale */
   function slot(i){
     var pos = i - (list.length - 1) / 2;
-    return { x: pos * 48, y: Math.abs(pos) * 11, rot: pos * 7.5 };
+    return { x: pos * PITCH, y: Math.abs(pos) * 11, rot: pos * 7.5 };
+  }
+  /* WHICH CARD A TAP MEANS is arithmetic, never stacking. It used to be a
+     click listener per card, so the answer came from whatever the browser
+     found on top -- and two things upstairs made that answer wrong. The
+     raised card is scaled 1.4 with the fan's highest z, so its box covered
+     the middle of the hand and ATE taps meant for the cards behind it; and
+     the resting z was `10 - |i - active|`, which peaks at the active card
+     and falls off BOTH ways, so on one side of the hand the near card
+     covered the far one and on the other side the far card covered the near.
+     Together: with the best pull at index 0 -- the common case, the hand
+     opens on it -- tapping any card between 20% and 70% across selected the
+     LEFTMOST card, and the third card could not be selected at all.
+
+     The hand is now stacked left-under-right like a real fan, so each card
+     shows its own left edge exactly one PITCH wide, and a tap is mapped to
+     that band by division. The raised card takes no pointer events (it is
+     already chosen), and the hand's cards take none either -- the fan owns
+     the gesture, so a tap can never resolve to a card the eye did not see. */
+  function hit(clientX){
+    var r = fan.getBoundingClientRect();
+    var rx = clientX - (r.left + r.width / 2);
+    var i = Math.floor((rx - (slot(0).x - HALF)) / PITCH);
+    return Math.max(0, Math.min(list.length - 1, i));
   }
   function layout(){
     cards.forEach(function(c, i){
@@ -4599,12 +5103,12 @@ function showSpread(pulls, pity){
       if(i === active){
         c.classList.add('up');
         c.style.transform = 'translate(' + (sl.x * 0.18) + 'px,-74px) rotate(0deg) scale(1.4)';
-        c.style.opacity = '1'; c.style.zIndex = 20;
+        c.style.opacity = '1'; c.style.zIndex = 50;
       } else {
         c.classList.remove('up');
         c.style.transform = 'translate(' + sl.x + 'px,' + sl.y + 'px) rotate(' + sl.rot + 'deg) scale(.92)';
         c.style.opacity = String(0.82 - Math.abs(i - active) * 0.07);
-        c.style.zIndex = 10 - Math.abs(i - active);
+        c.style.zIndex = String(i);
       }
     });
     var c = list[active];
@@ -4619,7 +5123,6 @@ function showSpread(pulls, pity){
   cards.forEach(function(c, i){
     c.style.transform = 'translate(0,120px) rotate(0deg) scale(.55)';
     c.style.opacity = '0';
-    c.addEventListener('click', function(){ setActive(i); });
     setTimeout(function(){
       var sl = slot(i);
       c.style.opacity = '1';
@@ -4631,14 +5134,18 @@ function showSpread(pulls, pity){
     setActive(bestIdx);
   }, 70 + list.length * 85 + 240);
 
-  /* swipe the hand */
-  var fan = document.getElementById('sf'), x0 = null;
-  fan.addEventListener('pointerdown', function(e){ x0 = e.clientX; });
+  /* swipe the hand, or tap a card. `moved` is what keeps the two apart: the
+     click that follows a swipe would otherwise land on wherever the finger
+     stopped and undo the swipe. */
+  var x0 = null, lastX = 0, moved = 0;
+  fan.addEventListener('pointerdown', function(e){ x0 = e.clientX; lastX = e.clientX; moved = 0; });
   fan.addEventListener('pointermove', function(e){
     if(x0 === null) return;
+    moved += Math.abs(e.clientX - lastX); lastX = e.clientX;
     var dx = e.clientX - x0;
     if(Math.abs(dx) > 46){ setActive(active + (dx < 0 ? 1 : -1)); x0 = e.clientX; }
   });
+  fan.addEventListener('click', function(e){ if(moved <= 8) setActive(hit(e.clientX)); });
   function end(){ x0 = null; }
   fan.addEventListener('pointerup', end);
   fan.addEventListener('pointercancel', end);
@@ -5572,7 +6079,7 @@ function showDiag(){
    would only mean the next cold open has nothing to paint. */
 var REFRESH = {
   home: function(){ return Promise.all([loadHome(), loadLive(), loadStrip(),
-                                        loadRanks(), loadHomeNews()]); },
+                                        loadRanks()]).then(renderNextEvent); },
   news: function(){ newsCache = null; newsInFlight = null; return loadNews(); },
   you:  function(){ return loadMe().then(function(){ renderYou(); }); },
   fighters: function(){ allFighters = null; return loadFighters(); },
