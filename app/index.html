@@ -5335,10 +5335,13 @@ function startDiscBloom(){
 
     /* ON the button's edge, not around it. At 1.12x the ring floated 6px clear
        and read as a second, larger object; the button is drawn over the top of
-       this canvas, so a ring at 1.0x is half-hidden behind it and what shows is
-       a rim -- the button itself glowing. It only leaves the edge on a pull. */
-    var r  = BTN*1.0 + si*6;
-    var w  = 2.0 + si*6;
+       this canvas, so a ring INSIDE its radius is mostly hidden and what shows
+       is the soft outer half bleeding past the edge -- the button glowing
+       rather than wearing something. 0.94x with a fatter stroke: tucked
+       further under, and heavier so the part that does show still reads. It
+       only leaves the edge on a pull. */
+    var r  = BTN*0.94 + si*6;
+    var w  = 3.2 + si*6;
     var a  = 0.34 + si*0.42 + bloom*0.24;
     var dx = 0.9 + si*3.4 + bloom*6.5;      /* how far the channels are pulled apart */
 
