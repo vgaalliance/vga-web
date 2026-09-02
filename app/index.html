@@ -1069,6 +1069,53 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 /* Signed out, the prices still show — they just stop being buttons. */
 .tape .picks.off{margin-top:0;padding:9px 12px 11px;border-top:1px solid rgba(255,255,255,.07)}
 
+/* THE RUNNING TOTAL, docked above the nav on a card you have money on.
+   Ten markets is a lot of scrolling and the only place your total lived was a
+   screen back on level one.
+
+   COUNT FIRST, MONEY SECOND. That ordering is not taste — it is the one thing
+   PrizePicks, DraftKings and FanDuel all agree on: the slip leads with how
+   many, and the figure supports it.
+
+   It is NOT a bet slip, and that is the reason it carries no button. Every
+   bar those apps ship is a PENDING slip — selections not yet submitted — so
+   it ends in an action. Ours reports money already staked and unrecallable,
+   and a bar that looks like a slip but cannot be submitted or cleared is a
+   worse lie than no bar.
+
+   It also does not carry the back control, though the mockup did: the slab
+   only exists when you have bets on the card, and a way out that appears only
+   once you have spent money is not a way out. Back stays at the top. */
+.betslab{position:fixed;left:0;right:0;z-index:19;
+  /* Docked to the nav's top edge: the bar's buttons are 54px and it pads
+     itself by the safe-area inset, so that sum IS its height. --barpush is
+     the bar's own seating offset; matching it keeps the two locked together
+     if the bar is ever pushed. */
+  bottom:calc(54px + env(safe-area-inset-bottom,0px) - var(--barpush, 0px));
+  display:flex;align-items:center;gap:12px;padding:11px 16px;
+  background:rgba(14,10,28,.97);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  border-top:1px solid rgba(110,231,183,.3)}
+/* Capped short of centre. The You button is a raised disc that overhangs the
+   nav upward into this bar, and it sits above it — a long event name allowed
+   to run to the middle would slide underneath it and be unreadable. */
+.betslab .cnt{display:flex;align-items:baseline;gap:6px;min-width:0;max-width:calc(50% - 32px)}
+.betslab .cnt b{font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1;color:#6EE7B7;
+  flex-shrink:0}
+/* A long event name ellipsizes rather than shoving the money off the edge —
+   the figure on the right is the half you cannot afford to lose. */
+.betslab .cnt s{text-decoration:none;font-family:'Space Mono',monospace;font-size:7px;
+  letter-spacing:.14em;text-transform:uppercase;color:#8FD9BE;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.betslab .mny{margin-left:auto;text-align:right;white-space:nowrap;flex-shrink:0}
+.betslab .mny b{display:block;font-family:'Space Mono',monospace;font-size:13px;font-weight:700;
+  color:#6EE7B7;line-height:1;font-variant-numeric:tabular-nums}
+.betslab .mny b u{text-decoration:none;color:#F5C842}
+.betslab .mny s{display:block;text-decoration:none;font-family:'Space Mono',monospace;font-size:6px;
+  letter-spacing:.13em;text-transform:uppercase;color:#5F5880;margin-top:4px}
+/* The slab is fixed, so it does not push the list. This does — without it the
+   last bout on the card sits underneath it and cannot be read or bet on. */
+.slabgap{height:56px}
+
 /* the sheet */
 .summ{display:flex;gap:8px;margin:16px 16px 4px}
 .summ div{flex:1;padding:11px 6px;border-radius:11px;text-align:center;
@@ -6232,9 +6279,44 @@ function renderBetEvent(eventId){
     + '<div class="lab"><b>'+esc(ps[0].event_name)+'</b><i></i><s>'
     + ps.length+(ps.length===1?' market':' markets')+'</s></div>'
     + ps.map(function(r, i){ return boardHTML(r, i); }).join('')
-    + '<div class="foot">Your stake shows on the side you backed &middot; prices move until the bell</div>';
+    + '<div class="foot">Your stake shows on the side you backed &middot; prices move until the bell</div>'
+    + betSlabHTML(eventId, ps[0].event_name);
   var bk = el.querySelector('[data-bback]');
   if(bk) bk.onclick = function(){ loadBetting(); };
+}
+
+/* The docked total. Returns nothing at all when there is no money on this
+   card — an empty bar reporting zero would take 56px off the board to say
+   the one thing the board already says by having no mint on it.
+   It lives inside #bet-list rather than beside it, so going back to level one
+   removes it with the same innerHTML that redraws the list.
+
+   NAMED betSlabHTML, not slabHTML: the binder already has a slabHTML for the
+   graded card slab, it is declared further down this file, and a second
+   function declaration with the same name silently wins. The first version of
+   this shipped as slabHTML, rendered a CARD SLAB into the betting board's
+   footer, and threw nothing at all — the bar simply never appeared. */
+function betSlabHTML(eventId, eventName){
+  if(!me) return '';
+  var mine = (myBets || []).filter(function(b){
+    return b.event_id === eventId && b.state !== 'settled'; });
+  if(!mine.length) return '';
+  var stake = mine.reduce(function(n, b){ return n + Number(b.amount||0); }, 0);
+  /* Same split as the strips on level one: an OPEN bet is worth what the pool
+     pays right now, a LOCKED one is worth the price it locked at. Showing a
+     live price for a locked bet would be showing a number that can no longer
+     move as though it still could. */
+  var ret = mine.reduce(function(n, b){
+    var p = (betPools || []).filter(function(x){ return x.match_id === b.match_id; })[0];
+    var mult = b.state === 'open' ? livePays(p, b) : Number(b.odds || 1);
+    return n + Math.round(Number(b.amount||0) * mult);
+  }, 0);
+  return '<div class="slabgap"></div>'
+    + '<div class="betslab">'
+    + '<span class="cnt"><b>'+mine.length+'</b><s>'
+      + (mine.length === 1 ? 'bet on ' : 'bets on ') + esc(eventName || 'this card')+'</s></span>'
+    + '<span class="mny"><b>'+stake.toLocaleString()+' &rarr; <u>'+ret.toLocaleString()+'</u></b>'
+      + '<s>staked &rarr; pays now</s></span></div>';
 }
 
 /* `billing` is the bout's position in the sorted card, not a stored field \u2014
