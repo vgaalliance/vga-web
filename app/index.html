@@ -5325,23 +5325,30 @@ function startDiscBloom(){
     vel = (vel + (target - si) * stiff) * damp;
     si = Math.max(0, Math.min(1, si + vel));
     /* Spin rides the openness, which lengthens the trail exactly when the
-       flower is most open. */
-    spin += 0.010 + si * 0.030 + bloom * 0.12;
+       flower is most open. The bloom term was 0.12 -- fast enough that each
+       petal's trail reached the next one and the five merged into a single
+       turning mass. Fast still, but the gaps survive. */
+    spin += 0.010 + si * 0.030 + bloom * 0.045;
 
     /* The trail. destination-out lowers what is already there; a dark fill
        would paint a visible box on a transparent canvas. */
     ctx.globalCompositeOperation = 'destination-out';
-    ctx.fillStyle = 'rgba(0,0,0,0.13)';
+    /* 0.13 is the card's value, on a mark twice this size with a slower turn.
+       Here it left a smear long enough to close the gaps between petals. */
+    ctx.fillStyle = 'rgba(0,0,0,0.19)';
     ctx.fillRect(0, 0, S, S);
     ctx.globalCompositeOperation = 'source-over';
 
-    var ringR = R * 0.72;
-    /* SLENDER. The broadcast card's petal is R*0.34 wide against R*0.42-0.88
-       long -- up to 0.8 as wide as it is long, which reads as a fan at 30px
-       even though it is right at 40px behind a wordmark. Narrowed to 0.26 and
-       lengthened to 0.48 so the ratio sits near 0.45: the same shape, actually
-       legible as five petals at the size it is drawn here. */
-    var ew = R * (0.26 + si*0.05), eh = R * (0.48 + si*0.44);
+    /* The ring is pushed OUT to 0.88R. At 0.72R the inner half of every petal
+       sat under the You button, so all that showed was five pointed tips --
+       and five tips smeared by the trail read as a triangle, not a flower.
+       The broadcast card can use 0.72 because nothing covers its middle. */
+    var ringR = R * 0.88;
+    /* Aspect, tuned for THIS size. The card draws R*0.34 wide against
+       R*0.42-0.88 long; at 30px that is a fan when closed and a spike when
+       open. Wider base, and it lengthens less, so a petal stays a petal at
+       both ends of the range instead of turning into a needle. */
+    var ew = R * (0.30 + si*0.05), eh = R * (0.40 + si*0.26);
 
     for(var p = 0; p < 5; p++){
       var ang = (p/5)*Math.PI*2 + spin;
