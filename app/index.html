@@ -157,15 +157,26 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .ptr{position:absolute;left:0;right:0;top:0;height:0;display:flex;
   align-items:flex-end;justify-content:center;pointer-events:none;z-index:40;
   overflow:hidden}
-.ptr .dial{width:30px;height:30px;margin-bottom:9px;border-radius:50%;
-  background:rgba(26,21,51,.94);border:1px solid rgba(167,139,250,.5);
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 5px 16px rgba(6,4,20,.55)}
-.ptr .dial svg{width:15px;height:15px;stroke:#C3A6FF;fill:none;stroke-width:2.2;
-  stroke-linecap:round;stroke-linejoin:round;transition:transform .12s ease}
-.ptr.ready .dial{border-color:#6EE7B7}
-.ptr.ready .dial svg{stroke:#6EE7B7;transform:rotate(180deg)}
-.ptr.spin .dial svg{animation:ptrspin .7s linear infinite;transform:none}
+/* The spinner DRAWS ITSELF as you pull -- 30% pulled, 30% of the circle
+   exists -- so the pull distance and the indicator are the same thing and
+   there is nothing to learn. A complete circle IS "let go now".
+   The first version used an arrow that flipped and changed colour: two
+   signals doing one job, and the colour was the only thing saying you had
+   pulled far enough, which is invisible to anyone who cannot separate green
+   from purple. */
+.ptr .dial{width:28px;height:28px;margin-bottom:10px;opacity:0;
+  transform:scale(.7);transition:opacity .12s ease,transform .12s ease}
+.ptr .dial svg{width:28px;height:28px;display:block;
+  filter:drop-shadow(0 2px 6px rgba(6,4,20,.8))}
+.ptr .dial circle{fill:none;stroke-width:2.4;stroke-linecap:round;
+  transform:rotate(-90deg);transform-origin:50% 50%}
+.ptr .dial .track{stroke:rgba(255,255,255,.16)}
+.ptr .dial .arc{stroke:#C3A6FF;stroke-dasharray:69.1;stroke-dashoffset:69.1}
+/* Complete. Nothing else changes -- the full circle is the whole message. */
+.ptr.ready .dial .arc{stroke:#EFEAFF}
+.ptr.spin .dial svg{animation:ptrspin .8s linear infinite}
+.ptr.spin .dial .arc{stroke:#C3A6FF;stroke-dasharray:18 52;stroke-dashoffset:0}
+.ptr.spin .dial .track{stroke:rgba(255,255,255,.1)}
 @keyframes ptrspin{to{transform:rotate(360deg)}}
 .panel.snapback{transition:transform .22s cubic-bezier(.3,0,.2,1)}
 .panel.snapback .ptr{transition:height .22s cubic-bezier(.3,0,.2,1)}
@@ -5250,8 +5261,10 @@ function wirePullToRefresh(){
     if(!el){
       el = document.createElement('div');
       el.className = 'ptr';
-      el.innerHTML = '<div class="dial"><svg viewBox="0 0 24 24">'
-        + '<path d="M12 5v14M6 13l6 6 6-6"/></svg></div>';
+      /* r=11 -> circumference 69.1, which is the dasharray in the CSS. */
+      el.innerHTML = '<div class="dial"><svg viewBox="0 0 28 28">'
+        + '<circle class="track" cx="14" cy="14" r="11"/>'
+        + '<circle class="arc" cx="14" cy="14" r="11"/></svg></div>';
       /* The panel scrolls, so the indicator has to sit in a spot that scrolls
          with it and be pinned to the very top of the content. */
       p.insertBefore(el, p.firstChild);
@@ -5265,7 +5278,12 @@ function wirePullToRefresh(){
         if(panel){ panel.classList.remove('snapback'); panel.style.transform = ''; }
       }, 240);
     } else if(panel){ panel.style.transform = ''; }
-    if(ind){ ind.style.height = ''; ind.classList.remove('ready','spin'); }
+    if(ind){
+      ind.style.height = ''; ind.classList.remove('ready','spin');
+      var d = ind.firstChild, a = ind.querySelector('.arc');
+      if(d){ d.style.opacity = ''; d.style.transform = ''; }
+      if(a) a.style.strokeDashoffset = '';
+    }
     pulling = false; dist = 0;
   }
 
@@ -5291,6 +5309,12 @@ function wirePullToRefresh(){
     dist = Math.min(dy * RESIST, MAX);
     panel.style.transform = 'translateY(' + dist + 'px)';
     ind.style.height = dist + 'px';
+    /* Draw the circle in proportion to the pull, and stop at whole. */
+    var pct = Math.min(dist / TRIGGER, 1);
+    var dial = ind.firstChild, arc = ind.querySelector('.arc');
+    if(arc) arc.style.strokeDashoffset = (69.1 * (1 - pct)).toFixed(1);
+    if(dial){ dial.style.opacity = Math.min(pct * 1.6, 1); 
+              dial.style.transform = 'scale(' + (0.7 + 0.3 * pct).toFixed(2) + ')'; }
     ind.classList.toggle('ready', dist >= TRIGGER);
   }, { passive: false });
 
@@ -5300,6 +5324,7 @@ function wirePullToRefresh(){
     busy = true; pulling = false;
     var p = panel, i = ind, tab = currentTab;
     i.classList.remove('ready'); i.classList.add('spin');
+    var d0 = i.firstChild; if(d0){ d0.style.opacity = '1'; d0.style.transform = 'scale(1)'; }
     p.style.transform = 'translateY(56px)';
     i.style.height = '56px';
     var done = function(){
