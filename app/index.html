@@ -122,8 +122,14 @@ a{color:inherit;text-decoration:none}
 .mrow:active, .twin .tw:active, .slabw:active,
 .bpill:active, .evbet:active, .brec:active,
 .signin:active, .watchbtn:active,
-#tear .tapopen:active, #tear .tclose:active, #tear .scard:active{
+#tear .tapopen:active, #tear .tclose:active{
   transform:scale(.97);filter:brightness(1.28)}
+/* `.scard` was in that list and could never fire: the layout writes an inline
+   transform on every card every frame, and inline beats a stylesheet rule.
+   It is gone rather than fixed -- the cards no longer take pointer events at
+   all (see the fan's hit(), further down), so a press on one is a press on
+   the hand, and lighting up whichever card the finger physically touched
+   would contradict the card the tap actually selects. */
 /* Pills are small, so the same scale reads as nothing. */
 .chips span:active, .betback:active, .chipb:active{transform:scale(.93);filter:brightness(1.28)}
 /* .bhero runs the riding/pays-out tint on a keyframe animation, and an
@@ -1537,6 +1543,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 #tear .sfan{position:relative;width:100%;height:330px}
 #tear .scard{position:absolute;left:50%;top:52%;width:126px;margin:-88px 0 0 -63px;
   border-radius:9px;overflow:hidden;aspect-ratio:5/7;cursor:pointer;will-change:transform;
+  pointer-events:none;
   background:linear-gradient(165deg,var(--c2),#0B0818);border:2px solid var(--c);
   box-shadow:0 10px 26px rgba(0,0,0,.65);
   transition:transform .46s cubic-bezier(.2,.9,.25,1),box-shadow .3s,opacity .3s}
@@ -4602,9 +4609,34 @@ function showSpread(pulls, pity){
     + '</div>';
 
   var cards = [].slice.call(el.querySelectorAll('.scard'));
+  var fan = document.getElementById('sf');
+  var PITCH = 48, HALF = 58;   /* slot spacing, and half a card at resting scale */
   function slot(i){
     var pos = i - (list.length - 1) / 2;
-    return { x: pos * 48, y: Math.abs(pos) * 11, rot: pos * 7.5 };
+    return { x: pos * PITCH, y: Math.abs(pos) * 11, rot: pos * 7.5 };
+  }
+  /* WHICH CARD A TAP MEANS is arithmetic, never stacking. It used to be a
+     click listener per card, so the answer came from whatever the browser
+     found on top -- and two things upstairs made that answer wrong. The
+     raised card is scaled 1.4 with the fan's highest z, so its box covered
+     the middle of the hand and ATE taps meant for the cards behind it; and
+     the resting z was `10 - |i - active|`, which peaks at the active card
+     and falls off BOTH ways, so on one side of the hand the near card
+     covered the far one and on the other side the far card covered the near.
+     Together: with the best pull at index 0 -- the common case, the hand
+     opens on it -- tapping any card between 20% and 70% across selected the
+     LEFTMOST card, and the third card could not be selected at all.
+
+     The hand is now stacked left-under-right like a real fan, so each card
+     shows its own left edge exactly one PITCH wide, and a tap is mapped to
+     that band by division. The raised card takes no pointer events (it is
+     already chosen), and the hand's cards take none either -- the fan owns
+     the gesture, so a tap can never resolve to a card the eye did not see. */
+  function hit(clientX){
+    var r = fan.getBoundingClientRect();
+    var rx = clientX - (r.left + r.width / 2);
+    var i = Math.floor((rx - (slot(0).x - HALF)) / PITCH);
+    return Math.max(0, Math.min(list.length - 1, i));
   }
   function layout(){
     cards.forEach(function(c, i){
@@ -4612,12 +4644,12 @@ function showSpread(pulls, pity){
       if(i === active){
         c.classList.add('up');
         c.style.transform = 'translate(' + (sl.x * 0.18) + 'px,-74px) rotate(0deg) scale(1.4)';
-        c.style.opacity = '1'; c.style.zIndex = 20;
+        c.style.opacity = '1'; c.style.zIndex = 50;
       } else {
         c.classList.remove('up');
         c.style.transform = 'translate(' + sl.x + 'px,' + sl.y + 'px) rotate(' + sl.rot + 'deg) scale(.92)';
         c.style.opacity = String(0.82 - Math.abs(i - active) * 0.07);
-        c.style.zIndex = 10 - Math.abs(i - active);
+        c.style.zIndex = String(i);
       }
     });
     var c = list[active];
@@ -4632,7 +4664,6 @@ function showSpread(pulls, pity){
   cards.forEach(function(c, i){
     c.style.transform = 'translate(0,120px) rotate(0deg) scale(.55)';
     c.style.opacity = '0';
-    c.addEventListener('click', function(){ setActive(i); });
     setTimeout(function(){
       var sl = slot(i);
       c.style.opacity = '1';
@@ -4644,14 +4675,18 @@ function showSpread(pulls, pity){
     setActive(bestIdx);
   }, 70 + list.length * 85 + 240);
 
-  /* swipe the hand */
-  var fan = document.getElementById('sf'), x0 = null;
-  fan.addEventListener('pointerdown', function(e){ x0 = e.clientX; });
+  /* swipe the hand, or tap a card. `moved` is what keeps the two apart: the
+     click that follows a swipe would otherwise land on wherever the finger
+     stopped and undo the swipe. */
+  var x0 = null, lastX = 0, moved = 0;
+  fan.addEventListener('pointerdown', function(e){ x0 = e.clientX; lastX = e.clientX; moved = 0; });
   fan.addEventListener('pointermove', function(e){
     if(x0 === null) return;
+    moved += Math.abs(e.clientX - lastX); lastX = e.clientX;
     var dx = e.clientX - x0;
     if(Math.abs(dx) > 46){ setActive(active + (dx < 0 ? 1 : -1)); x0 = e.clientX; }
   });
+  fan.addEventListener('click', function(e){ if(moved <= 8) setActive(hit(e.clientX)); });
   function end(){ x0 = null; }
   fan.addEventListener('pointerup', end);
   fan.addEventListener('pointercancel', end);
