@@ -458,6 +458,45 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .lead .ld{flex:1;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.09em;text-transform:uppercase;color:#8F86AF}
 .lead .rd{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.14em;
   text-transform:uppercase;color:#C3A6FF}
+/* ── THE WATCH DECK ──────────────────────────────────────────────────
+   Every video, swipeable, above the wire. It exists so the wire underneath
+   can stay mostly writing: the channel uploads weekly and the last article
+   was 2026-08-22, so a feed sorted purely by date buries the journalism under
+   podcasts. Video gets the deck; the wire caps it at one row between
+   articles. */
+.vdeck{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;
+  scrollbar-width:none;padding:0 18px;-webkit-overflow-scrolling:touch}
+.vdeck::-webkit-scrollbar{display:none}
+.vslide{position:relative;flex:0 0 calc(100% - 36px);height:190px;border-radius:14px;
+  overflow:hidden;scroll-snap-align:center;display:block;
+  border:1px solid rgba(255,255,255,.13);background:#14102A}
+.vslide img{width:100%;height:100%;object-fit:cover;display:block}
+.vgrad{position:absolute;inset:0;background:linear-gradient(180deg,transparent 34%,rgba(8,5,18,.93))}
+.vmeta{position:absolute;left:14px;right:14px;bottom:12px}
+.vmeta b{display:block;font-family:'Space Mono',monospace;font-size:6.5px;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;color:#6EE7B7}
+.vmeta i{display:block;font-style:normal;font-family:'Barlow Condensed',sans-serif;font-weight:700;
+  font-size:24px;text-transform:uppercase;line-height:1.08;margin-top:4px;color:#F4F1FB}
+.vdots{display:flex;gap:5px;justify-content:center;margin-top:10px}
+.vdots i{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.22)}
+.vdots i.on{background:#C3A6FF}
+/* One play button, three sizes, so the deck and the wire cannot drift apart. */
+.vplay{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;
+  border-radius:50%;background:rgba(10,7,20,.66);border:1.5px solid rgba(255,255,255,.72)}
+.vplay:after{content:'';position:absolute;left:53%;top:50%;transform:translate(-50%,-50%);
+  border-left:15px solid #fff;border-top:10px solid transparent;border-bottom:10px solid transparent}
+.vplay.sm{width:24px;height:24px;margin:-12px 0 0 -12px}
+.vplay.sm:after{border-left-width:7px;border-top-width:4.5px;border-bottom-width:4.5px}
+/* A video in the wire: same row as an article, plus a thumbnail. */
+.wrow.vid{display:flex;gap:11px;align-items:center;color:inherit}
+.wrow.vid .wth{position:relative;width:104px;height:59px;border-radius:8px;overflow:hidden;
+  flex-shrink:0;background:#14102A;display:block}
+.wrow.vid .wth img{width:100%;height:100%;object-fit:cover;display:block}
+.wrow.vid .wb{flex:1;min-width:0;display:block}
+.wrow.vid .h{font-family:'Barlow',system-ui,sans-serif;font-weight:600;font-size:13.5px;
+  text-transform:none;line-height:1.25;margin-top:4px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.wrow .k.vk{color:#6EE7B7}
 .wrow{margin:0 18px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.09)}
 .wrow .k{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:#C3A6FF}
 .wrow .h{font-size:16.5px;font-weight:600;line-height:1.28;margin-top:4px}
@@ -2950,13 +2989,21 @@ async function loadHomeNews(){
       + '<div class="d">'+esc(dstr(n.posted_at))+'</div></div></div>';
   }).join('');
 }
+var VIDEOS_PATH = 'videos_public?select=video_id,title,thumb_url,published_at,seen_at,event_name&limit=8';
+var newsVideos = null;
+
 async function loadNews(){
   var el = document.getElementById('news-body');
   /* Yesterday's wire, instantly, then today's over the top of it. */
   var seed = cached(NEWS_PATH);
+  newsVideos = cached(VIDEOS_PATH) || newsVideos;
   var painted = false;
   if(seed && seed.length){ paintNews(seed); painted = true; }
-  var rows = await getNews();
+  var both = await Promise.all([getNews(), q(VIDEOS_PATH)]);
+  var rows = both[0];
+  /* A failed video read must not blank the deck or the wire -- q() returns
+     null on a 4xx and (null || []) is indistinguishable from "no videos". */
+  if(both[1]) newsVideos = both[1];
   if(!rows){
     retryHandlers['news'] = function(){ newsCache = null; loadNews(); };
     /* Do not replace a painted wire with a failure box. Old news beats no
@@ -2971,25 +3018,85 @@ function paintNews(rows){
   var el = document.getElementById('news-body');
   if(!el) return;
   document.getElementById('news-count').textContent = rows.length + ' posts';
-  var lead = rows[0], rest = rows.slice(1);
-  var html = '<div class="lead" data-news="'+esc(lead.id)+'"><div class="gfx">'
-    + (lead.graphic_url ? '<img src="'+esc(lead.graphic_url)+'" alt="'+esc(lead.headline)+'">'
-        : '<span class="bar"></span>'
-          + (lead.kicker ? '<span class="k">'+esc(lead.kicker)+'</span>' : '')
-          + '<span class="h">'+esc(lead.headline)+'</span>')
-    + '</div><div class="under"><div class="ld">'+esc(lead.reporter||'UBA')+' &middot; '
-    + esc(dstr(lead.posted_at))+'</div><div class="rd">Read</div></div></div>'
-    + '<div class="lab"><b>The wire</b><i></i></div>';
-  html += rest.map(function(n){
-    var first = (n.body||'').split('\n').filter(Boolean)[0] || '';
-    if(first.length > 130) first = first.slice(0,130).replace(/\s+\S*$/,'') + '…';
-    return '<div class="wrow" data-news="'+esc(n.id)+'">'
-      + (n.kicker ? '<div class="k">'+esc(n.kicker)+'</div>' : '')
-      + '<div class="h">'+esc(n.headline)+'</div>'
-      + (first ? '<div class="b">'+esc(first)+'</div>' : '')
-      + '<div class="d">'+esc(n.reporter||'UBA')+' &middot; '+esc(dstr(n.posted_at))+'</div></div>';
+  var vids = newsVideos || [];
+
+  /* THE DECK. Every video, swipeable, above everything. Video always has this,
+     which is what lets the wire below stay mostly writing. */
+  var html = '';
+  if(vids.length){
+    html += '<div class="vdeck">' + vids.map(function(v){
+      return '<a class="vslide" href="https://youtu.be/' + esc(v.video_id) + '"'
+        + ' target="_blank" rel="noopener">'
+        + (v.thumb_url ? '<img src="'+esc(v.thumb_url)+'" alt="" loading="lazy" decoding="async">' : '')
+        + '<span class="vplay"></span><span class="vgrad"></span>'
+        + '<span class="vmeta"><b>' + (v.event_name ? 'Watch \u00b7 ' + esc(v.event_name) : 'Watch')
+        + '</b><i>' + esc(v.title) + '</i></span></a>';
+    }).join('') + '</div>';
+    if(vids.length > 1){
+      html += '<div class="vdots">'
+        + vids.map(function(_, k){ return '<i class="' + (k ? '' : 'on') + '"></i>'; }).join('')
+        + '</div>';
+    }
+  }
+
+  /* THE LEAD STORY KEEPS ITS CARD. The deck taking the top of the tab is not a
+     reason to demote the writing to a row -- 21 of 22 posts carry a graphic,
+     and dropping the lead treatment threw every one of them away. Deck, then
+     the newest story at full size, then the mixed wire from the second story
+     down. */
+  var lead = rows[0];
+  if(lead){
+    html += '<div class="lab"><b>Latest</b><i></i></div>'
+      + '<div class="lead" data-news="'+esc(lead.id)+'"><div class="gfx">'
+      + (lead.graphic_url ? '<img src="'+esc(lead.graphic_url)+'" alt="'+esc(lead.headline)+'">'
+          : '<span class="bar"></span>'
+            + (lead.kicker ? '<span class="k">'+esc(lead.kicker)+'</span>' : '')
+            + '<span class="h">'+esc(lead.headline)+'</span>')
+      + '</div><div class="under"><div class="ld">'+esc(lead.reporter||'UBA')+' \u00b7 '
+      + esc(dstr(lead.posted_at))+'</div><div class="rd">Read</div></div></div>';
+  }
+
+  html += '<div class="lab"><b>The wire</b><i></i>'
+    + (vids.length ? '<s>newest first</s>' : '') + '</div>';
+
+  /* THE MIX, AND ITS CAP. Sorted purely by date the wire becomes mostly video:
+     the channel uploads weekly and the last article was 2026-08-22, so on the
+     numbers alone the writing would be buried under podcasts. NEVER MORE THAN
+     ONE VIDEO BETWEEN ARTICLES -- videos already own the deck above, so the
+     wire does not owe them the space. Any videos left over are simply not
+     shown here; they are one swipe away. */
+  var arts = rows.slice(1), vq = vids.slice(), feed = [], v;   /* the lead is above */
+  while(arts.length){
+    feed.push({ kind: 'a', it: arts.shift() });
+    if(vq.length){ v = vq.shift(); feed.push({ kind: 'v', it: v }); }
+  }
+  /* Nothing written yet? Then the wire is the videos rather than empty. */
+  if(!rows.length) feed = vq.map(function(x){ return { kind: 'v', it: x }; });
+
+  html += feed.map(function(f){
+    if(f.kind === 'v'){
+      var n = f.it;
+      return '<a class="wrow vid" href="https://youtu.be/' + esc(n.video_id) + '"'
+        + ' target="_blank" rel="noopener">'
+        + '<span class="wth">'
+        + (n.thumb_url ? '<img src="'+esc(n.thumb_url)+'" alt="" loading="lazy" decoding="async">' : '')
+        + '<span class="vplay sm"></span></span>'
+        + '<span class="wb"><span class="k vk">Watch'
+        + (n.event_name ? ' \u00b7 ' + esc(n.event_name) : '') + '</span>'
+        + '<span class="h">' + esc(n.title) + '</span></span></a>';
+    }
+    var a = f.it;
+    var first = (a.body || '').split('\n').filter(Boolean)[0] || '';
+    if(first.length > 130) first = first.slice(0, 130).replace(/\s+\S*$/, '') + '\u2026';
+    return '<div class="wrow" data-news="' + esc(a.id) + '">'
+      + (a.kicker ? '<div class="k">' + esc(a.kicker) + '</div>' : '')
+      + '<div class="h">' + esc(a.headline) + '</div>'
+      + (first ? '<div class="b">' + esc(first) + '</div>' : '')
+      + '<div class="d">' + esc(a.reporter || 'UBA') + ' \u00b7 ' + esc(dstr(a.posted_at)) + '</div></div>';
   }).join('');
-  html += '<div class="foot">End of the wire &middot; '+rows.length+' posts</div>';
+
+  html += '<div class="foot">End of the wire &middot; ' + rows.length + ' posts'
+    + (vids.length ? ' &middot; ' + vids.length + ' videos' : '') + '</div>';
   el.innerHTML = html;
 }
 
