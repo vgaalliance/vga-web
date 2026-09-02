@@ -154,18 +154,20 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    and triggering the BROWSER's own reload on Android, which would throw away
    the whole app rather than refetch a tab. */
 .panel{overscroll-behavior-y:contain}
-.ptr{position:absolute;left:0;right:0;top:0;height:0;display:flex;
-  align-items:flex-end;justify-content:center;pointer-events:none;z-index:40;
-  overflow:hidden}
-/* The spinner DRAWS ITSELF as you pull -- 30% pulled, 30% of the circle
-   exists -- so the pull distance and the indicator are the same thing and
-   there is nothing to learn. A complete circle IS "let go now".
-   The first version used an arrow that flipped and changed colour: two
-   signals doing one job, and the colour was the only thing saying you had
-   pulled far enough, which is invisible to anyone who cannot separate green
-   from purple. */
-.ptr .dial{width:28px;height:28px;margin-bottom:10px;opacity:0;
-  transform:scale(.7);transition:opacity .12s ease,transform .12s ease}
+/* The dial sits ABOVE the panel's top edge and rides in on a transform as the
+   panel is dragged down. The first version grew a container's HEIGHT instead,
+   which forces layout on every frame -- that was the jitter. Only `transform`
+   and `opacity` can be animated smoothly; everything else goes through layout
+   or paint and drops frames on a phone.
+
+   No overflow:hidden either. Clipping is what made the height necessary; with
+   the dial parked off the top it is simply out of view until the panel moves. */
+.ptr{position:absolute;left:0;right:0;top:-46px;height:46px;
+  display:flex;align-items:center;justify-content:center;
+  pointer-events:none;z-index:40}
+.ptr .dial{width:28px;height:28px;opacity:0;
+  transform:translateY(0) scale(.7);
+  will-change:transform,opacity}
 .ptr .dial svg{width:28px;height:28px;display:block;
   filter:drop-shadow(0 2px 6px rgba(6,4,20,.8))}
 .ptr .dial circle{fill:none;stroke-width:2.4;stroke-linecap:round;
@@ -178,8 +180,11 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .ptr.spin .dial .arc{stroke:#C3A6FF;stroke-dasharray:18 52;stroke-dashoffset:0}
 .ptr.spin .dial .track{stroke:rgba(255,255,255,.1)}
 @keyframes ptrspin{to{transform:rotate(360deg)}}
-.panel.snapback{transition:transform .22s cubic-bezier(.3,0,.2,1)}
-.panel.snapback .ptr{transition:height .22s cubic-bezier(.3,0,.2,1)}
+/* Easing belongs on the way BACK only -- during the drag the panel has to
+   track the finger with no lag at all, so the class is off while pulling. */
+.panel.snapback{transition:transform .26s cubic-bezier(.22,.9,.28,1)}
+.panel.snapback .ptr .dial{transition:transform .26s cubic-bezier(.22,.9,.28,1),
+  opacity .2s ease}
 /* Just clears the bar. This used to be much larger, which put a field of
    nothing under the last row when you scrolled to the end. */
 .pad{padding-bottom:calc(62px + env(safe-area-inset-bottom,0px))}
@@ -5253,8 +5258,19 @@ var REFRESH = {
 };
 
 function wirePullToRefresh(){
-  var TRIGGER = 64, MAX = 96, RESIST = 0.5;
-  var startY = 0, pulling = false, dist = 0, busy = false, panel = null, ind = null;
+  /* TRIGGER is where the circle completes and where the dial STOPS moving.
+     HOLD is where the panel rests while it refreshes. MAX is as far as the
+     panel can ever be dragged. */
+  var TRIGGER = 64, HOLD = 56, MAX = 110;
+  var startY = 0, pulling = false, dist = 0, busy = false;
+  var panel = null, ind = null, dial = null, arc = null;
+  var frame = 0, pending = 0;
+
+  /* Asymptotic resistance rather than a flat multiplier. The first pixels
+     track the finger almost 1:1 and it stiffens toward MAX, so the pull has a
+     felt END instead of either running away with the page or stopping dead
+     against a clamp. */
+  function resist(dy){ return MAX * (1 - Math.exp(-dy / (MAX * 0.9))); }
 
   function indicatorFor(p){
     var el = p.querySelector('.ptr');
@@ -5265,27 +5281,61 @@ function wirePullToRefresh(){
       el.innerHTML = '<div class="dial"><svg viewBox="0 0 28 28">'
         + '<circle class="track" cx="14" cy="14" r="11"/>'
         + '<circle class="arc" cx="14" cy="14" r="11"/></svg></div>';
-      /* The panel scrolls, so the indicator has to sit in a spot that scrolls
-         with it and be pinned to the very top of the content. */
       p.insertBefore(el, p.firstChild);
     }
     return el;
   }
-  function reset(animate){
-    if(animate){
-      panel.classList.add('snapback');
-      setTimeout(function(){
-        if(panel){ panel.classList.remove('snapback'); panel.style.transform = ''; }
-      }, 240);
-    } else if(panel){ panel.style.transform = ''; }
-    if(ind){
-      ind.style.height = ''; ind.classList.remove('ready','spin');
-      var d = ind.firstChild, a = ind.querySelector('.arc');
-      if(d){ d.style.opacity = ''; d.style.transform = ''; }
-      if(a) a.style.strokeDashoffset = '';
-    }
-    pulling = false; dist = 0;
+
+  /* ONE write per frame, and only transform/opacity/dashoffset -- none of
+     which touches layout. touchmove fires faster than the screen paints, so
+     writing straight from the handler queues work the compositor then has to
+     throw away; that is what made it feel like it was snapping. */
+  function schedule(d){
+    pending = d;
+    if(frame) return;
+    frame = requestAnimationFrame(function(){
+      frame = 0;
+      var v = pending;
+      panel.style.transform = 'translateY(' + v.toFixed(1) + 'px)';
+      var ride = Math.min(v, TRIGGER);
+      var pct  = Math.min(v / TRIGGER, 1);
+      if(dial){
+        dial.style.transform = 'translateY(' + ride.toFixed(1) + 'px) scale('
+          + (0.7 + 0.3 * pct).toFixed(3) + ')';
+        dial.style.opacity = Math.min(pct * 1.6, 1).toFixed(2);
+      }
+      if(arc) arc.style.strokeDashoffset = (69.1 * (1 - pct)).toFixed(1);
+      ind.classList.toggle('ready', v >= TRIGGER);
+    });
   }
+
+  /* Animate to a resting place. Clearing the transform has to happen WHILE the
+     transition class is on -- an earlier version set it 240ms later, after the
+     class had already come off, so the panel sat still and then jumped. */
+  function settle(to, then){
+    if(!panel) return;
+    if(frame){ cancelAnimationFrame(frame); frame = 0; }
+    var p = panel, i = ind, d = dial, a = arc;
+    p.classList.add('snapback');
+    if(to > 0){
+      p.style.transform = 'translateY(' + to + 'px)';
+      if(d) d.style.transform = 'translateY(' + Math.min(to, TRIGGER) + 'px) scale(1)';
+    } else {
+      p.style.transform = '';
+      if(d){ d.style.transform = ''; d.style.opacity = ''; }
+    }
+    setTimeout(function(){
+      p.classList.remove('snapback');
+      p.style.willChange = '';
+      if(to === 0){
+        i.classList.remove('ready','spin');
+        if(a) a.style.strokeDashoffset = '';
+        p.style.transform = '';
+      }
+      if(then) then();
+    }, 270);
+  }
+  function letGo(){ pulling = false; dist = 0; }
 
   document.addEventListener('touchstart', function(e){
     if(busy || e.touches.length !== 1) return;
@@ -5297,6 +5347,12 @@ function wirePullToRefresh(){
     if(!p || p.scrollTop > 0) return;
     if(!REFRESH[currentTab]) return;
     panel = p; ind = indicatorFor(p);
+    dial = ind.firstChild; arc = ind.querySelector('.arc');
+    /* Easing off while the finger is down, and the layer promoted before the
+       first move rather than during it -- promoting mid-gesture is its own
+       stutter. */
+    panel.classList.remove('snapback');
+    panel.style.willChange = 'transform';
     startY = e.touches[0].clientY; pulling = true; dist = 0;
   }, { passive: true });
 
@@ -5304,40 +5360,27 @@ function wirePullToRefresh(){
     if(!pulling || busy) return;
     var dy = e.touches[0].clientY - startY;
     /* Dragging back UP is a normal scroll, so hand it back rather than fight it. */
-    if(dy <= 0 || panel.scrollTop > 0){ reset(false); return; }
+    if(dy <= 0 || panel.scrollTop > 0){ settle(0); letGo(); return; }
     e.preventDefault();                       /* needs passive:false */
-    dist = Math.min(dy * RESIST, MAX);
-    panel.style.transform = 'translateY(' + dist + 'px)';
-    ind.style.height = dist + 'px';
-    /* Draw the circle in proportion to the pull, and stop at whole. */
-    var pct = Math.min(dist / TRIGGER, 1);
-    var dial = ind.firstChild, arc = ind.querySelector('.arc');
-    if(arc) arc.style.strokeDashoffset = (69.1 * (1 - pct)).toFixed(1);
-    if(dial){ dial.style.opacity = Math.min(pct * 1.6, 1); 
-              dial.style.transform = 'scale(' + (0.7 + 0.3 * pct).toFixed(2) + ')'; }
-    ind.classList.toggle('ready', dist >= TRIGGER);
+    dist = resist(dy);
+    schedule(dist);
   }, { passive: false });
 
   document.addEventListener('touchend', function(){
     if(!pulling || busy) return;
-    if(dist < TRIGGER){ reset(true); return; }
-    busy = true; pulling = false;
-    var p = panel, i = ind, tab = currentTab;
+    if(dist < TRIGGER){ settle(0); letGo(); return; }
+    busy = true; letGo();
+    var i = ind, tab = currentTab;
     i.classList.remove('ready'); i.classList.add('spin');
-    var d0 = i.firstChild; if(d0){ d0.style.opacity = '1'; d0.style.transform = 'scale(1)'; }
-    p.style.transform = 'translateY(56px)';
-    i.style.height = '56px';
-    var done = function(){
-      busy = false;
-      panel = p; ind = i;
-      reset(true);
-    };
+    settle(HOLD);                             /* ease into the hold, never snap */
+    var done = function(){ settle(0, function(){ busy = false; }); };
     /* Never leave the spinner up. A refresher that throws still has to give
        the screen back -- the failure is already reported by the loader's own
        retry box. */
     var out;
     try{ out = REFRESH[tab](); }catch(e){ out = null; }
-    Promise.resolve(out).then(function(){ setTimeout(done, 260); }, function(){ setTimeout(done, 260); });
+    Promise.resolve(out).then(function(){ setTimeout(done, 320); },
+                             function(){ setTimeout(done, 320); });
   }, { passive: true });
 }
 
