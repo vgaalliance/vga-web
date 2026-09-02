@@ -1474,7 +1474,44 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    catch. It only runs while `.lit` is on, which an IntersectionObserver
    grants as a card scrolls in — a hundred running animations is a warm phone
    and nobody is looking at ninety of them. */
-@keyframes drift{0%{background-position:0 0,0 0}100%{background-position:200px -280px,-120px 168px}}
+/* BOTH LAYERS RUN THE SAME WAY, AND BOTH LOOP CLEAN.
+
+   Two things were wrong for the life of this effect.
+
+   1. THE CROSS-HATCH. The two gratings were laid at 112deg and 68deg -- and
+      those are supplementary, so the second ran at the exact mirror of the
+      first and the pair drew a visible X across every holo card, one arm
+      running bottom-left to top-right. Foil is a grating, not a mesh: its
+      lines all run ONE way, and what makes it shimmer is a second, finer
+      structure running the SAME way at a different pitch, so the two slide
+      past each other and beat. Both layers are 112deg now.
+
+   2. THE LOOP SNAPPED. A repeating gradient only tiles seamlessly if the
+      distance travelled ALONG ITS OWN AXIS is a whole number of periods, and
+      neither layer's was: the colour grating moved 80.55px along a 15px
+      period (5.37 periods) and the fine one -174.20px along a 4px period
+      (-43.55 periods). So every cycle ended a third of a stripe out of
+      register and jumped back -- the "not a cycle" -- and it happened twice
+      at two different rates, which is why the jump never looked periodic.
+
+      The travel is now built FROM the axis rather than guessed. The 112deg
+      axis is u = (sin112, -cos112) = (0.927184, 0.374607); the colour layer
+      travels 120px along it (120/15 = 8 periods exactly) and the fine layer
+      -76px (-76/4 = -19 exactly), so both land dead on register and the two
+      move against each other. Change a period or an angle and these numbers
+      have to be recomputed -- they are not decoration.
+
+      The two pitches are 15px and 4px ON PURPOSE. A first pass used 5px,
+      which DIVIDES 15 -- so the layers were commensurate, locked into one
+      fixed 15px super-pattern that merely slid, with no beat in it. 15 and 4
+      share no factor, so their interference repeats only every 60px and the
+      card shimmers along its length instead of sliding as one printed sheet.
+
+   The band is `linear` now too. On ease-in-out it crawled at both ends,
+   which are OFF the card, and whipped through the middle, which is the only
+   part you see -- a flick, then a long wait, then a flick. */
+@keyframes drift{0%{background-position:0 0,0 0}
+                 100%{background-position:111.262px 44.953px,-70.466px -28.470px}}
 @keyframes band{0%{-webkit-mask-position:120% 0;mask-position:120% 0}
                 100%{-webkit-mask-position:-40% 0;mask-position:-40% 0}}
 .fx{position:absolute;inset:0;z-index:4;pointer-events:none;border-radius:2px;opacity:0;
@@ -1482,13 +1519,13 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
     repeating-linear-gradient(112deg,rgba(255,110,199,.30) 0px,rgba(255,209,102,.30) 3px,
       rgba(126,231,135,.30) 6px,rgba(79,227,208,.30) 9px,rgba(123,140,255,.30) 12px,
       rgba(255,110,199,.30) 15px),
-    repeating-linear-gradient(68deg,rgba(255,255,255,.10) 0px,rgba(255,255,255,0) 2px,
+    repeating-linear-gradient(112deg,rgba(255,255,255,.10) 0px,rgba(255,255,255,0) 2px,
       rgba(255,255,255,.10) 4px);
   mix-blend-mode:color-dodge;
   -webkit-mask-image:linear-gradient(105deg,transparent 22%,#000 44%,#000 56%,transparent 78%);
   mask-image:linear-gradient(105deg,transparent 22%,#000 44%,#000 56%,transparent 78%);
   -webkit-mask-size:260% 100%;mask-size:260% 100%}
-.fx.lit{animation:drift 9s linear infinite, band 4.6s ease-in-out infinite}
+.fx.lit{animation:drift 12s linear infinite, band 5.2s linear infinite}
 .r-common   .fx.lit{opacity:.16}
 .r-uncommon .fx.lit{opacity:.26}
 .r-rare     .fx.lit{opacity:.42}
