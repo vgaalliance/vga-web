@@ -5280,7 +5280,7 @@ var REFRESH = {
 
    A ring is rotationally symmetric, so spinning it is invisible. The sweep --
    one brighter arc travelling round -- is what makes it alive at rest. */
-var discPull = function(){}, discBloom = function(){};
+var discPull = function(){}, discBloom = function(){}, discHold = function(){};
 
 function startDiscBloom(){
   var cv = document.getElementById('disc-bloom');
@@ -5291,11 +5291,20 @@ function startDiscBloom(){
   cv.width = S*dpr; cv.height = S*dpr; ctx.scale(dpr, dpr);
 
   var IDLE = 0.16;
-  var si = IDLE, target = IDLE, vel = 0, sweep = 0, bloom = 0, t = 0;
+  var si = IDLE, target = IDLE, vel = 0, sweep = 0, bloom = 0, t = 0, held = false;
   var TAU = Math.PI*2;
 
-  discPull  = function(f){ target = IDLE + Math.max(0, Math.min(1, f)) * (0.74 - IDLE); };
+  discPull  = function(f){ if(!held) target = IDLE + Math.max(0, Math.min(1, f)) * (0.74 - IDLE); };
   discBloom = function(){ target = 1; bloom = 1; };
+  /* Press and hold the button and the ring winds open and STAYS open; let go
+     and it fires. Charge and release, so a long press is rewarded rather than
+     being the same as a tap -- and a tap is just a very short charge, which is
+     why one gesture covers both. */
+  discHold  = function(on){
+    held = !!on;
+    if(on){ target = 1; }
+    else  { discBloom(); }
+  };
 
   /* A soft neon ring: the same circle stroked three times, widest and faintest
      first, so no edge is ever hard. */
@@ -5320,7 +5329,7 @@ function startDiscBloom(){
     if(document.hidden) return;
     t++;
 
-    if(bloom > 0){ bloom = Math.max(0, bloom - 0.014); if(bloom === 0) target = IDLE; }
+    if(bloom > 0){ bloom = Math.max(0, bloom - 0.014); if(bloom === 0 && !held) target = IDLE; }
     /* Spring, not a lerp: stiffer going up than coming down, so it opens with
        intent and closes lazily. The asymmetry is the broadcast clock's. */
     var stiff = si < target ? 0.020 : 0.006, damp = si < target ? 0.68 : 0.60;
@@ -5470,6 +5479,18 @@ function wirePullToRefresh(){
   document.addEventListener('touchstart', function(){}, { passive: true });
   wirePullToRefresh();
   startDiscBloom();
+  /* Hold the You button to charge the halo, release to fire it. Pointer events
+     cover mouse and touch in one path, and `pointercancel` matters: a press
+     that turns into a scroll never gets pointerup, and without it the ring
+     would stay wound open forever. */
+  (function(){
+    var b = document.querySelector('.bar .midbtn');
+    if(!b || !window.PointerEvent) return;
+    b.addEventListener('pointerdown', function(){ discHold(true); }, { passive: true });
+    ['pointerup','pointercancel','pointerleave'].forEach(function(ev){
+      b.addEventListener(ev, function(){ discHold(false); }, { passive: true });
+    });
+  })();
   loadSession();
   if(session) me = await fetchMe();   /* renews the token itself — see fetchMe */
   await loadWhoAmI();
