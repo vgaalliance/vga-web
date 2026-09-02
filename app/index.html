@@ -404,6 +404,19 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 /* news */
 .nw{display:flex;gap:12px;margin:0 18px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)}
 .nw .th{width:54px;height:54px;border-radius:10px;flex-shrink:0;background:linear-gradient(150deg,#3E2F6B,#1B1533)}
+/* The placeholder row. Same box as a real .nw, so the page is already the
+   right height before the news arrives and nothing under it moves. */
+/* 96px is the measured height of a real row with a kicker and a headline that
+   wraps to two lines, which is what most of them do. Headlines vary, so this
+   is the best single guess rather than an exact match -- it takes the jump
+   from 274px to single digits, and a skeleton that is occasionally 15px out
+   is a different thing from one that is always 274px out. */
+.nw.gh{pointer-events:none;min-height:96px}
+.nw.gh .gb{flex:1;padding-top:6px}
+.nw.gh .gb i{display:block;height:11px;border-radius:5px;background:rgba(255,255,255,.07);
+  margin-bottom:8px}
+.nw.gh .gb i.w{width:52%}
+.nw.gh .th{opacity:.5}
 .nw .k{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.15em;text-transform:uppercase;color:#C3A6FF}
 .nw .h{font-size:15px;font-weight:600;line-height:1.3;margin-top:3px}
 .nw .d{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.09em;color:#7E7699;margin-top:5px}
@@ -1657,7 +1670,11 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   <div id="ranks"><div class="skel"></div><div class="skel" style="width:70%"></div></div>
   <div id="join-slot"></div>
   <div class="lab"><b>Latest</b><i></i><a data-goto="news">News</a></div>
-  <div id="home-news"><div class="skel"></div></div>
+  <!-- Three ghost rows, not one 14px bar. The real thing is three .nw rows
+       and everything under it moved ~220px when they landed -- measured
+       2026-09-01. A skeleton whose job is to hold the space has to be the
+       SHAPE of what is coming, not a token that says "loading". -->
+  <div id="home-news"><div class="nw gh"><span class="th"></span><div class="gb"><i></i><i class="w"></i></div></div><div class="nw gh"><span class="th"></span><div class="gb"><i></i><i class="w"></i></div></div><div class="nw gh"><span class="th"></span><div class="gb"><i></i><i class="w"></i></div></div></div>
   <div class="foot">discord.gg/uba &middot; ubaesports.com</div>
 </div></section>
 
