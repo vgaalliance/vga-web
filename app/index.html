@@ -5264,22 +5264,20 @@ var REFRESH = {
 };
 
 /* ── THE HALO ───────────────────────────────────────────────────────────
-   Round petals, and quiet. The bezier mark from the broadcast card is right on
-   a 392px tab where it IS the logo; in a nav bar under a 48px button it was
-   competing with the button instead of framing it. So this is the round form
-   -- soft stacked discs, the same technique as the website's corner blooms --
-   sitting close around the disc as a halo you notice rather than look at.
+   N3, CHROMA SPLIT. One ring, drawn three times and pulled apart -- the
+   misregistered-tube look, where the aberration IS the design rather than a
+   garnish on top of something else. Nothing petal-shaped: at 48px the button
+   eats the middle of any flower, so all that ever showed was the ring anyway.
 
-   Three things keep it subtle: it hugs the button (ring at 1.18x its radius,
-   so the glow starts where the button ends), the resting alpha is low, and the
-   spin is slow enough that the trail is a smear rather than motion. It only
-   stops being subtle on a refresh, which is the entire point of it being there.
+   THE SPLIT GROWS WITH THE PULL, and that is what keeps it usable. Pure R/G/B
+   at rest, screen-blended, converges to WHITE wherever the three overlap --
+   which is the whole ring -- so a permanently-split halo is a permanently
+   grey one. At rest this is a violet ring with a hairline of colour on each
+   edge; the channels separate as you drag and fly apart on the refresh. Brand
+   colour when it is furniture, full CRT when it is an event.
 
-   The CRT is on the bloom only: petals drawn three times at increasing offsets
-   in red / green / blue with `screen` compositing -- chromatic aberration --
-   and scanlines that ERASE alpha rather than paint black, because this canvas
-   is transparent over the page and a dark fill would draw a visible box. */
-var PETAL_HUES = [268, 285, 258, 292, 276];
+   A ring is rotationally symmetric, so spinning it is invisible. The sweep --
+   one brighter arc travelling round -- is what makes it alive at rest. */
 var discPull = function(){}, discBloom = function(){};
 
 function startDiscBloom(){
@@ -5290,23 +5288,29 @@ function startDiscBloom(){
   var dpr = Math.min(window.devicePixelRatio || 1, 2);
   cv.width = S*dpr; cv.height = S*dpr; ctx.scale(dpr, dpr);
 
-  var IDLE = 0.20;
-  var si = IDLE, target = IDLE, vel = 0, spin = 0, bloom = 0, acid = 0, t = 0;
+  var IDLE = 0.16;
+  var si = IDLE, target = IDLE, vel = 0, sweep = 0, bloom = 0, t = 0;
+  var TAU = Math.PI*2;
 
-  discPull  = function(f){ target = IDLE + Math.max(0, Math.min(1, f)) * (0.72 - IDLE); };
-  discBloom = function(){ target = 1; bloom = 1; acid = 1; };
+  discPull  = function(f){ target = IDLE + Math.max(0, Math.min(1, f)) * (0.74 - IDLE); };
+  discBloom = function(){ target = 1; bloom = 1; };
 
-  /* One petal: three concentric discs, biggest and faintest first, so no edge
-     is ever fully opaque and it reads as lit rather than drawn. */
-  function petal(x, y, hue, a, tint){
-    var pr = 7.0 + si * 3.4;
-    [[2.2, 66, 0.10], [1.35, 76, 0.22], [0.8, 84, 0.40]].forEach(function(d){
-      ctx.beginPath(); ctx.arc(x, y, pr*d[0], 0, Math.PI*2);
-      ctx.fillStyle = tint ? tint + (a*d[2]).toFixed(3) + ')'
-                           : 'hsla(' + hue + ',100%,' + d[1] + '%,' + (a*d[2]).toFixed(3) + ')';
-      ctx.fill();
-    });
+  /* A soft neon ring: the same circle stroked three times, widest and faintest
+     first, so no edge is ever hard. */
+  function ring(r, ox, oy, w, col, a){
+    var pass = [[w*2.8, 0.10], [w*1.7, 0.22], [w, 0.46]];
+    for(var k = 0; k < 3; k++){
+      ctx.beginPath();
+      ctx.arc(C + ox, C + oy, r, 0, TAU);
+      ctx.lineWidth = pass[k][0];
+      ctx.strokeStyle = col(a * pass[k][1]);
+      ctx.stroke();
+    }
   }
+  var violet = function(a){ return 'hsla(272,100%,72%,' + a.toFixed(3) + ')'; };
+  var red    = function(a){ return 'rgba(255,45,45,'   + a.toFixed(3) + ')'; };
+  var green  = function(a){ return 'rgba(45,255,150,'  + a.toFixed(3) + ')'; };
+  var blue   = function(a){ return 'rgba(70,110,255,'  + a.toFixed(3) + ')'; };
 
   (function loop(){
     requestAnimationFrame(loop);
@@ -5314,56 +5318,58 @@ function startDiscBloom(){
     if(document.hidden) return;
     t++;
 
-    if(bloom > 0){ bloom = Math.max(0, bloom - 0.013); if(bloom === 0) target = IDLE; }
-    if(acid  > 0){ acid  = Math.max(0, acid - 0.022); }
+    if(bloom > 0){ bloom = Math.max(0, bloom - 0.014); if(bloom === 0) target = IDLE; }
     /* Spring, not a lerp: stiffer going up than coming down, so it opens with
        intent and closes lazily. The asymmetry is the broadcast clock's. */
     var stiff = si < target ? 0.020 : 0.006, damp = si < target ? 0.68 : 0.60;
     vel = (vel + (target - si) * stiff) * damp;
     si = Math.max(0, Math.min(1, si + vel));
-    spin += 0.004 + si * 0.016 + bloom * 0.030;
+    sweep += 0.010 + si*0.030 + bloom*0.05;
 
     /* The trail, and the only way to fade a TRANSPARENT canvas: destination-out
        lowers the alpha of what is there. A dark fill paints a box. */
     ctx.globalCompositeOperation = 'destination-out';
-    ctx.fillStyle = 'rgba(0,0,0,0.20)';
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
     ctx.fillRect(0, 0, S, S);
     ctx.globalCompositeOperation = 'source-over';
 
-    /* Hugs the button: the halo begins where the button ends. */
-    var ringR = BTN * 1.18 + si * 9;
-    var a = (0.30 + 0.04*Math.sin(t*0.02)) + si * 0.40 + bloom * 0.30;
+    var r  = BTN*1.12 + si*7;
+    var w  = 2.2 + si*7;
+    var a  = 0.34 + si*0.42 + bloom*0.24;
+    var dx = 0.9 + si*3.4 + bloom*6.5;      /* how far the channels are pulled apart */
 
-    var lit = acid > 0.02;
-    var passes = lit
-      ? [[-acid*3.4, 'rgba(255,45,45,'], [0, 'rgba(45,255,130,'], [acid*3.4, 'rgba(70,100,255,']]
-      : [[0, null]];
-    /* SCREEN BLENDING SUMS TO WHITE. Three passes at full alpha take R, G and
-       B all to 255 wherever they overlap, which is most of the flower -- the
-       broadcast file hit exactly this and says so. Each pass is scaled down so
-       the three together land near the brightness of one, and what you get is
-       the colour SPLIT rather than a white blob. */
-    var passA = Math.min(a, 1) * (lit ? 0.42 : 1);
-    ctx.save();
-    if(lit) ctx.globalCompositeOperation = 'screen';
-    for(var k = 0; k < passes.length; k++){
-      for(var p = 0; p < 5; p++){
-        var ang = (p/5)*Math.PI*2 + spin;
-        petal(C + Math.cos(ang)*ringR + passes[k][0], C + Math.sin(ang)*ringR,
-              (PETAL_HUES[p] + si*8 + bloom*60) % 360, passA, passes[k][1]);
-      }
-    }
+    /* The body of the ring, in the brand's violet. */
+    ring(r, 0, 0, w, violet, a);
+
+    /* The fringes. They are faint until the pull separates them, so at rest
+       this is a violet ring with coloured edges rather than a grey one. */
+    var f = (0.16 + si*0.5 + bloom*0.34) * a;
+    ctx.save(); ctx.globalCompositeOperation = 'screen';
+    ring(r, -dx, 0,        w*0.85, red,   f);
+    ring(r,  0,  -dx*0.42, w*0.85, green, f*0.72);
+    ring(r,  dx, 0,        w*0.85, blue,  f);
     ctx.restore();
 
-    /* Scanlines ERASE, for the same reason the trail does. Bloom only -- at
-       rest they would just be dirt. */
-    if(acid > 0.02){
-      ctx.save();
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.globalAlpha = 0.22 * acid; ctx.fillStyle = '#000';
-      for(var y = 0; y < S; y += 3) ctx.fillRect(0, y, S, 1.4);
-      ctx.restore();
-    }
+    /* The sweep -- one brighter arc travelling round. A ring is rotationally
+       symmetric, so without this nothing would read as moving. */
+    ctx.save(); ctx.globalCompositeOperation = 'screen';
+    ctx.beginPath();
+    ctx.arc(C, C, r, sweep, sweep + 0.85);
+    ctx.lineWidth = w*1.5; ctx.lineCap = 'round';
+    ctx.strokeStyle = 'hsla(' + (272 + Math.sin(t*0.01)*40) + ',100%,84%,'
+      + (0.16 + si*0.30 + bloom*0.3).toFixed(3) + ')';
+    ctx.stroke();
+    ctx.restore();
+
+    /* Scanlines ERASE, for the same reason the trail does -- a dark fill would
+       draw a box on a transparent canvas. Always on, faintly; the refresh just
+       turns them up. */
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.globalAlpha = 0.10 + si*0.12 + bloom*0.16;
+    ctx.fillStyle = '#000';
+    for(var y = 0; y < S; y += 3) ctx.fillRect(0, y, S, 1.2);
+    ctx.restore();
   })();
 }
 
