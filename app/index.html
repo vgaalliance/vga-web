@@ -1777,6 +1777,24 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
       rgba(255,110,199,.30) 15px),
     repeating-linear-gradient(112deg,rgba(255,255,255,.10) 0px,rgba(255,255,255,0) 2px,
       rgba(255,255,255,.10) 4px);
+  /* THE TILE HAS TO BE A WHOLE NUMBER OF STRIPES, or the pattern seams.
+     A repeating-linear-gradient with no background-size is generated at the
+     ELEMENT's size, and the moment `drift` offsets it the browser tiles a
+     second copy in beside the first. The card art is ~126px wide, which is
+     7.79 stripe-widths across -- not whole -- so the two copies met out of
+     register and drew a hard VERTICAL line straight down the card, sweeping
+     across as the animation ran. It read as a cross because it is exactly
+     perpendicular to nothing else on the card: the stripes are steep
+     diagonals and the seam is dead vertical.
+
+     A diagonal grating repeats horizontally every P/sin(112deg) and
+     vertically every P/-cos(112deg). For P=15 that is 16.17802 x 40.04201,
+     for P=4 it is 4.31414 x 10.67787. 60px along the axis (lcm of 15 and 4)
+     is a whole number of BOTH -- 64.71208 x 160.16803 -- so one size makes
+     both layers tile invisibly. The drift travel is unchanged: it is already
+     pattern-invariant (8 and 19 periods), so the loop still lands on
+     register. Recompute these if a pitch or the angle ever changes. */
+  background-size:64.71208px 160.16803px;
   mix-blend-mode:color-dodge;
   -webkit-mask-image:linear-gradient(105deg,transparent 22%,#000 44%,#000 56%,transparent 78%);
   mask-image:linear-gradient(105deg,transparent 22%,#000 44%,#000 56%,transparent 78%);
@@ -1965,6 +1983,9 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 #tear .scard.holo:after{content:'';position:absolute;inset:0;z-index:3;pointer-events:none;
   background:repeating-linear-gradient(112deg,rgba(255,110,199,.3) 0,rgba(255,209,102,.3) 3px,
     rgba(126,231,135,.3) 6px,rgba(79,227,208,.3) 9px,rgba(123,140,255,.3) 12px,rgba(255,110,199,.3) 15px);
+  /* same seam, same fix -- this one animates `drift` too. 64.71208 is exactly
+     4 stripe-widths and 160.16803 exactly 4 stripe-heights at 15px/112deg. */
+  background-size:64.71208px 160.16803px;
   mix-blend-mode:color-dodge;animation:drift 7s linear infinite;opacity:.7}
 #tear .sdock{width:100%;padding:0 4px}
 #tear .sdn{font-family:'Bebas Neue',sans-serif;font-size:28px;line-height:1;letter-spacing:.02em}
