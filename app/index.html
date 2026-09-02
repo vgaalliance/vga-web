@@ -1043,8 +1043,15 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .tape .pays{display:flex;margin:9px 0 0;border-top:1px solid rgba(255,255,255,.07)}
 .tape .pays .pick{flex:1;min-width:0;padding:11px 8px;text-align:left}
 .tape .pays .pick + .pick{border-left:1px solid rgba(255,255,255,.07);text-align:right}
+/* A PRICE IS NOT A SIDE. Both prices used to be mint, which made mint mean
+   two things at once on the same card — "this is a price" and "this is yours"
+   — and the second meaning is the one that has to survive a card where every
+   bout is backed. Prices are ink; mint is reserved for the corner your money
+   is actually on, so there is exactly one mint number per bout you have bet. */
 .tape .pays b{display:block;font-family:'Space Mono',monospace;font-size:17px;font-weight:700;
-  color:#6EE7B7;line-height:1;font-variant-numeric:tabular-nums}
+  color:#EDEAF6;line-height:1;font-variant-numeric:tabular-nums}
+.tape .pays .pick.yours b{color:#6EE7B7}
+.tape .pays .pick.yours s{color:#8FD9BE}
 .tape .pays s{display:block;text-decoration:none;font-family:'Space Mono',monospace;font-size:6px;
   letter-spacing:.13em;text-transform:uppercase;color:#5F5880;margin-top:5px}
 .tape .pays .pick.on{background:linear-gradient(180deg,rgba(167,139,250,.22),transparent)}
@@ -6246,9 +6253,10 @@ function boardHTML(r, billing){
      the label the stake row's button needs \u2014 reading it off textContent would
      pick up the price and the caption too. */
   function cell(side, name, total, amt){
+    var cls = 'pick' + (amt ? ' yours' : '');
     var inner = '<b>'+pays(total)+'</b><s>'+(amt ? 'Yours \u00b7 pays now' : 'Pays now')+'</s>';
-    if(!me) return '<span class="pick">'+inner+'</span>';
-    return '<button class="pick" data-bet="'+esc(r.match_id)+'" data-side="'+side+'" '
+    if(!me) return '<span class="'+cls+'">'+inner+'</span>';
+    return '<button class="'+cls+'" data-bet="'+esc(r.match_id)+'" data-side="'+side+'" '
       + 'data-name="'+esc(name || side.toUpperCase())+'">'+inner+'</button>';
   }
   function stakeline(amt, name, total){
