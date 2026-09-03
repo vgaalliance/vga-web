@@ -5737,7 +5737,14 @@ async function renderShop(){
     + '<div class="kick">Spend your VC</div><h3>Shop</h3></div>'
     + '<div id="shp"><div class="skel"></div><div class="skel" style="width:60%"></div></div>';
   var el = document.getElementById('shp');
-  var rows = await q("shop_public?select=*&order=category.asc,vc_price.asc");
+  /* sort_order FIRST. The Discord panel has always honoured an operator's
+     hand-placed order and this screen sorted by category+price, so the same
+     shop listed its items in two different orders. Price ordering is also wrong
+     across sets on its own terms: it lists every 600, then every 2,500, then
+     every 7,000, so one set's Single/Pack/Box are never next to each other.
+     Category order now falls out of sort_order too, which is why Purses stopped
+     landing third on nothing but the alphabet. */
+  var rows = await q("shop_public?select=*&order=sort_order.asc.nullslast,category.asc,vc_price.asc");
   if(!el.isConnected) return;
   if(!rows){ retryHandlers['shp'] = renderShop;
     el.innerHTML = failHTML("Couldn't load the shop.", 'shp'); return; }
