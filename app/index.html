@@ -2713,7 +2713,16 @@ async function qStatus(path){
    anon key returns 401 — deliberately, since anon has no grant on them. */
 async function qMe(path, isRetry){
   if(!session) return null;
-  if(!isRetry) await ensureFreshSession();
+  if(!isRetry && !(await ensureFreshSession()) && refreshDead){
+    /* The refresh token was REFUSED, so the access token beside it is dead
+       too. Sending it anyway is what the binder's three boot reads did: each
+       one answered 401 with the stale JWT in hand, then asked for the same
+       refresh again. One refused refresh is the whole answer -- sign out here
+       and send nothing. (A refresh that merely failed to reach the server
+       leaves refreshDead false, and the read goes ahead as before.) */
+    signedOutUnexpectedly();
+    return null;
+  }
   if(!session) return null;
   try{
     var r = await fetch(SB + '/rest/v1/' + path, {
