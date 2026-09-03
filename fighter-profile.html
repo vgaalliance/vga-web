@@ -565,11 +565,11 @@ async function load() {
     let winStreak = 0;
     for (const m of completed) { if (m.won) winStreak++; else break; }
 
-    let prizeMoney = 0;
-    try {
-      const payouts = await sb('prize_payouts', `fighter_id=eq.${f.id}&status=eq.paid&select=amount`);
-      prizeMoney = payouts.reduce((sum, p) => sum + (p.amount || 0), 0);
-    } catch(e) {}
+    // Prize money is NOT read here. `prize_payouts` is the one real-$ table
+    // and anon has no grant on it by design, so the old query answered 401
+    // (and, before that, 400 for a column that never existed) on every
+    // profile load -- the console's only error on this page, for a number
+    // that could never be anything but $0.
 
     const titleFights = completed.filter(m => m.is_title_fight).length;
     const belts = completed.filter(m => m.is_title_fight && m.won).length;
@@ -699,11 +699,6 @@ async function load() {
 
         <div class="tab-pane" id="pane-achievements">
           <div class="two-col" style="margin-bottom:12px;">
-            <div class="ach-card" style="flex:1;">
-              <div class="ach-title">Prize Money</div>
-              <div class="ach-big ${prizeMoney ? '' : 'dim'}">$${prizeMoney.toLocaleString()}</div>
-              <div class="ach-sub">Career earnings</div>
-            </div>
             <div class="ach-card" style="flex:1;">
               <div class="ach-title">Title Fights</div>
               <div class="ach-big ${titleFights ? '' : 'dim'}">${titleFights}</div>
