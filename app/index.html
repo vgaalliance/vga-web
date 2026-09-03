@@ -858,6 +858,47 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .band .b.y{background:#E8C351;color:#231A05}
 .band .b.n{background:rgba(255,255,255,.09);color:#B7AEDC;border:1px solid rgba(255,255,255,.16)}
 .band .b[disabled]{opacity:.5}
+/* ── SIGNING OFF ──────────────────────────────────────────────────────
+   The band earns an exit. Signing is the one genuinely good moment in this
+   feature — somebody wanted your name badly enough to pay for it — and having
+   the panel blink out of existence on the next re-render throws that away.
+
+   Three beats: the ink strokes on, the buttons become a receipt, then the
+   whole band collapses. Only after that does the list reload, so the next ask
+   arrives on a clean screen instead of snapping into place under a dying one.
+
+   The height is collapsed from a MEASURED pixel value, not from `1fr` to
+   `0fr`. The grid version reads better and does not work: the browser jumps
+   straight to zero rather than interpolating the fr unit, so the band vanished
+   in one frame while the fade underneath it was still running. A hard-coded
+   max-height is not an option either — the headline runs one to three lines
+   depending on the name — so the height is read off the element at the moment
+   it starts leaving. */
+.band{transition:opacity .28s ease, transform .28s ease}
+.bandwrap{overflow:hidden;transition:max-height .34s ease}
+.band.signed .who{animation:inkon .55s ease both}
+.band.signed .btns{display:none}
+.band .receipt{display:none;margin-top:12px;padding:9px;border-radius:8px;text-align:center;
+  background:rgba(232,195,81,.92);color:#231A05;
+  font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.13em;
+  text-transform:uppercase}
+.band.signed .receipt{display:block;animation:pop .3s ease both}
+.band.passed .btns{display:none}
+.band.passed .receipt{display:block;background:rgba(255,255,255,.1);color:#B7AEDC}
+.bandwrap.out .band{opacity:0;transform:scale(.97)}
+.bandwrap.out .lab{opacity:0}
+@keyframes inkon{
+  from{opacity:0;clip-path:inset(0 100% 0 0);transform:translateX(-6px)}
+  to{opacity:1;clip-path:inset(0 0 0 0);transform:none}
+}
+@keyframes pop{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+/* The next ask arrives rather than appearing. */
+.bandwrap.arrive .band{animation:arrive .3s ease both}
+@keyframes arrive{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){
+  .band,.bandwrap,.bandwrap.out .band{transition:none}
+  .band.signed .who,.band.signed .receipt,.bandwrap.arrive .band{animation:none}
+}
 .band .more{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.13em;
   text-transform:uppercase;color:#9C93BC;margin-top:10px;text-align:center}
 /* Your own asks are a thing you WAIT on, not a decision you owe anybody, so
@@ -5004,7 +5045,8 @@ function signBandHTML(){
     var r = inc[0];
     var pot = inc.reduce(function(a, x){ return a + Number(x.price_vc || 0); }, 0);
     var pay = Number(r.price_vc || 0);
-    html += '<div class="lab"><b>Someone wants your autograph</b><i></i></div>'
+    html += '<div class="bandwrap' + (window.__sigArrive ? ' arrive' : '') + '"><div>'
+      + '<div class="lab"><b>Someone wants your autograph</b><i></i></div>'
       + '<div class="band" data-sig="' + esc(r.request_id) + '">'
       + '<div class="k">' + inc.length + (inc.length === 1 ? ' waiting' : ' waiting')
       + (pot > 0 ? ' \u00b7 ' + pot.toLocaleString() + ' VC on the table' : '') + '</div>'
@@ -5029,8 +5071,9 @@ function signBandHTML(){
       + (pay > 0 ? 'Sign \u00b7 ' + pay.toLocaleString() + ' VC' : 'Sign \u00b7 free') + '</button>'
       + '<button class="b n" data-signo="' + esc(r.request_id) + '">Pass</button>'
       + '</div>'
+      + '<div class="receipt"></div>'
       + (inc.length > 1 ? '<div class="more">' + (inc.length - 1) + ' more waiting</div>' : '')
-      + '</div>';
+      + '</div></div></div>';
   }
 
   /* Your own asks get a quiet line, not a band. It is a thing you are waiting
@@ -5048,6 +5091,53 @@ function signBandHTML(){
     }).join('');
   }
   return html;
+}
+
+/* The exit. Three beats: the ink strokes on, the buttons become a receipt,
+   then the band collapses and the list reloads behind it.
+
+   The reload happens AFTER the collapse, never during — re-rendering mid-exit
+   swaps the DOM out from under the animation, and the next ask snaps into place
+   under a band that is still dying. That is the thing that makes an interface
+   feel broken even when every value on it is right.
+
+   Timings are held in one place because they have to add up: the ink is 550ms,
+   so the collapse cannot start before it. Reduced motion skips the whole
+   sequence and reloads immediately — the animation is the reward, not the
+   mechanism, and nothing is lost by dropping it.
+
+   `bandwrap` is what collapses, not the band: the section label has to go with
+   it, or a "// SOMEONE WANTS YOUR AUTOGRAPH" heading is left sitting over
+   nothing while the list reloads. */
+var SIGN_HOLD_MS = 950, SIGN_FALL_MS = 360;
+
+function signOff(band, cls, receiptText){
+  var wrap = band && band.closest('.bandwrap');
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!wrap || reduce){ toast(receiptText); window.__sigArrive = false; loadMe(); return; }
+
+  var rc = band.querySelector('.receipt');
+  if(rc) rc.textContent = receiptText;
+  band.classList.add(cls);
+
+  setTimeout(function(){
+    if(!wrap.isConnected){ loadMe(); return; }
+    /* Pin the height BEFORE collapsing it. A transition needs two real values
+       and `auto` is not one, so the element is measured at the moment it starts
+       leaving; the reflow between the two assignments is what makes the second
+       one animate rather than apply instantly. */
+    wrap.style.maxHeight = wrap.scrollHeight + 'px';
+    void wrap.offsetHeight;
+    wrap.classList.add('out');
+    wrap.style.maxHeight = '0px';
+    setTimeout(function(){
+      /* Whatever is next arrives rather than appearing. The flag is consumed on
+         the next render so a plain page load never animates. */
+      window.__sigArrive = true;
+      loadMe();
+      setTimeout(function(){ window.__sigArrive = false; }, 400);
+    }, SIGN_FALL_MS);
+  }, cls === 'signed' ? SIGN_HOLD_MS : 420);
 }
 
 /* "2 hours ago" without a date library. Anything past a week is a date,
@@ -5189,10 +5279,15 @@ document.addEventListener('click', async function(e){
     busy(b, true, '\u2026');
     var ra = await rpc('app_sign_accept', { p_request_id: b.getAttribute('data-sigyes') });
     busy(b, false);
-    if(!ra.ok){ for(var i3 = 0; i3 < btns.length; i3++) btns[i3].disabled = false; }
-    toast(ra.ok ? 'Signed.' + (ra.price ? ' ' + Number(ra.price).toLocaleString() + ' VC is yours.' : '')
-                : ra.message, !ra.ok);
-    if(ra.ok){ loadMe(); renderCards(); }
+    if(!ra.ok){
+      for(var i3 = 0; i3 < btns.length; i3++) btns[i3].disabled = false;
+      toast(ra.message, true);
+      return;
+    }
+    signOff(sy, 'signed', ra.price
+      ? '\u2712\uFE0F Signed \u00b7 ' + Number(ra.price).toLocaleString() + ' VC is yours'
+      : '\u2712\uFE0F Signed');
+    renderCards();
     return;
   }
 
@@ -5203,11 +5298,15 @@ document.addEventListener('click', async function(e){
     busy(b, true, '\u2026');
     var rd = await rpc('app_sign_decline', { p_request_id: b.getAttribute('data-signo') });
     busy(b, false);
-    if(!rd.ok){ for(var i5 = 0; i5 < bn.length; i5++) bn[i5].disabled = false; }
+    if(!rd.ok){
+      for(var i5 = 0; i5 < bn.length; i5++) bn[i5].disabled = false;
+      toast(rd.message, true);
+      return;
+    }
     /* No reason is collected and none is sent. "Why not" is a conversation the
-       app should not be hosting. */
-    toast(rd.ok ? 'Passed. They were not charged.' : rd.message, !rd.ok);
-    if(rd.ok) loadMe();
+       app should not be hosting. A pass gets the same exit as a signature but
+       none of the ceremony — no ink, no gold receipt. */
+    signOff(sn, 'passed', 'Passed \u00b7 they were not charged');
     return;
   }
 
