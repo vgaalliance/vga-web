@@ -2303,6 +2303,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .train .fx{position:relative;width:100%;max-width:320px;height:34px;pointer-events:none}
 .train .fl{position:absolute;top:0;font-family:'Bebas Neue',sans-serif;font-size:24px;animation:flup .9s ease-out forwards}
 .train .fl.hit{color:#F5C842}.train .fl.whiff{color:#7A7096;font-size:16px;letter-spacing:.12em;text-transform:uppercase}
+.train .fl.pack{color:#C084FC;font-size:19px;letter-spacing:.06em;text-shadow:0 0 12px #C084FCaa;animation-duration:1.6s}
 @keyframes flup{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-34px)}}
 @media (prefers-reduced-motion:reduce){.train .bagsvg.hit,.train .bagsvg.miss,.train .fl{animation:none}}
 .train .stats{display:flex;gap:8px;width:100%;max-width:320px}
@@ -6522,6 +6523,12 @@ async function renderTrain(){
     /* The server's answer wins: it settled stamina and paid for what the bar held. */
     base = Number(r.stamina); baseAt = Date.now(); spent = pending;
     if(r.balance != null){ balance = Number(r.balance); drawTracks(); drawStats(); }
+    /* A pack fell out of the bag. It is a REAL shop pack -- same set, same
+       published odds -- so it is waiting in Cards to be ripped. */
+    if(Number(r.packs) > 0){
+      float('\uD83D\uDCE6 PACK', 'pack');
+      toast((r.pack_name || 'A pack') + ' \u2014 open it in Cards.');
+    }
     paint();
   }
   function punch(){
