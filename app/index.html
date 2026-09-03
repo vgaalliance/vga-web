@@ -2304,6 +2304,22 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .train .stats b{display:block;font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1}
 .train .stats s{display:block;text-decoration:none;font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;color:#9A90BE;margin-top:4px}
 .train .hint{font-size:13.5px;color:#9A90BE;text-align:center}
+.train .lab{width:100%;max-width:320px;margin:8px 0 0}
+.train .lab .bal{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.08em;color:#F5C842}
+.train .tracks{display:flex;gap:8px;width:100%;max-width:320px}
+.train .trk{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 4px;border-radius:12px;
+  background:rgba(255,255,255,.07);border:1px solid transparent;cursor:pointer;text-align:center;user-select:none;-webkit-user-select:none}
+.train .trk.on{border-color:#C084FC;background:rgba(192,132,252,.12)}
+.train .trk:focus-visible{outline:2px solid #C084FC;outline-offset:2px}
+.train .trk .nm{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;letter-spacing:.03em}
+.train .trk .lv{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.14em;color:#C084FC}
+.train .trk .now{font-size:11px;color:#9A90BE}
+.train .upmenu{width:100%;max-width:320px;background:rgba(255,255,255,.06);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.train .upmenu .row{display:flex;justify-content:space-between;font-size:14px}
+.train .upmenu .row span{color:#9A90BE}
+.train .upmenu .buy{margin-top:4px;padding:11px;border:0;border-radius:10px;background:#C084FC;color:#14102A;font-weight:700;font-size:14px;cursor:pointer}
+.train .upmenu .buy:disabled{background:rgba(255,255,255,.12);color:#9A90BE;cursor:default}
+.train .upmenu .mx{font-size:13.5px;color:#9A90BE;text-align:center}
 .sheet .evhead{padding:calc(18px + env(safe-area-inset-top)) 18px 16px;position:relative}
 .sheet .evhead .kick{margin:0 0 8px}
 .sheet .evhead h3{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:.03em;line-height:1;font-weight:400}
@@ -6383,7 +6399,10 @@ async function renderTrain(){
     +   '<div><b>' + acc + '%</b><s>land</s></div>'
     +   '<div><b>' + vcHit + '</b><s>VC a hit</s></div>'
     + '</div>'
-    + '<div class="hint" id="tr-hint"></div>';
+    + '<div class="hint" id="tr-hint"></div>'
+    + '<div class="lab"><b>Upgrades</b><i></i><span id="tr-bal" class="bal"></span></div>'
+    + '<div class="tracks" id="tracks"></div>'
+    + '<div class="upmenu" id="upmenu" hidden></div>';
   var bag = document.getElementById('bag'), cnt = document.getElementById('bag-cnt'),
       fx = document.getElementById('fx'), vcEl = document.getElementById('tr-vc'),
       fill = document.getElementById('stam-fill'), stTxt = document.getElementById('stam-txt'),
@@ -6400,6 +6419,69 @@ async function renderTrain(){
   paint();
   var tick = setInterval(function(){ if(!el.isConnected){ clearInterval(tick); return; } paint(); }, 1000);
 
+  /* Upgrades. Tap a box, a menu opens under it: what this level does, what
+     the next one does, the price. Every number is the server's (train_rules),
+     and Buy is only live when the wallet covers it -- the button is the only
+     gate a player meets before SQL refuses them, so it must not lie. */
+  var balance = guest ? null : Number(st.balance || 0);
+  var TRACKS = [
+    { key:'power',        name:'Power',        unit:function(v){ return v + ' VC a hit'; } },
+    { key:'accuracy',     name:'Accuracy',     unit:function(v){ return v + '% land'; } },
+    { key:'conditioning', name:'Conditioning', unit:function(v){ return v + ' punch bar'; } }
+  ];
+  var open = null;
+  function tracksHTML(){
+    return TRACKS.map(function(t){
+      var l = lv[t.key], max = rules[t.key].length, maxed = l >= max;
+      return '<div class="trk' + (open === t.key ? ' on' : '') + '" data-track="' + t.key + '" role="button" tabindex="0">'
+        + '<span class="nm">' + t.name + '</span>'
+        + '<span class="lv">' + (maxed ? 'MAX' : 'LVL ' + l) + '</span>'
+        + '<span class="now">' + t.unit(rules[t.key][l - 1]) + '</span></div>';
+    }).join('');
+  }
+  function menuHTML(t){
+    var l = lv[t.key], max = rules[t.key].length;
+    if(l >= max) return '<div class="mx">' + t.name + ' is maxed.</div>';
+    var price = rules.prices[l - 1], can = balance !== null && balance >= price;
+    return '<div class="row"><span>Now</span><b>' + t.unit(rules[t.key][l - 1]) + '</b></div>'
+      + '<div class="row"><span>Next</span><b>' + t.unit(rules[t.key][l]) + '</b></div>'
+      + '<button class="buy" data-buy="' + t.key + '"' + (can ? '' : ' disabled') + '>'
+      + (guest ? 'Sign in to upgrade' : can ? 'Buy \u2014 ' + price.toLocaleString() + ' VC'
+                : 'Need ' + price.toLocaleString() + ' VC') + '</button>';
+  }
+  var tracksEl = document.getElementById('tracks'), menu = document.getElementById('upmenu'),
+      balEl = document.getElementById('tr-bal');
+  function drawTracks(){
+    tracksEl.innerHTML = tracksHTML();
+    balEl.textContent = balance === null ? '' : balance.toLocaleString() + ' VC';
+    var t = TRACKS.filter(function(x){ return x.key === open; })[0];
+    menu.hidden = !t; if(t) menu.innerHTML = menuHTML(t);
+  }
+  drawTracks();
+  el.addEventListener('click', async function(e){
+    var box = e.target.closest('[data-track]');
+    if(box){ var k = box.getAttribute('data-track'); open = open === k ? null : k; drawTracks(); return; }
+    var b = e.target.closest('[data-buy]');
+    if(!b || guest) return;
+    var key = b.getAttribute('data-buy');
+    busy(b, true, 'Buying\u2026');
+    var r = await rpc('app_train_upgrade', { p_track: key });
+    if(!el.isConnected) return;
+    busy(b, false);
+    if(!r || !r.ok){ toast(r && r.message ? r.message : 'Could not buy that.', true); return; }
+    lv[key] = Number(r.level); balance = Number(r.balance);
+    acc = rules.accuracy[lv.accuracy - 1]; vcHit = rules.power[lv.power - 1]; bar = rules.conditioning[lv.conditioning - 1];
+    /* A new accuracy changes every roll not yet thrown -- drop the lookahead. */
+    rolls = {}; ahead = idx; lookahead();
+    document.querySelector('#train .stats').innerHTML =
+        '<div><b>' + earned.toLocaleString() + '</b><s>VC earned</s></div>'
+      + '<div><b>' + acc + '%</b><s>land</s></div>'
+      + '<div><b>' + vcHit + '</b><s>VC a hit</s></div>';
+    vcEl = document.getElementById('tr-vc');
+    toast(TRACKS.filter(function(x){ return x.key === key; })[0].name + ' \u2192 level ' + r.level + '. Balance ' + balance.toLocaleString() + ' VC');
+    paint(); drawTracks();
+  });
+
   function float(txt, cls){
     var f = document.createElement('span'); f.className = 'fl ' + cls; f.textContent = txt;
     f.style.left = (35 + Math.random() * 30) + '%';
@@ -6413,6 +6495,7 @@ async function renderTrain(){
     if(!r || !r.ok){ pending += n; toast(r && r.message ? r.message : 'Could not save those punches.', true); return; }
     /* The server's answer wins: it settled stamina and paid for what the bar held. */
     base = Number(r.stamina); baseAt = Date.now(); spent = pending;
+    if(r.balance != null){ balance = Number(r.balance); drawTracks(); }
     paint();
   }
   function punch(){
