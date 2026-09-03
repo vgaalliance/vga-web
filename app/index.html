@@ -24,6 +24,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<!-- The six signing hands. A fighter is assigned one at random on their first
+     signature and keeps it forever, so these are not interchangeable: the same
+     person must sign the same way on every card. Google serves the @font-face
+     rules in one request and fetches a font file only when it is actually
+     rendered, so a binder with no signatures in it downloads none of them. -->
+<link href="https://fonts.googleapis.com/css2?family=Nothing+You+Could+Do&family=Caveat:wght@600&family=Alex+Brush&family=Homemade+Apple&family=Mrs+Saint+Delafield&family=Reenie+Beanie&display=swap" rel="stylesheet">
 
 <style>
 /* ═══════════════════════════════════════════════════════════════════════
@@ -1765,6 +1771,38 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   text-shadow:0 2px 12px rgba(0,0,0,.9)}
 .slab .scrim{position:absolute;inset:0;z-index:2;
   background:linear-gradient(180deg,transparent 48%,rgba(6,4,14,.94))}
+/* ── THE AUTOGRAPH ────────────────────────────────────────────────────
+   Bottom third, over the body and never over the face — which is where a
+   person actually signs a photo, and the reason it is not centred. It sits
+   ABOVE the scrim (z-index 5 against the scrim's 2) so it reads on a dark
+   card, and BELOW the foot (6) so it can never cover the print number.
+
+   Sized in cq units against the slab itself, not px: the same markup draws a
+   44px binder thumbnail and a full-width detail card, and a fixed size would
+   be a scrawl on one and a smear on the other.
+
+   Six faces, one per fighter, assigned at random on their first signature and
+   then locked — a signature that changes between cards is a label. */
+.slab .inner{container-type:inline-size}
+.slab .sig{position:absolute;left:6%;right:6%;top:64%;z-index:5;
+  text-align:center;line-height:1;pointer-events:none;
+  color:#E8C351;font-size:19cqw;transform:rotate(-7deg);
+  text-shadow:0 1px 3px rgba(0,0,0,.75);
+  white-space:nowrap;overflow:hidden;text-overflow:clip}
+.slab .sig.f-nothing_you_could_do{font-family:'Nothing You Could Do',cursive}
+.slab .sig.f-caveat{font-family:'Caveat',cursive;font-weight:600}
+.slab .sig.f-alex_brush{font-family:'Alex Brush',cursive;font-size:23cqw}
+.slab .sig.f-homemade_apple{font-family:'Homemade Apple',cursive;font-size:15cqw}
+.slab .sig.f-mrs_saint_delafield{font-family:'Mrs Saint Delafield',cursive;font-size:26cqw}
+.slab .sig.f-reenie_beanie{font-family:'Reenie Beanie',cursive;font-size:22cqw}
+/* A binder thumbnail is ~74px wide; a scrawl at that size is noise, so the
+   ink gives way to a corner mark and the full hand returns on the detail
+   card. The mark still answers "is one of these signed", which is the whole
+   job at thumbnail size. */
+.slabw:not(.big) .slab .sig{display:none}
+.slab .sigmark{position:absolute;right:5px;top:5px;z-index:6;font-size:9px;
+  line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.9))}
+.slabw.big .slab .sigmark{display:none}
 .slab .cfoot{position:absolute;left:7px;right:7px;bottom:6px;z-index:6}
 .slab .cfoot .n{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;
   line-height:1;text-transform:uppercase;letter-spacing:.02em;
@@ -4956,7 +4994,15 @@ document.addEventListener('click', async function(e){
     var box = document.getElementById('pin-' + pid);
     var price = Number(box && box.value);
     if(!price || price < 100){ toast('Set a price of at least 100 VC.', true); if(box) box.focus(); return; }
-    if(b.getAttribute('data-only')
+    /* The signed warning outranks the only-copy one and replaces it: an only
+       copy can be bought back, and a signature cannot — buying the card again
+       gets you a different print with nothing written on it. Two confirms in a
+       row would also train the second one to be dismissed unread. */
+    var sgn = b.getAttribute('data-signed');
+    if(sgn){
+      if(!confirm('That copy is signed by ' + sgn + '. Signatures do not transfer to another print '
+        + '\u2014 buying this card back will not get the signature back. Sell it anyway?')) return;
+    } else if(b.getAttribute('data-only')
        && !confirm('This is your only copy of ' + b.getAttribute('data-name') + '. List it anyway?')) return;
     busy(b, true, '…');
     var rl = await rpc('app_list_card', { p_print_id: pid, p_price: price });
@@ -5175,6 +5221,12 @@ async function renderCard(cardId){
       + '<div><span class="k">Lowest number</span><span class="v">'
         + (have && have.lowest_print != null ? '#' + have.lowest_print : '\u2014') + '</span></div>'
       + '<div><span class="k">Set</span><span class="v">' + esc(card.set_code || '\u2014') + '</span></div>'
+      /* Named, not a yes/no. On a card whose printed name differs from the
+         fighter's (D30/D35) "signed" and "signed by whom" are different
+         questions, and the frozen name is the one that was actually inked. */
+      + '<div><span class="k">Signed</span><span class="v">' + (have && Number(have.signed_qty||0) > 0
+          ? esc(have.signed_name || 'yes') + (have.signed_print != null ? ' \u00b7 #' + have.signed_print : '')
+          : '\u2014') + '</span></div>'
     + '</div></div>'
     + (card.fighter_slug
         ? '<div class="lab"><b>The fighter</b><i></i></div>'
@@ -5889,11 +5941,15 @@ async function renderShelf(){
   html += free.length ? free.map(function(r){
       var only = Number(r.you_own || 0) <= 1;
       var suggested = r.price_typical ? Number(r.price_typical) : '';
+      /* The ink lives on the card ART, and this row has no art on it. Without
+         the words here somebody sells the signed copy having never been told
+         which one it was — and a signature cannot be re-made on another. */
+      var sg = r.signed_name ? ' \u00b7 \u2712\uFE0F ' + esc(r.signed_name) : '';
       return '<div class="shp"><div style="flex:1;min-width:0">'
         + '<div class="t">' + esc(r.name) + '</div>'
         + '<div class="s">#' + r.print_number + (r.grade != null ? ' · PSA ' + r.grade : '')
-        + ' · ' + esc(r.set_code || '') + '</div>'
-        + '<div class="stk">' + (only ? 'YOUR ONLY COPY'
+        + ' · ' + esc(r.set_code || '') + sg + '</div>'
+        + '<div class="stk">' + (r.signed_name ? 'SIGNED \u2014 CANNOT BE REMADE' : only ? 'YOUR ONLY COPY'
             : r.sales ? 'usually ' + Number(r.price_typical).toLocaleString() + ' VC'
             : 'never sold') + '</div>'
         + '</div><div class="prw">'
@@ -5901,7 +5957,8 @@ async function renderShelf(){
         + 'placeholder="' + (suggested || '100') + '" value="' + suggested + '" '
         + 'id="pin-' + esc(r.print_id) + '">'
         + '<button class="act buy" data-list="' + esc(r.print_id) + '" '
-        + 'data-name="' + esc(r.name) + '" data-only="' + (only ? '1' : '') + '">List</button>'
+        + 'data-name="' + esc(r.name) + '" data-signed="' + esc(r.signed_name || '') + '" '
+        + 'data-only="' + (only ? '1' : '') + '">List</button>'
         + '</div></div>';
     }).join('')
     : '<div class="empty">No cards free to sell. Anything in a trade or already listed sits above.</div>';
@@ -6722,7 +6779,17 @@ function slabHTML(card, have, big){
     ? '<img src="'+esc(card.photo_url)+'" alt="" loading="lazy" onerror="this.remove()">'
     : '<div class="noart">'+esc(card.name || 'Card')+'</div>';
 
-  return '<div class="slabw'+(have ? '' : ' unowned')+' r-'+esc(r)+'"'
+  /* A signature belongs to a PRINT, and this slab is a whole CARD — so it can
+     only ever say "one of yours is signed", never "this card is signed". The
+     other 207 copies out there are not, and that is the entire point of it. */
+  var sigName = have && Number(have.signed_qty || 0) > 0 ? (have.signed_name || '') : '';
+  var sigFont = (have && have.signed_font) || 'caveat';
+  var ink = sigName
+    ? '<div class="sig f-' + esc(sigFont) + '">' + esc(sigName) + '</div>'
+      + '<div class="sigmark">\u2712\uFE0F</div>'
+    : '';
+
+  return '<div class="slabw'+(have ? '' : ' unowned')+(big ? ' big' : '')+' r-'+esc(r)+'"'
       + ' data-card="'+esc(card.card_id)+'">'
     + fan
     + '<div class="slab">'
@@ -6739,7 +6806,7 @@ function slabHTML(card, have, big){
             ? '<b>'+grade+'</b><i>PSA</i>' : '<b class="dash">&ndash;</b><i>&nbsp;</i>') + '</div>'
       + '</div>'
       + '<div class="well"><div class="inner">' + art
-        + '<span class="scrim"></span><span class="fx"></span>'
+        + '<span class="scrim"></span><span class="fx"></span>' + ink
         + '<div class="cfoot"><div class="n">'+esc(card.name || 'Card')+'</div>'
         + '<div class="p">' + (have
             ? (print != null ? '#'+print+(total ? ' / '+total : '') : 'Owned')
