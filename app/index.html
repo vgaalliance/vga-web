@@ -6386,6 +6386,7 @@ async function renderTrain(){
     return Math.max(0, Math.min(bar, base + gained) - spent);
   }
   var earned = 0, pending = 0, flushT = null, rolls = {}, ahead = idx;
+  var balance = guest ? null : Number(st.balance || 0);
   function lookahead(){
     while(ahead < idx + TRAIN_LOOKAHEAD){
       (function(i){ trainRoll(seed, i).then(function(r){ rolls[i] = r < acc * 100; }); })(++ahead);
@@ -6403,20 +6404,27 @@ async function renderTrain(){
     + '</div>'
     + '<div class="fx" id="fx" aria-live="polite"></div>'
     + '<div class="count"><b id="bag-cnt">0</b><s>punches</s></div>'
-    + '<div class="stats">'
-    +   '<div><b id="tr-vc">0</b><s>VC earned</s></div>'
-    +   '<div><b>' + acc + '%</b><s>land</s></div>'
-    +   '<div><b>' + vcHit + '</b><s>VC a hit</s></div>'
-    + '</div>'
+    + '<div class="stats" id="tr-stats"></div>'
     + '<div class="hint" id="tr-hint"></div>'
-    + '<div class="lab"><b>Upgrades</b><i></i><span id="tr-bal" class="bal"></span></div>'
+    + '<div class="lab"><b>Upgrades</b><i></i></div>'
     + '<div class="tracks" id="tracks"></div>'
     + '<div class="upmenu" id="upmenu" hidden></div>';
   var bag = document.getElementById('bag'), cnt = document.getElementById('bag-cnt'),
-      fx = document.getElementById('fx'), vcEl = document.getElementById('tr-vc'),
+      fx = document.getElementById('fx'),
       fill = document.getElementById('stam-fill'), stTxt = document.getElementById('stam-txt'),
       hint = document.getElementById('tr-hint');
   var thrown = 0;
+  /* Three numbers a player actually asks for: what this sitting made, what the
+     gym has made them ever, and what is in the wallet to spend on the boxes
+     below. Land % and VC-a-hit live on the track boxes, where buying changes
+     them. */
+  var lifetime0 = guest ? 0 : Number(st.vc_earned_total || 0);
+  function drawStats(){
+    document.getElementById('tr-stats').innerHTML =
+        '<div><b>' + earned.toLocaleString() + '</b><s>this session</s></div>'
+      + '<div><b>' + (guest ? '\u2014' : (lifetime0 + earned).toLocaleString()) + '</b><s>lifetime</s></div>'
+      + '<div><b>' + (balance === null ? '\u2014' : balance.toLocaleString()) + '</b><s>wallet</s></div>';
+  }
   var boxer = null;
   loadAvatarBundle().then(function(ok){
     var host = document.getElementById('boxer');
@@ -6438,7 +6446,6 @@ async function renderTrain(){
      the next one does, the price. Every number is the server's (train_rules),
      and Buy is only live when the wallet covers it -- the button is the only
      gate a player meets before SQL refuses them, so it must not lie. */
-  var balance = guest ? null : Number(st.balance || 0);
   var TRACKS = [
     { key:'power',        name:'Power',        unit:function(v){ return v + ' VC a hit'; } },
     { key:'accuracy',     name:'Accuracy',     unit:function(v){ return v + '% land'; } },
@@ -6464,15 +6471,13 @@ async function renderTrain(){
       + (guest ? 'Sign in to upgrade' : can ? 'Buy \u2014 ' + price.toLocaleString() + ' VC'
                 : 'Need ' + price.toLocaleString() + ' VC') + '</button>';
   }
-  var tracksEl = document.getElementById('tracks'), menu = document.getElementById('upmenu'),
-      balEl = document.getElementById('tr-bal');
+  var tracksEl = document.getElementById('tracks'), menu = document.getElementById('upmenu');
   function drawTracks(){
     tracksEl.innerHTML = tracksHTML();
-    balEl.textContent = balance === null ? '' : balance.toLocaleString() + ' VC';
     var t = TRACKS.filter(function(x){ return x.key === open; })[0];
     menu.hidden = !t; if(t) menu.innerHTML = menuHTML(t);
   }
-  drawTracks();
+  drawTracks(); drawStats();
   el.addEventListener('click', async function(e){
     var box = e.target.closest('[data-track]');
     if(box){ var k = box.getAttribute('data-track'); open = open === k ? null : k; drawTracks(); return; }
@@ -6488,11 +6493,7 @@ async function renderTrain(){
     acc = rules.accuracy[lv.accuracy - 1]; vcHit = rules.power[lv.power - 1]; bar = rules.conditioning[lv.conditioning - 1];
     /* A new accuracy changes every roll not yet thrown -- drop the lookahead. */
     rolls = {}; ahead = idx; lookahead();
-    document.querySelector('#train .stats').innerHTML =
-        '<div><b>' + earned.toLocaleString() + '</b><s>VC earned</s></div>'
-      + '<div><b>' + acc + '%</b><s>land</s></div>'
-      + '<div><b>' + vcHit + '</b><s>VC a hit</s></div>';
-    vcEl = document.getElementById('tr-vc');
+    drawStats();
     toast(TRACKS.filter(function(x){ return x.key === key; })[0].name + ' \u2192 level ' + r.level + '. Balance ' + balance.toLocaleString() + ' VC');
     paint(); drawTracks();
   });
@@ -6510,7 +6511,7 @@ async function renderTrain(){
     if(!r || !r.ok){ pending += n; toast(r && r.message ? r.message : 'Could not save those punches.', true); return; }
     /* The server's answer wins: it settled stamina and paid for what the bar held. */
     base = Number(r.stamina); baseAt = Date.now(); spent = pending;
-    if(r.balance != null){ balance = Number(r.balance); drawTracks(); }
+    if(r.balance != null){ balance = Number(r.balance); drawTracks(); drawStats(); }
     paint();
   }
   function punch(){
@@ -6520,7 +6521,7 @@ async function renderTrain(){
     var bs = bag.querySelector('.bagsvg');
     bs.classList.remove('hit','miss'); void bs.offsetWidth; bs.classList.add(hit ? 'hit' : 'miss');
     if(boxer) boxer.punch(!!hit);
-    if(hit){ if(!guest){ earned += vcHit; vcEl.textContent = earned.toLocaleString(); } float('+' + vcHit, 'hit'); }
+    if(hit){ if(!guest){ earned += vcHit; drawStats(); } float('+' + vcHit, 'hit'); }
     else float('whiff', 'whiff');
     delete rolls[idx]; lookahead(); paint();
     if(guest) return;
