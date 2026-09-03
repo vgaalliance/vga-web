@@ -822,6 +822,51 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .twin .s{font-family:'Space Mono',monospace;font-size:6.5px;color:#8B83AC;margin-top:4px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
+/* ── THE SIGNATURE BAND ────────────────────────────────────────────────
+   Gold, because it is the same gold as the ink on the card. Conditional, and
+   that exception is argued at the call site. Answered in place: the entire
+   interaction is two buttons, so a door to a list would be a corridor. */
+.band{margin:0 14px;border-radius:13px;padding:13px 14px;position:relative;overflow:hidden;
+  background:linear-gradient(135deg,rgba(232,195,81,.2),rgba(12,8,25,.85));
+  border:1px solid rgba(232,195,81,.42)}
+.band .k{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.18em;
+  text-transform:uppercase;color:#E8C351}
+.band .h{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:23px;
+  text-transform:uppercase;line-height:1.02;margin-top:5px}
+.band .h em{font-style:normal;color:#E8C351}
+.band .meta{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.09em;
+  color:#9C93BC;margin-top:6px}
+/* Their hand, in the face they were assigned. The one thing on this screen
+   that is theirs rather than the app's. */
+.band .who{font-size:27px;color:#E8C351;line-height:1;margin-top:9px}
+.band .who.f-nothing_you_could_do{font-family:'Nothing You Could Do',cursive}
+.band .who.f-caveat{font-family:'Caveat',cursive;font-weight:600}
+.band .who.f-alex_brush{font-family:'Alex Brush',cursive;font-size:32px}
+.band .who.f-homemade_apple{font-family:'Homemade Apple',cursive;font-size:21px}
+.band .who.f-mrs_saint_delafield{font-family:'Mrs Saint Delafield',cursive;font-size:36px}
+.band .who.f-reenie_beanie{font-family:'Reenie Beanie',cursive;font-size:30px}
+.band .note{font-size:12.5px;line-height:1.4;color:#C6BEE2;margin-top:8px;
+  border-left:2px solid rgba(232,195,81,.5);padding-left:9px}
+.band .btns{display:flex;gap:7px;margin-top:12px}
+.band .b{flex:1;text-align:center;padding:9px 6px;border-radius:8px;border:0;cursor:pointer;
+  font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase}
+.band .b.y{background:#E8C351;color:#231A05}
+.band .b.n{background:rgba(255,255,255,.09);color:#B7AEDC;border:1px solid rgba(255,255,255,.16)}
+.band .b[disabled]{opacity:.5}
+.band .more{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.13em;
+  text-transform:uppercase;color:#9C93BC;margin-top:10px;text-align:center}
+/* Your own asks are a thing you WAIT on, not a decision you owe anybody, so
+   they get a quiet row rather than a second gold band. */
+.sigout{display:flex;align-items:center;gap:10px;margin:0 14px 7px;padding:11px 13px;
+  border-radius:11px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09)}
+.sigout .t{font-size:13.5px;font-weight:600}
+.sigout .s{font-family:'Space Mono',monospace;font-size:7px;color:#8B83AC;margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sigout .pull{flex-shrink:0;background:none;border:1px solid rgba(255,255,255,.18);
+  color:#9C93BC;border-radius:8px;padding:6px 10px;cursor:pointer;
+  font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.11em;text-transform:uppercase}
+
 /* THE ROOMS. The number on the right is the point: it turns a menu into a
    dashboard, so the screen can be read without opening anything. */
 .mrow{display:flex;align-items:center;gap:12px;margin:0 14px 7px;padding:12px 14px;border-radius:12px;
@@ -4792,7 +4837,8 @@ async function loadMe(){
     q("bet_pools_public?select=match_id"),
     q("shop_public?select=id"),
     q("market_public?select=listing_id"),
-    qMe("my_listings?select=listing_id")
+    qMe("my_listings?select=listing_id"),
+    qMe("my_signature_requests?select=*&order=created_at.asc")
   ]);
   if(!el.isConnected) return;
   var rows = got[0];
@@ -4805,6 +4851,9 @@ async function loadMe(){
   var shopN   = (got[6] || []).length;
   var marketN = (got[7] || []).length;
   var myListN = (got[8] || []).length;
+  /* Unpacked on its own like every other read here: a dead signature inbox
+     must not cost somebody their record. */
+  window.__sigReqs = got[9] || [];
 
   if(!rows){
     retryHandlers['me'] = loadMe;
@@ -4879,6 +4928,25 @@ async function loadMe(){
        : 'None on file')
     + '</div></div></div></div></div>';
 
+  /* ── SOMEBODY WANTS YOUR AUTOGRAPH ──────────────────────────────────
+     CONDITIONAL, unlike the two strips above, and that is a deliberate
+     exception rather than an oversight. Those two are permanent because
+     everybody has a contract and everybody gets offers, so a fixed shape is
+     what makes them learnable. Almost nobody has a signature queue — only 51
+     fighters are on a card at all — and a strip reading "nobody wants your
+     autograph" every time you open the app is worse than no strip.
+
+     ANSWERED IN PLACE, not behind a door. The whole interaction is Accept or
+     Pass, so a row that opens a list to reach two buttons is a corridor. The
+     thing that decides whether this feature works is a fighter bothering, and
+     what makes them bother is seeing the money without tapping anything.
+
+     The headline names WHO and WHICH CARD. "Somebody wants a signature" is
+     not a question anybody can answer. No possessive on the asker — guessing
+     a pronoun off a username puts a wrong guess about a real person on a
+     screen somebody else reads. */
+  html += signBandHTML();
+
   /* THE ROOMS. Each carries its live number, so the list is a dashboard. */
   /* Offers and Contract are NOT repeated here — they are the two strips above,
      always present, so a row for each would be the same door twice. */
@@ -4916,6 +4984,77 @@ async function loadMe(){
   html += '<div id="me-media"></div>';
   el.innerHTML = html;
   if(p.fighter_slug) loadCareer(p.fighter_slug);
+}
+
+
+/* The band, and the queue behind it. Renders nothing at all when nothing is
+   waiting — the caller does not have to know that. */
+function signBandHTML(){
+  var all = window.__sigReqs || [];
+  var inc = all.filter(function(r){ return r.direction === 'incoming'; });
+  var out = all.filter(function(r){ return r.direction === 'outgoing'; });
+  if(!inc.length && !out.length) return '';
+
+  var html = '';
+  if(inc.length){
+    var r = inc[0];
+    var pot = inc.reduce(function(a, x){ return a + Number(x.price_vc || 0); }, 0);
+    var pay = Number(r.price_vc || 0);
+    html += '<div class="lab"><b>Someone wants your autograph</b><i></i></div>'
+      + '<div class="band" data-sig="' + esc(r.request_id) + '">'
+      + '<div class="k">' + inc.length + (inc.length === 1 ? ' waiting' : ' waiting')
+      + (pot > 0 ? ' \u00b7 ' + pot.toLocaleString() + ' VC on the table' : '') + '</div>'
+      + '<div class="h">' + esc(r.requester_name || 'Someone') + ' wants <em>'
+      + esc(r.card_name || 'a card') + '</em> signed by you</div>'
+      + '<div class="meta">' + esc(r.set_code || '') + ' \u00b7 #' + r.print_number
+      + (r.grade != null ? ' \u00b7 PSA ' + r.grade : ' \u00b7 ungraded')
+      + ' \u00b7 ' + esc(agoStr(r.created_at)) + '</div>'
+      /* Their own hand, in the font they were assigned. It is the one thing on
+         this screen that is theirs rather than the app's, and it is what makes
+         a signature feel like a signature instead of a database column. */
+      + (r.fighter_name ? '<div class="who f-' + esc(r.sig_font || 'caveat') + '">'
+          + esc(r.fighter_name) + '</div>' : '')
+      + (r.message ? '<div class="note">\u201c' + esc(String(r.message).slice(0, 140)) + '\u201d</div>' : '')
+      + '<div class="btns">'
+      + '<button class="b y" data-sigyes="' + esc(r.request_id) + '">'
+      + (pay > 0 ? 'Sign \u00b7 ' + pay.toLocaleString() + ' VC' : 'Sign \u00b7 free') + '</button>'
+      + '<button class="b n" data-signo="' + esc(r.request_id) + '">Pass</button>'
+      + '</div>'
+      + (inc.length > 1 ? '<div class="more">' + (inc.length - 1) + ' more waiting</div>' : '')
+      + '</div>';
+  }
+
+  /* Your own asks get a quiet line, not a band. It is a thing you are waiting
+     on rather than a decision you owe anybody, and giving it the same weight
+     would make the screen shout twice. */
+  if(out.length){
+    html += '<div class="lab"><b>Your signature requests</b><i></i></div>';
+    html += out.map(function(r){
+      return '<div class="sigout"><div style="flex:1;min-width:0">'
+        + '<div class="t">' + esc(r.card_name || 'Card') + ' #' + r.print_number + '</div>'
+        + '<div class="s">waiting on ' + esc(r.fighter_name || 'them') + ' \u00b7 '
+        + (Number(r.price_vc || 0) > 0 ? Number(r.price_vc).toLocaleString() + ' VC offered' : 'free')
+        + ' \u00b7 ' + esc(agoStr(r.created_at)) + '</div></div>'
+        + '<button class="pull" data-sigpull="' + esc(r.request_id) + '">Withdraw</button></div>';
+    }).join('');
+  }
+  return html;
+}
+
+/* "2 hours ago" without a date library. Anything past a week is a date,
+   because "11 days ago" is a number nobody converts. */
+function agoStr(iso){
+  if(!iso) return '';
+  var ms = Date.now() - new Date(iso).getTime();
+  if(!isFinite(ms) || ms < 0) return 'just now';
+  var mins = Math.floor(ms / 60000);
+  if(mins < 1) return 'just now';
+  if(mins < 60) return mins + (mins === 1 ? ' minute ago' : ' minutes ago');
+  var hrs = Math.floor(mins / 60);
+  if(hrs < 24) return hrs + (hrs === 1 ? ' hour ago' : ' hours ago');
+  var d = Math.floor(hrs / 24);
+  if(d <= 7) return d + (d === 1 ? ' day ago' : ' days ago');
+  return dstr(iso);
 }
 
 /* One room. Tabs go to a tab, everything else opens a sheet, and the game is
@@ -5020,6 +5159,55 @@ document.addEventListener('click', async function(e){
     busy(b, false);
     toast(rl.ok ? 'Listed at ' + price.toLocaleString() + ' VC for 7 days.' : rl.message, !rl.ok);
     if(rl.ok){ renderShelf(); loadMe(); }
+    return;
+  }
+
+  /* ── ANSWERING A SIGNATURE ASK ────────────────────────────────────────
+     Signing is FINAL and it is confirmed: the ink cannot be moved to another
+     copy, the card can never be fused afterwards, and there is no undo. A
+     Pass is not confirmed — it costs nobody anything and they can ask again.
+
+     Both buttons are disabled together before the call. They sit side by side
+     and the whole band is replaced on success, so a second tap on either one
+     during the round trip would answer a request that is already answered. */
+  if((b = e.target.closest('[data-sigyes]'))){
+    var sy = b.closest('.band');
+    var payTxt = b.textContent.trim();
+    if(!confirm('Sign it? ' + payTxt.replace(/^Sign \u00b7 /, 'You get ')
+      + '. A signature cannot be moved to another copy, and the card can never be fused.')) return;
+    var btns = sy ? sy.querySelectorAll('.b') : [];
+    for(var i2 = 0; i2 < btns.length; i2++) btns[i2].disabled = true;
+    busy(b, true, '\u2026');
+    var ra = await rpc('app_sign_accept', { p_request_id: b.getAttribute('data-sigyes') });
+    busy(b, false);
+    if(!ra.ok){ for(var i3 = 0; i3 < btns.length; i3++) btns[i3].disabled = false; }
+    toast(ra.ok ? 'Signed.' + (ra.price ? ' ' + Number(ra.price).toLocaleString() + ' VC is yours.' : '')
+                : ra.message, !ra.ok);
+    if(ra.ok){ loadMe(); renderCards(); }
+    return;
+  }
+
+  if((b = e.target.closest('[data-signo]'))){
+    var sn = b.closest('.band');
+    var bn = sn ? sn.querySelectorAll('.b') : [];
+    for(var i4 = 0; i4 < bn.length; i4++) bn[i4].disabled = true;
+    busy(b, true, '\u2026');
+    var rd = await rpc('app_sign_decline', { p_request_id: b.getAttribute('data-signo') });
+    busy(b, false);
+    if(!rd.ok){ for(var i5 = 0; i5 < bn.length; i5++) bn[i5].disabled = false; }
+    /* No reason is collected and none is sent. "Why not" is a conversation the
+       app should not be hosting. */
+    toast(rd.ok ? 'Passed. They were not charged.' : rd.message, !rd.ok);
+    if(rd.ok) loadMe();
+    return;
+  }
+
+  if((b = e.target.closest('[data-sigpull]'))){
+    busy(b, true, '\u2026');
+    var rp = await rpc('app_sign_cancel', { p_request_id: b.getAttribute('data-sigpull') });
+    busy(b, false);
+    toast(rp.ok ? 'Withdrawn.' : rp.message, !rp.ok);
+    if(rp.ok) loadMe();
     return;
   }
 
