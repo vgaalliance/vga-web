@@ -834,6 +834,10 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .band .h{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:23px;
   text-transform:uppercase;line-height:1.02;margin-top:5px}
 .band .h em{font-style:normal;color:#E8C351}
+/* The set code rides with the name but must not compete with it: same line,
+   smaller, dimmer gold. It is which-one information, not what-it-is. */
+.band .h i{font-style:normal;font-family:'Space Mono',monospace;font-size:11px;
+  letter-spacing:.04em;color:rgba(232,195,81,.72);white-space:nowrap}
 .band .meta{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.09em;
   color:#9C93BC;margin-top:6px}
 /* Their hand, in the face they were assigned. The one thing on this screen
@@ -5004,9 +5008,14 @@ function signBandHTML(){
       + '<div class="band" data-sig="' + esc(r.request_id) + '">'
       + '<div class="k">' + inc.length + (inc.length === 1 ? ' waiting' : ' waiting')
       + (pot > 0 ? ' \u00b7 ' + pot.toLocaleString() + ' VC on the table' : '') + '</div>'
+      /* The SET is in the headline, not only the meta line under it. Six
+         fighters have a card in more than one set, so the name alone does not
+         say which card is being asked about — and the set is the difference
+         between a card somebody is completing and one they already have. */
       + '<div class="h">' + esc(r.requester_name || 'Someone') + ' wants <em>'
-      + esc(r.card_name || 'a card') + '</em> signed by you</div>'
-      + '<div class="meta">' + esc(r.set_code || '') + ' \u00b7 #' + r.print_number
+      + esc(r.card_name || 'a card') + '</em>'
+      + (r.set_code ? ' <i>' + esc(r.set_code) + '</i>' : '') + ' signed by you</div>'
+      + '<div class="meta">#' + r.print_number
       + (r.grade != null ? ' \u00b7 PSA ' + r.grade : ' \u00b7 ungraded')
       + ' \u00b7 ' + esc(agoStr(r.created_at)) + '</div>'
       /* Their own hand, in the font they were assigned. It is the one thing on
