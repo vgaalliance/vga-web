@@ -2277,6 +2277,49 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .sheet .body p{font-size:16px;line-height:1.62;color:#DAD5EC;margin:14px 18px 0}
 
 /* fight card inside a sheet */
+.train{display:flex;flex-direction:column;align-items:center;gap:16px;padding:8px 18px 40px}
+.train .guest{font-size:13.5px;color:#DAD5EC;background:rgba(255,255,255,.06);border-radius:10px;padding:10px 14px;text-align:center;line-height:1.5}
+.train .guest .signin{display:inline-block;margin:0 2px;padding:4px 10px;font-size:12px}
+.train .stam{position:relative;width:100%;max-width:320px;height:22px;border-radius:11px;background:rgba(255,255,255,.08);overflow:hidden}
+.train .stam i{position:absolute;inset:0;width:0;background:linear-gradient(90deg,#7C5CFF,#C084FC);transition:width .3s ease}
+.train .stam b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;font-weight:700}
+.train .bag{width:200px;height:200px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 35% 30%,#4A3A80,#1E1740 70%);border:2px solid rgba(255,255,255,.12);
+  box-shadow:0 18px 40px -18px rgba(0,0,0,.8);user-select:none;-webkit-user-select:none;touch-action:manipulation;cursor:pointer}
+.train .bag:focus-visible{outline:2px solid #C084FC;outline-offset:4px}
+.train .bag.spent{opacity:.45;cursor:default}
+.train .bag.pop{animation:bagpop .18s ease-out}
+.train .bag.miss{animation:bagmiss .22s ease-out}
+@keyframes bagpop{0%{transform:scale(1)}40%{transform:scale(.9)}100%{transform:scale(1)}}
+@keyframes bagmiss{0%{transform:translateX(0)}30%{transform:translateX(-7px) rotate(-3deg)}70%{transform:translateX(5px) rotate(2deg)}100%{transform:none}}
+.train .fx{position:relative;width:100%;max-width:320px;height:34px;pointer-events:none}
+.train .fl{position:absolute;top:0;font-family:'Bebas Neue',sans-serif;font-size:24px;animation:flup .9s ease-out forwards}
+.train .fl.hit{color:#F5C842}.train .fl.whiff{color:#7A7096;font-size:16px;letter-spacing:.12em;text-transform:uppercase}
+@keyframes flup{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-34px)}}
+@media (prefers-reduced-motion:reduce){.train .bag.pop,.train .bag.miss,.train .fl{animation:none}}
+.train .cnt{font-family:'Bebas Neue',sans-serif;font-size:56px;line-height:1}
+.train .lbl{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:#9A90BE}
+.train .stats{display:flex;gap:8px;width:100%;max-width:320px}
+.train .stats div{flex:1;text-align:center;background:rgba(255,255,255,.07);border-radius:10px;padding:10px 4px}
+.train .stats b{display:block;font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1}
+.train .stats s{display:block;text-decoration:none;font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;color:#9A90BE;margin-top:4px}
+.train .hint{font-size:13.5px;color:#9A90BE;text-align:center}
+.train .lab{width:100%;max-width:320px;margin:8px 0 0}
+.train .lab .bal{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.08em;color:#F5C842}
+.train .tracks{display:flex;gap:8px;width:100%;max-width:320px}
+.train .trk{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 4px;border-radius:12px;
+  background:rgba(255,255,255,.07);border:1px solid transparent;cursor:pointer;text-align:center;user-select:none;-webkit-user-select:none}
+.train .trk.on{border-color:#C084FC;background:rgba(192,132,252,.12)}
+.train .trk:focus-visible{outline:2px solid #C084FC;outline-offset:2px}
+.train .trk .nm{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;letter-spacing:.03em}
+.train .trk .lv{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.14em;color:#C084FC}
+.train .trk .now{font-size:11px;color:#9A90BE}
+.train .upmenu{width:100%;max-width:320px;background:rgba(255,255,255,.06);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.train .upmenu .row{display:flex;justify-content:space-between;font-size:14px}
+.train .upmenu .row span{color:#9A90BE}
+.train .upmenu .buy{margin-top:4px;padding:11px;border:0;border-radius:10px;background:#C084FC;color:#14102A;font-weight:700;font-size:14px;cursor:pointer}
+.train .upmenu .buy:disabled{background:rgba(255,255,255,.12);color:#9A90BE;cursor:default}
+.train .upmenu .mx{font-size:13.5px;color:#9A90BE;text-align:center}
 .sheet .evhead{padding:calc(18px + env(safe-area-inset-top)) 18px 16px;position:relative}
 .sheet .evhead .kick{margin:0 0 8px}
 .sheet .evhead h3{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:.03em;line-height:1;font-weight:400}
@@ -4248,7 +4291,8 @@ function hashFor(entry){
        : entry.kind === 'offers'   ? '#offers'
        : entry.kind === 'shop'     ? '#shop'
        : entry.kind === 'card'     ? '#c/' + entry.id
-       : entry.kind === 'mybets'   ? '#mybets' : '';
+       : entry.kind === 'mybets'   ? '#mybets'
+       : entry.kind === 'train'    ? '#train' : '';
 }
 
 function openSheet(entry){
@@ -4320,6 +4364,7 @@ function renderSheet(entry){
   if(entry.kind === 'shelf')    return renderShelf();
   if(entry.kind === 'card')     return renderCard(entry.id);
   if(entry.kind === 'mybets')   return renderMyBets();
+  if(entry.kind === 'train')    return renderTrain();
 }
 
 /* what opens a sheet */
@@ -5045,11 +5090,9 @@ async function loadMe(){
         pools ? String(pools) : '\u2014', '', true)
     + mrow('\uD83D\uDCB0','wallet','Wallet','Purses, bonuses, every move',
         Number(p.vc_balance||0).toLocaleString() + ' VC', 'q')
-    + mrow('\uD83C\uDFAE','game','Training',
-        myGame ? 'Level ' + Number(myGame.level||1)
-                 + (myGame.streak ? ' \u00b7 ' + myGame.streak + '-day streak' : '')
-               : 'Tap in daily, earn VC',
-        myGame ? 'LVL ' + Number(myGame.level||1) : 'NEW', 'q');
+    + mrow('\uD83E\uDD4A','train','Training','Tap the bag, earn VC',
+        myGame && Number(myGame.vc_earned_total) > 0
+          ? Number(myGame.vc_earned_total).toLocaleString() + ' VC' : 'NEW', 'q');
 
   html += '<div id="me-media"></div>';
   el.innerHTML = html;
@@ -5181,11 +5224,11 @@ function agoStr(iso){
   return dstr(iso);
 }
 
-/* One room. Tabs go to a tab, everything else opens a sheet, and the game is
-   a different app on the same site. */
+/* One room. Tabs go to a tab, everything else opens a sheet. TRAIN used to
+   navigate to ../game/ -- OUTSIDE the manifest scope, so iOS threw the
+   installed app out to Safari. It is a sheet now, like everything else. */
 function mrow(icon, target, title, sub, val, cls, isTab){
-  var attr = target === 'game' ? 'data-game="1"'
-           : isTab ? 'data-goto="'+esc(target)+'"'
+  var attr = isTab ? 'data-goto="'+esc(target)+'"'
            : 'data-hub="'+esc(target)+'"';
   return '<div class="mrow" '+attr+'>'
     + '<span class="mic">'+icon+'</span>'
@@ -5194,10 +5237,6 @@ function mrow(icon, target, title, sub, val, cls, isTab){
     + '<span class="rr"><span class="v '+(cls||'')+'">'+esc(val)+'</span>'
     + '<span class="c">&rsaquo;</span></span></div>';
 }
-document.addEventListener('click', function(e){
-  if(e.target.closest('[data-game]')) location.href = '../game/index.html';
-});
-
 /* EVERY WRITE IN ONE PLACE. Each one disables its own button first, shows what
    the server actually said, and re-reads the screen it changed — never guesses
    the new state, because a screen that assumes it worked is how somebody ends
@@ -6301,6 +6340,194 @@ async function renderShelf(){
     + 'The <b>10%</b> tax comes off what you receive.</div>';
 }
 
+
+/* ── TRAIN ── the tap trainer. Design: docs/train-plan.md in VGA Systems.
+   Every number on this screen comes from the server (train_rules via
+   app_train_start) -- the client holds no copy to drift. Hit or whiff is
+   rolled HERE off the seed and the lifetime punch counter, and the server
+   replays the identical roll at claim, so the screen can answer a tap
+   instantly and still never be believed. Punches are claimed in batches;
+   the server's answer always wins. */
+var TRAIN_BATCH = 12, TRAIN_FLUSH_MS = 1500, TRAIN_LOOKAHEAD = 200;
+async function trainRoll(seed, idx){
+  var d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(seed + ':' + idx));
+  return new DataView(d).getUint32(0) % 10000;   // same bytes the SQL reads
+}
+async function renderTrain(){
+  var body = document.getElementById('sheet-body');
+  body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'
+    + '<div class="kick">Training</div><h3>Train</h3></div>'
+    + '<div class="train" id="train"><div class="skel"></div><div class="skel" style="width:60%"></div></div>';
+  var el = document.getElementById('train');
+  var guest = !session;
+  var st = guest ? await rpc0('train_rules') : await rpc('app_train_start');
+  if(!el.isConnected) return;
+  if(!st || (!guest && !st.ok)){
+    retryHandlers['train'] = renderTrain;
+    el.innerHTML = failHTML(st && st.message ? st.message : "Couldn't open the gym.", 'train'); return;
+  }
+  var rules  = guest ? st : st.rules;
+  var lv     = guest ? {power:1, accuracy:1, conditioning:1} : st.levels;
+  var acc    = rules.accuracy[lv.accuracy - 1], vcHit = rules.power[lv.power - 1];
+  var bar    = rules.conditioning[lv.conditioning - 1];
+  var seed   = guest ? crypto.randomUUID() : st.seed;
+  var idx    = guest ? 0 : Number(st.punches_total || 0);   // lifetime counter: the roll index
+  /* Stamina as the server last said it, plus what the clock has refilled since. */
+  var base   = guest ? bar : Number(st.stamina), baseAt = guest ? Date.now() : Date.parse(st.stamina_at);
+  var spent  = 0;                                            // punches thrown since `base`
+  function stamina(){
+    var gained = Math.floor((Date.now() - baseAt) / 3600000 * rules.regen_per_hour);
+    return Math.max(0, Math.min(bar, base + gained) - spent);
+  }
+  var earned = 0, pending = 0, flushT = null, rolls = {}, ahead = idx;
+  function lookahead(){
+    while(ahead < idx + TRAIN_LOOKAHEAD){
+      (function(i){ trainRoll(seed, i).then(function(r){ rolls[i] = r < acc * 100; }); })(++ahead);
+    }
+  }
+  lookahead();
+
+  el.innerHTML =
+      (guest ? '<div class="guest">As a guest your punches pay nothing. '
+             + '<button class="signin" data-signin>Sign in</button> to earn VC.</div>' : '')
+    + '<div class="stam"><i id="stam-fill"></i><b id="stam-txt"></b></div>'
+    + '<div class="bag" id="bag" role="button" aria-label="Punch the bag" tabindex="0">'
+    +   '<span class="cnt" id="bag-cnt">0</span><span class="lbl">punches</span></div>'
+    + '<div class="fx" id="fx" aria-live="polite"></div>'
+    + '<div class="stats">'
+    +   '<div><b id="tr-vc">0</b><s>VC earned</s></div>'
+    +   '<div><b>' + acc + '%</b><s>land</s></div>'
+    +   '<div><b>' + vcHit + '</b><s>VC a hit</s></div>'
+    + '</div>'
+    + '<div class="hint" id="tr-hint"></div>'
+    + '<div class="lab"><b>Upgrades</b><i></i><span id="tr-bal" class="bal"></span></div>'
+    + '<div class="tracks" id="tracks"></div>'
+    + '<div class="upmenu" id="upmenu" hidden></div>';
+  var bag = document.getElementById('bag'), cnt = document.getElementById('bag-cnt'),
+      fx = document.getElementById('fx'), vcEl = document.getElementById('tr-vc'),
+      fill = document.getElementById('stam-fill'), stTxt = document.getElementById('stam-txt'),
+      hint = document.getElementById('tr-hint');
+  var thrown = 0;
+  function paint(){
+    var sN = stamina();
+    fill.style.width = (100 * sN / bar) + '%';
+    stTxt.textContent = sN + ' / ' + bar;
+    bag.classList.toggle('spent', sN <= 0);
+    hint.textContent = sN > 0 ? 'Tap the bag.'
+      : 'Out of stamina. It refills ' + rules.regen_per_hour + ' an hour whether you are here or not.';
+  }
+  paint();
+  var tick = setInterval(function(){ if(!el.isConnected){ clearInterval(tick); return; } paint(); }, 1000);
+
+  /* Upgrades. Tap a box, a menu opens under it: what this level does, what
+     the next one does, the price. Every number is the server's (train_rules),
+     and Buy is only live when the wallet covers it -- the button is the only
+     gate a player meets before SQL refuses them, so it must not lie. */
+  var balance = guest ? null : Number(st.balance || 0);
+  var TRACKS = [
+    { key:'power',        name:'Power',        unit:function(v){ return v + ' VC a hit'; } },
+    { key:'accuracy',     name:'Accuracy',     unit:function(v){ return v + '% land'; } },
+    { key:'conditioning', name:'Conditioning', unit:function(v){ return v + ' punch bar'; } }
+  ];
+  var open = null;
+  function tracksHTML(){
+    return TRACKS.map(function(t){
+      var l = lv[t.key], max = rules[t.key].length, maxed = l >= max;
+      return '<div class="trk' + (open === t.key ? ' on' : '') + '" data-track="' + t.key + '" role="button" tabindex="0">'
+        + '<span class="nm">' + t.name + '</span>'
+        + '<span class="lv">' + (maxed ? 'MAX' : 'LVL ' + l) + '</span>'
+        + '<span class="now">' + t.unit(rules[t.key][l - 1]) + '</span></div>';
+    }).join('');
+  }
+  function menuHTML(t){
+    var l = lv[t.key], max = rules[t.key].length;
+    if(l >= max) return '<div class="mx">' + t.name + ' is maxed.</div>';
+    var price = rules.prices[l - 1], can = balance !== null && balance >= price;
+    return '<div class="row"><span>Now</span><b>' + t.unit(rules[t.key][l - 1]) + '</b></div>'
+      + '<div class="row"><span>Next</span><b>' + t.unit(rules[t.key][l]) + '</b></div>'
+      + '<button class="buy" data-buy="' + t.key + '"' + (can ? '' : ' disabled') + '>'
+      + (guest ? 'Sign in to upgrade' : can ? 'Buy \u2014 ' + price.toLocaleString() + ' VC'
+                : 'Need ' + price.toLocaleString() + ' VC') + '</button>';
+  }
+  var tracksEl = document.getElementById('tracks'), menu = document.getElementById('upmenu'),
+      balEl = document.getElementById('tr-bal');
+  function drawTracks(){
+    tracksEl.innerHTML = tracksHTML();
+    balEl.textContent = balance === null ? '' : balance.toLocaleString() + ' VC';
+    var t = TRACKS.filter(function(x){ return x.key === open; })[0];
+    menu.hidden = !t; if(t) menu.innerHTML = menuHTML(t);
+  }
+  drawTracks();
+  el.addEventListener('click', async function(e){
+    var box = e.target.closest('[data-track]');
+    if(box){ var k = box.getAttribute('data-track'); open = open === k ? null : k; drawTracks(); return; }
+    var b = e.target.closest('[data-buy]');
+    if(!b || guest) return;
+    var key = b.getAttribute('data-buy');
+    busy(b, true, 'Buying\u2026');
+    var r = await rpc('app_train_upgrade', { p_track: key });
+    if(!el.isConnected) return;
+    busy(b, false);
+    if(!r || !r.ok){ toast(r && r.message ? r.message : 'Could not buy that.', true); return; }
+    lv[key] = Number(r.level); balance = Number(r.balance);
+    acc = rules.accuracy[lv.accuracy - 1]; vcHit = rules.power[lv.power - 1]; bar = rules.conditioning[lv.conditioning - 1];
+    /* A new accuracy changes every roll not yet thrown -- drop the lookahead. */
+    rolls = {}; ahead = idx; lookahead();
+    document.querySelector('#train .stats').innerHTML =
+        '<div><b>' + earned.toLocaleString() + '</b><s>VC earned</s></div>'
+      + '<div><b>' + acc + '%</b><s>land</s></div>'
+      + '<div><b>' + vcHit + '</b><s>VC a hit</s></div>';
+    vcEl = document.getElementById('tr-vc');
+    toast(TRACKS.filter(function(x){ return x.key === key; })[0].name + ' \u2192 level ' + r.level + '. Balance ' + balance.toLocaleString() + ' VC');
+    paint(); drawTracks();
+  });
+
+  function float(txt, cls){
+    var f = document.createElement('span'); f.className = 'fl ' + cls; f.textContent = txt;
+    f.style.left = (35 + Math.random() * 30) + '%';
+    fx.appendChild(f); setTimeout(function(){ f.remove(); }, 900);
+  }
+  async function flush(){
+    if(guest || !pending) return;
+    var n = pending; pending = 0; flushT = null;
+    var r = await rpc('app_train_claim', { p_punches: n });
+    if(!el.isConnected) return;
+    if(!r || !r.ok){ pending += n; toast(r && r.message ? r.message : 'Could not save those punches.', true); return; }
+    /* The server's answer wins: it settled stamina and paid for what the bar held. */
+    base = Number(r.stamina); baseAt = Date.now(); spent = pending;
+    if(r.balance != null){ balance = Number(r.balance); drawTracks(); }
+    paint();
+  }
+  function punch(){
+    if(stamina() <= 0){ paint(); return; }
+    idx++; spent++; thrown++; cnt.textContent = thrown;
+    var hit = rolls[idx];
+    bag.classList.remove('pop','miss'); void bag.offsetWidth; bag.classList.add(hit ? 'pop' : 'miss');
+    if(hit){ if(!guest){ earned += vcHit; vcEl.textContent = earned.toLocaleString(); } float('+' + vcHit, 'hit'); }
+    else float('whiff', 'whiff');
+    delete rolls[idx]; lookahead(); paint();
+    if(guest) return;
+    pending++;
+    if(pending >= TRAIN_BATCH) flush();
+    else { clearTimeout(flushT); flushT = setTimeout(flush, TRAIN_FLUSH_MS); }
+  }
+  bag.addEventListener('pointerdown', function(e){ e.preventDefault(); punch(); });
+  bag.addEventListener('keydown', function(e){ if(e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); punch(); } });
+  /* Leaving mid-batch flushes it. A batch the browser kills in flight is at
+     most 12 punches, and it costs the player, never the ledger -- stamina is
+     held server-side, so a lost claim is lost effort, not free money. */
+  var onHide = function(){ if(pending) flush(); };
+  document.addEventListener('visibilitychange', onHide); window.addEventListener('pagehide', onHide);
+}
+/* A read the app makes with NO session: train_rules is an immutable literal
+   with an anon grant, so a guest sees the real numbers rather than a copy. */
+async function rpc0(fn){
+  try{
+    var r = await fetch(SB + '/rest/v1/rpc/' + fn, { method:'POST',
+      headers:{ apikey: KEY, Authorization:'Bearer ' + KEY, 'Content-Type':'application/json' }, body:'{}' });
+    return r.ok ? await r.json() : null;
+  }catch(e){ return null; }
+}
 
 /* ── WALLET ── the balance, and every move behind it. */
 async function renderWallet(){
