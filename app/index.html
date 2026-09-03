@@ -828,7 +828,10 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    interaction is two buttons, so a door to a list would be a corridor. */
 .band{margin:0 14px;border-radius:13px;padding:13px 14px;position:relative;overflow:hidden;
   background:linear-gradient(135deg,rgba(232,195,81,.2),rgba(12,8,25,.85));
-  border:1px solid rgba(232,195,81,.42)}
+  border:1px solid rgba(232,195,81,.42);
+  /* the exit fade — declared here rather than in a second .band rule, because
+     two top-level rules for one class is how a property silently loses */
+  transition:opacity .28s ease, transform .28s ease}
 .band .k{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.18em;
   text-transform:uppercase;color:#E8C351}
 .band .h{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:23px;
@@ -874,7 +877,6 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    max-height is not an option either — the headline runs one to three lines
    depending on the name — so the height is read off the element at the moment
    it starts leaving. */
-.band{transition:opacity .28s ease, transform .28s ease}
 .bandwrap{overflow:hidden;transition:max-height .34s ease}
 .band.signed .who{animation:inkon .55s ease both}
 .band.signed .btns{display:none}
@@ -7529,6 +7531,14 @@ function registerWorker(){
   var swReloaded = false;
   navigator.serviceWorker.addEventListener('controllerchange', function(){
     if(swReloaded) return;
+    /* NEVER RELOAD ON TOP OF AN OAUTH RETURN. Supabase hands the tokens back
+       in the URL FRAGMENT, and a reload at the wrong moment throws them away:
+       the app comes back signed out and the only symptom is "I can't log in".
+       loadSession() runs before this is ever registered, so by the time a
+       controllerchange can fire the token is already banked — this is the
+       second lock on the same door, because the cost of being wrong is
+       somebody's session and the cost of skipping one reload is nothing. */
+    if((location.hash || '').indexOf('access_token') !== -1) return;
     swReloaded = true;
     location.reload();
   });
@@ -7541,6 +7551,19 @@ function registerWorker(){
 }
 
 (async function(){
+  /* THE SESSION IS BANKED BEFORE THE WORKER IS REGISTERED, and the order is
+     load-bearing.
+
+     registerWorker() asks for a new build immediately and reloads the page the
+     moment one takes over. On the load that RETURNS FROM DISCORD that reload
+     lands on top of a URL fragment carrying the access token — and an
+     installed PWA is the worst case for it, because it may be many shell
+     versions behind, so the update lands on the very load that carries the
+     token. Signing in appeared to do nothing.
+
+     loadSession() is synchronous and reads that fragment into localStorage, so
+     running it first makes the reload survivable. */
+  loadSession();
   registerWorker();
 
   /* iOS fires :active only if SOMETHING is listening for touch. Without this
@@ -7562,7 +7585,6 @@ function registerWorker(){
       b.addEventListener(ev, function(){ discHold(false); }, { passive: true });
     });
   })();
-  loadSession();
   prefetchBinder();                   /* in flight during the two awaits below */
   if(session) me = await fetchMe();   /* renews the token itself — see fetchMe */
   await loadWhoAmI();
