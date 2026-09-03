@@ -2309,6 +2309,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .train .stats{display:flex;gap:8px;width:100%;max-width:320px}
 .train .stats div{flex:1;text-align:center;background:rgba(255,255,255,.07);border-radius:10px;padding:10px 4px}
 .train .stats b{display:block;font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1}
+.train .stats b em{font-style:normal;font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.1em;color:#F5C842;margin-left:3px;vertical-align:2px}
 .train .stats s{display:block;text-decoration:none;font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;color:#9A90BE;margin-top:4px}
 .train .hint{font-size:13.5px;color:#9A90BE;text-align:center}
 .train .lab{width:100%;max-width:320px;margin:8px 0 0}
@@ -6437,10 +6438,15 @@ async function renderTrain(){
      them. */
   var lifetime0 = guest ? 0 : Number(st.vc_earned_total || 0);
   function drawStats(){
+    var tile = function(val, label){
+      var dash = val === null;
+      return '<div><b>' + (dash ? '\u2014' : val.toLocaleString())
+        + (dash ? '' : '<em>VC</em>') + '</b><s>' + label + '</s></div>';
+    };
     document.getElementById('tr-stats').innerHTML =
-        '<div><b>' + earned.toLocaleString() + '</b><s>this session</s></div>'
-      + '<div><b>' + (guest ? '\u2014' : (lifetime0 + earned).toLocaleString()) + '</b><s>lifetime</s></div>'
-      + '<div><b>' + (balance === null ? '\u2014' : balance.toLocaleString()) + '</b><s>wallet</s></div>';
+        tile(earned, 'this session')
+      + tile(guest ? null : lifetime0 + earned, 'lifetime')
+      + tile(balance, 'wallet');
   }
   var boxer = null;
   loadAvatarBundle().then(function(ok){
