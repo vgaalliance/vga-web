@@ -1784,11 +1784,16 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    Six faces, one per fighter, assigned at random on their first signature and
    then locked — a signature that changes between cards is a label. */
 .slab .inner{container-type:inline-size}
-.slab .sig{position:absolute;left:6%;right:6%;top:64%;z-index:5;
-  text-align:center;line-height:1;pointer-events:none;
+.slab .sig{position:absolute;left:10%;right:7%;top:63%;z-index:5;
+  text-align:right;line-height:1;pointer-events:none;
   color:#E8C351;font-size:19cqw;transform:rotate(-7deg);
   text-shadow:0 1px 3px rgba(0,0,0,.75);
   white-space:nowrap;overflow:hidden;text-overflow:clip}
+/* A long stage name shrinks rather than losing its last letters. A
+   signature with the end clipped off does not read as a shorter name,
+   it reads as a rendering fault. */
+.slab .sig.long{font-size:13cqw}
+.slab .sig.xlong{font-size:10cqw}
 .slab .sig.f-nothing_you_could_do{font-family:'Nothing You Could Do',cursive}
 .slab .sig.f-caveat{font-family:'Caveat',cursive;font-weight:600}
 .slab .sig.f-alex_brush{font-family:'Alex Brush',cursive;font-size:23cqw}
@@ -1800,8 +1805,14 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    card. The mark still answers "is one of these signed", which is the whole
    job at thumbnail size. */
 .slabw:not(.big) .slab .sig{display:none}
-.slab .sigmark{position:absolute;right:5px;top:5px;z-index:6;font-size:9px;
-  line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.9))}
+/* The binder mark carries a gold disc behind it. At 9px bare on card art it
+   was there but not readable, and the one job it has in a grid of forty slabs
+   is to be spotted without being looked for. */
+.slab .sigmark{position:absolute;right:5px;top:5px;z-index:6;
+  width:19px;height:19px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1;
+  background:radial-gradient(circle at 34% 28%,#F5E093,#D4AF37 62%,#8A6D18);
+  box-shadow:0 1px 4px rgba(0,0,0,.8), inset 0 0 0 1px rgba(255,255,255,.35)}
 .slabw.big .slab .sigmark{display:none}
 .slab .cfoot{position:absolute;left:7px;right:7px;bottom:6px;z-index:6}
 .slab .cfoot .n{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;
@@ -6784,8 +6795,10 @@ function slabHTML(card, have, big){
      other 207 copies out there are not, and that is the entire point of it. */
   var sigName = have && Number(have.signed_qty || 0) > 0 ? (have.signed_name || '') : '';
   var sigFont = (have && have.signed_font) || 'caveat';
+  var len = sigName.length;
   var ink = sigName
-    ? '<div class="sig f-' + esc(sigFont) + '">' + esc(sigName) + '</div>'
+    ? '<div class="sig f-' + esc(sigFont) + (len > 16 ? ' xlong' : len > 10 ? ' long' : '') + '">'
+      + esc(sigName) + '</div>'
       + '<div class="sigmark">\u2712\uFE0F</div>'
     : '';
 
