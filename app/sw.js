@@ -15,13 +15,14 @@
    old app until they clear site data.
    ═══════════════════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'uba-v154';
+const CACHE_VERSION = 'uba-v155';
 const SHELL = [
   './',
   './index.html',
   './manifest.json',
   './icons/icon-192.png',
-  './icons/icon-512.png'
+  './icons/icon-512.png',
+  './game/vga-avatar.embed.js'   // the TRAIN boxer -- lazy on first open, then offline like the shell
 ];
 
 self.addEventListener('install', event => {

@@ -2283,22 +2283,28 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .train .stam{position:relative;width:100%;max-width:320px;height:22px;border-radius:11px;background:rgba(255,255,255,.08);overflow:hidden}
 .train .stam i{position:absolute;inset:0;width:0;background:linear-gradient(90deg,#7C5CFF,#C084FC);transition:width .3s ease}
 .train .stam b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;font-weight:700}
-.train .bag{width:200px;height:200px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  background:radial-gradient(circle at 35% 30%,#4A3A80,#1E1740 70%);border:2px solid rgba(255,255,255,.12);
-  box-shadow:0 18px 40px -18px rgba(0,0,0,.8);user-select:none;-webkit-user-select:none;touch-action:manipulation;cursor:pointer}
-.train .bag:focus-visible{outline:2px solid #C084FC;outline-offset:4px}
-.train .bag.spent{opacity:.45;cursor:default}
-.train .bag.pop{animation:bagpop .18s ease-out}
-.train .bag.miss{animation:bagmiss .22s ease-out}
-@keyframes bagpop{0%{transform:scale(1)}40%{transform:scale(.9)}100%{transform:scale(1)}}
-@keyframes bagmiss{0%{transform:translateX(0)}30%{transform:translateX(-7px) rotate(-3deg)}70%{transform:translateX(5px) rotate(2deg)}100%{transform:none}}
+.train .stage{position:relative;display:flex;align-items:flex-end;justify-content:center;gap:6px;width:100%;max-width:320px;height:232px;
+  border-radius:16px;background:radial-gradient(ellipse at 50% 100%,rgba(124,92,255,.18),transparent 70%);
+  user-select:none;-webkit-user-select:none;touch-action:manipulation;cursor:pointer}
+.train .stage::after{content:'';position:absolute;left:12%;right:12%;bottom:10px;height:10px;border-radius:50%;background:rgba(0,0,0,.45);filter:blur(4px)}
+.train .stage:focus-visible{outline:2px solid #C084FC;outline-offset:4px}
+.train .stage.spent{opacity:.45;cursor:default}
+.train .bagsvg{width:118px;height:216px;transform-origin:60px 8px;position:relative;z-index:1}
+.train .boxer{position:relative;z-index:2;margin-bottom:14px}
+.train .bagsvg.hit{animation:bagHit .55s cubic-bezier(.2,.7,.3,1)}
+.train .bagsvg.miss{animation:bagMiss .3s ease-out}
+.train .bagsvg.hit .impact{animation:impact .35s ease-out}
+@keyframes bagHit{0%{transform:rotate(0)}22%{transform:rotate(-9deg)}60%{transform:rotate(4deg)}85%{transform:rotate(-1.5deg)}100%{transform:rotate(0)}}
+@keyframes bagMiss{0%{transform:rotate(0)}40%{transform:rotate(-1.5deg)}100%{transform:rotate(0)}}
+@keyframes impact{0%{r:0;opacity:.9}100%{r:22;opacity:0}}
+.train .count{display:flex;flex-direction:column;align-items:center;line-height:1}
+.train .count b{font-family:'Bebas Neue',sans-serif;font-size:40px}
+.train .count s{text-decoration:none;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:#9A90BE;margin-top:2px}
 .train .fx{position:relative;width:100%;max-width:320px;height:34px;pointer-events:none}
 .train .fl{position:absolute;top:0;font-family:'Bebas Neue',sans-serif;font-size:24px;animation:flup .9s ease-out forwards}
 .train .fl.hit{color:#F5C842}.train .fl.whiff{color:#7A7096;font-size:16px;letter-spacing:.12em;text-transform:uppercase}
 @keyframes flup{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-34px)}}
-@media (prefers-reduced-motion:reduce){.train .bag.pop,.train .bag.miss,.train .fl{animation:none}}
-.train .cnt{font-family:'Bebas Neue',sans-serif;font-size:56px;line-height:1}
-.train .lbl{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:#9A90BE}
+@media (prefers-reduced-motion:reduce){.train .bagsvg.hit,.train .bagsvg.miss,.train .fl{animation:none}}
 .train .stats{display:flex;gap:8px;width:100%;max-width:320px}
 .train .stats div{flex:1;text-align:center;background:rgba(255,255,255,.07);border-radius:10px;padding:10px 4px}
 .train .stats b{display:block;font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1}
@@ -6391,9 +6397,12 @@ async function renderTrain(){
       (guest ? '<div class="guest">As a guest your punches pay nothing. '
              + '<button class="signin" data-signin>Sign in</button> to earn VC.</div>' : '')
     + '<div class="stam"><i id="stam-fill"></i><b id="stam-txt"></b></div>'
-    + '<div class="bag" id="bag" role="button" aria-label="Punch the bag" tabindex="0">'
-    +   '<span class="cnt" id="bag-cnt">0</span><span class="lbl">punches</span></div>'
+    + '<div class="stage" id="bag" role="button" aria-label="Punch the bag" tabindex="0">'
+    +   heavyBagSVG()
+    +   '<div class="boxer" id="boxer"></div>'
+    + '</div>'
     + '<div class="fx" id="fx" aria-live="polite"></div>'
+    + '<div class="count"><b id="bag-cnt">0</b><s>punches</s></div>'
     + '<div class="stats">'
     +   '<div><b id="tr-vc">0</b><s>VC earned</s></div>'
     +   '<div><b>' + acc + '%</b><s>land</s></div>'
@@ -6408,6 +6417,12 @@ async function renderTrain(){
       fill = document.getElementById('stam-fill'), stTxt = document.getElementById('stam-txt'),
       hint = document.getElementById('tr-hint');
   var thrown = 0;
+  var boxer = null;
+  loadAvatarBundle().then(function(ok){
+    var host = document.getElementById('boxer');
+    if(!ok || !host || !host.isConnected) return;
+    boxer = window.VGAAvatar.mount(host, { equipped: guest ? null : (st.equipped || null), size: 92 });
+  });
   function paint(){
     var sN = stamina();
     fill.style.width = (100 * sN / bar) + '%';
@@ -6502,7 +6517,9 @@ async function renderTrain(){
     if(stamina() <= 0){ paint(); return; }
     idx++; spent++; thrown++; cnt.textContent = thrown;
     var hit = rolls[idx];
-    bag.classList.remove('pop','miss'); void bag.offsetWidth; bag.classList.add(hit ? 'pop' : 'miss');
+    var bs = bag.querySelector('.bagsvg');
+    bs.classList.remove('hit','miss'); void bs.offsetWidth; bs.classList.add(hit ? 'hit' : 'miss');
+    if(boxer) boxer.punch(!!hit);
     if(hit){ if(!guest){ earned += vcHit; vcEl.textContent = earned.toLocaleString(); } float('+' + vcHit, 'hit'); }
     else float('whiff', 'whiff');
     delete rolls[idx]; lookahead(); paint();
@@ -6519,6 +6536,43 @@ async function renderTrain(){
   var onHide = function(){ if(pending) flush(); };
   document.addEventListener('visibilitychange', onHide); window.addEventListener('pagehide', onHide);
 }
+/* The heavy bag. Drawn here rather than shipped as an image so it takes the
+   app's palette and animates from CSS: a landed punch swings it on its chain,
+   a whiff barely moves it. The pivot is the top ring. */
+function heavyBagSVG(){
+  return '<svg class="bagsvg" viewBox="0 0 120 220" aria-hidden="true">'
+    + '<defs>'
+    +   '<linearGradient id="bagL" x1="0" x2="1"><stop offset="0" stop-color="#5A1020"/><stop offset=".42" stop-color="#A32036"/><stop offset=".6" stop-color="#B8283F"/><stop offset="1" stop-color="#3E0A16"/></linearGradient>'
+    +   '<linearGradient id="bagCap" x1="0" x2="1"><stop offset="0" stop-color="#241B3A"/><stop offset=".5" stop-color="#4A3C6E"/><stop offset="1" stop-color="#1A1230"/></linearGradient>'
+    + '</defs>'
+    + '<g class="chain" stroke="#8F8AA6" stroke-width="3" fill="none" stroke-linecap="round">'
+    +   '<circle cx="60" cy="8" r="5"/>'
+    +   '<path d="M60 13v7M60 24v7M60 35v7"/><ellipse cx="60" cy="20" rx="4" ry="5"/><ellipse cx="60" cy="31" rx="4" ry="5"/><ellipse cx="60" cy="42" rx="4" ry="5"/>'
+    + '</g>'
+    + '<path d="M40 50 L80 50 L84 58 L36 58 Z" fill="url(#bagCap)"/>'
+    + '<rect x="24" y="56" width="72" height="150" rx="26" fill="url(#bagL)"/>'
+    + '<rect x="24" y="56" width="72" height="16" rx="8" fill="#2A1F42" opacity=".9"/>'
+    + '<rect x="24" y="190" width="72" height="16" rx="8" fill="#2A1F42" opacity=".9"/>'
+    + '<rect x="24" y="118" width="72" height="12" fill="#1A1230" opacity=".55"/>'
+    + '<text x="60" y="127.5" text-anchor="middle" font-family="Bebas Neue, sans-serif" font-size="9" letter-spacing="2" fill="#EDEAF6" opacity=".85">VGA</text>'
+    + '<rect x="36" y="72" width="7" height="118" rx="3.5" fill="#fff" opacity=".07"/>'
+    + '<circle class="impact" cx="30" cy="128" r="0" fill="none" stroke="#F5C842" stroke-width="3"/>'
+    + '</svg>';
+}
+var _avatarLoad = null;
+function loadAvatarBundle(){
+  if(window.VGAAvatar) return Promise.resolve(true);
+  if(_avatarLoad) return _avatarLoad;
+  _avatarLoad = new Promise(function(res){
+    var sc = document.createElement('script');
+    sc.src = './game/vga-avatar.embed.js';
+    sc.onload = function(){ res(!!window.VGAAvatar); };
+    sc.onerror = function(){ res(false); };   // the bag still works without a boxer
+    document.head.appendChild(sc);
+  });
+  return _avatarLoad;
+}
+
 /* A read the app makes with NO session: train_rules is an immutable literal
    with an anon grant, so a guest sees the real numbers rather than a copy. */
 async function rpc0(fn){
