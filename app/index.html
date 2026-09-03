@@ -4713,8 +4713,12 @@ function saveSession(s){
    401, with a single in-flight guard so a burst of parallel reads cannot
    trigger a burst of refreshes. */
 var refreshInFlight = null;
+/* Set by the last refresh attempt: true only when the server explicitly
+   rejected the refresh token. A network failure leaves it false, and false is
+   the safe answer — it keeps the session. */
+var refreshDead = false;
 async function refreshSession(){
-  if(!session || !session.refresh_token) return false;
+  if(!session || !session.refresh_token){ refreshDead = true; return false; }
   if(refreshInFlight) return refreshInFlight;
   refreshInFlight = (async function(){
     try{
@@ -4723,9 +4727,20 @@ async function refreshSession(){
         headers: { apikey: KEY, 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh_token: session.refresh_token })
       });
-      if(!r.ok){ refreshInFlight = null; return false; }
+      /* A REJECTED REFRESH TOKEN AND A BAD DAY ARE DIFFERENT ANSWERS, and
+         only one of them means you are signed out. 400/401/403 is Supabase
+         saying this token is dead — nothing will make it work. Anything else
+         (a 500, a gateway, a phone that lost signal mid-request) says nothing
+         about the token at all, and treating it as a dead session is how one
+         bad moment on mobile data becomes a sign-in. `dead` is recorded so
+         fetchMe knows which of the two it just had. */
+      if(!r.ok){
+        refreshDead = (r.status === 400 || r.status === 401 || r.status === 403);
+        refreshInFlight = null; return false;
+      }
       var d = await r.json();
-      if(!d || !d.access_token){ refreshInFlight = null; return false; }
+      if(!d || !d.access_token){ refreshDead = false; refreshInFlight = null; return false; }
+      refreshDead = false;
       saveSession({
         access_token: d.access_token,
         refresh_token: d.refresh_token || session.refresh_token,
@@ -4733,7 +4748,11 @@ async function refreshSession(){
       });
       refreshInFlight = null;
       return true;
-    }catch(e){ refreshInFlight = null; return false; }
+    }catch(e){
+      /* A thrown fetch is offline or DNS — it never reached Supabase, so it
+         says nothing about the token. */
+      refreshDead = false; refreshInFlight = null; return false;
+    }
   })();
   return refreshInFlight;
 }
@@ -4790,14 +4809,18 @@ async function loadWhoAmI(){
    the expected state on a cold load, not a failure. */
 async function fetchMe(isRetry){
   if(!session) return null;
-  if(!isRetry && !(await ensureFreshSession())) { saveSession(null); return null; }
+  if(!isRetry && !(await ensureFreshSession())){
+    if(refreshDead) saveSession(null);   /* refused — genuinely signed out */
+    return null;                          /* otherwise keep it and try later */
+  }
   try{
     var r = await fetch(SB + '/auth/v1/user', {
       headers:{ apikey: KEY, Authorization: 'Bearer ' + session.access_token }
     });
     if(r.status === 401 && !isRetry){
       if(await refreshSession()) return fetchMe(true);
-      saveSession(null); return null;
+      if(refreshDead) saveSession(null);  /* the refresh token is dead too */
+      return null;
     }
     /* Anything that is not a 401 is the SERVER having a bad day, not you being
        signed out. Wiping the session on a 500 or an offline fetch is how a
