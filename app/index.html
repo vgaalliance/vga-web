@@ -2277,17 +2277,33 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .sheet .body p{font-size:16px;line-height:1.62;color:#DAD5EC;margin:14px 18px 0}
 
 /* fight card inside a sheet */
-.train{display:flex;flex-direction:column;align-items:center;gap:18px;padding:8px 18px 40px}
+.train{display:flex;flex-direction:column;align-items:center;gap:16px;padding:8px 18px 40px}
+.train .guest{font-size:13.5px;color:#DAD5EC;background:rgba(255,255,255,.06);border-radius:10px;padding:10px 14px;text-align:center;line-height:1.5}
+.train .guest .signin{display:inline-block;margin:0 2px;padding:4px 10px;font-size:12px}
+.train .stam{position:relative;width:100%;max-width:320px;height:22px;border-radius:11px;background:rgba(255,255,255,.08);overflow:hidden}
+.train .stam i{position:absolute;inset:0;width:0;background:linear-gradient(90deg,#7C5CFF,#C084FC);transition:width .3s ease}
+.train .stam b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;font-weight:700}
 .train .bag{width:200px;height:200px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;
   background:radial-gradient(circle at 35% 30%,#4A3A80,#1E1740 70%);border:2px solid rgba(255,255,255,.12);
   box-shadow:0 18px 40px -18px rgba(0,0,0,.8);user-select:none;-webkit-user-select:none;touch-action:manipulation;cursor:pointer}
 .train .bag:focus-visible{outline:2px solid #C084FC;outline-offset:4px}
+.train .bag.spent{opacity:.45;cursor:default}
 .train .bag.pop{animation:bagpop .18s ease-out}
-@keyframes bagpop{0%{transform:scale(1)}40%{transform:scale(.93)}100%{transform:scale(1)}}
-@media (prefers-reduced-motion:reduce){.train .bag.pop{animation:none}}
+.train .bag.miss{animation:bagmiss .22s ease-out}
+@keyframes bagpop{0%{transform:scale(1)}40%{transform:scale(.9)}100%{transform:scale(1)}}
+@keyframes bagmiss{0%{transform:translateX(0)}30%{transform:translateX(-7px) rotate(-3deg)}70%{transform:translateX(5px) rotate(2deg)}100%{transform:none}}
+.train .fx{position:relative;width:100%;max-width:320px;height:34px;pointer-events:none}
+.train .fl{position:absolute;top:0;font-family:'Bebas Neue',sans-serif;font-size:24px;animation:flup .9s ease-out forwards}
+.train .fl.hit{color:#F5C842}.train .fl.whiff{color:#7A7096;font-size:16px;letter-spacing:.12em;text-transform:uppercase}
+@keyframes flup{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-34px)}}
+@media (prefers-reduced-motion:reduce){.train .bag.pop,.train .bag.miss,.train .fl{animation:none}}
 .train .cnt{font-family:'Bebas Neue',sans-serif;font-size:56px;line-height:1}
 .train .lbl{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:#9A90BE}
-.train .hint{font-size:14px;color:#9A90BE}
+.train .stats{display:flex;gap:8px;width:100%;max-width:320px}
+.train .stats div{flex:1;text-align:center;background:rgba(255,255,255,.07);border-radius:10px;padding:10px 4px}
+.train .stats b{display:block;font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1}
+.train .stats s{display:block;text-decoration:none;font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;color:#9A90BE;margin-top:4px}
+.train .hint{font-size:13.5px;color:#9A90BE;text-align:center}
 .sheet .evhead{padding:calc(18px + env(safe-area-inset-top)) 18px 16px;position:relative}
 .sheet .evhead .kick{margin:0 0 8px}
 .sheet .evhead h3{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:.03em;line-height:1;font-weight:400}
@@ -6310,28 +6326,124 @@ async function renderShelf(){
 
 
 /* ── TRAIN ── the tap trainer. Design: docs/train-plan.md in VGA Systems.
-   This is the shell: it opens in-app and the bag counts taps. Stamina, VC
-   and upgrades land in later slices, and until they do the screen makes no
-   claim about them. */
-function renderTrain(){
+   Every number on this screen comes from the server (train_rules via
+   app_train_start) -- the client holds no copy to drift. Hit or whiff is
+   rolled HERE off the seed and the lifetime punch counter, and the server
+   replays the identical roll at claim, so the screen can answer a tap
+   instantly and still never be believed. Punches are claimed in batches;
+   the server's answer always wins. */
+var TRAIN_BATCH = 12, TRAIN_FLUSH_MS = 1500, TRAIN_LOOKAHEAD = 200;
+async function trainRoll(seed, idx){
+  var d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(seed + ':' + idx));
+  return new DataView(d).getUint32(0) % 10000;   // same bytes the SQL reads
+}
+async function renderTrain(){
   var body = document.getElementById('sheet-body');
   body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'
     + '<div class="kick">Training</div><h3>Train</h3></div>'
-    + '<div class="train">'
-    +   '<div class="bag" id="bag" role="button" aria-label="Punch the bag" tabindex="0">'
-    +     '<span class="hit" id="bag-hit"></span>'
-    +     '<span class="cnt" id="bag-cnt">0</span>'
-    +     '<span class="lbl">punches</span>'
-    +   '</div>'
-    +   '<div class="hint">Tap the bag.</div>'
-    + '</div>';
-  var n = 0, bag = document.getElementById('bag'), cnt = document.getElementById('bag-cnt');
+    + '<div class="train" id="train"><div class="skel"></div><div class="skel" style="width:60%"></div></div>';
+  var el = document.getElementById('train');
+  var guest = !session;
+  var st = guest ? await rpc0('train_rules') : await rpc('app_train_start');
+  if(!el.isConnected) return;
+  if(!st || (!guest && !st.ok)){
+    retryHandlers['train'] = renderTrain;
+    el.innerHTML = failHTML(st && st.message ? st.message : "Couldn't open the gym.", 'train'); return;
+  }
+  var rules  = guest ? st : st.rules;
+  var lv     = guest ? {power:1, accuracy:1, conditioning:1} : st.levels;
+  var acc    = rules.accuracy[lv.accuracy - 1], vcHit = rules.power[lv.power - 1];
+  var bar    = rules.conditioning[lv.conditioning - 1];
+  var seed   = guest ? crypto.randomUUID() : st.seed;
+  var idx    = guest ? 0 : Number(st.punches_total || 0);   // lifetime counter: the roll index
+  /* Stamina as the server last said it, plus what the clock has refilled since. */
+  var base   = guest ? bar : Number(st.stamina), baseAt = guest ? Date.now() : Date.parse(st.stamina_at);
+  var spent  = 0;                                            // punches thrown since `base`
+  function stamina(){
+    var gained = Math.floor((Date.now() - baseAt) / 3600000 * rules.regen_per_hour);
+    return Math.max(0, Math.min(bar, base + gained) - spent);
+  }
+  var earned = 0, pending = 0, flushT = null, rolls = {}, ahead = idx;
+  function lookahead(){
+    while(ahead < idx + TRAIN_LOOKAHEAD){
+      (function(i){ trainRoll(seed, i).then(function(r){ rolls[i] = r < acc * 100; }); })(++ahead);
+    }
+  }
+  lookahead();
+
+  el.innerHTML =
+      (guest ? '<div class="guest">As a guest your punches pay nothing. '
+             + '<button class="signin" data-signin>Sign in</button> to earn VC.</div>' : '')
+    + '<div class="stam"><i id="stam-fill"></i><b id="stam-txt"></b></div>'
+    + '<div class="bag" id="bag" role="button" aria-label="Punch the bag" tabindex="0">'
+    +   '<span class="cnt" id="bag-cnt">0</span><span class="lbl">punches</span></div>'
+    + '<div class="fx" id="fx" aria-live="polite"></div>'
+    + '<div class="stats">'
+    +   '<div><b id="tr-vc">0</b><s>VC earned</s></div>'
+    +   '<div><b>' + acc + '%</b><s>land</s></div>'
+    +   '<div><b>' + vcHit + '</b><s>VC a hit</s></div>'
+    + '</div>'
+    + '<div class="hint" id="tr-hint"></div>';
+  var bag = document.getElementById('bag'), cnt = document.getElementById('bag-cnt'),
+      fx = document.getElementById('fx'), vcEl = document.getElementById('tr-vc'),
+      fill = document.getElementById('stam-fill'), stTxt = document.getElementById('stam-txt'),
+      hint = document.getElementById('tr-hint');
+  var thrown = 0;
+  function paint(){
+    var sN = stamina();
+    fill.style.width = (100 * sN / bar) + '%';
+    stTxt.textContent = sN + ' / ' + bar;
+    bag.classList.toggle('spent', sN <= 0);
+    hint.textContent = sN > 0 ? 'Tap the bag.'
+      : 'Out of stamina. It refills ' + rules.regen_per_hour + ' an hour whether you are here or not.';
+  }
+  paint();
+  var tick = setInterval(function(){ if(!el.isConnected){ clearInterval(tick); return; } paint(); }, 1000);
+
+  function float(txt, cls){
+    var f = document.createElement('span'); f.className = 'fl ' + cls; f.textContent = txt;
+    f.style.left = (35 + Math.random() * 30) + '%';
+    fx.appendChild(f); setTimeout(function(){ f.remove(); }, 900);
+  }
+  async function flush(){
+    if(guest || !pending) return;
+    var n = pending; pending = 0; flushT = null;
+    var r = await rpc('app_train_claim', { p_punches: n });
+    if(!el.isConnected) return;
+    if(!r || !r.ok){ pending += n; toast(r && r.message ? r.message : 'Could not save those punches.', true); return; }
+    /* The server's answer wins: it settled stamina and paid for what the bar held. */
+    base = Number(r.stamina); baseAt = Date.now(); spent = pending;
+    paint();
+  }
   function punch(){
-    n++; cnt.textContent = n;
-    bag.classList.remove('pop'); void bag.offsetWidth; bag.classList.add('pop');
+    if(stamina() <= 0){ paint(); return; }
+    idx++; spent++; thrown++; cnt.textContent = thrown;
+    var hit = rolls[idx];
+    bag.classList.remove('pop','miss'); void bag.offsetWidth; bag.classList.add(hit ? 'pop' : 'miss');
+    if(hit){ if(!guest){ earned += vcHit; vcEl.textContent = earned.toLocaleString(); } float('+' + vcHit, 'hit'); }
+    else float('whiff', 'whiff');
+    delete rolls[idx]; lookahead(); paint();
+    if(guest) return;
+    pending++;
+    if(pending >= TRAIN_BATCH) flush();
+    else { clearTimeout(flushT); flushT = setTimeout(flush, TRAIN_FLUSH_MS); }
   }
   bag.addEventListener('pointerdown', function(e){ e.preventDefault(); punch(); });
   bag.addEventListener('keydown', function(e){ if(e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); punch(); } });
+  /* Leaving mid-batch flushes it. A batch the browser kills in flight is at
+     most 12 punches, and it costs the player, never the ledger -- stamina is
+     held server-side, so a lost claim is lost effort, not free money. */
+  var onHide = function(){ if(pending) flush(); };
+  document.addEventListener('visibilitychange', onHide); window.addEventListener('pagehide', onHide);
+}
+/* A read the app makes with NO session: train_rules is an immutable literal
+   with an anon grant, so a guest sees the real numbers rather than a copy. */
+async function rpc0(fn){
+  try{
+    var r = await fetch(SB + '/rest/v1/rpc/' + fn, { method:'POST',
+      headers:{ apikey: KEY, Authorization:'Bearer ' + KEY, 'Content-Type':'application/json' }, body:'{}' });
+    return r.ok ? await r.json() : null;
+  }catch(e){ return null; }
 }
 
 /* ── WALLET ── the balance, and every move behind it. */
