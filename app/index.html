@@ -2290,7 +2290,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .train .stage:focus-visible{outline:2px solid #C084FC;outline-offset:4px}
 .train .stage.spent{opacity:.45;cursor:default}
 .train .bagsvg{width:118px;height:216px;transform-origin:60px 8px;position:relative;z-index:1}
-.train .boxer{position:relative;z-index:2;margin-bottom:14px}
+.train .boxer{position:relative;z-index:2;margin-bottom:6px}
 .train .bagsvg.hit{animation:bagHit .55s cubic-bezier(.2,.7,.3,1)}
 .train .bagsvg.miss{animation:bagMiss .3s ease-out}
 .train .bagsvg.hit .impact{animation:impact .35s ease-out}
@@ -2320,6 +2320,9 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .train .trk .nm{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;letter-spacing:.03em}
 .train .trk .lv{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.14em;color:#C084FC}
 .train .trk .now{font-size:11px;color:#9A90BE}
+.train .trk .pr{margin-top:4px;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.06em;color:#9A90BE;background:rgba(255,255,255,.07);border-radius:999px;padding:3px 8px}
+.train .trk.can .pr{color:#14102A;background:#F5C842}
+.train .lab s{margin-left:auto}
 .train .upmenu{width:100%;max-width:320px;background:rgba(255,255,255,.06);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
 .train .upmenu .row{display:flex;justify-content:space-between;font-size:14px}
 .train .upmenu .row span{color:#9A90BE}
@@ -6381,10 +6384,14 @@ async function renderTrain(){
   /* Stamina as the server last said it, plus what the clock has refilled since. */
   var base   = guest ? bar : Number(st.stamina), baseAt = guest ? Date.now() : Date.parse(st.stamina_at);
   var spent  = 0;                                            // punches thrown since `base`
+  var PUNCH_MS = 3600000 / rules.regen_per_hour;   // one punch of stamina, in ms
   function stamina(){
-    var gained = Math.floor((Date.now() - baseAt) / 3600000 * rules.regen_per_hour);
+    var gained = Math.floor((Date.now() - baseAt) / PUNCH_MS);
     return Math.max(0, Math.min(bar, base + gained) - spent);
   }
+  /* How far into the NEXT punch the clock is, 0..1 -- so the bar creeps rather
+     than jumping once every 36 seconds and reading as stuck. */
+  function nextFrac(){ return ((Date.now() - baseAt) % PUNCH_MS) / PUNCH_MS; }
   var earned = 0, pending = 0, flushT = null, rolls = {}, ahead = idx;
   var balance = guest ? null : Number(st.balance || 0);
   function lookahead(){
@@ -6406,7 +6413,7 @@ async function renderTrain(){
     + '<div class="count"><b id="bag-cnt">0</b><s>punches</s></div>'
     + '<div class="stats" id="tr-stats"></div>'
     + '<div class="hint" id="tr-hint"></div>'
-    + '<div class="lab"><b>Upgrades</b><i></i></div>'
+    + '<div class="lab"><b>Upgrades</b><i></i><s>tap a box \u00b7 costs VC</s></div>'
     + '<div class="tracks" id="tracks"></div>'
     + '<div class="upmenu" id="upmenu" hidden></div>';
   var bag = document.getElementById('bag'), cnt = document.getElementById('bag-cnt'),
@@ -6429,12 +6436,13 @@ async function renderTrain(){
   loadAvatarBundle().then(function(ok){
     var host = document.getElementById('boxer');
     if(!ok || !host || !host.isConnected) return;
-    boxer = window.VGAAvatar.mount(host, { equipped: guest ? null : (st.equipped || null), size: 92 });
+    boxer = window.VGAAvatar.mount(host, { equipped: guest ? null : (st.equipped || null), size: 112 });
   });
   function paint(){
-    var sN = stamina();
-    fill.style.width = (100 * sN / bar) + '%';
-    stTxt.textContent = sN + ' / ' + bar;
+    var sN = stamina(), full = sN >= bar;
+    fill.style.width = (100 * (full ? bar : sN + nextFrac()) / bar) + '%';
+    var secs = Math.ceil((1 - nextFrac()) * PUNCH_MS / 1000);
+    stTxt.textContent = sN + ' / ' + bar + (full ? '' : '  \u00b7  +1 in ' + secs + 's');
     bag.classList.toggle('spent', sN <= 0);
     hint.textContent = sN > 0 ? 'Tap the bag.'
       : 'Out of stamina. It refills ' + rules.regen_per_hour + ' an hour whether you are here or not.';
@@ -6455,10 +6463,12 @@ async function renderTrain(){
   function tracksHTML(){
     return TRACKS.map(function(t){
       var l = lv[t.key], max = rules[t.key].length, maxed = l >= max;
-      return '<div class="trk' + (open === t.key ? ' on' : '') + '" data-track="' + t.key + '" role="button" tabindex="0">'
+      var price = maxed ? null : rules.prices[l - 1], can = !maxed && balance !== null && balance >= price;
+      return '<div class="trk' + (open === t.key ? ' on' : '') + (can ? ' can' : '') + '" data-track="' + t.key + '" role="button" tabindex="0">'
         + '<span class="nm">' + t.name + '</span>'
         + '<span class="lv">' + (maxed ? 'MAX' : 'LVL ' + l) + '</span>'
-        + '<span class="now">' + t.unit(rules[t.key][l - 1]) + '</span></div>';
+        + '<span class="now">' + t.unit(rules[t.key][l - 1]) + '</span>'
+        + '<span class="pr">' + (maxed ? 'maxed' : price.toLocaleString() + ' VC') + '</span></div>';
     }).join('');
   }
   function menuHTML(t){
