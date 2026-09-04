@@ -16,12 +16,24 @@
        clock sliver    y  696- 812  one symmetrical row
        bottom info     y  812-1920  58% of the frame
 
-     TWO STATES.
+     THREE STATES.
        LOADING  between matches: the video slot is covered and the
-                whole frame below the CTA is the loading screen.
+                whole frame below the CTA is one of six standby
+                screens (card · standings · rosters · schedule ·
+                team-vs-team · rankings · CTA).
+       RUNDOWN  the shutters stay closed and the whole frame becomes
+                one fighter at a time — photo, record, rank — walking
+                the card in bout order. The UBA 15 rundown without a
+                voiceover, so the beat is the graphic's own.
        MATCH    the shutters OPEN — arcade-machine style, splitting
                 apart from the centre — revealing the game, the clock
                 and whatever the bottom is carrying.
+
+     BOTH LEAGUES. UBA/GFL drive it with {clock, bout, clocktimer};
+     UBAe drives it with {clock, pickbar, matchtimer}, and the clock
+     sliver grows a team line and a first-to-three score for it. There
+     is no league gate on the clock: one vertical canvas is showing one
+     show, so whichever clock is running is this canvas's clock.
 
      THE VIDEO SLOT IS TRANSPARENT ON PURPOSE. This page never draws
      the game; OBS composites the capture behind it. The slot only
@@ -175,13 +187,132 @@
     padding:0 46px 46px;display:flex;flex-direction:column;
     transition:opacity .4s ease;}
   body.open #load{opacity:0;pointer-events:none;}
-  #load .body{flex:1;min-height:0;padding-top:30px;}
+  #load .body{flex:1;min-height:0;padding-top:30px;
+    display:flex;flex-direction:column;justify-content:center;}
+  #load .body > *{flex:none;}
   .lrow{display:grid;grid-template-columns:56px 1fr 130px;align-items:center;gap:14px;
     padding:13px 18px;margin-bottom:9px;background:var(--panel);border-left:4px solid var(--pur);}
   .lrow .r{font-family:'Press Start 2P',monospace;font-size:13px;color:var(--hi);}
   .lrow .n{font-weight:700;font-size:33px;text-transform:uppercase;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .lrow .x{font-weight:700;font-size:28px;text-align:right;color:var(--dim);}
+
+  /* ── UBAe: the clock sliver grows a team line and a score ──────────────
+     A UBAe bout is two TEAMS' representatives, and the score of the match
+     is the thing the fighters' own names cannot tell you. Both are gated to
+     .ubae so a UBA night's sliver is exactly what it was. */
+  #clock .nm{flex-direction:column;justify-content:center;gap:2px;}
+  #clock .nm.l{align-items:flex-end;} #clock .nm.r{align-items:flex-start;}
+  #clock .who{font-weight:900;font-size:52px;line-height:1;white-space:nowrap;
+    text-shadow:0 0 22px var(--glow);}
+  #clock .team{font:600 19px 'Barlow';letter-spacing:.2em;color:var(--dim);
+    text-transform:uppercase;white-space:nowrap;display:none;}
+  body.ubae #clock .team{display:block;}
+  #pips{display:none;gap:5px;align-items:center;margin-bottom:5px;}
+  body.ubae #pips{display:flex;}
+  #pips .p{width:15px;height:9px;background:rgba(255,255,255,.16);
+    border:1px solid rgba(255,255,255,.22);}
+  #pips .p.on{background:var(--hi);border-color:var(--hi);box-shadow:0 0 9px var(--glow);}
+  #pips .sep{width:12px;height:1px;background:var(--dim);margin:0 3px;}
+
+  /* ── the standby SCREENS ───────────────────────────────────────────────
+     Six screens, not fifteen. The horizontal standby carries a playoff
+     bracket and a card-collection wall; at 1080 wide with 1112px of height
+     those become unreadable rather than smaller, so a press for one of them
+     HOLDS whatever is already on air instead of blanking this canvas. */
+  .conf-h{font-family:'Press Start 2P',monospace;font-size:13px;letter-spacing:.24em;
+    color:var(--hi);margin:18px 0 10px;text-shadow:0 0 12px var(--glow);}
+  .conf-h:first-child{margin-top:0;}
+  .srow{display:grid;grid-template-columns:56px 1fr 150px 92px;align-items:center;gap:12px;
+    padding:12px 18px;margin-bottom:8px;background:var(--panel);border-left:4px solid var(--pur);}
+  .srow.lead{border-left-color:var(--gold);}
+  .srow .rk{font-family:'Press Start 2P',monospace;font-size:14px;color:var(--hi);}
+  .srow .nm{font-weight:700;font-size:34px;text-transform:uppercase;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .srow .rec{font-weight:700;font-size:30px;text-align:right;}
+  .srow .df{font-weight:700;font-size:26px;text-align:right;color:var(--dim);}
+
+  .tgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .tcol{background:var(--panel);border-top:3px solid var(--accent);padding:12px 16px;}
+  .tcol .th{font-weight:900;font-size:28px;line-height:1;text-transform:uppercase;margin-bottom:8px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tcol .plr{font:600 22px/1.15 'Barlow';color:#e6d8ff;padding:2px 0;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tcol .ct{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.2em;
+    color:var(--dim);margin-top:9px;}
+
+  .rrow{display:grid;grid-template-columns:64px 1fr 200px;align-items:center;gap:12px;
+    padding:10px 18px;margin-bottom:7px;background:var(--panel);border-left:4px solid var(--pur);}
+  .rrow.one{border-left-color:var(--gold);}
+  .rrow .n{font-family:'Press Start 2P',monospace;font-size:14px;color:var(--hi);}
+  .rrow .nm{font-weight:700;font-size:32px;text-transform:uppercase;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .rrow .wc{font:600 20px 'Barlow';letter-spacing:.12em;text-align:right;color:var(--dim);
+    text-transform:uppercase;}
+
+  /* team vs team is the one screen that is a PICTURE, not a list — it is on
+     air while two teams walk out, and a list would be read instead of them */
+  .tvs{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;}
+  .tvs .t{font-weight:900;font-size:96px;line-height:.9;text-transform:uppercase;text-align:center;
+    text-shadow:0 0 34px var(--glow);padding:0 20px;}
+  .tvs .v{font-family:'Press Start 2P',monospace;font-size:34px;color:var(--pink);
+    text-shadow:0 0 20px rgba(255,51,204,.6);}
+  .tvs .when{font:600 26px 'Barlow';letter-spacing:.2em;color:var(--dim);text-transform:uppercase;}
+
+  .ctaBig{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;}
+  .ctaBig .l{font-family:'Press Start 2P',monospace;font-size:14px;letter-spacing:.26em;color:var(--hi);}
+  .ctaBig .u{font-weight:900;font-size:74px;letter-spacing:.03em;text-transform:uppercase;
+    text-shadow:0 0 30px var(--glow);}
+  .ctaBig .s{font:600 27px 'Barlow';color:var(--dim);letter-spacing:.16em;text-transform:uppercase;}
+
+  .empty{font:600 28px 'Barlow';color:var(--dim);letter-spacing:.14em;text-transform:uppercase;
+    text-align:center;padding-top:60px;}
+
+  /* ── THE RUNDOWN — one fighter at a time, the whole frame ───────────────
+     Not a bottom-third pane: the rundown runs with the shutters CLOSED, so
+     there is no game behind it and the photo is allowed the 820px that makes
+     it a portrait rather than a thumbnail. It is a third closed state
+     alongside the loading card, which is why it draws over #load rather than
+     living inside it — the two can never be on at once. */
+  #rundown{position:absolute;top:var(--cta);bottom:0;left:0;right:0;z-index:26;
+    display:none;flex-direction:column;overflow:hidden;
+    background:linear-gradient(180deg,#0b0018,#16062e 42%,#0b0018);}
+  body.rundown #rundown{display:flex;}
+  body.rundown #load{opacity:0;pointer-events:none;}
+  #rdPhoto{position:relative;flex:1;min-height:0;overflow:hidden;}
+  #rdImg{position:absolute;inset:0;background-size:cover;background-position:center 12%;}
+  #rdMono{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-weight:900;font-size:300px;line-height:1;color:rgba(216,180,254,.09);}
+  #rdPhoto .glowplate{position:absolute;inset:0;
+    background:radial-gradient(ellipse at 50% 32%,rgba(155,48,255,.28),transparent 62%);}
+  #rdPhoto .fade{position:absolute;left:0;right:0;bottom:0;height:300px;
+    background:linear-gradient(180deg,transparent,#0b0018 88%);}
+  #rdPhoto .scanline{position:absolute;left:0;right:0;height:3px;
+    background:linear-gradient(90deg,transparent,var(--hi),transparent);
+    animation:scan 4.2s linear infinite;opacity:.55;}
+  #rdBadge{position:absolute;top:26px;left:0;z-index:3;background:var(--accent);
+    font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.2em;
+    padding:11px 22px;box-shadow:0 6px 22px rgba(0,0,0,.55);}
+  #rdBelt{position:absolute;top:26px;right:0;z-index:3;background:var(--gold);color:#1a0f00;
+    font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.2em;
+    padding:11px 22px;display:none;}
+  #rdBelt.on{display:block;}
+  #rdInfo{flex:none;padding:0 46px 30px;margin-top:-130px;position:relative;z-index:4;}
+  #rdName{font-weight:900;font-size:104px;line-height:.88;text-transform:uppercase;
+    text-shadow:0 0 36px var(--glow);}
+  #rdNick{font:500 34px 'Barlow';font-style:italic;color:var(--gold);margin-top:10px;}
+  #rdStats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:34px;}
+  #rdStats .s{background:var(--panel);border-top:3px solid var(--accent);padding:16px 18px;}
+  #rdStats .s .l{font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.18em;
+    color:var(--dim);margin-bottom:10px;}
+  #rdStats .s .v{font-weight:900;font-size:46px;line-height:.9;white-space:nowrap;}
+  #rdStats .s .v.gold{color:var(--gold);}
+  #rdDots{display:flex;gap:7px;justify-content:center;padding:0 46px 30px;flex-wrap:wrap;}
+  #rdDots .d{width:26px;height:5px;background:rgba(255,255,255,.16);}
+  #rdDots .d.on{background:var(--hi);box-shadow:0 0 10px var(--glow);}
+  /* every card arrives the same way, so the sequence has a beat */
+  #rundown.step #rdPhoto,#rundown.step #rdInfo{animation:rdin .55s cubic-bezier(.16,1,.3,1);}
+  @keyframes rdin{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:none;}}
 
   #crt{position:absolute;inset:0;pointer-events:none;z-index:60;
     background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1px,transparent 1px 3px);}
@@ -210,11 +341,11 @@
 </div>
 
 <div id="clock">
-  <div class="nm l" id="cnL">—</div>
+  <div class="nm l"><span class="who" id="cnL">—</span><span class="team" id="ctL"></span></div>
   <div class="cor" id="corL" style="background:#3a3a44"></div>
-  <div class="mid"><div id="tm">0:00</div><div id="rd">ROUND 1</div></div>
+  <div class="mid"><div id="pips"></div><div id="tm">0:00</div><div id="rd">ROUND 1</div></div>
   <div class="cor" id="corR" style="background:#3a3a44"></div>
-  <div class="nm r" id="cnR">—</div>
+  <div class="nm r"><span class="who" id="cnR">—</span><span class="team" id="ctR"></span></div>
 </div>
 <div id="boutTag"><span id="boutTagTxt">MAIN EVENT</span></div>
 
@@ -237,6 +368,24 @@
   <div class="body" id="loadBody"></div>
 </div>
 
+<div id="rundown">
+  <div id="rdPhoto">
+    <div id="rdImg"></div>
+    <div id="rdMono"></div>
+    <div class="glowplate"></div>
+    <div class="scanline"></div>
+    <div class="fade"></div>
+    <div id="rdBadge">BOUT 1</div>
+    <div id="rdBelt" class="on">CHAMPION</div>
+  </div>
+  <div id="rdInfo">
+    <div id="rdName">—</div>
+    <div id="rdNick"></div>
+    <div id="rdStats"></div>
+  </div>
+  <div id="rdDots"></div>
+</div>
+
 <div id="vig"></div>
 <div id="crt"></div>
 
@@ -250,8 +399,9 @@ const Q = new URLSearchParams(location.search)
 const esc = t => String(t ?? '').replace(/[<>&]/g, ch => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[ch]))
 const has = v => v !== null && v !== undefined && String(v).trim() !== '' && String(v).trim() !== '—'
 const norm = s => String(s ?? '').trim().toLowerCase()
+const FUTURE = () => new Date(Date.now() - 6*3600e3).toISOString()
 
-// ── the two states ─────────────────────────────────────────────────────
+// ── the states ─────────────────────────────────────────────────────────
 // open = the shutters are apart and the game is showing through the slot.
 // Everything else keys off this one class, so there is exactly one place
 // that decides whether the frame is a loading screen or a match.
@@ -261,13 +411,20 @@ function pane(which){
   document.querySelectorAll('.pane').forEach(p => p.classList.remove('on'))
   if(which) $(which).classList.add('on')
 }
+// The rundown is the THIRD closed state. It is mutually exclusive with the
+// loading card by construction — one class, one screen — because both want
+// the whole frame and neither can be half on air.
+function setRundown(on){
+  document.body.classList.toggle('rundown', !!on)
+  if(!on){ clearTimeout(RD.t); RD.t = null }
+}
 
 // ── league skin ────────────────────────────────────────────────────────
-const LEAGUE = { uba:{n:'UBA', s:'Fight Night'}, gfl:{n:'GFL', s:'Glory League'},
-                 ubae:{n:'UBAe', s:'Team League'} }
+let SPLIT = 'Summer Split'
 function setLeague(lg){
   const k = norm(lg) === 'gfl' ? 'gfl' : norm(lg) === 'ubae' ? 'ubae' : 'uba'
   document.body.classList.toggle('gfl', k === 'gfl')
+  document.body.classList.toggle('ubae', k === 'ubae')
   document.body.dataset.league = k
 }
 if(Q.get('league')) setLeague(Q.get('league'))
@@ -286,10 +443,13 @@ function timer(secs){
 }
 // Names shrink to fit their half rather than being clipped. Measured after
 // the face loads: measured against the fallback they come back narrow.
+// The name is now a span inside its half, so the ROOM is the half's width and
+// the thing that shrinks is the span — measuring the span against itself
+// would have found it always fits.
 function fitNames(){
   for(const id of ['cnL','cnR']){
     const el = $(id); if(!el) return
-    const room = el.clientWidth - 52
+    const room = el.parentElement.clientWidth - 52
     let px = 52; el.style.fontSize = px + 'px'
     const w = () => { const r = document.createRange(); r.selectNodeContents(el)
       return r.getBoundingClientRect().width }
@@ -297,6 +457,15 @@ function fitNames(){
   }
 }
 if(document.fonts && document.fonts.ready) document.fonts.ready.then(fitNames)
+
+// A UBAe match is first to three, so the score is three pips a side. Drawn
+// only when a score arrives — a UBA night never has one and the row stays
+// exactly the height it was.
+function drawPips(a, b){
+  const sa = Math.max(0, Math.min(3, +a || 0)), sbv = Math.max(0, Math.min(3, +b || 0))
+  const side = n => Array.from({length:3}, (_,i) => `<span class="p${i < n ? ' on' : ''}"></span>`).join('')
+  $('pips').innerHTML = side(sa) + '<span class="sep"></span>' + side(sbv)
+}
 
 // ── tale of the tape, in the bottom half ───────────────────────────────
 const inches = v => {
@@ -307,6 +476,8 @@ const inches = v => {
   return null
 }
 const rankNum = v => { const m = String(v ?? '').match(/(\d+)/); return m ? +m[1] : null }
+const ftin = v => { const n = inches(v); return n ? `${Math.floor(n/12)}'${Math.round(n%12)}"` : String(v) }
+const inchOf = v => { const n = inches(v); return n ? `${Math.round(n)}"` : String(v) }
 const TROWS = [
   { k:'record', l:'RECORD' },
   { k:'rank',   l:'RANK',   lead:(a,b)=>{const x=rankNum(a),y=rankNum(b);return (x&&y)?(x<y?-1:x>y?1:0):0} },
@@ -350,51 +521,345 @@ function drawWho(d){
   $('whoChips').innerHTML = chips.join('')
 }
 
-// ── the loading screen ─────────────────────────────────────────────────
-async function loadCard(eventName){
-  const FUTURE = new Date(Date.now() - 6*3600e3).toISOString()
-  let q = sb.from('events_public').select('id,name,event_date').eq('status','scheduled')
-  q = eventName ? q.eq('name', eventName) : q.gte('event_date', FUTURE).order('event_date')
-  const { data: evs, error } = await q.limit(1)
+// ── the data behind every standby screen ───────────────────────────────
+// Read ONCE at boot, the way the horizontal standby does, so a deck press
+// swaps innerHTML instead of waiting on a round trip mid-show. A failed read
+// leaves that slice EMPTY and its screen says so — supabase-js resolves
+// {data:null,error} rather than throwing, so treating a failure as "no teams"
+// would put an empty league table on air over a working database.
+const DATA = { st:[], rec:[], mt:[], ev:[], rk:[] }
+async function loadTeamData(){
+  const keys = ['st','rec','mt','ev','rk']
+  const res = await Promise.all([
+    sb.from('team_standings').select('*'),
+    sb.from('ubae_fighter_records').select('stage_name,current_team,photo_thumb_url'),
+    sb.from('team_matches_public').select('*').eq('status','scheduled').order('match_date').limit(8),
+    sb.from('events_public').select('id,name,event_date').eq('status','scheduled')
+      .gte('event_date', FUTURE()).order('event_date').limit(4),
+    sb.from('rankings_public').select('rank,fighter_name,weight_class,level').eq('scope','weight_class').order('rank'),
+  ])
+  res.forEach((r, i) => {
+    if(r.error){ console.warn('[vertical] ' + keys[i] + ' read failed —', r.error); return }
+    DATA[keys[i]] = r.data || []
+  })
+}
+
+const fdate = d => new Date(d).toLocaleDateString('en-US', { month:'short', day:'numeric' }).toUpperCase()
+const ftime = d => new Date(d).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }).toUpperCase()
+const wcShort = w => String(w || '').replace(/_/g,' ').toUpperCase()
+// LIGHT HEAVYWEIGHT is 17 characters and a stat cell is 282px. Truncating it
+// printed "LIGHT HEAVYW", which reads as a rendering bug rather than a
+// division — so the long ones lose the word every division shares.
+const wcFit = w => { const t = wcShort(w); if(t.length <= 12) return t
+  return t.replace(/\s*HEAVYWEIGHT$/, ' HEAVY').replace(/WEIGHT$/, '').trim() }
+function head(kick, title, sub){
+  $('loadKick').textContent = String(kick || '').toUpperCase()
+  $('loadTitle').textContent = String(title || '').toUpperCase()
+  $('loadSub').textContent = String(sub || '').toUpperCase()
+}
+const EMPTY = t => `<div class="empty">${esc(t)}</div>`
+
+// ── the six standby screens ────────────────────────────────────────────
+// The horizontal standby carries fifteen. A playoff bracket, a rosters-VS
+// wall and a card-collection grid do not become smaller at 1080 wide — they
+// become unreadable — so this canvas carries the six that survive the width,
+// and a press for any of the others HOLDS what is on screen rather than
+// blacking out the vertical output mid-show.
+const SCREEN = {}
+
+// A NAMED event is taken as given — no status filter. The deck names the card
+// it has loaded, and the moment a show goes live that card's status stops
+// being 'scheduled'; filtering on it made the graphic go blank at exactly the
+// point somebody would press it.
+function eventQuery(name){
+  const q = sb.from('events_public').select('id,name,event_date')
+  return name ? q.eq('name', name)
+              : q.eq('status','scheduled').gte('event_date', FUTURE()).order('event_date')
+}
+
+SCREEN.card = async (c) => {
+  const { data: evs, error } = await eventQuery(c && c.event).limit(1)
   // A failed read must never be mistaken for "no event" — that would put
   // STANDING BY on air over a working database with a card behind it.
-  if(error){ console.warn('[vertical] event read failed —', error); return }
-  const ev = evs && evs[0]; if(!ev) return
-  $('loadTitle').textContent = String(ev.name).toUpperCase()
-  $('loadKick').textContent = 'UP NEXT'
+  if(error){ console.warn('[vertical] event read failed —', error); return false }
+  const ev = evs && evs[0]; if(!ev) return false
   const { data: bs } = await sb.from('event_matches').select('*').eq('event_id', ev.id).order('bout_number')
   const open = (bs || []).filter(b => b.fighter_a_name && b.fighter_b_name)
-  $('loadSub').textContent = open.length ? `${open.length} BOUTS` : ''
+  head('UP NEXT', ev.name, open.length ? `${open.length} BOUTS` : '')
   $('loadBody').innerHTML = open.slice(0, 9).map((b, i) =>
     `<div class="lrow" style="${b.is_title_fight ? 'border-left-color:var(--gold);' : ''}">
        <span class="r">${b.bout_number ?? i+1}</span>
        <span class="n">${esc(b.fighter_a_name)} <span style="color:var(--dim)">v</span> ${esc(b.fighter_b_name)}</span>
-       <span class="x">${esc(String(b.weight_class || '').replace(/_/g,' ').toUpperCase().slice(0,10))}</span>
-     </div>`).join('')
+       <span class="x">${esc(wcFit(b.weight_class))}</span>
+     </div>`).join('') || EMPTY('card to be announced')
+  return true
+}
+
+SCREEN.standings = () => {
+  if(!DATA.st.length) return false
+  head('UBAe · ' + SPLIT, 'STANDINGS', '')
+  const byC = {}
+  DATA.st.forEach(t => { (byC[t.conference] = byC[t.conference] || []).push(t) })
+  $('loadBody').innerHTML = Object.keys(byC).sort().map(c => {
+    const rows = byC[c].sort((a,b) => (b.match_wins - a.match_wins) || (b.bout_diff - a.bout_diff))
+    return `<div class="conf-h">CONFERENCE ${esc(c)}</div>` + rows.map((t,i) =>
+      `<div class="srow${i===0?' lead':''}"><span class="rk">${i+1}</span>
+        <span class="nm">${esc(t.team_name)}</span>
+        <span class="rec">${t.match_wins}-${t.match_losses}${t.match_draws?'-'+t.match_draws:''}</span>
+        <span class="df">${t.bout_diff>0?'+':''}${t.bout_diff}</span></div>`).join('')
+  }).join('')
+  return true
+}
+
+SCREEN.rosters = () => {
+  if(!DATA.rec.length) return false
+  head('UBAe · ' + SPLIT, 'ROSTERS', '')
+  const confOf = {}; DATA.st.forEach(t => confOf[t.team_name] = t.conference)
+  const byTeam = {}
+  DATA.rec.forEach(f => { if(!f.current_team) return; (byTeam[f.current_team] = byTeam[f.current_team] || []).push(f.stage_name) })
+  const teams = Object.keys(byTeam).sort((a,b) =>
+    (confOf[a]||'Z').localeCompare(confOf[b]||'Z') || a.localeCompare(b))
+  // Two columns, five names deep, all eight teams — the whole league on one
+  // screen with nothing running off the bottom. A third column at 1080 wide
+  // clips every handle over ten characters, which is most of them; a sixth
+  // name pushed the bottom ROW of tiles off the frame, and a roster that is
+  // two teams short is a worse graphic than one that is a name short.
+  $('loadBody').innerHTML = '<div class="tgrid">' + teams.slice(0, 8).map(t =>
+    `<div class="tcol"><div class="th">${esc(t)}</div>
+      ${byTeam[t].slice(0,5).map(n => `<div class="plr">${esc(n)}</div>`).join('')}
+      <div class="ct">CONF ${esc(confOf[t] || '—')}</div></div>`).join('') + '</div>'
+  return true
+}
+
+SCREEN.schedule = () => {
+  if(!DATA.mt.length) return false
+  head('UBAe · ' + SPLIT, 'SCHEDULE', '')
+  $('loadBody').innerHTML = DATA.mt.slice(0, 8).map(m =>
+    `<div class="lrow"><span class="r">W${m.week}</span>
+      <span class="n">${esc(m.team_a_name)} <span style="color:var(--dim)">v</span> ${esc(m.team_b_name)}</span>
+      <span class="x">${fdate(m.match_date)}</span></div>`).join('')
+  return true
+}
+
+SCREEN.teamvs = () => {
+  const m = DATA.mt[0]
+  // The deck's pickbar names tonight's two teams before the fixture list does,
+  // so a match loaded on the deck wins over the nearest scheduled one — on a
+  // rescheduled night those are different teams.
+  const a = MN.teamA || (m && m.team_a_name), b = MN.teamB || (m && m.team_b_name)
+  if(!a || !b) return false
+  head('TONIGHT', 'UBAe', SPLIT)
+  const when = m ? `WEEK ${m.week} · ${fdate(m.match_date)} · ${ftime(m.match_date)}` : SPLIT
+  $('loadBody').innerHTML = `<div class="tvs"><div class="t">${esc(a)}</div>
+    <div class="v">VS</div><div class="t">${esc(b)}</div><div class="when">${esc(when)}</div></div>`
+  return true
+}
+
+function rankScreen(level, label){
+  const rows = DATA.rk.filter(r => level === 'amateur' ? r.level === 'amateur' : r.level !== 'amateur')
+  if(!rows.length) return false
+  head('RANKINGS', label, '')
+  // Grouped by division and cut to the top three of each: a vertical frame
+  // holds about fourteen rows, and a flat top-fourteen shows one division's
+  // whole ladder and none of anybody else's.
+  const byW = {}
+  rows.forEach(r => { (byW[r.weight_class] = byW[r.weight_class] || []).push(r) })
+  $('loadBody').innerHTML = Object.keys(byW).map(w =>
+    `<div class="conf-h">${esc(wcShort(w))}</div>` +
+    byW[w].sort((a,b) => a.rank - b.rank).slice(0,3).map(r =>
+      `<div class="rrow${r.rank===1?' one':''}"><span class="n">${r.rank}</span>
+        <span class="nm">${esc(r.fighter_name)}</span>
+        <span class="wc">${esc(wcFit(w))}</span></div>`).join('')).join('')
+  return true
+}
+SCREEN.ubarank = () => rankScreen('pro', 'UBA RANKINGS')
+SCREEN.gflrank = () => rankScreen('amateur', 'GFL RANKINGS')
+
+SCREEN.nextev = (c) => {
+  const evs = DATA.ev.filter(e => !c || !c.exclude || e.name !== c.exclude)
+  if(!evs.length) return false
+  head('COMING UP', evs.length > 1 ? 'NEXT EVENTS' : 'NEXT EVENT', '')
+  $('loadBody').innerHTML = evs.slice(0,4).map(e =>
+    `<div class="lrow"><span class="r">›</span><span class="n">${esc(e.name)}</span>
+      <span class="x">${fdate(e.event_date)}</span></div>`).join('')
+  return true
+}
+SCREEN.next3 = SCREEN.nextev
+
+SCREEN.cta = () => {
+  head('VGA ESPORTS', 'JOIN IN', '')
+  $('loadBody').innerHTML = `<div class="ctaBig">
+    <div class="l">PLAY · WATCH · BET</div>
+    <div class="u">DISCORD.GG/UBA</div>
+    <div class="s">ubaesports.com</div></div>`
+  return true
+}
+
+// ── which screen, and the auto-cycle ───────────────────────────────────
+const ROTA = {
+  ubae: ['teamvs','standings','rosters','schedule','cta'],
+  uba:  ['card','ubarank','nextev','cta'],
+  gfl:  ['card','gflrank','nextev','cta'],
+}
+let cycle = null
+function stopCycle(){ clearInterval(cycle); cycle = null }
+
+async function showView(view, c){
+  const fn = SCREEN[view]
+  // An unknown view is a screen this canvas deliberately does not carry
+  // (bracket, rosters VS, the card wall). HOLD what is on air — blanking the
+  // vertical output because the operator pressed a horizontal-only screen is
+  // the worst possible reading of "not supported".
+  if(!fn){ console.log('[vertical] no vertical screen for', view, '— holding'); return }
+  const ok = await fn(c)
+  // A screen with nothing in it is the same problem one step later: it renders
+  // an empty panel. Hold instead, and say why in the log.
+  if(!ok) console.log('[vertical]', view, 'has no data — holding')
+}
+
+async function autoCycle(league){
+  const list = ROTA[league] || ROTA.ubae
+  let i = 0
+  const step = () => showView(list[i++ % list.length], null)
+  await step()
+  stopCycle()
+  cycle = setInterval(step, 15000)
+}
+
+// ── THE RUNDOWN ────────────────────────────────────────────────────────
+// One fighter at a time, in card order, with the photo the profile already
+// has. This is the UBA 15 rundown without the voiceover — so the timing is
+// the graphic's own, not a voice's, and it advances on a fixed beat that the
+// deck can override with a Next press when the desk is talking over it.
+const RD = { list: [], i: 0, t: null }
+const RD_MS = 7000
+
+async function buildRundown(eventName){
+  const { data: evs, error } = await eventQuery(eventName).limit(1)
+  if(error){ console.warn('[vertical] rundown event read failed —', error); return [] }
+  const ev = evs && evs[0]; if(!ev) return []
+  const [{ data: bs }, cardsRes] = await Promise.all([
+    sb.from('event_matches').select('*').eq('event_id', ev.id).order('bout_number'),
+    sb.from('fighter_cards').select('display_name,nickname,weight_class,rank,is_champion,country,team,'
+      + 'profile_photo_url,headline_wins,headline_losses,headline_draws,headline_ko_wins,height,reach,stance'),
+  ])
+  if(cardsRes.error) console.warn('[vertical] fighter_cards read failed —', cardsRes.error)
+  const cards = cardsRes.data || []
+  const find = n => cards.find(c => norm(c.display_name) === norm(n)) || null
+  const out = []
+  for(const b of (bs || [])){
+    if(!b.fighter_a_name || !b.fighter_b_name) continue
+    for(const n of [b.fighter_a_name, b.fighter_b_name]){
+      const f = find(n) || {}
+      out.push({
+        name: n, bout: b.bout_number, wc: wcShort(b.weight_class), title: !!b.is_title_fight,
+        nickname: f.nickname, photo: f.profile_photo_url, champ: !!f.is_champion,
+        rank: f.rank, ko: f.headline_ko_wins, team: f.team, country: f.country,
+        height: f.height, reach: f.reach, stance: f.stance,
+        record: (f.headline_wins != null)
+          ? `${f.headline_wins||0}-${f.headline_losses||0}${f.headline_draws?'-'+f.headline_draws:''}` : null,
+      })
+    }
+  }
+  head('THE CARD', ev.name, `${out.length} FIGHTERS`)
+  return out
+}
+
+function rdDraw(){
+  const f = RD.list[RD.i]; if(!f) return
+  const el = $('rundown')
+  el.classList.remove('step'); void el.offsetWidth; el.classList.add('step')
+  const img = $('rdImg')
+  if(has(f.photo)){ img.style.backgroundImage = `url('${f.photo}')`; $('rdMono').textContent = '' }
+  // No photo is not an error — 245 of 467 fighters have one. The monogram is
+  // the same fallback the profile card uses, so a thin roster renders as a
+  // designed plate rather than a black rectangle.
+  else { img.style.backgroundImage = 'none'; $('rdMono').textContent = String(f.name || '?').slice(0,1).toUpperCase() }
+  $('rdBadge').textContent = f.title ? 'TITLE BOUT' : ('BOUT ' + (f.bout ?? '—'))
+  $('rdBelt').classList.toggle('on', !!f.champ)
+  $('rdName').textContent = String(f.name).toUpperCase()
+  $('rdNick').textContent = has(f.nickname) ? `"${f.nickname}"` : ''
+  // Three across, and a stat with nothing behind it is DROPPED rather than
+  // printed as a dash — half these fighters have no reach and no stance, and a
+  // row of dashes reads as a broken graphic, not as a thin profile.
+  const cells = []
+  const cell = (l, v, gold) => cells.push(`<div class="s"><div class="l">${l}</div><div class="v${gold?' gold':''}">${esc(v)}</div></div>`)
+  if(has(f.record)) cell('RECORD', f.record)
+  if(+f.ko > 0)     cell('KO WINS', String(+f.ko))
+  if(+f.rank > 0)   cell('RANKED', '#' + (+f.rank), true)
+  if(has(f.wc))     cell('DIVISION', wcFit(f.wc))
+  // Both are stored as bare inches. 70 is a number, 5'10" is a height — and
+  // the same 70 under REACH means something completely different, so the
+  // units go on rather than being left for the viewer to guess.
+  if(has(f.height)) cell('HEIGHT', ftin(f.height))
+  if(has(f.reach))  cell('REACH', inchOf(f.reach))
+  if(has(f.stance)) cell('STANCE', String(f.stance).toUpperCase())
+  if(has(f.team))   cell('TEAM', String(f.team).toUpperCase().slice(0,12))
+  $('rdStats').innerHTML = cells.slice(0, 6).join('')
+  $('rdDots').innerHTML = RD.list.map((_, i) => `<span class="d${i===RD.i?' on':''}"></span>`).join('')
+}
+
+function rdSchedule(){
+  clearTimeout(RD.t)
+  RD.t = setTimeout(() => { rdNext() }, RD_MS)
+}
+function rdNext(){
+  if(!RD.list.length) return
+  RD.i = (RD.i + 1) % RD.list.length
+  rdDraw(); rdSchedule()
+}
+async function startRundown(eventName){
+  const list = await buildRundown(eventName)
+  if(!list.length){ console.log('[vertical] rundown has no fighters — holding'); return }
+  RD.list = list; RD.i = 0
+  stopCycle(); setOpen(false); setClock(false); pane(null); setRundown(true)
+  rdDraw(); rdSchedule()
 }
 
 // ── the wire ───────────────────────────────────────────────────────────
+// Tonight's teams, as the deck knows them. The pickbar is the only command
+// that carries them, and 'teamvs' reads them back.
+const MN = { teamA:null, teamB:null, left:[], right:[] }
+const pickName = (arr, i) => (i == null || i < 0) ? null : (arr || [])[i] || null
+
 sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, ({ payload: c }) => {
   if(!c) return
   if(has(c.league)) setLeague(c.league)
+  if(has(c.split)) SPLIT = c.split
 
-  // STANDBY closes the shutters and puts the loading screen back. This is the
+  // STANDBY closes the shutters and puts a screen back. This is the
   // between-matches state, and it is also what the deck already presses.
   if(c.type === 'standby'){
-    if(c.on === false || c.view === 'off'){ setOpen(true); return }
-    setOpen(false); setClock(false); pane(null)
-    loadCard(c.event || null)
+    if(c.on === false || c.view === 'off'){ setOpen(true); stopCycle(); setRundown(false); return }
+    setOpen(false); setClock(false); pane(null); setRundown(false)
+    const league = norm(c.league) || document.body.dataset.league || 'ubae'
+    if(c.view === 'auto'){ autoCycle(league); return }
+    stopCycle(); showView(c.view || 'card', c)
+    return
+  }
+
+  // THE RUNDOWN — its own command, deliberately not {type:'rundown'}: that one
+  // belongs to the horizontal card list, and sharing it would flip a second
+  // graphic on with a payload shaped for this one.
+  if(c.type === 'vrundown'){
+    if(c.on === false){ setRundown(false); return }
+    if(c.step === 'next'){ rdNext(); return }
+    startRundown(c.event || null)
     return
   }
 
   // THE CLOCK. Showing it is what OPENS the machine: the shutters part, the
   // game appears, the sliver drops in. That is the arcade moment and it is
   // driven by the press the operator already makes.
+  //
+  // NO LEAGUE GATE. There is one vertical canvas and it is showing one show,
+  // so whichever league's clock is running IS this canvas's clock. The gate
+  // that used to be here listed uba and gfl, which meant a UBAe match night
+  // streamed a frozen loading screen vertically for its whole duration and
+  // nothing errored.
   if(c.type === 'clock'){
-    const mine = !c.league || c.league === 'uba' || c.league === 'gfl'
-    if(!mine) return
     if(c.show === false){ setClock(false); return }
-    setOpen(true); setClock(true)
+    stopCycle(); setRundown(false); setOpen(true); setClock(true)
     return
   }
   if(c.type === 'bout' && c.d){
@@ -404,16 +869,45 @@ sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, ({ payload: c }) => {
     if(has(d.label)) $('boutTagTxt').textContent = String(d.label).toUpperCase()
     if(has(d.colorL)) $('corL').style.background = d.colorL
     if(has(d.colorR)) $('corR').style.background = d.colorR
-    setOpen(true); setClock(true); fitNames()
+    stopCycle(); setRundown(false); setOpen(true); setClock(true); fitNames()
     return
   }
+
+  // THE BATTLEROOM PUSH is UBAe's version of {type:'bout'} — the deck sends
+  // the two teams, the two picked fighters and the running score on one
+  // command. Every field is guarded because mnReset sends a PARTIAL payload
+  // (score and picks only), and reading a missing team as blank would wipe
+  // the names off the sliver on the press that resets the score.
+  if(c.type === 'pickbar' && c.d){
+    const d = c.d
+    setLeague('ubae')
+    if(has(d.teamA)){ MN.teamA = d.teamA; $('ctL').textContent = String(d.teamA).toUpperCase() }
+    if(has(d.teamB)){ MN.teamB = d.teamB; $('ctR').textContent = String(d.teamB).toUpperCase() }
+    if(Array.isArray(d.left))  MN.left  = d.left
+    if(Array.isArray(d.right)) MN.right = d.right
+    // Before a pick is made the TEAM's name stands in for the fighter's. A
+    // blank half reads as a graphic that failed, and the pick clock runs for
+    // two minutes with nothing else on that side of the row.
+    if('pickL' in d) $('cnL').textContent = String(pickName(MN.left,  d.pickL) || MN.teamA || '—').toUpperCase()
+    if('pickR' in d) $('cnR').textContent = String(pickName(MN.right, d.pickR) || MN.teamB || '—').toUpperCase()
+    if(d.scoreA != null || d.scoreB != null) drawPips(d.scoreA, d.scoreB)
+    if(d.round != null) $('rd').textContent = 'ROUND ' + d.round
+    if(has(d.split)) SPLIT = d.split
+    fitNames()
+    return
+  }
+
   if(c.type === 'corner' && c.d){
     if(has(c.d.l)) $('corL').style.background = c.d.l
     if(has(c.d.r)) $('corR').style.background = c.d.r
     return
   }
   if(c.type === 'round'){ $('rd').textContent = 'ROUND ' + c.n; return }
-  if(c.type === 'clocktimer'){ timer(c.on === false ? null : c.secs); return }
+  // Two names for one thing: UBA drives the fight clock's own centre timer
+  // ('clocktimer'), UBAe drives the overlay badge ('matchtimer'). This canvas
+  // has ONE timer, so it answers both — listening for only the UBA one left
+  // 0:00 on screen for every UBAe bout.
+  if(c.type === 'clocktimer' || c.type === 'matchtimer'){ timer(c.on === false ? null : c.secs); return }
 
   // THE TAPE lives in the bottom half during a match. Pressed with the
   // machine closed it is still the full screen it was — the shutters simply
@@ -421,14 +915,14 @@ sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, ({ payload: c }) => {
   if(c.type === 'tape'){
     if(c.on === false){ pane(null); return }
     if(c.d) drawTape(c.d)
-    if(c.show === true){ pane('paneTape') }
+    if(c.show === true){ setRundown(false); pane('paneTape') }
     return
   }
   // THE DOSSIER takes the same bottom half. One pane at a time, so they can
   // never draw over each other — the thing four separate sources could not do.
   if(c.type === 'fighter'){
     if(c.on === false || !c.d){ pane(null); return }
-    drawWho(c.d); pane('paneWho')
+    setRundown(false); drawWho(c.d); pane('paneWho')
     clearTimeout(whoTimer); whoTimer = setTimeout(() => pane(null), 14000)
     return
   }
@@ -436,9 +930,16 @@ sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, ({ payload: c }) => {
 let whoTimer = null
 
 // first paint: closed, showing whatever is next
-loadCard(null)
+loadTeamData().then(() => {
+  // The team data decides which screen can even be drawn, so the first paint
+  // waits for it. A UBAe night opens on tonight's two teams; a solo night on
+  // the card, which is what this frame has always opened on.
+  const boot = Q.get('view') || (norm(Q.get('league')) === 'ubae' ? 'teamvs' : 'card')
+  showView(boot, null)
+})
 
-// ?state=open|closed and ?pane=tape|who for checking it without a deck
+// ?state=open|closed · ?pane=tape|who · ?view=<screen> · ?rundown=1
+// for checking it without a deck
 if(Q.get('state') === 'open'){ setOpen(true); setClock(true) }
 if(Q.get('pane') === 'tape'){
   drawTape({ title:'UBA HEAVYWEIGHT TITLE',
@@ -451,6 +952,7 @@ if(Q.get('pane') === 'who'){
   drawWho({name:'smokinem',nickname:'The Quiet Part',record:'11-2-1',ko:7,rank:7,weight:'Heavyweight'})
   pane('paneWho')
 }
+if(Q.get('rundown') === '1') startRundown(Q.get('event') || null)
 })()
 </script>
 </body>
