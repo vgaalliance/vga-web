@@ -6393,7 +6393,9 @@ async function trainRoll(seed, idx){
   var d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(seed + ':' + idx));
   return new DataView(d).getUint32(0) % 10000;   // same bytes the SQL reads
 }
+var _trainCleanup = null;
 async function renderTrain(){
+  if(_trainCleanup){ _trainCleanup(); _trainCleanup = null; }
   var body = document.getElementById('sheet-body');
   body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'
     + '<div class="kick">Training</div><h3>Train</h3></div>'
@@ -6423,7 +6425,7 @@ async function renderTrain(){
   /* How far into the NEXT punch the clock is, 0..1 -- so the bar creeps rather
      than jumping once every 36 seconds and reading as stuck. */
   function nextFrac(){ return ((Date.now() - baseAt) % PUNCH_MS) / PUNCH_MS; }
-  var earned = 0, pending = 0, flushT = null, rolls = {}, ahead = idx;
+  var earned = 0, pending = 0, flushT = null, rolls = {}, ahead = idx, flushFailed = false;
   var balance = guest ? null : Number(st.balance || 0);
   function lookahead(){
     while(ahead < idx + TRAIN_LOOKAHEAD){
@@ -6612,6 +6614,7 @@ async function renderTrain(){
     if(c && !guest){
       var ck = c.getAttribute('data-chip');
       busy(c, true, 'Applying\u2026');
+      clearTimeout(flushT); await flush();          // settle in-flight punches at the OLD level first
       var cr = await rpc('app_train_apply_chip', { p_track: ck });
       if(!el.isConnected) return;
       busy(c, false);
@@ -6629,6 +6632,7 @@ async function renderTrain(){
     if(!b || guest) return;
     var key = b.getAttribute('data-buy');
     busy(b, true, 'Buying\u2026');
+    clearTimeout(flushT); await flush();          // settle in-flight punches at the OLD level first
     var r = await rpc('app_train_upgrade', { p_track: key });
     if(!el.isConnected) return;
     busy(b, false);
@@ -6652,10 +6656,26 @@ async function renderTrain(){
     var n = pending; pending = 0; flushT = null;
     var r = await rpc('app_train_claim', { p_punches: n });
     if(!el.isConnected) return;
-    if(!r || !r.ok){ pending += n; toast(r && r.message ? r.message : 'Could not save those punches.', true); return; }
+    if(!r || !r.ok){
+      pending += n;
+      /* one toast per failure streak, not one per 1.5s of tapping offline */
+      if(!flushFailed){ flushFailed = true; toast(r && r.message ? r.message : 'Could not save those punches.', true); }
+      return;
+    }
+    flushFailed = false;
     /* The server's answer wins: it settled stamina and paid for what the bar held. */
     base = Number(r.stamina); baseAt = Date.now(); spent = pending;
-    if(r.balance != null){ balance = Number(r.balance); drawTracks(); drawStats(); }
+    if(Number(r.punches) !== n){
+      /* It paid fewer than we threw -- the bar was emptier than the screen
+         thought. The lifetime index is now ahead of the server's, so every
+         pre-rolled hit is for the wrong punch: fall back to the server's count
+         (plus what is still in flight) and re-roll. */
+      idx = Number(r.punches_total) + pending; rolls = {}; ahead = idx; lookahead();
+    }
+    if(r.balance != null){
+      balance = Number(r.balance); if(wardrobe){ wardrobe.balance = balance; drawWardrobe(); }
+      drawTracks(); drawStats();
+    }
     /* A pack fell out of the bag. It is a REAL shop pack -- same set, same
        published odds -- so it is waiting in Cards to be ripped. */
     if(Number(r.packs) > 0){
@@ -6690,6 +6710,12 @@ async function renderTrain(){
      held server-side, so a lost claim is lost effort, not free money. */
   var onHide = function(){ if(pending) flush(); };
   document.addEventListener('visibilitychange', onHide); window.addEventListener('pagehide', onHide);
+  _trainCleanup = function(){
+    if(pending) flush();
+    document.removeEventListener('visibilitychange', onHide); window.removeEventListener('pagehide', onHide);
+    clearInterval(tick);
+    if(boxer){ try{ boxer.unmount(); }catch(e){} boxer = null; }
+  };
 }
 /* The heavy bag. Drawn here rather than shipped as an image so it takes the
    app's palette and animates from CSS: a landed punch swings it on its chain,
