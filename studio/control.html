@@ -449,6 +449,16 @@
     </div>
     <h5>🃏 Card reveal — pick which event's card</h5>
     <div class="row" id="cardEvents">loading events…</div>
+    <!-- VERTICAL ONLY. The rundown covers the whole 1080x1920 frame, so it has
+         no horizontal counterpart and its own command type: {type:'rundown'}
+         already belongs to the horizontal card list, and sharing it would flip
+         that graphic on with a payload shaped for this one. -->
+    <h5>📱 Vertical rundown — one fighter at a time, TikTok canvas only</h5>
+    <div class="row">
+      <button onclick="vRundown()">▶ Start rundown</button>
+      <button onclick="vRundownNext()">⏭ Next fighter</button>
+      <button class="hide" onclick="vRundownOff()">■ Stop</button>
+    </div>
   </div></div>
 
   <!-- ③ BATTLEROOM (UBAe) / TALE OF THE TAPE (UBA) -->
@@ -1567,6 +1577,15 @@ window.standby=view=>send({type:'standby', view, league:EV, on:view!=='off', spl
 
 // coin toss — heads or tails
 window.fireCoin=()=>send({type:'coin', result: Math.random()<.5?'HEADS':'TAILS' })
+
+/* THE VERTICAL RUNDOWN. Named 'vrundown' on purpose — card-rundown.html owns
+   'rundown' and renders a horizontal bout list from a completely different
+   payload. Sends the loaded card's name so the rundown walks the show that is
+   actually on, falling back to the soonest scheduled event when nothing is
+   loaded yet (scene ① runs before the card load, every time). */
+window.vRundown=()=>send({type:'vrundown', on:true, event:(window.UBA&&UBA.name)||null})
+window.vRundownNext=()=>send({type:'vrundown', step:'next'})
+window.vRundownOff=()=>send({type:'vrundown', on:false})
 
 // Post-bout result. Reads the ARMED bout and the win already clicked in the
 // tracker, so it's one button rather than re-entering who beat whom -- the
