@@ -2331,6 +2331,24 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .train .upmenu .buy{margin-top:4px;padding:11px;border:0;border-radius:10px;background:#C084FC;color:#14102A;font-weight:700;font-size:14px;cursor:pointer}
 .train .upmenu .buy:disabled{background:rgba(255,255,255,.12);color:#9A90BE;cursor:default}
 .train .upmenu .mx{font-size:13.5px;color:#9A90BE;text-align:center}
+.train .wr{width:100%;max-width:320px;display:flex;flex-direction:column;gap:10px}
+.train .wtabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.train .wtabs::-webkit-scrollbar{display:none}
+.train .wtab{flex:none;border:0;border-radius:999px;padding:6px 12px;cursor:pointer;
+  font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  background:rgba(255,255,255,.07);color:#9A90BE}
+.train .wtab.on{background:#C084FC;color:#14102A}
+.train .witems{display:flex;flex-direction:column;gap:6px;max-height:236px;overflow-y:auto;scrollbar-width:none}
+.train .witems::-webkit-scrollbar{display:none}
+.train .wit{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer;
+  background:rgba(255,255,255,.06);border:1px solid transparent}
+.train .wit.on{border-color:#C084FC;background:rgba(192,132,252,.13)}
+.train .wit.busy{opacity:.5;pointer-events:none}
+.train .wit .wn{flex:1;font-size:14px}
+.train .wit .wp{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.08em;
+  color:#7A7096;background:rgba(255,255,255,.07);border-radius:999px;padding:3px 9px}
+.train .wit .wp.can{color:#14102A;background:#F5C842}
+.train .wit .wp.ok{color:#C084FC;background:rgba(192,132,252,.16)}
 .sheet .evhead{padding:calc(18px + env(safe-area-inset-top)) 18px 16px;position:relative}
 .sheet .evhead .kick{margin:0 0 8px}
 .sheet .evhead h3{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:.03em;line-height:1;font-weight:400}
@@ -6426,7 +6444,9 @@ async function renderTrain(){
     + '<div class="hint" id="tr-hint"></div>'
     + '<div class="lab"><b>Upgrades</b><i></i><s>tap a box \u00b7 costs VC</s></div>'
     + '<div class="tracks" id="tracks"></div>'
-    + '<div class="upmenu" id="upmenu" hidden></div>';
+    + '<div class="upmenu" id="upmenu" hidden></div>'
+    + (guest ? '' : '<div class="lab"><b>Wardrobe</b><i></i><s>worn on your fighter</s></div>'
+              + '<div class="wr" id="wr"><div class="skel"></div></div>');
   var bag = document.getElementById('bag'), cnt = document.getElementById('bag-cnt'),
       fx = document.getElementById('fx'),
       fill = document.getElementById('stam-fill'), stTxt = document.getElementById('stam-txt'),
@@ -6504,9 +6524,77 @@ async function renderTrain(){
     menu.hidden = !t; if(t) menu.innerHTML = menuHTML(t);
   }
   drawTracks(); drawStats();
+
+  /* ── WARDROBE ── the fighter on the stage is the preview, so equipping is
+     instant and visible rather than a menu that describes a change. Slots the
+     avatar cannot draw are not sold at all (the parked game's haymaker and
+     crate skins), because a Buy button on something invisible is the
+     /inventory trap with a price on it. */
+  var SLOT_NAMES = { skincolor:'Skin', face:'Face', hair:'Hair', headgear:'Headgear',
+                     gloves:'Gloves', shorts:'Trunks', fullskin:'Suit', shoes:'Shoes',
+                     effect:'Aura', trail:'Trail' };
+  var wardrobe = null, wrSlot = 'gloves';
+  function owns(slot, id){
+    return ((wardrobe.owned || {})[slot] || []).indexOf(id) >= 0;
+  }
+  function drawWardrobe(){
+    var host = document.getElementById('wr');
+    if(!host || !wardrobe) return;
+    var slots = Object.keys(SLOT_NAMES).filter(function(k){
+      return wardrobe.catalogue.some(function(c){ return c.slot === k; }); });
+    var worn = wardrobe.equipped || {};
+    var items = wardrobe.catalogue.filter(function(c){ return c.slot === wrSlot; });
+    host.innerHTML =
+        '<div class="wtabs">' + slots.map(function(k){
+          return '<button class="wtab' + (k === wrSlot ? ' on' : '') + '" data-wslot="' + k + '">'
+               + esc(SLOT_NAMES[k]) + '</button>'; }).join('') + '</div>'
+      + '<div class="witems">' + items.map(function(c){
+          var have = c.price === 0 || owns(c.slot, c.id), on = worn[c.slot] === c.id;
+          var can  = have || (wardrobe.balance !== null && wardrobe.balance >= c.price);
+          return '<div class="wit' + (on ? ' on' : '') + (have ? ' have' : '') + '"'
+               + ' data-wbuy="' + esc(c.slot) + '|' + esc(c.id) + '|' + (have ? 'wear' : 'buy') + '">'
+               + '<span class="wn">' + esc(c.name) + '</span>'
+               + '<span class="wp' + (have ? ' ok' : (can ? ' can' : '')) + '">'
+               + (on ? 'WORN' : have ? 'Wear' : c.price.toLocaleString() + ' VC') + '</span></div>';
+        }).join('') + '</div>';
+  }
+  if(!guest) rpc('app_train_wardrobe').then(function(w){
+    if(!el.isConnected) return;
+    if(!w || !w.ok){ var h = document.getElementById('wr'); if(h) h.innerHTML = '<div class="empty">Couldn\u2019t load the wardrobe.</div>'; return; }
+    wardrobe = w; balance = Number(w.balance); drawWardrobe(); drawStats(); drawTracks();
+  });
+
   el.addEventListener('click', async function(e){
     var box = e.target.closest('[data-track]');
     if(box){ var k = box.getAttribute('data-track'); open = open === k ? null : k; drawTracks(); return; }
+    var ws = e.target.closest('[data-wslot]');
+    if(ws){ wrSlot = ws.getAttribute('data-wslot'); drawWardrobe(); return; }
+
+    var wi = e.target.closest('[data-wbuy]');
+    if(wi && !guest){
+      var parts = wi.getAttribute('data-wbuy').split('|');
+      var slot = parts[0], id = parts[1], act = parts[2];
+      wi.classList.add('busy');
+      var res = act === 'buy'
+        ? await rpc('app_train_buy_cosmetic', { p_slot: slot, p_id: id })
+        : await rpc('app_train_equip',        { p_slot: slot, p_id: id });
+      if(!el.isConnected) return;
+      wi.classList.remove('busy');
+      if(!res || !res.ok){ toast(res && res.message ? res.message : 'Could not do that.', true); return; }
+      if(act === 'buy'){
+        wardrobe.owned = res.owned; balance = Number(res.balance); wardrobe.balance = balance;
+        toast('Bought. ' + (res.paid ? Number(res.paid).toLocaleString() + ' VC \u2014 ' : '')
+              + 'tap it again to wear it.');
+        drawStats(); drawTracks();
+      } else {
+        wardrobe.equipped = res.equipped;
+        /* the fighter on the stage IS the preview */
+        if(boxer) boxer.setEquipped(res.equipped);
+      }
+      drawWardrobe();
+      return;
+    }
+
     var b = e.target.closest('[data-buy]');
     if(!b || guest) return;
     var key = b.getAttribute('data-buy');
