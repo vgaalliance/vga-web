@@ -2312,6 +2312,9 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .train .stats b em{font-style:normal;font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.1em;color:#F5C842;margin-left:3px;vertical-align:2px}
 .train .stats s{display:block;text-decoration:none;font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;color:#9A90BE;margin-top:4px}
 .train .hint{font-size:13.5px;color:#9A90BE;text-align:center}
+.train .tocards{width:100%;max-width:320px;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 14px;border-radius:12px;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:#EDEAF6;font-family:'Barlow',sans-serif;font-weight:600;font-size:14px;cursor:pointer}
+.train .tocards span{color:#9A90BE;font-size:18px;line-height:1}
 .train .lab{width:100%;max-width:320px;margin:8px 0 0}
 .train .lab .bal{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.08em;color:#F5C842}
 .train .tracks{display:flex;gap:8px;width:100%;max-width:320px}
@@ -6446,6 +6449,7 @@ async function renderTrain(){
     + '<div class="count"><b id="bag-cnt">0</b><s>punches</s></div>'
     + '<div class="stats" id="tr-stats"></div>'
     + '<div class="hint" id="tr-hint"></div>'
+    + '<button class="tocards" data-train-cards>\uD83C\uDCCF Your cards <span>\u203A</span></button>'
     + '<div class="lab"><b>Upgrades</b><i></i><s>tap a box \u00b7 costs VC</s></div>'
     + '<div class="tracks" id="tracks"></div>'
     + '<div class="upmenu" id="upmenu" hidden></div>'
@@ -6580,6 +6584,13 @@ async function renderTrain(){
   });
 
   el.addEventListener('click', async function(e){
+    if(e.target.closest('[data-train-cards]')){
+      /* the sheet is on top of the tabs; close it, THEN switch, or the tab
+         changes underneath a screen the player is still looking at */
+      if(pending) flush();
+      history.back(); setTimeout(function(){ goTab('cards'); }, 60);
+      return;
+    }
     var box = e.target.closest('[data-track]');
     if(box){ var k = box.getAttribute('data-track'); open = open === k ? null : k; drawTracks(); return; }
     var ws = e.target.closest('[data-wslot]');
