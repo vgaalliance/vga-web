@@ -2330,6 +2330,8 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .train .upmenu .row span{color:#9A90BE}
 .train .upmenu .buy{margin-top:4px;padding:11px;border:0;border-radius:10px;background:#C084FC;color:#14102A;font-weight:700;font-size:14px;cursor:pointer}
 .train .upmenu .buy:disabled{background:rgba(255,255,255,.12);color:#9A90BE;cursor:default}
+.train .upmenu .buy.chip{background:#F5C842;color:#14102A}
+.train .chips{width:100%;font-size:13px;color:#F5C842;background:rgba(245,200,66,.1);border:1px solid rgba(245,200,66,.3);border-radius:10px;padding:8px 12px;text-align:center;margin-bottom:8px}
 .train .upmenu .mx{font-size:13.5px;color:#9A90BE;text-align:center}
 .train .wr{width:100%;max-width:320px;display:flex;flex-direction:column;gap:10px}
 .train .wtabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
@@ -6490,6 +6492,10 @@ async function renderTrain(){
      the next one does, the price. Every number is the server's (train_rules),
      and Buy is only live when the wallet covers it -- the button is the only
      gate a player meets before SQL refuses them, so it must not lie. */
+  /* Training Chips (train-plan T8). A chip is a permanent level you PULLED
+     rather than bought. Holding zero -- which is everybody until the faucet
+     is switched on at launch -- means none of this renders. */
+  var chips = guest ? 0 : Number(st.chips || 0);
   var TRACKS = [
     { key:'power',        name:'Power',        unit:function(v){ return v + ' VC a hit'; } },
     { key:'accuracy',     name:'Accuracy',     unit:function(v){ return v + '% land'; } },
@@ -6515,11 +6521,18 @@ async function renderTrain(){
       + '<div class="row"><span>Next</span><b>' + t.unit(rules[t.key][l]) + '</b></div>'
       + '<button class="buy" data-buy="' + t.key + '"' + (can ? '' : ' disabled') + '>'
       + (guest ? 'Sign in to upgrade' : can ? 'Buy \u2014 ' + price.toLocaleString() + ' VC'
-                : 'Need ' + price.toLocaleString() + ' VC') + '</button>';
+                : 'Need ' + price.toLocaleString() + ' VC') + '</button>'
+      /* The chip button says what it skips: a chip is worth 100 VC on a
+         level-1 track and 18,000 on a level-5 one, and the number lets the
+         player work that out rather than the screen nagging them. */
+      + (chips > 0 ? '<button class="buy chip" data-chip="' + t.key + '">Apply chip \u2014 skips '
+                     + price.toLocaleString() + ' VC</button>' : '');
   }
   var tracksEl = document.getElementById('tracks'), menu = document.getElementById('upmenu');
   function drawTracks(){
-    tracksEl.innerHTML = tracksHTML();
+    tracksEl.innerHTML = (chips > 0
+      ? '<div class="chips">\uD83E\uDE99 ' + chips + (chips === 1 ? ' Training Chip' : ' Training Chips')
+        + ' \u2014 tap a track to apply one</div>' : '') + tracksHTML();
     var t = TRACKS.filter(function(x){ return x.key === open; })[0];
     menu.hidden = !t; if(t) menu.innerHTML = menuHTML(t);
   }
@@ -6595,6 +6608,23 @@ async function renderTrain(){
       return;
     }
 
+    var c = e.target.closest('[data-chip]');
+    if(c && !guest){
+      var ck = c.getAttribute('data-chip');
+      busy(c, true, 'Applying\u2026');
+      var cr = await rpc('app_train_apply_chip', { p_track: ck });
+      if(!el.isConnected) return;
+      busy(c, false);
+      if(!cr || !cr.ok){ toast(cr && cr.message ? cr.message : 'Could not apply that.', true); return; }
+      lv[ck] = Number(cr.level); chips = Number(cr.chips || 0);
+      acc = rules.accuracy[lv.accuracy - 1]; vcHit = rules.power[lv.power - 1]; bar = rules.conditioning[lv.conditioning - 1];
+      rolls = {}; ahead = idx; lookahead();
+      drawStats();
+      toast('Chip applied \u2014 ' + TRACKS.filter(function(x){ return x.key === ck; })[0].name + ' \u2192 level ' + cr.level
+        + '. Skipped ' + Number(cr.skipped_vc || 0).toLocaleString() + ' VC.');
+      paint(); drawTracks();
+      return;
+    }
     var b = e.target.closest('[data-buy]');
     if(!b || guest) return;
     var key = b.getAttribute('data-buy');
@@ -6631,6 +6661,10 @@ async function renderTrain(){
     if(Number(r.packs) > 0){
       float('\uD83D\uDCE6 PACK', 'pack');
       toast((r.pack_name || 'A pack') + ' \u2014 open it in Cards.');
+    }
+    if(Number(r.chips) > 0){
+      chips += Number(r.chips); float('\uD83E\uDE99 CHIP', 'pack');
+      toast('A Training Chip fell out \u2014 tap a track to apply it.'); drawTracks();
     }
     paint();
   }
