@@ -4,46 +4,47 @@
 <meta charset="utf-8">
 <title>VGA — Vertical</title>
 <!-- ============================================================
-     THE VERTICAL CANVAS — ONE COMPOSED FRAME.
+     THE VERTICAL CANVAS — THE COMPLEMENT, NOT A SECOND SHOW.
 
-     Add THIS as the only 1080x1920 browser source in the vertical
-     canvas (Aitum Vertical), with the game capture BEHIND it.
+     Add THIS as a 1080x1920 browser source in the vertical canvas
+     (Aitum Vertical), ON TOP of two sources you already have:
+       · your background source
+       · the DESKTOP PROGRAMME FEED, scaled to 1080 wide, parked in
+         the slot at y 169. 1920x1080 at 1080 wide is 1080x607.5
+         against a 608px slot — it lands within half a pixel.
 
-     FOUR FIXED REGIONS, top to bottom:
-       CTA sliver      y    0- 88   always up, never moves
-       video slot      y   88- 696  1080x608, transparent — the game
-                                    shows THROUGH it
-       clock sliver    y  696- 812  one symmetrical row
-       bottom info     y  812-1920  58% of the frame
+     WHY THIS PAGE DRAWS SO LITTLE. There is ONE deck and ONE channel,
+     so a press lights both canvases. When this page drew its own
+     standby screens, pressing "Team vs team" rendered it twice on the
+     same frame — once in the desktop feed up top and once down here.
+     So the rule is now: IF THE DESKTOP DRAWS IT, THIS PAGE DOESN'T.
+     Nothing below answers a VIEW. It answers the show STATE that the
+     press put the show into, which no other source is drawing.
 
-     THREE STATES.
-       LOADING  between matches: the video slot is covered and the
-                whole frame below the CTA is one of six standby
-                screens (card · standings · rosters · schedule ·
-                team-vs-team · rankings · CTA).
-       RUNDOWN  the shutters stay closed and the whole frame becomes
-                one fighter at a time — photo, record, rank — walking
-                the card in bout order. The UBA 15 rundown without a
-                voiceover, so the beat is the graphic's own.
-       MATCH    the shutters OPEN — arcade-machine style, splitting
-                apart from the centre — revealing the game, the clock
-                and whatever the bottom is carrying.
+     FOUR REGIONS, top to bottom:
+       CTA         y    0- 169  the 1920x300 CTA graphic's slot
+       feed slot   y  169- 777  1080x608, transparent — the desktop
+                                programme feed shows THROUGH it
+       score rail  y  777- 927  fixed furniture, never moves
+       mode stage  y  927-1920  one block at a time
 
-     BOTH LEAGUES. UBA/GFL drive it with {clock, bout, clocktimer};
-     UBAe drives it with {clock, pickbar, matchtimer}, and the clock
-     sliver grows a team line and a first-to-three score for it. There
-     is no league gate on the clock: one vertical canvas is showing one
-     show, so whichever clock is running is this canvas's clock.
+     THE SCORE RAIL IS THE POINT OF THE WHOLE PAGE. A phone viewer
+     arrives mid-show with none of the context the desktop audience
+     built up, so the rail answers the three things the broadcast
+     never repeats: who is playing, what the score is, which bout.
+     "Always on" only holds if it is always in the SAME PLACE, so the
+     rail never moves and the stage changes underneath it.
 
-     THE VIDEO SLOT IS TRANSPARENT ON PURPOSE. This page never draws
-     the game; OBS composites the capture behind it. The slot only
-     carries its frame and, in LOADING, its shutters.
+     THREE STAGE MODES, chosen by state and never by a button:
+       TEAMS   both sides' three starters, spent ones dimmed, the
+               picked one lit. The default, and what STANDBY returns to.
+       ROOM    the pick clock is running: coaches have 2:00.
+       MATCH   a bout is live: the two fighters, big, and the clock —
+               bigger than the desktop clock arriving at 56%, which is
+               the only reason to draw a second one.
 
-     THE CLOCK IS ONE ROW, NOT A STACK. A fight clock is read left to
-     right across a centre — name, corner, time, corner, name — and
-     stacking it made a 400px tower out of something that is 116px of
-     information. Symmetrical about the centre line so neither fighter
-     reads as the home side.
+     THE RUNDOWN is the one thing here with no desktop counterpart:
+     full frame, one fighter at a time, the two just picked.
      ============================================================= -->
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Barlow+Condensed:wght@500;700;900&family=Barlow:wght@500;600&display=swap');
@@ -53,8 +54,9 @@
     --panel:rgba(14,0,30,.92); --line:rgba(155,48,255,.3); --dim:rgba(200,160,255,.6);
     --accent:var(--pur); --glow:rgba(155,48,255,.55);
     /* THE ONE PLACE THE COMPOSITION LIVES. Change these and every region
-       follows; nothing below hardcodes a y position. */
-    --cta:88px; --feed:608px; --clock:116px;
+       follows; nothing below hardcodes a y position. --cta is 169 because the
+       CTA block is a 1920x300 desktop graphic and 1080/1920 of 300 is 169. */
+    --cta:169px; --feed:608px; --rail:150px;
   }
   body.gfl{ --accent:#e8312a; --glow:rgba(232,49,42,.55); --hi:#ff6a5e; --pink:#ff3b2f; }
   html,body{width:1080px;height:1920px;background:transparent;overflow:hidden;
@@ -74,206 +76,225 @@
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
   /* ── VIDEO SLOT ───────────────────────────────────────────────────── */
-  /* Transparent. Only the frame and the shutters are drawn here. */
+  /* Transparent, always. The desktop programme feed sits behind it. */
   #slot{position:absolute;top:var(--cta);left:0;right:0;height:var(--feed);z-index:20;}
   #slot .edge{position:absolute;inset:0;pointer-events:none;
     box-shadow:inset 0 0 0 2px rgba(155,48,255,.35), inset 0 0 40px rgba(155,48,255,.14);}
-  /* the arcade shutters — two halves that part from the centre line */
-  .shut{position:absolute;left:0;right:0;height:50%;overflow:hidden;
-    background:linear-gradient(180deg,#0b0018,#16062e);
-    transition:transform .78s cubic-bezier(.7,0,.2,1);}
-  #shutT{top:0;   border-bottom:2px solid var(--accent);}
-  #shutB{bottom:0;border-top:2px solid var(--accent);}
-  body.open #shutT{transform:translateY(-100%);}
-  body.open #shutB{transform:translateY(100%);}
-  /* what is printed across the closed shutters */
-  #shutTxt{position:absolute;top:0;left:0;right:0;height:100%;z-index:2;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:14px;pointer-events:none;transition:opacity .3s ease;}
-  body.open #shutTxt{opacity:0;}
-  #shutTxt .k{font-family:'Press Start 2P',monospace;font-size:14px;letter-spacing:.3em;color:var(--hi);}
-  #shutTxt .v{font-weight:900;font-size:66px;line-height:.92;text-transform:uppercase;text-align:center;
-    text-shadow:0 0 30px var(--glow);padding:0 60px;}
-  #shutTxt .s{font:600 24px 'Barlow';color:var(--dim);letter-spacing:.14em;text-transform:uppercase;}
-  /* the scan bar that travels the shutters while waiting */
-  #scan{position:absolute;left:0;right:0;height:3px;z-index:3;
-    background:linear-gradient(90deg,transparent,var(--hi),transparent);
-    animation:scan 3.4s linear infinite;opacity:.7;}
+  /* kept for the rundown's scan bar, which is the only thing that still uses it */
   @keyframes scan{0%{top:0}100%{top:100%}}
-  body.open #scan{display:none;}
 
-  /* ── CLOCK SLIVER — one row, symmetrical ──────────────────────────── */
-  #clock{position:absolute;top:calc(var(--cta) + var(--feed));left:0;right:0;
-    height:var(--clock);z-index:30;display:grid;
-    /* name | corner | CENTRE | corner | name — the centre column is fixed so
-       the timer sits on the frame's true midline whatever the names do */
-    grid-template-columns:1fr 14px 290px 14px 1fr;align-items:stretch;
-    background:linear-gradient(180deg,rgba(13,0,28,.96),rgba(8,0,18,.97));
-    border-top:1px solid var(--line);border-bottom:2px solid var(--accent);
-    opacity:0;transform:translateY(-14px);
-    transition:opacity .45s cubic-bezier(.16,1,.3,1), transform .45s cubic-bezier(.16,1,.3,1);}
-  body.open.clockon #clock{opacity:1;transform:none;}
-  #clock .nm{display:flex;align-items:center;font-weight:900;font-size:52px;
-    text-transform:uppercase;letter-spacing:.01em;white-space:nowrap;overflow:hidden;
-    text-shadow:0 0 22px var(--glow);padding:0 26px;}
-  #clock .nm.l{justify-content:flex-end;} #clock .nm.r{justify-content:flex-start;}
-  #clock .cor{align-self:stretch;}                       /* the corner colour */
-  #clock .mid{display:flex;flex-direction:column;align-items:center;justify-content:center;
-    background:linear-gradient(180deg,rgba(155,48,255,.2),rgba(255,51,204,.12));
-    border-left:1px solid var(--line);border-right:1px solid var(--line);}
-  body.gfl #clock .mid{background:linear-gradient(180deg,rgba(232,49,42,.22),rgba(255,120,40,.12));}
-  #tm{font-weight:900;font-size:54px;line-height:1;letter-spacing:.02em;color:var(--gold);
-    font-variant-numeric:tabular-nums;text-shadow:0 0 22px rgba(255,206,0,.5);}
-  #tm.low{color:#ff4d4d;text-shadow:0 0 22px rgba(255,77,77,.6);animation:pulse 1s ease-in-out infinite;}
-  #rd{font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.16em;
-    color:#fff;margin-top:8px;text-shadow:0 0 12px var(--glow);}
-  /* the bout label rides UNDER the sliver so the row itself stays one line */
-  #boutTag{position:absolute;top:calc(var(--cta) + var(--feed) + var(--clock));left:0;right:0;
-    z-index:29;display:flex;justify-content:center;pointer-events:none;
-    opacity:0;transition:opacity .4s ease .2s;}
-  body.open.clockon #boutTag{opacity:1;}
-  #boutTag span{background:var(--accent);color:#fff;font-family:'Press Start 2P',monospace;
-    font-size:11px;letter-spacing:.2em;padding:7px 20px;box-shadow:0 6px 20px rgba(0,0,0,.5);}
+  /* ── THE SCORE RAIL — fixed furniture, never moves ─────────────────
+     "Always on" only holds if it is always in the SAME place. It sits at
+     the top of the bottom half and the mode block changes underneath it,
+     so a viewer who looks for the score twice finds it twice. */
+  #rail{position:absolute;top:calc(var(--cta) + var(--feed));left:0;right:0;height:var(--rail);
+    z-index:26;display:grid;grid-template-columns:1fr 300px 1fr;align-items:center;
+    background:linear-gradient(180deg,rgba(13,0,28,.97),rgba(8,0,18,.98));
+    border-top:1px solid var(--line);border-bottom:2px solid var(--accent);}
+  #rail .tm{display:flex;flex-direction:column;justify-content:center;padding:0 34px;overflow:hidden;}
+  #rail .tm.l{align-items:flex-start;} #rail .tm.r{align-items:flex-end;}
+  #rail .tm .n{font-weight:900;font-size:44px;line-height:1;text-transform:uppercase;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
+    text-shadow:0 0 20px var(--glow);}
+  #rail .tm .p{display:flex;gap:6px;margin-top:9px;}
+  #rail .tm.r .p{flex-direction:row-reverse;}
+  #rail .tm .p i{width:34px;height:9px;background:rgba(255,255,255,.15);
+    border:1px solid rgba(255,255,255,.2);transition:background .3s ease,box-shadow .3s ease;}
+  #rail .tm .p i.on{background:var(--hi);border-color:var(--hi);box-shadow:0 0 12px var(--glow);}
+  #rail .mid{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:linear-gradient(180deg,rgba(155,48,255,.2),rgba(255,51,204,.1));
+    border-left:1px solid var(--line);border-right:1px solid var(--line);align-self:stretch;}
+  #rail .mid .sc{font-weight:900;font-size:58px;line-height:1;color:var(--gold);
+    font-variant-numeric:tabular-nums;letter-spacing:.04em;text-shadow:0 0 22px rgba(255,206,0,.45);}
+  #rail .mid .bt{font-family:'Press Start 2P',monospace;font-size:11px;letter-spacing:.18em;
+    color:#fff;margin-top:9px;}
 
-  /* ── BOTTOM INFO ──────────────────────────────────────────────────── */
-  #bot{position:absolute;top:calc(var(--cta) + var(--feed) + var(--clock));bottom:0;left:0;right:0;
-    z-index:25;padding:56px 46px 40px;overflow:hidden;}
-  /* When the clock is down the bottom starts right under the slot instead —
-     one rule, so a scene with no clock does not leave a 116px hole. */
-  body:not(.clockon) #bot{top:calc(var(--cta) + var(--feed));}
-  .pane{position:absolute;inset:0;padding:inherit;display:none;flex-direction:column;}
-  .pane.on{display:flex;animation:panein .5s cubic-bezier(.16,1,.3,1);}
-  @keyframes panein{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
+  /* ── THE MODE STAGE — one block at a time, under the rail ──────────
+     Three blocks, and which one is up is decided by the SHOW STATE the
+     deck already broadcasts, never by a button of its own. That is what
+     keeps the vertical canvas from answering the same press the desktop
+     scene is already answering, and it is why nothing can render twice. */
+  #stage{position:absolute;top:calc(var(--cta) + var(--feed) + var(--rail));bottom:0;left:0;right:0;
+    z-index:25;overflow:hidden;}
+  .bmode{position:absolute;inset:0;padding:44px 40px 38px;display:none;flex-direction:column;}
+  .bmode.on{display:flex;}
+  .bmode.in{animation:modein .46s cubic-bezier(.16,1,.3,1);}
+  .bmode.out{display:flex;animation:modeout .2s ease forwards;pointer-events:none;}
+  @keyframes modein{from{opacity:0;transform:translateY(34px);}to{opacity:1;transform:none;}}
+  @keyframes modeout{to{opacity:0;transform:translateY(-18px);}}
+  /* the wipe — one bright edge crossing the stage on every change. It is the
+     only motion that is not the content itself, so it is the thing that reads
+     as a cut rather than a redraw. */
+  #wipe{position:absolute;inset:0;z-index:9;pointer-events:none;overflow:hidden;}
+  #wipe i{position:absolute;top:0;bottom:0;width:46%;left:-50%;
+    background:linear-gradient(90deg,transparent,rgba(155,48,255,.5),rgba(204,102,255,.85),transparent);
+    box-shadow:0 0 60px rgba(155,48,255,.6);}
+  #wipe.go i{animation:wipe .52s cubic-bezier(.5,0,.2,1);}
+  @keyframes wipe{from{left:-50%}to{left:110%}}
+  @media (prefers-reduced-motion:reduce){
+    .bmode.in,.bmode.out,#wipe.go i{animation:none;}
+    .bmode.out{display:none;}
+  }
+  .bhead{font-family:'Press Start 2P',monospace;font-size:13px;letter-spacing:.26em;
+    color:var(--hi);text-align:center;text-shadow:0 0 12px var(--glow);}
 
-  .ph{font-family:'Press Start 2P',monospace;font-size:13px;letter-spacing:.26em;
-    color:var(--hi);text-align:center;text-shadow:0 0 12px var(--glow);margin-bottom:6px;}
-  .pt{font-weight:900;font-size:50px;line-height:.94;text-transform:uppercase;text-align:center;
-    text-shadow:0 0 26px var(--glow);margin-bottom:22px;}
-
-  /* tale of the tape, compact — the stat column is what earns the space */
-  .trow{display:grid;grid-template-columns:1fr 190px 1fr;align-items:center;
-    padding:13px 20px;border-top:1px solid var(--line);background:var(--panel);}
-  .trow:last-child{border-bottom:1px solid var(--line);}
-  .trow .v{font-weight:700;font-size:38px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .trow .v.r{text-align:right;}
-  .trow .v.win{color:var(--gold);text-shadow:0 0 16px rgba(255,206,0,.45);}
-  .trow .lb{font-family:'Press Start 2P',monospace;font-size:11px;letter-spacing:.16em;
-    color:var(--hi);text-align:center;}
-  .tnames{display:grid;grid-template-columns:1fr 190px 1fr;align-items:end;margin-bottom:16px;}
-  .tnames .n{font-weight:900;font-size:44px;text-transform:uppercase;line-height:1;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .tnames .n.r{text-align:right;}
-  .tnames .vs{font-family:'Press Start 2P',monospace;font-size:22px;color:var(--pink);
-    text-align:center;text-shadow:0 0 16px rgba(255,51,204,.6);}
-  body.on .trow{animation:dealin .4s cubic-bezier(.16,1,.3,1) backwards;}
-  @keyframes dealin{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
-
-  /* the dossier pane */
-  #paneWho .big{font-weight:900;font-size:82px;line-height:.92;text-transform:uppercase;
-    text-shadow:0 0 32px var(--glow);}
-  #paneWho .nick{font:500 30px 'Barlow';color:var(--gold);font-style:italic;margin-top:8px;}
-  #paneWho .chips{display:flex;gap:40px;margin-top:26px;flex-wrap:wrap;}
-  #paneWho .chip .l{font-family:'Press Start 2P',monospace;font-size:11px;letter-spacing:.18em;
-    color:var(--dim);margin-bottom:9px;}
-  #paneWho .chip .v{font-weight:700;font-size:46px;line-height:.9;}
-  #paneWho .chip .v.gold{color:var(--gold);}
-
-  /* the loading pane fills everything under the CTA when closed */
-  /* The loading screen is TWO parts that make one picture: the shutters carry
-     the event name across the slot, and this carries the card underneath them.
-     It used to start at the CTA and cover the slot, so it drew straight over
-     the shutter title — two loading screens fighting for the same 608px. */
-  #load{position:absolute;top:calc(var(--cta) + var(--feed));bottom:0;left:0;right:0;z-index:22;
-    padding:0 46px 46px;display:flex;flex-direction:column;
-    transition:opacity .4s ease;}
-  body.open #load{opacity:0;pointer-events:none;}
-  #load .body{flex:1;min-height:0;padding-top:30px;
-    display:flex;flex-direction:column;justify-content:center;}
-  #load .body > *{flex:none;}
-  .lrow{display:grid;grid-template-columns:56px 1fr 130px;align-items:center;gap:14px;
-    padding:13px 18px;margin-bottom:9px;background:var(--panel);border-left:4px solid var(--pur);}
-  .lrow .r{font-family:'Press Start 2P',monospace;font-size:13px;color:var(--hi);}
-  .lrow .n{font-weight:700;font-size:33px;text-transform:uppercase;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .lrow .x{font-weight:700;font-size:28px;text-align:right;color:var(--dim);}
-
-  /* ── UBAe: the clock sliver grows a team line and a score ──────────────
-     A UBAe bout is two TEAMS' representatives, and the score of the match
-     is the thing the fighters' own names cannot tell you. Both are gated to
-     .ubae so a UBA night's sliver is exactly what it was. */
-  #clock .nm{flex-direction:column;justify-content:center;gap:2px;}
-  #clock .nm.l{align-items:flex-end;} #clock .nm.r{align-items:flex-start;}
-  #clock .who{font-weight:900;font-size:52px;line-height:1;white-space:nowrap;
-    text-shadow:0 0 22px var(--glow);}
-  #clock .team{font:600 19px 'Barlow';letter-spacing:.2em;color:var(--dim);
-    text-transform:uppercase;white-space:nowrap;display:none;}
-  body.ubae #clock .team{display:block;}
-  #pips{display:none;gap:5px;align-items:center;margin-bottom:5px;}
-  body.ubae #pips{display:flex;}
-  #pips .p{width:15px;height:9px;background:rgba(255,255,255,.16);
-    border:1px solid rgba(255,255,255,.22);}
-  #pips .p.on{background:var(--hi);border-color:var(--hi);box-shadow:0 0 9px var(--glow);}
-  #pips .sep{width:12px;height:1px;background:var(--dim);margin:0 3px;}
-
-  /* ── the standby SCREENS ───────────────────────────────────────────────
-     Six screens, not fifteen. The horizontal standby carries a playoff
-     bracket and a card-collection wall; at 1080 wide with 1112px of height
-     those become unreadable rather than smaller, so a press for one of them
-     HOLDS whatever is already on air instead of blanking this canvas. */
-  .conf-h{font-family:'Press Start 2P',monospace;font-size:13px;letter-spacing:.24em;
-    color:var(--hi);margin:18px 0 10px;text-shadow:0 0 12px var(--glow);}
-  .conf-h:first-child{margin-top:0;}
-  .srow{display:grid;grid-template-columns:56px 1fr 150px 92px;align-items:center;gap:12px;
-    padding:12px 18px;margin-bottom:8px;background:var(--panel);border-left:4px solid var(--pur);}
-  .srow.lead{border-left-color:var(--gold);}
-  .srow .rk{font-family:'Press Start 2P',monospace;font-size:14px;color:var(--hi);}
-  .srow .nm{font-weight:700;font-size:34px;text-transform:uppercase;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .srow .rec{font-weight:700;font-size:30px;text-align:right;}
-  .srow .df{font-weight:700;font-size:26px;text-align:right;color:var(--dim);}
-
-  .tgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-  .tcol{background:var(--panel);border-top:3px solid var(--accent);padding:12px 16px;}
-  .tcol .th{font-weight:900;font-size:28px;line-height:1;text-transform:uppercase;margin-bottom:8px;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .tcol .plr{font:600 22px/1.15 'Barlow';color:#e6d8ff;padding:2px 0;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .tcol .ct{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.2em;
-    color:var(--dim);margin-top:9px;}
-
-  .rrow{display:grid;grid-template-columns:64px 1fr 200px;align-items:center;gap:12px;
-    padding:10px 18px;margin-bottom:7px;background:var(--panel);border-left:4px solid var(--pur);}
-  .rrow.one{border-left-color:var(--gold);}
-  .rrow .n{font-family:'Press Start 2P',monospace;font-size:14px;color:var(--hi);}
-  .rrow .nm{font-weight:700;font-size:32px;text-transform:uppercase;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .rrow .wc{font:600 20px 'Barlow';letter-spacing:.12em;text-align:right;color:var(--dim);
-    text-transform:uppercase;}
-
-  /* team vs team is the one screen that is a PICTURE, not a list — it is on
-     air while two teams walk out, and a list would be read instead of them */
-  .tvs{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;}
-  .tvs .t{font-weight:900;font-size:96px;line-height:.9;text-transform:uppercase;text-align:center;
-    text-shadow:0 0 34px var(--glow);padding:0 20px;}
-  .tvs .v{font-family:'Press Start 2P',monospace;font-size:34px;color:var(--pink);
+  /* ① TEAMS — three across against three across.
+     Not a column each: the desktop bar reads FFF vs FFF and this has to be
+     the same shape or the two screens are teaching different things. The
+     RING is the entire state readout, borrowed from the battleroom -- plain
+     ring available, GOLD picked, and a spent fighter dims out of it. */
+  #mTeams{flex-direction:column;align-items:stretch;padding:16px 22px 26px;}
+  .sixup{display:flex;align-items:flex-start;width:100%;}
+  /* ── the minimal tape ──
+     Only up once BOTH corners have picked, because a tape is a COMPARISON --
+     one fighter beside an empty column is not a shorter tape, it is a broken
+     one. A row neither man can fill is dropped rather than printed as two
+     dashes: half this roster has no reach and no stance on file. */
+  .minitape{margin-top:34px;display:none;flex-direction:column;}
+  .minitape.on{display:flex;animation:modein .4s cubic-bezier(.16,1,.3,1);}
+  /* The two values READ INWARD, toward the label between them. Splayed to the
+     outer edges of a 1036px row they were 300px apart with the thing they are
+     being compared on marooned in the middle -- a tape is a comparison and the
+     eye has to be able to make it without travelling. */
+  .mtrow{display:grid;grid-template-columns:1fr auto 1fr;gap:30px;align-items:center;
+    padding:15px 34px;border-top:1px solid var(--line);background:var(--panel);}
+  .mtrow:last-child{border-bottom:1px solid var(--line);}
+  .mtrow .v{font-weight:700;font-size:44px;line-height:1;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;text-align:right;}
+  .mtrow .v.r{text-align:left;}
+  .mtrow .v.win{color:var(--gold);text-shadow:0 0 16px rgba(255,206,0,.45);}
+  .mtrow .lb{font-family:'Press Start 2P',monospace;font-size:16px;letter-spacing:.18em;
+    color:var(--hi);text-align:center;text-shadow:0 0 12px var(--glow);
+    min-width:200px;}
+  .tside{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .tside .tnm{font-weight:900;font-size:56px;line-height:1;text-transform:uppercase;
+    text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
+    text-shadow:0 0 24px var(--glow);}
+  .tstack{display:flex;gap:11px;width:100%;justify-content:center;}
+  .f{flex:1;min-width:0;max-width:158px;display:flex;flex-direction:column;align-items:center;
+    gap:7px;transition:opacity .3s ease;}
+  /* the cue keeps its row whether it shows or not, so nothing jumps when it steps */
+  /* The cursor sits ON THE HEAD, character-select style. That only works
+     because the tile is now the cut-out's OWN aspect (300x463): a 158x392
+     box let `contain` letterbox the fighter to the bottom, so the marker was
+     floating 140px of empty air above him. */
+  .f .mk{height:34px;display:flex;align-items:flex-end;justify-content:center;gap:7px;
+    margin-bottom:2px;opacity:0;transform:translateY(6px);
+    transition:opacity .18s ease,transform .18s cubic-bezier(.16,1,.3,1);}
+  .f.cue .mk{opacity:1;transform:none;}
+  .f .mk .a{font-family:'Press Start 2P',monospace;font-size:17px;color:var(--hi);
+    text-shadow:0 0 14px var(--hi);animation:cueblink .7s steps(1) infinite;}
+  .f .mk .p{font-family:'Press Start 2P',monospace;font-size:13px;letter-spacing:.14em;color:var(--hi);}
+  @keyframes cueblink{0%,49%{opacity:1}50%,100%{opacity:.15}}
+  /* THE STROKE FOLLOWS THE FIGHTER, NOT A RECTANGLE. An inset ring on a
+     block draws a BOX around the photo; four hard drop-shadows on the
+     cut-out itself trace its own silhouette, which is what an outlined
+     avatar means. Nothing here has a background, so there is no box left. */
+  /* NEUTRAL until something has happened to you. Purple was the league's
+     colour doing a job it cannot do: if "available" is already coloured, the
+     gold that means PICKED is just a second colour rather than the moment the
+     screen was built for. So available is white, picked is gold, spent is a
+     white that has gone out. */
+  .f{--ring:rgba(176,166,196,.42);}
+  .f.picked{--ring:var(--gold);}
+  .f.used{--ring:rgba(176,166,196,.2);}
+  /* 4px cardinal, 3px diagonal. Three flat was about one device pixel on a
+     phone and read as nothing; six read as a sticker. The diagonals are
+     needed at any weight -- without them every sloped edge (a shoulder, a
+     raised glove) breaks open at the corners. */
+  .f .av,.f .sil{width:100%;aspect-ratio:300/463;
+    filter:drop-shadow(4px 0 0 var(--ring)) drop-shadow(-4px 0 0 var(--ring))
+           drop-shadow(0 4px 0 var(--ring)) drop-shadow(0 -4px 0 var(--ring))
+           drop-shadow(3px 3px 0 var(--ring)) drop-shadow(-3px 3px 0 var(--ring))
+           drop-shadow(3px -3px 0 var(--ring)) drop-shadow(-3px -3px 0 var(--ring));
+    transition:filter .3s ease;}
+  .f .av{object-fit:contain;object-position:bottom center;}
+  /* The GLOW pulses on a wrapper, not on the image: the stroke itself is
+     eight stacked drop-shadows and CSS cannot interpolate a chain like that,
+     but a parent's filter composes over the child's result. So the outline
+     stays hard and only the halo around it breathes. The name is outside the
+     wrapper, which is why it does not breathe with it. */
+  .f .por{display:block;width:100%;animation:glowIdle 3.6s ease-in-out infinite;}
+  .f.picked .por{animation:glowPick 2s ease-in-out infinite;}
+  .f.used .por{animation:none;}
+  /* Available is a grey that has to sit next to gold for five bouts without
+     competing with it. Pure white read as a highlight -- six highlights and
+     the picked one stops being the loud thing on screen. */
+  @keyframes glowIdle{
+    0%,100%{filter:drop-shadow(0 0 4px rgba(176,166,196,.1));}
+    50%    {filter:drop-shadow(0 0 11px rgba(176,166,196,.24));}}
+  @keyframes glowPick{
+    0%,100%{filter:drop-shadow(0 0 9px rgba(255,206,0,.45));}
+    50%    {filter:drop-shadow(0 0 28px rgba(255,206,0,.9));}}
+  @media (prefers-reduced-motion:reduce){ .f .por{animation:none;} }
+  /* No photo yet -> the same blank the battleroom uses, masked and filled
+     dark so it reads as the silhouette character rather than a gap. It
+     faces the centre, so each side gets its own hand. */
+  /* Drawn as an IMAGE and blackened, not as a mask over a fill. The blank is
+     700x1080 -- the same 0.648 the photo thumbs are -- so it sizes through the
+     exact path a real photo does, and the stroke traces it identically. A
+     masked block took its own sizing route and came out a narrow bar. */
+  .f .sil{filter:brightness(.12) saturate(0)
+          drop-shadow(4px 0 0 var(--ring)) drop-shadow(-4px 0 0 var(--ring))
+          drop-shadow(0 4px 0 var(--ring)) drop-shadow(0 -4px 0 var(--ring))
+          drop-shadow(3px 3px 0 var(--ring)) drop-shadow(-3px 3px 0 var(--ring))
+          drop-shadow(3px -3px 0 var(--ring)) drop-shadow(-3px -3px 0 var(--ring));}
+  .f .nm{font-weight:700;font-size:26px;line-height:1;text-transform:uppercase;text-align:center;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  .f.picked .nm{color:var(--gold);text-shadow:0 0 16px rgba(255,206,0,.4);}
+  .f.used{opacity:.46;}
+  /* the VS sits level with the FACES, not with the whole column, so it
+     lands between the two rows rather than under the team names */
+  /* offset to the middle of the FACES: team name 56 + gap 4 + cue row 30,
+     then half a portrait. Centring it on the column instead dropped it below
+     the fighters, which reads as a caption rather than a versus. */
+  .tvs{display:flex;align-items:flex-start;justify-content:center;width:86px;flex:none;
+    padding-top:calc(56px + 4px + 36px + 108px);}
+  .tvs span{font-family:'Press Start 2P',monospace;font-size:26px;color:var(--pink);
     text-shadow:0 0 20px rgba(255,51,204,.6);}
-  .tvs .when{font:600 26px 'Barlow';letter-spacing:.2em;color:var(--dim);text-transform:uppercase;}
+  @media (prefers-reduced-motion:reduce){ .f .mk .a{animation:none;} }
 
-  .ctaBig{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;}
-  .ctaBig .l{font-family:'Press Start 2P',monospace;font-size:14px;letter-spacing:.26em;color:var(--hi);}
-  .ctaBig .u{font-weight:900;font-size:74px;letter-spacing:.03em;text-transform:uppercase;
-    text-shadow:0 0 30px var(--glow);}
-  .ctaBig .s{font:600 27px 'Barlow';color:var(--dim);letter-spacing:.16em;text-transform:uppercase;}
+  /* ② BATTLEROOM — the room is the news, not the roster */
+  #mRoom{align-items:center;justify-content:center;gap:26px;text-align:center;}
+  #mRoom .big{font-weight:900;font-size:104px;line-height:.9;text-transform:uppercase;
+    text-shadow:0 0 34px var(--glow);}
+  #mRoom .sub{font:600 30px 'Barlow';letter-spacing:.16em;color:var(--dim);text-transform:uppercase;}
+  #roomClk{font-weight:900;font-size:150px;line-height:.9;color:var(--gold);
+    font-variant-numeric:tabular-nums;text-shadow:0 0 40px rgba(255,206,0,.45);}
+  #roomClk.low{color:#ff4d4d;text-shadow:0 0 40px rgba(255,77,77,.55);animation:pulse 1s ease-in-out infinite;}
+  #mRoom .who{display:flex;align-items:center;gap:26px;font-weight:900;font-size:46px;
+    text-transform:uppercase;}
+  #mRoom .who em{font-style:normal;font-family:'Press Start 2P',monospace;font-size:18px;color:var(--pink);}
 
-  .empty{font:600 28px 'Barlow';color:var(--dim);letter-spacing:.14em;text-transform:uppercase;
-    text-align:center;padding-top:60px;}
+  /* ③ MATCH — the vertical fight clock. Bigger than the desktop clock
+     arriving in the slot at 56%, which is the reason it exists at all. */
+  #mMatch{align-items:center;justify-content:center;gap:4px;}
+  .mrow{display:flex;align-items:center;gap:22px;width:100%;}
+  .mrow .cor{width:16px;align-self:stretch;min-height:88px;}
+  /* name and team are ONE stack. Left as two flex children with the name on
+     flex:1, the team was pushed to the far end of the row -- so each fighter's
+     side was labelled with his own team sitting over the OTHER man's name. */
+  .mrow .stk{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;}
+  .mrow .who{font-weight:900;font-size:76px;line-height:.94;text-transform:uppercase;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 0 26px var(--glow);}
+  .mrow .tag{font:600 22px 'Barlow';letter-spacing:.18em;color:var(--dim);text-transform:uppercase;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .mrow.b{flex-direction:row-reverse;}
+  .mrow.b .stk{align-items:flex-end;}
+  .mrow.b .who,.mrow.b .tag{text-align:right;}
+  #mMatch .vsx{font-family:'Press Start 2P',monospace;font-size:20px;color:var(--pink);
+    margin:8px 0;text-shadow:0 0 16px rgba(255,51,204,.6);}
+  #mClk{font-weight:900;font-size:138px;line-height:.9;color:var(--gold);margin-top:16px;
+    font-variant-numeric:tabular-nums;text-shadow:0 0 36px rgba(255,206,0,.45);}
+  #mClk.low{color:#ff4d4d;text-shadow:0 0 36px rgba(255,77,77,.6);animation:pulse 1s ease-in-out infinite;}
+  #mRd{font-family:'Press Start 2P',monospace;font-size:14px;letter-spacing:.2em;color:#fff;
+    margin-top:14px;text-shadow:0 0 12px var(--glow);}
 
   /* ── THE RUNDOWN — one fighter at a time, the whole frame ───────────────
-     Not a bottom-third pane: the rundown runs with the shutters CLOSED, so
-     there is no game behind it and the photo is allowed the 820px that makes
-     it a portrait rather than a thumbnail. It is a third closed state
-     alongside the loading card, which is why it draws over #load rather than
-     living inside it — the two can never be on at once. */
+     Not a bottom-third pane: the rundown deliberately COVERS the desktop
+     feed, because it is the one segment this canvas owns outright and a
+     portrait needs the height. It is the only thing here that hides the
+     show above it, so it is only ever up while somebody is holding it. */
   #rundown{position:absolute;top:var(--cta);bottom:0;left:0;right:0;z-index:26;
     display:none;flex-direction:column;overflow:hidden;
     background:linear-gradient(180deg,#0b0018,#16062e 42%,#0b0018);}
@@ -328,44 +349,48 @@
   <span class="v" id="ctaUrl">DISCORD.GG/UBA</span>
 </div>
 
-<div id="slot">
-  <div class="shut" id="shutT"></div>
-  <div class="shut" id="shutB"></div>
-  <div id="scan"></div>
-  <div id="shutTxt">
-    <div class="k" id="loadKick">STANDING BY</div>
-    <div class="v" id="loadTitle">UBA</div>
-    <div class="s" id="loadSub"></div>
-  </div>
-  <div class="edge"></div>
+<!-- The feed slot is TRANSPARENT and always open. Behind this page OBS
+     composites the desktop programme feed -- the game AND every graphic the
+     deck draws on it. Nothing here covers it, which is why this half never
+     answers a press the desktop scene has already answered. -->
+<div id="slot"><div class="edge"></div></div>
+
+<!-- ── THE SCORE RAIL — always on, always here ─────────────────────── -->
+<div id="rail">
+  <div class="tm l"><span class="n" id="rtA">TEAM A</span><span class="p" id="rpA"></span></div>
+  <div class="mid"><div class="sc" id="rsc">0 — 0</div><div class="bt" id="rbt">BOUT 1 OF 5</div></div>
+  <div class="tm r"><span class="n" id="rtB">TEAM B</span><span class="p" id="rpB"></span></div>
 </div>
 
-<div id="clock">
-  <div class="nm l"><span class="who" id="cnL">—</span><span class="team" id="ctL"></span></div>
-  <div class="cor" id="corL" style="background:#3a3a44"></div>
-  <div class="mid"><div id="pips"></div><div id="tm">0:00</div><div id="rd">ROUND 1</div></div>
-  <div class="cor" id="corR" style="background:#3a3a44"></div>
-  <div class="nm r"><span class="who" id="cnR">—</span><span class="team" id="ctR"></span></div>
-</div>
-<div id="boutTag"><span id="boutTagTxt">MAIN EVENT</span></div>
-
-<div id="bot">
-  <div class="pane" id="paneTape">
-    <div class="ph" id="tapeKick">TALE OF THE TAPE</div>
-    <div class="tnames"><span class="n" id="tnL">—</span><span class="vs">VS</span><span class="n r" id="tnR">—</span></div>
-    <div id="tapeRows"></div>
+<!-- ── THE MODE STAGE ─────────────────────────────────────────────── -->
+<div id="stage">
+  <div class="bmode" id="mTeams">
+    <div class="sixup">
+      <div class="tside a"><span class="tnm" id="tnA">TEAM A</span><div class="tstack" id="t3A"></div></div>
+      <div class="tvs"><span>VS</span></div>
+      <div class="tside b"><span class="tnm" id="tnB">TEAM B</span><div class="tstack" id="t3B"></div></div>
+    </div>
+    <div class="minitape" id="mtape"></div>
   </div>
 
-  <div class="pane" id="paneWho">
-    <div class="ph" id="whoKick">IN THE RING</div>
-    <div class="big" id="whoName">—</div>
-    <div class="nick" id="whoNick"></div>
-    <div class="chips" id="whoChips"></div>
+  <div class="bmode" id="mRoom">
+    <div class="bhead">THE BATTLEROOM</div>
+    <div class="big">COACHES<br>ARE PICKING</div>
+    <div id="roomClk">2:00</div>
+    <div class="who"><span id="rmA">TEAM A</span><em>VS</em><span id="rmB">TEAM B</span></div>
   </div>
-</div>
 
-<div id="load">
-  <div class="body" id="loadBody"></div>
+  <div class="bmode" id="mMatch">
+    <div class="mrow"><span class="cor" id="mcA" style="background:#e8312a"></span>
+      <span class="stk"><span class="who" id="mnA">—</span><span class="tag" id="mtA"></span></span></div>
+    <div class="vsx">VS</div>
+    <div class="mrow b"><span class="cor" id="mcB" style="background:#2e6fe8"></span>
+      <span class="stk"><span class="who" id="mnB">—</span><span class="tag" id="mtB"></span></span></div>
+    <div id="mClk">0:00</div>
+    <div id="mRd">ROUND 1</div>
+  </div>
+
+  <div id="wipe"><i></i></div>
 </div>
 
 <div id="rundown">
@@ -400,74 +425,174 @@ const esc = t => String(t ?? '').replace(/[<>&]/g, ch => ({'<':'&lt;','>':'&gt;'
 const has = v => v !== null && v !== undefined && String(v).trim() !== '' && String(v).trim() !== '—'
 const norm = s => String(s ?? '').trim().toLowerCase()
 const FUTURE = () => new Date(Date.now() - 6*3600e3).toISOString()
-
-// ── the states ─────────────────────────────────────────────────────────
-// open = the shutters are apart and the game is showing through the slot.
-// Everything else keys off this one class, so there is exactly one place
-// that decides whether the frame is a loading screen or a match.
-function setOpen(on){ document.body.classList.toggle('open', !!on) }
-function setClock(on){ document.body.classList.toggle('clockon', !!on) }
-function pane(which){
-  document.querySelectorAll('.pane').forEach(p => p.classList.remove('on'))
-  if(which) $(which).classList.add('on')
-}
-// The rundown is the THIRD closed state. It is mutually exclusive with the
-// loading card by construction — one class, one screen — because both want
-// the whole frame and neither can be half on air.
-function setRundown(on){
-  document.body.classList.toggle('rundown', !!on)
-  if(!on){ clearTimeout(RD.t); RD.t = null }
-}
+const mmss = s => `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`
 
 // ── league skin ────────────────────────────────────────────────────────
-let SPLIT = 'Summer Split'
 function setLeague(lg){
   const k = norm(lg) === 'gfl' ? 'gfl' : norm(lg) === 'ubae' ? 'ubae' : 'uba'
   document.body.classList.toggle('gfl', k === 'gfl')
-  document.body.classList.toggle('ubae', k === 'ubae')
   document.body.dataset.league = k
 }
 if(Q.get('league')) setLeague(Q.get('league'))
 
-// ── clock ──────────────────────────────────────────────────────────────
-let tHandle = null
-function timer(secs){
-  clearInterval(tHandle)
-  const el = $('tm')
+/* ═══════════════════════════════════════════════════════════════════════
+   THE MODE STAGE
+
+   Three blocks, and which one is up is decided by the show state the deck
+   ALREADY broadcasts — never by a button of its own. That is the whole
+   reason nothing on this canvas can render twice: the desktop scene in the
+   feed slot answers the operator's press, and this half answers the state
+   that press put the show into.
+   ═══════════════════════════════════════════════════════════════════════ */
+let MODE = null, outT = null
+function mode(id){
+  if(MODE === id) return
+  const prev = MODE ? $(MODE) : null
+  MODE = id
+  if(prev){
+    prev.classList.remove('on','in'); prev.classList.add('out')
+    clearTimeout(outT)
+    outT = setTimeout(() => prev.classList.remove('out'), 220)
+  }
+  const next = $(id)
+  next.classList.remove('out'); next.classList.add('on','in')
+  // one bright edge crossing the stage — the thing that reads as a CUT
+  // rather than a redraw, and the only motion here that is not content.
+  const w = $('wipe'); w.classList.remove('go'); void w.offsetWidth; w.classList.add('go')
+}
+
+// ── the rail ───────────────────────────────────────────────────────────
+// A UBAe match is first to three. The pips run OUTWARD from the centre on
+// both sides so the two scores are mirror images and neither team's row
+// reads as the longer one.
+function pips(el, n){
+  el.innerHTML = Array.from({length:3}, (_,i) =>
+    `<i class="${i < n ? 'on' : ''}"></i>`).join('')
+}
+function drawRail(){
+  $('rtA').textContent = String(MN.teamA || 'TEAM A').toUpperCase()
+  $('rtB').textContent = String(MN.teamB || 'TEAM B').toUpperCase()
+  pips($('rpA'), MN.scoreA); pips($('rpB'), MN.scoreB)
+  $('rsc').textContent = `${MN.scoreA} — ${MN.scoreB}`
+  const bout = Math.min(5, MN.scoreA + MN.scoreB + 1)
+  $('rbt').textContent = (MN.scoreA >= 3 || MN.scoreB >= 3) ? 'FINAL' : `BOUT ${bout} OF 5`
+}
+
+// ── ① the two teams, three starters a side ─────────────────────────────
+// The avatars come from ubae_fighter_records, which is also where the
+// horizontal rosters screen gets them, so a fighter photographed once shows
+// up on both canvases without a second upload.
+const PHOTO = {}
+function starterCards(box, names, used, pick, tag, side){
+  const list = (names || []).slice(0, 3)
+  const rows = list.length ? list : [null, null, null]
+  box.innerHTML = rows.map((n, i) => {
+    // A lineup that has not been revealed yet still gets three faces. Three
+    // blank rings say "three are coming"; an empty column says nothing, and
+    // the stack would resize the moment the reveal landed.
+    const label = has(n) ? n : 'TBA'
+    const url = has(n) ? PHOTO[norm(n)] : null
+    // An <img> so the stroke can trace the cut-out; a masked block when there
+    // is no photo, which is the same silhouette the battleroom falls back to.
+    const inner = url ? `<img class="av" src="${url}" alt="">`
+                      : `<img class="av sil" src="assets/avatar-blank-${side}.png" alt="">`
+    const av = `<span class="por">${inner}</span>`
+    const cls = ((used || []).includes(i) ? ' used' : '') + (pick === i ? ' picked' : '')
+    return `<div class="f${cls}">
+      <span class="mk"><span class="a">▼</span><span class="p">${tag}</span></span>
+      ${av}<span class="nm">${esc(label)}</span></div>`
+  }).join('')
+}
+function drawTeams(){
+  $('tnA').textContent = String(MN.teamA || 'TEAM A').toUpperCase()
+  $('tnB').textContent = String(MN.teamB || 'TEAM B').toUpperCase()
+  starterCards($('t3A'), MN.left,  MN.usedL, MN.pickA, 'P1', 'left')
+  starterCards($('t3B'), MN.right, MN.usedR, MN.pickB, 'P2', 'right')
+  cueDraw()
+  drawMiniTape()
+}
+
+// P1 IS THE LEFT SIDE AND P2 IS THE RIGHT SIDE — it names which corner, not
+// which slot in a lineup. Numbering the three positions instead put a P3 on
+// screen that matches nothing anybody says out loud.
+//
+// It never parks. A character-select cursor is always travelling — that
+// motion is the only thing moving on this block, and it is what walks a
+// viewer's eye across six faces they have never seen before. Who is actually
+// PICKED is said by the gold stroke, which does not need the cursor's help.
+let cueI = 0, cueT = null
+function cueDraw(){
+  ;[$('t3A'), $('t3B')].forEach(box => {
+    ;[...box.children].forEach((c, i) => c.classList.toggle('cue', i === cueI))
+  })
+}
+function cueStart(){
+  clearInterval(cueT)
+  cueT = setInterval(() => { cueI = (cueI + 1) % 3; cueDraw() }, 1600)
+}
+cueStart()
+
+// ── ② the battleroom ───────────────────────────────────────────────────
+let roomT = null
+function roomClock(secs){
+  clearInterval(roomT)
+  const el = $('roomClk')
   if(secs == null){ el.textContent = ''; el.classList.remove('low'); return }
   let left = secs
-  const draw = () => { el.textContent = `${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`
-    el.classList.toggle('low', left <= 10) }
+  const draw = () => { el.textContent = mmss(left); el.classList.toggle('low', left <= 15) }
   draw()
-  tHandle = setInterval(() => { left = Math.max(0, left-1); draw(); if(left <= 0) clearInterval(tHandle) }, 1000)
+  roomT = setInterval(() => { left = Math.max(0, left-1); draw(); if(left <= 0) clearInterval(roomT) }, 1000)
 }
-// Names shrink to fit their half rather than being clipped. Measured after
-// the face loads: measured against the fallback they come back narrow.
-// The name is now a span inside its half, so the ROOM is the half's width and
-// the thing that shrinks is the span — measuring the span against itself
-// would have found it always fits.
-function fitNames(){
-  for(const id of ['cnL','cnR']){
-    const el = $(id); if(!el) return
-    const room = el.parentElement.clientWidth - 52
-    let px = 52; el.style.fontSize = px + 'px'
+function drawRoom(){
+  $('rmA').textContent = String(MN.teamA || 'TEAM A').toUpperCase()
+  $('rmB').textContent = String(MN.teamB || 'TEAM B').toUpperCase()
+}
+
+// ── ③ the match ────────────────────────────────────────────────────────
+let clkT = null
+function matchClock(secs){
+  clearInterval(clkT)
+  const el = $('mClk')
+  if(secs == null){ el.textContent = ''; el.classList.remove('low'); return }
+  let left = secs
+  const draw = () => { el.textContent = mmss(left); el.classList.toggle('low', left <= 10) }
+  draw()
+  clkT = setInterval(() => { left = Math.max(0, left-1); draw(); if(left <= 0) clearInterval(clkT) }, 1000)
+}
+// Names shrink to fit rather than being clipped, measured after the face
+// loads: measured against the fallback they come back about 18% narrow.
+function fitMatch(){
+  for(const id of ['mnA','mnB']){
+    const el = $(id); if(!el) continue
+    const room = el.parentElement.clientWidth
+    let px = 76; el.style.fontSize = px + 'px'
     const w = () => { const r = document.createRange(); r.selectNodeContents(el)
       return r.getBoundingClientRect().width }
-    while(w() > room && px > 22){ px -= 2; el.style.fontSize = px + 'px' }
+    while(w() > room && px > 34){ px -= 2; el.style.fontSize = px + 'px' }
   }
 }
-if(document.fonts && document.fonts.ready) document.fonts.ready.then(fitNames)
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(() => { fitMatch(); drawTeams() })
 
-// A UBAe match is first to three, so the score is three pips a side. Drawn
-// only when a score arrives — a UBA night never has one and the row stays
-// exactly the height it was.
-function drawPips(a, b){
-  const sa = Math.max(0, Math.min(3, +a || 0)), sbv = Math.max(0, Math.min(3, +b || 0))
-  const side = n => Array.from({length:3}, (_,i) => `<span class="p${i < n ? ' on' : ''}"></span>`).join('')
-  $('pips').innerHTML = side(sa) + '<span class="sep"></span>' + side(sbv)
+function drawMatch(){
+  const nameA = pickName(MN.left,  MN.pickA) || MN.teamA || '—'
+  const nameB = pickName(MN.right, MN.pickB) || MN.teamB || '—'
+  if(!MN.manualA) $('mnA').textContent = String(nameA).toUpperCase()
+  if(!MN.manualB) $('mnB').textContent = String(nameB).toUpperCase()
+  $('mtA').textContent = String(MN.teamA || '').toUpperCase()
+  $('mtB').textContent = String(MN.teamB || '').toUpperCase()
+  fitMatch()
 }
 
-// ── tale of the tape, in the bottom half ───────────────────────────────
+/* ═══════════════════════════════════════════════════════════════════════
+   THE RUNDOWN — the one thing on this canvas with no desktop counterpart,
+   which is why it is still here after everything else moved up into the
+   feed slot. Full frame, shutters gone, one fighter at a time.
+   ═══════════════════════════════════════════════════════════════════════ */
+const RD = { list: [], i: 0, t: null }
+const RD_MS = 7000
+const wcShort = w => String(w || '').replace(/_/g,' ').toUpperCase()
+const wcFit = w => { const t = wcShort(w); if(t.length <= 12) return t
+  return t.replace(/\s*HEAVYWEIGHT$/, ' HEAVY').replace(/WEIGHT$/, '').trim() }
 const inches = v => {
   const s = String(v ?? '').trim(); if(!s) return null
   let m = s.match(/^(\d+)\s*['’]\s*(\d+(?:\.\d+)?)?/); if(m) return (+m[1])*12 + (m[2] ? +m[2] : 0)
@@ -475,484 +600,236 @@ const inches = v => {
   m = s.match(/^(\d+(?:\.\d+)?)/); if(m){ const n = +m[1]; return n > 40 && n < 90 ? n : null }
   return null
 }
-const rankNum = v => { const m = String(v ?? '').match(/(\d+)/); return m ? +m[1] : null }
 const ftin = v => { const n = inches(v); return n ? `${Math.floor(n/12)}'${Math.round(n%12)}"` : String(v) }
 const inchOf = v => { const n = inches(v); return n ? `${Math.round(n)}"` : String(v) }
-const TROWS = [
-  { k:'record', l:'RECORD' },
-  { k:'rank',   l:'RANK',   lead:(a,b)=>{const x=rankNum(a),y=rankNum(b);return (x&&y)?(x<y?-1:x>y?1:0):0} },
-  { k:'height', l:'HEIGHT', lead:(a,b)=>{const x=inches(a),y=inches(b);return (x!==null&&y!==null)?(x>y?-1:x<y?1:0):0} },
-  { k:'reach',  l:'REACH',  lead:(a,b)=>{const x=inches(a),y=inches(b);return (x!==null&&y!==null)?(x>y?-1:x<y?1:0):0} },
-  { k:'age',    l:'AGE' },
-  { k:'stance', l:'STANCE' },
-  { k:'weight', l:'DIVISION' },
-]
-function drawTape(d){
-  const L = d.left || {}, R = d.right || {}
-  $('tnL').textContent = String(L.name || '—').toUpperCase()
-  $('tnR').textContent = String(R.name || '—').toUpperCase()
-  if(has(d.title)) $('tapeKick').textContent = String(d.title).toUpperCase()
-  const out = []
-  for(const r of TROWS){
-    const a = L[r.k], b = R[r.k]
-    // A row neither side can fill is DROPPED — half the roster has no reach
-    // and no age, and this pane has 1108px, not a whole frame, to spend.
-    if(!has(a) && !has(b)) continue
-    const lead = r.lead ? r.lead(a, b) : 0
-    const cell = (v, side) => `<span class="v ${side}${(side==='l'&&lead===-1)||(side==='r'&&lead===1)?' win':''}">`
-      + (has(v) ? esc(String(v).toUpperCase()) : '—') + `</span>`
-    out.push(`<div class="trow">${cell(a,'l')}<span class="lb">${r.l}</span>${cell(b,'r')}</div>`)
-  }
-  $('tapeRows').innerHTML = out.join('')
-  ;[...$('tapeRows').children].forEach((n,i) => { n.style.animationDelay = (60 + i*55) + 'ms' })
-  document.body.classList.add('on')
-}
 
-// ── dossier, in the bottom half ────────────────────────────────────────
-function drawWho(d){
-  $('whoName').textContent = String(d.name || '—').toUpperCase()
-  $('whoNick').textContent = has(d.nickname) ? `"${d.nickname}"` : ''
-  const chips = []
-  const chip = (l, v, gold) => `<div class="chip"><div class="l">${l}</div><div class="v${gold?' gold':''}">${esc(v)}</div></div>`
-  if(has(d.record)) chips.push(chip('RECORD', d.record))
-  if(+d.ko > 0)     chips.push(chip('KO WINS', String(+d.ko)))
-  if(+d.rank > 0)   chips.push(chip('RANKED', '#' + (+d.rank), true))
-  if(has(d.weight)) chips.push(chip('DIVISION', String(d.weight).toUpperCase()))
-  $('whoChips').innerHTML = chips.join('')
+function setRundown(on){
+  document.body.classList.toggle('rundown', !!on)
+  if(!on){ clearTimeout(RD.t); RD.t = null }
 }
-
-// ── the data behind every standby screen ───────────────────────────────
-// Read ONCE at boot, the way the horizontal standby does, so a deck press
-// swaps innerHTML instead of waiting on a round trip mid-show. A failed read
-// leaves that slice EMPTY and its screen says so — supabase-js resolves
-// {data:null,error} rather than throwing, so treating a failure as "no teams"
-// would put an empty league table on air over a working database.
-const DATA = { st:[], rec:[], mt:[], ev:[], rk:[] }
-async function loadTeamData(){
-  const keys = ['st','rec','mt','ev','rk']
-  const res = await Promise.all([
-    sb.from('team_standings').select('*'),
-    sb.from('ubae_fighter_records').select('stage_name,current_team,photo_thumb_url'),
-    sb.from('team_matches_public').select('*').eq('status','scheduled').order('match_date').limit(8),
-    sb.from('events_public').select('id,name,event_date').eq('status','scheduled')
-      .gte('event_date', FUTURE()).order('event_date').limit(4),
-    sb.from('rankings_public').select('rank,fighter_name,weight_class,level').eq('scope','weight_class').order('rank'),
-  ])
-  res.forEach((r, i) => {
-    if(r.error){ console.warn('[vertical] ' + keys[i] + ' read failed —', r.error); return }
-    DATA[keys[i]] = r.data || []
+async function buildRundown(names){
+  if(!CARDS) await loadCards()
+  if(!CARDS) return []
+  return names.filter(has).map(n => {
+    const f = cardOf(n) || {}
+    return { name:n, nickname:f.nickname, photo:f.profile_photo_url, champ:!!f.is_champion,
+      rank:f.rank, ko:f.headline_ko_wins, team:f.team, wc:f.weight_class,
+      height:f.height, reach:f.reach, stance:f.stance, record:recOf(f) }
   })
 }
-
-const fdate = d => new Date(d).toLocaleDateString('en-US', { month:'short', day:'numeric' }).toUpperCase()
-const ftime = d => new Date(d).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }).toUpperCase()
-const wcShort = w => String(w || '').replace(/_/g,' ').toUpperCase()
-// LIGHT HEAVYWEIGHT is 17 characters and a stat cell is 282px. Truncating it
-// printed "LIGHT HEAVYW", which reads as a rendering bug rather than a
-// division — so the long ones lose the word every division shares.
-const wcFit = w => { const t = wcShort(w); if(t.length <= 12) return t
-  return t.replace(/\s*HEAVYWEIGHT$/, ' HEAVY').replace(/WEIGHT$/, '').trim() }
-function head(kick, title, sub){
-  $('loadKick').textContent = String(kick || '').toUpperCase()
-  $('loadTitle').textContent = String(title || '').toUpperCase()
-  $('loadSub').textContent = String(sub || '').toUpperCase()
-}
-const EMPTY = t => `<div class="empty">${esc(t)}</div>`
-
-// ── the six standby screens ────────────────────────────────────────────
-// The horizontal standby carries fifteen. A playoff bracket, a rosters-VS
-// wall and a card-collection grid do not become smaller at 1080 wide — they
-// become unreadable — so this canvas carries the six that survive the width,
-// and a press for any of the others HOLDS what is on screen rather than
-// blacking out the vertical output mid-show.
-const SCREEN = {}
-
-// A NAMED event is taken as given — no status filter. The deck names the card
-// it has loaded, and the moment a show goes live that card's status stops
-// being 'scheduled'; filtering on it made the graphic go blank at exactly the
-// point somebody would press it.
-function eventQuery(name){
-  const q = sb.from('events_public').select('id,name,event_date')
-  return name ? q.eq('name', name)
-              : q.eq('status','scheduled').gte('event_date', FUTURE()).order('event_date')
-}
-
-SCREEN.card = async (c) => {
-  const { data: evs, error } = await eventQuery(c && c.event).limit(1)
-  // A failed read must never be mistaken for "no event" — that would put
-  // STANDING BY on air over a working database with a card behind it.
-  if(error){ console.warn('[vertical] event read failed —', error); return false }
-  const ev = evs && evs[0]; if(!ev) return false
-  const { data: bs } = await sb.from('event_matches').select('*').eq('event_id', ev.id).order('bout_number')
-  const open = (bs || []).filter(b => b.fighter_a_name && b.fighter_b_name)
-  head('UP NEXT', ev.name, open.length ? `${open.length} BOUTS` : '')
-  $('loadBody').innerHTML = open.slice(0, 9).map((b, i) =>
-    `<div class="lrow" style="${b.is_title_fight ? 'border-left-color:var(--gold);' : ''}">
-       <span class="r">${b.bout_number ?? i+1}</span>
-       <span class="n">${esc(b.fighter_a_name)} <span style="color:var(--dim)">v</span> ${esc(b.fighter_b_name)}</span>
-       <span class="x">${esc(wcFit(b.weight_class))}</span>
-     </div>`).join('') || EMPTY('card to be announced')
-  return true
-}
-
-SCREEN.standings = () => {
-  if(!DATA.st.length) return false
-  head('UBAe · ' + SPLIT, 'STANDINGS', '')
-  const byC = {}
-  DATA.st.forEach(t => { (byC[t.conference] = byC[t.conference] || []).push(t) })
-  $('loadBody').innerHTML = Object.keys(byC).sort().map(c => {
-    const rows = byC[c].sort((a,b) => (b.match_wins - a.match_wins) || (b.bout_diff - a.bout_diff))
-    return `<div class="conf-h">CONFERENCE ${esc(c)}</div>` + rows.map((t,i) =>
-      `<div class="srow${i===0?' lead':''}"><span class="rk">${i+1}</span>
-        <span class="nm">${esc(t.team_name)}</span>
-        <span class="rec">${t.match_wins}-${t.match_losses}${t.match_draws?'-'+t.match_draws:''}</span>
-        <span class="df">${t.bout_diff>0?'+':''}${t.bout_diff}</span></div>`).join('')
-  }).join('')
-  return true
-}
-
-SCREEN.rosters = () => {
-  if(!DATA.rec.length) return false
-  head('UBAe · ' + SPLIT, 'ROSTERS', '')
-  const confOf = {}; DATA.st.forEach(t => confOf[t.team_name] = t.conference)
-  const byTeam = {}
-  DATA.rec.forEach(f => { if(!f.current_team) return; (byTeam[f.current_team] = byTeam[f.current_team] || []).push(f.stage_name) })
-  const teams = Object.keys(byTeam).sort((a,b) =>
-    (confOf[a]||'Z').localeCompare(confOf[b]||'Z') || a.localeCompare(b))
-  // Two columns, five names deep, all eight teams — the whole league on one
-  // screen with nothing running off the bottom. A third column at 1080 wide
-  // clips every handle over ten characters, which is most of them; a sixth
-  // name pushed the bottom ROW of tiles off the frame, and a roster that is
-  // two teams short is a worse graphic than one that is a name short.
-  $('loadBody').innerHTML = '<div class="tgrid">' + teams.slice(0, 8).map(t =>
-    `<div class="tcol"><div class="th">${esc(t)}</div>
-      ${byTeam[t].slice(0,5).map(n => `<div class="plr">${esc(n)}</div>`).join('')}
-      <div class="ct">CONF ${esc(confOf[t] || '—')}</div></div>`).join('') + '</div>'
-  return true
-}
-
-SCREEN.schedule = () => {
-  if(!DATA.mt.length) return false
-  head('UBAe · ' + SPLIT, 'SCHEDULE', '')
-  $('loadBody').innerHTML = DATA.mt.slice(0, 8).map(m =>
-    `<div class="lrow"><span class="r">W${m.week}</span>
-      <span class="n">${esc(m.team_a_name)} <span style="color:var(--dim)">v</span> ${esc(m.team_b_name)}</span>
-      <span class="x">${fdate(m.match_date)}</span></div>`).join('')
-  return true
-}
-
-SCREEN.teamvs = () => {
-  const m = DATA.mt[0]
-  // The deck's pickbar names tonight's two teams before the fixture list does,
-  // so a match loaded on the deck wins over the nearest scheduled one — on a
-  // rescheduled night those are different teams.
-  const a = MN.teamA || (m && m.team_a_name), b = MN.teamB || (m && m.team_b_name)
-  if(!a || !b) return false
-  head('TONIGHT', 'UBAe', SPLIT)
-  const when = m ? `WEEK ${m.week} · ${fdate(m.match_date)} · ${ftime(m.match_date)}` : SPLIT
-  $('loadBody').innerHTML = `<div class="tvs"><div class="t">${esc(a)}</div>
-    <div class="v">VS</div><div class="t">${esc(b)}</div><div class="when">${esc(when)}</div></div>`
-  return true
-}
-
-function rankScreen(level, label){
-  const rows = DATA.rk.filter(r => level === 'amateur' ? r.level === 'amateur' : r.level !== 'amateur')
-  if(!rows.length) return false
-  head('RANKINGS', label, '')
-  // Grouped by division and cut to the top three of each: a vertical frame
-  // holds about fourteen rows, and a flat top-fourteen shows one division's
-  // whole ladder and none of anybody else's.
-  const byW = {}
-  rows.forEach(r => { (byW[r.weight_class] = byW[r.weight_class] || []).push(r) })
-  $('loadBody').innerHTML = Object.keys(byW).map(w =>
-    `<div class="conf-h">${esc(wcShort(w))}</div>` +
-    byW[w].sort((a,b) => a.rank - b.rank).slice(0,3).map(r =>
-      `<div class="rrow${r.rank===1?' one':''}"><span class="n">${r.rank}</span>
-        <span class="nm">${esc(r.fighter_name)}</span>
-        <span class="wc">${esc(wcFit(w))}</span></div>`).join('')).join('')
-  return true
-}
-SCREEN.ubarank = () => rankScreen('pro', 'UBA RANKINGS')
-SCREEN.gflrank = () => rankScreen('amateur', 'GFL RANKINGS')
-
-SCREEN.nextev = (c) => {
-  const evs = DATA.ev.filter(e => !c || !c.exclude || e.name !== c.exclude)
-  if(!evs.length) return false
-  head('COMING UP', evs.length > 1 ? 'NEXT EVENTS' : 'NEXT EVENT', '')
-  $('loadBody').innerHTML = evs.slice(0,4).map(e =>
-    `<div class="lrow"><span class="r">›</span><span class="n">${esc(e.name)}</span>
-      <span class="x">${fdate(e.event_date)}</span></div>`).join('')
-  return true
-}
-SCREEN.next3 = SCREEN.nextev
-
-SCREEN.cta = () => {
-  head('VGA ESPORTS', 'JOIN IN', '')
-  $('loadBody').innerHTML = `<div class="ctaBig">
-    <div class="l">PLAY · WATCH · BET</div>
-    <div class="u">DISCORD.GG/UBA</div>
-    <div class="s">ubaesports.com</div></div>`
-  return true
-}
-
-// ── which screen, and the auto-cycle ───────────────────────────────────
-const ROTA = {
-  ubae: ['teamvs','standings','rosters','schedule','cta'],
-  uba:  ['card','ubarank','nextev','cta'],
-  gfl:  ['card','gflrank','nextev','cta'],
-}
-let cycle = null
-function stopCycle(){ clearInterval(cycle); cycle = null }
-
-async function showView(view, c){
-  const fn = SCREEN[view]
-  // An unknown view is a screen this canvas deliberately does not carry
-  // (bracket, rosters VS, the card wall). HOLD what is on air — blanking the
-  // vertical output because the operator pressed a horizontal-only screen is
-  // the worst possible reading of "not supported".
-  if(!fn){ console.log('[vertical] no vertical screen for', view, '— holding'); return }
-  const ok = await fn(c)
-  // A screen with nothing in it is the same problem one step later: it renders
-  // an empty panel. Hold instead, and say why in the log.
-  if(!ok) console.log('[vertical]', view, 'has no data — holding')
-}
-
-async function autoCycle(league){
-  const list = ROTA[league] || ROTA.ubae
-  let i = 0
-  const step = () => showView(list[i++ % list.length], null)
-  await step()
-  stopCycle()
-  cycle = setInterval(step, 15000)
-}
-
-// ── THE RUNDOWN ────────────────────────────────────────────────────────
-// One fighter at a time, in card order, with the photo the profile already
-// has. This is the UBA 15 rundown without the voiceover — so the timing is
-// the graphic's own, not a voice's, and it advances on a fixed beat that the
-// deck can override with a Next press when the desk is talking over it.
-const RD = { list: [], i: 0, t: null }
-const RD_MS = 7000
-
-async function buildRundown(eventName){
-  const { data: evs, error } = await eventQuery(eventName).limit(1)
-  if(error){ console.warn('[vertical] rundown event read failed —', error); return [] }
-  const ev = evs && evs[0]; if(!ev) return []
-  const [{ data: bs }, cardsRes] = await Promise.all([
-    sb.from('event_matches').select('*').eq('event_id', ev.id).order('bout_number'),
-    sb.from('fighter_cards').select('display_name,nickname,weight_class,rank,is_champion,country,team,'
-      + 'profile_photo_url,headline_wins,headline_losses,headline_draws,headline_ko_wins,height,reach,stance'),
-  ])
-  if(cardsRes.error) console.warn('[vertical] fighter_cards read failed —', cardsRes.error)
-  const cards = cardsRes.data || []
-  const find = n => cards.find(c => norm(c.display_name) === norm(n)) || null
-  const out = []
-  for(const b of (bs || [])){
-    if(!b.fighter_a_name || !b.fighter_b_name) continue
-    for(const n of [b.fighter_a_name, b.fighter_b_name]){
-      const f = find(n) || {}
-      out.push({
-        name: n, bout: b.bout_number, wc: wcShort(b.weight_class), title: !!b.is_title_fight,
-        nickname: f.nickname, photo: f.profile_photo_url, champ: !!f.is_champion,
-        rank: f.rank, ko: f.headline_ko_wins, team: f.team, country: f.country,
-        height: f.height, reach: f.reach, stance: f.stance,
-        record: (f.headline_wins != null)
-          ? `${f.headline_wins||0}-${f.headline_losses||0}${f.headline_draws?'-'+f.headline_draws:''}` : null,
-      })
-    }
-  }
-  head('THE CARD', ev.name, `${out.length} FIGHTERS`)
-  return out
-}
-
 function rdDraw(){
   const f = RD.list[RD.i]; if(!f) return
   const el = $('rundown')
   el.classList.remove('step'); void el.offsetWidth; el.classList.add('step')
   const img = $('rdImg')
   if(has(f.photo)){ img.style.backgroundImage = `url('${f.photo}')`; $('rdMono').textContent = '' }
-  // No photo is not an error — 245 of 467 fighters have one. The monogram is
-  // the same fallback the profile card uses, so a thin roster renders as a
-  // designed plate rather than a black rectangle.
+  // No photo is not an error — the monogram is the same fallback the profile
+  // card uses, so a thin roster renders as a designed plate, not a black box.
   else { img.style.backgroundImage = 'none'; $('rdMono').textContent = String(f.name || '?').slice(0,1).toUpperCase() }
-  $('rdBadge').textContent = f.title ? 'TITLE BOUT' : ('BOUT ' + (f.bout ?? '—'))
+  $('rdBadge').textContent = has(f.team) ? String(f.team).toUpperCase() : 'IN THE RING'
   $('rdBelt').classList.toggle('on', !!f.champ)
   $('rdName').textContent = String(f.name).toUpperCase()
   $('rdNick').textContent = has(f.nickname) ? `"${f.nickname}"` : ''
-  // Three across, and a stat with nothing behind it is DROPPED rather than
-  // printed as a dash — half these fighters have no reach and no stance, and a
-  // row of dashes reads as a broken graphic, not as a thin profile.
   const cells = []
   const cell = (l, v, gold) => cells.push(`<div class="s"><div class="l">${l}</div><div class="v${gold?' gold':''}">${esc(v)}</div></div>`)
   if(has(f.record)) cell('RECORD', f.record)
   if(+f.ko > 0)     cell('KO WINS', String(+f.ko))
   if(+f.rank > 0)   cell('RANKED', '#' + (+f.rank), true)
   if(has(f.wc))     cell('DIVISION', wcFit(f.wc))
-  // Both are stored as bare inches. 70 is a number, 5'10" is a height — and
-  // the same 70 under REACH means something completely different, so the
-  // units go on rather than being left for the viewer to guess.
   if(has(f.height)) cell('HEIGHT', ftin(f.height))
   if(has(f.reach))  cell('REACH', inchOf(f.reach))
   if(has(f.stance)) cell('STANCE', String(f.stance).toUpperCase())
-  if(has(f.team))   cell('TEAM', String(f.team).toUpperCase().slice(0,12))
   $('rdStats').innerHTML = cells.slice(0, 6).join('')
   $('rdDots').innerHTML = RD.list.map((_, i) => `<span class="d${i===RD.i?' on':''}"></span>`).join('')
 }
-
-function rdSchedule(){
-  clearTimeout(RD.t)
-  RD.t = setTimeout(() => { rdNext() }, RD_MS)
-}
+function rdSchedule(){ clearTimeout(RD.t); RD.t = setTimeout(rdNext, RD_MS) }
 function rdNext(){
   if(!RD.list.length) return
   RD.i = (RD.i + 1) % RD.list.length
   rdDraw(); rdSchedule()
 }
-async function startRundown(eventName){
-  const list = await buildRundown(eventName)
-  if(!list.length){ console.log('[vertical] rundown has no fighters — holding'); return }
+async function startRundown(){
+  // UBAe's rundown is a BOUT intro, not a pre-show segment: the two fighters
+  // the coaches just picked, not fourteen names off a card. Falls back to the
+  // six revealed starters when nobody has been picked yet.
+  const picked = [pickName(MN.left, MN.pickA), pickName(MN.right, MN.pickB)].filter(has)
+  const names = picked.length === 2 ? picked : [...(MN.left||[]), ...(MN.right||[])]
+  const list = await buildRundown(names)
+  if(!list.length){ console.log('[vertical] rundown has nobody to show — holding'); return }
   RD.list = list; RD.i = 0
-  stopCycle(); setOpen(false); setClock(false); pane(null); setRundown(true)
-  rdDraw(); rdSchedule()
+  setRundown(true); rdDraw(); rdSchedule()
 }
 
-// ── the wire ───────────────────────────────────────────────────────────
-// Tonight's teams, as the deck knows them. The pickbar is the only command
-// that carries them, and 'teamvs' reads them back.
-const MN = { teamA:null, teamB:null, left:[], right:[] }
+/* ═══════════════════════════════════════════════════════════════════════
+   THE WIRE
+   ═══════════════════════════════════════════════════════════════════════ */
+const MN = { teamA:null, teamB:null, left:[], right:[], usedL:[], usedR:[],
+             pickA:null, pickB:null, scoreA:0, scoreB:0, round:1,
+             manualA:false, manualB:false }
 const pickName = (arr, i) => (i == null || i < 0) ? null : (arr || [])[i] || null
+
+/* ── the minimal tape, under the six faces ────────────────────────────
+   Five rows at most. It is the answer to "who are these two" for somebody
+   who arrived thirty seconds ago, not a full tape -- the full one is a
+   desktop graphic and arrives through the slot when it is pressed. */
+let CARDS = null
+const rankNum = v => { const m = String(v ?? '').match(/(\d+)/); return m ? +m[1] : null }
+const cardOf = n => (CARDS || []).find(c => norm(c.display_name) === norm(n)) || null
+const recOf = f => (f && f.headline_wins != null)
+  ? `${f.headline_wins||0}-${f.headline_losses||0}${f.headline_draws?'-'+f.headline_draws:''}` : null
+const MT = [
+  { l:'RECORD', get:f => recOf(f) },
+  { l:'RANK',   get:f => (+f.rank > 0) ? '#'+(+f.rank) : null,
+    lead:(a,b)=>{const x=rankNum(a),y=rankNum(b);return (x&&y)?(x<y?-1:x>y?1:0):0} },
+  { l:'HEIGHT', get:f => has(f.height) ? ftin(f.height) : null,
+    lead:(a,b)=>{const x=inches(a),y=inches(b);return (x!==null&&y!==null)?(x>y?-1:x<y?1:0):0} },
+  { l:'REACH',  get:f => has(f.reach) ? inchOf(f.reach) : null,
+    lead:(a,b)=>{const x=inches(a),y=inches(b);return (x!==null&&y!==null)?(x>y?-1:x<y?1:0):0} },
+  { l:'STANCE', get:f => has(f.stance) ? String(f.stance).toUpperCase() : null },
+]
+function drawMiniTape(){
+  const box = $('mtape')
+  const nA = pickName(MN.left, MN.pickA), nB = pickName(MN.right, MN.pickB)
+  if(!has(nA) || !has(nB) || !CARDS){ box.classList.remove('on'); box.innerHTML = ''; return }
+  const A = cardOf(nA), B = cardOf(nB)
+  if(!A && !B){ box.classList.remove('on'); box.innerHTML = ''; return }
+  const out = []
+  for(const r of MT){
+    const a = A ? r.get(A) : null, b = B ? r.get(B) : null
+    if(!has(a) && !has(b)) continue
+    const lead = r.lead ? r.lead(a, b) : 0
+    const cell = (v, side) => `<span class="v ${side}${(side==='l'&&lead===-1)||(side==='r'&&lead===1)?' win':''}">`
+      + (has(v) ? esc(v) : '—') + '</span>'
+    out.push(`<div class="mtrow">${cell(a,'l')}<span class="lb">${r.l}</span>${cell(b,'r')}</div>`)
+  }
+  box.innerHTML = out.join('')
+  box.classList.toggle('on', out.length > 0)
+}
+async function loadCards(){
+  const { data, error } = await sb.from('fighter_cards')
+    .select('display_name,nickname,weight_class,rank,is_champion,team,'
+          + 'profile_photo_url,headline_wins,headline_losses,headline_draws,headline_ko_wins,'
+          + 'height,reach,stance')
+  // supabase-js resolves {data:null,error} rather than throwing, so a failed
+  // read must leave CARDS null and the tape OFF -- an empty tape under two
+  // faces reads as "we have nothing on these men", which is a claim.
+  if(error){ console.warn('[vertical] fighter_cards read failed —', error); return }
+  CARDS = data || []
+  drawMiniTape()
+}
+
+// One read at boot for the starter photos. supabase-js resolves
+// {data:null,error} rather than throwing, so a failed read must leave the
+// map EMPTY and fall through to monograms — never be mistaken for a roster
+// where nobody has a photo.
+async function loadPhotos(){
+  const { data, error } = await sb.from('ubae_fighter_records')
+    .select('stage_name,photo_thumb_url')
+  if(error){ console.warn('[vertical] photo read failed —', error); return }
+  ;(data || []).forEach(r => { if(r.photo_thumb_url) PHOTO[norm(r.stage_name)] = r.photo_thumb_url })
+  drawTeams()
+}
 
 sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, ({ payload: c }) => {
   if(!c) return
   if(has(c.league)) setLeague(c.league)
-  if(has(c.split)) SPLIT = c.split
 
-  // STANDBY closes the shutters and puts a screen back. This is the
-  // between-matches state, and it is also what the deck already presses.
-  if(c.type === 'standby'){
-    if(c.on === false || c.view === 'off'){ setOpen(true); stopCycle(); setRundown(false); return }
-    setOpen(false); setClock(false); pane(null); setRundown(false)
-    const league = norm(c.league) || document.body.dataset.league || 'ubae'
-    if(c.view === 'auto'){ autoCycle(league); return }
-    stopCycle(); showView(c.view || 'card', c)
-    return
-  }
-
-  // THE RUNDOWN — its own command, deliberately not {type:'rundown'}: that one
-  // belongs to the horizontal card list, and sharing it would flip a second
-  // graphic on with a payload shaped for this one.
-  if(c.type === 'vrundown'){
-    if(c.on === false){ setRundown(false); return }
-    if(c.step === 'next'){ rdNext(); return }
-    startRundown(c.event || null)
-    return
-  }
-
-  // THE CLOCK. Showing it is what OPENS the machine: the shutters part, the
-  // game appears, the sliver drops in. That is the arcade moment and it is
-  // driven by the press the operator already makes.
-  //
-  // NO LEAGUE GATE. There is one vertical canvas and it is showing one show,
-  // so whichever league's clock is running IS this canvas's clock. The gate
-  // that used to be here listed uba and gfl, which meant a UBAe match night
-  // streamed a frozen loading screen vertically for its whole duration and
-  // nothing errored.
-  if(c.type === 'clock'){
-    if(c.show === false){ setClock(false); return }
-    stopCycle(); setRundown(false); setOpen(true); setClock(true)
-    return
-  }
-  if(c.type === 'bout' && c.d){
-    const d = c.d
-    if(has(d.a)) $('cnL').textContent = String(d.a).toUpperCase()
-    if(has(d.b)) $('cnR').textContent = String(d.b).toUpperCase()
-    if(has(d.label)) $('boutTagTxt').textContent = String(d.label).toUpperCase()
-    if(has(d.colorL)) $('corL').style.background = d.colorL
-    if(has(d.colorR)) $('corR').style.background = d.colorR
-    stopCycle(); setRundown(false); setOpen(true); setClock(true); fitNames()
-    return
-  }
-
-  // THE BATTLEROOM PUSH is UBAe's version of {type:'bout'} — the deck sends
-  // the two teams, the two picked fighters and the running score on one
-  // command. Every field is guarded because mnReset sends a PARTIAL payload
-  // (score and picks only), and reading a missing team as blank would wipe
-  // the names off the sliver on the press that resets the score.
+  // THE BATTLEROOM PUSH carries everything this half needs: both teams, both
+  // lineups, who is picked, who is spent, the score and the round. Every field
+  // is guarded because mnReset sends a PARTIAL payload — reading a missing
+  // team as blank would wipe the rail on the press that resets the score.
   if(c.type === 'pickbar' && c.d){
     const d = c.d
     setLeague('ubae')
-    if(has(d.teamA)){ MN.teamA = d.teamA; $('ctL').textContent = String(d.teamA).toUpperCase() }
-    if(has(d.teamB)){ MN.teamB = d.teamB; $('ctR').textContent = String(d.teamB).toUpperCase() }
-    if(Array.isArray(d.left))  MN.left  = d.left
-    if(Array.isArray(d.right)) MN.right = d.right
-    // Before a pick is made the TEAM's name stands in for the fighter's. A
-    // blank half reads as a graphic that failed, and the pick clock runs for
-    // two minutes with nothing else on that side of the row.
-    if('pickL' in d) $('cnL').textContent = String(pickName(MN.left,  d.pickL) || MN.teamA || '—').toUpperCase()
-    if('pickR' in d) $('cnR').textContent = String(pickName(MN.right, d.pickR) || MN.teamB || '—').toUpperCase()
-    if(d.scoreA != null || d.scoreB != null) drawPips(d.scoreA, d.scoreB)
-    if(d.round != null) $('rd').textContent = 'ROUND ' + d.round
-    if(has(d.split)) SPLIT = d.split
-    fitNames()
+    if(has(d.teamA)) MN.teamA = d.teamA
+    if(has(d.teamB)) MN.teamB = d.teamB
+    if(Array.isArray(d.left))    MN.left  = d.left
+    if(Array.isArray(d.right))   MN.right = d.right
+    if(Array.isArray(d.usedL))   MN.usedL = d.usedL
+    if(Array.isArray(d.usedR))   MN.usedR = d.usedR
+    if('pickL' in d){ MN.pickA = d.pickL; MN.manualA = false }
+    if('pickR' in d){ MN.pickB = d.pickR; MN.manualB = false }
+    if(d.scoreA != null) MN.scoreA = +d.scoreA
+    if(d.scoreB != null) MN.scoreB = +d.scoreB
+    if(d.round != null)  MN.round = +d.round
+    drawRail(); drawTeams(); drawRoom(); drawMatch()
+    $('mRd').textContent = 'ROUND ' + MN.round
+    // The pick CLOCK is the one field that means "we are in the room right
+    // now" — the deck only ever sends it on the press that starts the 2:00.
+    if(d.timer != null){ roomClock(+d.timer); mode('mRoom'); return }
+    if(MODE !== 'mMatch') mode('mTeams')
     return
   }
 
+  // A MATCH STARTING is what moves this half to the clock. Both the UBA-style
+  // {bout} and the {clock} toggle say it, so either press lands the same way.
+  if(c.type === 'clock'){
+    if(c.show === false){ mode('mTeams'); return }
+    setRundown(false); mode('mMatch'); drawMatch()
+    return
+  }
+  if(c.type === 'bout' && c.d){
+    // A typed name is a REPLACEMENT fighter and must outrank the pick until
+    // the next push — otherwise the graphic goes back to naming the man who
+    // pulled out the moment the deck refreshes.
+    if(has(c.d.a)){ $('mnA').textContent = String(c.d.a).toUpperCase(); MN.manualA = true }
+    if(has(c.d.b)){ $('mnB').textContent = String(c.d.b).toUpperCase(); MN.manualB = true }
+    if(has(c.d.colorL)) $('mcA').style.background = c.d.colorL
+    if(has(c.d.colorR)) $('mcB').style.background = c.d.colorR
+    setRundown(false); mode('mMatch'); fitMatch()
+    return
+  }
   if(c.type === 'corner' && c.d){
-    if(has(c.d.l)) $('corL').style.background = c.d.l
-    if(has(c.d.r)) $('corR').style.background = c.d.r
+    if(has(c.d.l)) $('mcA').style.background = c.d.l
+    if(has(c.d.r)) $('mcB').style.background = c.d.r
     return
   }
-  if(c.type === 'round'){ $('rd').textContent = 'ROUND ' + c.n; return }
-  // Two names for one thing: UBA drives the fight clock's own centre timer
-  // ('clocktimer'), UBAe drives the overlay badge ('matchtimer'). This canvas
-  // has ONE timer, so it answers both — listening for only the UBA one left
-  // 0:00 on screen for every UBAe bout.
-  if(c.type === 'clocktimer' || c.type === 'matchtimer'){ timer(c.on === false ? null : c.secs); return }
+  if(c.type === 'round'){ MN.round = +c.n; $('mRd').textContent = 'ROUND ' + c.n; return }
+  // Two names for one thing: UBA drives 'clocktimer', UBAe drives
+  // 'matchtimer'. This canvas has one clock, so it answers both.
+  if(c.type === 'clocktimer' || c.type === 'matchtimer'){
+    matchClock(c.on === false ? null : c.secs); return
+  }
 
-  // THE TAPE lives in the bottom half during a match. Pressed with the
-  // machine closed it is still the full screen it was — the shutters simply
-  // have not opened, so the bottom pane is all there is to see.
-  if(c.type === 'tape'){
-    if(c.on === false){ pane(null); return }
-    if(c.d) drawTape(c.d)
-    if(c.show === true){ setRundown(false); pane('paneTape') }
+  // STANDBY means the show is between things. The desktop scene in the feed
+  // slot is already drawing whichever screen was pressed, so this half does
+  // not answer the VIEW at all — it just goes back to the two teams. That is
+  // the rule that keeps one press from rendering the same thing twice.
+  if(c.type === 'standby'){
+    setRundown(false)
+    if(c.on !== false && c.view !== 'off') mode('mTeams')
     return
   }
-  // THE DOSSIER takes the same bottom half. One pane at a time, so they can
-  // never draw over each other — the thing four separate sources could not do.
-  if(c.type === 'fighter'){
-    if(c.on === false || !c.d){ pane(null); return }
-    setRundown(false); drawWho(c.d); pane('paneWho')
-    clearTimeout(whoTimer); whoTimer = setTimeout(() => pane(null), 14000)
+
+  // THE RUNDOWN — vertical only, its own command. {type:'rundown'} belongs to
+  // the horizontal card list and sharing it would flip that graphic on with a
+  // payload shaped for this one.
+  if(c.type === 'vrundown'){
+    if(c.on === false){ setRundown(false); return }
+    if(c.step === 'next'){ rdNext(); return }
+    startRundown()
     return
   }
 }).subscribe(s => { if(s === 'SUBSCRIBED') console.log('[vertical] live') })
-let whoTimer = null
 
-// first paint: closed, showing whatever is next
-loadTeamData().then(() => {
-  // The team data decides which screen can even be drawn, so the first paint
-  // waits for it. A UBAe night opens on tonight's two teams; a solo night on
-  // the card, which is what this frame has always opened on.
-  const boot = Q.get('view') || (norm(Q.get('league')) === 'ubae' ? 'teamvs' : 'card')
-  showView(boot, null)
-})
+// first paint
+drawRail(); drawTeams(); drawRoom(); mode('mTeams')
+loadPhotos(); loadCards()
 
-// ?state=open|closed · ?pane=tape|who · ?view=<screen> · ?rundown=1
-// for checking it without a deck
-if(Q.get('state') === 'open'){ setOpen(true); setClock(true) }
-if(Q.get('pane') === 'tape'){
-  drawTape({ title:'UBA HEAVYWEIGHT TITLE',
-    left:{name:'smokinem',record:'11-2-1',rank:'#7',age:27,height:"6'2",reach:'76',weight:'Heavyweight',stance:'Orthodox'},
-    right:{name:'Hello World',record:'5-4',rank:'#12',age:31,height:"6'0",reach:'73',weight:'Heavyweight',stance:'Southpaw'} })
-  pane('paneTape'); $('cnL').textContent='SMOKINEM'; $('cnR').textContent='HELLO WORLD'
-  $('corL').style.background='#e8312a'; $('corR').style.background='#2e6fe8'; timer(143); fitNames()
+/* ── checking it without a deck ──────────────────────────────────────
+   ?mode=teams|room|match  ·  ?demo=1 fills it with a real-looking match  */
+if(Q.get('demo') === '1'){
+  MN.teamA='UKFC UNCS'; MN.teamB='Ring Reapers'
+  MN.left=['Gold-E-Lockz','Bing Ling','baz']; MN.right=['slove','dragon5000','Yow']
+  MN.usedL=[0]; MN.usedR=[1]; MN.pickA=1; MN.pickB=2
+  MN.scoreA=2; MN.scoreB=1; MN.round=4
+  setLeague('ubae'); drawRail(); drawTeams(); drawRoom(); drawMatch()
+  $('mRd').textContent='ROUND 4'; matchClock(96); roomClock(83)
 }
-if(Q.get('pane') === 'who'){
-  drawWho({name:'smokinem',nickname:'The Quiet Part',record:'11-2-1',ko:7,rank:7,weight:'Heavyweight'})
-  pane('paneWho')
-}
-if(Q.get('rundown') === '1') startRundown(Q.get('event') || null)
+const m = Q.get('mode')
+if(m === 'room')  mode('mRoom')
+if(m === 'match') mode('mMatch')
+if(Q.get('rundown') === '1') startRundown()
 })()
 </script>
 </body>
