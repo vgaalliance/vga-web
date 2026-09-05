@@ -252,22 +252,49 @@ const DIVISION = { heavyweight:'HEAVYWEIGHT', light_heavyweight:'LIGHT HEAVYWEIG
   cruiserweight:'CRUISERWEIGHT' }
 const division = v => DIVISION[norm(v).replace(/\s+/g,'_')] || String(v ?? '').toUpperCase()
 
-let gen = 0
+// ONE lookup for the whole night, and the PROMISE is cached rather than the
+// result -- two switches in quick succession must share one fetch instead of
+// racing two reads of the same 467-row table. Re-read only if it failed, so a
+// blip at load does not leave the scene unable to name anybody all night.
+let _cardsP = null
+function cards(){
+  if(_cardsP) return _cardsP
+  _cardsP = sb.from('fighter_cards')
+    .select('slug,display_name,nickname,weight_class,rank,is_champion,country,team,'+
+            'profile_photo_url,headline_wins,headline_losses,headline_draws')
+    .then(({ data, error }) => {
+      // supabase-js resolves {data:null, error} instead of throwing, so a
+      // failed lookup must be told apart from a fighter who is not there.
+      // Conflating them would put a blank plate on air and log nothing.
+      if(error || !data){ console.warn('[fancam] lookup failed —', error); _cardsP = null; return [] }
+      return data
+    })
+  return _cardsP
+}
+
+let gen = 0, curWho = null
 async function show(who, over){
   over = over || {}
   const mine = ++gen
   let f = null
 
+  // THE FACE COMES DOWN FIRST. The lookup and the photo both take time, and
+  // for that whole stretch the PREVIOUS fighter was still composited in the
+  // chair -- first under his own name, then under the new man's. A cutaway
+  // that names one fighter over another's face is worse than one that names
+  // him over an empty chair, which is a state this scene already has.
+  //
+  // Only on a genuine change: the deck re-fires the same fighter to update
+  // the tally, and blinking the face for that would be a flicker with no
+  // information in it.
+  const changed = norm(who) !== norm(curWho)
+  if(changed) $('who').classList.add('empty')
+  curWho = who
+
   if(has(who)){
-    // supabase-js resolves {data:null, error} instead of throwing, so a
-    // failed lookup must be told apart from a fighter who is not there.
-    // Conflating them would put a blank plate on air and log nothing.
-    const { data, error } = await sb.from('fighter_cards')
-      .select('slug,display_name,nickname,weight_class,rank,is_champion,country,team,'+
-              'profile_photo_url,headline_wins,headline_losses,headline_draws')
-    if(error || !data){ console.warn('[fancam] lookup failed —', error) }
-    else f = data.find(c => norm(c.slug) === norm(who)) ||
-             data.find(c => norm(c.display_name) === norm(who)) || null
+    const data = await cards()
+    f = data.find(c => norm(c.slug) === norm(who)) ||
+        data.find(c => norm(c.display_name) === norm(who)) || null
     if(!f) console.warn('[fancam] no fighter matched', who)
   }
   if(mine !== gen) return
@@ -299,9 +326,16 @@ async function show(who, over){
   const img = $('portrait'), holder = $('who')
   const url = over.photo || (f && f.profile_photo_url) || null
   if(url){
-    img.onload  = () => { if(mine === gen) holder.classList.remove('empty') }
-    img.onerror = () => { if(mine === gen) holder.classList.add('empty') }
-    img.src = url
+    // Decoded off-screen first, THEN handed to the visible element. Assigning
+    // straight to the live <img> leaves the old face painted until the new one
+    // arrives over the wire -- the browser does not clear a decoded image just
+    // because src changed. By the time src is set here the bytes are already
+    // in cache, so the swap is one frame and there is no empty gap either.
+    const pre = new Image()
+    pre.onload  = () => { if(mine !== gen) return
+      img.src = url; holder.classList.remove('empty') }
+    pre.onerror = () => { if(mine === gen) holder.classList.add('empty') }
+    pre.src = url
   } else holder.classList.add('empty')
 
   $('cam').classList.add('on')
