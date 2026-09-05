@@ -2339,7 +2339,12 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 @keyframes boxerPop{0%{transform:scale(1)}40%{transform:scale(1.14) translateY(-6px)}100%{transform:scale(1)}}
 /* sound toggle, tucked in the stage corner */
 .train .snd{position:absolute;right:8px;top:8px;z-index:4;width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.08);color:#EDEAF6;font-size:15px;cursor:pointer}
-.train .wit.vault .wn i{font-style:normal;font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.1em;text-transform:uppercase;color:#C084FC;margin-left:4px}
+.train .vaulthead{width:100%;max-width:320px;font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:#C084FC;margin:4px 0 -4px}
+.train .witems.vaulted .wit{background:rgba(192,132,252,.07);border-color:rgba(192,132,252,.22)}
+.train .asnew{width:100%;max-width:320px;margin-top:4px;padding:9px 12px;border-radius:10px;cursor:pointer;
+  background:rgba(255,255,255,.06);border:1px dashed rgba(255,255,255,.18);color:#9A90BE;
+  font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase}
+.train .asnew.on{border-style:solid;border-color:#C084FC;color:#C084FC;background:rgba(192,132,252,.1)}
 @media (prefers-reduced-motion:reduce){.train .bagsvg.hit,.train .bagsvg.miss,.train .tfl,.train .tfl b,.train .tfl s,.train .stage.shake,.train .stage.levelup,.train .stage.levelup .boxer{animation:none}}
 .train .stats{display:flex;gap:8px;width:100%;max-width:320px}
 .train .stats div{flex:1;text-align:center;background:rgba(255,255,255,.07);border-radius:10px;padding:10px 4px}
@@ -6592,29 +6597,55 @@ async function renderTrain(){
                      gloves:'Gloves', shorts:'Trunks', fullskin:'Suit', shoes:'Shoes',
                      effect:'Aura', trail:'Trail' };
   var wardrobe = null, wrSlot = 'gloves';
+  /* Preview as a new player. The sixteen who played the parked game own items
+     that are still vaulted, so their own wardrobe is the ONE view that does
+     not show what a new sign-up sees -- which is the view the launch is being
+     judged on. Off by default, remembered. */
+  var asNew = false;
+  try{ asNew = localStorage.getItem('uba.train.asnew') === '1'; }catch(e){}
   function owns(slot, id){
     return ((wardrobe.owned || {})[slot] || []).indexOf(id) >= 0;
   }
+  function witHTML(c, worn){
+    var have = c.price === 0 || owns(c.slot, c.id), on = worn[c.slot] === c.id;
+    var can  = have || (wardrobe.balance !== null && wardrobe.balance >= c.price);
+    return '<div class="wit' + (on ? ' on' : '') + (have ? ' have' : '') + (c.vaulted ? ' vault' : '') + '"'
+         + ' data-wbuy="' + esc(c.slot) + '|' + esc(c.id) + '|' + (have ? 'wear' : 'buy') + '">'
+         + '<span class="wn">' + esc(c.name) + '</span>'
+         + '<span class="wp' + (have ? ' ok' : (can ? ' can' : '')) + '">'
+         + (on ? 'WORN' : have ? 'Wear' : c.price.toLocaleString() + ' VC') + '</span></div>';
+  }
+  /* THE SHOP AND THE CLOSET ARE TWO DIFFERENT THINGS. One list made a wardrobe
+     full of already-owned vaulted items read as an uncurated shop. The shop is
+     always the live five a slot; the vault below it is what this player already
+     owns that has not been released yet -- wearable, theirs, and out of the
+     shop's way. A wave release moves an item from the vault into the shop. */
   function drawWardrobe(){
     var host = document.getElementById('wr');
     if(!host || !wardrobe) return;
-    var slots = Object.keys(SLOT_NAMES).filter(function(k){
-      return wardrobe.catalogue.some(function(c){ return c.slot === k; }); });
     var worn = wardrobe.equipped || {};
-    var items = wardrobe.catalogue.filter(function(c){ return c.slot === wrSlot; });
+    var live = wardrobe.catalogue.filter(function(c){ return !c.vaulted; });
+    var mine = asNew ? [] : wardrobe.catalogue.filter(function(c){ return c.vaulted; });
+    var slots = Object.keys(SLOT_NAMES).filter(function(k){
+      return live.some(function(c){ return c.slot === k; }); });
+    if(slots.indexOf(wrSlot) < 0) wrSlot = slots[0];
+    var vaultHere = mine.filter(function(c){ return c.slot === wrSlot; });
     host.innerHTML =
         '<div class="wtabs">' + slots.map(function(k){
           return '<button class="wtab' + (k === wrSlot ? ' on' : '') + '" data-wslot="' + k + '">'
                + esc(SLOT_NAMES[k]) + '</button>'; }).join('') + '</div>'
-      + '<div class="witems">' + items.map(function(c){
-          var have = c.price === 0 || owns(c.slot, c.id), on = worn[c.slot] === c.id;
-          var can  = have || (wardrobe.balance !== null && wardrobe.balance >= c.price);
-          return '<div class="wit' + (on ? ' on' : '') + (have ? ' have' : '') + (c.vaulted ? ' vault' : '') + '"'
-               + ' data-wbuy="' + esc(c.slot) + '|' + esc(c.id) + '|' + (have ? 'wear' : 'buy') + '">'
-               + '<span class="wn">' + esc(c.name) + (c.vaulted ? ' <i>vault</i>' : '') + '</span>'
-               + '<span class="wp' + (have ? ' ok' : (can ? ' can' : '')) + '">'
-               + (on ? 'WORN' : have ? 'Wear' : c.price.toLocaleString() + ' VC') + '</span></div>';
-        }).join('') + '</div>';
+      + '<div class="witems">'
+      + live.filter(function(c){ return c.slot === wrSlot; }).map(function(c){ return witHTML(c, worn); }).join('')
+      + '</div>'
+      + (vaultHere.length
+          ? '<div class="vaulthead">Your vault \u00b7 ' + vaultHere.length + ' not released yet</div>'
+            + '<div class="witems vaulted">' + vaultHere.map(function(c){ return witHTML(c, worn); }).join('') + '</div>'
+          : '')
+      + (mine.length || asNew
+          ? '<button class="asnew' + (asNew ? ' on' : '') + '" data-asnew>'
+            + (asNew ? 'Showing the shop as a new player \u2014 tap to see your vault'
+                     : 'Preview as a new player') + '</button>'
+          : '');
   }
   if(!guest) rpc('app_train_wardrobe').then(function(w){
     if(!el.isConnected) return;
@@ -6634,6 +6665,10 @@ async function renderTrain(){
     if(box){ var k = box.getAttribute('data-track'); open = open === k ? null : k; drawTracks(); return; }
     var ws = e.target.closest('[data-wslot]');
     if(ws){ wrSlot = ws.getAttribute('data-wslot'); drawWardrobe(); return; }
+    if(e.target.closest('[data-asnew]')){
+      asNew = !asNew; try{ localStorage.setItem('uba.train.asnew', asNew ? '1' : '0'); }catch(x){}
+      drawWardrobe(); return;
+    }
 
     var wi = e.target.closest('[data-wbuy]');
     if(wi && !guest){
