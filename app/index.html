@@ -2352,6 +2352,10 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .train .stats b em{font-style:normal;font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.1em;color:#F5C842;margin-left:3px;vertical-align:2px}
 .train .stats s{display:block;text-decoration:none;font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;color:#9A90BE;margin-top:4px}
 .train .hint{font-size:13.5px;color:#9A90BE;text-align:center}
+.train .idle{width:100%;max-width:320px;padding:11px 14px;border-radius:12px;cursor:pointer;text-align:center;
+  background:rgba(245,200,66,.12);border:1px solid rgba(245,200,66,.42);color:#F5C842;
+  font-family:'Barlow',sans-serif;font-weight:600;font-size:13.5px}
+.train .idle b{color:#fff;font-weight:700}
 .train .tocards{width:100%;max-width:320px;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 14px;border-radius:12px;
   background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:#EDEAF6;font-family:'Barlow',sans-serif;font-weight:600;font-size:14px;cursor:pointer}
 .train .tocards span{color:#9A90BE;font-size:18px;line-height:1}
@@ -6481,6 +6485,7 @@ async function renderTrain(){
       (guest ? '<div class="guest">As a guest your punches pay nothing. '
              + '<button class="signin" data-signin>Sign in</button> to earn VC.</div>' : '')
     + '<div class="stam"><i id="stam-fill"></i><b id="stam-txt"></b></div>'
+    + '<button class="idle" id="tr-idle" type="button" hidden></button>'
     + '<div class="stage" id="bag" role="button" aria-label="Punch the bag" tabindex="0">'
     +   heavyBagSVG()
     +   '<div class="boxer" id="boxer"></div>'
@@ -6501,6 +6506,18 @@ async function renderTrain(){
       fill = document.getElementById('stam-fill'), stTxt = document.getElementById('stam-txt'),
       hint = document.getElementById('tr-hint');
   var thrown = 0;
+  /* The sparring partner works while the app is shut, into a bank that fills
+     for six hours and then STOPS -- so a week away is worth one bank, and the
+     reason to open the app is to empty it. Flat rate on purpose: it is +56% to
+     a new player and +11% to a maxed one, so it lifts the floor without
+     lifting the ceiling. */
+  var idle = guest ? 0 : Number(st.idle || 0);
+  var idleEl = document.getElementById('tr-idle');
+  function drawIdle(){
+    idleEl.hidden = guest || idle <= 0;
+    if(!idleEl.hidden) idleEl.innerHTML = '\uD83E\uDD4A Your sparring partner banked <b>'
+      + idle.toLocaleString() + ' VC</b> \u2014 collect';
+  }
   /* Three numbers a player actually asks for: what this sitting made, what the
      gym has made them ever, and what is in the wallet to spend on the boxes
      below. Land % and VC-a-hit live on the track boxes, where buying changes
@@ -6509,6 +6526,7 @@ async function renderTrain(){
   function drawStats(){
     var tile = function(val, label){
       var dash = val === null;
+      if(!dash) val = Math.round(val);
       return '<div><b>' + (dash ? '\u2014' : val.toLocaleString())
         + (dash ? '' : '<em>VC</em>') + '</b><s>' + label + '</s></div>';
     };
@@ -6547,7 +6565,7 @@ async function renderTrain(){
      is switched on at launch -- means none of this renders. */
   var chips = guest ? 0 : Number(st.chips || 0);
   var TRACKS = [
-    { key:'power',        name:'Power',        unit:function(v){ return v + ' VC a hit'; } },
+    { key:'power',        name:'Power',        unit:function(v){ return (Math.round(v * 10) / 10) + ' VC a hit'; } },
     { key:'accuracy',     name:'Accuracy',     unit:function(v){ return v + '% land'; } },
     { key:'conditioning', name:'Conditioning', unit:function(v){ return v + ' punch bar'; } }
   ];
@@ -6586,7 +6604,7 @@ async function renderTrain(){
     var t = TRACKS.filter(function(x){ return x.key === open; })[0];
     menu.hidden = !t; if(t) menu.innerHTML = menuHTML(t);
   }
-  drawTracks(); drawStats();
+  drawTracks(); drawStats(); drawIdle();
 
   /* ── WARDROBE ── the fighter on the stage is the preview, so equipping is
      instant and visible rather than a menu that describes a change. Slots the
@@ -6659,6 +6677,18 @@ async function renderTrain(){
          changes underneath a screen the player is still looking at */
       if(pending) flush();
       history.back(); setTimeout(function(){ goTab('cards'); }, 60);
+      return;
+    }
+    if(e.target.closest('#tr-idle')){
+      busy(idleEl, true, 'Collecting\u2026');
+      var ir = await rpc('app_train_collect');
+      if(!el.isConnected) return;
+      busy(idleEl, false);
+      if(!ir || !ir.ok){ toast(ir && ir.message ? ir.message : 'Could not collect.', true); idle = 0; drawIdle(); return; }
+      idle = 0; balance = Number(ir.balance); earned += Number(ir.collected);
+      float('+' + Number(ir.collected), 'pack'); sfx('pack');
+      toast('Collected ' + Number(ir.collected).toLocaleString() + ' VC from your sparring partner.');
+      drawIdle(); drawStats(); drawTracks(); if(wardrobe){ wardrobe.balance = balance; drawWardrobe(); }
       return;
     }
     var box = e.target.closest('[data-track]');
@@ -6808,7 +6838,7 @@ async function renderTrain(){
     var bs = bag.querySelector('.bagsvg');
     bs.classList.remove('hit','miss'); void bs.offsetWidth; bs.classList.add(hit ? 'hit' : 'miss');
     if(boxer) boxer.punch(!!hit);
-    if(hit){ if(!guest){ earned += vcHit; drawStats(); } float('+' + vcHit, 'hit'); impact(); sfx('hit'); }
+    if(hit){ if(!guest){ earned += vcHit; drawStats(); } float('+' + (Math.round(vcHit * 10) / 10), 'hit'); impact(); sfx('hit'); }
     else { float('whiff', 'whiff'); sfx('whiff'); }
     delete rolls[idx]; lookahead(); paint();
     if(guest) return;
