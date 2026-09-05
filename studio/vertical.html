@@ -114,12 +114,18 @@
      deck already broadcasts, never by a button of its own. That is what
      keeps the vertical canvas from answering the same press the desktop
      scene is already answering, and it is why nothing can render twice. */
+  /* THE SIX FACES NEVER LEAVE. They used to be one mode among three, so the
+     bell replaced them with two names in text and the thing people had spent
+     two minutes learning vanished at the exact moment it started to matter.
+     Now they are permanent furniture and only the block UNDER them changes. */
   #stage{position:absolute;top:calc(var(--cta) + var(--feed) + var(--rail));bottom:0;left:0;right:0;
-    z-index:25;overflow:hidden;}
-  .bmode{position:absolute;inset:0;padding:44px 40px 38px;display:none;flex-direction:column;}
-  .bmode.on{display:flex;}
-  .bmode.in{animation:modein .46s cubic-bezier(.16,1,.3,1);}
-  .bmode.out{display:flex;animation:modeout .2s ease forwards;pointer-events:none;}
+    z-index:25;overflow:hidden;display:flex;flex-direction:column;padding:16px 22px 26px;}
+  .under{flex:1;min-height:0;position:relative;margin-top:22px;}
+  .ublock{position:absolute;inset:0;display:none;flex-direction:column;
+    align-items:center;justify-content:center;}
+  .ublock.on{display:flex;}
+  .ublock.in{animation:modein .46s cubic-bezier(.16,1,.3,1);}
+  .ublock.out{display:flex;animation:modeout .2s ease forwards;pointer-events:none;}
   @keyframes modein{from{opacity:0;transform:translateY(34px);}to{opacity:1;transform:none;}}
   @keyframes modeout{to{opacity:0;transform:translateY(-18px);}}
   /* the wipe — one bright edge crossing the stage on every change. It is the
@@ -132,8 +138,8 @@
   #wipe.go i{animation:wipe .52s cubic-bezier(.5,0,.2,1);}
   @keyframes wipe{from{left:-50%}to{left:110%}}
   @media (prefers-reduced-motion:reduce){
-    .bmode.in,.bmode.out,#wipe.go i{animation:none;}
-    .bmode.out{display:none;}
+    .ublock.in,.ublock.out,#wipe.go i{animation:none;}
+    .ublock.out{display:none;}
   }
   .bhead{font-family:'Press Start 2P',monospace;font-size:13px;letter-spacing:.26em;
     color:var(--hi);text-align:center;text-shadow:0 0 12px var(--glow);}
@@ -143,14 +149,13 @@
      the same shape or the two screens are teaching different things. The
      RING is the entire state readout, borrowed from the battleroom -- plain
      ring available, GOLD picked, and a spent fighter dims out of it. */
-  #mTeams{flex-direction:column;align-items:stretch;padding:16px 22px 26px;}
-  .sixup{display:flex;align-items:flex-start;width:100%;}
+  .sixup{display:flex;align-items:flex-start;width:100%;flex:none;}
   /* ── the minimal tape ──
      Only up once BOTH corners have picked, because a tape is a COMPARISON --
      one fighter beside an empty column is not a shorter tape, it is a broken
      one. A row neither man can fill is dropped rather than printed as two
      dashes: half this roster has no reach and no stance on file. */
-  .minitape{margin-top:34px;display:none;flex-direction:column;}
+  .minitape{width:100%;display:none;flex-direction:column;}
   .minitape.on{display:flex;animation:modein .4s cubic-bezier(.16,1,.3,1);}
   /* The two values READ INWARD, toward the label between them. Splayed to the
      outer edges of a 1036px row they were 300px apart with the thing they are
@@ -239,6 +244,10 @@
           drop-shadow(0 4px 0 var(--ring)) drop-shadow(0 -4px 0 var(--ring))
           drop-shadow(3px 3px 0 var(--ring)) drop-shadow(-3px 3px 0 var(--ring))
           drop-shadow(3px -3px 0 var(--ring)) drop-shadow(-3px -3px 0 var(--ring));}
+  /* the corner colour, on the fighter wearing it rather than on a bar of its
+     own -- 6px under his name, and only on the two who are actually boxing */
+  .f .cor{width:0;height:6px;margin-top:5px;transition:width .3s ease;}
+  .f.picked .cor{width:72%;}
   .f .nm{font-weight:700;font-size:26px;line-height:1;text-transform:uppercase;text-align:center;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
   .f.picked .nm{color:var(--gold);text-shadow:0 0 16px rgba(255,206,0,.4);}
@@ -255,40 +264,22 @@
   @media (prefers-reduced-motion:reduce){ .f .mk .a{animation:none;} }
 
   /* ② BATTLEROOM — the room is the news, not the roster */
-  #mRoom{align-items:center;justify-content:center;gap:26px;text-align:center;}
-  #mRoom .big{font-weight:900;font-size:104px;line-height:.9;text-transform:uppercase;
+  #uRoom{gap:22px;text-align:center;}
+  #uRoom .big{font-weight:900;font-size:84px;line-height:.9;text-transform:uppercase;
     text-shadow:0 0 34px var(--glow);}
-  #mRoom .sub{font:600 30px 'Barlow';letter-spacing:.16em;color:var(--dim);text-transform:uppercase;}
-  #roomClk{font-weight:900;font-size:150px;line-height:.9;color:var(--gold);
+  #uRoom .sub{font:600 28px 'Barlow';letter-spacing:.16em;color:var(--dim);text-transform:uppercase;}
+  #roomClk{font-weight:900;font-size:130px;line-height:.9;color:var(--gold);
     font-variant-numeric:tabular-nums;text-shadow:0 0 40px rgba(255,206,0,.45);}
   #roomClk.low{color:#ff4d4d;text-shadow:0 0 40px rgba(255,77,77,.55);animation:pulse 1s ease-in-out infinite;}
-  #mRoom .who{display:flex;align-items:center;gap:26px;font-weight:900;font-size:46px;
-    text-transform:uppercase;}
-  #mRoom .who em{font-style:normal;font-family:'Press Start 2P',monospace;font-size:18px;color:var(--pink);}
 
-  /* ③ MATCH — the vertical fight clock. Bigger than the desktop clock
-     arriving in the slot at 56%, which is the reason it exists at all. */
-  #mMatch{align-items:center;justify-content:center;gap:4px;}
-  .mrow{display:flex;align-items:center;gap:22px;width:100%;}
-  .mrow .cor{width:16px;align-self:stretch;min-height:88px;}
-  /* name and team are ONE stack. Left as two flex children with the name on
-     flex:1, the team was pushed to the far end of the row -- so each fighter's
-     side was labelled with his own team sitting over the OTHER man's name. */
-  .mrow .stk{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;}
-  .mrow .who{font-weight:900;font-size:76px;line-height:.94;text-transform:uppercase;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 0 26px var(--glow);}
-  .mrow .tag{font:600 22px 'Barlow';letter-spacing:.18em;color:var(--dim);text-transform:uppercase;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .mrow.b{flex-direction:row-reverse;}
-  .mrow.b .stk{align-items:flex-end;}
-  .mrow.b .who,.mrow.b .tag{text-align:right;}
-  #mMatch .vsx{font-family:'Press Start 2P',monospace;font-size:20px;color:var(--pink);
-    margin:8px 0;text-shadow:0 0 16px rgba(255,51,204,.6);}
-  #mClk{font-weight:900;font-size:138px;line-height:.9;color:var(--gold);margin-top:16px;
+  /* ③ MATCH — just the clock. Who is boxing is said by the two gold-ringed
+     faces above it, which is the whole point of keeping them up. */
+  #uMatch{gap:6px;}
+  #mClk{font-weight:900;font-size:172px;line-height:.9;color:var(--gold);
     font-variant-numeric:tabular-nums;text-shadow:0 0 36px rgba(255,206,0,.45);}
   #mClk.low{color:#ff4d4d;text-shadow:0 0 36px rgba(255,77,77,.6);animation:pulse 1s ease-in-out infinite;}
-  #mRd{font-family:'Press Start 2P',monospace;font-size:14px;letter-spacing:.2em;color:#fff;
-    margin-top:14px;text-shadow:0 0 12px var(--glow);}
+  #mRd{font-family:'Press Start 2P',monospace;font-size:16px;letter-spacing:.2em;color:#fff;
+    margin-top:16px;text-shadow:0 0 12px var(--glow);}
 
   /* ── THE RUNDOWN — one fighter at a time, the whole frame ───────────────
      Not a bottom-third pane: the rundown deliberately COVERS the desktop
@@ -364,30 +355,26 @@
 
 <!-- ── THE MODE STAGE ─────────────────────────────────────────────── -->
 <div id="stage">
-  <div class="bmode" id="mTeams">
-    <div class="sixup">
-      <div class="tside a"><span class="tnm" id="tnA">TEAM A</span><div class="tstack" id="t3A"></div></div>
-      <div class="tvs"><span>VS</span></div>
-      <div class="tside b"><span class="tnm" id="tnB">TEAM B</span><div class="tstack" id="t3B"></div></div>
+  <!-- ALWAYS UP, every state, bell to bell -->
+  <div class="sixup">
+    <div class="tside a"><span class="tnm" id="tnA">TEAM A</span><div class="tstack" id="t3A"></div></div>
+    <div class="tvs"><span>VS</span></div>
+    <div class="tside b"><span class="tnm" id="tnB">TEAM B</span><div class="tstack" id="t3B"></div></div>
+  </div>
+
+  <div class="under">
+    <div class="ublock" id="uTape"><div class="minitape" id="mtape"></div></div>
+
+    <div class="ublock" id="uRoom">
+      <div class="bhead">THE BATTLEROOM</div>
+      <div class="big">COACHES<br>ARE PICKING</div>
+      <div id="roomClk">2:00</div>
     </div>
-    <div class="minitape" id="mtape"></div>
-  </div>
 
-  <div class="bmode" id="mRoom">
-    <div class="bhead">THE BATTLEROOM</div>
-    <div class="big">COACHES<br>ARE PICKING</div>
-    <div id="roomClk">2:00</div>
-    <div class="who"><span id="rmA">TEAM A</span><em>VS</em><span id="rmB">TEAM B</span></div>
-  </div>
-
-  <div class="bmode" id="mMatch">
-    <div class="mrow"><span class="cor" id="mcA" style="background:#e8312a"></span>
-      <span class="stk"><span class="who" id="mnA">—</span><span class="tag" id="mtA"></span></span></div>
-    <div class="vsx">VS</div>
-    <div class="mrow b"><span class="cor" id="mcB" style="background:#2e6fe8"></span>
-      <span class="stk"><span class="who" id="mnB">—</span><span class="tag" id="mtB"></span></span></div>
-    <div id="mClk">0:00</div>
-    <div id="mRd">ROUND 1</div>
+    <div class="ublock" id="uMatch">
+      <div id="mClk">0:00</div>
+      <div id="mRd">ROUND 1</div>
+    </div>
   </div>
 
   <div id="wipe"><i></i></div>
@@ -490,8 +477,9 @@ function starterCards(box, names, used, pick, tag, side){
     // A lineup that has not been revealed yet still gets three faces. Three
     // blank rings say "three are coming"; an empty column says nothing, and
     // the stack would resize the moment the reveal landed.
-    const label = has(n) ? n : 'TBA'
-    const url = has(n) ? PHOTO[norm(n)] : null
+    const over = (tag === 'P1' ? MN.manualA : MN.manualB)
+    const label = (pick === i && has(over)) ? over : (has(n) ? n : 'TBA')
+    const url = has(label) && label !== 'TBA' ? PHOTO[norm(label)] : null
     // An <img> so the stroke can trace the cut-out; a masked block when there
     // is no photo, which is the same silhouette the battleroom falls back to.
     const inner = url ? `<img class="av" src="${url}" alt="">`
@@ -500,7 +488,8 @@ function starterCards(box, names, used, pick, tag, side){
     const cls = ((used || []).includes(i) ? ' used' : '') + (pick === i ? ' picked' : '')
     return `<div class="f${cls}">
       <span class="mk"><span class="a">▼</span><span class="p">${tag}</span></span>
-      ${av}<span class="nm">${esc(label)}</span></div>`
+      ${av}<span class="nm">${esc(label)}</span>
+      <span class="cor" style="background:${tag === 'P1' ? MN.corL : MN.corR}"></span></div>`
   }).join('')
 }
 function drawTeams(){
@@ -543,10 +532,6 @@ function roomClock(secs){
   draw()
   roomT = setInterval(() => { left = Math.max(0, left-1); draw(); if(left <= 0) clearInterval(roomT) }, 1000)
 }
-function drawRoom(){
-  $('rmA').textContent = String(MN.teamA || 'TEAM A').toUpperCase()
-  $('rmB').textContent = String(MN.teamB || 'TEAM B').toUpperCase()
-}
 
 // ── ③ the match ────────────────────────────────────────────────────────
 let clkT = null
@@ -559,28 +544,13 @@ function matchClock(secs){
   draw()
   clkT = setInterval(() => { left = Math.max(0, left-1); draw(); if(left <= 0) clearInterval(clkT) }, 1000)
 }
-// Names shrink to fit rather than being clipped, measured after the face
-// loads: measured against the fallback they come back about 18% narrow.
-function fitMatch(){
-  for(const id of ['mnA','mnB']){
-    const el = $(id); if(!el) continue
-    const room = el.parentElement.clientWidth
-    let px = 76; el.style.fontSize = px + 'px'
-    const w = () => { const r = document.createRange(); r.selectNodeContents(el)
-      return r.getBoundingClientRect().width }
-    while(w() > room && px > 34){ px -= 2; el.style.fontSize = px + 'px' }
-  }
-}
-if(document.fonts && document.fonts.ready) document.fonts.ready.then(() => { fitMatch(); drawTeams() })
-
-function drawMatch(){
-  const nameA = pickName(MN.left,  MN.pickA) || MN.teamA || '—'
-  const nameB = pickName(MN.right, MN.pickB) || MN.teamB || '—'
-  if(!MN.manualA) $('mnA').textContent = String(nameA).toUpperCase()
-  if(!MN.manualB) $('mnB').textContent = String(nameB).toUpperCase()
-  $('mtA').textContent = String(MN.teamA || '').toUpperCase()
-  $('mtB').textContent = String(MN.teamB || '').toUpperCase()
-  fitMatch()
+// A REPLACEMENT fighter is typed on the deck, and with the faces carrying the
+// names there is no separate label to write it into — so it overrides the
+// name under that side's picked portrait until the next battleroom push. Any
+// other outcome puts the man who pulled out back on screen.
+function manualName(side, name){
+  if(side === 'a') MN.manualA = name; else MN.manualB = name
+  drawTeams()
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -665,7 +635,7 @@ async function startRundown(){
    ═══════════════════════════════════════════════════════════════════════ */
 const MN = { teamA:null, teamB:null, left:[], right:[], usedL:[], usedR:[],
              pickA:null, pickB:null, scoreA:0, scoreB:0, round:1,
-             manualA:false, manualB:false }
+             manualA:null, manualB:null, corL:'#e8312a', corR:'#2e6fe8' }
 const pickName = (arr, i) => (i == null || i < 0) ? null : (arr || [])[i] || null
 
 /* ── the minimal tape, under the six faces ────────────────────────────
@@ -747,41 +717,42 @@ sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, ({ payload: c }) => {
     if(Array.isArray(d.right))   MN.right = d.right
     if(Array.isArray(d.usedL))   MN.usedL = d.usedL
     if(Array.isArray(d.usedR))   MN.usedR = d.usedR
-    if('pickL' in d){ MN.pickA = d.pickL; MN.manualA = false }
-    if('pickR' in d){ MN.pickB = d.pickR; MN.manualB = false }
+    if('pickL' in d){ MN.pickA = d.pickL; MN.manualA = null }
+    if('pickR' in d){ MN.pickB = d.pickR; MN.manualB = null }
     if(d.scoreA != null) MN.scoreA = +d.scoreA
     if(d.scoreB != null) MN.scoreB = +d.scoreB
     if(d.round != null)  MN.round = +d.round
-    drawRail(); drawTeams(); drawRoom(); drawMatch()
+    drawRail(); drawTeams()
     $('mRd').textContent = 'ROUND ' + MN.round
     // The pick CLOCK is the one field that means "we are in the room right
     // now" — the deck only ever sends it on the press that starts the 2:00.
-    if(d.timer != null){ roomClock(+d.timer); mode('mRoom'); return }
-    if(MODE !== 'mMatch') mode('mTeams')
+    if(d.timer != null){ roomClock(+d.timer); mode('uRoom'); return }
+    if(MODE !== 'uMatch') mode('uTape')
     return
   }
 
   // A MATCH STARTING is what moves this half to the clock. Both the UBA-style
   // {bout} and the {clock} toggle say it, so either press lands the same way.
   if(c.type === 'clock'){
-    if(c.show === false){ mode('mTeams'); return }
-    setRundown(false); mode('mMatch'); drawMatch()
+    if(c.show === false){ mode('uTape'); return }
+    setRundown(false); mode('uMatch')
     return
   }
   if(c.type === 'bout' && c.d){
     // A typed name is a REPLACEMENT fighter and must outrank the pick until
     // the next push — otherwise the graphic goes back to naming the man who
     // pulled out the moment the deck refreshes.
-    if(has(c.d.a)){ $('mnA').textContent = String(c.d.a).toUpperCase(); MN.manualA = true }
-    if(has(c.d.b)){ $('mnB').textContent = String(c.d.b).toUpperCase(); MN.manualB = true }
-    if(has(c.d.colorL)) $('mcA').style.background = c.d.colorL
-    if(has(c.d.colorR)) $('mcB').style.background = c.d.colorR
-    setRundown(false); mode('mMatch'); fitMatch()
+    if(has(c.d.a)) manualName('a', c.d.a)
+    if(has(c.d.b)) manualName('b', c.d.b)
+    if(has(c.d.colorL)){ MN.corL = c.d.colorL }
+    if(has(c.d.colorR)){ MN.corR = c.d.colorR }
+    setRundown(false); drawTeams(); mode('uMatch')
     return
   }
   if(c.type === 'corner' && c.d){
-    if(has(c.d.l)) $('mcA').style.background = c.d.l
-    if(has(c.d.r)) $('mcB').style.background = c.d.r
+    if(has(c.d.l)) MN.corL = c.d.l
+    if(has(c.d.r)) MN.corR = c.d.r
+    drawTeams()
     return
   }
   if(c.type === 'round'){ MN.round = +c.n; $('mRd').textContent = 'ROUND ' + c.n; return }
@@ -797,7 +768,7 @@ sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, ({ payload: c }) => {
   // the rule that keeps one press from rendering the same thing twice.
   if(c.type === 'standby'){
     setRundown(false)
-    if(c.on !== false && c.view !== 'off') mode('mTeams')
+    if(c.on !== false && c.view !== 'off') mode('uTape')
     return
   }
 
@@ -813,7 +784,7 @@ sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, ({ payload: c }) => {
 }).subscribe(s => { if(s === 'SUBSCRIBED') console.log('[vertical] live') })
 
 // first paint
-drawRail(); drawTeams(); drawRoom(); mode('mTeams')
+drawRail(); drawTeams(); mode('uTape')
 loadPhotos(); loadCards()
 
 /* ── checking it without a deck ──────────────────────────────────────
@@ -823,12 +794,12 @@ if(Q.get('demo') === '1'){
   MN.left=['Gold-E-Lockz','Bing Ling','baz']; MN.right=['slove','dragon5000','Yow']
   MN.usedL=[0]; MN.usedR=[1]; MN.pickA=1; MN.pickB=2
   MN.scoreA=2; MN.scoreB=1; MN.round=4
-  setLeague('ubae'); drawRail(); drawTeams(); drawRoom(); drawMatch()
+  setLeague('ubae'); drawRail(); drawTeams()
   $('mRd').textContent='ROUND 4'; matchClock(96); roomClock(83)
 }
 const m = Q.get('mode')
-if(m === 'room')  mode('mRoom')
-if(m === 'match') mode('mMatch')
+if(m === 'room')  mode('uRoom')
+if(m === 'match') mode('uMatch')
 if(Q.get('rundown') === '1') startRundown()
 })()
 </script>
