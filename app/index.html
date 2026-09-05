@@ -2313,6 +2313,9 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   animation:digit .42s cubic-bezier(.2,1.4,.4,1) both;animation-delay:calc(var(--i) * 45ms);transform-origin:50% 100%}
 .train .tfl.whiff{animation-duration:1.1s}
 .train .tfl.whiff b{font-size:28px;color:#D9E6FF;-webkit-text-stroke:1px #142a50;text-shadow:0 0 6px rgba(159,184,255,.9),0 3px 0 #142a50,0 5px 6px rgba(0,0,0,.5)}
+.train .tfl.purse b{color:#FFF;-webkit-text-stroke:1.4px #6b4a00;font-size:44px;
+  text-shadow:0 0 14px rgba(245,200,66,1),0 0 26px rgba(245,200,66,.8),0 4px 0 #6b4a00,0 7px 8px rgba(0,0,0,.6)}
+.train .tfl.purse{animation-duration:2s}
 .train .tfl.pack b,.train .tfl.up b{color:#FFE9A3;-webkit-text-stroke:1.2px #4a3208;text-shadow:0 0 8px rgba(245,200,66,.95),0 3px 0 #4a3208,0 5px 6px rgba(0,0,0,.6)}
 /* NO gradient-through-text here, deliberately. `-webkit-background-clip:text`
    + `color:transparent` + a `filter:drop-shadow(...)` paints NOTHING -- not
@@ -6771,7 +6774,10 @@ async function renderTrain(){
     var f = document.createElement('span'); f.className = 'tfl ' + cls;
     var glyphs = cls === 'whiff' ? 'MISS' : String(txt);
     glyphs.split('').forEach(function(ch, i){
-      var d = document.createElement('b'); d.textContent = ch; d.style.setProperty('--i', i); f.appendChild(d); });
+      /* a plain space is an empty glyph and collapses in the flex row, so
+         "5 PACKS" rendered as "5PACKS" -- non-breaking keeps the gap */
+      var d = document.createElement('b'); d.textContent = ch === ' ' ? '\u00a0' : ch;
+      d.style.setProperty('--i', i); f.appendChild(d); });
     if(cls === 'hit'){ for(var k = 0; k < 5; k++){ var sp = document.createElement('s'); sp.style.setProperty('--a', (k * 72 + 18) + 'deg'); f.appendChild(sp); } }
     var sr = bag.getBoundingClientRect(), br = bag.querySelector('.bagsvg').getBoundingClientRect();
     f.style.left = ((br.left - sr.left) + br.width * 0.34 + (Math.random() * 12 - 6)) + 'px';
@@ -6821,9 +6827,18 @@ async function renderTrain(){
     }
     /* A pack fell out of the bag. It is a REAL shop pack -- same set, same
        published odds -- so it is waiting in Cards to be ripped. */
+    /* A PURSE. Rolled off a landed punch like the pack, richest tier first, and
+       funded out of the base rate rather than added on top -- so it is the same
+       money arriving as a moment instead of a drip. */
+    if(Number(r.purse) > 0){
+      float(Number(r.purse).toLocaleString(), 'purse'); sfx('pack');
+      toast('\uD83D\uDCB0 PURSE \u2014 ' + Number(r.purse).toLocaleString() + ' VC off one punch.');
+    }
     if(Number(r.packs) > 0){
-      float('PACK', 'pack'); sfx('pack');
-      toast((r.pack_name || 'A pack') + ' \u2014 open it in Cards.');
+      float(Number(r.packs) > 1 ? Number(r.packs) + ' PACKS' : 'PACK', 'pack'); sfx('pack');
+      toast(Number(r.packs) > 1
+        ? Number(r.packs) + ' \u00d7 ' + (r.pack_name || 'pack') + ' at once \u2014 they are in Cards.'
+        : (r.pack_name || 'A pack') + ' \u2014 open it in Cards.');
     }
     if(Number(r.chips) > 0){
       chips += Number(r.chips); float('CHIP', 'pack'); sfx('pack');
