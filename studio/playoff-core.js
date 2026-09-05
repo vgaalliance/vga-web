@@ -216,7 +216,43 @@
 
   function who(x){ return !x ? [] : (x.name ? [x.name] : (x.from||[])) }
 
-  function bracket(p){
+  /* `results` — matches already FOUGHT, as [{a,b,winner}] of team names.
+     Nothing stores a bracket id on a match row, so the PAIRING is what
+     identifies it: walk the bracket in order and a match whose two sides are
+     both known is the one played between those two teams. Same rule, and the
+     same reason, as the bot's playoff-advance.js.
+
+     Without this every round after the play-in stays a placeholder forever —
+     the poster printed "WINNER 4/5" the morning of a semifinal whose two teams
+     had been decided the night before. A resolved side keeps its `ref` as well
+     as gaining a `name`, so a renderer that only knows about refs is unchanged
+     and one that prefers names shows the real team. */
+  function results_(p, results){
+    const key=(x,y)=>[x,y].sort().join(' \u0000 ')
+    const byPair=new Map()
+    ;(results||[]).forEach(r=>{ if(r&&r.a&&r.b&&r.winner) byPair.set(key(r.a,r.b), r.winner) })
+    const s=seats(p), seat=n=>(s[n-1]||{}).name||null
+    const R={}, side=f=>f()
+    // A HALF-known match still names the half it knows: the winners final is
+    // "Champions United v winner of semi 2" the moment semi 1 is fought, and
+    // refusing to fill either side until both are known leaves a poster
+    // printing two placeholders next to a decided team. Only the RESULT waits
+    // for both sides — you cannot have played a match against nobody.
+    const put=(id,a,b)=>{
+      if(a && b && a===b) return
+      const w=(a&&b)?byPair.get(key(a,b)):null
+      R[id]={a:a||null, b:b||null, w:(w===a||w===b)?w:null, l:w===a?b:(w===b?a:null)}
+    }
+    const win=id=>(R[id]||{}).w||null, lose=id=>(R[id]||{}).l||null
+    put('W1', seat(3), seat(6)); put('W2', seat(4), seat(5))
+    put('S1', seat(1), win('W2')); put('S2', seat(2), win('W1'))
+    put('L1', lose('W1'), lose('W2')); put('L2', lose('S1'), lose('S2'))
+    put('WF', win('S1'), win('S2')); put('LS', win('L1'), win('L2'))
+    put('LF', win('LS'), lose('WF')); put('GF', win('WF'), win('LF'))
+    return R
+  }
+
+  function bracket(p, results){
     const s=seats(p), at=n=>s[n-1], ref=t=>({ref:t})
     // Winners round 1 cannot run before the play-in — but only before the ONE
     // play-in that fills ITS seat. Seats are handed out in order, seeds first,
@@ -230,7 +266,7 @@
     const piOf={}; let piI=0
     s.forEach(x=>{ if(x.fromPlayin){ piI++; if(!x.name) piOf[x.seed]='PI'+piI } })
     const needPI=n=>piOf[n]?[piOf[n]]:[]
-    return {
+    const out={
       seats:s,
       playin:(p.playin||[]).map((m,i)=>({conf:m[0].conference, a:{name:m[0].team_name}, b:{name:m[1].team_name},
                                          won:(p.playinWon||[])[i]||null})),
@@ -257,6 +293,21 @@
       gf:{ round:'GRAND FINAL', ms:[
         {id:'GF', needs:['WF','LF'], a:ref('WINNERS BRACKET'), b:ref('LOSERS BRACKET')}] },
     }
+    if(results && results.length){
+      const R=results_(p, results)
+      const fill=m=>{
+        const r=R[m.id]; if(!r) return m
+        if(r.a && !m.a.name) m.a={...m.a, name:r.a}
+        if(r.b && !m.b.name) m.b={...m.b, name:r.b}
+        // The winner is named on the match, never by reordering the sides: the
+        // box reads top-down and swapping it would silently rewrite who was
+        // listed first on a card people have already seen.
+        if(r.w) m.won=r.w
+        return m
+      }
+      ;[...out.wb, ...out.lb, out.gf].forEach(rnd=>rnd.ms.forEach(fill))
+    }
+    return out
   }
 
   /* What the seed is WORTH, in matches — both roads.

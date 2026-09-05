@@ -275,5 +275,48 @@ console.log('\nUBAe playoff picture\n')
   eq(ns.map(n=>n.ms.length),[2,2,2,2,2,1,1],'the calendar is unchanged by a result')
 }
 
+
+// ── a fought round stops being a placeholder ─────────────────────────────────
+// The poster printed "WINNER 4/5" on the morning of a semifinal whose two teams
+// had been decided the night before, because nothing after the play-in ever
+// read a result. The pairing is the identifier — no bracket id is stored on a
+// match row anywhere.
+{
+  // Both play-ins settled, so seats are 1 CU, 2 MUDS, 3 Sheath, 4 Rag Tags,
+  // 5 UKFC, 6 Ring Reapers — W1 is 3 v 6, W2 is 4 v 5.
+  const p=P.picture(SUMMER, null, undefined, ['Ring Reapers','UKFC UNCS'])
+  const S0=P.bracket(p).wb[1].ms
+  eq(S0.map(m=>m.b.ref),['WINNER 4/5','WINNER 3/6'],'with no results the semis are still placeholders')
+  eq(S0.some(m=>m.b.name), false, 'and carry no team name to print')
+
+  const R1=[{a:'Sheath Elite', b:'Ring Reapers', winner:'Sheath Elite'},
+            {a:'Team Rag Tags', b:'UKFC UNCS', winner:'Team Rag Tags'}]
+  const b=P.bracket(p, R1)
+  const s1=b.wb[1].ms.find(m=>m.id==='S1'), s2=b.wb[1].ms.find(m=>m.id==='S2')
+  eq(s1.b.name,'Team Rag Tags','the semi names the team that won round 1')
+  eq(s2.b.name,'Sheath Elite','both of them')
+  eq(s1.b.ref,'WINNER 4/5','and keeps the ref, so an old renderer is unchanged')
+  eq(b.wb[0].ms.find(m=>m.id==='W1').won,'Sheath Elite','a fought match names its winner')
+  eq(s1.won, undefined, 'a match not yet fought names nobody')
+
+  // The losers bracket is fed by the SAME results, which is where a hand-rolled
+  // resolver goes wrong: L1 is the two teams that LOST, not the two that won.
+  const l1=b.lb[0].ms[0]
+  eq([l1.a.name,l1.b.name],['Ring Reapers','UKFC UNCS'],'losers round 1 is the two round-1 losers')
+  eq(b.lb[1].ms[0].a.name, undefined, 'losers round 2 waits on semis nobody has played')
+
+  // Order matters: a later round can only resolve once the earlier one has.
+  const b2=P.bracket(p, R1.concat([{a:'Champions United', b:'Team Rag Tags', winner:'Champions United'}]))
+  eq(b2.wb[2].ms[0].a.name,'Champions United','the winners final names the semi winner it now knows')
+  eq(b2.wb[2].ms[0].b.name, undefined, 'and still waits on the semi that has not been played')
+  eq(b2.lb[1].ms[0].a.name,'Team Rag Tags','losers round 2 takes the semi LOSER')
+
+  // A result between two teams that never meet in this bracket is not a match.
+  eq(P.bracket(p,[{a:'Champions United', b:'Ring Reapers', winner:'Champions United'}])
+      .wb[1].ms[0].b.name, undefined, 'a pairing the bracket does not contain resolves nothing')
+  eq(P.bracket(p, []).wb[1].ms[0].b.name, undefined, 'an empty result list changes nothing')
+  eq(P.nights(P.bracket(p,R1)).map(x=>x.ms.length),[2,2,2,2,2,1,1],'the calendar is unchanged by results')
+}
+
 console.log(`\n${n-bad}/${n} passed${bad?` — ${bad} FAILED`:''}\n`)
 process.exit(bad?1:0)
