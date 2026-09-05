@@ -175,6 +175,14 @@
     letter-spacing:.16em;color:var(--dim);margin-top:5px;}
   .bk-s.alt .nm{color:#ffb020;}          /* amber: this seat is not settled */
   .bk-s.alt .sd{color:#ffb020;}
+  /* A match that has been FOUGHT. A decided slot drawn identically to an
+     undecided one is the bracket's whole job left undone -- the board carried
+     five played matches and read as though the tournament had not started. */
+  .bk-m.done{border-left-color:#39ff88;box-shadow:0 0 16px rgba(0,120,60,.35);}
+  .bk-s.win .nm{color:#39ff88;} .bk-s.win .sd{color:#39ff88;}
+  .bk-s.win .nm::after{content:' \2714';font-size:15px;}
+  .bk-s.lost{opacity:.45;}
+  .bk-s.lost .nm{text-decoration:line-through;text-decoration-thickness:2px;}
   .bk-s.prov .nm{color:#ffb020;} .bk-s.prov .sd{color:#ffb020;}
   .bk-col.gf .bk-m{border-left-color:#ffce00;box-shadow:0 0 26px rgba(255,206,0,.22);}
   .bk-col.gf .bk-h{color:#ffce00;}
@@ -196,6 +204,8 @@
   .po-line .vs{color:var(--pink);font-weight:900;padding:0 8px;}
   .po-line .lbl{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.14em;
     color:var(--dim);padding-right:10px;}
+  .po-line .w{color:#39ff88;font-weight:900;}
+  .po-line .l{opacity:.45;text-decoration:line-through;text-decoration-thickness:2px;}
   .po-note{font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.1em;
     color:#ffce00;margin-top:10px;line-height:1.6;}
   .po-foot{font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.16em;
@@ -913,6 +923,21 @@ const ftime=d=>{const p=etParts(d)
 // a match, is a screen that rewards somebody talking over it. It stays a deck
 // button; the schedule screen's three week-cards are what cycles.
 let VIEWS=['standings','playoff','rosters','vsrosters','ubarank','schedule','next3','teamvs','card','cta'], cycle=null
+
+/* ── playoff matches already FOUGHT ───────────────────────────────────────
+   playoff-core has taken results since it was written; nothing on this page
+   ever handed it any. So every board drew the tournament as if it had not
+   started -- "WINNER 4/5" above a semifinal whose two teams fought last night,
+   and a play-in seat cycling two names when one of them had already won it.
+   The pairing identifies the match (no bracket id is stored on a row), so all
+   this needs is the completed rows.
+   Play-ins settle a SEAT, so they go to picture(); everything else settles a
+   BRACKET SLOT, so it goes to bracket(). Same list, two doors. */
+let PO_DONE=[]
+const poWon=()=>PO_DONE.filter(m=>m.stage==='play_in').map(m=>m.winner_name).filter(Boolean)
+const poRes=()=>PO_DONE.filter(m=>m.stage!=='play_in'&&m.winner_name)
+  .map(m=>({a:m.team_a_name, b:m.team_b_name, winner:m.winner_name}))
+const poPic=st=>PLAYOFF.picture(st, undefined, undefined, poWon())
 // Auto-cycle for a UBA fight night: only the screens that mean something on one.
 // The deck picks the rotation by mode, so 'auto' doesn't parade team standings
 // through a solo card.
@@ -924,13 +949,17 @@ const VIEWS_GFL=['card','gflrank','nextev','cta']
 const FUTURE=()=>new Date(Date.now()-6*3600e3).toISOString()
 
 async function loadAll(){
-  const [{data:st},{data:rec},{data:mt},{data:ev},{data:rk}] = await Promise.all([
+  const [{data:st},{data:rec},{data:mt},{data:ev},{data:rk},{data:pd}] = await Promise.all([
     sb.from('team_standings').select('*'),
     sb.from('ubae_fighter_records').select('stage_name,current_team,photo_thumb_url'),
     sb.from('team_matches_public').select('*').eq('status','scheduled').order('match_date').limit(8),
     sb.from('events_public').select('*').eq('status','scheduled').gte('event_date',FUTURE()).order('event_date').limit(3),
     sb.from('rankings_public').select('rank,fighter_name,weight_class,level').eq('scope','weight_class').order('rank'),
+    // completed only -- an unplayed row has no winner and would resolve nothing
+    sb.from('team_matches_public').select('*').in('stage',['play_in','playoff','final'])
+      .eq('status','completed').order('match_date'),
   ])
+  PO_DONE=pd||[]
   renderStandings(st||[]); renderRosters(st||[], rec||[]); renderNext(ev||[]); renderTvs(mt||[])
   // The poster scene names the night it is a poster for. Falls back to the
   // heading already in the markup when nothing is scheduled -- a poster under
@@ -1582,7 +1611,7 @@ function renderStandings(st){
 function renderPoWeeks(st, mt){
   const box=$('schedPlayoff'); if(!box) return
   if(!window.PLAYOFF||!(st||[]).length){ box.innerHTML=''; return }
-  const p=PLAYOFF.picture(st), b=PLAYOFF.bracket(p), wks=PLAYOFF.weeks(b)
+  const p=poPic(st), b=PLAYOFF.bracket(p, poRes()), wks=PLAYOFF.weeks(b)
   const left=(mt||[]).filter(m=>(m.stage||'regular')==='regular')
   const settled=!left.length
   const real={}
@@ -1668,11 +1697,11 @@ function renderPlayoff(st, mt){
   const box=$('poContent'), swing=$('poSwing')
   if(!box||!swing) return
   if(!window.PLAYOFF||!(st||[]).length){ box.innerHTML=''; swing.innerHTML=''; return }
-  const p=PLAYOFF.picture(st)
+  const p=poPic(st)
   const left=(mt||[]).filter(m=>(m.stage||'regular')==='regular')
   // The TAG is what is CLINCHED, not what the table says today: sitting 2nd
   // with a rival still to play is not through, it is on the line.
-  const out=PLAYOFF.outlook(st, left)
+  const out=PLAYOFF.outlook(st, left, undefined, poWon())
   const TAG={in:'THROUGH', bye:'BYE · IN', playin:'PLAY-IN', out:'OUT', live:'ON THE LINE'}
   box.innerHTML=p.order.map(c=>
     `<div><div class="conf-h">Conference ${c}</div>${p.confs[c].map((t,i)=>{
@@ -1734,16 +1763,28 @@ function renderPlayoff(st, mt){
   // Settled (or not close to settled) — the play-in board, and the seeds the
   // teams already through hold. Survivors slot into that order by record, so
   // it is provisional until the play-in is played, and says so.
-  const rows = pin.length
-    ? pin.map(m=>line(fdate(m.match_date).toUpperCase(), m.team_a_name, m.team_b_name)).join('')
-    : (p.playin.length ? p.playin.map(x=>line('PLAY-IN', x[0].team_name, x[1].team_name)).join('')
-                       : line('PLAY-IN','TBA',''))
+  // A play-in that has been FOUGHT is not a fixture. Drawn as one it told the
+  // room two teams might still be here on a night after one of them had
+  // already gone home.
+  const mark=(n,w)=>!w ? n : `<span class="${n===w?'w':'l'}">${n}</span>`
+  const wn=p.playinWon||[]
+  const rows = p.playin.length
+    ? p.playin.map((x,i)=>line(wn[i]?'PLAY-IN · FINAL':(pin[i]?fdate(pin[i].match_date).toUpperCase():'PLAY-IN'),
+        mark(x[0].team_name, wn[i]), mark(x[1].team_name, wn[i]))).join('')
+    : (pin.length ? pin.map(m=>line(fdate(m.match_date).toUpperCase(), m.team_a_name, m.team_b_name)).join('')
+                  : line('PLAY-IN','TBA',''))
+  // Once every play-in is settled the SIX seats are known, not four — printing
+  // the four seeded on record under "survivors seed in by record" hides the two
+  // teams the survivors actually became.
+  const seats=(window.PLAYOFF?PLAYOFF.bracket(p, poRes()).seats:[]).filter(x=>x.name)
   const right = left.length>1
     ? line(left.length+' MATCHES LEFT','PICTURE NOT FINAL','')
-    : p.seeds.map((t,i)=>line('SEED '+(i+1), t.team_name,'')).join('')
-      + '<div class="po-note">▲ SURVIVORS SEED IN BY RECORD</div>'
+    : seats.length===6
+      ? seats.map(x=>line('SEED '+x.seed, x.name, '')).join('')
+      : p.seeds.map((t,i)=>line('SEED '+(i+1), t.team_name,'')).join('')
+        + '<div class="po-note">▲ SURVIVORS SEED IN BY RECORD</div>'
   swing.innerHTML=`<div class="po-swing">
-    <div class="po-sh">// PLAY-IN${pin.length?' · SCHEDULED':''} //</div>
+    <div class="po-sh">// PLAY-IN${wn.length&&wn.every(Boolean)?' · COMPLETE':(pin.length?' · SCHEDULED':'')} //</div>
     <div class="po-brs"><div class="po-br">${rows}</div><div class="po-br">${right}</div></div>
     <div class="po-foot">${RULES}</div></div>`
 }
@@ -1758,12 +1799,12 @@ function renderBracket(st, mt, scene){
   const box=$('bkContent'), note=$('bkNote')
   if(!box||!note) return
   if(!window.PLAYOFF||!(st||[]).length){ box.innerHTML=''; note.innerHTML=''; return }
-  const p=PLAYOFF.picture(st), b=PLAYOFF.bracket(p)
+  const p=poPic(st), b=PLAYOFF.bracket(p, poRes())
   const left=(mt||[]).filter(m=>(m.stage||'regular')==='regular')
   // Amber = this seat is not settled. It has no job inside a SCENARIO board:
   // "if UKFC win" already says the whole page is conditional, and marking seats
   // inside it as uncertain says the opposite of what the caption promises.
-  const out=scene ? null : PLAYOFF.outlook(st, left)
+  const out=scene ? null : PLAYOFF.outlook(st, left, undefined, poWon())
   const prov=n=>(out && out.status[n]==='live') ? ' prov' : ''
 
   // TWO TEAMS, ALTERNATING. A slot that is a straight either/or — Sheath Elite
@@ -1774,18 +1815,28 @@ function renderBracket(st, mt, scene){
   const alt=(seed,names,label)=>`<div class="bk-s alt"><span class="sd">${seed||'·'}</span>
       <span class="nm"><span class="cyc" data-names="${names.join('|')}">${names[0]}</span>
       <span class="lbl">${label}</span></span></div>`
-  const slot=x=>{
+  // `res` is '' until the match has been fought, then ' win' / ' lost'. A slot
+  // that is still a REF or a cycling pair cannot be either -- there is no
+  // result to draw on a team that is not named yet.
+  const slot=(x,res)=>{
     if(!x) return ''
-    if(x.ref) return (x.of||[]).length===2
+    if(x.ref && !x.name) return (x.of||[]).length===2
       ? alt('·', x.of, x.ref)
       : `<div class="bk-s ref"><span class="sd">·</span><span class="nm">${x.ref}</span></div>`
-    if(x.name) return `<div class="bk-s${prov(x.name)}"><span class="sd">${x.seed||''}</span><span class="nm">${x.name}</span></div>`
+    if(x.name) return `<div class="bk-s${res||prov(x.name)}"><span class="sd">${x.seed||''}</span><span class="nm">${x.name}</span></div>`
     if(x.from) return alt(x.seed, x.from, 'PLAY-IN WINNER')
     return `<div class="bk-s ref"><span class="sd">${x.seed||''}</span><span class="nm">TBD</span></div>`
   }
+  // The winner is marked in PLACE. Sorting the box so the winner sits on top
+  // would rewrite who was listed first on a card the audience has already
+  // seen -- same rule playoff-core keeps when it fills the slots.
+  const box2=m=>{
+    const r=x=>!m.won||!x||!x.name ? '' : (x.name===m.won ? ' win' : ' lost')
+    return `<div class="bk-m${m.won?' done':''}">${slot(m.a,r(m.a))}${slot(m.b,r(m.b))}</div>`
+  }
   const col=(cls,head,ms,style)=>`<div class="bk-col ${cls||''}" ${style||''}>
     <div class="bk-h">${head}</div>
-    ${ms.map(m=>`<div class="bk-m">${slot(m.a)}${slot(m.b)}</div>`).join('')}</div>`
+    ${ms.map(box2).join('')}</div>`
 
   box.innerHTML =
     col('pi bk-span','PLAY-IN', b.playin.length?b.playin:[{a:{ref:'TBD'},b:{ref:'TBD'}}], 'style="grid-column:1"')
@@ -1804,6 +1855,8 @@ function renderBracket(st, mt, scene){
     return `SEED${sd.length>1?'S':''} ${sd.length>1?sd[0]+'–'+sd[sd.length-1]:sd[0]}: <b>${w}</b>`
   }).join(' · ')
   const longest=Math.max.apply(null, Object.keys(r).map(sd=>r[sd].long))
+  const all=[...b.wb, ...b.lb, b.gf].reduce((a,rd)=>a.concat(rd.ms), [])
+  const played=all.filter(m=>m.won).length, total=all.length
 
   const cap=$('bkScene')
   if(cap) cap.innerHTML = scene
@@ -1813,6 +1866,8 @@ function renderBracket(st, mt, scene){
       ? `EVERY SEAT ON THIS BOARD IS WHAT IT WOULD BE — <b>${scene}</b><br>`
       : left.length
       ? `<b>AMBER = STILL DECIDED BY TONIGHT</b> · ${left.length} MATCH${left.length>1?'ES':''} STILL TO PLAY<br>`
+      : b.playin.length && b.playin.every(m=>m.won)
+      ? `SEEDS SET · <b>${played}</b> OF ${total} BRACKET MATCHES IN THE BOOKS<br>`
       : 'SEEDS PROVISIONAL UNTIL THE PLAY-IN — A SURVIVOR SEEDS IN ON RECORD LIKE EVERYONE ELSE<br>')
     + `MATCHES TO THE TITLE, UNBEATEN — ${roadLine} · THE LONG WAY ROUND: <b>UP TO ${longest}</b><br>`
     + 'DOUBLE ELIMINATION · SEEDS 1–2 SKIP ROUND 1 · <b>TRUE GRAND FINAL — ONE LOSS AND IT IS OVER</b>'

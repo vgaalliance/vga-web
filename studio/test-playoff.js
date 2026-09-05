@@ -316,6 +316,38 @@ console.log('\nUBAe playoff picture\n')
       .wb[1].ms[0].b.name, undefined, 'a pairing the bracket does not contain resolves nothing')
   eq(P.bracket(p, []).wb[1].ms[0].b.name, undefined, 'an empty result list changes nothing')
   eq(P.nights(P.bracket(p,R1)).map(x=>x.ms.length),[2,2,2,2,2,1,1],'the calendar is unchanged by results')
+
+  // A match nobody has played has no loser. This is the one a null slips
+  // through: the winners final has a known `a` and an unknown `b`, so a
+  // `w===b` test is null===null and names `a` as the team that just lost it.
+  // The losers final then prints a live, unbeaten team as beaten.
+  eq(b2.lb[3].ms[0].b.name, undefined, 'the losers final waits on a winners final nobody has played')
+  eq(b2.wb[2].ms[0].won, undefined, 'an unplayed winners final names no winner either')
+  const b3=P.bracket(p, R1.concat([
+    {a:'Champions United', b:'Team Rag Tags', winner:'Champions United'},
+    {a:'Team MUDS', b:'Sheath Elite', winner:'Team MUDS'},
+    {a:'Champions United', b:'Team MUDS', winner:'Team MUDS'}]))
+  eq(b3.lb[3].ms[0].b.name,'Champions United','once it IS played the beaten finalist drops to the losers final')
+}
+
+// ── the TAG on the picture board knows the play-in has been played ──────────
+// outlook() overrides picture()'s status wherever it is drawn, so a play-in
+// result that reaches picture() and not outlook() is invisible: the board kept
+// tagging a team that had lost and gone home a week earlier as "PLAY-IN".
+{
+  // In this table the play-ins are UKFC UNCS v jUnC and The 5 Great Kage v
+  // Ring Reapers -- Sheath Elite is 2nd in A and never goes to one.
+  const done=P.outlook(SUMMER, [], undefined, ['UKFC UNCS','Ring Reapers'])
+  eq(done.status['The 5 Great Kage'],'out','a team that LOST its play-in is out')
+  eq(done.status['jUnC'],'out','both of them')
+  eq(done.status['Ring Reapers'],'playin','a team that WON one still qualified through the play-in')
+  eq(done.status['Champions United'],'in','and the seeded teams are untouched')
+  const open=P.outlook(SUMMER, [])
+  eq(open.status['The 5 Great Kage'],'playin','with no results nothing is decided by it')
+  // It only ever NARROWS: a settled play-in cannot un-clinch anybody.
+  const live=P.outlook(SUMMER, [{team_a_name:'UKFC UNCS', team_b_name:'Ring Reapers'}],
+                       undefined, ['UKFC UNCS','Ring Reapers'])
+  eq(live.status['Champions United'],'in','a match still to play does not shake a clinched team loose')
 }
 
 console.log(`\n${n-bad}/${n} passed${bad?` — ${bad} FAILED`:''}\n`)

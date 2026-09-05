@@ -143,9 +143,14 @@
      holds in ALL of them. Anything that survives in some and not others is
      ON THE LINE, which is the honest thing to put on screen and also the more
      interesting one. */
-  function outlook(standings, pending, springChamp){
+  /* `won` — play-in results, same list picture() takes. The tag on this board
+     OVERRIDES picture()'s status, so leaving it out kept calling a team that
+     lost its play-in a week ago "PLAY-IN", as though the night were still to
+     come. It only ever narrows: a settled play-in cannot make anything less
+     certain than it already was. */
+  function outlook(standings, pending, springChamp, won){
     const left=(pending||[]).filter(m=>m&&m.team_a_name&&m.team_b_name)
-    const base=picture(standings, null, springChamp)
+    const base=picture(standings, null, springChamp, won)
     // 6 scenarios per match; past three matches the combinations stop being
     // worth computing and nothing is clinched that early anyway.
     if(!left.length || left.length>3) return { status:base.status, base, pending:left.length, decided:!left.length }
@@ -167,7 +172,7 @@
       // one produced, or a team playing twice would only ever bank one result
       let rows=standings
       chain.forEach(sim=>{ rows=project(rows, sim) })
-      const p=picture(rows, null, springChamp)
+      const p=picture(rows, null, springChamp, won)
       Object.keys(p.status).forEach(n=>{ (seen[n]=seen[n]||{})[p.status[n]]=1 })
     })
     const status={}
@@ -240,8 +245,16 @@
     // for both sides — you cannot have played a match against nobody.
     const put=(id,a,b)=>{
       if(a && b && a===b) return
-      const w=(a&&b)?byPair.get(key(a,b)):null
-      R[id]={a:a||null, b:b||null, w:(w===a||w===b)?w:null, l:w===a?b:(w===b?a:null)}
+      const raw=(a&&b)?byPair.get(key(a,b)):null
+      const w=(raw && (raw===a || raw===b)) ? raw : null
+      // A match nobody has played has no LOSER. The old form read
+      // `w===b ? a : null`, and on an unplayed match both `w` and `b` are null
+      // -- null===null is true -- so it handed the `a` side back as the beaten
+      // team. On the morning of the winners final that put CHAMPIONS UNITED in
+      // the losers final as "loser of the WB final", a match they had not
+      // fought, on a board a viewer reads as fact. Derive the loser from the
+      // winner only, never from a comparison that null can satisfy.
+      R[id]={a:a||null, b:b||null, w, l:w ? (w===a?b:a) : null}
     }
     const win=id=>(R[id]||{}).w||null, lose=id=>(R[id]||{}).l||null
     put('W1', seat(3), seat(6)); put('W2', seat(4), seat(5))
