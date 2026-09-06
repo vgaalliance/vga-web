@@ -1596,7 +1596,9 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 
 #fan,#dots,#cds,#strip{display:none !important}
 /* ── THE MASTHEAD ON THE WORLD ─────────────────────────────────────── */
-.wm{position:relative;height:84px;margin:0 0 -34px;z-index:8}
+/* the old .top carried env(safe-area-inset-top); the masthead that replaced
+   it must too, or the wordmark sits under the notch on an installed PWA */
+.wm{position:relative;height:84px;margin:env(safe-area-inset-top,0px) 0 -34px;padding-top:6px;z-index:8}
 .wm svg{position:absolute;left:0;right:0;top:0;width:100%;height:150px;overflow:visible;pointer-events:none}
 .wm .t1{font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:.10em;fill:#EFEAFF}
 .wm .t1 .e{fill:#A78BFA}
