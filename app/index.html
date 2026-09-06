@@ -6762,10 +6762,16 @@ async function showSpread(pulls, pity){
      row (a ghost with a name the roster does not carry) keeps the plain
      rectangle rather than a slab with the wrong face on it. */
   var all = binderAll || await q("cards_public?select=*") || [];
-  list.forEach(function(c){
-    var m = all.filter(function(k){ return k.name === c.n && String(k.rarity) === c.r; });
+  var pullRows = Array.isArray(pulls) ? pulls : [];
+  list.forEach(function(c, i){
+    /* by id when the pull carries one (open_pack does since 2026-09-06); by
+       name + rarity for anything older. the printed name on the card wins
+       over the stage name the pull reports -- "KO Artist Kam", not "Kam". */
+    var id = pullRows[i] && pullRows[i].card_id, m = id ? all.filter(function(k){ return k.card_id === id; }) : [];
+    if(!m.length) m = all.filter(function(k){ return k.name === c.n && String(k.rarity) === c.r; });
     if(m.length > 1) m = m.filter(function(k){ return k.set_status === 'active'; }).concat(m);
     c.card = m[0] || null;
+    if(c.card && c.card.name) c.n = c.card.name;
   });
 
   var active = 0;
