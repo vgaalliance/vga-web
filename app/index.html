@@ -1644,6 +1644,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 /* a borrowed slot: the other league's fighter standing in for the moment */
 #ranks .rkrow.swp{background:rgba(245,200,66,.14);box-shadow:inset 2px 0 0 #F5C842,0 0 12px rgba(245,200,66,.25);border-radius:4px}
 #ranks .rkrow.swp .rft{color:#FFE9A8}
+#ranks .rkrow.swp .rno{text-decoration:none;font-family:'Space Mono',monospace;font-size:7px;color:#F5C842;letter-spacing:.06em}
 #ranks .rdh .rtag{display:inline-block;margin-left:5px;padding:1px 4px;border-radius:3px;background:#F5C842;color:#3A2A00;font-size:6px;letter-spacing:.12em;vertical-align:1px}
 #bouttxt .b{fill:#F5C842}
 .world text{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.19em;fill:#CDBEFF;text-transform:uppercase}
@@ -4295,8 +4296,12 @@ function startWorld(){
   var bpath = document.getElementById('boutarc'), btxt = document.getElementById('bouttxt'), btp = btxt && btxt.querySelector('textPath');
   function labelArc(runs){
     if(!btp) return;
-    var best = -1, bz = 0.12;
-    for(var q = 0; q < runs.length; q++){ var rz = runs[q].z; if(rz > bz + (q === front ? 0 : 0.08)){ bz = rz; best = q; } }
+    /* the arc whose apex is nearest the middle of the disc, on screen -- with
+       a few px of hysteresis so two crossing arcs do not flicker. z alone
+       chose the first of three hoops over america and never let go. */
+    var best = -1, bd = 1e9;
+    for(var q = 0; q < runs.length; q++){ var rq = runs[q]; if(rq.z < 0.12) continue;
+      var dd = Math.hypot(rq.ax - CX, rq.ay - CY) + (q === front ? 0 : 8); if(dd < bd){ bd = dd; best = q; } }
     if(best >= 0) front = best;
     var r = front >= 0 ? runs[front] : null, on = r && r.z > 0.05 && Date.now() < showUntil;
     if(!on){ btxt.style.opacity = 0; litBoard(null); return; }
@@ -4341,18 +4346,26 @@ function startWorld(){
     el.querySelectorAll('a.lit').forEach(function(a){ a.classList.remove('lit'); });
     unswap();
     if(!arc) return;
-    [arc.ra, arc.rb].forEach(function(st, i){
-      var sl = i ? arc.sb : arc.sa; if(!sl) return;
-      var own = el.querySelectorAll('a[data-slug="' + sl + '"]');
-      if(own.length){ own.forEach(function(a){ a.classList.add('lit'); }); return; }
-      if(!st || st.level === rankLeague) return;                 // same league and unranked here, or nothing to borrow
+    var folded = !!el.querySelector('.rgrid.rfold'), taken = {};
+    /* the two are placed bottom-up so that, when both are past the fold, the
+       better rank sits above the worse in the two borrowed slots */
+    var pair = [[arc.ra, arc.sa], [arc.rb, arc.sb]].sort(function(x, y){ return (y[0] ? y[0].rank : 0) - (x[0] ? x[0].rank : 0); });
+    pair.forEach(function(px){
+      var st = px[0], sl = px[1]; if(!sl) return;
+      var own = el.querySelector('a[data-slug="' + sl + '"]');
+      if(own && !(folded && own.classList.contains('rkx'))){ own.classList.add('lit'); return; }   // on the board and visible: just light it
+      if(!st) return;                                                                                 // unranked anywhere: nothing to show
       var col = RANK_DIVS.map(function(d){ return d.k; }).indexOf(st.weight_class); if(col < 0) return;
       var rcol = el.querySelectorAll('.rcol')[col]; if(!rcol) return;
-      var row = rcol.querySelectorAll('.rkrow')[st.rank - 1]; if(!row) return;
+      var rows = [].slice.call(rcol.querySelectorAll('.rkrow')), row = rows[st.rank - 1]; if(!row) return;
+      if(folded && row.classList.contains('rkx')){
+        /* past the fold: take the lowest visible slot not already taken, never unfold */
+        var vis = rows.filter(function(x){ return !x.classList.contains('rkx') && !x.classList.contains('swp'); });
+        row = vis[vis.length - 1]; if(!row) return; }
       worldSwapped.push({ el: row, html: row.innerHTML, cls: row.className });
-      row.className = row.className.replace(' rkx', '') + ' swp';
-      row.innerHTML = '<span class="rnm"><b class="rft">' + esc(st.fighter_name || sl) + '</b></span><i class="rmv"></i>';
-      var hd = rcol.querySelector('.rdh'); if(hd && !hd.querySelector('.rtag')) hd.insertAdjacentHTML('beforeend', '<i class="rtag">' + (st.level === 'amateur' ? 'GFL' : 'UBA') + '</i>');
+      row.className = row.className + ' swp';
+      row.innerHTML = '<span class="rnm"><b class="rft">' + esc(st.fighter_name || sl) + '</b></span><i class="rmv"><s class="rno">#' + st.rank + '</s></i>';
+      if(st.level !== rankLeague){ var hd = rcol.querySelector('.rdh'); if(hd && !hd.querySelector('.rtag')) hd.insertAdjacentHTML('beforeend', '<i class="rtag">' + (st.level === 'amateur' ? 'GFL' : 'UBA') + '</i>'); }
     });
   }
   /* one loop, always: cancel whatever is pending and request afresh. a flag
