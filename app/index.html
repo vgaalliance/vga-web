@@ -4139,11 +4139,48 @@ var REGION_AT={'NA':[39.8,-98.6],'NA-E':US_REGION['NA-E'],'NA-C':US_REGION['NA-C
 /* WHERE A FIGHTER IS, for the globe: the country, refined by region inside the
    US; the region alone when the country is blank. GFL 7 had five fighters with
    no country and five all-American bouts, which drew three lines out of eight. */
-function placeFighter(country, region){
-  var c = (country || '').trim();
-  if(c === 'United States' && US_REGION[region]) return US_REGION[region];
-  if(c && CENTROID[c]) return CENTROID[c];
-  return REGION_AT[region] || null;
+/* THE RULE (Castle, 2026-09-06): a dot is one person. They are placed by the
+   best thing the database knows -- a US region, then a country, then a wider
+   region -- and INSIDE that area at a spot fixed by their slug, so the same
+   fighter is always in the same place and nobody stacks on a capital. The
+   spot has to be on land (ray-cast against the coastlines) or it is retried;
+   after 24 tries it falls back to the area's centre. A US fighter with the
+   plain NA region is dealt one of east / central / west the same fixed way.
+   Nothing is drawn where nobody is: no fighters in Africa, no dots there. */
+var BOX = {   /* [latMin, latMax, lngMin, lngMax] -- the populated part, not the border */
+  'NA-E':[30,45,-90,-70],'NA-C':[30,48,-104,-88],'NA-W':[32,48,-124,-105],
+  'United States':[30,48,-124,-70],'Canada':[43,54,-124,-63],'Brazil':[-30,-3,-60,-35],'Australia':[-38,-17,115,153],
+  'Mexico':[17,31,-115,-88],'China':[22,42,100,122],'Russia':[50,62,30,60],'India':[10,30,72,88],'Argentina':[-40,-25,-70,-58],
+  'Indonesia':[-8,3,98,118],'Japan':[32,43,130,142],'Norway':[58,65,5,12],'Sweden':[56,64,12,19],'Finland':[60,66,22,29],
+  'UK/IE':[50.5,57.5,-9,1.5],'EU':[40,55,-8,22],'LATAM':[-35,20,-100,-40],'APAC':[-8,40,95,140],'OCE':[-42,-20,115,178],'MEA':[15,35,25,55],'NA':[30,48,-124,-70]
+};
+function hash32(str){ var h = 2166136261; for(var i = 0; i < str.length; i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function onLand(lat, lng){
+  var inside = false;
+  for(var r = 0; r < LAND.length; r++){ var ring = LAND[r];
+    for(var i = 0, j = ring.length - 1; i < ring.length; j = i++){
+      var xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+      if(((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi)) inside = !inside; }
+    if(inside) return true; }
+  return false;
+}
+function spotIn(box, centre, seed){
+  var h = hash32(seed);
+  for(var t = 0; t < 24; t++){
+    h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0; var u = (h & 0xffff) / 65535;
+    h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0; var v = (h & 0xffff) / 65535;
+    var lat = box[0] + (box[1] - box[0]) * u, lng = box[2] + (box[3] - box[2]) * v;
+    if(onLand(lat, lng)) return [lat, lng]; }
+  return centre;
+}
+function placeFighter(country, region, slug){
+  var c = (country || '').trim(), seed = slug || (c + '/' + region);
+  if(c === 'United States' || (!c && (region === 'NA' || US_REGION[region]))){
+    var reg = US_REGION[region] ? region : ['NA-E', 'NA-C', 'NA-W'][hash32(seed + '#') % 3];
+    return spotIn(BOX[reg], US_REGION[reg], seed); }
+  if(c && CENTROID[c]){ var b = BOX[c] || [CENTROID[c][0] - 1.2, CENTROID[c][0] + 1.2, CENTROID[c][1] - 1.5, CENTROID[c][1] + 1.5]; return spotIn(b, CENTROID[c], seed); }
+  if(REGION_AT[region]) return spotIn(BOX[region] || [REGION_AT[region][0] - 3, REGION_AT[region][0] + 3, REGION_AT[region][1] - 4, REGION_AT[region][1] + 4], REGION_AT[region], seed);
+  return null;
 }
 var CENTROID={"United States":[39.8,-98.6],"United Kingdom":[54,-2.5],"Brazil":[-10.8,-52.9],"Canada":[56.1,-106.3],"Spain":[40.2,-3.6],"Australia":[-25.3,133.8],"Ireland":[53.1,-8.2],"Dominican Republic":[18.7,-70.2],"China":[35.9,104.2],"Mexico":[23.6,-102.5],"Germany":[51.2,10.5],"Belgium":[50.5,4.5],"Austria":[47.5,14.6],"Sweden":[60.1,18.6],"Cuba":[21.5,-77.8],"Bahamas":[25,-77.4],"Afghanistan":[33.9,67.7],"France":[46.2,2.2],"Poland":[51.9,19.1],"Japan":[36.2,138.3],"Jamaica":[18.1,-77.3],"Armenia":[40.1,45],"Bulgaria":[42.7,25.5],"Russia":[61.5,105.3],"Andorra":[42.5,1.6],"Indonesia":[-0.8,113.9],"Norway":[60.5,8.5],"Honduras":[15.2,-86.2],"Romania":[45.9,25],"Colombia":[4.6,-74.3],"Bahrain":[26,50.6],"Vatican City":[41.9,12.5],"Liechtenstein":[47.2,9.6],"Croatia":[45.1,15.2],"Latvia":[56.9,24.6],"North Korea":[40.3,127.5],"India":[20.6,79],"Georgia":[42.3,43.4],"Morocco":[31.8,-7.1],"Slovakia":[48.7,19.7],"Kuwait":[29.3,47.5],"Denmark":[56.3,9.5],"Philippines":[12.9,121.8],"Benin":[9.3,2.3],"El Salvador":[13.8,-88.9],"Italy":[41.9,12.6],"Netherlands":[52.1,5.3],"Portugal":[39.4,-8.2],"Argentina":[-38.4,-63.6],"Chile":[-35.7,-71.5],"Peru":[-9.2,-75],"Venezuela":[6.4,-66.6],"Puerto Rico":[18.2,-66.5],"South Korea":[35.9,127.8],"Turkey":[38.9,35.2],"Greece":[39.1,21.8],"Switzerland":[46.8,8.2],"New Zealand":[-40.9,174.9],"South Africa":[-30.6,22.9],"Nigeria":[9.1,8.7],"Egypt":[26.8,30.8],"Saudi Arabia":[23.9,45.1],"United Arab Emirates":[23.4,53.8],"Israel":[31,34.9],"Ukraine":[48.4,31.2],"Finland":[61.9,25.7],"Czechia":[49.8,15.5],"Hungary":[47.2,19.5],"Scotland":[56.5,-4.2],"Wales":[52.1,-3.8],"England":[52.4,-1.5],"Guatemala":[15.8,-90.2],"Costa Rica":[9.7,-83.8],"Panama":[8.5,-80.8],"Ecuador":[-1.8,-78.2],"Pakistan":[30.4,69.3],"Thailand":[15.9,100.9],"Vietnam":[14.1,108.3],"Malaysia":[4.2,101.9],"Singapore":[1.35,103.8],"Trinidad and Tobago":[10.7,-61.2],"Haiti":[19,-72.3]};
 var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA","Spain":"ES","Australia":"AU","Ireland":"IE","Dominican Republic":"DO","China":"CN","Mexico":"MX","Germany":"DE","Belgium":"BE","Austria":"AT","Sweden":"SE","Cuba":"CU","Bahamas":"BS","Afghanistan":"AF","France":"FR","Poland":"PL","Japan":"JP","Jamaica":"JM","Armenia":"AM","Bulgaria":"BG","Russia":"RU","Andorra":"AD","Indonesia":"ID","Norway":"NO","Honduras":"HN","Romania":"RO","Colombia":"CO","Bahrain":"BH","Vatican City":"VA","Liechtenstein":"LI","Croatia":"HR","Latvia":"LV","North Korea":"KP","India":"IN","Georgia":"GE","Morocco":"MA","Slovakia":"SK","Kuwait":"KW","Denmark":"DK","Philippines":"PH","Benin":"BJ","El Salvador":"SV","Italy":"IT","Netherlands":"NL","Portugal":"PT","Argentina":"AR","Chile":"CL","Peru":"PE","Venezuela":"VE","Puerto Rico":"PR","South Korea":"KR","Turkey":"TR","Greece":"GR","Switzerland":"CH","New Zealand":"NZ","South Africa":"ZA","Nigeria":"NG","Egypt":"EG","Saudi Arabia":"SA","United Arab Emirates":"AE","Israel":"IL","Ukraine":"UA","Finland":"FI","Czechia":"CZ","Hungary":"HU","Scotland":"GB","Wales":"GB","England":"GB","Guatemala":"GT","Costa Rica":"CR","Panama":"PA","Ecuador":"EC","Pakistan":"PK","Thailand":"TH","Vietnam":"VN","Malaysia":"MY","Singapore":"SG","Trinidad and Tobago":"TT","Haiti":"HT"};
@@ -4154,18 +4191,13 @@ var worldPts = [], worldArcs = [], worldStarted = false;
 
 /* The dots and the flags come from one read: every active fighter's country. */
 async function loadWorldData(){
-  var rows = await q("fighter_cards?select=country,region&status=eq.active&limit=1000");
+  var rows = await q("fighter_cards?select=slug,country,region&status=eq.active&limit=1000");
   if(!rows) return;
-  var count = {}, dots = {};
-  rows.forEach(function(r){ var c = (r.country || '').trim(); if(!c) return; count[c] = (count[c] || 0) + 1;
-    /* the US is most of the league and one dot said nothing: split it by the
-       region the fighter is in (east / central / west). a region we cannot
-       place, or none, stays on the country's own centroid */
-    var key = c + '/' + (c === 'United States' ? (r.region || '') : ''), at = placeFighter(c, r.region);
-    if(!at) return;
-    dots[key] = dots[key] || [0, at[0], at[1]]; dots[key][0]++; });
+  var count = {}, pts = [];
+  rows.forEach(function(r){ var c = (r.country || '').trim(); if(c) count[c] = (count[c] || 0) + 1;
+    var at = placeFighter(c, r.region, r.slug); if(at) pts.push([1, at[0], at[1]]); });
   var names = Object.keys(count).sort(function(a, b){ return count[b] - count[a]; });
-  worldPts = Object.keys(dots).map(function(k){ return dots[k]; });
+  worldPts = pts;
   /* six flags: three a side, biggest first, leaning with the limb */
   var top = names.filter(function(n){ return ISO[n]; }).slice(0, 6);
   seatFlags = top.map(function(n){ return { n: n, c: count[n] }; });
@@ -4200,7 +4232,7 @@ async function loadWorldArcs(){
   bouts.forEach(function(b){ [b.fighter_a_slug, b.fighter_b_slug].forEach(function(x){ if(x && slugs.indexOf(x) === -1) slugs.push(x); }); });
   var fs = await q("fighter_cards?select=slug,country,region,display_name&slug=in.(" + slugs.join(',') + ")");
   if(!fs) return;
-  var at = {}, nm = {}; fs.forEach(function(f){ at[f.slug] = placeFighter(f.country, f.region); nm[f.slug] = f.display_name || f.slug; });
+  var at = {}, nm = {}; fs.forEach(function(f){ at[f.slug] = placeFighter(f.country, f.region, f.slug); nm[f.slug] = f.display_name || f.slug; });
   worldArcs = bouts.map(function(b){
     var A = at[b.fighter_a_slug], B = at[b.fighter_b_slug];
     if(!A || !B || (A[0] === B[0] && A[1] === B[1])) return null;
@@ -4226,6 +4258,8 @@ function startWorld(){
   function proj(la, lo){ la *= rad; lo = lo * rad + lam; var cl = Math.cos(la), sl = Math.sin(la), cp = Math.cos(tilt), sp = Math.sin(tilt);
     var z = sp * sl + cp * cl * Math.cos(lo); return { x: CX + R * cl * Math.sin(lo), y: CY - R * (cp * sl - sp * cl * Math.cos(lo)), v: z > 0, z: z }; }
   var hidden = false, raf = 0, front = -1, showUntil = 0;
+  var GLOW = document.createElement('canvas'); GLOW.width = GLOW.height = 20;
+  (function(){ var g = GLOW.getContext('2d'), gr = g.createRadialGradient(10, 10, 0, 10, 10, 10); gr.addColorStop(0, 'rgba(160,255,220,.8)'); gr.addColorStop(1, 'rgba(160,255,220,0)'); g.fillStyle = gr; g.fillRect(0, 0, 20, 20); })();
   var bpath = document.getElementById('boutarc'), btxt = document.getElementById('bouttxt'), btp = btxt && btxt.querySelector('textPath');
   function labelArc(runs){
     if(!btp) return;
@@ -4311,9 +4345,11 @@ function startWorld(){
       else { cx.strokeStyle = 'rgba(190,170,255,.30)'; cx.lineWidth = .9; cx.shadowBlur = 0; }
       cx.stroke(); cx.shadowBlur = 0; }
     labelArc(runs);
-    for(var i = 0; i < worldPts.length; i++){ var d = worldPts[i], p2 = proj(d[1], d[2]); if(!p2.v) continue; var r = 1.6 + Math.sqrt(d[0]) * .9, al = .3 + p2.z * .7;
-      var gg = cx.createRadialGradient(p2.x, p2.y, 0, p2.x, p2.y, r * 3.4); gg.addColorStop(0, 'rgba(160,255,220,' + (al * .55) + ')'); gg.addColorStop(1, 'rgba(160,255,220,0)');
-      cx.beginPath(); cx.arc(p2.x, p2.y, r * 3.4, 0, 7); cx.fillStyle = gg; cx.fill(); cx.beginPath(); cx.arc(p2.x, p2.y, r, 0, 7); cx.fillStyle = 'rgba(230,255,246,' + al + ')'; cx.fill(); }
+    /* one dot per fighter: ~450 of them, so the glow is a sprite drawn with
+       drawImage rather than a gradient built per dot per frame */
+    for(var i = 0; i < worldPts.length; i++){ var d = worldPts[i], p2 = proj(d[1], d[2]); if(!p2.v) continue; var al = .3 + p2.z * .7;
+      cx.globalAlpha = al * .7; cx.drawImage(GLOW, p2.x - 5, p2.y - 5, 10, 10); cx.globalAlpha = 1;
+      cx.beginPath(); cx.arc(p2.x, p2.y, 1.3, 0, 7); cx.fillStyle = 'rgba(230,255,246,' + al + ')'; cx.fill(); }
     if(!drag){ lam += spin + vel; vel *= .955; }
     raf = requestAnimationFrame(frame);
   }
