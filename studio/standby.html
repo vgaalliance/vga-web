@@ -1053,7 +1053,8 @@ async function loadAll(){
   // heading already in the markup when nothing is scheduled -- a poster under
   // the word "Fight Night" is still a poster; one under a stale event name is a
   // graphic lying about which show this is.
-  if(ev && ev[0] && ev[0].name) document.getElementById('promoTitle').textContent = ev[0].name
+  if(!POSTER_PINNED && ev && ev[0] && ev[0].name) document.getElementById('promoTitle').textContent = ev[0].name
+  else if(POSTER_PINNED) document.getElementById('promoTitle').textContent = POSTER_PINNED
   renderPlayoff(st||[], mt||[])
   renderPoWeeks(st||[], mt||[])
   playoffScenes(st||[], mt||[])
@@ -1265,6 +1266,10 @@ function promoLayout(){
   if(promoHas.prize && !VIEWS_UBA.includes('prize')) VIEWS_UBA.splice(1, 0, 'prize')
 }
 
+// Set when ?poster= pinned the scene to a named event: the heading follows the
+// poster, and the next data refresh must not quietly put the calendar's next
+// event back over the top of it.
+let POSTER_PINNED = null
 let posterList = [], fanAt = 0, fanTimer = null
 const FAN_HOLD = 10000   // long enough to read the one in front, short enough that the others get their turn
 const FAN_PEEK = 1600    // the stack opens for this long before it swaps
@@ -1280,11 +1285,47 @@ async function mountPoster(){
   // The FULL file, not the `-thumb` beside it: this is a 1640px broadcast row,
   // and the thumbnail exists for a 152px peek on a phone.
   try{
-    const { data:evs } = await sb.from('events_public').select('id')
-      .eq('status','scheduled').gte('event_date', FUTURE()).order('event_date').limit(1)
-    if(evs && evs[0]){
+    // WHICH event's posters. The default is the next one on the calendar, which
+    // is right on a normal night and wrong on exactly the night you want to
+    // promote something: FN 31 sits behind three GFL cards, so its poster could
+    // not be put up until the week it happened. `?poster=` names an event to
+    // show instead -- an id, or any part of its name ("noche", "fight night
+    // 31"), so the OBS source can be pointed at a card without a code change.
+    const qs = new URLSearchParams(location.search)
+    const want = (qs.get('poster') || '').trim().toLowerCase()
+    // `?promo=` names the screen outright. It exists because events_public
+    // HIDES a scheduled event until its card is published, and a poster is the
+    // announcement -- the whole point is to promote a card before it is public,
+    // so the event you most want to advertise is exactly the one ?poster=
+    // cannot see. With the files in posters.json this puts any poster on air
+    // under any heading, with nothing in the database at all.
+    const promoName = (qs.get('promo') || '').trim()
+    if(promoName){
+      POSTER_PINNED = promoName
+      const t0 = document.getElementById('promoTitle'); if(t0) t0.textContent = promoName
+    }
+    let ev = null
+    const { data:evs } = await sb.from('events_public').select('id,name')
+      .eq('status','scheduled').gte('event_date', FUTURE()).order('event_date')
+    if(want && evs){
+      ev = evs.find(e => e.id.toLowerCase() === want)
+        || evs.find(e => String(e.name || '').toLowerCase().includes(want))
+      // A name that matches NOTHING falls back to the next event rather than to
+      // an empty screen: a typo in an OBS url is found at the worst moment, and
+      // last week's poster is a better answer than no poster.
+    }
+    if(!ev && evs) ev = evs[0]
+    // An override has to take the HEADING with it. The title is set from the
+    // next scheduled event elsewhere, so without this the screen shows FN 31's
+    // poster under the words "GFL 7" -- a graphic lying about which show it is
+    // advertising, which is worse than not being able to promote it at all.
+    if(want && ev && ev.name){
+      POSTER_PINNED = ev.name
+      const t = document.getElementById('promoTitle'); if(t) t.textContent = ev.name
+    }
+    if(ev){
       const { data:gs } = await sb.from('graphic_assets').select('key,url')
-        .like('key', 'poster-' + evs[0].id + '-%')
+        .like('key', 'poster-' + ev.id + '-%')
       if(gs) posterList = gs
         .filter(g => !/-thumb$/.test(g.key))
         .sort((a, b) => (parseInt(a.key.split('-').pop(), 10) || 99)
