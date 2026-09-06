@@ -80,7 +80,11 @@
    to a height that is not what is on screen in iOS, while fill-available asks
    the browser for the box it actually has. The plain 100% stays first as the
    fallback for anything that does not know the keyword. */
-html{height:100%;min-height:calc(100% + env(safe-area-inset-top));background:linear-gradient(180deg,#02010A 0%,#02010A 45%,#1A1533 55%) #1A1533}
+/* iOS paints the status bar strip with html's computed BACKGROUND-COLOR, not
+   the gradient -- so the colour in the shorthand is the sky's black. The
+   gradient still covers the canvas the browser paints itself (the band under
+   the tab bar), which stays the bar's navy. */
+html{height:100%;min-height:calc(100% + env(safe-area-inset-top));background:linear-gradient(180deg,#02010A 0%,#02010A 45%,#1A1533 55%) #02010A}
 body{height:100%;height:-webkit-fill-available;overflow:hidden;background:#1A1533;
   color:#EDEAF6;font-family:'Barlow',system-ui,sans-serif;-webkit-font-smoothing:antialiased;
 }
