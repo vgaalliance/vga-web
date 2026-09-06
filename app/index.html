@@ -1621,6 +1621,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .world{position:relative;height:300px;margin:0 0 4px;overflow:hidden}
 .world canvas{position:absolute;left:0;top:0;z-index:2;pointer-events:none}
 .world svg{position:absolute;left:0;right:0;top:0;width:100%;height:300px;pointer-events:none;z-index:3}
+#feedtxt{transition:opacity .3s}
 .world text{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.19em;fill:#CDBEFF;text-transform:uppercase}
 .world .grab{position:absolute;width:200px;height:200px;border-radius:50%;z-index:4;touch-action:none;cursor:grab}
 /* W3 · the terminator: day and night across the sphere, so the dots read as
@@ -3274,7 +3275,7 @@ async function loadHome(){
   }
   await Promise.all([loadLive(), loadRanks(), loadHomeNews(), loadStrip(), loadWorldData()]);
   startWorld(); renderNextEvent();
-  if(typeof stripFaces !== 'undefined' && stripFaces && stripFaces[0]) paintFeedArc(String(stripFaces[0].v || '').replace(/<[^>]+>/g, ''));
+  buildArcFaces();
 }
 
 
@@ -3873,7 +3874,7 @@ async function loadRanks(){
   /* Two reads, one await. The board is useless without the rankings and only
      poorer without the belts, so they are weighted differently below. */
   var res = await Promise.all([
-    q("rankings_public?select=rank,prev_rank,fighter_name,fighter_slug,weight_class"
+    q("rankings_public?select=rank,prev_rank,fighter_name,fighter_slug,weight_class,as_of_date"
       + "&level=eq." + rankLeague + "&scope=eq.weight_class&order=rank.asc&limit=200"),
     q("titles_public?select=weight_class,kind,holder_name,holder_slug,is_interim"
       + "&level=eq." + rankLeague + "&kind=neq.team")
@@ -4221,6 +4222,50 @@ function paintFeedArc(text){
   t.textContent = text ? '// FEED · ' + text : '';
 }
 
+/* THE ARC IS THE FEED NOW — one line under the sphere, rotating every 8s.
+   Everything on it is already loaded for something else, so it costs no
+   request: the live row, the paid feed lines, the biggest mover on the board,
+   the newest headline. The order is the rule: LIVE first because it is
+   happening now, then every PAID line in turn (somebody spent VC on it and it
+   never gets buried), then the moments. A paid line is never dropped to make
+   room; the moments are what fill the gaps. */
+var arcFaces = [], arcAt = 0, arcTimer = null;
+function buildArcFaces(){
+  var f = [];
+  if(liveNow && liveNow.video_id) f.push('LIVE NOW · ' + (liveNow.event_name || liveNow.title || 'VGA'));
+  (stripFaces || []).forEach(function(x){ if(x.tab === 'Feed') f.push(String(x.v || '').replace(/<[^>]+>/g, '')); });
+  var mv = rankMover();
+  if(mv) f.push(mv);
+  (stripFaces || []).forEach(function(x){ if(x.tab === 'News') f.push(String(x.v || '').replace(/<[^>]+>/g, '')); });
+  if(!f.length) f.push('Fight cards, rankings and the collection.');
+  var same = f.join('\n') === arcFaces.join('\n');
+  arcFaces = f;
+  if(!same){ arcAt = 0; paintFeedArc(arcFaces[0]); }
+  if(arcFaces.length > 1 && !arcTimer) arcTimer = setInterval(flipArc, 8000);
+}
+function flipArc(){
+  if(currentTab !== 'home' || document.hidden || arcFaces.length < 2) return;
+  var t = document.getElementById('feedtxt'); if(!t) return;
+  t.style.opacity = '0';
+  setTimeout(function(){ arcAt = (arcAt + 1) % arcFaces.length; paintFeedArc(arcFaces[arcAt]); t.style.opacity = '1'; }, 300);
+}
+/* The biggest climb on the board being shown, as a sentence — "Bloob up 3 to
+   #2 HW · Sep 3". A fighter new to the board is not a climb (prev_rank null),
+   and a board where nobody moved says nothing rather than "updated". */
+function rankMover(){
+  var d = rankCache && rankCache[rankLeague]; if(!d || !d.rows) return null;
+  var best = null;
+  d.rows.forEach(function(r){
+    if(r.prev_rank == null || r.rank == null) return;
+    var up = r.prev_rank - r.rank; if(up <= 0) return;
+    if(!best || up > best.up || (up === best.up && r.rank < best.rank)) best = { up: up, rank: r.rank, name: r.fighter_name, wc: r.weight_class, at: r.as_of_date };
+  });
+  if(!best) return null;
+  var ab = { heavyweight:'HW', light_heavyweight:'LHW', middleweight:'MW', lightweight:'LW' }[best.wc] || String(best.wc || '').toUpperCase();
+  var when = best.at ? ' · ' + new Date(best.at + 'T12:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '';
+  return best.name + ' up ' + best.up + ' to #' + best.rank + ' ' + ab + when;
+}
+
 /* ── THE NEXT CARD ────────────────────────────────────────────────────
    Reads what home already has: fanEvents (every scheduled event, plus a past
    backfill when the schedule is thin) and faceoffs (bout 1 of each published
@@ -4362,7 +4407,7 @@ async function loadLive2(){
   var next = rows && rows.length ? rows[0] : null;
   var changed = (next && next.video_id) !== (liveNow && liveNow.video_id);
   liveNow = next;
-  if(changed) renderNextEvent();
+  if(changed){ renderNextEvent(); buildArcFaces(); }
 }
 setInterval(function(){ if(currentTab === 'home' || currentTab === 'news') loadLive2(); }, 60 * 1000);
 
