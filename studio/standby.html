@@ -19,6 +19,12 @@
      1920x1080 board to fit whatever window it is opened in. Without the param
      nothing here applies and OBS gets exactly the board it always got. */
   body.kiosk{background:#04000c;display:flex;align-items:center;justify-content:center;}
+  /* ?clear=1 -- kiosk WITHOUT the backdrop, for an overlay source or a
+     transparent still. The dark fill and the CRT/vignette layers exist to make
+     a shared LINK look like a screen; over live video they are the screen, and
+     a scanline layer with nothing behind it just greys the feed. */
+  body.kiosk.clear{background:transparent;}
+  body.clear #crt, body.clear #vig{display:none;}
   /* the connection readout is for whoever is running the show, not for the
      people the link was sent to */
   body.kiosk #status{display:none;}
@@ -188,6 +194,21 @@
   .bk-col.gf .bk-h{color:#ffce00;}
   .bk-col.pi .bk-m{border-left-color:var(--hi);}
   .bk-span{grid-row:1 / span 2;align-self:center;}
+  /* the nights still to come — a strip, not a table. One line per night so it
+     reads at a glance from across a room, and the NEXT one is lit. */
+  .bk-nights{display:flex;justify-content:center;gap:14px;margin-top:22px;flex-wrap:wrap;}
+  .bkn{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--pur);
+    padding:10px 16px 12px;min-width:206px;box-shadow:0 0 16px rgba(60,0,110,.35);}
+  .bkn.next{border-top-color:#39ff88;box-shadow:0 0 22px rgba(0,140,70,.4);}
+  .bkn .d{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.14em;
+    color:var(--hi);margin-bottom:3px;}
+  .bkn.next .d{color:#39ff88;}
+  .bkn .r{font-family:'Press Start 2P',monospace;font-size:8px;letter-spacing:.14em;
+    color:var(--dim);margin-bottom:8px;}
+  .bkn .m{font-weight:700;font-size:19px;text-transform:uppercase;line-height:1.35;
+    color:#f0e0ff;white-space:nowrap;}
+  .bkn .m .v{color:var(--pink);padding:0 6px;}
+  .bkn .m .tbd{color:var(--dim);font-weight:600;font-size:15px;letter-spacing:.03em;}
   .bk-note{font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.14em;
     color:var(--dim);text-align:center;margin-top:16px;line-height:1.8;}
   .bk-note b{color:#ffce00;font-weight:400;}
@@ -738,6 +759,10 @@
            not in the small print under it. -->
       <div class="bk-scn" id="bkScene"></div>
       <div class="bk" id="bkContent"></div>
+      <!-- WHAT IS LEFT, AND WHEN. The bracket says who plays whom; without a
+           date beside it a viewer cannot tell tomorrow's match from next
+           Sunday's, which is the only question they have while looking at it. -->
+      <div class="bk-nights" id="bkNights"></div>
       <div class="bk-note" id="bkNote"></div>
     </div>
 
@@ -1858,6 +1883,41 @@ function renderBracket(st, mt, scene){
   const all=[...b.wb, ...b.lb, b.gf].reduce((a,rd)=>a.concat(rd.ms), [])
   const played=all.filter(m=>m.won).length, total=all.length
 
+  // ── the nights still to come ──
+  // Only what is LEFT: a night already fought is on the board above with a
+  // tick, and repeating it underneath as a fixture is the schedule arguing
+  // with the bracket. Real team_matches rows win over the planned calendar
+  // where they exist -- they carry the actual kick-off time.
+  const nx=$('bkNights')
+  if(nx){
+    const real={}
+    ;(mt||[]).filter(m=>m.stage==='play_in'||m.stage==='playoff'||m.stage==='final')
+      .forEach(m=>{ const d=String(m.match_date).slice(0,10); (real[d]=real[d]||[]).push(m) })
+    const today=new Intl.DateTimeFormat('en-CA',{timeZone:ET_TZ,year:'numeric',month:'2-digit',day:'2-digit'})
+      .format(new Date())
+    const left2=PLAYOFF.nights(b).filter(n=>n.date>=today && n.ms.some(m=>!m.won))
+    const nm=x=>!x ? '<span class="tbd">TBD</span>'
+      : (x.name ? x.name : `<span class="tbd">${x.ref||(x.from?x.from.join(' / '):'TBD')}</span>`)
+    // A real row is matched to its bracket slot by the PAIRING, never by
+    // position in the night. Sep 11 carries the losers semi (teams unknown) and
+    // the winners final (teams known) -- index-matching handed the winners
+    // final's row to the losers semi and printed Champions United v UKFC UNCS
+    // twice on the same night.
+    const pairKey=(x,y)=>[x,y].sort().join('\u0000')
+    nx.innerHTML=left2.map((n,i)=>{
+      const byPair=new Map()
+      ;(real[n.date]||[]).forEach(r=>byPair.set(pairKey(r.team_a_name, r.team_b_name), r))
+      const ms=n.ms.filter(m=>!m.won).map(m=>{
+        const r=(m.a&&m.a.name&&m.b&&m.b.name) ? byPair.get(pairKey(m.a.name, m.b.name)) : null
+        return `<div class="m">${nm(m.a)}<span class="v">V</span>${nm(m.b)}${
+          r?` <span class="tbd">${ftime(r.match_date)}</span>`:''}</div>`
+      }).join('')
+      return `<div class="bkn${i===0?' next':''}">
+        <div class="d">${fdate(n.date+'T18:00:00Z')||n.date}</div>
+        <div class="r">${n.label}</div>${ms}</div>`
+    }).join('')
+  }
+
   const cap=$('bkScene')
   if(cap) cap.innerHTML = scene
     ? `${scene}<small>ONE OF THE ${SCN.length} BOARDS TONIGHT CAN LEAVE — THIS SCREEN SHOWS EACH IN TURN</small>`
@@ -2240,6 +2300,7 @@ sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
 const KIOSK = new URLSearchParams(location.search)
 if(KIOSK.get('kiosk') === '1'){
   document.body.classList.add('kiosk')
+  if(KIOSK.get('clear') === '1') document.body.classList.add('clear')
   // The board is a fixed 1920x1080 and is SCALED rather than reflowed: every
   // screen in this file is laid out against that size, and a reflow would be a
   // second design to maintain for an audience of five people on a call.
