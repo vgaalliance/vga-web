@@ -1441,7 +1441,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    missing cut-out draws a silhouette. A poster that needed two photographs
    would almost never appear. */
 .pv{position:relative;margin:0 15px;height:258px;border-radius:16px;overflow:hidden;
-  isolation:isolate;background:#07050F}
+  isolation:isolate;background:#07050F;touch-action:pan-y}
 .pvgh{background:rgba(255,255,255,.035)}
 .pv .bg{position:absolute;inset:0;z-index:1;pointer-events:none;background:
   linear-gradient(11deg,transparent 32%,rgba(190,180,255,.09) 47%,transparent 62%),
@@ -1598,6 +1598,18 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 /* ── THE MASTHEAD ON THE WORLD ─────────────────────────────────────── */
 /* the old .top carried env(safe-area-inset-top); the masthead that replaced
    it must too, or the wordmark sits under the notch on an installed PWA */
+/* SP2 · space: the globe is seen from outside, so above it is black and
+   seventy pinpoints. The layer scrolls with the page and dies into the panel
+   navy before the rankings, and the stars thin out with it (the mask) so the
+   sky fades rather than stops. Static on purpose: the only motion on this
+   screen is the card below. */
+#p-home .pad{position:relative}
+.sky{position:absolute;left:0;right:0;top:0;height:470px;z-index:0;pointer-events:none;
+  -webkit-mask-image:linear-gradient(180deg,#000 0%,#000 55%,transparent 100%);
+  mask-image:linear-gradient(180deg,#000 0%,#000 55%,transparent 100%);
+  background:radial-gradient(1px 1px at 13.4% 72.0%,rgba(255,255,255,0.50),transparent 70%),radial-gradient(2px 2px at 49.5% 38.2%,rgba(255,255,255,0.58),transparent 70%),radial-gradient(1.5px 1.5px at 21.0% 41.5%,rgba(255,255,255,0.61),transparent 70%),radial-gradient(1.5px 1.5px at 76.2% 0.2%,rgba(255,255,255,0.51),transparent 70%),radial-gradient(1px 1px at 80.2% 50.2%,rgba(255,255,255,0.89),transparent 70%),radial-gradient(1.5px 1.5px at 3.1% 2.2%,rgba(255,255,255,0.36),transparent 70%),radial-gradient(1.5px 1.5px at 88.1% 58.4%,rgba(255,255,255,0.79),transparent 70%),radial-gradient(1.5px 1.5px at 52.8% 64.9%,rgba(255,255,255,0.68),transparent 70%),radial-gradient(1.5px 1.5px at 34.6% 57.5%,rgba(255,255,255,0.92),transparent 70%),radial-gradient(1.5px 1.5px at 92.7% 35.4%,rgba(255,255,255,0.90),transparent 70%),radial-gradient(2px 2px at 10.0% 53.5%,rgba(255,255,255,0.87),transparent 70%),radial-gradient(2px 2px at 12.1% 28.3%,rgba(255,255,255,0.93),transparent 70%),radial-gradient(1.5px 1.5px at 50.1% 82.2%,rgba(255,255,255,0.85),transparent 70%),radial-gradient(1.5px 1.5px at 67.0% 25.8%,rgba(255,255,255,0.93),transparent 70%),radial-gradient(1.5px 1.5px at 49.9% 80.0%,rgba(255,255,255,0.70),transparent 70%),radial-gradient(1.5px 1.5px at 3.5% 20.6%,rgba(255,255,255,0.60),transparent 70%),radial-gradient(2px 2px at 17.3% 46.6%,rgba(255,255,255,0.82),transparent 70%),radial-gradient(2px 2px at 73.8% 7.3%,rgba(255,255,255,0.66),transparent 70%),radial-gradient(1.5px 1.5px at 77.8% 44.3%,rgba(255,255,255,0.57),transparent 70%),radial-gradient(1px 1px at 73.3% 39.9%,rgba(255,255,255,0.77),transparent 70%),radial-gradient(1.5px 1.5px at 98.3% 50.4%,rgba(255,255,255,0.74),transparent 70%),radial-gradient(1px 1px at 16.9% 19.3%,rgba(255,255,255,0.81),transparent 70%),radial-gradient(1px 1px at 54.0% 73.1%,rgba(255,255,255,0.59),transparent 70%),radial-gradient(1px 1px at 34.4% 72.0%,rgba(255,255,255,0.63),transparent 70%),radial-gradient(2px 2px at 26.9% 46.6%,rgba(255,255,255,0.35),transparent 70%),radial-gradient(2px 2px at 78.4% 69.7%,rgba(255,255,255,0.66),transparent 70%),radial-gradient(1px 1px at 12.9% 66.1%,rgba(255,255,255,0.61),transparent 70%),radial-gradient(1.5px 1.5px at 5.6% 74.0%,rgba(255,255,255,0.68),transparent 70%),radial-gradient(1px 1px at 94.1% 35.1%,rgba(255,255,255,0.60),transparent 70%),radial-gradient(1.5px 1.5px at 0.2% 45.9%,rgba(255,255,255,0.55),transparent 70%),radial-gradient(2px 2px at 60.0% 68.4%,rgba(255,255,255,0.46),transparent 70%),radial-gradient(1.5px 1.5px at 58.4% 73.2%,rgba(255,255,255,0.83),transparent 70%),radial-gradient(2px 2px at 81.6% 21.7%,rgba(255,255,255,0.39),transparent 70%),radial-gradient(1px 1px at 86.8% 38.5%,rgba(255,255,255,0.50),transparent 70%),radial-gradient(1px 1px at 10.9% 53.1%,rgba(255,255,255,0.52),transparent 70%),radial-gradient(1px 1px at 16.7% 21.7%,rgba(255,255,255,0.74),transparent 70%),radial-gradient(2px 2px at 64.8% 25.0%,rgba(255,255,255,0.54),transparent 70%),radial-gradient(1.5px 1.5px at 47.4% 2.0%,rgba(255,255,255,0.56),transparent 70%),radial-gradient(1px 1px at 79.6% 22.0%,rgba(255,255,255,0.89),transparent 70%),radial-gradient(1.5px 1.5px at 51.0% 17.8%,rgba(255,255,255,0.61),transparent 70%),radial-gradient(1.5px 1.5px at 97.6% 19.2%,rgba(255,255,255,0.44),transparent 70%),radial-gradient(2px 2px at 71.9% 13.6%,rgba(255,255,255,0.65),transparent 70%),radial-gradient(2px 2px at 42.7% 70.7%,rgba(255,255,255,0.83),transparent 70%),radial-gradient(2px 2px at 51.7% 19.0%,rgba(255,255,255,0.37),transparent 70%),radial-gradient(2px 2px at 67.5% 68.3%,rgba(255,255,255,0.73),transparent 70%),radial-gradient(1px 1px at 5.9% 25.4%,rgba(255,255,255,0.88),transparent 70%),radial-gradient(1px 1px at 30.6% 73.0%,rgba(255,255,255,0.90),transparent 70%),radial-gradient(1.5px 1.5px at 29.8% 13.4%,rgba(255,255,255,0.50),transparent 70%),radial-gradient(1px 1px at 0.8% 74.7%,rgba(255,255,255,0.70),transparent 70%),radial-gradient(1.5px 1.5px at 21.8% 76.6%,rgba(255,255,255,0.45),transparent 70%),radial-gradient(2px 2px at 86.8% 82.8%,rgba(255,255,255,0.72),transparent 70%),radial-gradient(1px 1px at 3.7% 17.0%,rgba(255,255,255,0.47),transparent 70%),radial-gradient(1px 1px at 67.4% 36.8%,rgba(255,255,255,0.65),transparent 70%),radial-gradient(1.5px 1.5px at 93.8% 33.2%,rgba(255,255,255,0.65),transparent 70%),radial-gradient(1px 1px at 32.5% 74.1%,rgba(255,255,255,0.36),transparent 70%),radial-gradient(1.5px 1.5px at 20.1% 27.9%,rgba(255,255,255,0.82),transparent 70%),radial-gradient(2px 2px at 33.9% 18.1%,rgba(255,255,255,0.41),transparent 70%),radial-gradient(2px 2px at 37.9% 46.5%,rgba(255,255,255,0.67),transparent 70%),radial-gradient(1px 1px at 76.8% 45.3%,rgba(255,255,255,0.79),transparent 70%),radial-gradient(1.5px 1.5px at 8.5% 14.4%,rgba(255,255,255,0.48),transparent 70%),radial-gradient(1px 1px at 75.9% 51.0%,rgba(255,255,255,0.57),transparent 70%),radial-gradient(1.5px 1.5px at 34.0% 24.8%,rgba(255,255,255,0.82),transparent 70%),radial-gradient(1.5px 1.5px at 71.5% 41.5%,rgba(255,255,255,0.68),transparent 70%),radial-gradient(1px 1px at 10.4% 3.3%,rgba(255,255,255,0.58),transparent 70%),radial-gradient(1px 1px at 99.1% 12.5%,rgba(255,255,255,0.55),transparent 70%),radial-gradient(1.5px 1.5px at 61.5% 66.5%,rgba(255,255,255,0.40),transparent 70%),radial-gradient(1px 1px at 55.0% 48.1%,rgba(255,255,255,0.57),transparent 70%),radial-gradient(1px 1px at 29.6% 45.4%,rgba(255,255,255,0.62),transparent 70%),radial-gradient(1px 1px at 27.7% 66.9%,rgba(255,255,255,0.36),transparent 70%),radial-gradient(1px 1px at 67.0% 7.8%,rgba(255,255,255,0.85),transparent 70%),linear-gradient(180deg,#02010A 0%,#04030F 55%,rgba(25,18,52,0) 100%)}
+.wm,.world{z-index:1}
+.wm{z-index:8}
 .wm{position:relative;height:84px;margin:env(safe-area-inset-top,0px) 0 -34px;padding-top:6px;z-index:8}
 .wm svg{position:absolute;left:0;right:0;top:0;width:100%;height:150px;overflow:visible;pointer-events:none}
 .wm .t1{font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:.10em;fill:#EFEAFF}
@@ -2644,6 +2656,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 
 <!-- ═══ HOME ═══ -->
 <section class="panel live" id="p-home"><div class="pad wrapmax">
+  <div class="sky"></div>
   <div class="livebar" id="livebar">
     <span class="dot"></span>
     <span class="txt"><span class="k">Live now</span><span class="n" id="live-name"></span></span>
@@ -4390,26 +4403,47 @@ function renderNextInto(id, home){
   nextIdx = +d.getAttribute('data-nxi');
   renderNextEvent();
 }); });
-(function(){
-  var el = document.getElementById('news-body'), x0 = null, y0 = null;
+/* SWIPE, the way every native carousel does it: the first 10px of movement
+   decide the axis and nothing else does. Mostly sideways and the poster takes
+   the finger and the page freezes (preventDefault, so passive:false); mostly
+   up-down and the page scrolls and the poster never hears about it. Delegated
+   from the containers because both blocks are repainted wholesale. `hSwipe` is
+   read by the pull-to-refresh so a slanted flip cannot also tug the panel. */
+var hSwipe = false;
+['news-body', 'home-next'].forEach(function(id){
+  var el = document.getElementById(id), x0 = null, y0 = null, lock = null, pv = null;
   if(!el) return;
+  function done(){ x0 = null; lock = null; hSwipe = false; if(pv){ pv.style.transition = 'transform .22s'; pv.style.transform = ''; } pv = null; }
   el.addEventListener('touchstart', function(e){
-    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
+    if(e.touches.length !== 1) return;
+    var box = e.target.closest('#news-next, #home-next'); if(!box) return;
+    pv = box.querySelector('.pv'); if(!pv || pv.classList.contains('live')) { pv = null; return; }
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; lock = null;
+    pv.style.transition = 'none';
   }, { passive: true });
-  el.addEventListener('touchend', function(e){
+  el.addEventListener('touchmove', function(e){
     if(x0 === null) return;
-    var dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
-    x0 = null;
-    /* Vertical wins ties: this block sits in a scrolling column and stealing a
-       scroll to flip a poster is worse than missing a flip. */
-    if(Math.abs(dx) < 42 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
-    if(!e.target.closest('#news-next')) return;   // the deck owns its own swipe
+    var dx = e.touches[0].clientX - x0, dy = e.touches[0].clientY - y0;
+    if(!lock){
+      if(Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+      lock = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+      if(lock === 'v'){ done(); return; }
+      hSwipe = true;
+    }
+    e.preventDefault();
+    pv.style.transform = 'translateX(' + (dx * .6).toFixed(1) + 'px)';
+  }, { passive: false });
+  el.addEventListener('touchend', function(e){
+    if(x0 === null || lock !== 'h'){ done(); return; }
+    var dx = e.changedTouches[0].clientX - x0;
     var n = nextEventList().rows.length;
-    if(n < 2) return;
+    done();
+    if(Math.abs(dx) < 42 || n < 2) return;
     nextIdx = (nextIdx + (dx < 0 ? 1 : n - 1)) % n;
     renderNextEvent();
   }, { passive: true });
-})();
+  el.addEventListener('touchcancel', done, { passive: true });
+});
 
 var VIDEOS_PATH = 'videos_public?select=video_id,title,thumb_url,published_at,seen_at,event_name&limit=8';
 var newsVideos = null;
@@ -8471,6 +8505,7 @@ function wirePullToRefresh(){
 
   document.addEventListener('touchmove', function(e){
     if(!pulling || busy) return;
+    if(hSwipe){ retract(); letGo(); return; }   /* a poster flip owns this finger */
     var dy = e.touches[0].clientY - startY;
     /* Dragging back UP is a normal scroll, so hand it back rather than fight it. */
     if(dy <= 0 || panel.scrollTop > 0){ retract(); letGo(); return; }
