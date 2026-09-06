@@ -1643,6 +1643,10 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 #ranks a[data-slug]{transition:box-shadow .3s,background .3s}
 #ranks a.lit{background:rgba(245,200,66,.14);box-shadow:inset 2px 0 0 #F5C842,0 0 12px rgba(245,200,66,.25);border-radius:4px}
 #ranks a.lit .rft{color:#FFE9A8}
+/* a borrowed slot: the other league's fighter standing in for the moment */
+#ranks .rkrow.swp{background:rgba(245,200,66,.14);box-shadow:inset 2px 0 0 #F5C842,0 0 12px rgba(245,200,66,.25);border-radius:4px}
+#ranks .rkrow.swp .rft{color:#FFE9A8}
+#ranks .rdh .rtag{display:inline-block;margin-left:5px;padding:1px 4px;border-radius:3px;background:#F5C842;color:#3A2A00;font-size:6px;letter-spacing:.12em;vertical-align:1px}
 #bouttxt .b{fill:#F5C842}
 .world text{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.19em;fill:#CDBEFF;text-transform:uppercase}
 .world .grab{position:absolute;left:50%;top:150px;margin:-100px 0 0 -100px;width:200px;height:200px;border-radius:50%;z-index:4;touch-action:none;cursor:grab}
@@ -3960,7 +3964,7 @@ function rankRowHTML(slug, cls, name, extraNameCls, move){
 }
 
 function paintRanks(el, data){
-  worldLitSlugs = '';   // a repaint drops the lit rows; let the globe re-apply them
+  worldLitSlugs = ''; worldSwapped = [];   // a repaint drops the lit and borrowed rows; let the globe re-apply them
   var rows = data.rows, titles = data.titles;
   if(!rows.length){ el.innerHTML = '<div class="empty">Nothing ranked here yet.</div>'; return; }
 
@@ -4192,7 +4196,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var worldPts = [], worldArcs = [], worldStarted = false, worldLitSlugs = '';   // the last pair lit on the board; reset when the board repaints
+var worldPts = [], worldArcs = [], worldStarted = false, worldLitSlugs = '', worldSwapped = [];   // the last pair lit on the board; reset when the board repaints
 
 /* The dots and the flags come from one read: every active fighter's country. */
 async function loadWorldData(){
@@ -4238,10 +4242,15 @@ async function loadWorldArcs(){
   var fs = await q("fighter_cards?select=slug,country,region,display_name&slug=in.(" + slugs.join(',') + ")");
   if(!fs) return;
   var at = {}, nm = {}; fs.forEach(function(f){ at[f.slug] = placeFighter(f.country, f.region, f.slug); nm[f.slug] = f.display_name || f.slug; });
+  /* where each of them stands: rank, division and league, so the board can
+     show the bout in its own terms even when it is showing the other league */
+  var rk = await q("rankings_public?select=rank,fighter_slug,weight_class,level,fighter_name&scope=eq.weight_class&fighter_slug=in.(" + slugs.join(',') + ")");
+  var standing = {}; (rk || []).forEach(function(r){ if(!standing[r.fighter_slug] || r.rank < standing[r.fighter_slug].rank) standing[r.fighter_slug] = r; });
   worldArcs = bouts.map(function(b){
     var A = at[b.fighter_a_slug], B = at[b.fighter_b_slug];
     if(!A || !B || (A[0] === B[0] && A[1] === B[1])) return null;
-    return { a: A, b: B, hot: b.bout_number === 1, na: nm[b.fighter_a_slug] || '', nb: nm[b.fighter_b_slug] || '', sa: b.fighter_a_slug, sb: b.fighter_b_slug };
+    return { a: A, b: B, hot: b.bout_number === 1, na: nm[b.fighter_a_slug] || '', nb: nm[b.fighter_b_slug] || '', sa: b.fighter_a_slug, sb: b.fighter_b_slug,
+             ra: standing[b.fighter_a_slug] || null, rb: standing[b.fighter_b_slug] || null };
   }).filter(Boolean);
 }
 
@@ -4296,13 +4305,37 @@ function startWorld(){
   /* THE BOARD ANSWERS THE GLOBE: while an arc is lit, its two fighters light
      up in the rankings below -- if they are on the board being shown. a GFL
      card against the UBA board lights nobody, and that is correct. */
+  /* THE SWAP (Castle, 2026-09-06): a GFL bout lit while the board shows UBA
+     borrows the two slots -- MW rank 3 and rank 5, say -- for the moment the
+     arc is lit, the borrowed rows in gold with the league tagged on that
+     column's header, and gives them back when the label goes. A fighter with
+     no ranking swaps nothing; a slot past the fold is unfolded for the moment
+     rather than swapped invisibly. Same league: the rows just light. */
+  function unswap(){
+    worldSwapped.forEach(function(x){ if(!x.el.isConnected) return; x.el.innerHTML = x.html; x.el.className = x.cls; });
+    worldSwapped = [];
+    document.querySelectorAll('#ranks .rdh .rtag').forEach(function(t){ t.remove(); });
+  }
   function litBoard(arc){
     var want = arc ? (arc.sa || '') + '|' + (arc.sb || '') : '';
     if(want === worldLitSlugs) return; worldLitSlugs = want;
     var el = document.getElementById('ranks'); if(!el) return;
     el.querySelectorAll('a.lit').forEach(function(a){ a.classList.remove('lit'); });
+    unswap();
     if(!arc) return;
-    [arc.sa, arc.sb].forEach(function(sl){ if(!sl) return; el.querySelectorAll('a[data-slug="' + sl + '"]').forEach(function(a){ a.classList.add('lit'); }); });
+    [arc.ra, arc.rb].forEach(function(st, i){
+      var sl = i ? arc.sb : arc.sa; if(!sl) return;
+      var own = el.querySelectorAll('a[data-slug="' + sl + '"]');
+      if(own.length){ own.forEach(function(a){ a.classList.add('lit'); }); return; }
+      if(!st || st.level === rankLeague) return;                 // same league and unranked here, or nothing to borrow
+      var col = RANK_DIVS.map(function(d){ return d.k; }).indexOf(st.weight_class); if(col < 0) return;
+      var rcol = el.querySelectorAll('.rcol')[col]; if(!rcol) return;
+      var row = rcol.querySelectorAll('.rkrow')[st.rank - 1]; if(!row) return;
+      worldSwapped.push({ el: row, html: row.innerHTML, cls: row.className });
+      row.className = row.className.replace(' rkx', '') + ' swp';
+      row.innerHTML = '<span class="rnm"><b class="rft">' + esc(st.fighter_name || sl) + '</b></span><i class="rmv"></i>';
+      var hd = rcol.querySelector('.rdh'); if(hd && !hd.querySelector('.rtag')) hd.insertAdjacentHTML('beforeend', '<i class="rtag">' + (st.level === 'amateur' ? 'GFL' : 'UBA') + '</i>');
+    });
   }
   /* one loop, always: cancel whatever is pending and request afresh. a flag
      went stale when a frame was pending in a hidden tab and the globe froze. */
