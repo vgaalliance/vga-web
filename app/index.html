@@ -4133,6 +4133,18 @@ var LAND=[[[-59.6,-80.0],[-60.2,-81.0],[-64.5,-80.9],[-65.7,-80.5],[-64.0,-80.3]
    with no row here are counted in the flags and simply not drawn — a dot in
    the wrong ocean is worse than no dot. */
 var US_REGION={'NA-E':[38.5,-79.0],'NA-C':[39.5,-97.5],'NA-W':[39.0,-117.5]};
+/* a fighter with no country still has a region on most rows; that is enough
+   to put them somewhere honest rather than nowhere */
+var REGION_AT={'NA':[39.8,-98.6],'NA-E':US_REGION['NA-E'],'NA-C':US_REGION['NA-C'],'NA-W':US_REGION['NA-W'],'UK/IE':[54,-2.5],'EU':[50,10],'LATAM':[-10,-60],'APAC':[20,110],'OCE':[-25.3,133.8],'MEA':[26,45]};
+/* WHERE A FIGHTER IS, for the globe: the country, refined by region inside the
+   US; the region alone when the country is blank. GFL 7 had five fighters with
+   no country and five all-American bouts, which drew three lines out of eight. */
+function placeFighter(country, region){
+  var c = (country || '').trim();
+  if(c === 'United States' && US_REGION[region]) return US_REGION[region];
+  if(c && CENTROID[c]) return CENTROID[c];
+  return REGION_AT[region] || null;
+}
 var CENTROID={"United States":[39.8,-98.6],"United Kingdom":[54,-2.5],"Brazil":[-10.8,-52.9],"Canada":[56.1,-106.3],"Spain":[40.2,-3.6],"Australia":[-25.3,133.8],"Ireland":[53.1,-8.2],"Dominican Republic":[18.7,-70.2],"China":[35.9,104.2],"Mexico":[23.6,-102.5],"Germany":[51.2,10.5],"Belgium":[50.5,4.5],"Austria":[47.5,14.6],"Sweden":[60.1,18.6],"Cuba":[21.5,-77.8],"Bahamas":[25,-77.4],"Afghanistan":[33.9,67.7],"France":[46.2,2.2],"Poland":[51.9,19.1],"Japan":[36.2,138.3],"Jamaica":[18.1,-77.3],"Armenia":[40.1,45],"Bulgaria":[42.7,25.5],"Russia":[61.5,105.3],"Andorra":[42.5,1.6],"Indonesia":[-0.8,113.9],"Norway":[60.5,8.5],"Honduras":[15.2,-86.2],"Romania":[45.9,25],"Colombia":[4.6,-74.3],"Bahrain":[26,50.6],"Vatican City":[41.9,12.5],"Liechtenstein":[47.2,9.6],"Croatia":[45.1,15.2],"Latvia":[56.9,24.6],"North Korea":[40.3,127.5],"India":[20.6,79],"Georgia":[42.3,43.4],"Morocco":[31.8,-7.1],"Slovakia":[48.7,19.7],"Kuwait":[29.3,47.5],"Denmark":[56.3,9.5],"Philippines":[12.9,121.8],"Benin":[9.3,2.3],"El Salvador":[13.8,-88.9],"Italy":[41.9,12.6],"Netherlands":[52.1,5.3],"Portugal":[39.4,-8.2],"Argentina":[-38.4,-63.6],"Chile":[-35.7,-71.5],"Peru":[-9.2,-75],"Venezuela":[6.4,-66.6],"Puerto Rico":[18.2,-66.5],"South Korea":[35.9,127.8],"Turkey":[38.9,35.2],"Greece":[39.1,21.8],"Switzerland":[46.8,8.2],"New Zealand":[-40.9,174.9],"South Africa":[-30.6,22.9],"Nigeria":[9.1,8.7],"Egypt":[26.8,30.8],"Saudi Arabia":[23.9,45.1],"United Arab Emirates":[23.4,53.8],"Israel":[31,34.9],"Ukraine":[48.4,31.2],"Finland":[61.9,25.7],"Czechia":[49.8,15.5],"Hungary":[47.2,19.5],"Scotland":[56.5,-4.2],"Wales":[52.1,-3.8],"England":[52.4,-1.5],"Guatemala":[15.8,-90.2],"Costa Rica":[9.7,-83.8],"Panama":[8.5,-80.8],"Ecuador":[-1.8,-78.2],"Pakistan":[30.4,69.3],"Thailand":[15.9,100.9],"Vietnam":[14.1,108.3],"Malaysia":[4.2,101.9],"Singapore":[1.35,103.8],"Trinidad and Tobago":[10.7,-61.2],"Haiti":[19,-72.3]};
 var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA","Spain":"ES","Australia":"AU","Ireland":"IE","Dominican Republic":"DO","China":"CN","Mexico":"MX","Germany":"DE","Belgium":"BE","Austria":"AT","Sweden":"SE","Cuba":"CU","Bahamas":"BS","Afghanistan":"AF","France":"FR","Poland":"PL","Japan":"JP","Jamaica":"JM","Armenia":"AM","Bulgaria":"BG","Russia":"RU","Andorra":"AD","Indonesia":"ID","Norway":"NO","Honduras":"HN","Romania":"RO","Colombia":"CO","Bahrain":"BH","Vatican City":"VA","Liechtenstein":"LI","Croatia":"HR","Latvia":"LV","North Korea":"KP","India":"IN","Georgia":"GE","Morocco":"MA","Slovakia":"SK","Kuwait":"KW","Denmark":"DK","Philippines":"PH","Benin":"BJ","El Salvador":"SV","Italy":"IT","Netherlands":"NL","Portugal":"PT","Argentina":"AR","Chile":"CL","Peru":"PE","Venezuela":"VE","Puerto Rico":"PR","South Korea":"KR","Turkey":"TR","Greece":"GR","Switzerland":"CH","New Zealand":"NZ","South Africa":"ZA","Nigeria":"NG","Egypt":"EG","Saudi Arabia":"SA","United Arab Emirates":"AE","Israel":"IL","Ukraine":"UA","Finland":"FI","Czechia":"CZ","Hungary":"HU","Scotland":"GB","Wales":"GB","England":"GB","Guatemala":"GT","Costa Rica":"CR","Panama":"PA","Ecuador":"EC","Pakistan":"PK","Thailand":"TH","Vietnam":"VN","Malaysia":"MY","Singapore":"SG","Trinidad and Tobago":"TT","Haiti":"HT"};
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
@@ -4149,8 +4161,7 @@ async function loadWorldData(){
     /* the US is most of the league and one dot said nothing: split it by the
        region the fighter is in (east / central / west). a region we cannot
        place, or none, stays on the country's own centroid */
-    var key = c, at = CENTROID[c];
-    if(c === 'United States' && US_REGION[r.region]){ key = c + '/' + r.region; at = US_REGION[r.region]; }
+    var key = c + '/' + (c === 'United States' ? (r.region || '') : ''), at = placeFighter(c, r.region);
     if(!at) return;
     dots[key] = dots[key] || [0, at[0], at[1]]; dots[key][0]++; });
   var names = Object.keys(count).sort(function(a, b){ return count[b] - count[a]; });
@@ -4187,11 +4198,11 @@ async function loadWorldArcs(){
   if(!bouts || !bouts.length){ worldArcs = []; return; }
   var slugs = [];
   bouts.forEach(function(b){ [b.fighter_a_slug, b.fighter_b_slug].forEach(function(x){ if(x && slugs.indexOf(x) === -1) slugs.push(x); }); });
-  var fs = await q("fighter_cards?select=slug,country,display_name&slug=in.(" + slugs.join(',') + ")");
+  var fs = await q("fighter_cards?select=slug,country,region,display_name&slug=in.(" + slugs.join(',') + ")");
   if(!fs) return;
-  var country = {}, nm = {}; fs.forEach(function(f){ if(f.country) country[f.slug] = f.country.trim(); nm[f.slug] = f.display_name || f.slug; });
+  var at = {}, nm = {}; fs.forEach(function(f){ at[f.slug] = placeFighter(f.country, f.region); nm[f.slug] = f.display_name || f.slug; });
   worldArcs = bouts.map(function(b){
-    var A = CENTROID[country[b.fighter_a_slug]], B = CENTROID[country[b.fighter_b_slug]];
+    var A = at[b.fighter_a_slug], B = at[b.fighter_b_slug];
     if(!A || !B || (A[0] === B[0] && A[1] === B[1])) return null;
     return { a: A, b: B, hot: b.bout_number === 1, na: nm[b.fighter_a_slug] || '', nb: nm[b.fighter_b_slug] || '' };
   }).filter(Boolean);
