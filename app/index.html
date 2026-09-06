@@ -1639,6 +1639,10 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    the globe is being spun and for a few seconds after -- spinning is asking
    "who is fighting", and a globe nobody touches stays clean. */
 #bouttxt{font-size:8.5px;fill:#fff;letter-spacing:.16em;opacity:0;transition:opacity .25s}
+/* a ranked fighter whose bout is lit on the globe */
+#ranks a[data-slug]{transition:box-shadow .3s,background .3s}
+#ranks a.lit{background:rgba(245,200,66,.14);box-shadow:inset 2px 0 0 #F5C842,0 0 12px rgba(245,200,66,.25);border-radius:4px}
+#ranks a.lit .rft{color:#FFE9A8}
 #bouttxt .b{fill:#F5C842}
 .world text{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.19em;fill:#CDBEFF;text-transform:uppercase}
 .world .grab{position:absolute;left:50%;top:150px;margin:-100px 0 0 -100px;width:200px;height:200px;border-radius:50%;z-index:4;touch-action:none;cursor:grab}
@@ -3956,6 +3960,7 @@ function rankRowHTML(slug, cls, name, extraNameCls, move){
 }
 
 function paintRanks(el, data){
+  worldLitSlugs = '';   // a repaint drops the lit rows; let the globe re-apply them
   var rows = data.rows, titles = data.titles;
   if(!rows.length){ el.innerHTML = '<div class="empty">Nothing ranked here yet.</div>'; return; }
 
@@ -4187,7 +4192,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var worldPts = [], worldArcs = [], worldStarted = false;
+var worldPts = [], worldArcs = [], worldStarted = false, worldLitSlugs = '';   // the last pair lit on the board; reset when the board repaints
 
 /* The dots and the flags come from one read: every active fighter's country. */
 async function loadWorldData(){
@@ -4236,7 +4241,7 @@ async function loadWorldArcs(){
   worldArcs = bouts.map(function(b){
     var A = at[b.fighter_a_slug], B = at[b.fighter_b_slug];
     if(!A || !B || (A[0] === B[0] && A[1] === B[1])) return null;
-    return { a: A, b: B, hot: b.bout_number === 1, na: nm[b.fighter_a_slug] || '', nb: nm[b.fighter_b_slug] || '' };
+    return { a: A, b: B, hot: b.bout_number === 1, na: nm[b.fighter_a_slug] || '', nb: nm[b.fighter_b_slug] || '', sa: b.fighter_a_slug, sb: b.fighter_b_slug };
   }).filter(Boolean);
 }
 
@@ -4267,7 +4272,7 @@ function startWorld(){
     for(var q = 0; q < runs.length; q++){ var rz = runs[q].z; if(rz > bz + (q === front ? 0 : 0.08)){ bz = rz; best = q; } }
     if(best >= 0) front = best;
     var r = front >= 0 ? runs[front] : null, on = r && r.z > 0.05 && Date.now() < showUntil;
-    if(!on){ btxt.style.opacity = 0; return; }
+    if(!on){ btxt.style.opacity = 0; litBoard(null); return; }
     var want = r.na.toUpperCase() + '  v  ' + r.nb.toUpperCase();
     if(btp.getAttribute('data-t') !== want){ btp.setAttribute('data-t', want);
       btp.innerHTML = '<tspan>' + esc(r.na.toUpperCase()) + '</tspan><tspan class="b">  v  </tspan><tspan>' + esc(r.nb.toUpperCase()) + '</tspan>'; }
@@ -4286,6 +4291,18 @@ function startWorld(){
     else d = pts.map(function(p, i){ return (i ? 'L ' : 'M ') + X(p.x) + ',' + Y(p.y); }).join(' ');
     bpath.setAttribute('d', d);
     btxt.style.opacity = Math.max(0, Math.min(1, (r.z - 0.05) / 0.35));
+    litBoard(worldArcs[front]);
+  }
+  /* THE BOARD ANSWERS THE GLOBE: while an arc is lit, its two fighters light
+     up in the rankings below -- if they are on the board being shown. a GFL
+     card against the UBA board lights nobody, and that is correct. */
+  function litBoard(arc){
+    var want = arc ? (arc.sa || '') + '|' + (arc.sb || '') : '';
+    if(want === worldLitSlugs) return; worldLitSlugs = want;
+    var el = document.getElementById('ranks'); if(!el) return;
+    el.querySelectorAll('a.lit').forEach(function(a){ a.classList.remove('lit'); });
+    if(!arc) return;
+    [arc.sa, arc.sb].forEach(function(sl){ if(!sl) return; el.querySelectorAll('a[data-slug="' + sl + '"]').forEach(function(a){ a.classList.add('lit'); }); });
   }
   /* one loop, always: cancel whatever is pending and request afresh. a flag
      went stale when a frame was pending in a hidden tab and the globe froze. */
@@ -4340,10 +4357,20 @@ function startWorld(){
         if(z > -0.05){ started ? cx.lineTo(x, y) : cx.moveTo(x, y); started = true; run.pts.push({ x: x, y: y }); } else started = false;
         if(t === seg / 2){ run.z = z; run.ax = x; run.ay = y; } }
       runs.push(run);
-      if(k === front && Date.now() < showUntil){ cx.strokeStyle = 'rgba(255,255,255,.8)'; cx.lineWidth = 1.4; cx.shadowColor = 'rgba(220,210,255,.8)'; cx.shadowBlur = 6; }
-      else if(pr.hot){ var pu = .55 + .45 * Math.sin(T * 3); cx.strokeStyle = 'rgba(255,214,120,' + pu + ')'; cx.lineWidth = 1.6; cx.shadowColor = 'rgba(255,214,120,.9)'; cx.shadowBlur = 8; }
-      else { cx.strokeStyle = 'rgba(190,170,255,.30)'; cx.lineWidth = .9; cx.shadowBlur = 0; }
-      cx.stroke(); cx.shadowBlur = 0; }
+      /* F3 · THE REACH (2026-09-06). light from the fighters, falling off toward
+         the middle, and the falloff breathes on a slow clock per bout with a
+         halo that widens as it brightens. main event gold. the arc facing you,
+         while the sphere is being spun, is lit end to end with a glow. */
+      var lit = k === front && Date.now() < showUntil, base = lit ? '255,255,255' : pr.hot ? '255,214,120' : '200,185,255', al = lit ? .95 : pr.hot ? .9 : .55;
+      var br = .5 + .5 * Math.sin(T * .7 + k * 1.7), pa = run.pts[0], pb = run.pts[run.pts.length - 1];
+      if(pa && pb && pa !== pb){
+        var g1 = cx.createLinearGradient(pa.x, pa.y, pb.x, pb.y), g2 = cx.createLinearGradient(pa.x, pa.y, pb.x, pb.y), rr = .3 + .25 * br;
+        [[0, .06], [.5, 0], [1, .06]].forEach(function(st){ g1.addColorStop(st[0], 'rgba(' + base + ',' + (al * st[1]) + ')'); });
+        (lit ? [[0, 1], [1, 1]] : [[0, .95], [rr, .15], [.5, .04], [1 - rr, .15], [1, .95]]).forEach(function(st){ g2.addColorStop(st[0], 'rgba(' + base + ',' + (al * st[1]) + ')'); });
+        cx.lineWidth = 2 + 3 * br; cx.strokeStyle = g1; cx.stroke();
+        cx.lineWidth = lit ? 1.3 : .8; cx.strokeStyle = g2; if(lit){ cx.shadowColor = 'rgba(255,240,200,.9)'; cx.shadowBlur = 8; } cx.stroke(); cx.shadowBlur = 0;
+        if(lit){ [pa, pb].forEach(function(q){ cx.beginPath(); cx.arc(q.x, q.y, 3, 0, 7); cx.fillStyle = 'rgba(255,255,255,.95)'; cx.shadowColor = 'rgba(255,240,200,1)'; cx.shadowBlur = 10; cx.fill(); cx.shadowBlur = 0; }); }
+      } }
     labelArc(runs);
     /* one dot per fighter: ~450 of them, so the glow is a sprite drawn with
        drawImage rather than a gradient built per dot per frame */
