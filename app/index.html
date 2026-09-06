@@ -1563,6 +1563,18 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   transform-origin:left center;animation:pvWipe .9s cubic-bezier(.2,.8,.2,1) both}
 .pv .who.r b:after{left:auto;right:0;transform-origin:right center;
   background:linear-gradient(270deg,#7BE8BE,rgba(123,232,190,0))}
+/* THE CARD, LIVE. The frame is the player. iOS refuses autoplay with sound,
+   so it starts muted and playsinline; a tap unmutes. The ticker and the
+   stand are gone here on purpose — they were the poster's, and the poster
+   is off. */
+.pv.live{background:#000}
+.pv.live iframe{position:absolute;inset:0;width:100%;height:100%;border:0;z-index:3}
+.pv .livetag{position:absolute;left:12px;top:10px;z-index:8;display:flex;align-items:center;gap:6px;
+  padding:4px 9px;border-radius:999px;background:rgba(4,3,10,.78);border:1px solid rgba(232,54,43,.55);
+  font-family:'Space Mono',monospace;font-size:7px;font-weight:700;letter-spacing:.18em;
+  text-transform:uppercase;color:#FFD9D9;pointer-events:none}
+.pv .livetag i{width:6px;height:6px;border-radius:50%;background:#FF4D4D;box-shadow:0 0 8px #FF4D4D;
+  animation:pulse 1.6s ease-in-out infinite}
 /* No card published yet is a REAL state, not a broken poster: an event can sit
    on the schedule with no bouts, and saying so beats two empty silhouettes. */
 .pv .tba{position:absolute;left:0;right:0;top:56%;z-index:8;text-align:center;
@@ -4010,6 +4022,21 @@ var PV_FLOWERS = (function(){
 
 function posterHTML(e, past, i, n){
   var f = faceoffs[e.id];
+  /* LIVE: the same frame becomes the player. Nothing else on the page moves.
+     Only the event the bot matched flips; every other card stays a poster,
+     and a stream the bot could not match flips nothing — the live bar has it. */
+  if(liveNow && liveNow.event_id && liveNow.event_id === e.id){
+    var dots0 = n > 1
+      ? '<div class="pvdots">' + Array.apply(null, Array(n)).map(function(_, k){
+          return '<s class="' + (k === i ? 'on' : '') + '" data-nxi="' + k + '"></s>'; }).join('') + '</div>'
+      : '';
+    return '<div class="pv live" data-event="' + esc(e.id) + '">'
+      + '<iframe src="https://www.youtube.com/embed/' + esc(liveNow.video_id)
+      + '?autoplay=1&mute=1&playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen"'
+      + ' allowfullscreen loading="lazy" title="' + esc(e.name) + ' — live"></iframe>'
+      + '<div class="livetag"><i></i>Live \u00b7 ' + esc(e.name) + '</div>'
+      + '</div>' + dots0;
+  }
   /* Everything on this app states event times in ET, because the league runs
      to one clock and a local-time render makes two people disagree about when
      the card starts. */
@@ -4061,6 +4088,21 @@ function cutout(url, flip){
       + '<circle cx="30" cy="21" r="14"/>'
       + '<path d="M30 38c-14 0-24 9-26 22l-4 40h60l-4-40c-2-13-12-22-26-22z"/></svg>';
 }
+
+/* THE LIVE ROW. One row while the channel is streaming, written by the bot
+   (bot/src/lib/live-watch.js): the video and the event whose card flips to
+   the player. A browser cannot read YouTube cross-origin, so this row is the
+   only way the app can know it is live. Read on every home load and every
+   60s while home is open — the same cadence the bot writes it at. */
+var liveNow = null;
+async function loadLive2(){
+  var rows = await q("live_public?select=video_id,title,event_id,event_name,match_kind,live_since&limit=1");
+  var next = rows && rows.length ? rows[0] : null;
+  var changed = (next && next.video_id) !== (liveNow && liveNow.video_id);
+  liveNow = next;
+  if(changed) renderNextEvent();
+}
+setInterval(function(){ if(currentTab === 'home' || currentTab === 'news') loadLive2(); }, 60 * 1000);
 
 function renderNextEvent(){
   var el = document.getElementById('news-next');
@@ -8293,6 +8335,7 @@ function registerWorker(){
   else if(panels[hash] && hash !== 'home') goTab(hash);
 
   await loadHome();
+  loadLive2();
   loadNews();
   loadFighters();
 })();
