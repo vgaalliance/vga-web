@@ -3223,12 +3223,14 @@ async function loadHome(){
   var evs = await q("events_public?select=id,name,type,status,event_date,stream_platform&status=eq.scheduled&order=event_date.asc&limit=40");
   // Drop anything that has plainly already happened, whatever its status says.
   if(evs) evs = evs.filter(function(e){ return !eventIsOver(e); });
-  if(evs && evs.length < 3){
-    // One scheduled event leaves a hand of one. Backfill with what just
-    // happened so the fan is always three deep and the past stays reachable.
+  if(evs){
+    // ALWAYS the two most recent finished events behind the upcoming ones.
+    // This used to backfill only when fewer than three were scheduled, which
+    // was the fan's rule; the next-card block pages back into the past on
+    // purpose, and with four scheduled it had nothing to page into.
     var past = await q("events_public?select=id,name,type,status,event_date,stream_platform"
-      + "&status=eq.completed&order=event_date.desc&limit=" + (3 - evs.length));
-    if(past) evs = evs.concat(past);
+      + "&status=eq.completed&order=event_date.desc&limit=2");
+    if(past) evs = evs.concat(past.filter(function(pe){ return !evs.some(function(e){ return e.id === pe.id; }); }));
   }
   // UBAe nights sit in the same hand, ordered with everything else by date —
   // a playoff night is a night the league is on, and hiding it because it
@@ -4223,14 +4225,23 @@ function paintFeedArc(text){
 var nextIdx = 0;
 
 function nextEventList(){
+  /* THE HAND THE FAN HAD: every upcoming event, soonest first, then the two
+     most recent finished ones behind them. This block replaced the fan on
+     home, and "upcoming only" made last week's card unreachable from the
+     screen that used to show it. Each row carries its own `past`, so the
+     label and the eyebrow change as you page — "Next card" on the front,
+     "Last time out" once you swipe back into what has happened. loadHome
+     already backfills the fan's hand with the most recent completed events
+     when fewer than three are scheduled, so the past rows are there to use. */
   var evs = fanEvents || [];
-  var soon = evs.filter(function(e){ return !eventIsOver(e); });
-  if(soon.length) return { rows: soon, past: false };
-  /* Newest-first for the past, because "last time out" means the most recent
-     one, not the oldest one still in the hand. */
-  var done = evs.slice().filter(eventIsOver).sort(function(x, y){
-    return new Date(y.event_date) - new Date(x.event_date); });
-  return { rows: done, past: true };
+  var soon = evs.filter(function(e){ return !eventIsOver(e); })
+    .sort(function(x, y){ return new Date(x.event_date) - new Date(y.event_date); })
+    .map(function(e){ e.__past = false; return e; });
+  var done = evs.filter(eventIsOver)
+    .sort(function(x, y){ return new Date(y.event_date) - new Date(x.event_date); })
+    .slice(0, 2).map(function(e){ e.__past = true; return e; });
+  var rows = soon.concat(done);
+  return { rows: rows, past: rows.length ? !!rows[Math.min(nextIdx, rows.length - 1)].__past : false };
 }
 
 /* Nine blooms, always the same nine. They are rendered for every state — an
@@ -4348,7 +4359,10 @@ function renderNextEvent(){
 function renderNextInto(id, home){
   var el = document.getElementById(id);
   if(!el) return;
-  var lab = document.getElementById('nx-lab');
+  /* the label is whichever `.lab` sits directly above THIS container — home
+     and news each have one, and only news's carried an id */
+  var prev = el.previousElementSibling;
+  var lab = (prev && prev.classList.contains('lab')) ? prev.querySelector('b') : document.getElementById('nx-lab');
   var list = nextEventList();
   if(!list.rows.length){
     if(lab) lab.textContent = 'Next card';
@@ -4359,8 +4373,9 @@ function renderNextInto(id, home){
     return;
   }
   if(nextIdx >= list.rows.length) nextIdx = 0;
-  if(lab) lab.textContent = list.past ? 'Last time out' : 'Next card';
-  el.innerHTML = posterHTML(list.rows[nextIdx], list.past, nextIdx, list.rows.length, home);
+  var row = list.rows[nextIdx];
+  if(lab) lab.textContent = row && row.__past ? 'Last time out' : 'Next card';
+  el.innerHTML = posterHTML(row, !!(row && row.__past), nextIdx, list.rows.length, home);
 }
 
 /* Dots and a swipe, on the block itself. The tap-through to the event is the
