@@ -1635,7 +1635,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .wm .szn{position:absolute;right:16px;top:10px}
 
 /* ── THE WORLD ─────────────────────────────────────────────────────── */
-.world{position:relative;height:300px;margin:0 0 4px;overflow:hidden;z-index:1}
+.world{position:relative;height:300px;margin:0 0 -36px;overflow:hidden;z-index:1}   /* the board rides up under the feed arc: the champion row lands in the first screen */
 .world canvas{position:absolute;left:0;top:0;width:100%;height:300px;z-index:2;pointer-events:none}
 .world svg{position:absolute;left:0;right:0;top:0;width:100%;height:300px;pointer-events:none;z-index:3}
 #feedtxt{transition:opacity .3s}
@@ -4236,7 +4236,7 @@ async function loadWorldData(){
 var seatFlags = [];
 function placeSeats(){
   var wd = document.getElementById('world'); if(!wd) return;
-  var W = wd.clientWidth || 393, CX = W / 2, CY = 150, R = 100, ROWS = [98, 120, 142], top = seatFlags;
+  var W = wd.clientWidth || 393, CX = W / 2, CY = 150, R = 100, ROWS = [113, 135, 157]   /* a hair lower, so the US flag lines up with the US glow */, top = seatFlags;
   var base = Math.sqrt(Math.max(R * R - (CY - ROWS[0]) * (CY - ROWS[0]), 0)), html = '';
   top.forEach(function(f, k){
     var n = f.n, c = f.c, side = k < 3 ? 'l' : 'r', row = k % 3, y = ROWS[row];
