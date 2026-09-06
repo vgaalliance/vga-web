@@ -1076,8 +1076,17 @@ async function loadAll(){
 // together and one failure can't take the rest of standby down with it.
 async function loadUba(rk){
   try{
-    const [{data:ch},{data:p4},{data:fm},{data:sets},{data:coll},{data:nx}] = await Promise.all([
+    const [{data:ch},{data:tt},{data:p4},{data:fm},{data:sets},{data:coll},{data:nx}] = await Promise.all([
       sb.from('fighter_cards').select('display_name,weight_class,wins:headline_wins,losses:headline_losses,draws:headline_draws,is_champion').eq('is_champion',true),
+      // BELTS COME FROM THE TITLES TABLE, not from fighter_cards.is_champion.
+      // is_champion is one boolean on a fighter who has one weight_class, so a
+      // DOUBLE CHAMPION can only ever appear in one division: Killer Kam held
+      // middleweight AND light heavyweight and the board printed light
+      // heavyweight as "Vacant". The same shape hid the other half too --
+      // abdullah's GFL lightweight belt landed in the same `lightweight` bucket
+      // as Lama's UBA one, and champIn() takes the FIRST match, so one of the
+      // two silently shadowed the other depending on row order.
+      sb.from('titles_public').select('name,weight_class,kind,is_interim,holder_name,level'),
       sb.from('rankings_public').select('rank,fighter_name').eq('scope','overall').order('rank').limit(16),
       sb.from('fighter_of_month_public').select('name,tag').limit(1),
       sb.from('card_sets_public').select('name,code,status,set_size'),
@@ -1088,12 +1097,25 @@ async function loadUba(rk){
       sb.from('events_public').select('id,name,event_date').eq('status','scheduled')
         .gte('event_date',FUTURE()).order('event_date').limit(1),
     ])
-    const champs=ch||[]
+    // One row per BELT, so a fighter holding two appears in both divisions. The
+    // record still comes from fighter_cards, matched by name; a holder with no
+    // card row keeps the belt and shows no record, which is the honest way
+    // round -- dropping them would print "Vacant" over a real champion.
+    const rec={}; (ch||[]).forEach(c=>{ rec[c.display_name]=c })
+    const beltsOf = lvl => (tt||[])
+      .filter(t => t.kind==='weight_class' && !t.is_interim && t.holder_name && t.level===lvl)
+      .map(t => {
+        const r = rec[t.holder_name] || {}
+        return { display_name:t.holder_name, weight_class:t.weight_class,
+                 wins:r.wins, losses:r.losses, draws:r.draws, hasRec:!!rec[t.holder_name] }
+      })
+    const champs = beltsOf('pro')
+    const gflChamps = beltsOf('amateur')
     // split by level -- pro to the UBA board (the amateur ladder is real data
     // now, seeded 2026-08-08, and unfiltered it interleaved: two #1s per
     // division), amateur to the GFL board
     renderRankBoard('ubarankContent', (rk||[]).filter(r=>r.level!=='amateur'), champs)
-    renderRankBoard('gflrankContent', (rk||[]).filter(r=>r.level==='amateur'), [])
+    renderRankBoard('gflrankContent', (rk||[]).filter(r=>r.level==='amateur'), gflChamps)
     renderChamps(champs)
     renderP4P(p4||[], champs)
     renderFotm((fm||[])[0], champs)
@@ -1105,7 +1127,10 @@ async function loadUba(rk){
 }
 
 const cap1=s=>String(s||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())
-const recOf=f=> `${f.wins||0}-${f.losses||0}${f.draws?'-'+f.draws:''}`
+// A champion whose card row is missing shows NO record rather than "0-0" --
+// an invented record on a belt row is worse than a blank one.
+const recOf=f=> (f && f.hasRec===false) ? ''
+  : `${f.wins||0}-${f.losses||0}${f.draws?'-'+f.draws:''}`
 const champIn=(champs,wc)=> champs.find(c=>c.weight_class===wc)
 
 function renderChamps(champs){
