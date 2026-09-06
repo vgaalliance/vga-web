@@ -1526,7 +1526,14 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    reason. */
 .pv .ttl{position:absolute;left:0;right:0;top:40%;z-index:7;text-align:center;
   font-family:'Bebas Neue',sans-serif;font-size:40px;line-height:.9;letter-spacing:.02em;
-  text-shadow:0 3px 22px rgba(4,3,10,.85);padding:0 10px}
+  padding:0 10px;
+  /* gold plate: the champion rows' metal, so the card and the board are one
+     object. the fill is a gradient clipped to the glyphs; the dark edge and
+     the low glow live on a duplicate underneath (::before), because a clipped
+     fill cannot carry a text-shadow without the shadow showing through */
+  background:linear-gradient(180deg,#FFF1B8 0%,#F5C842 42%,#C8901A 70%,#F1D27A 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 2px 0 rgba(60,35,0,.9)) drop-shadow(0 4px 18px rgba(245,200,66,.35))}
 .pv .tick{position:absolute;left:0;right:0;bottom:0;height:15px;z-index:9;overflow:hidden;
   background:rgba(4,3,10,.94);border-top:1px solid rgba(167,139,250,.28)}
 .pv .tick span{position:absolute;white-space:nowrap;font-family:'Space Mono',monospace;
@@ -1627,6 +1634,12 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .world canvas{position:absolute;left:0;top:0;width:100%;height:300px;z-index:2;pointer-events:none}
 .world svg{position:absolute;left:0;right:0;top:0;width:100%;height:300px;pointer-events:none;z-index:3}
 #feedtxt{transition:opacity .3s}
+/* THE BOUT LABEL rides the arc facing you, on the same curve the line takes,
+   so it is in the scene rather than pasted over it. It is only there while
+   the globe is being spun and for a few seconds after -- spinning is asking
+   "who is fighting", and a globe nobody touches stays clean. */
+#bouttxt{font-size:8.5px;fill:#fff;letter-spacing:.16em;opacity:0;transition:opacity .25s}
+#bouttxt .b{fill:#F5C842}
 .world text{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.19em;fill:#CDBEFF;text-transform:uppercase}
 .world .grab{position:absolute;left:50%;top:150px;margin:-100px 0 0 -100px;width:200px;height:200px;border-radius:50%;z-index:4;touch-action:none;cursor:grab}
 /* W3 · the terminator: day and night across the sphere, so the dots read as
@@ -2683,7 +2696,9 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
     <canvas id="wcv"></canvas>
     <svg id="wsvg" viewBox="0 0 393 300" preserveAspectRatio="xMidYMin meet"><defs>
       <path id="feedarc" d="M 82,196 A 122,122 0 0 0 311,196"/></defs>
-      <text id="feedtxt"><textPath href="#feedarc" startOffset="50%" text-anchor="middle"></textPath></text></svg>
+      <text id="feedtxt"><textPath href="#feedarc" startOffset="50%" text-anchor="middle"></textPath></text>
+      <path id="boutarc" d="M 0,0" fill="none"/>
+      <text id="bouttxt"><textPath href="#boutarc" startOffset="50%" text-anchor="middle"></textPath></text></svg>
     <div class="gx"></div><div class="grab" id="wgrab"></div><div id="seats"></div>
   </div>
   <!-- the old hero, kept as hidden stubs: renderFan, the countdown tick and
@@ -4165,13 +4180,13 @@ async function loadWorldArcs(){
   if(!bouts || !bouts.length){ worldArcs = []; return; }
   var slugs = [];
   bouts.forEach(function(b){ [b.fighter_a_slug, b.fighter_b_slug].forEach(function(x){ if(x && slugs.indexOf(x) === -1) slugs.push(x); }); });
-  var fs = await q("fighter_cards?select=slug,country&slug=in.(" + slugs.join(',') + ")");
+  var fs = await q("fighter_cards?select=slug,country,display_name&slug=in.(" + slugs.join(',') + ")");
   if(!fs) return;
-  var country = {}; fs.forEach(function(f){ if(f.country) country[f.slug] = f.country.trim(); });
+  var country = {}, nm = {}; fs.forEach(function(f){ if(f.country) country[f.slug] = f.country.trim(); nm[f.slug] = f.display_name || f.slug; });
   worldArcs = bouts.map(function(b){
     var A = CENTROID[country[b.fighter_a_slug]], B = CENTROID[country[b.fighter_b_slug]];
     if(!A || !B || (A[0] === B[0] && A[1] === B[1])) return null;
-    return { a: A, b: B, hot: b.bout_number === 1 };
+    return { a: A, b: B, hot: b.bout_number === 1, na: nm[b.fighter_a_slug] || '', nb: nm[b.fighter_b_slug] || '' };
   }).filter(Boolean);
 }
 
@@ -4192,8 +4207,29 @@ function startWorld(){
   var lam = -1.6, spin = 0.0016, drag = null, vel = 0, tilt = -0.36, rad = Math.PI / 180;
   function proj(la, lo){ la *= rad; lo = lo * rad + lam; var cl = Math.cos(la), sl = Math.sin(la), cp = Math.cos(tilt), sp = Math.sin(tilt);
     var z = sp * sl + cp * cl * Math.cos(lo); return { x: CX + R * cl * Math.sin(lo), y: CY - R * (cp * sl - sp * cl * Math.cos(lo)), v: z > 0, z: z }; }
-  var hidden = false, running = false;
-  function go(){ if(wd.clientWidth && wd.clientWidth !== W){ size(); placeSeats(); } if(!running){ running = true; requestAnimationFrame(frame); } }
+  var hidden = false, raf = 0, front = -1, showUntil = 0;
+  var bpath = document.getElementById('boutarc'), btxt = document.getElementById('bouttxt'), btp = btxt && btxt.querySelector('textPath');
+  function labelArc(runs){
+    if(!btp) return;
+    var best = -1, bz = 0.12;
+    for(var q = 0; q < runs.length; q++){ var rz = runs[q].z; if(rz > bz + (q === front ? 0 : 0.08)){ bz = rz; best = q; } }
+    if(best >= 0) front = best;
+    var r = front >= 0 ? runs[front] : null, on = r && r.z > 0.05 && Date.now() < showUntil;
+    if(!on){ btxt.style.opacity = 0; return; }
+    var pts = r.pts; if(pts[0].x > pts[pts.length - 1].x) pts = pts.slice().reverse();   // text reads left to right
+    var len = 0; for(var i = 1; i < pts.length; i++) len += Math.hypot(pts[i].x - pts[i-1].x, pts[i].y - pts[i-1].y);
+    var k = 393 / W, d;   // svg is 393 wide whatever the phone; canvas is in css px
+    if(len < 120){ d = 'M ' + ((r.ax - 75) * k).toFixed(1) + ',' + ((r.ay - 8) * k).toFixed(1) + ' L ' + ((r.ax + 75) * k).toFixed(1) + ',' + ((r.ay - 8) * k).toFixed(1); }   // too short to bend a name along
+    else d = pts.map(function(p, i){ return (i ? 'L ' : 'M ') + (p.x * k).toFixed(1) + ',' + (p.y * k).toFixed(1); }).join(' ');
+    bpath.setAttribute('d', d);
+    var want = r.na.toUpperCase() + '  v  ' + r.nb.toUpperCase();
+    if(btp.getAttribute('data-t') !== want){ btp.setAttribute('data-t', want);
+      btp.innerHTML = '<tspan>' + esc(r.na.toUpperCase()) + '</tspan><tspan class="b">  v  </tspan><tspan>' + esc(r.nb.toUpperCase()) + '</tspan>'; }
+    btxt.style.opacity = Math.max(0, Math.min(1, (r.z - 0.05) / 0.35));
+  }
+  /* one loop, always: cancel whatever is pending and request afresh. a flag
+     went stale when a frame was pending in a hidden tab and the globe froze. */
+  function go(){ if(wd.clientWidth && wd.clientWidth !== W){ size(); placeSeats(); } cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); }
   document.addEventListener('visibilitychange', function(){ hidden = document.hidden; if(!hidden) go(); });
   /* a point round the back lands INSIDE the disc under orthographic projection
      (mirrored), so it cannot simply be drawn; pushed out to the limb instead,
@@ -4202,7 +4238,7 @@ function startWorld(){
      which is why continents vanished as they crossed the edge. */
   function limb(p){ var dx = p.x - CX, dy = p.y - CY, d = Math.sqrt(dx * dx + dy * dy) || 1; return { x: CX + dx / d * R * 1.02, y: CY + dy / d * R * 1.02 }; }
   function frame(){
-    if(hidden || currentTab !== 'home'){ running = false; return; }   // nothing to draw for; resume on return
+    if(hidden || currentTab !== 'home'){ raf = 0; return; }   // nothing to draw for; resume on return
     cx.clearRect(0, 0, W, H);
     var a = cx.createRadialGradient(CX, CY, R * .94, CX, CY, R * 1.3); a.addColorStop(0, 'rgba(150,120,255,.18)'); a.addColorStop(1, 'rgba(150,120,255,0)');
     cx.beginPath(); cx.arc(CX, CY, R * 1.3, 0, 7); cx.fillStyle = a; cx.fill();
@@ -4218,26 +4254,31 @@ function startWorld(){
     for(var lo = -180; lo < 180; lo += 20){ cx.beginPath(); var on = false; for(var la = -90; la <= 90; la += 3){ var p = proj(la, lo); if(p.v){ on ? cx.lineTo(p.x, p.y) : cx.moveTo(p.x, p.y); on = true; } else on = false; } cx.strokeStyle = 'rgba(167,139,250,.17)'; cx.stroke(); }
     for(var la2 = -60; la2 <= 60; la2 += 20){ cx.beginPath(); var on2 = false; for(var lo2 = -180; lo2 <= 180; lo2 += 3){ var q2 = proj(la2, lo2); if(q2.v){ on2 ? cx.lineTo(q2.x, q2.y) : cx.moveTo(q2.x, q2.y); on2 = true; } else on2 = false; } cx.strokeStyle = la2 === 0 ? 'rgba(167,139,250,.30)' : 'rgba(167,139,250,.13)'; cx.stroke(); }
     var T = Date.now() / 1000;
-    for(var k = 0; k < worldArcs.length; k++){ var pr = worldArcs[k], A = pr.a, B = pr.b, seg = 28, started = false; cx.beginPath();
+    var runs = [];
+    for(var k = 0; k < worldArcs.length; k++){ var pr = worldArcs[k], A = pr.a, B = pr.b, seg = 28, started = false, run = { pts: [], z: -1, ax: 0, ay: 0, na: pr.na, nb: pr.nb }; cx.beginPath();
       for(var t = 0; t <= seg; t++){ var f = t / seg; var la3 = A[0] + (B[0] - A[0]) * f, lo3 = A[1] + (B[1] - A[1]) * f; if(Math.abs(B[1] - A[1]) > 180) lo3 += (A[1] < B[1] ? -360 : 360) * f;
         var lift = 1 + Math.sin(f * Math.PI) * 0.16, la_ = la3 * rad, lo_ = lo3 * rad + lam, cl = Math.cos(la_), sl = Math.sin(la_), cp = Math.cos(tilt), sp = Math.sin(tilt);
         var z = sp * sl + cp * cl * Math.cos(lo_), x = CX + R * lift * cl * Math.sin(lo_), y = CY - R * lift * (cp * sl - sp * cl * Math.cos(lo_));
-        if(z > -0.05){ started ? cx.lineTo(x, y) : cx.moveTo(x, y); started = true; } else started = false; }
-      if(pr.hot){ var pu = .55 + .45 * Math.sin(T * 3); cx.strokeStyle = 'rgba(255,214,120,' + pu + ')'; cx.lineWidth = 1.6; cx.shadowColor = 'rgba(255,214,120,.9)'; cx.shadowBlur = 8; }
+        if(z > -0.05){ started ? cx.lineTo(x, y) : cx.moveTo(x, y); started = true; run.pts.push({ x: x, y: y }); } else started = false;
+        if(t === seg / 2){ run.z = z; run.ax = x; run.ay = y; } }
+      runs.push(run);
+      if(k === front && Date.now() < showUntil){ cx.strokeStyle = 'rgba(255,255,255,.8)'; cx.lineWidth = 1.4; cx.shadowColor = 'rgba(220,210,255,.8)'; cx.shadowBlur = 6; }
+      else if(pr.hot){ var pu = .55 + .45 * Math.sin(T * 3); cx.strokeStyle = 'rgba(255,214,120,' + pu + ')'; cx.lineWidth = 1.6; cx.shadowColor = 'rgba(255,214,120,.9)'; cx.shadowBlur = 8; }
       else { cx.strokeStyle = 'rgba(190,170,255,.30)'; cx.lineWidth = .9; cx.shadowBlur = 0; }
       cx.stroke(); cx.shadowBlur = 0; }
+    labelArc(runs);
     for(var i = 0; i < worldPts.length; i++){ var d = worldPts[i], p2 = proj(d[1], d[2]); if(!p2.v) continue; var r = 1.6 + Math.sqrt(d[0]) * .9, al = .3 + p2.z * .7;
       var gg = cx.createRadialGradient(p2.x, p2.y, 0, p2.x, p2.y, r * 3.4); gg.addColorStop(0, 'rgba(160,255,220,' + (al * .55) + ')'); gg.addColorStop(1, 'rgba(160,255,220,0)');
       cx.beginPath(); cx.arc(p2.x, p2.y, r * 3.4, 0, 7); cx.fillStyle = gg; cx.fill(); cx.beginPath(); cx.arc(p2.x, p2.y, r, 0, 7); cx.fillStyle = 'rgba(230,255,246,' + al + ')'; cx.fill(); }
     if(!drag){ lam += spin + vel; vel *= .955; }
-    requestAnimationFrame(frame);
+    raf = requestAnimationFrame(frame);
   }
   go();
   worldResume = go;
-  gb.addEventListener('pointerdown', function(e){ drag = { x: e.clientX, y: e.clientY, l: lam, t: tilt }; gb.setPointerCapture(e.pointerId); });
+  gb.addEventListener('pointerdown', function(e){ drag = { x: e.clientX, y: e.clientY, l: lam, t: tilt }; showUntil = Infinity; gb.setPointerCapture(e.pointerId); });
   gb.addEventListener('pointermove', function(e){ if(!drag) return; var d = (e.clientX - drag.x) * .0075; vel = d - (lam - drag.l); lam = drag.l + d;
     tilt = Math.max(-1.35, Math.min(1.35, drag.t - (e.clientY - drag.y) * .0075)); });
-  addEventListener('pointerup', function(){ drag = null; });
+  addEventListener('pointerup', function(){ if(drag) showUntil = Date.now() + 4000; drag = null; });
 }
 var worldResume = null;
 
