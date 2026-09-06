@@ -4216,15 +4216,23 @@ function startWorld(){
     if(best >= 0) front = best;
     var r = front >= 0 ? runs[front] : null, on = r && r.z > 0.05 && Date.now() < showUntil;
     if(!on){ btxt.style.opacity = 0; return; }
-    var pts = r.pts; if(pts[0].x > pts[pts.length - 1].x) pts = pts.slice().reverse();   // text reads left to right
-    var len = 0; for(var i = 1; i < pts.length; i++) len += Math.hypot(pts[i].x - pts[i-1].x, pts[i].y - pts[i-1].y);
-    var k = 393 / W, d;   // svg is 393 wide whatever the phone; canvas is in css px
-    if(len < 120){ d = 'M ' + ((r.ax - 75) * k).toFixed(1) + ',' + ((r.ay - 8) * k).toFixed(1) + ' L ' + ((r.ax + 75) * k).toFixed(1) + ',' + ((r.ay - 8) * k).toFixed(1); }   // too short to bend a name along
-    else d = pts.map(function(p, i){ return (i ? 'L ' : 'M ') + (p.x * k).toFixed(1) + ',' + (p.y * k).toFixed(1); }).join(' ');
-    bpath.setAttribute('d', d);
     var want = r.na.toUpperCase() + '  v  ' + r.nb.toUpperCase();
     if(btp.getAttribute('data-t') !== want){ btp.setAttribute('data-t', want);
       btp.innerHTML = '<tspan>' + esc(r.na.toUpperCase()) + '</tspan><tspan class="b">  v  </tspan><tspan>' + esc(r.nb.toUpperCase()) + '</tspan>'; }
+    /* a textPath DROPS every glyph past the end of its path, so the path must be
+       at least as long as the text -- measured, not guessed: two long names at
+       8.5px run past 200px */
+    var tl = 0; try{ tl = btp.getComputedTextLength(); }catch(e){}
+    var pts = r.pts; if(pts[0].x > pts[pts.length - 1].x) pts = pts.slice().reverse();   // text reads left to right
+    var len = 0; for(var i = 1; i < pts.length; i++) len += Math.hypot(pts[i].x - pts[i-1].x, pts[i].y - pts[i-1].y);
+    /* canvas px -> svg units. the svg is 393 wide, centred, and stops scaling
+       above 393px (meet), so a tablet needs an offset rather than a scale */
+    var k = W < 393 ? 393 / W : 1, ox = W < 393 ? 0 : (W - 393) / 2;
+    function X(x){ return ((x - ox) * k).toFixed(1); } function Y(y){ return (y * k).toFixed(1); }
+    var d, half = tl / 2 + 12;
+    if(len < tl + 16){ d = 'M ' + X(r.ax - half) + ',' + Y(r.ay - 8) + ' L ' + X(r.ax + half) + ',' + Y(r.ay - 8); }   // too short to bend the names along
+    else d = pts.map(function(p, i){ return (i ? 'L ' : 'M ') + X(p.x) + ',' + Y(p.y); }).join(' ');
+    bpath.setAttribute('d', d);
     btxt.style.opacity = Math.max(0, Math.min(1, (r.z - 0.05) / 0.35));
   }
   /* one loop, always: cancel whatever is pending and request afresh. a flag
@@ -4278,7 +4286,8 @@ function startWorld(){
   gb.addEventListener('pointerdown', function(e){ drag = { x: e.clientX, y: e.clientY, l: lam, t: tilt }; showUntil = Infinity; gb.setPointerCapture(e.pointerId); });
   gb.addEventListener('pointermove', function(e){ if(!drag) return; var d = (e.clientX - drag.x) * .0075; vel = d - (lam - drag.l); lam = drag.l + d;
     tilt = Math.max(-1.35, Math.min(1.35, drag.t - (e.clientY - drag.y) * .0075)); });
-  addEventListener('pointerup', function(){ if(drag) showUntil = Date.now() + 4000; drag = null; });
+  function up(){ if(drag) showUntil = Date.now() + 4000; drag = null; }
+  addEventListener('pointerup', up); addEventListener('pointercancel', up);
 }
 var worldResume = null;
 
