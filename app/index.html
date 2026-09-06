@@ -4196,7 +4196,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var worldPts = [], worldArcs = [], worldStarted = false, worldLitSlugs = '', worldSwapped = [];   // the last pair lit on the board; reset when the board repaints
+var worldPts = [], worldArcs = [], worldStarted = false, worldLitSlugs = '', worldSwapped = [], worldFace = null, worldFaced = false;   // the last pair lit on the board; reset when the board repaints
 
 /* The dots and the flags come from one read: every active fighter's country. */
 async function loadWorldData(){
@@ -4249,9 +4249,17 @@ async function loadWorldArcs(){
   worldArcs = bouts.map(function(b){
     var A = at[b.fighter_a_slug], B = at[b.fighter_b_slug];
     if(!A || !B || (A[0] === B[0] && A[1] === B[1])) return null;
-    return { a: A, b: B, hot: b.bout_number === 1, na: nm[b.fighter_a_slug] || '', nb: nm[b.fighter_b_slug] || '', sa: b.fighter_a_slug, sb: b.fighter_b_slug,
+    var r_ = Math.PI / 180, dl = Math.acos(Math.max(-1, Math.min(1, Math.sin(A[0]*r_) * Math.sin(B[0]*r_) + Math.cos(A[0]*r_) * Math.cos(B[0]*r_) * Math.cos((A[1]-B[1])*r_))));
+    return { a: A, b: B, d: dl, hot: b.bout_number === 1, na: nm[b.fighter_a_slug] || '', nb: nm[b.fighter_b_slug] || '', sa: b.fighter_a_slug, sb: b.fighter_b_slug,
              ra: standing[b.fighter_a_slug] || null, rb: standing[b.fighter_b_slug] || null };
   }).filter(Boolean);
+  /* FACE THE CARD: the globe opens turned to the centre of the card's
+     endpoints (a vector mean, so a card across the date line does not average
+     to the middle of nowhere). the engine eases to it once, then the spin and
+     the finger own it. */
+  var vx = 0, vy = 0, vz = 0, rr = Math.PI / 180;
+  worldArcs.forEach(function(ar){ [ar.a, ar.b].forEach(function(pt){ vx += Math.cos(pt[0]*rr) * Math.cos(pt[1]*rr); vy += Math.cos(pt[0]*rr) * Math.sin(pt[1]*rr); vz += Math.sin(pt[0]*rr); }); });
+  worldFace = worldArcs.length ? [Math.atan2(vz, Math.hypot(vx, vy)) / rr, Math.atan2(vy, vx) / rr] : null; worldFaced = false;
 }
 
 var wcv = document.getElementById('wcv');
@@ -4385,7 +4393,7 @@ function startWorld(){
     var runs = [];
     for(var k = 0; k < worldArcs.length; k++){ var pr = worldArcs[k], A = pr.a, B = pr.b, seg = 28, started = false, run = { pts: [], z: -1, ax: 0, ay: 0, na: pr.na, nb: pr.nb }; cx.beginPath();
       for(var t = 0; t <= seg; t++){ var f = t / seg; var la3 = A[0] + (B[0] - A[0]) * f, lo3 = A[1] + (B[1] - A[1]) * f; if(Math.abs(B[1] - A[1]) > 180) lo3 += (A[1] < B[1] ? -360 : 360) * f;
-        var lift = 1 + Math.sin(f * Math.PI) * 0.16, la_ = la3 * rad, lo_ = lo3 * rad + lam, cl = Math.cos(la_), sl = Math.sin(la_), cp = Math.cos(tilt), sp = Math.sin(tilt);
+        var lift = 1 + Math.sin(f * Math.PI) * (0.16 + 0.26 * Math.max(0, Math.min(1, 1 - (pr.d || 1.2) / 1.2))), la_ = la3 * rad, lo_ = lo3 * rad + lam, cl = Math.cos(la_), sl = Math.sin(la_), cp = Math.cos(tilt), sp = Math.sin(tilt);
         var z = sp * sl + cp * cl * Math.cos(lo_), x = CX + R * lift * cl * Math.sin(lo_), y = CY - R * lift * (cp * sl - sp * cl * Math.cos(lo_));
         if(z > -0.05){ started ? cx.lineTo(x, y) : cx.moveTo(x, y); started = true; run.pts.push({ x: x, y: y }); } else started = false;
         if(t === seg / 2){ run.z = z; run.ax = x; run.ay = y; } }
@@ -4410,12 +4418,18 @@ function startWorld(){
     for(var i = 0; i < worldPts.length; i++){ var d = worldPts[i], p2 = proj(d[1], d[2]); if(!p2.v) continue; var al = .3 + p2.z * .7;
       cx.globalAlpha = al * .7; cx.drawImage(GLOW, p2.x - 5, p2.y - 5, 10, 10); cx.globalAlpha = 1;
       cx.beginPath(); cx.arc(p2.x, p2.y, 1.3, 0, 7); cx.fillStyle = 'rgba(230,255,246,' + al + ')'; cx.fill(); }
-    if(!drag){ lam += spin + vel; vel *= .955; }
+    if(!drag){
+      if(worldFace && !worldFaced){
+        var tl = -worldFace[1] * rad, dfl = tl - lam; dfl = Math.atan2(Math.sin(dfl), Math.cos(dfl));   // shortest way round
+        var tt = Math.max(-0.3, Math.min(0.72, worldFace[0] * rad)), dft = tt - tilt;   // the card's latitude to the centre of the disc (positive tilt shows the north)
+        lam += dfl * 0.07; tilt += dft * 0.07;
+        if(Math.abs(dfl) < 0.01 && Math.abs(dft) < 0.005) worldFaced = true;
+      } else { lam += spin + vel; vel *= .955; } }
     raf = requestAnimationFrame(frame);
   }
   go();
   worldResume = go;
-  gb.addEventListener('pointerdown', function(e){ drag = { x: e.clientX, y: e.clientY, l: lam, t: tilt }; showUntil = Infinity; gb.setPointerCapture(e.pointerId); });
+  gb.addEventListener('pointerdown', function(e){ drag = { x: e.clientX, y: e.clientY, l: lam, t: tilt }; showUntil = Infinity; worldFaced = true; gb.setPointerCapture(e.pointerId); });
   gb.addEventListener('pointermove', function(e){ if(!drag) return; var d = (e.clientX - drag.x) / R; vel = d - (lam - drag.l); lam = drag.l + d;
     tilt = Math.max(-1.35, Math.min(1.35, drag.t - (e.clientY - drag.y) / R)); });
   function up(){ if(drag) showUntil = Date.now() + 4000; drag = null; }
