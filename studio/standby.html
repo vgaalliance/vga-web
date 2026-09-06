@@ -38,14 +38,36 @@
 
   #stage{position:absolute;inset:0;display:flex;flex-direction:column;
     align-items:center;justify-content:center;padding:70px 90px;}
-  .view{display:none;width:100%;max-width:1640px;animation:vin .5s cubic-bezier(.16,1,.3,1);}
+  /* A dense screen -- the fight card especially -- read as a JUMP at half a
+     second and 24px: the eye follows the movement instead of the names. Longer,
+     shorter travel and a hair of scale reads as the screen settling rather than
+     arriving. */
+  .view{display:none;width:100%;max-width:1640px;animation:vin .78s cubic-bezier(.16,1,.3,1);}
   .view.on{display:block;}
-  @keyframes vin{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:none;}}
+  @keyframes vin{from{opacity:0;transform:translateY(14px) scale(.992);}
+                 to{opacity:1;transform:none;}}
   /* Leaving view: JS pins it in place first (see hideView) so lifting it out of
      the flex flow can't make it jump, then it lifts away instead of blinking off. */
-  .view.out{display:block;animation:vout .42s cubic-bezier(.5,0,.75,.2) forwards;
+  .view.out{display:block;animation:vout .6s cubic-bezier(.4,0,.7,.3) forwards;
     pointer-events:none;z-index:1;}
-  @keyframes vout{from{opacity:1;transform:none;}to{opacity:0;transform:translateY(-22px);}}
+  @keyframes vout{from{opacity:1;transform:none;}
+                  to{opacity:0;transform:translateY(-12px) scale(.994);}}
+
+  /* The card's BOUTS come in behind the heading rather than with it, so a
+     twelve-bout card lands as a card being dealt instead of a block appearing.
+     Capped at ten steps: past that the last row would wait most of a second. */
+  .view.on .cbouts > *{animation:boutin .5s cubic-bezier(.16,1,.3,1) backwards;}
+  @keyframes boutin{from{opacity:0;transform:translateY(9px);}to{opacity:1;transform:none;}}
+  .view.on .cbouts > *:nth-child(1){animation-delay:.10s}
+  .view.on .cbouts > *:nth-child(2){animation-delay:.15s}
+  .view.on .cbouts > *:nth-child(3){animation-delay:.20s}
+  .view.on .cbouts > *:nth-child(4){animation-delay:.25s}
+  .view.on .cbouts > *:nth-child(5){animation-delay:.30s}
+  .view.on .cbouts > *:nth-child(6){animation-delay:.35s}
+  .view.on .cbouts > *:nth-child(7){animation-delay:.40s}
+  .view.on .cbouts > *:nth-child(8){animation-delay:.45s}
+  .view.on .cbouts > *:nth-child(9){animation-delay:.50s}
+  .view.on .cbouts > *:nth-child(n+10){animation-delay:.55s}
 
   .eyebrow{font-family:'Press Start 2P',monospace;font-size:14px;letter-spacing:.35em;
     color:var(--hi);text-shadow:0 0 14px rgba(204,102,255,.6);margin-bottom:6px;}
@@ -490,19 +512,49 @@
   #promoPrizeLogo{display:block;height:38px;width:auto;max-width:26vw;opacity:.95;}
   .promo-cap{font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.2em;
     color:var(--dim);white-space:nowrap;text-align:center;}
-  .setgrid{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:start;}
+  /* ── THE CARD WALL ────────────────────────────────────────────────────
+     NO BORDER. The cards are rendered with their own edge, lighting and
+     corner already in the file -- a purple rule round one draws a second,
+     squarer frame a few pixels outside the real one, which reads as a mistake
+     at 1080p and as a double border on a 4K capture. The only treatment is a
+     drop shadow, which follows the card's actual silhouette instead of a box. */
+  .cw{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;
+    gap:26px;width:100%;}
+  .cw video{display:block;width:auto;background:transparent;border:0;
+    filter:drop-shadow(0 16px 34px rgba(0,0,0,.6)) drop-shadow(0 0 26px rgba(90,0,160,.5));}
+  /* ALL: every card on screen at once, sized down to fit two rows. */
+  .cw.all video{max-height:29vh;}
+  /* THREE: three big ones, each crossfading to the next card on its own clock.
+     The slot holds its size while the two videos swap inside it, so the row
+     never reflows mid-fade. */
+  .cw.three .cwslot{position:relative;display:flex;align-items:center;justify-content:center;}
+  .cw.three video{max-height:58vh;max-width:28vw;
+    position:absolute;opacity:0;transition:opacity .8s ease;}
+  .cw.three video.on{opacity:1;position:relative;}
+  .cw-cap{font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.2em;
+    color:var(--dim);text-align:center;margin-top:26px;}
+  /* ONE SET AT A TIME. Five sets in two columns overlapped and none of them
+     could be read; a set is a checklist, and half a checklist at a glance is
+     worse than the next one waiting eight seconds. */
+  .setgrid{position:relative;width:100%;}
+  .setpage{position:absolute;top:0;left:0;width:100%;opacity:0;
+    transition:opacity .7s ease;pointer-events:none;}
+  .setpage.on{position:relative;opacity:1;}
   .sethead{display:flex;justify-content:space-between;align-items:baseline;
-    border-bottom:2px solid var(--pur);padding-bottom:6px;margin-bottom:10px;}
+    border-bottom:2px solid var(--pur);padding-bottom:10px;margin-bottom:16px;}
   .setname{font-weight:900;font-size:30px;text-transform:uppercase;line-height:1;}
   .setprog{font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.16em;color:var(--dim);}
-  .scards{display:grid;grid-template-columns:repeat(auto-fill,minmax(146px,1fr));gap:7px;}
-  .scard{border:1px solid var(--line);background:var(--panel);padding:8px 9px 7px;position:relative;}
-  .scard-name{font-weight:700;font-size:19px;line-height:1.05;text-transform:uppercase;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#f0e8ff;padding-right:26px;}
-  .scard-rar{font-family:'Press Start 2P',monospace;font-size:7px;letter-spacing:.14em;
-    text-transform:uppercase;margin-top:4px;color:var(--dim);}
-  .scard-circ{font-family:'Press Start 2P',monospace;font-size:9px;color:#fff;
-    position:absolute;top:7px;right:8px;}
+  /* A set now has the WHOLE screen instead of half of one, so the tiles take
+     it: names that were ellipsed to "GUTS 'THE ST..." fit, and a 25-card set
+     fills the frame rather than sitting in a strip across the top. */
+  .scards{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:12px;}
+  .scard{border:1px solid var(--line);background:var(--panel);padding:13px 15px 12px;position:relative;}
+  .scard-name{font-weight:700;font-size:27px;line-height:1.05;text-transform:uppercase;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#f0e8ff;padding-right:38px;}
+  .scard-rar{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.14em;
+    text-transform:uppercase;margin-top:7px;color:var(--dim);}
+  .scard-circ{font-family:'Press Start 2P',monospace;font-size:11px;color:#fff;
+    position:absolute;top:11px;right:12px;}
   .scard.r-legendary{border-color:rgba(245,200,66,.6);}
   .scard.r-legendary .scard-rar{color:rgba(245,200,66,.85);}
   .scard.r-mystic{border-color:rgba(165,110,240,.6);}
@@ -859,6 +911,17 @@
       </div>
     </div>
 
+    <!-- CARDS ONLY — no poster, no frame. The poster scene pairs one card with
+         the night's artwork; this is the other question: what does the whole
+         set look like at once. Two layouts, picked with ?wall=all / ?wall=3,
+         so the two can be compared rather than argued about. -->
+    <div class="view" id="v-cardwall">
+      <div class="eyebrow">VGA · UBA</div>
+      <div class="title sm">The Cards</div>
+      <div class="cw" id="cwContent"></div>
+      <div class="cw-cap">EARNED · TRADED · FUSED</div>
+    </div>
+
     <div class="view" id="v-cards">
       <div class="eyebrow">VGA · UBA</div>
       <div class="title sm">Card Collection</div>
@@ -1125,13 +1188,13 @@ function renderCards(sets, coll){
   const byCode={}
   ;(coll||[]).forEach(c=>{ (byCode[c.set_code]=byCode[c.set_code]||[]).push(c) })
   const codes=Object.keys(byCode)
-  document.getElementById('cardsContent').innerHTML = codes.length ? codes.map(code=>{
+  document.getElementById('cardsContent').innerHTML = codes.length ? codes.map((code,pi)=>{
     const m=meta[code]||{}
     const cards=byCode[code].slice().sort((a,b)=>
       (RANK[a.rarity]??9)-(RANK[b.rarity]??9) || (b.copies||0)-(a.copies||0))
     const total=cards.reduce((n,c)=>n+(c.copies||0),0)
     const rarest=cards.slice().sort((a,b)=>(a.copies||0)-(b.copies||0))[0]
-    return '<div>'
+    return '<div class="setpage'+(pi===0?' on':'')+'">'
       + '<div class="sethead"><div class="setname">'+(m.name||code)+'</div>'
       + '<div class="setprog">'+cards.length+(m.size?' OF '+m.size:'')+' CARDS</div></div>'
       + '<div class="scards">' + cards.map(function(c){
@@ -1146,6 +1209,10 @@ function renderCards(sets, coll){
       + (rarest ? ' &middot; RAREST <b>'+String(rarest.card_fighter).toUpperCase()+'</b> &times;'+rarest.copies : '')
       + '</div></div>'
   }).join('') : '<div class="setfoot">NO SETS RELEASED</div>'
+  // The pages only exist once the sets have loaded, which is AFTER the first
+  // view change -- without this the turn is never started at all on the screen
+  // the rotation opens on.
+  setTimer = null; setCycle()
 }
 
 // ── THE POSTER SCENE ─────────────────────────────────────────────────────
@@ -1467,6 +1534,116 @@ async function mountCardFilm(){
   })
   first.src = cardList[0]
   first.play().catch(()=>{})
+
+  // The wall reads the SAME list. It joins the rotation only when ?wall= asked
+  // for it, so trying a layout can never change what a live show puts up.
+  if(WALL_MODE && cardList.length){
+    mountCardWall()
+    if(!VIEWS.includes('cardwall')) VIEWS.splice(0, 0, 'cardwall')
+    if(!VIEWS_UBA.includes('cardwall')) VIEWS_UBA.splice(0, 0, 'cardwall')
+  }
+}
+
+// One SET on screen at a time, turning over on its own clock. Same rule as the
+// card wall: it only runs while its screen is up, never behind one nobody is
+// looking at.
+const SET_HOLD = 8000
+let setTimer = null
+function setCycle(){
+  const live = document.getElementById('v-cards').classList.contains('on')
+  // Do NOT restart a turn that is already running. syncPromo fires on every
+  // view change, and re-arming there reset the 8s clock every 15s -- the set on
+  // screen changed on whichever timer happened to win, not on its own beat.
+  if(live && setTimer) return
+  clearTimeout(setTimer); setTimer = null
+  const pages = document.querySelectorAll('#cardsContent .setpage')
+  if(pages.length < 2 || !live) return
+  setTimer = setTimeout(() => {
+    const cur = document.querySelector('#cardsContent .setpage.on') || pages[0]
+    const at  = ([...pages].indexOf(cur) + 1) % pages.length
+    cur.classList.remove('on'); pages[at].classList.add('on')
+    setTimer = null
+    setCycle()
+  }, SET_HOLD)
+}
+
+// ── THE CARD WALL ────────────────────────────────────────────────────────
+// Cards with nothing else on the screen, in one of two layouts:
+//   ?wall=all   every card at once
+//   ?wall=3     three big ones, each turning over on its own clock
+// The scene only joins the rotation when the param is present, so trying a
+// layout cannot change what a live show puts up.
+// Three big ones turning over is the layout that was chosen. `?wall=all` still
+// puts every card on screen at once, kept so the two can be compared again.
+const WALL_MODE = new URLSearchParams(location.search).get('wall') || '3'
+const WALL_SLOTS = 3
+const WALL_HOLD = 7000      // one card's turn in a slot
+const WALL_STAGGER = 2300   // ...offset per slot, so they never all flip at once
+let wallTimers = []
+
+function mountCardWall(){
+  const box = document.getElementById('cwContent')
+  if(!box || !WALL_MODE || !cardList.length) return
+  const all = WALL_MODE === 'all'
+  box.className = 'cw ' + (all ? 'all' : 'three')
+  box.innerHTML = ''
+  const vid = src => {
+    const v = document.createElement('video')
+    v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto'
+    if(src){ v.src = src }
+    // A card whose file is missing leaves NOTHING behind: an empty video box is
+    // a black rectangle in a row of artwork, which reads worse than ten cards.
+    v.addEventListener('error', () => v.remove())
+    return v
+  }
+  if(all){
+    cardList.forEach(src => { const v = vid(src); box.appendChild(v); v.play().catch(()=>{}) })
+    syncPromo()
+    return
+  }
+  // three slots, each with its own pair of elements and its own position in the
+  // list, so no two slots ever show the same card
+  for(let i = 0; i < WALL_SLOTS; i++){
+    const slot = document.createElement('div')
+    slot.className = 'cwslot'
+    const a = vid(cardList[i % cardList.length]), b = vid(null)
+    a.classList.add('on')
+    slot.append(a, b); box.appendChild(slot)
+    a.play().catch(()=>{})
+    slot.dataset.at = String(i)
+  }
+  wallCycle()
+  // The cards are mounted AFTER the first view change (the list is fetched), so
+  // the play/pause pass has already run and left them stopped. Re-run it now
+  // that there is something to play, or the wall opens on three still frames.
+  syncPromo()
+}
+
+function wallCycle(){
+  wallTimers.forEach(clearTimeout); wallTimers = []
+  if(WALL_MODE !== '3' || cardList.length <= WALL_SLOTS) return
+  if(!document.getElementById('v-cardwall').classList.contains('on')) return
+  document.querySelectorAll('#cwContent .cwslot').forEach((slot, i) => {
+    const step = () => {
+      const cur = slot.querySelector('video.on') || slot.querySelector('video')
+      const next = [...slot.querySelectorAll('video')].find(v => v !== cur)
+      if(!cur || !next) return
+      // advance by the number of SLOTS, so the three never collide on one card
+      const at = (Number(slot.dataset.at) + WALL_SLOTS) % cardList.length
+      slot.dataset.at = String(at)
+      next.src = cardList[at]
+      next.addEventListener('loadeddata', () => {
+        next.play().catch(()=>{})
+        next.classList.add('on'); cur.classList.remove('on')
+        wallTimers.push(setTimeout(step, WALL_HOLD))
+      }, {once:true})
+      next.addEventListener('error', () => {
+        wallTimers.push(setTimeout(step, WALL_HOLD))
+      }, {once:true})
+      next.load()
+    }
+    wallTimers.push(setTimeout(step, WALL_HOLD + i * WALL_STAGGER))
+  })
 }
 
 // One card at a time, not eleven: this runs on the machine that is also
@@ -1500,6 +1677,18 @@ function cardCycle(){
 function syncPromo(){
   if(window.__fanShuffle) window.__fanShuffle()   // starts on the way in, stops itself on the way out
   cardCycle()
+  // Same rule as the card slot, and it matters more here: eleven decoders
+  // behind a screen nobody is looking at is exactly the load this file has
+  // always refused to leave running.
+  const wallOn = document.getElementById('v-cardwall').classList.contains('on')
+  document.querySelectorAll('#cwContent video').forEach(v => {
+    if(wallOn && v.src && (v.classList.contains('on') || !v.closest('.cwslot'))){
+      const p = v.play(); if(p && p.catch) p.catch(()=>{})
+    } else v.pause()
+  })
+  if(wallOn) wallCycle()
+  else { wallTimers.forEach(clearTimeout); wallTimers = [] }
+  setCycle()
   if(!promoFilmEl) return
   if(document.getElementById('v-poster').classList.contains('on')){
     const p = promoFilmEl.play(); if(p && p.catch) p.catch(()=>{})
@@ -2109,7 +2298,7 @@ function renderTvs(mt){
 // Retire the visible view with an animation instead of dropping it to
 // display:none. It's pinned at its measured position first, because .out takes
 // it out of the stage's flex flow and it would otherwise snap before fading.
-const VOUT_MS=440
+const VOUT_MS=600      // must match .view.out's animation length
 function hideView(el){
   if(!el.classList.contains('on')) return
   const r=el.getBoundingClientRect(), p=el.parentElement.getBoundingClientRect()
