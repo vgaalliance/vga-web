@@ -1639,6 +1639,8 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .world canvas{position:absolute;left:0;top:0;width:100%;height:300px;z-index:2;pointer-events:none}
 .world svg{position:absolute;left:0;right:0;top:0;width:100%;height:300px;pointer-events:none;z-index:3}
 #feedtxt{transition:opacity .3s}
+/* which build this phone is actually running -- the only way to tell a cached shell from a fresh one */
+.build{margin:22px 15px 0;font-family:'Space Mono',monospace;font-size:7px;letter-spacing:.14em;color:#4A4468;text-transform:uppercase}
 /* THE BOUT LABEL rides the arc facing you, on the same curve the line takes,
    so it is in the scene rather than pasted over it. It is only there while
    the globe is being spun and for a few seconds after -- spinning is asking
@@ -2746,6 +2748,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
        2026-09-01. A skeleton whose job is to hold the space has to be the
        SHAPE of what is coming, not a token that says "loading". -->
   <div id="home-news"><div class="nw gh"><span class="th"></span><div class="gb"><i></i><i class="w"></i></div></div><div class="nw gh"><span class="th"></span><div class="gb"><i></i><i class="w"></i></div></div><div class="nw gh"><span class="th"></span><div class="gb"><i></i><i class="w"></i></div></div></div>
+  <div class="build" id="build"></div>
   <div class="foot">discord.gg/uba &middot; ubaesports.com</div>
 </div></section>
 
@@ -4208,6 +4211,8 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
+var APP_BUILD = 'uba-v194';   // keep equal to CACHE_VERSION in sw.js
+(function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 var worldPts = [], worldArcs = [], worldStarted = false, worldLitSlugs = '', worldSwapped = [], worldFace = null, worldFaced = false;   // the last pair lit on the board; reset when the board repaints
 
 /* The dots and the flags come from one read: every active fighter's country. */
