@@ -2299,6 +2299,12 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
      4 stripe-widths and 160.16803 exactly 4 stripe-heights at 15px/112deg. */
   background-size:64.71208px 160.16803px;
   mix-blend-mode:color-dodge;animation:drift 7s linear infinite;opacity:.7}
+/* a pull the binder knows: the slab itself, in the hand, instead of a rectangle */
+#tear .scard.real{aspect-ratio:auto;background:none;border:0;box-shadow:none;overflow:visible;
+  width:112px;margin-left:-56px;margin-top:-104px;border-radius:11px}
+#tear .scard.real .slabw{cursor:default;pointer-events:none}
+#tear .scard.real.up .slab{box-shadow:0 0 52px var(--glow),0 20px 40px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.55)}
+#tear .scard.real .slab .plate .l3 .bars{display:none}
 #tear .sdock{width:100%;padding:0 4px}
 #tear .sdn{font-family:'Bebas Neue',sans-serif;font-size:28px;line-height:1;letter-spacing:.02em}
 #tear .sdm{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.14em;
@@ -6723,16 +6729,29 @@ function wireTear(itemId){
    fan around whichever card was active, which threw the others off to one
    side; a real hand does not rearrange when you pull a card out of it. */
 var RSORT = ['common','uncommon','rare','mystic','legendary','prismatic'];
-function showSpread(pulls, pity){
+async function showSpread(pulls, pity){
   var list = (Array.isArray(pulls) ? pulls : []).map(function(c){
     return { n: c.fighter || c.name || c.display_name || 'Card',
              r: String(c.rarity || 'common'),
              p: c.print != null ? '#' + c.print : '',
+             pn: c.print != null ? Number(c.print) : null,
              g: c.grade };
   });
   var el = document.getElementById('tear');
   if(!list.length){ toast('The pack came back empty. The league office has a bug.', true);
     closeTear(); return; }
+  /* THE ACTUAL CARD. A pull comes back as a name, a rarity, a print and a
+     grade; the slab the binder draws needs the cards_public row behind it
+     (photo, set code, circulation). The binder has those rows loaded, since
+     the pack was ripped from it; if not, one read. A pull that matches no
+     row (a ghost with a name the roster does not carry) keeps the plain
+     rectangle rather than a slab with the wrong face on it. */
+  var all = binderAll || await q("cards_public?select=*") || [];
+  list.forEach(function(c){
+    var m = all.filter(function(k){ return k.name === c.n && String(k.rarity) === c.r; });
+    if(m.length > 1) m = m.filter(function(k){ return k.set_status === 'active'; }).concat(m);
+    c.card = m[0] || null;
+  });
 
   var active = 0;
   list.forEach(function(c, i){
@@ -6744,6 +6763,8 @@ function showSpread(pulls, pity){
       + (pity ? ' \u00b7 pity pull' : '') + '</div>'
     + '<div class="sfan" id="sf">' + list.map(function(c){
         var holo = RSORT.indexOf(c.r) >= 3;
+        if(c.card) return '<div class="scard real r-' + esc(c.r) + '">'
+          + slabHTML(c.card, { qty: 1, best_grade: c.g, lowest_print: c.pn }, false) + '</div>';
         return '<div class="scard r-' + esc(c.r) + (holo ? ' holo' : '') + '">'
           + (holo ? '<span class="shit">' + esc(c.r) + '</span>' : '')
           + '<div class="snm">' + esc(c.n) + '</div>'
