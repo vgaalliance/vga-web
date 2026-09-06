@@ -4206,6 +4206,12 @@ async function loadWorldData(){
   rows.forEach(function(r){ var c = (r.country || '').trim(); if(c) count[c] = (count[c] || 0) + 1;
     var at = placeFighter(c, r.region, r.slug); if(at) pts.push([1, at[0], at[1]]); });
   var names = Object.keys(count).sort(function(a, b){ return count[b] - count[a]; });
+  /* CROWDING: a dot shrinks with the number of neighbours within ~3 degrees,
+     so 168 Americans read as many small lights rather than one smear, and a
+     lone fighter somewhere stays full size. pts[i][0] is the size factor. */
+  for(var i = 0; i < pts.length; i++){ var near = 0;
+    for(var j = 0; j < pts.length; j++){ if(i === j) continue; var dla = pts[i][1] - pts[j][1], dlo = pts[i][2] - pts[j][2]; if(dla * dla + dlo * dlo < 9) near++; }
+    pts[i][0] = near > 12 ? .45 : near > 5 ? .6 : near > 1 ? .8 : 1; }
   worldPts = pts;
   /* six flags: three a side, biggest first, leaning with the limb */
   var top = names.filter(function(n){ return ISO[n]; }).slice(0, 6);
@@ -4416,8 +4422,9 @@ function startWorld(){
     /* one dot per fighter: ~450 of them, so the glow is a sprite drawn with
        drawImage rather than a gradient built per dot per frame */
     for(var i = 0; i < worldPts.length; i++){ var d = worldPts[i], p2 = proj(d[1], d[2]); if(!p2.v) continue; var al = .3 + p2.z * .7;
-      cx.globalAlpha = al * .7; cx.drawImage(GLOW, p2.x - 5, p2.y - 5, 10, 10); cx.globalAlpha = 1;
-      cx.beginPath(); cx.arc(p2.x, p2.y, 1.3, 0, 7); cx.fillStyle = 'rgba(230,255,246,' + al + ')'; cx.fill(); }
+      var sz = d[0], gr = 6 * sz * sz + 1.5;   // glow falls off with the square, so a crowd is texture, not fog
+      cx.globalAlpha = al * .75 * sz * sz; cx.drawImage(GLOW, p2.x - gr, p2.y - gr, gr * 2, gr * 2); cx.globalAlpha = 1;
+      cx.beginPath(); cx.arc(p2.x, p2.y, .6 + .8 * sz, 0, 7); cx.fillStyle = 'rgba(230,255,246,' + al + ')'; cx.fill(); }
     if(!drag){
       if(worldFace && !worldFaced){
         var tl = -worldFace[1] * rad, dfl = tl - lam; dfl = Math.atan2(Math.sin(dfl), Math.cos(dfl));   // shortest way round
