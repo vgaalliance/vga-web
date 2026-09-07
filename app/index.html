@@ -3703,10 +3703,12 @@ async function loadLive(){
     var t = new Date(e.event_date).getTime();
     return e.status !== 'completed' && t <= now && now - t < LIVE_WINDOW_MS;
   })[0];
+  /* the bar is RETIRED (2026-09-07): on fight night it pushed the whole home
+     page down under the wordmark, and the card itself now becomes the stream
+     (live_now). the clock still runs for anything else that reads `live`. */
   var bar = document.getElementById('livebar');
-  if(!live){ bar.classList.remove('on'); return; }
-  document.getElementById('live-name').textContent = live.name;
-  bar.classList.add('on');
+  if(bar) bar.classList.remove('on');
+  if(!live) return;
 }
 setInterval(function(){ if(document.visibilityState === 'visible') loadLive(); }, 5 * 60 * 1000);
 
@@ -4220,7 +4222,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v203';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v204';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 var worldPts = [], worldArcs = [], worldStarted = false, worldLitSlugs = '', worldSwapped = [], worldFace = null, worldFaced = false;   // the last pair lit on the board; reset when the board repaints
 
