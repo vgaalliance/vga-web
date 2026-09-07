@@ -1643,6 +1643,13 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .world canvas{position:absolute;left:0;top:0;width:100%;height:300px;z-index:2;pointer-events:none}
 .world svg{position:absolute;left:0;right:0;top:0;width:100%;height:340px;pointer-events:none;z-index:3}
 #feedtxt{transition:opacity .3s}
+#turn{display:none;position:fixed;inset:0;z-index:200;background:#02010A;color:#EFEAFF;align-items:center;justify-content:center;flex-direction:column;gap:8px;text-align:center}
+#turn .ic{font-size:44px;color:#A78BFA;animation:turnspin 2.4s ease-in-out infinite}
+#turn .t{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:.04em}
+#turn .s{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#8B83AC}
+@keyframes turnspin{0%,100%{transform:rotate(0)}50%{transform:rotate(-90deg)}}
+/* a phone on its side: short, and wider than tall. a tablet or a desktop window is neither */
+@media (orientation:landscape) and (max-height:500px) and (pointer:coarse){#turn{display:flex}}
 /* which build this phone is actually running -- the only way to tell a cached shell from a fresh one */
 .build{margin:22px 15px 0;font-family:'Space Mono',monospace;font-size:7px;letter-spacing:.14em;color:#4A4468;text-transform:uppercase}
 /* THE BOUT LABEL rides the arc facing you, on the same curve the line takes,
@@ -2702,6 +2709,9 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 </svg>
 
 <!-- ═══ HOME ═══ -->
+<!-- PORTRAIT ONLY. iOS ignores the manifest's orientation lock for an installed
+     web app, so a landscape phone gets this instead of a broken globe. -->
+<div id="turn" aria-hidden="true"><div class="ic">&#x21bb;</div><div class="t">Turn your phone</div><div class="s">VGA is built for portrait</div></div>
 <section class="panel live" id="p-home"><div class="pad wrapmax">
   <div class="sky"></div>
   <div class="livebar" id="livebar">
@@ -4222,7 +4232,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v204';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v205';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 var worldPts = [], worldArcs = [], worldStarted = false, worldLitSlugs = '', worldSwapped = [], worldFace = null, worldFaced = false;   // the last pair lit on the board; reset when the board repaints
 
