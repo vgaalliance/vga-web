@@ -3094,6 +3094,7 @@ function goTab(name, fromHistory){
   if(tabBtns[currentTab]) tabBtns[currentTab].classList.remove('on');
   currentTab = name;
   panels[name].classList.add('live');
+  if(name === 'home') goTabWorldHook();   /* the globe's loop stops on any other tab and nothing else restarts it */
   if(tabBtns[name]) tabBtns[name].classList.add('on');
   panels[name].scrollTop = scrollMem[name] || 0;
   if(name === 'betting') renderBetting();
@@ -4214,7 +4215,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v197';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v198';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 var worldPts = [], worldArcs = [], worldStarted = false, worldLitSlugs = '', worldSwapped = [], worldFace = null, worldFaced = false;   // the last pair lit on the board; reset when the board repaints
 
