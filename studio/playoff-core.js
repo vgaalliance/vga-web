@@ -371,8 +371,11 @@
     { date:'2026-09-05', label:'WINNERS SEMIS',   ids:['S1','S2'] },
     { date:'2026-09-06', label:'LOSERS R1 + R2',  ids:['L1','L2'] },
     { date:'2026-09-11', label:'LOSERS SEMI + WINNERS FINAL', ids:['LS','WF'] },
-    { date:'2026-09-12', label:'LOSERS FINAL',    ids:['LF'] },
-    { date:'2026-09-13', label:'GRAND FINAL',     ids:['GF'] },
+    // The grand final moved off Sunday (2026-09-06). The id order inside a
+    // night IS its running order, so LF then GF on one evening is legal --
+    // the same shape as L1 then L2 -- and a team that loses the losers final
+    // is out before the grand final starts.
+    { date:'2026-09-12', label:'LOSERS FINAL + GRAND FINAL', ids:['LF','GF'] },
   ]
 
   // The calendar with each night's matches named, and every match checked

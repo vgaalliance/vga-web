@@ -165,10 +165,10 @@ console.log('\nUBAe playoff picture\n')
 {
   const b=P.bracket(P.picture(SUMMER))
   const ns=P.nights(b)
-  eq(ns.map(n=>n.ms.length),[2,2,2,2,2,1,1],'both play-ins, then two a night until the last two nights stand alone')
+  eq(ns.map(n=>n.ms.length),[2,2,2,2,2,2],'both play-ins, then two matches every night')
   eq(ns.map(n=>n.date),
-     ['2026-08-28','2026-09-04','2026-09-05','2026-09-06','2026-09-11','2026-09-12','2026-09-13'],
-     'friday-saturday-sunday, two weekends, season ending Sun Sep 13')
+     ['2026-08-28','2026-09-04','2026-09-05','2026-09-06','2026-09-11','2026-09-12'],
+     'friday-saturday, two weekends, season ending Sat Sep 12')
 
   // The rescheduled play-in is the reason Sep 4 has two matches and Aug 28 has
   // one: conference A never played theirs. W1 can still open that night because
@@ -176,10 +176,16 @@ console.log('\nUBAe playoff picture\n')
   eq(ns[0].ms.map(m=>m.id),['PI1','PI2'],'both play-ins were fought on the same night')
   eq(ns[1].ms.map(m=>m.id),['W1','W2'],'and the bracket opens with a whole round')
 
-  // What six bracket nights buys, and the reason for the Sundays: NOBODY is
-  // asked to fight twice in one evening, anywhere in the tournament.
+  // Nobody fights twice in one evening -- with ONE deliberate exception, and it
+  // is named here rather than left as a hole in the rule. The grand final moved
+  // off Sunday onto the losers final's Saturday (2026-09-06, founder's call), so
+  // whoever wins the losers final walks straight into the title match an hour
+  // later. That is a real cost and it is the point: the last night is one card.
+  // Every OTHER night must stay clean, which is what this pins.
   eq(ns.filter(n=>n.ms.some(m=>(m.needs||[]).some(d=>n.ms.some(x=>x.id===d)))).map(n=>n.date),
-     [],'no night runs a match fed by the match before it')
+     ['2026-09-12'],'the last night is the only one that feeds itself')
+  eq(ns.find(n=>n.date==='2026-09-12').ms.map(m=>m.id),['LF','GF'],
+     'and it runs the losers final BEFORE the grand final it feeds')
 
   const all=ns.reduce((a,n)=>a.concat(n.ms.map(m=>m.id)),[])
   eq(all.length,12,'two play-ins plus ten bracket matches, all scheduled')
@@ -234,7 +240,7 @@ console.log('\nUBAe playoff picture\n')
   const b=P.bracket(P.picture(SUMMER)), w=P.weeks(b)
   eq(w.length, 3, 'play-in week, then two weekends of bracket')
   eq(w.map(x=>x.title), ['PLAY-IN WEEK','PLAYOFFS · WEEK 1','PLAYOFFS · WEEK 2'], 'and they are named that way')
-  eq(w.map(x=>x.dates.length), [1,3,3], 'a weekend is one card — Friday, Saturday and Sunday together')
+  eq(w.map(x=>x.dates.length), [1,3,2], 'a weekend is one card — the last one is Friday and Saturday')
   eq(w.map(x=>x.ms.length), [2,6,4], 'every match on the calendar is on exactly one card')
   eq(w[2].ms.some(m=>m.id==='GF'), true, 'the last week holds the grand final')
   eq(w.map(x=>x.stake), ['TWO SURVIVE · TWO GO HOME',
@@ -272,7 +278,7 @@ console.log('\nUBAe playoff picture\n')
   eq(p.status['The 5 Great Kage'],'out','and the team that lost it is out')
 
   const ns=P.nights(b)
-  eq(ns.map(n=>n.ms.length),[2,2,2,2,2,1,1],'the calendar is unchanged by a result')
+  eq(ns.map(n=>n.ms.length),[2,2,2,2,2,2],'the calendar is unchanged by a result')
 }
 
 
@@ -315,7 +321,7 @@ console.log('\nUBAe playoff picture\n')
   eq(P.bracket(p,[{a:'Champions United', b:'Ring Reapers', winner:'Champions United'}])
       .wb[1].ms[0].b.name, undefined, 'a pairing the bracket does not contain resolves nothing')
   eq(P.bracket(p, []).wb[1].ms[0].b.name, undefined, 'an empty result list changes nothing')
-  eq(P.nights(P.bracket(p,R1)).map(x=>x.ms.length),[2,2,2,2,2,1,1],'the calendar is unchanged by results')
+  eq(P.nights(P.bracket(p,R1)).map(x=>x.ms.length),[2,2,2,2,2,2],'the calendar is unchanged by results')
 
   // A match nobody has played has no loser. This is the one a null slips
   // through: the winners final has a known `a` and an unknown `b`, so a
