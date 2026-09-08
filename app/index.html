@@ -4245,7 +4245,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v209';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v210';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -4268,6 +4268,22 @@ var APP_BUILD = 'uba-v209';   // keep equal to CACHE_VERSION in sw.js
   band.addEventListener('pointerup', lift); band.addEventListener('pointercancel', lift);
   band.addEventListener('touchmove', function(e){ e.preventDefault(); }, { passive: false });
   addEventListener('resize', fit); document.fonts && document.fonts.ready.then(fit); setTimeout(fit, 600); setTimeout(fit, 2500);
+  /* ON ITS OWN, every so often: the same light crosses the title left to
+     right in about a second and a half, roughly every twenty seconds, only
+     while Home is showing and nobody is touching the title. */
+  var autoAt = Date.now() + 6000;
+  function autoSweep(){
+    if(down || currentTab !== 'home' || document.hidden){ autoAt = Date.now() + 4000; return; }
+    var t0 = performance.now(), dur = 1500;
+    (function tick(){
+      if(down) return;
+      var f = Math.min(1, (performance.now() - t0) / dur), e = f < .5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2;
+      grad.setAttribute('cx', 40 + 313 * e); grad.setAttribute('cy', 190 - 150 * Math.sin(Math.PI * (.15 + .7 * e)));   /* along the arc the letters sit on */
+      fx.classList.add('on');
+      if(f < 1) requestAnimationFrame(tick); else { fx.classList.remove('on'); autoAt = Date.now() + 18000 + Math.random() * 6000; }
+    })();
+  }
+  setInterval(function(){ if(Date.now() >= autoAt) autoSweep(); }, 500);
 })();
 var worldPts = [], worldArcs = [], worldStarted = false, worldLitSlugs = '', worldSwapped = [], worldFace = null, worldFaced = false;   // the last pair lit on the board; reset when the board repaints
 
