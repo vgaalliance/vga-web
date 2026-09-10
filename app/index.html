@@ -2411,6 +2411,38 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .sheet .meta dt{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.12em;
   text-transform:uppercase;color:#8F86AF;padding-top:3px}
 .sheet .meta dd{font-weight:600}
+/* the tail of a fighter's page: tape, next, the media rail, and his world */
+.ftape{display:grid;grid-template-columns:1fr 1fr;margin:0;padding:0 18px 4px}
+.ftape div{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.ftape div:nth-child(odd){padding-right:14px}.ftape div:nth-child(even){padding-left:14px}
+.ftape dt{font-size:13px;color:#9C94BE}.ftape dd{margin:0;font-weight:600;font-size:15px}
+.fnext{display:flex;align-items:center;gap:13px;min-height:60px;margin:0 18px;padding:10px 14px;
+  background:#1B1740;border:1px solid rgba(245,200,66,.28);border-radius:12px}
+.fnext .bar{width:5px;align-self:stretch;border-radius:3px;background:#F5C842;flex:none}
+.fnext div{flex:1;min-width:0}.fnext b{display:block;font-weight:600;font-size:17px}
+.fnext span{font-size:13px;color:#9C94BE}.fnext em{font-style:normal;font-size:12px;color:#9C94BE}
+.frail{display:flex;gap:10px;overflow-x:auto;padding:2px 18px 6px;scroll-snap-type:x mandatory}
+.frail::-webkit-scrollbar{display:none}
+.fcard{flex:none;scroll-snap-align:start;width:206px;height:118px;border-radius:12px;position:relative;
+  overflow:hidden;background:linear-gradient(120deg,#241E4A,#14102C);border:1px solid rgba(167,139,250,.25);
+  text-decoration:none;color:inherit;display:block}
+.fcard .tag{position:absolute;left:10px;top:9px;font-family:'Space Mono',monospace;font-size:8px;
+  letter-spacing:.14em;color:#9C94BE}
+.fcard .play{position:absolute;left:12px;bottom:12px;width:30px;height:30px;border-radius:50%;
+  background:#E8312A;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff}
+.fcard .lbl{position:absolute;left:50px;right:10px;bottom:12px}
+.fcard .lbl b{display:block;font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fcard .lbl s{text-decoration:none;font-size:11px;color:#9C94BE}
+.fworld{position:relative;height:340px;margin-top:2px;touch-action:pan-y;user-select:none;overflow:hidden}
+.fworld canvas{position:absolute;inset:0;display:block}
+.fworld .hint{position:absolute;right:16px;top:12px;font-family:'Space Mono',monospace;font-size:9px;
+  letter-spacing:.1em;color:rgba(169,162,198,.7);pointer-events:none;transition:opacity .4s}
+.fsel{display:flex;align-items:center;gap:13px;min-height:56px;padding:10px 18px;background:#191536;
+  border-top:1px solid rgba(255,255,255,.08)}
+.fsel .bar{width:5px;align-self:stretch;border-radius:3px;background:#5FD39A;flex:none}
+.fsel .bar.up{background:#F5C842}
+.fsel div{flex:1;min-width:0}.fsel b{display:block;font-weight:600;font-size:16px}
+.fsel span{font-size:13px;color:#9C94BE}
 .sheet .bout{display:flex;align-items:center;gap:12px;margin:0 18px;padding:12px 0;
   border-bottom:1px solid rgba(255,255,255,.08)}
 .sheet .bout .wl{width:26px;height:26px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;
@@ -4245,7 +4277,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v210';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v214';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -5225,7 +5257,7 @@ async function renderFighter(slug){
   if(!f){
     var got = await q("fighter_cards?select=id,display_name,slug,weight_class,headline_wins,"
       + "headline_losses,headline_draws,rank,is_champion,profile_photo_url,team,"
-      + "nickname,country,gym&slug=eq." + encodeURIComponent(slug) + "&limit=1");
+      + "nickname,country,gym,height,reach,stance,region&slug=eq." + encodeURIComponent(slug) + "&limit=1");
     if(!got){
       retryHandlers['fighter'] = function(){ renderFighter(slug); };
       body.innerHTML = '<div class="evhead">'+backButton()+'</div>' + failHTML("Couldn't load that fighter.", 'fighter');
@@ -5235,6 +5267,15 @@ async function renderFighter(slug){
   }
   if(!f){ body.innerHTML = '<div class="evhead">'+backButton()+'</div>'
     + '<div class="empty">That fighter no longer exists.</div>'; return; }
+
+  /* The roster list is 600 rows and deliberately thin, so it carries none of
+     the tape. Fill it in once per fighter and keep it on the cached object;
+     the second visit needs no request. */
+  if(f.region === undefined){
+    var more = await q("fighter_cards?select=country,gym,height,reach,stance,region&slug=eq."
+      + encodeURIComponent(slug) + "&limit=1");
+    if(more && more[0]) for(var k in more[0]) f[k] = more[0][k];
+  }
 
   var art = f.profile_photo_url
     ? '<span class="init">'+esc(initials(f.display_name))+'</span>'
@@ -5260,23 +5301,54 @@ async function renderFighter(slug){
     + (f.country ? '<dt>From</dt><dd>'+esc(f.country)+'</dd>' : '')
     + (f.gym ? '<dt>Gym</dt><dd>'+esc(f.gym)+'</dd>' : '')
     + '</dl>'
+    + tapeHTML(f)
+    + '<div id="sheet-next"></div>'
     + '<div class="lab"><b>Fights</b><i></i></div>'
-    + '<div id="sheet-bouts"><div class="skel"></div><div class="skel" style="width:70%"></div></div>';
+    + '<div id="sheet-bouts"><div class="skel"></div><div class="skel" style="width:70%"></div></div>'
+    + '<div id="sheet-media"></div>'
+    + '<div id="sheet-world"></div>';
 
   loadBouts(f);
+}
+
+/* THE TALE OF THE TAPE. Every row is a column the database already held and
+   the page never showed. A missing measurement prints nothing rather than a
+   dash: half the roster has no height on file and four dashes reads as broken.
+   Height is stored in inches. */
+function tapeHTML(f){
+  var rows = [];
+  if(f.height) rows.push(['Height', Math.floor(f.height / 12) + '\u2032' + (f.height % 12) + '\u2033']);
+  if(f.reach)  rows.push(['Reach', f.reach + '\u2033']);
+  if(f.stance) rows.push(['Stance', f.stance.charAt(0).toUpperCase() + f.stance.slice(1)]);
+  if(f.gym)    rows.push(['Gym', f.gym]);
+  if(!rows.length) return '';
+  return '<div class="lab"><b>Tale of the tape</b><i></i></div><dl class="ftape">'
+    + rows.map(function(r){ return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(String(r[1])) + '</dd></div>'; }).join('')
+    + '</dl>';
 }
 
 async function loadBouts(f){
   var el = document.getElementById('sheet-bouts');
   if(!el || !f.id){ if(el) el.innerHTML = '<div class="empty">No fight history.</div>'; return; }
-  var rows = await q("fighter_matches?select=won,method,opponent_name,opponent_slug,event_name,"
-    + "event_date,status,is_title_fight&fighter_id=eq." + f.id
-    + "&status=eq.completed&order=event_date.desc.nullslast&limit=15");
+  /* ONE read for the whole tail of the page. The old one asked only for
+     completed bouts, so the page could never say what was coming next. */
+  var all = await q("fighter_matches?select=won,method,opponent_name,opponent_slug,event_name,"
+    + "event_date,status,is_title_fight,vod_link,weight_class&fighter_id=eq." + f.id
+    + "&order=event_date.desc.nullslast&limit=40");
   if(!el.isConnected) return;
-  if(!rows){
+  if(!all){
     retryHandlers['bouts'] = function(){ loadBouts(f); };
     el.innerHTML = failHTML("Couldn't load the fight history.", 'bouts'); return;
   }
+  var rows = all.filter(function(b){ return b.status === 'completed'; });
+  /* A bout is only COMING if its date has not passed. UBA 15 sat unresolved
+     with status `scheduled` a fortnight after it happened, and the page
+     announced it as the next fight. A stale row is not a fixture. */
+  var soon = all.filter(function(b){ return isUpcomingBout(b); })
+                .sort(function(a2, b2){ return new Date(a2.event_date) - new Date(b2.event_date); })[0];
+  paintNext(soon);
+  paintMedia(all);
+  loadFighterWorld(f, all);
   if(!rows.length){ el.innerHTML = '<div class="empty">No fights recorded yet.</div>'; return; }
   el.innerHTML = rows.map(function(b){
     return '<div class="bout"'+(b.opponent_slug ? ' data-slug="'+esc(b.opponent_slug)+'"' : '')+'>'
@@ -5286,6 +5358,185 @@ async function loadBouts(f){
       + (b.is_title_fight ? ' · title' : '')+'</div></div>'
       + '<span class="via">'+esc((b.method||'').toUpperCase())+'</span></div>';
   }).join('');
+}
+
+function isUpcomingBout(b){
+  if(!b || b.status === 'completed' || !b.event_date) return false;
+  return new Date(b.event_date).getTime() > Date.now() - 12 * 3600 * 1000;
+}
+
+/* WHAT IS COMING. Nothing at all if there is nothing scheduled -- an empty
+   "next fight" block on a fighter between camps is worse than no block. */
+function paintNext(b){
+  var el = document.getElementById('sheet-next'); if(!el) return;
+  if(!b){ el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="lab"><b>Next</b><i></i></div>'
+    + '<div class="fnext"' + (b.opponent_slug ? ' data-slug="' + esc(b.opponent_slug) + '"' : '') + '>'
+    + '<span class="bar"></span><div><b>' + esc(b.opponent_name || 'Opponent TBA') + '</b>'
+    + '<span>' + esc(b.event_name || '') + (b.event_date ? ' \u00b7 ' + esc(dstr(b.event_date)) : '')
+    + (b.is_title_fight ? ' \u00b7 title' : '') + '</span></div>'
+    + '<em>' + esc(wc(b.weight_class) || '') + '</em></div>';
+}
+
+/* WHAT HE APPEARS IN. Only what actually exists: a recording is a chip you can
+   press, an event with a poster is a poster. A fighter with neither gets no
+   section rather than an empty rail. */
+function paintMedia(all){
+  var el = document.getElementById('sheet-media'); if(!el) return;
+  var vods = (all || []).filter(function(b){ return b.vod_link; });
+  if(!vods.length){ el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="lab"><b>Appears in</b><i></i></div><div class="frail">'
+    + vods.slice(0, 8).map(function(b){
+        return '<a class="fcard" href="' + esc(b.vod_link) + '" target="_blank" rel="noopener">'
+          + '<span class="tag">FULL FIGHT</span><span class="play">\u25b6</span>'
+          + '<span class="lbl"><b>v ' + esc(b.opponent_name || '') + '</b>'
+          + '<s>' + esc(b.event_name || '') + '</s></span></a>';
+      }).join('')
+    + '</div>';
+}
+
+/* HIS WORLD, and it closes the page. The sphere's centre sits below the frame,
+   so what you see is a horizon rather than a ball, and the view centre is put
+   in the deep south so that everyone from his own country to the far side of
+   the Atlantic lands in the visible band. Sideways drags travel; up and down
+   scrolls the sheet, decided on the first 8px. */
+async function loadFighterWorld(f, all){
+  var el = document.getElementById('sheet-world'); if(!el) return;
+  var home = placeFighter(f.country, f.region, f.slug);
+  if(!home){ el.innerHTML = ''; return; }
+  var slugs = [], seen = {};
+  (all || []).forEach(function(b){ if(b.opponent_slug && !seen[b.opponent_slug]){ seen[b.opponent_slug] = 1; slugs.push(b.opponent_slug); } });
+  var ops = slugs.length
+    ? await q("fighter_cards?select=slug,country,region&slug=in.(" + slugs.join(',') + ")")
+    : [];
+  if(!el.isConnected) return;
+  var at = {}; (ops || []).forEach(function(o){ at[o.slug] = placeFighter(o.country, o.region, o.slug); });
+  var arcs = [];
+  (all || []).forEach(function(b){
+    var p = at[b.opponent_slug]; if(!p) return;
+    if(p[0] === home[0] && p[1] === home[1]) return;
+    if(arcs.some(function(a){ return a.slug === b.opponent_slug; })) return;
+    var done = b.status === 'completed', next = isUpcomingBout(b);
+    arcs.push({ slug: b.opponent_slug, at: p, n: b.opponent_name || b.opponent_slug,
+      ev: b.event_name || '', when: b.event_date ? dstr(b.event_date) : '',
+      up: next, res: done ? (b.won ? 'W' : 'L') : (next ? 'NEXT' : ''),
+      how: done ? String(b.method || '').toUpperCase() : '' });
+  });
+  if(!arcs.length){ el.innerHTML = ''; return; }
+  arcs.sort(function(a, b){ return (b.up ? 1 : 0) - (a.up ? 1 : 0); });
+  el.innerHTML = '<div class="lab"><b>His world</b><i></i></div>'
+    + '<div class="fworld"><canvas></canvas><div class="hint">drag to travel</div></div>'
+    + '<div class="fsel"><span class="bar"></span><div><b>&nbsp;</b><span>&nbsp;</span></div></div>';
+  mountFighterGlobe(el.querySelector('.fworld'), home, arcs, f.display_name, el.querySelector('.fsel'));
+}
+
+function mountFighterGlobe(stage, home, arcs, name, selEl){
+  var rad = Math.PI / 180;   /* the home globe's own `rad` is scoped inside startWorld() */
+  var cv = stage.querySelector('canvas'), cx = cv.getContext('2d');
+  var W = stage.clientWidth || 393, H = 340, R = W * 0.865, CY = H - 60 + 0.3376 * R, CX = W / 2;
+  var lam = 66 * rad, tilt = -33 * rad, vel = 0, drag = null, axis = null, sel = 0, t0 = performance.now();
+  var DPR = Math.min(devicePixelRatio || 1, 1.5), raf = 0;
+  cv.width = W * DPR; cv.height = H * DPR; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  cx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  function proj(la, lo, lift){ la *= rad; lo = lo * rad + lam; lift = lift || 1;
+    var cl = Math.cos(la), sl = Math.sin(la), cp = Math.cos(tilt), sp = Math.sin(tilt);
+    var z = sp * sl + cp * cl * Math.cos(lo);
+    return { x: CX + R * lift * cl * Math.sin(lo), y: CY - R * lift * (cp * sl - sp * cl * Math.cos(lo)), v: z > 0, z: z }; }
+  function arcPts(A, B){ var out = [], seg = 44;
+    for(var t = 0; t <= seg; t++){ var fr = t / seg, lo = A[1] + (B[1] - A[1]) * fr;
+      if(Math.abs(B[1] - A[1]) > 180) lo += (A[1] < B[1] ? -360 : 360) * fr;
+      out.push(proj(A[0] + (B[0] - A[0]) * fr, lo, 1 + Math.sin(fr * Math.PI) * .035)); } return out; }
+  function line(pts, col, w, glow){ cx.beginPath(); var st = false;
+    for(var i = 0; i < pts.length; i++){ var p = pts[i];
+      if(p.z > -0.02){ st ? cx.lineTo(p.x, p.y) : cx.moveTo(p.x, p.y); st = true; } else st = false; }
+    cx.strokeStyle = col; cx.lineWidth = w; if(glow){ cx.shadowBlur = glow; cx.shadowColor = col; }
+    cx.stroke(); cx.shadowBlur = 0; }
+  function tag(p, txt, col, alpha, bold){ if(p.y < 22) return;
+    cx.font = (bold ? 'bold ' : '') + '11px Barlow, system-ui, sans-serif';
+    cx.textAlign = 'center'; cx.textBaseline = 'bottom'; cx.globalAlpha = alpha;
+    cx.lineWidth = 3.5; cx.lineJoin = 'round'; cx.strokeStyle = 'rgba(4,3,12,.92)';
+    cx.strokeText(txt, p.x, p.y - 11); cx.fillStyle = col; cx.fillText(txt, p.x, p.y - 11); cx.globalAlpha = 1; }
+  function frame(){
+    if(!stage.isConnected){ raf = 0; return; }
+    var el2 = (performance.now() - t0) / 1000;
+    if(!drag){ lam += 0.0006 + vel; vel *= 0.94; }
+    cx.clearRect(0, 0, W, H);
+    var sky = cx.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#02010A'); sky.addColorStop(1, '#0B0824');
+    cx.fillStyle = sky; cx.fillRect(0, 0, W, H);
+    var h = 7; for(var i = 0; i < 60; i++){
+      h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0; var sx = (h & 0xffff) / 65535 * W;
+      h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0; var sy = (h & 0xffff) / 65535 * (H * .42);
+      h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0;
+      cx.fillStyle = 'rgba(255,255,255,' + (.16 + (h & 0xff) / 255 * .5).toFixed(2) + ')';
+      cx.beginPath(); cx.arc(sx, sy, .7 + (h & 1) * .5, 0, 7); cx.fill(); }
+    var ag = cx.createRadialGradient(CX, CY, R * .985, CX, CY, R * 1.075);
+    ag.addColorStop(0, 'rgba(150,120,255,.45)'); ag.addColorStop(1, 'rgba(150,120,255,0)');
+    cx.beginPath(); cx.arc(CX, CY, R * 1.075, 0, 7); cx.fillStyle = ag; cx.fill();
+    var g = cx.createRadialGradient(CX - R * .25, CY - R * .55, R * .05, CX, CY, R);
+    g.addColorStop(0, 'rgba(98,76,178,.85)'); g.addColorStop(.5, 'rgba(48,34,100,.9)'); g.addColorStop(1, 'rgba(12,8,28,.95)');
+    cx.beginPath(); cx.arc(CX, CY, R, 0, 7); cx.fillStyle = g; cx.fill();
+    cx.save(); cx.beginPath(); cx.arc(CX, CY, R, 0, 7); cx.clip();
+    cx.fillStyle = 'rgba(165,145,240,.30)'; cx.strokeStyle = 'rgba(210,196,255,.36)'; cx.lineWidth = .8;
+    for(var r2 = 0; r2 < LAND.length; r2++){ var ring = LAND[r2], ok = true; cx.beginPath();
+      for(var pi = 0; pi < ring.length; pi++){ var pp = proj(ring[pi][1], ring[pi][0]); if(!pp.v){ ok = false; break; }
+        pi ? cx.lineTo(pp.x, pp.y) : cx.moveTo(pp.x, pp.y); }
+      if(ok){ cx.closePath(); cx.fill(); cx.stroke(); } }
+    cx.lineWidth = .6; cx.strokeStyle = 'rgba(167,139,250,.14)';
+    for(var lo2 = -180; lo2 < 180; lo2 += 15){ cx.beginPath(); var on = false;
+      for(var la = -90; la <= 90; la += 4){ var p = proj(la, lo2); if(p.v){ on ? cx.lineTo(p.x, p.y) : cx.moveTo(p.x, p.y); on = true; } else on = false; } cx.stroke(); }
+    for(var la2 = -60; la2 <= 60; la2 += 15){ cx.beginPath(); var o2 = false;
+      for(var lo3 = -180; lo3 <= 180; lo3 += 4){ var qq = proj(la2, lo3); if(qq.v){ o2 ? cx.lineTo(qq.x, qq.y) : cx.moveTo(qq.x, qq.y); o2 = true; } else o2 = false; } cx.stroke(); }
+    cx.restore();
+    arcs.forEach(function(a, i){
+      var pts = arcPts(home, a.at), on = (i === sel);
+      var col = a.up ? '255,214,120' : '200,185,255', al = on ? 1 : (a.up ? .9 : .5);
+      line(pts, 'rgba(' + col + ',' + (al * .14) + ')', on ? 9 : 6);
+      line(pts, 'rgba(' + col + ',' + al + ')', on ? 2.4 : (a.up ? 1.8 : 1.2), on ? 10 : (a.up ? 7 : 0));
+    });
+    var hp = proj(home[0], home[1]);
+    if(hp.v){ var pl = 5 + Math.sin(el2 * 2.4) * 2.6;
+      cx.beginPath(); cx.arc(hp.x, hp.y, pl + 9, 0, 7); cx.fillStyle = 'rgba(95,211,154,.13)'; cx.fill();
+      cx.beginPath(); cx.arc(hp.x, hp.y, 5, 0, 7); cx.fillStyle = '#EAFFF6';
+      cx.shadowBlur = 18; cx.shadowColor = '#5FD39A'; cx.fill(); cx.shadowBlur = 0;
+      tag(hp, String(name || '').toUpperCase(), '#5FD39A', 1, true); }
+    arcs.forEach(function(a, i){
+      var p = proj(a.at[0], a.at[1]); if(!p.v){ a._p = null; return; } a._p = p;
+      var fade = Math.max(0, Math.min(1, (p.z - 0.004) / 0.12)); if(i === sel) fade = 1; if(fade <= 0) return;
+      var on = (i === sel), col = a.up ? '#F5C842' : '#EAFFF6';
+      cx.globalAlpha = fade; cx.beginPath(); cx.arc(p.x, p.y, on ? 6 : 4, 0, 7); cx.fillStyle = col;
+      cx.shadowBlur = on ? 16 : 8; cx.shadowColor = a.up ? '#F5C842' : '#CDBEFF'; cx.fill(); cx.shadowBlur = 0;
+      tag(p, a.n.toUpperCase() + (a.res ? '  \u00b7  ' + a.res : ''), col, fade, on); cx.globalAlpha = 1; });
+    raf = requestAnimationFrame(frame);
+  }
+  stage.addEventListener('pointerdown', function(e){
+    drag = { x: e.clientX, y: e.clientY, l: lam, moved: false }; axis = null; vel = 0;
+    var hh = stage.querySelector('.hint'); if(hh) hh.style.opacity = 0; });
+  stage.addEventListener('pointermove', function(e){
+    if(!drag) return;
+    var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if(!axis){ if(Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      axis = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+      if(axis === 'h' && stage.setPointerCapture) stage.setPointerCapture(e.pointerId); }
+    if(axis !== 'h') return;
+    drag.moved = true; e.preventDefault();
+    var next = drag.l + dx / R * 1.9; vel = (next - lam) * .55; lam = next; });
+  function up(e){
+    if(drag && !drag.moved && axis !== 'v'){
+      var r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top, best = -1, bd = 44;
+      arcs.forEach(function(a, i){ if(!a._p) return; var d = Math.hypot(a._p.x - mx, a._p.y - my); if(d < bd){ bd = d; best = i; } });
+      if(best >= 0) select(best);
+    }
+    drag = null; axis = null; }
+  stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
+  stage.addEventListener('touchmove', function(e){ if(axis === 'h') e.preventDefault(); }, { passive: false });
+  function select(i){
+    sel = i; var a = arcs[i]; if(!selEl) return;
+    selEl.querySelector('.bar').className = 'bar' + (a.up ? ' up' : '');
+    selEl.querySelector('b').textContent = (a.up ? 'Next: ' : '') + name + ' v ' + a.n;
+    selEl.querySelector('span:not(.bar)').textContent =
+      [a.ev, a.when, a.up ? '' : (a.res + (a.how ? ' \u00b7 ' + a.how : ''))].filter(Boolean).join(' \u00b7 ');
+  }
+  select(0); frame();
 }
 
 /* ── news article ── */
