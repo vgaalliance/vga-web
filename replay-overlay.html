@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VGA replay overlay</title>
+<!--
+  VGA replay overlay  (the OBS browser source)
+
+  In OBS: add a Browser source, tick "Local file", point it at this file,
+  set width 1920 height 1080, and leave "Shutdown source when not visible" OFF
+  so it stays connected between scenes.
+
+  Fill in the same two keys as the control page. Nothing else to configure.
+  This page has no controls of its own; it only obeys the control page.
+
+  Test without Supabase: open it in a browser and add ?test=1 to the address.
+-->
+<style>
+  html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+  #box{position:absolute;inset:0}
+  #video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+  #ink{position:absolute;inset:0;width:100%;height:100%}
+  #warn{position:absolute;left:16px;bottom:16px;font:13px system-ui;color:#fff;background:rgba(200,60,60,.85);
+        padding:6px 10px;border-radius:4px;display:none}
+</style>
+</head>
+<body>
+<div id="box">
+  <video id="video" playsinline preload="auto"></video>
+  <canvas id="ink"></canvas>
+</div>
+<div id="warn"></div>
+
+<script>
+// ---------- config: same two values as the control page ----------
+const SUPABASE_URL = "https://emzlivoykbhhjcugupit.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF";
+
+const video = document.getElementById("video");
+const ink   = document.getElementById("ink");
+const ctx   = ink.getContext("2d");
+const warn  = document.getElementById("warn");
+
+let strokes = [];   // finished strokes
+let live    = null; // the stroke the analyst is drawing right now
+
+// ---------- canvas ----------
+function fit(){
+  ink.width  = ink.clientWidth  * devicePixelRatio;
+  ink.height = ink.clientHeight * devicePixelRatio;
+  redraw();
+}
+addEventListener("resize", fit);
+
+function redraw(){
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,ink.width,ink.height);
+  for (const s of strokes) draw(s);
+  if (live) draw(live);
+}
+
+// Identical to the control page, so what the analyst sees is what goes on air.
+function draw(s){
+  const W = ink.width, H = ink.height, k = W/1920;
+  ctx.lineCap = ctx.lineJoin = "round"; ctx.strokeStyle = s.color; ctx.lineWidth = s.width*k*1.6;
+  ctx.shadowColor = "rgba(0,0,0,.6)"; ctx.shadowBlur = 4*k;
+  const P = s.pts.map(([x,y]) => [x*W, y*H]);
+  ctx.beginPath();
+  if (s.tool === "pen"){ ctx.moveTo(...P[0]); for (const p of P.slice(1)) ctx.lineTo(...p); ctx.stroke(); return; }
+  if (P.length < 2) return;
+  const [a,b] = P;
+  if (s.tool === "line" || s.tool === "arrow"){
+    ctx.moveTo(...a); ctx.lineTo(...b); ctx.stroke();
+    if (s.tool === "arrow"){
+      const ang = Math.atan2(b[1]-a[1], b[0]-a[0]), L = 18*k + s.width*k*2;
+      ctx.beginPath(); ctx.moveTo(...b);
+      ctx.lineTo(b[0]-L*Math.cos(ang-0.5), b[1]-L*Math.sin(ang-0.5));
+      ctx.moveTo(...b);
+      ctx.lineTo(b[0]-L*Math.cos(ang+0.5), b[1]-L*Math.sin(ang+0.5));
+      ctx.stroke();
+    }
+  }
+  if (s.tool === "circle"){
+    const rx = Math.abs(b[0]-a[0])/2, ry = Math.abs(b[1]-a[1])/2;
+    ctx.ellipse((a[0]+b[0])/2, (a[1]+b[1])/2, rx, ry, 0, 0, Math.PI*2); ctx.stroke();
+  }
+}
+
+// ---------- obey the control page ----------
+// Seeks are only applied when they differ by more than a frame, so ordinary
+// playback drift doesn't cause a visible jump on air.
+function apply(m){
+  switch (m.type){
+    case "load":   video.src = m.url; video.load(); strokes = []; live = null; redraw(); break;
+    case "play":   video.play().catch(()=>{}); break;
+    case "pause":  video.pause(); break;
+    case "seek":   if (Math.abs(video.currentTime - m.t) > 0.05) video.currentTime = m.t; break;
+    case "rate":   video.playbackRate = m.r; break;
+    case "live":   live = m.stroke; redraw(); break;
+    case "stroke": live = null; strokes.push(m); redraw(); break;
+    case "undo":   strokes.pop(); live = null; redraw(); break;
+    case "clear":  strokes = []; live = null; redraw(); break;
+  }
+}
+
+// ---------- connect ----------
+async function connect(){
+  if (new URLSearchParams(location.search).has("test")) return testMode();
+
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY){
+    warn.style.display = "block";
+    warn.textContent = "Overlay: add your Supabase keys to this file";
+    return;
+  }
+  await new Promise((ok,no)=>{ const s=document.createElement("script");
+    s.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"; s.onload=ok; s.onerror=no;
+    document.head.appendChild(s); });
+
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  sb.channel("replay")
+    .on("broadcast", { event:"replay" }, p => apply(p.payload))
+    .subscribe(s => {
+      const bad = s !== "SUBSCRIBED";
+      warn.style.display = bad ? "block" : "none";
+      if (bad) warn.textContent = "Overlay: not connected to the control page";
+    });
+}
+
+// ---------- test mode ----------
+// ?test=1 draws a moving arrow and circle so you can check the source is
+// keyed correctly in OBS without needing Supabase or a clip.
+function testMode(){
+  video.style.background = "transparent";
+  let t = 0;
+  setInterval(() => {
+    t += 0.03;
+    strokes = [
+      { tool:"arrow",  color:"#ffd23f", width:6, pts:[[0.25,0.7],[0.45+0.05*Math.sin(t),0.4]] },
+      { tool:"circle", color:"#3fd7ff", width:6, pts:[[0.55,0.25],[0.75,0.55]] }
+    ];
+    redraw();
+  }, 33);
+}
+
+connect().catch(e => { warn.style.display="block"; warn.textContent="Overlay: couldn't reach Supabase"; console.error(e); });
+fit();
+</script>
+</body>
+</html>
