@@ -19,6 +19,8 @@
   html,body{margin:0;height:100%;background:transparent;overflow:hidden}
   #box{position:absolute;inset:0}
   #video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+  /* No clip yet: see-through, not a black 1920x1080 box over the scene. */
+  #video:not([src]){background:transparent}
   #ink{position:absolute;inset:0;width:100%;height:100%}
   #warn{position:absolute;left:16px;bottom:16px;font:13px system-ui;color:#fff;background:rgba(200,60,60,.85);
         padding:6px 10px;border-radius:4px;display:none}
@@ -37,6 +39,10 @@ const SUPABASE_URL = "https://emzlivoykbhhjcugupit.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF";
 
 const video = document.getElementById("video");
+// 10% until the control page says otherwise -- a replay must never hit the air
+// at full volume just because the overlay was refreshed before the analyst's
+// page reconnected.
+video.volume = 0.10;
 const ink   = document.getElementById("ink");
 const ctx   = ink.getContext("2d");
 const warn  = document.getElementById("warn");
@@ -96,6 +102,7 @@ function apply(m){
     case "pause":  video.pause(); break;
     case "seek":   if (Math.abs(video.currentTime - m.t) > 0.05) video.currentTime = m.t; break;
     case "rate":   video.playbackRate = m.r; break;
+    case "volume": video.volume = Math.max(0, Math.min(1, +m.v || 0)); video.muted = !!m.muted; break;
     case "live":   live = m.stroke; redraw(); break;
     case "stroke": live = null; strokes.push(m); redraw(); break;
     case "undo":   strokes.pop(); live = null; redraw(); break;
@@ -117,10 +124,13 @@ async function connect(){
     document.head.appendChild(s); });
 
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  sb.channel("replay")
+  const ch = sb.channel("replay")
     .on("broadcast", { event:"replay" }, p => apply(p.payload))
     .subscribe(s => {
       const bad = s !== "SUBSCRIBED";
+      // Ask the control page for whatever is on screen, so a refresh lands back
+      // on the clip instead of sitting empty until the next click.
+      if (!bad) ch.send({ type:"broadcast", event:"replay", payload:{ type:"hello" } });
       warn.style.display = bad ? "block" : "none";
       if (bad) warn.textContent = "Overlay: not connected to the control page";
     });
