@@ -2423,16 +2423,16 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .fnext span{font-size:13px;color:#9C94BE}.fnext em{font-style:normal;font-size:12px;color:#9C94BE}
 .frail{display:flex;gap:10px;overflow-x:auto;padding:2px 18px 6px;scroll-snap-type:x mandatory}
 .frail::-webkit-scrollbar{display:none}
-.fcard{flex:none;scroll-snap-align:start;width:206px;height:118px;border-radius:12px;position:relative;
+.fmedia{flex:none;scroll-snap-align:start;width:206px;height:118px;border-radius:12px;position:relative;
   overflow:hidden;background:linear-gradient(120deg,#241E4A,#14102C);border:1px solid rgba(167,139,250,.25);
   text-decoration:none;color:inherit;display:block}
-.fcard .tag{position:absolute;left:10px;top:9px;font-family:'Space Mono',monospace;font-size:8px;
+.fmedia .tag{position:absolute;left:10px;top:9px;font-family:'Space Mono',monospace;font-size:8px;
   letter-spacing:.14em;color:#9C94BE}
-.fcard .play{position:absolute;left:12px;bottom:12px;width:30px;height:30px;border-radius:50%;
+.fmedia .play{position:absolute;left:12px;bottom:12px;width:30px;height:30px;border-radius:50%;
   background:#E8312A;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff}
-.fcard .lbl{position:absolute;left:50px;right:10px;bottom:12px}
-.fcard .lbl b{display:block;font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fcard .lbl s{text-decoration:none;font-size:11px;color:#9C94BE}
+.fmedia .lbl{position:absolute;left:50px;right:10px;bottom:12px}
+.fmedia .lbl b{display:block;font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fmedia .lbl s{text-decoration:none;font-size:11px;color:#9C94BE}
 .fworld{position:relative;height:340px;margin-top:2px;touch-action:pan-y;user-select:none;overflow:hidden}
 .fworld canvas{position:absolute;inset:0;display:block}
 .fworld .hint{position:absolute;right:16px;top:12px;font-family:'Space Mono',monospace;font-size:9px;
@@ -5387,7 +5387,7 @@ function paintMedia(all){
   if(!vods.length){ el.innerHTML = ''; return; }
   el.innerHTML = '<div class="lab"><b>Appears in</b><i></i></div><div class="frail">'
     + vods.slice(0, 8).map(function(b){
-        return '<a class="fcard" href="' + esc(b.vod_link) + '" target="_blank" rel="noopener">'
+        return '<a class="fmedia" href="' + esc(b.vod_link) + '" target="_blank" rel="noopener">'
           + '<span class="tag">FULL FIGHT</span><span class="play">\u25b6</span>'
           + '<span class="lbl"><b>v ' + esc(b.opponent_name || '') + '</b>'
           + '<s>' + esc(b.event_name || '') + '</s></span></a>';
