@@ -2361,7 +2361,6 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .world .dpkcap.on{opacity:1}
 .world .seat,#feedtxt,#bouttxt{transition:opacity .5s}
 .world.picking .seat,.world.picking #feedtxt,.world.picking #bouttxt{opacity:0 !important;pointer-events:none}
-.world.picking .grab{pointer-events:none}
 .dfly{position:fixed !important;left:0;top:0;z-index:95;pointer-events:none;will-change:transform;margin:0}
 .dfly.wrapper{width:42px;height:56px;border-radius:6px;transform-origin:50% 50%;box-shadow:0 0 22px rgba(176,139,250,.6)}
 #tear.daily{background:rgba(10,7,26,.42);-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2)}
@@ -4324,7 +4323,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v215';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v216';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -4459,9 +4458,11 @@ function startWorld(){
   var gb = document.getElementById('wgrab');
   var lam = -1.6, spin = 0.0016, drag = null, vel = 0, tilt = -0.36, rad = Math.PI / 180;
   /* the daily pick parents its packs to points on this sphere, so it reads the
-     same rotation the frame draws with, and stills it while the packs are up */
+     same rotation the frame draws with. The planet keeps turning and still
+     takes a drag while they are up -- the packs ride on it. `hold` only stops
+     the face-the-card ease, which would swing the row away from under you. */
   worldCtl = { get lam(){ return lam; }, get tilt(){ return tilt; }, get CX(){ return CX; }, CY: CY, R: R,
-    still: function(on){ spin = on ? 0 : 0.0016; vel = 0; if(on) worldFaced = true; } };
+    hold: function(){ worldFaced = true; } };
   function proj(la, lo){ la *= rad; lo = lo * rad + lam; var cl = Math.cos(la), sl = Math.sin(la), cp = Math.cos(tilt), sp = Math.sin(tilt);
     var z = sp * sl + cp * cl * Math.cos(lo); return { x: CX + R * cl * Math.sin(lo), y: CY - R * (cp * sl - sp * cl * Math.cos(lo)), v: z > 0, z: z }; }
   var hidden = false, raf = 0, front = -1, showUntil = 0;
@@ -7317,7 +7318,7 @@ async function showSpread(pulls, pity, daily){
 /* ── THE DAILY PICK ── the first open of each ET day, three single-card
    packs float over the face of the globe, each parented to a real point on it
    (a row across the latitude you are looking at, following the curve), and
-   the planet holds still while they are up. Tap one: the other two drift off,
+   the planet keeps turning -- spin it and they ride along. Tap one: the other two drift off,
    it flies into the real tear, and the rip mints ONE card through
    app_daily_pick(). The other two are rolled after the pick and shown as
    "you passed on" -- never minted. Day 7 of the streak rips a 5-card pack.
@@ -7346,7 +7347,7 @@ async function maybeDailyPick(){
   if(!t || t.ok === false || t.picked !== false || currentTab !== 'home'){ dailyUp = false; return; }
   var sd = Number(t.streak_day) || 1, g = worldCtl, rad = Math.PI / 180;
   var world = document.getElementById('world'), orb = document.getElementById('dpk'), cap = document.getElementById('dpkcap');
-  g.still(true); world.classList.add('picking');
+  g.hold(); world.classList.add('picking');
   var c = -g.lam / rad, la = g.tilt / rad + 6, PW = 42, PH = 56;
   function P3(la, lo, lift){ la *= rad; lo = lo * rad + g.lam; var cl = Math.cos(la), sl = Math.sin(la), cp = Math.cos(g.tilt), sp = Math.sin(g.tilt);
     return { x: g.CX + g.R * lift * cl * Math.sin(lo), y: g.CY - g.R * lift * (cp * sl - sp * cl * Math.cos(lo)), z: sp * sl + cp * cl * Math.cos(lo) }; }
@@ -7452,7 +7453,6 @@ function dailyEnd(){
   var orb = document.getElementById('dpk'); if(orb) orb.innerHTML = '';
   var cap = document.getElementById('dpkcap'); if(cap) cap.classList.remove('on');
   var w = document.getElementById('world'); if(w) w.classList.remove('picking');
-  if(worldCtl) worldCtl.still(false);
   /* dailyUp stays true: the day is picked, and this session never asks again */
 }
 
