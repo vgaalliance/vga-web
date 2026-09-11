@@ -2347,6 +2347,51 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   transition:background .2s,transform .2s}
 #tear .sdots i.on{background:#F5C842;transform:scale(1.35)}
 #tear .sdone{width:100%}
+/* ── the daily pick ── three packs parented to the globe, the rip over a
+   blurred Home, the streak and what you passed on */
+.world .dpk{position:absolute;inset:0;z-index:7;pointer-events:none}
+.world .dpk .wrapper{position:absolute;left:0;top:0;width:42px;height:56px;border-radius:6px;transition:none;pointer-events:auto;
+  transform-origin:50% 100%;will-change:transform,opacity;box-shadow:0 0 16px rgba(176,139,250,.5),0 6px 12px rgba(0,0,0,.45)}
+.dpk .wrapper .tear,.dfly.wrapper .tear{top:8px;height:3px}.dpk .wrapper .sz,.dfly.wrapper .sz{font-size:13px;left:4px;bottom:3px}
+.dpk .wrapper .sz em,.dfly.wrapper .sz em{font-size:3.5px}
+.world .dshd{position:absolute;left:0;top:0;width:26px;height:8px;margin:-4px 0 0 -13px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(ellipse,rgba(0,0,0,.55),rgba(0,0,0,0) 70%)}
+.world .dpkcap{position:absolute;left:0;right:0;top:300px;z-index:7;text-align:center;pointer-events:none;opacity:0;transition:opacity .6s;
+  font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:#F5C842;text-shadow:0 0 12px rgba(245,200,66,.5)}
+.world .dpkcap.on{opacity:1}
+.world .seat,#feedtxt,#bouttxt{transition:opacity .5s}
+.world.picking .seat,.world.picking #feedtxt,.world.picking #bouttxt{opacity:0 !important;pointer-events:none}
+.world.picking .grab{pointer-events:none}
+.dfly{position:fixed !important;left:0;top:0;z-index:95;pointer-events:none;will-change:transform;margin:0}
+.dfly.wrapper{width:42px;height:56px;border-radius:6px;transform-origin:50% 50%;box-shadow:0 0 22px rgba(176,139,250,.6)}
+#tear.daily{background:rgba(10,7,26,.42);-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2)}
+#tear .sin.dly .sfan{height:250px}
+#tear .sin.dly .dsk{margin-bottom:64px}   /* the raised card rises 74px and grows 1.4x out of the fan; without this it sits on the streak */
+#tear .dsk{width:100%;margin-bottom:6px}
+#tear .dskh{display:flex;align-items:baseline;justify-content:space-between;padding:0 4px}
+#tear .dskh b{font-family:'Bebas Neue',sans-serif;font-size:22px;font-weight:400;letter-spacing:.03em;color:#EFEAFF}
+#tear .dskh span{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;color:#A9A2C6;text-transform:uppercase}
+#tear .dskr{display:flex;gap:5px;margin-top:7px}
+#tear .dd{flex:1;height:40px;border-radius:8px;background:rgba(26,22,54,.7);border:1px solid #2A2547;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;font-family:'Space Mono',monospace;font-size:7.5px;color:#A9A2C6;transition:all .5s}
+#tear .dd b{font-family:'Bebas Neue',sans-serif;font-size:15px;font-weight:400;color:#EDEAF6}
+#tear .dd.done{background:#15352A;border-color:#2E7A57}#tear .dd.done b{color:#5FD39A}
+#tear .dd.today{border-color:#A78BFA;box-shadow:0 0 0 2px rgba(167,139,250,.3)}
+#tear .dd.seven{background:linear-gradient(135deg,#5A420C,#C99A28);border-color:#F5C842}#tear .dd.seven b{color:#FFF1B8}
+#tear .dpass{width:100%;display:flex;flex-direction:column;align-items:center;margin:-4px 0 12px;animation:dpin .4s .9s both}
+#tear .dpl{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.18em;color:#A9A2C6;text-transform:uppercase}
+#tear .dpr{display:flex;gap:16px;margin-top:8px}
+#tear .dpo{display:flex;flex-direction:column;align-items:center;gap:5px}
+#tear .dpc{width:126px;zoom:.5;pointer-events:none}
+#tear .dpc .slab .plate .l3 .bars{display:none}
+#tear .dpn{width:126px;height:176px;border-radius:10px;display:flex;align-items:center;justify-content:center;text-align:center;padding:10px;box-sizing:border-box;
+  background:linear-gradient(160deg,#241D48,#120E28);border:2px solid rgba(255,255,255,.2);font-family:'Bebas Neue',sans-serif;font-size:24px;color:#EFEAFF}
+#tear .dpo span{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.1em;color:#A9A2C6;text-transform:uppercase}
+#tear .dpo.close span{color:#5AA8FF;font-weight:700}
+#tear .dpo.close .dpc{filter:drop-shadow(0 0 10px rgba(90,168,255,.7))}
+@keyframes dpin{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes dpop{0%{transform:scale(1)}40%{transform:scale(1.28);box-shadow:0 0 0 6px rgba(245,200,66,.35),0 0 30px rgba(245,200,66,.6)}100%{transform:scale(1)}}
+.dpop{animation:dpop .7s cubic-bezier(.2,.8,.2,1)}
 @media (prefers-reduced-motion:reduce){
   #tear .scard{transition:opacity .2s}
   #tear .scard.holo:after{animation:none;opacity:.35}
@@ -2784,6 +2829,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
       <path id="boutarc" d="M 0,0" fill="none"/>
       <text id="bouttxt"><textPath href="#boutarc" startOffset="50%" text-anchor="middle"></textPath></text></svg>
     <div class="gx"></div><div class="grab" id="wgrab"></div><div id="seats"></div>
+    <div class="dpk" id="dpk"></div><div class="dpkcap" id="dpkcap"></div>
   </div>
   <div class="wmband" id="wmband" aria-hidden="true"></div>
   <!-- the old hero, kept as hidden stubs: renderFan, the countdown tick and
@@ -3383,6 +3429,7 @@ async function loadHome(){
   await Promise.all([loadLive(), loadRanks(), loadHomeNews(), loadStrip(), loadWorldData()]);
   startWorld(); renderNextEvent();
   buildArcFaces();
+  maybeDailyPick();
 }
 
 
@@ -4277,7 +4324,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v214';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v215';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -4411,6 +4458,10 @@ function startWorld(){
   var rsz; addEventListener('resize', function(){ clearTimeout(rsz); rsz = setTimeout(function(){ size(); placeSeats(); }, 120); });
   var gb = document.getElementById('wgrab');
   var lam = -1.6, spin = 0.0016, drag = null, vel = 0, tilt = -0.36, rad = Math.PI / 180;
+  /* the daily pick parents its packs to points on this sphere, so it reads the
+     same rotation the frame draws with, and stills it while the packs are up */
+  worldCtl = { get lam(){ return lam; }, get tilt(){ return tilt; }, get CX(){ return CX; }, CY: CY, R: R,
+    still: function(on){ spin = on ? 0 : 0.0016; vel = 0; if(on) worldFaced = true; } };
   function proj(la, lo){ la *= rad; lo = lo * rad + lam; var cl = Math.cos(la), sl = Math.sin(la), cp = Math.cos(tilt), sp = Math.sin(tilt);
     var z = sp * sl + cp * cl * Math.cos(lo); return { x: CX + R * cl * Math.sin(lo), y: CY - R * (cp * sl - sp * cl * Math.cos(lo)), v: z > 0, z: z }; }
   var hidden = false, raf = 0, front = -1, showUntil = 0;
@@ -4585,7 +4636,7 @@ function startWorld(){
       if(sz >= .6){ cx.globalAlpha = al * .75 * sz * sz; cx.drawImage(GLOW, p2.x - gr, p2.y - gr, gr * 2, gr * 2); cx.globalAlpha = 1; }   /* the crowd gets no glow: 120 fewer draws a frame */
       cx.beginPath(); cx.arc(p2.x, p2.y, .6 + .8 * sz, 0, 7); cx.fillStyle = 'rgba(230,255,246,' + al + ')'; cx.fill(); }
     if(!drag){
-      if(worldFace && !worldFaced){
+      if(worldFace && !worldFaced && !dailyUp){
         var tl = -worldFace[1] * rad, dfl = tl - lam; dfl = Math.atan2(Math.sin(dfl), Math.cos(dfl));   // shortest way round
         var tt = Math.max(-0.3, Math.min(0.72, worldFace[0] * rad)), dft = tt - tilt;   // the card's latitude to the centre of the disc (positive tilt shows the north)
         lam += dfl * 0.07; tilt += dft * 0.07;
@@ -4601,7 +4652,7 @@ function startWorld(){
   function up(){ if(drag) showUntil = Date.now() + 4000; drag = null; }
   addEventListener('pointerup', up); addEventListener('pointercancel', up);
 }
-var worldResume = null;
+var worldResume = null, worldCtl = null;
 
 /* The feed line rides the arc under the sphere: the same strip text the old
    home showed in a bar, now on the world. */
@@ -6799,18 +6850,23 @@ function openTear(itemId, name){
           .map(function(){ return '<i></i>'; }).join('') + '</div>'
       + '<div class="tshd"></div><div class="trim" id="tr"></div>'
       + '<div class="tbody" id="tb"><div class="tskin"></div>'
-        + '<span class="tsz">' + size + '<em>cards</em></span></div>'
+        + '<span class="tsz">' + size + '<em>' + (size === 1 ? 'card' : 'cards') + '</em></span></div>'
       + '<div class="tflap" id="tt"></div><span class="tnotch" id="tn"></span>'
       + '<div class="tgrab" id="tg"></div>'
     + '</div>'
     + '<div class="thint" id="th">Drag the strip across &rarr;</div>'
     + '<button class="tclose" id="tx">Not now</button>'
     + '</div>';
+  /* the daily pick rips over Home, blurred, not over a black room -- and has
+     no Not now: the day is spent on the pick, not on the rip */
+  var daily = String(itemId).indexOf('daily:') === 0;
+  el.classList.toggle('daily', daily);
   el.classList.add('live');
   void el.offsetWidth;
   el.classList.add('shown');
   wireTear(itemId);
   document.getElementById('tx').onclick = closeTear;
+  if(daily) document.getElementById('tx').style.display = 'none';
 }
 function closeTear(){
   var el = document.getElementById('tear');
@@ -7077,7 +7133,13 @@ function wireTear(itemId){
     top.style.clipPath = flapPath(pts, OVER);
     release(vel);
     hint.textContent = 'Opening\u2026';
-    var r = await rpc('app_open_pack', { p_player_item_id: itemId });
+    /* a daily pick has no item behind it: the slot IS the pick, and the
+       server claims the day before it mints. A refusal cannot reseal -- there
+       is nothing to go back to -- so it says why and puts Home back. */
+    var daily = String(itemId).indexOf('daily:') === 0;
+    var r = daily ? await rpc('app_daily_pick', { p_slot: +String(itemId).slice(6) })
+                  : await rpc('app_open_pack', { p_player_item_id: itemId });
+    if(!r.ok && daily){ toast(r.message || 'The daily pick did not go through.', true); closeTear(); dailyEnd(); dailyUp = false; return; }
     if(!r.ok){
       /* Reseal. A torn pack that never opened is worse than an error. */
       opened = false;
@@ -7091,7 +7153,7 @@ function wireTear(itemId){
       return;
     }
     kick.textContent = r.message === 'god' ? 'God pack' : 'Opened';
-    setTimeout(function(){ showSpread(r.pulls, r.pity_hit); }, 240);
+    setTimeout(function(){ showSpread(r.pulls, r.pity_hit, daily ? r : null); }, 240);
     loadBinder();
   }
 }
@@ -7101,7 +7163,7 @@ function wireTear(itemId){
    fan around whichever card was active, which threw the others off to one
    side; a real hand does not rearrange when you pull a card out of it. */
 var RSORT = ['common','uncommon','rare','mystic','legendary','prismatic'];
-async function showSpread(pulls, pity){
+async function showSpread(pulls, pity, daily){
   var list = (Array.isArray(pulls) ? pulls : []).map(function(c){
     return { n: c.fighter || c.name || c.display_name || 'Card',
              r: String(c.rarity || 'common'),
@@ -7136,7 +7198,8 @@ async function showSpread(pulls, pity){
     if(RSORT.indexOf(c.r) > RSORT.indexOf(list[active].r)) active = i; });
   var bestIdx = active;
 
-  el.innerHTML = '<div class="sin">'
+  el.innerHTML = '<div class="sin' + (daily ? ' dly' : '') + '">'
+    + (daily ? dailyStreakHTML(daily.streak_day) : '')
     + '<div class="skick" id="sk">' + list.length + (list.length === 1 ? ' card' : ' cards')
       + (pity ? ' \u00b7 pity pull' : '') + '</div>'
     + '<div class="sfan" id="sf">' + list.map(function(c){
@@ -7148,6 +7211,7 @@ async function showSpread(pulls, pity){
           + '<div class="snm">' + esc(c.n) + '</div>'
           + '<div class="sft">' + esc(c.p) + (c.g != null ? ' \u00b7 PSA ' + c.g : '') + '</div></div>';
       }).join('') + '</div>'
+    + (daily ? dailyPassedHTML(daily.passed, list[bestIdx].r, all) : '')
     + '<div class="sdock"><div><div class="sdn" id="sdn"></div>'
       + '<div class="sdm" id="sdm"></div>'
       + '<div class="sdots" id="sdots">' + list.map(function(){ return '<i></i>'; }).join('') + '</div></div>'
@@ -7245,7 +7309,151 @@ async function showSpread(pulls, pity){
   fan.addEventListener('pointerup', end);
   fan.addEventListener('pointercancel', end);
 
-  document.getElementById('sdone').onclick = function(){ closeTear(); loadBinder(); };
+  document.getElementById('sdone').onclick = daily ? function(){ this.disabled = true; dailyLand(); }
+                                                   : function(){ closeTear(); loadBinder(); };
+  if(daily) setTimeout(function(){ var t = el.querySelector('.dsk .today'); if(t){ t.classList.add('done'); t.querySelector('b').innerHTML = '&#10003;'; } }, 700);
+}
+
+/* ── THE DAILY PICK ── the first open of each ET day, three single-card
+   packs float over the face of the globe, each parented to a real point on it
+   (a row across the latitude you are looking at, following the curve), and
+   the planet holds still while they are up. Tap one: the other two drift off,
+   it flies into the real tear, and the rip mints ONE card through
+   app_daily_pick(). The other two are rolled after the pick and shown as
+   "you passed on" -- never minted. Day 7 of the streak rips a 5-card pack.
+   No Not now: miss a day and it is gone, which is the whole mechanic.
+   Rules live in db/001_schema.sql (DAILY PICK) and economy-plan §1. */
+var dailyUp = false, dailyRun = null;
+function dpEase(t){ return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+function dpCub(a, b, c, d, t){ var u = 1 - t; return u*u*u*a + 3*u*u*t*b + 3*u*t*t*c + t*t*t*d; }
+/* move an element along a cubic bezier: P is four {x,y}; scale s0->s1, a
+   swing of `rot` degrees that peaks mid-flight, optional fade o0->o1 */
+function dpPath(el, P, ms, s0, s1, rot, done, o0, o1){
+  var t0 = performance.now();
+  (function f(){
+    var k = Math.min(1, (performance.now() - t0) / ms), t = dpEase(k);
+    el.style.transform = 'translate(' + dpCub(P[0].x, P[1].x, P[2].x, P[3].x, t) + 'px,' + dpCub(P[0].y, P[1].y, P[2].y, P[3].y, t) + 'px) rotate('
+      + ((rot || 0) * Math.sin(Math.PI * t)) + 'deg) scale(' + (s0 + (s1 - s0) * t) + ')';
+    if(o0 != null) el.style.opacity = String(o0 + (o1 - o0) * t);
+    if(k < 1) requestAnimationFrame(f); else if(done) done();
+  })();
+}
+function dpName(sd){ return sd === 7 ? 'Day 7 · First Edition Pack' : 'Daily · First Edition Single'; }
+async function maybeDailyPick(){
+  if(dailyUp || !session || !worldCtl) return;
+  dailyUp = true;   /* claimed before the await, so a second loadHome cannot stack a second row */
+  var t = await rpc('app_daily_pick_today');
+  if(!t || t.ok === false || t.picked !== false || currentTab !== 'home'){ dailyUp = false; return; }
+  var sd = Number(t.streak_day) || 1, g = worldCtl, rad = Math.PI / 180;
+  var world = document.getElementById('world'), orb = document.getElementById('dpk'), cap = document.getElementById('dpkcap');
+  g.still(true); world.classList.add('picking');
+  var c = -g.lam / rad, la = g.tilt / rad + 6, PW = 42, PH = 56;
+  function P3(la, lo, lift){ la *= rad; lo = lo * rad + g.lam; var cl = Math.cos(la), sl = Math.sin(la), cp = Math.cos(g.tilt), sp = Math.sin(g.tilt);
+    return { x: g.CX + g.R * lift * cl * Math.sin(lo), y: g.CY - g.R * lift * (cp * sl - sp * cl * Math.cos(lo)), z: sp * sl + cp * cl * Math.cos(lo) }; }
+  var R = { run: true, done: false }; dailyRun = R;
+  orb.innerHTML = '';
+  /* spaced by SCREEN distance, not degrees: the globe usually rests facing
+     the next card (the US, ~40N), where 34 degrees of longitude is half the
+     width it is at the equator and the three packs overlapped */
+  var dlo = Math.asin(Math.min(1, 64 / (g.R * 1.07 * Math.cos(la * rad)))) / rad;
+  var P = [-dlo, 0, dlo].map(function(d, i){
+    var sh = document.createElement('div'); sh.className = 'dshd'; orb.appendChild(sh);
+    var w = document.createElement('div'); w.innerHTML = '<div class="wrapper" style="--pk:' + packColour(dpName(sd)) + '"><span class="foil"></span><span class="tear"></span><span class="sz">' + (sd === 7 ? 5 : 1) + '<em>' + (sd === 7 ? 'cards' : 'card') + '</em></span></div>';
+    var e = w.firstChild; orb.appendChild(e);
+    return { el: e, sh: sh, la: la, lo: c + d, i: i };
+  });
+  var t0 = performance.now();
+  function place(p, now){
+    var bob = Math.sin(now / 700 + p.i * 1.9) * .012, up = Math.min(1, (now - t0) / 900), e3 = 1 - Math.pow(1 - up, 3);
+    var lift = 1.07 + bob + (1 - e3) * .9, q = P3(p.la, p.lo, lift), s = P3(p.la, p.lo, 1);
+    var vis = q.z > 0.04 && s.z > 0; p.el.style.display = p.sh.style.display = vis ? 'block' : 'none';
+    if(!vis) return;
+    /* lies along the row's tangent: sample the latitude a degree either side */
+    var a1 = P3(p.la, p.lo - 1, lift), b1 = P3(p.la, p.lo + 1, lift), rot = Math.atan2(b1.y - a1.y, b1.x - a1.x) / rad;
+    p.el.style.transform = 'translate(' + (q.x - PW / 2) + 'px,' + (q.y - PH) + 'px) rotate(' + rot + 'deg) scale(' + (.62 + .42 * q.z) + ')';
+    p.el.style.opacity = String(Math.min(1, e3 * 1.4) * (.55 + .45 * q.z));
+    p.sh.style.transform = 'translate(' + s.x + 'px,' + s.y + 'px) scale(' + (.5 + .6 * s.z) + ',' + (.3 + .5 * s.z) + ')'; p.sh.style.opacity = String(.9 * e3);
+  }
+  (function tick(){ if(!R.run) return;
+    if(!document.hidden){ var now = performance.now(); P.forEach(function(p){ if(!p.gone) place(p, now); }); }
+    requestAnimationFrame(tick); })();
+  setTimeout(function(){
+    if(!R.run) return;
+    cap.textContent = 'Pick one · Day ' + sd + ' of 7';
+    cap.classList.add('on');
+    P.forEach(function(p){ p.el.onclick = function(){ if(R.done) return; R.done = true; dailyChoose(P, p.i, sd); }; });
+  }, 950);
+}
+function dailyChoose(P, i, sd){
+  var orb = document.getElementById('dpk'), ob = orb.getBoundingClientRect(), PW = 42, PH = 56;
+  document.getElementById('dpkcap').classList.remove('on');
+  /* the other two lift off the planet and drift away */
+  P.forEach(function(p, j){
+    p.gone = true; p.sh.style.transition = 'opacity .4s'; p.sh.style.opacity = '0';
+    if(j === i) return;
+    var r = p.el.getBoundingClientRect(), x0 = r.left - ob.left, y0 = r.top - ob.top, away = j < i ? -1 : 1;
+    p.el.style.transformOrigin = '50% 50%';
+    dpPath(p.el, [{x:x0,y:y0},{x:x0,y:y0-50},{x:x0+away*120,y:y0-140},{x:x0+away*200,y:y0-240}], 900, 1, .4, away * 30, null, 1, 0);
+  });
+  /* the chosen one flies into the real tear, which waits invisible until it lands */
+  var el = P[i].el, from = el.getBoundingClientRect();
+  openTear('daily:' + i, dpName(sd));
+  var tear = document.getElementById('tear');
+  tear.classList.remove('shown'); tear.style.transition = 'none'; tear.style.opacity = '0';
+  var to = tear.querySelector('.tpack').getBoundingClientRect();
+  var gg = el.cloneNode(true); gg.className = 'wrapper dfly'; gg.style.cssText = '--pk:' + packColour(dpName(sd));
+  document.body.appendChild(gg); el.style.opacity = '0';
+  var f0 = { x: from.left + (from.width - PW) / 2, y: from.top + (from.height - PH) / 2 },
+      f3 = { x: to.left + (to.width - PW) / 2, y: to.top + (to.height - PH) / 2 };
+  dpPath(gg, [f0, {x:f0.x,y:f0.y-110}, {x:f3.x,y:f3.y-100}, f3], 700, from.width / PW, to.width / PW, -10, function(){
+    tear.style.transition = 'opacity .16s'; tear.style.opacity = '1'; tear.classList.add('shown');
+    setTimeout(function(){ gg.remove(); tear.style.transition = ''; tear.style.opacity = ''; }, 180);
+    if(dailyRun) dailyRun.run = false;
+  });
+}
+function dailyStreakHTML(sd){
+  sd = Number(sd) || 1;
+  var cells = '';
+  for(var d = 1; d <= 7; d++) cells += '<div class="dd' + (d < sd ? ' done' : d === sd ? ' today' : '') + (d === 7 ? ' seven' : '') + '"><b>'
+    + (d < sd ? '&#10003;' : d) + '</b>' + (d === 7 ? 'pack' : 'day') + '</div>';
+  return '<div class="dsk"><div class="dskh"><b>Daily pick</b><span>Day ' + sd + ' of 7</span></div><div class="dskr">' + cells + '</div></div>';
+}
+function dailyPassedHTML(passed, keptRarity, all){
+  var list = Array.isArray(passed) ? passed : [];
+  if(!list.length) return '';
+  var kr = RSORT.indexOf(keptRarity);
+  return '<div class="dpass"><div class="dpl">You passed on</div><div class="dpr">' + list.map(function(o){
+    var r = String(o.rarity || 'common'), close = RSORT.indexOf(r) > kr;
+    var row = (all || []).filter(function(k){ return k.card_id === o.card_id; })[0];
+    return '<div class="dpo' + (close ? ' close' : '') + '"><div class="dpc">'
+      + (row ? slabHTML(row, { qty: 1 }, false) : '<div class="dpn r-' + esc(r) + '">' + esc(o.fighter || 'Card') + '</div>')
+      + '</div><span>' + (close ? 'So close' : esc(r)) + '</span></div>';
+  }).join('') + '</div></div>';
+}
+/* into the binder, which lives in You: the card drops along a curve into the centre button */
+function dailyLand(){
+  var tear = document.getElementById('tear'), card = tear && (tear.querySelector('.scard.up') || tear.querySelector('.scard'));
+  var you = document.querySelector('.bar .midbtn .disc') || document.querySelector('.bar .midbtn');
+  if(!card || !you){ closeTear(); dailyEnd(); return; }
+  var from = card.getBoundingClientRect(), to = you.getBoundingClientRect(), w = card.offsetWidth || from.width;
+  var g = card.cloneNode(true); g.classList.add('dfly'); g.classList.remove('up');
+  var cs = getComputedStyle(card);
+  g.style.cssText = 'width:' + w + 'px;margin:0;left:0;top:0;transform-origin:0 0;background:' + cs.background + ';border:' + cs.border + ';border-radius:' + cs.borderRadius;
+  document.body.appendChild(g); card.style.opacity = '0';
+  closeTear();
+  var s0 = from.width / w, s1 = Math.max(.12, to.width / w);
+  var f0 = { x: from.left, y: from.top }, f3 = { x: to.left + to.width / 2 - w * s1 / 2, y: to.top + to.height / 2 - from.height / s0 * s1 / 2 };
+  dpPath(g, [f0, {x:f0.x+50,y:f0.y-70}, {x:f3.x+80,y:f3.y-190}, f3], 760, s0, s1, 18, function(){
+    g.remove(); you.classList.remove('dpop'); void you.offsetWidth; you.classList.add('dpop'); dailyEnd();
+  }, 1, .6);
+}
+function dailyEnd(){
+  if(dailyRun) dailyRun.run = false; dailyRun = null;
+  var orb = document.getElementById('dpk'); if(orb) orb.innerHTML = '';
+  var cap = document.getElementById('dpkcap'); if(cap) cap.classList.remove('on');
+  var w = document.getElementById('world'); if(w) w.classList.remove('picking');
+  if(worldCtl) worldCtl.still(false);
+  /* dailyUp stays true: the day is picked, and this session never asks again */
 }
 
 /* ── SHOP ── the price list, read-only. Buying happens in Discord. */
