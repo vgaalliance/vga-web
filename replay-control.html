@@ -48,6 +48,14 @@
   .clip.on{background:#2c3340;box-shadow:inset 3px 0 0 var(--hot)}
   .clip small{color:var(--dim);margin-left:8px}
   #empty{padding:24px 16px;color:var(--dim);font-size:14px}
+  /* Matches before the one the show is on fade back but stay clickable. The clip
+     on screen never fades, whatever match it came from. */
+  .match.now{color:var(--hot)}
+  .match.now small{color:var(--dim);font-weight:400;font-size:12px;margin-left:8px}
+  .wait{padding:4px 16px 10px 24px;color:var(--dim);font-size:13px;font-style:italic}
+  .past{opacity:.38;transition:opacity .15s}
+  .clip.past:hover{opacity:.85}
+  .clip.past.on{opacity:1}
   #open{margin:8px 16px 16px;width:calc(100% - 32px);color:var(--dim)}
 
   /* right: stage */
@@ -170,13 +178,18 @@ function renderList(){
   if (!state.clips.length){ list.innerHTML = '<div id="empty">No clips yet. Hit replay on the broadcast PC and they\'ll show up here.</div>'; return; }
   const byMatch = {};
   for (const c of state.clips){ (byMatch[c.match_no] ??= {})[c.round_no] ??= []; byMatch[c.match_no][c.round_no].push(c); }
+  byMatch[state.match] ??= {};   // the match the show is on always gets a header, clips or not
   let html = "";
   for (const m of Object.keys(byMatch).map(Number).sort((a,b)=>b-a)){
-    html += `<div class="match">Match ${m}</div>`;
+    const past = m !== state.match ? " past" : "";
+    html += m === state.match
+      ? `<div class="match now">Match ${m}<small>on now</small></div>`
+      : `<div class="match${past}">Match ${m}</div>`;
+    if (!Object.keys(byMatch[m]).length){ html += `<div class="wait">Waiting for the first replay…</div>`; continue; }
     for (const r of Object.keys(byMatch[m]).map(Number).sort((a,b)=>b-a)){
-      html += `<div class="round">Round ${r}</div>`;
+      html += `<div class="round${past}">Round ${r}</div>`;
       for (const c of byMatch[m][r].slice().sort((a,b)=>b.created_at.localeCompare(a.created_at)))
-        html += `<button class="clip${state.current===c.id?" on":""}" data-id="${c.id}">${c.name}<small>${fmtTime(c.created_at)}</small></button>`;
+        html += `<button class="clip${past}${state.current===c.id?" on":""}" data-id="${c.id}">${c.name}<small>${fmtTime(c.created_at)}</small></button>`;
     }
   }
   list.innerHTML = html;
@@ -202,7 +215,7 @@ $("#file").onchange = e => {
 };
 
 // ---------- match / round ----------
-function showCurrent(){ $("#mNo").textContent = state.match; $("#rNo").textContent = state.round; }
+function showCurrent(){ $("#mNo").textContent = state.match; $("#rNo").textContent = state.round; renderList(); }
 async function saveCurrent(){
   showCurrent();
   if (sb) await sb.from("replay_state").upsert({ id:1, match_no:state.match, round_no:state.round });
