@@ -16,7 +16,9 @@
     realtime channel "replay"  <- broadcast messages the overlay page obeys:
        {type:"load", url}  {type:"play"}  {type:"pause"}  {type:"seek", t}  {type:"rate", r}
        {type:"live", stroke}   {type:"stroke", tool, color, pts:[[x,y],...]}   (x,y are 0..1 of the video frame)
-       {type:"undo"}  {type:"clear"}
+       {type:"undo"}  {type:"clear"}  {type:"volume", v, muted}   (v is 0..1)
+    and one the overlay sends back: {type:"hello"} when it (re)connects, which this
+    page answers by re-sending the clip, speed, position, sound and every stroke
 -->
 <style>
   :root{
@@ -81,6 +83,9 @@
   #reset:hover{color:var(--ink)}
   #clear:hover{background:var(--live);color:#fff}
   #width{width:110px;accent-color:var(--ink)}
+  #mute{min-width:92px}
+  #mute.off{color:var(--live);border-color:var(--live)}
+  #vol{width:90px;accent-color:var(--ink)}
 
   #play{width:56px;font-size:18px}
   #scrub{flex:1;min-width:160px;accent-color:var(--hot)}
@@ -153,6 +158,11 @@
         <button data-rate="0.5">½</button>
         <button data-rate="1" class="on">1×</button>
       </div>
+      <div class="group">
+        <button id="mute" title="mute or unmute the replay on air (M)">Sound 10%</button>
+        <input id="vol" type="range" min="0" max="100" value="10" aria-label="replay volume on air">
+      </div>
+      <div class="gap"></div>
       <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="scrub">
       <span id="time">0:00.0 / 0:00.0</span>
       <span id="status" class="push">Offline, local clips only</span>
@@ -169,7 +179,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF";
 const $ = s => document.querySelector(s);
 const video = $("#video"), ink = $("#ink"), ctx = ink.getContext("2d");
 const state = { match:1, round:1, clips:[], current:null, tool:"pen", color:"#ffd23f", width:5, strokes:[], drawing:null };
-let sb = null, channel = null, lastLive = 0;
+let sb = null, channel = null, lastLive = 0, lastVol = 0;
 
 // ---------- messaging ----------
 function send(msg){ if (channel) channel.send({ type:"broadcast", event:"replay", payload: msg }); }
@@ -207,7 +217,7 @@ function loadClip(id){
   video.src = c.url; video.playbackRate = currentRate(); video.load();
   $("#nothing").style.display = "none";
   clearAll(false);
-  send({ type:"load", url:c.url });
+  send({ type:"load", url:c.url }); sendSound();
 }
 
 $("#open").onclick = () => $("#file").click();
@@ -257,6 +267,34 @@ document.querySelector("[data-rates]").addEventListener("click", e => {
   video.playbackRate = +b.dataset.rate; send({ type:"rate", r:+b.dataset.rate });
 });
 
+// ---------- sound ----------
+// Replays go on air at 10% unless the analyst turns them up: crowd noise from a
+// clip played at full level over the commentators is the one thing that cannot
+// be fixed after the fact. The analyst hears the same level they send.
+// Remembered on this browser, so a mid-show refresh doesn't snap the air back.
+const SOUND_KEY = "vga-replay-sound";
+try { Object.assign(state, JSON.parse(localStorage.getItem(SOUND_KEY)) || {}); } catch {}
+state.vol ??= 0.10; state.muted ??= false;
+
+function sendSound(){ send({ type:"volume", v:state.vol, muted:state.muted }); }
+function showSound(){
+  video.volume = state.vol; video.muted = state.muted;
+  $("#vol").value = Math.round(state.vol*100);
+  $("#mute").textContent = state.muted ? "Muted" : `Sound ${Math.round(state.vol*100)}%`;
+  $("#mute").classList.toggle("off", state.muted);
+  try { localStorage.setItem(SOUND_KEY, JSON.stringify({ vol:state.vol, muted:state.muted })); } catch {}
+}
+function toggleMute(){ state.muted = !state.muted; showSound(); sendSound(); }
+$("#mute").onclick = toggleMute;
+// Dragging sends at most every 100ms, and always once on release, so the air
+// follows the slider without spending a realtime message per pixel.
+$("#vol").oninput = e => {
+  state.vol = e.target.value/100; state.muted = false; showSound();
+  const now = performance.now(); if (now - lastVol > 100){ lastVol = now; sendSound(); }
+};
+$("#vol").onchange = sendSound;
+showSound();
+
 document.addEventListener("keydown", e => {
   if (e.target.tagName === "INPUT") return;
   if (e.code === "Space"){ e.preventDefault(); $("#play").click(); }
@@ -264,6 +302,7 @@ document.addEventListener("keydown", e => {
   if (e.code === "ArrowRight") seek(video.currentTime + (e.shiftKey?1:1/30));
   if ((e.metaKey||e.ctrlKey) && e.key === "z"){ e.preventDefault(); undo(); }
   if (e.key === "Escape") clearAll(true);
+  if (e.key === "m" || e.key === "M") toggleMute();
 });
 
 // ---------- drawing ----------
@@ -342,6 +381,22 @@ function draw(s){
   }
 }
 
+// ---------- resync ----------
+// Broadcasts are not stored, so an overlay that refreshes -- OBS does this on its
+// own, and "right-click, Refresh" is the first fix anyone reaches for -- comes back
+// knowing nothing and sits empty until the next click. It says hello when it
+// connects; this answers with everything that is on screen right now.
+function resync(){
+  sendSound();
+  const c = state.clips.find(x => x.id === state.current);
+  if (!c || String(c.id).startsWith("local-")) { send({ type:"clear" }); return; }   // a file from this computer can't reach OBS anyway
+  send({ type:"load", url:c.url });
+  send({ type:"rate", r:currentRate() });
+  send({ type:"seek", t:video.currentTime });
+  for (const s of state.strokes) send({ type:"stroke", ...s });
+  if (!video.paused) send({ type:"play" });
+}
+
 // ---------- supabase ----------
 async function connect(){
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return;
@@ -355,9 +410,10 @@ async function connect(){
   state.clips = clips || []; renderList();
 
   channel = sb.channel("replay")
+    .on("broadcast", { event:"replay" }, p => { if (p.payload?.type === "hello") resync(); })
     .on("postgres_changes", { event:"INSERT", schema:"public", table:"replay_clips" }, p => { state.clips.push(p.new); renderList(); })
     .on("postgres_changes", { event:"DELETE", schema:"public", table:"replay_clips" }, p => { state.clips = state.clips.filter(c => c.id !== p.old.id); renderList(); })
-    .subscribe(s => { const el = $("#status"); if (s === "SUBSCRIBED"){ el.textContent = "Connected to overlay"; el.classList.add("live"); } else { el.textContent = "Connecting…"; el.classList.remove("live"); } });
+    .subscribe(s => { const el = $("#status"); if (s === "SUBSCRIBED"){ el.textContent = "Connected to overlay"; el.classList.add("live"); sendSound(); } else { el.textContent = "Connecting…"; el.classList.remove("live"); } });
 }
 connect().catch(err => { $("#status").textContent = "Couldn't reach Supabase, check the keys"; console.error(err); });
 showCurrent(); renderList();
