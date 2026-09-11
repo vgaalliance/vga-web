@@ -92,12 +92,30 @@ function draw(s){
   }
 }
 
+// ---------- loading a clip ----------
+// The clip is pulled down in full and played from memory, not streamed while it
+// plays. On a broadcast PC the upstream is already full of the stream itself, so
+// a video fed a few hundred KB at a time stutters -- and it stutters ON AIR,
+// where a buffering clip is worse than a clip that starts a second later.
+// A blob also survives the connection dropping mid-replay: the bytes are already
+// here. If the fetch fails at all, the plain URL still works the old way.
+let clipUrl = null;   // the blob we made, so it can be released
+
+function loadClip(url){
+  if (clipUrl){ URL.revokeObjectURL(clipUrl); clipUrl = null; }
+  video.src = "";
+  fetch(url)
+    .then(r => r.ok ? r.blob() : Promise.reject(new Error(r.status)))
+    .then(blob => { clipUrl = URL.createObjectURL(blob); video.src = clipUrl; video.load(); })
+    .catch(() => { video.src = url; video.load(); });   // stream it rather than show nothing
+}
+
 // ---------- obey the control page ----------
 // Seeks are only applied when they differ by more than a frame, so ordinary
 // playback drift doesn't cause a visible jump on air.
 function apply(m){
   switch (m.type){
-    case "load":   video.src = m.url; video.load(); strokes = []; live = null; redraw(); break;
+    case "load":   loadClip(m.url); strokes = []; live = null; redraw(); break;
     case "play":   video.play().catch(()=>{}); break;
     case "pause":  video.pause(); break;
     case "seek":   if (Math.abs(video.currentTime - m.t) > 0.05) video.currentTime = m.t; break;
