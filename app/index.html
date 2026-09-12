@@ -1658,6 +1658,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .world{position:relative;height:340px;margin:0 0 -36px;overflow:hidden;z-index:3;pointer-events:none}   /* the 14px the top gained comes out here, so the board does not move */   /* above the wordmark; only the grab and the flags take touches, so Sign in stays tappable under the frame */
 .world .grab,.world .seat{pointer-events:auto}   /* G3: the sphere is 240px across (R 120, centre 170) */   /* the board rides up under the feed arc: the champion row lands in the first screen */
 .world canvas{position:absolute;left:0;top:0;width:100%;height:300px;z-index:2;pointer-events:none}
+.world #wgl{z-index:1}   /* the WebGL sphere under the 2D layer, which then only carries the arcs */
 .world svg{position:absolute;left:0;right:0;top:0;width:100%;height:340px;pointer-events:none;z-index:3}
 #feedtxt{transition:opacity .3s}
 .pv.home.offscreen .stand i{animation-play-state:paused}
@@ -2827,7 +2828,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
        next card, corner to corner). SVG: the feed arc under it. The flags are
        the top six countries by headcount, stacked on the sphere's shoulders. -->
   <div class="world" id="world">
-    <canvas id="wcv"></canvas>
+    <canvas id="wgl"></canvas><canvas id="wcv"></canvas>
     <svg id="wsvg" viewBox="0 0 393 340" preserveAspectRatio="xMidYMin meet"><defs>
       <path id="feedarc" d="M 65,223.5 A 142,142 0 0 0 328,223.5"/></defs>
       <text id="feedtxt"><textPath href="#feedarc" startOffset="50%" text-anchor="middle"></textPath></text>
@@ -4329,7 +4330,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v219';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v220';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -4448,15 +4449,147 @@ async function loadWorldArcs(){
   worldFace = worldArcs.length ? [Math.atan2(vz, Math.hypot(vx, vy)) / rr, Math.atan2(vy, vx) / rr] : null; worldFaced = false;
 }
 
+/* ── THE GLOBE ON THE GPU (2026-09-12) ─────────────────────────────────
+   The 2D canvas projected ~3,000 points on the phone's CPU every frame --
+   coastlines, grid, dots -- and no amount of batching got it past the feel of
+   "heavy". This draws the same picture in WebGL, the way GitHub's and Stripe's
+   globes are drawn: the land is painted ONCE into an equirectangular texture
+   (red = fill, green = coastline), and a fragment shader looks every pixel of
+   the sphere up in it, with the grid and the two-circle body gradient worked
+   out per pixel. The dots are GL points projected in the vertex shader. What
+   stays on the 2D canvas above it is only the arcs, which are eight lines.
+   Colours and alphas are the 2D renderer's, number for number. If WebGL is
+   missing or the context is lost, makeWorldGL reports it and the 2D path
+   draws everything, exactly as before. */
+function makeWorldGL(cv){
+  var gl = null;
+  try{ gl = cv.getContext('webgl', { antialias: false, premultipliedAlpha: true, alpha: true }); }catch(e){}
+  var der = gl && gl.getExtension('OES_standard_derivatives');
+  if(!gl || !der || typeof LAND === 'undefined') return null;
+  function sh(t, src){ var o = gl.createShader(t); gl.shaderSource(o, src); gl.compileShader(o); if(!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; }
+  function prog(v, f){ var o = gl.createProgram(); gl.attachShader(o, sh(gl.VERTEX_SHADER, v)); gl.attachShader(o, sh(gl.FRAGMENT_SHADER, f)); gl.linkProgram(o); if(!gl.getProgramParameter(o, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(o)); return o; }
+  var FS = [
+    '#extension GL_OES_standard_derivatives : enable',
+    'precision highp float;',
+    'uniform vec2 uC; uniform float uR, uLam, uTilt, uDpr, uH; uniform sampler2D uLand;',
+    'const float PI = 3.14159265;',
+    'vec4 over(vec4 d, vec3 c, float a){ return vec4(c * a + d.rgb * (1.0 - a), a + d.a * (1.0 - a)); }',
+    'vec4 grad(float t){ vec4 a = vec4(84.0,64.0,150.0,140.25)/255.0, b = vec4(38.0,27.0,80.0,127.5)/255.0, c = vec4(10.0,7.0,22.0,158.1)/255.0;',
+    '  return t < .62 ? mix(a, b, t / .62) : mix(b, c, (t - .62) / .38); }',
+    'void main(){',
+    '  vec2 fc = vec2(gl_FragCoord.x, uH - gl_FragCoord.y);',
+    '  vec2 d = (fc - uC) / uR; float r = length(d), aa = fwidth(r);',
+    '  if(r > 1.32) discard;',
+    '  vec4 o = vec4(0.0);',
+    '  o = over(o, vec3(150.0,120.0,255.0)/255.0, .18 * (1.0 - clamp((r - .94) / .36, 0.0, 1.0)) * (1.0 - smoothstep(1.3 - aa, 1.3 + aa, r)));',
+    '  float disc = 1.0 - smoothstep(1.0 - aa, 1.0 + aa, r);',
+    '  vec2 c0 = vec2(-.35, -.45), cd = -c0, pd = d - c0; float r0 = .1, dr = .9;',
+    '  float A = dot(cd, cd) - dr * dr, B = dot(pd, cd) + r0 * dr, C = dot(pd, pd) - r0 * r0, q = sqrt(max(B * B - A * C, 0.0));',
+    '  float t1 = (B + q) / A, t2 = (B - q) / A, t = max(r0 + t1 * dr >= 0.0 ? t1 : -1.0, r0 + t2 * dr >= 0.0 ? t2 : -1.0);',
+    '  vec4 g = grad(clamp(t, 0.0, 1.0)); o = over(o, g.rgb, g.a * disc);',
+    '  if(r < 1.0){',
+    '    vec3 v = vec3(d.x, -d.y, sqrt(max(0.0, 1.0 - r * r))); float cp = cos(uTilt), sp = sin(uTilt);',
+    '    float wy = cp * v.y + sp * v.z, wz = -sp * v.y + cp * v.z;',
+    '    float la = asin(clamp(wy, -1.0, 1.0)) / PI * 180.0, lo = (atan(v.x, wz) - uLam) / PI * 180.0;',
+    '    vec4 L = texture2D(uLand, vec2(fract((lo + 180.0) / 360.0), (90.0 - la) / 180.0));',
+    '    o = over(o, vec3(150.0,130.0,225.0)/255.0, .16 * L.r * disc);',
+    '    o = over(o, vec3(190.0,175.0,255.0)/255.0, .22 * L.g * disc);',
+    '    float lw = .7 * uDpr, loW = mod(lo + 3600.0, 360.0);',
+    '    float fl = min(fwidth(loW), fwidth(mod(loW + 180.0, 360.0)));',
+    '    float mer = min(lw, 1.0) * clamp(max(lw, 1.0) * .5 + .5 - abs(mod(loW + 10.0, 20.0) - 10.0) / max(fl, 1e-4), 0.0, 1.0);',
+    '    float par = abs(la) < 70.0 ? min(lw, 1.0) * clamp(max(lw, 1.0) * .5 + .5 - abs(mod(la + 10.0, 20.0) - 10.0) / max(fwidth(la), 1e-4), 0.0, 1.0) : 0.0;',
+    '    o = over(o, vec3(167.0,139.0,250.0)/255.0, .17 * mer * disc);',
+    '    o = over(o, vec3(167.0,139.0,250.0)/255.0, (abs(la) < 10.0 ? .30 : .13) * par * disc);',
+    '  }',
+    '  o = over(o, vec3(167.0,139.0,250.0)/255.0, .42 * (1.0 - smoothstep(0.0, uDpr, abs(r - 1.0) * uR)));',
+    '  gl_FragColor = o;',
+    '}'].join('\n');
+  var DVS = [
+    'attribute vec3 aP;',
+    'uniform vec2 uC, uView; uniform float uR, uLam, uTilt, uDpr;',
+    'varying float vAl, vSz, vGr, vDr, vPs;',
+    'void main(){',
+    '  float la = radians(aP.y), lo = radians(aP.z) + uLam, cl = cos(la), sl = sin(la), cp = cos(uTilt), sp = sin(uTilt);',
+    '  float z = sp * sl + cp * cl * cos(lo);',
+    '  vec2 p = vec2(uC.x + uR * cl * sin(lo), uC.y - uR * (cp * sl - sp * cl * cos(lo)));',
+    '  vSz = aP.x; vAl = .3 + z * .7; vGr = (6.0 * vSz * vSz + 1.5) * uDpr; vDr = (.6 + .8 * vSz) * uDpr;',
+    '  vPs = 2.0 * max(vSz >= .6 ? vGr : 0.0, vDr + uDpr); gl_PointSize = vPs;',
+    '  gl_Position = z > 0.0 ? vec4(p.x / uView.x * 2.0 - 1.0, 1.0 - p.y / uView.y * 2.0, 0.0, 1.0) : vec4(2.0, 2.0, 2.0, 1.0);',
+    '}'].join('\n');
+  var DFS = [
+    'precision mediump float;',
+    'varying float vAl, vSz, vGr, vDr, vPs;',
+    'vec4 over(vec4 d, vec3 c, float a){ return vec4(c * a + d.rgb * (1.0 - a), a + d.a * (1.0 - a)); }',
+    'void main(){',
+    '  float dist = length(gl_PointCoord - .5) * vPs; vec4 o = vec4(0.0);',
+    '  if(vSz >= .6) o = over(o, vec3(160.0,255.0,220.0)/255.0, vAl * .6 * vSz * vSz * max(0.0, 1.0 - dist / vGr));',
+    '  o = over(o, vec3(230.0,255.0,246.0)/255.0, vAl * clamp(vDr - dist + .5, 0.0, 1.0));',
+    '  if(o.a < .002) discard; gl_FragColor = o;',
+    '}'].join('\n');
+  var P1, P2;
+  try{ P1 = prog('attribute vec2 aQ; void main(){ gl_Position = vec4(aQ, 0.0, 1.0); }', FS); P2 = prog(DVS, DFS); }
+  catch(e){ console.warn('[uba] globe gl', e); return null; }
+  var u1 = {}, u2 = {};
+  ['uC','uR','uLam','uTilt','uDpr','uH','uLand'].forEach(function(n){ u1[n] = gl.getUniformLocation(P1, n); });
+  ['uC','uView','uR','uLam','uTilt','uDpr'].forEach(function(n){ u2[n] = gl.getUniformLocation(P2, n); });
+  var a1 = gl.getAttribLocation(P1, 'aQ'), a2 = gl.getAttribLocation(P2, 'aP');
+  var quad = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW);
+  var dots = gl.createBuffer(), nDots = 0, dotsFor = null, dotsLen = -1;
+  /* the planet's land, painted once. A ring that crosses the date line is
+     unwrapped and painted three times, 360 degrees apart, so it tiles. */
+  (function(){
+    var TW = 2048, TH = 1024, c = document.createElement('canvas'); c.width = TW; c.height = TH;
+    var g = c.getContext('2d');
+    function trace(ring, off){ var prev = ring[0][0], acc = 0;
+      g.moveTo((ring[0][0] + off + 180) / 360 * TW, (90 - ring[0][1]) / 180 * TH);
+      for(var i = 1; i < ring.length; i++){ var lo = ring[i][0], dd = lo - prev; if(dd > 180) acc -= 360; else if(dd < -180) acc += 360; prev = lo;
+        g.lineTo((lo + acc + off + 180) / 360 * TW, (90 - ring[i][1]) / 180 * TH); }
+      g.closePath(); }
+    function all(){ g.beginPath(); LAND.forEach(function(r){ trace(r, -360); trace(r, 0); trace(r, 360); }); }
+    g.fillStyle = '#f00'; all(); g.fill();
+    g.globalCompositeOperation = 'lighter'; g.strokeStyle = '#0f0'; g.lineWidth = 2.2; g.lineJoin = 'round'; all(); g.stroke();
+    var tx = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tx);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  })();
+  gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+  var api = { lost: false };
+  cv.addEventListener('webglcontextlost', function(e){ e.preventDefault(); api.lost = true; });
+  api.draw = function(pts, lam, tilt, CX, CY, R, DPR){
+    if(pts !== dotsFor || pts.length !== dotsLen){   /* the roster lands after the sphere starts turning */
+      var arr = new Float32Array(pts.length * 3);
+      for(var i = 0; i < pts.length; i++){ arr[i*3] = +pts[i][0]; arr[i*3+1] = +pts[i][1]; arr[i*3+2] = +pts[i][2]; }
+      gl.bindBuffer(gl.ARRAY_BUFFER, dots); gl.bufferData(gl.ARRAY_BUFFER, arr, gl.STATIC_DRAW); nDots = pts.length; dotsFor = pts; dotsLen = pts.length; }
+    gl.viewport(0, 0, cv.width, cv.height);
+    gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.useProgram(P1);
+    gl.uniform2f(u1.uC, CX * DPR, CY * DPR); gl.uniform1f(u1.uR, R * DPR); gl.uniform1f(u1.uLam, lam); gl.uniform1f(u1.uTilt, tilt);
+    gl.uniform1f(u1.uDpr, DPR); gl.uniform1f(u1.uH, cv.height); gl.uniform1i(u1.uLand, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, quad); gl.enableVertexAttribArray(a1); gl.vertexAttribPointer(a1, 2, gl.FLOAT, false, 0, 0);
+    gl.drawArrays(gl.TRIANGLES, 0, 6); gl.disableVertexAttribArray(a1);
+    if(!nDots) return;
+    gl.useProgram(P2);
+    gl.uniform2f(u2.uC, CX * DPR, CY * DPR); gl.uniform2f(u2.uView, cv.width, cv.height); gl.uniform1f(u2.uR, R * DPR);
+    gl.uniform1f(u2.uLam, lam); gl.uniform1f(u2.uTilt, tilt); gl.uniform1f(u2.uDpr, DPR);
+    gl.bindBuffer(gl.ARRAY_BUFFER, dots); gl.enableVertexAttribArray(a2); gl.vertexAttribPointer(a2, 3, gl.FLOAT, false, 0, 0);
+    gl.drawArrays(gl.POINTS, 0, nDots); gl.disableVertexAttribArray(a2);
+  };
+  api.clear = function(){ gl.viewport(0, 0, cv.width, cv.height); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); };
+  return api;
+}
 var wcv = document.getElementById('wcv');
 function startWorld(){
   if(worldStarted || !wcv) return; worldStarted = true;
   var wd = document.getElementById('world'), cx = wcv.getContext('2d');
   var W, H = 340, CX, CY = 170, R = 120, DPR = Math.min(devicePixelRatio || 1, 1.5);   /* 2 was 4x the pixels of 1 for a difference nobody can see on a 240px sphere */
+  var wglc = document.getElementById('wgl'), GDPR = Math.min(devicePixelRatio || 1, 2), wgl = wglc ? makeWorldGL(wglc) : null;
   function size(){
     if(!wd.clientWidth) return;   // a hidden tab measures 0 -- keep the last real width
     W = wd.clientWidth; CX = W / 2;
     wcv.width = W * DPR; wcv.height = H * DPR; wcv.style.width = W + 'px'; wcv.style.height = H + 'px'; cx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    if(wglc){ wglc.width = Math.round(W * GDPR); wglc.height = Math.round(H * GDPR); wglc.style.width = W + 'px'; wglc.style.height = H + 'px'; }
   }
   W = 393; CX = W / 2; size();
   /* rotate the phone, or open on a tablet: the sphere re-centres and the flags follow */
@@ -4635,6 +4768,10 @@ function startWorld(){
        until the next resize -- which never came. Re-measure twice a second. */
     if((++fc & 15) === 0 && wd.clientWidth && wd.clientWidth !== W){ size(); placeSeats(); }
     cx.clearRect(0, 0, W, H);
+    var onGPU = wgl && !wgl.lost;
+    if(onGPU) wgl.draw(worldPts, lam, tilt, CX, CY, R, GDPR);   /* sphere, land, grid and dots; the 2D layer keeps only the arcs */
+    else {
+    if(wgl && wgl.lost){ wgl.clear && wgl.clear(); wgl = null; }
     /* the two big radial fills are the same picture every frame: built once per
        width instead of ~120 gradient objects a second */
     if(gW !== W){ gW = W;
@@ -4643,6 +4780,7 @@ function startWorld(){
     var g = cx.createRadialGradient(CX - R * .35, CY - R * .45, R * .1, CX, CY, R); g.addColorStop(0, 'rgba(84,64,150,.55)'); g.addColorStop(.62, 'rgba(38,27,80,.5)'); g.addColorStop(1, 'rgba(10,7,22,.62)');
     cx.beginPath(); cx.arc(CX, CY, R, 0, 7); cx.fillStyle = g; cx.fill(); cx.lineWidth = 1; cx.strokeStyle = 'rgba(167,139,250,.42)'; cx.stroke();
     drawLandGrid();
+    }
     var T = Date.now() / 1000;
     var runs = [];
     for(var k = 0; k < worldArcs.length; k++){ var pr = worldArcs[k], A = pr.a, B = pr.b, seg = 28, started = false, run = { pts: [], z: -1, ax: 0, ay: 0, na: pr.na, nb: pr.nb }; cx.beginPath();
@@ -4672,6 +4810,7 @@ function startWorld(){
     /* 450 dots used to be 450 beginPath/fill pairs -- the single biggest cost in
        the frame. Brightness is quantised into five steps and each step is ONE
        path with ONE fill; nobody can see 1/5 of an alpha step on a 2px dot. */
+    if(!onGPU){
     for(var b = 0; b < 5; b++) DOTP[b] = new Path2D();
     for(var i = 0; i < worldPts.length; i++){ var d = worldPts[i], p2 = proj(d[1], d[2]); if(!p2.v) continue; var al = .3 + p2.z * .7;
       var sz = d[0], gr = 6 * sz * sz + 1.5;   // glow falls off with the square, so a crowd is texture, not fog
@@ -4682,6 +4821,7 @@ function startWorld(){
       var dr = .6 + .8 * sz, dp = DOTP[Math.min(4, Math.floor((al - .3) / .14))];
       dp.moveTo(p2.x + dr, p2.y); dp.arc(p2.x, p2.y, dr, 0, 7); }
     for(var b = 0; b < 5; b++){ cx.fillStyle = 'rgba(230,255,246,' + (.37 + b * .14).toFixed(2) + ')'; cx.fill(DOTP[b]); }
+    }
     if(!drag){
       if(worldFace && !worldFaced && !dailyUp){
         var tl = -worldFace[1] * rad, dfl = tl - lam; dfl = Math.atan2(Math.sin(dfl), Math.cos(dfl));   // shortest way round
