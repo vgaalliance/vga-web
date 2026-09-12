@@ -1024,7 +1024,7 @@ let VIEWS=['standings','playoff','rosters','vsrosters','ubarank','schedule','nex
 let PO_DONE=[]
 const poWon=()=>PO_DONE.filter(m=>m.stage==='play_in').map(m=>m.winner_name).filter(Boolean)
 const poRes=()=>PO_DONE.filter(m=>m.stage!=='play_in'&&m.winner_name)
-  .map(m=>({a:m.team_a_name, b:m.team_b_name, winner:m.winner_name}))
+  .map(m=>({a:m.team_a_name, b:m.team_b_name, winner:m.winner_name, match_date:m.match_date}))
 const poPic=st=>PLAYOFF.picture(st, undefined, undefined, poWon())
 // Auto-cycle for a UBA fight night: only the screens that mean something on one.
 // The deck picks the rotation by mode, so 'auto' doesn't parade team standings

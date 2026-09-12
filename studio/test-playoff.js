@@ -323,6 +323,47 @@ console.log('\nUBAe playoff picture\n')
   eq(P.bracket(p, []).wb[1].ms[0].b.name, undefined, 'an empty result list changes nothing')
   eq(P.nights(P.bracket(p,R1)).map(x=>x.ms.length),[2,2,2,2,2,2],'the calendar is unchanged by results')
 
+  // A pairing can meet twice. The real season through Fri Sep 11: MUDS v UKFC
+  // fought the winners semi and meet again in the losers final; CU v UKFC
+  // fought the winners final and can meet again in the grand final. Keyed by
+  // pairing alone, both Saturday matches read as already fought.
+  {
+    // The table as it finished, not SUMMER above (that one is a week earlier).
+    const FINAL=[
+      T('Champions United','A',4,1,12,8), T('UKFC UNCS','A',3,2,11,7),
+      T('Sheath Elite','A',3,2,10,7),     T('jUnC','A',1,4,4,14),
+      T('Team MUDS','B',3,2,12,8),        T('Team Rag Tags','B',3,2,10,8),
+      T('The 5 Great Kage','B',2,3,10,11), T('Ring Reapers','B',1,4,8,14),
+    ]
+    const p2=P.picture(FINAL, null, undefined, ['Sheath Elite','Ring Reapers'])
+    eq(P.bracket(p2).seats.map(x=>x.name),
+      ['Champions United','Team MUDS','UKFC UNCS','Team Rag Tags','Sheath Elite','Ring Reapers'],
+      'the fixture seats the bracket the way it was really played')
+    const SEASON=[
+      {a:'UKFC UNCS', b:'Ring Reapers', winner:'UKFC UNCS', match_date:'2026-09-04T22:00:00Z'},
+      {a:'Team Rag Tags', b:'Sheath Elite', winner:'Team Rag Tags', match_date:'2026-09-04T23:00:00Z'},
+      {a:'Champions United', b:'Team Rag Tags', winner:'Champions United', match_date:'2026-09-05T22:00:00Z'},
+      {a:'Team MUDS', b:'UKFC UNCS', winner:'UKFC UNCS', match_date:'2026-09-05T23:00:00Z'},
+      {a:'Ring Reapers', b:'Sheath Elite', winner:'Sheath Elite', match_date:'2026-09-06T22:00:00Z'},
+      {a:'Team Rag Tags', b:'Team MUDS', winner:'Team MUDS', match_date:'2026-09-06T23:00:00Z'},
+      {a:'Sheath Elite', b:'Team MUDS', winner:'Team MUDS', match_date:'2026-09-11T22:00:00Z'},
+      {a:'Champions United', b:'UKFC UNCS', winner:'Champions United', match_date:'2026-09-11T23:00:00Z'},
+    ]
+    const flat=b=>[...b.wb, ...b.lb, ...(b.gf?[b.gf]:[])].flatMap(r=>r.ms||[r])
+    const sb=P.bracket(p2, SEASON)
+    const s2=flat(sb).find(m=>m.id==='S2')
+    eq(s2 && s2.won, 'UKFC UNCS', 'the first meeting is the winners semi')
+    const lf=flat(sb).find(m=>m.id==='LF')
+    eq(lf && [lf.a.name, lf.b.name], ['Team MUDS','UKFC UNCS'], 'the losers final names the rematch')
+    eq(lf && lf.won, undefined, 'and is NOT read as already fought')
+    const gf=flat(sb).find(m=>m.id==='GF')
+    eq(gf && gf.won, undefined, 'nor is the grand final -- nobody is champion yet')
+    const lf2=flat(P.bracket(p2, SEASON.concat([{a:'UKFC UNCS', b:'Team MUDS', winner:'Team MUDS', match_date:'2026-09-12T22:00:00Z'}]))).find(m=>m.id==='LF')
+    eq(lf2 && lf2.won, 'Team MUDS', 'the second meeting, once fought, is the losers final')
+    const rev=flat(P.bracket(p2, [...SEASON].reverse())).find(m=>m.id==='S2')
+    eq(rev && rev.won, 'UKFC UNCS', 'results handed in newest-first are still settled oldest-first')
+  }
+
   // A match nobody has played has no loser. This is the one a null slips
   // through: the winners final has a known `a` and an unknown `b`, so a
   // `w===b` test is null===null and names `a` as the team that just lost it.
