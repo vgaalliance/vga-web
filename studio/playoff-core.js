@@ -234,8 +234,15 @@
      and one that prefers names shows the real team. */
   function results_(p, results){
     const key=(x,y)=>[x,y].sort().join(' \u0000 ')
+    // A pairing can meet TWICE in double elimination, so each result settles
+    // ONE match, oldest first. Keyed by pairing alone, Team MUDS v UKFC UNCS
+    // (winners semi, Sep 5) was also read as their losers final a week later,
+    // and the winners final as the grand final -- the board crowned Champions
+    // United the night before the final was fought.
     const byPair=new Map()
-    ;(results||[]).forEach(r=>{ if(r&&r.a&&r.b&&r.winner) byPair.set(key(r.a,r.b), r.winner) })
+    ;(results||[]).filter(r=>r&&r.a&&r.b&&r.winner).map((r,i)=>({r,i}))
+      .sort((x,y)=>(x.r.match_date&&y.r.match_date ? new Date(x.r.match_date)-new Date(y.r.match_date) : 0) || x.i-y.i)
+      .forEach(({r})=>{ const k=key(r.a,r.b); if(!byPair.has(k)) byPair.set(k,[]); byPair.get(k).push(r.winner) })
     const s=seats(p), seat=n=>(s[n-1]||{}).name||null
     const R={}, side=f=>f()
     // A HALF-known match still names the half it knows: the winners final is
@@ -245,8 +252,9 @@
     // for both sides — you cannot have played a match against nobody.
     const put=(id,a,b)=>{
       if(a && b && a===b) return
-      const raw=(a&&b)?byPair.get(key(a,b)):null
+      const q=(a&&b)?byPair.get(key(a,b)):null, raw=q?q[0]:null
       const w=(raw && (raw===a || raw===b)) ? raw : null
+      if(w) q.shift()
       // A match nobody has played has no LOSER. The old form read
       // `w===b ? a : null`, and on an unplayed match both `w` and `b` are null
       // -- null===null is true -- so it handed the `a` side back as the beaten
