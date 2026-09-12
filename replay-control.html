@@ -93,6 +93,13 @@
   .push{margin-left:auto}
   #status{color:var(--dim);font-size:13px}
   #status.live::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#4fc36b;margin-right:6px}
+  /* What OBS actually has. Separate from #status, which only ever meant "this page
+     reached Supabase" -- the light is the one that says whether the air is ready. */
+  #air{font-size:13px;font-weight:600;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--dim);white-space:nowrap}
+  #air::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:currentColor;margin-right:6px;vertical-align:1px}
+  #air.ready{color:#4fc36b;border-color:#4fc36b}
+  #air.loading{color:var(--hot);border-color:var(--hot)}
+  #air.none{color:var(--live);border-color:var(--live)}
 
   @media (max-width:820px){
     #app{grid-template-columns:1fr;grid-template-rows:auto 1fr}
@@ -165,7 +172,8 @@
       <div class="gap"></div>
       <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="scrub">
       <span id="time">0:00.0 / 0:00.0</span>
-      <span id="status" class="push">Offline, local clips only</span>
+      <span id="air" class="none push" title="Whether the OBS overlay has this clip loaded">On air: no overlay</span>
+      <span id="status">Offline, local clips only</span>
     </div>
   </main>
 </div>
@@ -183,6 +191,26 @@ let sb = null, channel = null, lastLive = 0, lastVol = 0;
 
 // ---------- messaging ----------
 function send(msg){ if (channel) channel.send({ type:"broadcast", event:"replay", payload: msg }); }
+
+// ---------- the light: is the clip actually ready on air? ----------
+// Green only when the overlay has said, within the last few seconds, that it holds
+// THIS clip and can play it. Anything else is amber or red, never green by default:
+// a light that is green when nobody has checked is how the old "Connected to
+// overlay" label lied for a whole show.
+let air = null;   // the overlay's last report
+function airLight(){
+  const el = $("#air");
+  const alive = air && Date.now() - air.at < 3000;
+  let cls, text;
+  if (!alive)                          { cls = "none";    text = "On air: no overlay"; }
+  else if (!signUrl)                   { cls = "loading"; text = "On air: overlay connected"; }
+  else if (air.url !== signUrl)        { cls = "loading"; text = "On air: loading clip…"; }
+  else if (!air.ready)                 { cls = "loading"; text = "On air: loading clip…"; }
+  else                                 { cls = "ready";   text = "On air: ready"; }
+  if (el.className !== cls + " push") el.className = cls + " push";
+  if (el.textContent !== text) el.textContent = text;
+}
+setInterval(airLight, 500);           // so it goes red when the heartbeat stops
 
 // ---------- the sign ----------
 // The overlay used to be given orders -- play, seek, quarter speed -- and any
@@ -233,6 +261,7 @@ function loadClip(id){
   state.current = c.id; renderList();
   video.src = c.url; video.playbackRate = currentRate(); video.load();
   signUrl = String(c.id).startsWith("local-") ? null : c.url;
+  airLight();
   $("#nothing").style.display = "none";
   clearAll(false);
   send({ type:"load", url:c.url }); sendSound();
@@ -428,10 +457,13 @@ async function connect(){
   state.clips = clips || []; renderList();
 
   channel = sb.channel("replay")
-    .on("broadcast", { event:"replay" }, p => { if (p.payload?.type === "hello") resync(); })
+    .on("broadcast", { event:"replay" }, p => {
+      if (p.payload?.type === "hello") resync();
+      if (p.payload?.type === "overlay"){ air = { ...p.payload, at: Date.now() }; airLight(); }
+    })
     .on("postgres_changes", { event:"INSERT", schema:"public", table:"replay_clips" }, p => { state.clips.push(p.new); renderList(); })
     .on("postgres_changes", { event:"DELETE", schema:"public", table:"replay_clips" }, p => { state.clips = state.clips.filter(c => c.id !== p.old.id); renderList(); })
-    .subscribe(s => { const el = $("#status"); if (s === "SUBSCRIBED"){ el.textContent = "Connected to overlay"; el.classList.add("live"); sendSound(); } else { el.textContent = "Connecting…"; el.classList.remove("live"); } });
+    .subscribe(s => { const el = $("#status"); if (s === "SUBSCRIBED"){ el.textContent = "Connected"; el.classList.add("live"); sendSound(); } else { el.textContent = "Connecting…"; el.classList.remove("live"); } });
 }
 connect().catch(err => { $("#status").textContent = "Couldn't reach Supabase, check the keys"; console.error(err); });
 showCurrent(); renderList();

@@ -214,7 +214,29 @@ async function connect(){
       warn.style.display = bad ? "block" : "none";
       if (bad) warn.textContent = "Overlay: not connected to the control page";
     });
+  airChannel = ch;
 }
+
+// ---------- telling the control page what is really on air ----------
+// The analyst could not see this page, so "Connected" on their screen meant only
+// that THEY had reached Supabase -- it said nothing about whether OBS had the clip,
+// or was even open. Once a second, and at once whenever it changes, the overlay
+// says which clip it holds and whether it can play it. The control page turns that
+// into the light.
+let airChannel = null, lastReport = "";
+function report(force){
+  if (!airChannel) return;
+  const msg = { type:"overlay", url: loadedUrl,
+                ready: !!loadedUrl && video.hasAttribute("src") && video.readyState >= 3 };
+  const key = msg.url + "|" + msg.ready;
+  if (!force && key === lastReport) return;
+  lastReport = key;
+  airChannel.send({ type:"broadcast", event:"replay", payload: msg });
+}
+setInterval(() => report(true), 1000);             // the heartbeat: silence = no overlay
+video.addEventListener("canplay",   () => report());
+video.addEventListener("emptied",   () => report());
+video.addEventListener("waiting",   () => report());
 
 // ---------- test mode ----------
 // ?test=1 draws a moving arrow and circle so you can check the source is
