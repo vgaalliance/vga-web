@@ -2351,7 +2351,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    blurred Home, the streak and what you passed on */
 .world .dpk{position:absolute;inset:0;z-index:7;pointer-events:none}
 .world .dpk .wrapper{position:absolute;left:0;top:0;width:42px;height:56px;border-radius:6px;transition:none;pointer-events:auto;
-  transform-origin:50% 100%;will-change:transform,opacity;box-shadow:0 0 16px rgba(176,139,250,.5),0 6px 12px rgba(0,0,0,.45)}
+  transform-origin:50% 50%;will-change:transform,opacity;box-shadow:0 0 16px rgba(176,139,250,.5),0 6px 12px rgba(0,0,0,.45)}
 .dpk .wrapper .tear,.dfly.wrapper .tear{top:8px;height:3px}.dpk .wrapper .sz,.dfly.wrapper .sz{font-size:13px;left:4px;bottom:3px}
 .dpk .wrapper .sz em,.dfly.wrapper .sz em{font-size:3.5px}
 .world .dshd{position:absolute;left:0;top:0;width:26px;height:8px;margin:-4px 0 0 -13px;border-radius:50%;pointer-events:none;
@@ -4323,7 +4323,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v216';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v217';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -4462,10 +4462,10 @@ function startWorld(){
      takes a drag while they are up -- the packs ride on it. `hold` only stops
      the face-the-card ease, which would swing the row away from under you. */
   worldCtl = { get lam(){ return lam; }, get tilt(){ return tilt; }, get CX(){ return CX; }, CY: CY, R: R,
-    hold: function(){ worldFaced = true; } };
+    hold: function(){ worldFaced = true; }, slow: function(on){ spin = on ? 0.00053 : 0.0016; }, onFrame: null };
   function proj(la, lo){ la *= rad; lo = lo * rad + lam; var cl = Math.cos(la), sl = Math.sin(la), cp = Math.cos(tilt), sp = Math.sin(tilt);
     var z = sp * sl + cp * cl * Math.cos(lo); return { x: CX + R * cl * Math.sin(lo), y: CY - R * (cp * sl - sp * cl * Math.cos(lo)), v: z > 0, z: z }; }
-  var hidden = false, raf = 0, front = -1, showUntil = 0;
+  var hidden = false, raf = 0, front = -1, showUntil = 0, fc = 0, gW = -1, gAtmo = null, DOTP = [];
   var GLOW = document.createElement('canvas'); GLOW.width = GLOW.height = 20;
   (function(){ var g = GLOW.getContext('2d'), gr = g.createRadialGradient(10, 10, 0, 10, 10, 10); gr.addColorStop(0, 'rgba(160,255,220,.8)'); gr.addColorStop(1, 'rgba(160,255,220,0)'); g.fillStyle = gr; g.fillRect(0, 0, 20, 20); })();
   var bpath = document.getElementById('boutarc'), btxt = document.getElementById('bouttxt'), btp = btxt && btxt.querySelector('textPath');
@@ -4581,7 +4581,13 @@ function startWorld(){
   var LG = document.createElement('canvas'), lgc = LG.getContext('2d'), lgLam = 99, lgTilt = 99, lgW = 0;
   function drawLandGrid(){
     if(LG.width !== wcv.width || LG.height !== wcv.height){ LG.width = wcv.width; LG.height = wcv.height; lgc.setTransform(DPR, 0, 0, DPR, 0, 0); lgLam = 99; }
-    if(Math.abs(lam - lgLam) > 0.0004 || tilt !== lgTilt || W !== lgW){   /* any movement redraws; the cache only saves work when the sphere is still */
+    /* the coastlines and the grid are the most expensive thing in the frame and
+       the cheapest to be slightly late with: the cache is rebuilt once the
+       sphere has turned a fifth of a degree (about three frames of spin, 0.4px
+       at this radius), so land redraws ~20 times a second while the dots, arcs
+       and packs stay on every frame. A drag moves further than that per frame
+       and so still rebuilds every frame. */
+    if(Math.abs(lam - lgLam) > 0.0038 || Math.abs(tilt - lgTilt) > 0.0038 || W !== lgW){
       lgLam = lam; lgTilt = tilt; lgW = W;
       lgc.clearRect(0, 0, W, H);
       var real = cx; cx = lgc;
@@ -4600,9 +4606,16 @@ function startWorld(){
     if(hidden || currentTab !== 'home'){ raf = 0; return; }   // nothing to draw for; resume on return
     /* 30fps while nobody is touching it: the spin is slow enough that every
        other frame is invisible, and it halves the work on the phone */
+    /* THE PHONE ROTATED AND CAME BACK. `resize` fires mid-rotation, when the
+       column is momentarily neither width, and the sphere then drew off-centre
+       until the next resize -- which never came. Re-measure twice a second. */
+    if((++fc & 15) === 0 && wd.clientWidth && wd.clientWidth !== W){ size(); placeSeats(); }
     cx.clearRect(0, 0, W, H);
-    var a = cx.createRadialGradient(CX, CY, R * .94, CX, CY, R * 1.3); a.addColorStop(0, 'rgba(150,120,255,.18)'); a.addColorStop(1, 'rgba(150,120,255,0)');
-    cx.beginPath(); cx.arc(CX, CY, R * 1.3, 0, 7); cx.fillStyle = a; cx.fill();
+    /* the two big radial fills are the same picture every frame: built once per
+       width instead of ~120 gradient objects a second */
+    if(gW !== W){ gW = W;
+      gAtmo = cx.createRadialGradient(CX, CY, R * .94, CX, CY, R * 1.3); gAtmo.addColorStop(0, 'rgba(150,120,255,.18)'); gAtmo.addColorStop(1, 'rgba(150,120,255,0)'); }
+    cx.beginPath(); cx.arc(CX, CY, R * 1.3, 0, 7); cx.fillStyle = gAtmo; cx.fill();
     var g = cx.createRadialGradient(CX - R * .35, CY - R * .45, R * .1, CX, CY, R); g.addColorStop(0, 'rgba(84,64,150,.55)'); g.addColorStop(.62, 'rgba(38,27,80,.5)'); g.addColorStop(1, 'rgba(10,7,22,.62)');
     cx.beginPath(); cx.arc(CX, CY, R, 0, 7); cx.fillStyle = g; cx.fill(); cx.lineWidth = 1; cx.strokeStyle = 'rgba(167,139,250,.42)'; cx.stroke();
     drawLandGrid();
@@ -4629,13 +4642,22 @@ function startWorld(){
         cx.lineWidth = lit ? 1.3 : .8; cx.strokeStyle = g2; if(lit){ cx.shadowColor = 'rgba(255,240,200,.9)'; cx.shadowBlur = 8; } cx.stroke(); cx.shadowBlur = 0;
         if(lit){ [pa, pb].forEach(function(q){ cx.beginPath(); cx.arc(q.x, q.y, 3, 0, 7); cx.fillStyle = 'rgba(255,255,255,.95)'; cx.shadowColor = 'rgba(255,240,200,1)'; cx.shadowBlur = 10; cx.fill(); cx.shadowBlur = 0; }); }
       } }
-    labelArc(runs);
+    if((fc & 3) === 0) labelArc(runs);   /* getComputedTextLength forces an SVG layout: 15 a second is plenty */
     /* one dot per fighter: ~450 of them, so the glow is a sprite drawn with
        drawImage rather than a gradient built per dot per frame */
+    /* 450 dots used to be 450 beginPath/fill pairs -- the single biggest cost in
+       the frame. Brightness is quantised into five steps and each step is ONE
+       path with ONE fill; nobody can see 1/5 of an alpha step on a 2px dot. */
+    for(var b = 0; b < 5; b++) DOTP[b] = new Path2D();
     for(var i = 0; i < worldPts.length; i++){ var d = worldPts[i], p2 = proj(d[1], d[2]); if(!p2.v) continue; var al = .3 + p2.z * .7;
       var sz = d[0], gr = 6 * sz * sz + 1.5;   // glow falls off with the square, so a crowd is texture, not fog
       if(sz >= .6){ cx.globalAlpha = al * .75 * sz * sz; cx.drawImage(GLOW, p2.x - gr, p2.y - gr, gr * 2, gr * 2); cx.globalAlpha = 1; }   /* the crowd gets no glow: 120 fewer draws a frame */
-      cx.beginPath(); cx.arc(p2.x, p2.y, .6 + .8 * sz, 0, 7); cx.fillStyle = 'rgba(230,255,246,' + al + ')'; cx.fill(); }
+      /* moveTo FIRST: arcs added back to back share a subpath, and filling one
+         of those joins every dot to the next with a straight wedge -- which
+         drew white beams across the planet the first time this was batched */
+      var dr = .6 + .8 * sz, dp = DOTP[Math.min(4, Math.floor((al - .3) / .14))];
+      dp.moveTo(p2.x + dr, p2.y); dp.arc(p2.x, p2.y, dr, 0, 7); }
+    for(var b = 0; b < 5; b++){ cx.fillStyle = 'rgba(230,255,246,' + (.37 + b * .14).toFixed(2) + ')'; cx.fill(DOTP[b]); }
     if(!drag){
       if(worldFace && !worldFaced && !dailyUp){
         var tl = -worldFace[1] * rad, dfl = tl - lam; dfl = Math.atan2(Math.sin(dfl), Math.cos(dfl));   // shortest way round
@@ -4643,6 +4665,7 @@ function startWorld(){
         lam += dfl * 0.07; tilt += dft * 0.07;
         if(Math.abs(dfl) < 0.01 && Math.abs(dft) < 0.005) worldFaced = true;
       } else { lam += spin + vel; vel *= .955; } }
+    if(worldCtl.onFrame) worldCtl.onFrame();   /* the daily packs ride this loop rather than starting a second one */
     raf = requestAnimationFrame(frame);
   }
   go();
@@ -7347,7 +7370,7 @@ async function maybeDailyPick(){
   if(!t || t.ok === false || t.picked !== false || currentTab !== 'home'){ dailyUp = false; return; }
   var sd = Number(t.streak_day) || 1, g = worldCtl, rad = Math.PI / 180;
   var world = document.getElementById('world'), orb = document.getElementById('dpk'), cap = document.getElementById('dpkcap');
-  g.hold(); world.classList.add('picking');
+  g.hold(); g.slow(true); world.classList.add('picking');   /* a third of the speed while they are up: fast enough to feel alive, slow enough to pick */
   var c = -g.lam / rad, la = g.tilt / rad + 6, PW = 42, PH = 56;
   function P3(la, lo, lift){ la *= rad; lo = lo * rad + g.lam; var cl = Math.cos(la), sl = Math.sin(la), cp = Math.cos(g.tilt), sp = Math.sin(g.tilt);
     return { x: g.CX + g.R * lift * cl * Math.sin(lo), y: g.CY - g.R * lift * (cp * sl - sp * cl * Math.cos(lo)), z: sp * sl + cp * cl * Math.cos(lo) }; }
@@ -7357,27 +7380,51 @@ async function maybeDailyPick(){
      the next card (the US, ~40N), where 34 degrees of longitude is half the
      width it is at the equator and the three packs overlapped */
   var dlo = Math.asin(Math.min(1, 64 / (g.R * 1.07 * Math.cos(la * rad)))) / rad;
-  var P = [-dlo, 0, dlo].map(function(d, i){
+  var OFF = [-dlo, 0, dlo];
+  var P = OFF.map(function(d, i){
     var sh = document.createElement('div'); sh.className = 'dshd'; orb.appendChild(sh);
     var w = document.createElement('div'); w.innerHTML = '<div class="wrapper" style="--pk:' + packColour(dpName(sd)) + '"><span class="foil"></span><span class="tear"></span><span class="sz">' + (sd === 7 ? 5 : 1) + '<em>' + (sd === 7 ? 'cards' : 'card') + '</em></span></div>';
     var e = w.firstChild; orb.appendChild(e);
     return { el: e, sh: sh, la: la, lo: c + d, i: i };
   });
   var t0 = performance.now();
+  /* FLAT ON THE PLANET, not standing up facing you. The pack's own axes ARE
+     the surface's -- east along the parallel, north along the meridian -- so
+     it is drawn with the 2x2 matrix those two directions make on screen. It
+     foreshortens into the curve and thins out toward the limb by itself; a
+     rotate() could only ever spin a flat card that still faced the camera. */
   function place(p, now){
-    var bob = Math.sin(now / 700 + p.i * 1.9) * .012, up = Math.min(1, (now - t0) / 900), e3 = 1 - Math.pow(1 - up, 3);
-    var lift = 1.07 + bob + (1 - e3) * .9, q = P3(p.la, p.lo, lift), s = P3(p.la, p.lo, 1);
-    var vis = q.z > 0.04 && s.z > 0; p.el.style.display = p.sh.style.display = vis ? 'block' : 'none';
+    var bob = Math.sin(now / 700 + p.i * 1.9) * .008, up = Math.min(1, (now - t0) / 900), e3 = 1 - Math.pow(1 - up, 3);
+    var lift = 1.03 + bob + (1 - e3) * .9, q = P3(p.la, p.lo, lift), gr = P3(p.la, p.lo, 1);
+    var vis = q.z > 0.08 && gr.z > 0; p.el.style.display = p.sh.style.display = vis ? 'block' : 'none';
     if(!vis) return;
-    /* lies along the row's tangent: sample the latitude a degree either side */
-    var a1 = P3(p.la, p.lo - 1, lift), b1 = P3(p.la, p.lo + 1, lift), rot = Math.atan2(b1.y - a1.y, b1.x - a1.x) / rad;
-    p.el.style.transform = 'translate(' + (q.x - PW / 2) + 'px,' + (q.y - PH) + 'px) rotate(' + rot + 'deg) scale(' + (.62 + .42 * q.z) + ')';
-    p.el.style.opacity = String(Math.min(1, e3 * 1.4) * (.55 + .45 * q.z));
-    p.sh.style.transform = 'translate(' + s.x + 'px,' + s.y + 'px) scale(' + (.5 + .6 * s.z) + ',' + (.3 + .5 * s.z) + ')'; p.sh.style.opacity = String(.9 * e3);
+    var ref = g.R * lift * rad, cla = Math.max(.2, Math.cos(p.la * rad));   /* one degree of great circle, at the middle of the disc */
+    var e = P3(p.la, p.lo + 1, lift), w = P3(p.la, p.lo - 1, lift), n = P3(p.la + 1, p.lo, lift), so = P3(p.la - 1, p.lo, lift);
+    var k = .72, ax = (e.x - w.x) / (2 * ref * cla) * k, ay = (e.y - w.y) / (2 * ref * cla) * k,
+        bx = -(n.x - so.x) / (2 * ref) * k, by = -(n.y - so.y) / (2 * ref) * k;   /* CSS y grows downward, north is up */
+    p.el.style.transform = 'translate(' + (q.x - PW / 2) + 'px,' + (q.y - PH / 2) + 'px) matrix(' + ax.toFixed(4) + ',' + ay.toFixed(4) + ',' + bx.toFixed(4) + ',' + by.toFixed(4) + ',0,0)';
+    p.el.style.opacity = String(Math.min(1, e3 * 1.4) * (.5 + .5 * q.z));
+    p.sh.style.transform = 'translate(' + gr.x + 'px,' + gr.y + 'px) scale(' + (.35 + .4 * gr.z) + ',' + (.2 + .35 * gr.z) + ')'; p.sh.style.opacity = String(.35 * e3);
   }
-  (function tick(){ if(!R.run) return;
-    if(!document.hidden){ var now = performance.now(); P.forEach(function(p){ if(!p.gone) place(p, now); }); }
-    requestAnimationFrame(tick); })();
+  /* ROUND THE BACK IS A DEAD END. Parented to the planet, the row turns out of
+     sight and would not come back for half a minute -- a long time to stare at
+     an empty globe holding a pick you cannot make. So once all three have been
+     hidden for a second, they are re-anchored to the face you are looking at
+     now. It happens where nobody can see it, which is the point. */
+  var gone0 = 0;
+  g.onFrame = function(){
+    if(!R.run){ g.onFrame = null; return; }
+    var now = performance.now(), live = 0;
+    P.forEach(function(p){ if(p.gone) return; place(p, now); if(p.el.style.display !== 'none') live++; });
+    if(R.done) return;
+    if(live){ gone0 = 0; return; }
+    if(!gone0){ gone0 = now; return; }
+    if(now - gone0 < 1000) return;
+    gone0 = 0;
+    var c2 = -g.lam / rad, la2 = g.tilt / rad + 6;
+    var dlo2 = Math.asin(Math.min(1, 64 / (g.R * 1.07 * Math.cos(la2 * rad)))) / rad;
+    P.forEach(function(p, i){ p.la = la2; p.lo = c2 + (i === 0 ? -dlo2 : i === 2 ? dlo2 : 0); });
+  };
   setTimeout(function(){
     if(!R.run) return;
     cap.textContent = 'Pick one · Day ' + sd + ' of 7';
@@ -7452,6 +7499,7 @@ function dailyEnd(){
   if(dailyRun) dailyRun.run = false; dailyRun = null;
   var orb = document.getElementById('dpk'); if(orb) orb.innerHTML = '';
   var cap = document.getElementById('dpkcap'); if(cap) cap.classList.remove('on');
+  if(worldCtl) worldCtl.slow(false);
   var w = document.getElementById('world'); if(w) w.classList.remove('picking');
   /* dailyUp stays true: the day is picked, and this session never asks again */
 }
