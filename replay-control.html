@@ -184,6 +184,23 @@ let sb = null, channel = null, lastLive = 0, lastVol = 0;
 // ---------- messaging ----------
 function send(msg){ if (channel) channel.send({ type:"broadcast", event:"replay", payload: msg }); }
 
+// ---------- the sign ----------
+// The overlay used to be given orders -- play, seek, quarter speed -- and any
+// order that arrived while it was still loading a clip was gone for good, which
+// is how an analyst ends up watching a replay that never started on air. So the
+// transport is published as STATE instead, three times a second: not "play" but
+// "clip 3, 4.2 seconds in, quarter speed, playing". Miss one and the next is
+// 300ms behind it. The orders are still sent as well, purely so the overlay
+// reacts instantly rather than up to a third of a second later.
+//
+// Only while a clip is up: an idle control page says nothing.
+let signUrl = null;
+setInterval(() => {
+  if (!channel || !signUrl) return;
+  send({ type:"state", url:signUrl, t:video.currentTime, rate:currentRate(),
+         playing:!video.paused && !video.ended, vol:state.vol, muted:state.muted });
+}, 300);
+
 // ---------- clip list ----------
 function fmtTime(iso){ const d = new Date(iso); return d.toLocaleTimeString([], {hour:"numeric", minute:"2-digit", second:"2-digit"}); }
 
@@ -215,6 +232,7 @@ function loadClip(id){
   const c = state.clips.find(x => String(x.id) === String(id)); if (!c) return;
   state.current = c.id; renderList();
   video.src = c.url; video.playbackRate = currentRate(); video.load();
+  signUrl = String(c.id).startsWith("local-") ? null : c.url;
   $("#nothing").style.display = "none";
   clearAll(false);
   send({ type:"load", url:c.url }); sendSound();
