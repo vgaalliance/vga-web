@@ -1633,8 +1633,15 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    2026-09-07) -- CSS-animated, because the SVG-native sweep it replaces did
    not run in every viewer. Half the strength of the mock. */
 @keyframes wmbreathe{0%,100%{opacity:.12}50%{opacity:.42}}
-.wm .t1.halo{fill:#B9AEE0;stroke:none;pointer-events:none;filter:blur(6px);will-change:opacity;animation:wmbreathe 5s ease-in-out infinite}
-@media (prefers-reduced-motion:reduce){.wm .t1.halo{animation:none;opacity:.25}}
+.wm svg.wmhalo{filter:blur(6px);will-change:opacity;opacity:.12;animation:wmbreathe 5s ease-in-out infinite}
+.wm svg.wmhalo .t1{fill:#B9AEE0;stroke:none}
+/* THE HALO IS ITS OWN LAYER. It was a blurred <text> inside the wordmark svg,
+   and an SVG filter is re-rendered on the CPU whenever the element changes --
+   so a halo breathing forever re-blurred the title sixty times a second, right
+   under the transparent globe canvas that composites over it every frame. As a
+   separate <svg> the blur is a CSS filter on a composited layer and the breath
+   is an opacity change the GPU does alone. */
+@media (prefers-reduced-motion:reduce){.wm svg.wmhalo{animation:none;opacity:.25}}
 /* PAINT THE TITLE (Castle, 2026-09-07): a finger on the wordmark drags a soft
    lavender light through the letters; it fades a second after the lift. The
    touch lands on an invisible band laid over the title ABOVE the sphere --
@@ -2809,9 +2816,8 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   <!-- THE MASTHEAD IS ON THE WORLD. The wordmark is set on an arc concentric
        with the sphere below it, so the name sits on the thing it names. The
        sign-in pill keeps its id: renderHomeHeader() swaps it for the avatar. -->
-  <div class="wm"><svg viewBox="0 0 393 150" preserveAspectRatio="xMidYMin meet"><defs><radialGradient id="wmlav" gradientUnits="userSpaceOnUse" cx="-999" cy="-999" r="70"><stop offset="0" stop-color="#CDBEFF" stop-opacity=".95"/><stop offset=".6" stop-color="#A78BFA" stop-opacity=".55"/><stop offset="1" stop-color="#A78BFA" stop-opacity="0"/></radialGradient><pattern id="wmsky" patternUnits="userSpaceOnUse" width="60" height="60"><rect width="60" height="60" fill="#1E2A5C"/><circle cx="8" cy="12" r="1.3" fill="#fff"></circle><circle cx="31" cy="40" r="1" fill="#fff"></circle><circle cx="50" cy="9" r="1.5" fill="#fff"></circle><circle cx="19" cy="52" r="0.9" fill="#fff"></circle><circle cx="44" cy="27" r="1.1" fill="#fff"></circle><circle cx="57" cy="47" r="0.8" fill="#fff"></circle><circle cx="14" cy="33" r="0.8" fill="#fff"></circle><circle cx="38" cy="16" r="0.9" fill="#fff"></circle><circle cx="27" cy="4" r="0.7" fill="#fff"></circle><circle cx="52" cy="33" r="1" fill="#fff"></circle><circle cx="5" cy="45" r="0.9" fill="#fff"></circle><circle cx="34" cy="56" r="1.2" fill="#fff"></circle></pattern>
+  <div class="wm"><svg class="wmhalo" viewBox="0 0 393 150" preserveAspectRatio="xMidYMin meet" aria-hidden="true"><text class="t1"><textPath href="#wmarc" startOffset="50%" text-anchor="middle">VGA ESPORTS</textPath></text></svg><svg viewBox="0 0 393 150" preserveAspectRatio="xMidYMin meet"><defs><radialGradient id="wmlav" gradientUnits="userSpaceOnUse" cx="-999" cy="-999" r="70"><stop offset="0" stop-color="#CDBEFF" stop-opacity=".95"/><stop offset=".6" stop-color="#A78BFA" stop-opacity=".55"/><stop offset="1" stop-color="#A78BFA" stop-opacity="0"/></radialGradient><pattern id="wmsky" patternUnits="userSpaceOnUse" width="60" height="60"><rect width="60" height="60" fill="#1E2A5C"/><circle cx="8" cy="12" r="1.3" fill="#fff"></circle><circle cx="31" cy="40" r="1" fill="#fff"></circle><circle cx="50" cy="9" r="1.5" fill="#fff"></circle><circle cx="19" cy="52" r="0.9" fill="#fff"></circle><circle cx="44" cy="27" r="1.1" fill="#fff"></circle><circle cx="57" cy="47" r="0.8" fill="#fff"></circle><circle cx="14" cy="33" r="0.8" fill="#fff"></circle><circle cx="38" cy="16" r="0.9" fill="#fff"></circle><circle cx="27" cy="4" r="0.7" fill="#fff"></circle><circle cx="52" cy="33" r="1" fill="#fff"></circle><circle cx="5" cy="45" r="0.9" fill="#fff"></circle><circle cx="34" cy="56" r="1.2" fill="#fff"></circle></pattern>
       <path id="wmarc" d="M 46,190 A 150,150 0 0 1 347,190"/></defs>
-      <text class="t1 halo"><textPath href="#wmarc" startOffset="50%" text-anchor="middle">VGA ESPORTS</textPath></text>
       <text class="t1"><textPath href="#wmarc" startOffset="50%" text-anchor="middle">VGA <tspan class="e">ESPORTS</tspan></textPath></text>
       <text class="t1 fx"><textPath href="#wmarc" startOffset="50%" text-anchor="middle">VGA ESPORTS</textPath></text></svg>
     <button class="signin" id="home-signin" data-goto="you">Sign in</button>
@@ -4323,7 +4329,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v217';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v218';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -4333,7 +4339,7 @@ var APP_BUILD = 'uba-v217';   // keep equal to CACHE_VERSION in sw.js
     .observe(document.getElementById('home-next') || document.body, { childList: true, subtree: true });
 })();
 (function(){
-  var band = document.getElementById('wmband'), wm = document.querySelector('.wm'), svg = wm && wm.querySelector('svg');
+  var band = document.getElementById('wmband'), wm = document.querySelector('.wm'), svg = wm && wm.querySelector('svg:not(.wmhalo)');
   if(!band || !svg) return;
   var fx = svg.querySelector('.t1.fx'), grad = svg.querySelector('#wmlav'), pad = band.parentNode, down = false, offT = null;
   function fit(){ var t = svg.querySelector('text.t1:not(.fx):not(.halo)'); if(!t) return; var b = t.getBoundingClientRect(), r = pad.getBoundingClientRect();
@@ -4465,7 +4471,7 @@ function startWorld(){
     hold: function(){ worldFaced = true; }, slow: function(on){ spin = on ? 0.00053 : 0.0016; }, onFrame: null };
   function proj(la, lo){ la *= rad; lo = lo * rad + lam; var cl = Math.cos(la), sl = Math.sin(la), cp = Math.cos(tilt), sp = Math.sin(tilt);
     var z = sp * sl + cp * cl * Math.cos(lo); return { x: CX + R * cl * Math.sin(lo), y: CY - R * (cp * sl - sp * cl * Math.cos(lo)), v: z > 0, z: z }; }
-  var hidden = false, raf = 0, front = -1, showUntil = 0, fc = 0, gW = -1, gAtmo = null, DOTP = [];
+  var hidden = false, raf = 0, front = -1, showUntil = 0, fc = 0, gW = -1, gAtmo = null, DOTP = [], lastT = 0;
   var GLOW = document.createElement('canvas'); GLOW.width = GLOW.height = 20;
   (function(){ var g = GLOW.getContext('2d'), gr = g.createRadialGradient(10, 10, 0, 10, 10, 10); gr.addColorStop(0, 'rgba(160,255,220,.8)'); gr.addColorStop(1, 'rgba(160,255,220,0)'); g.fillStyle = gr; g.fillRect(0, 0, 20, 20); })();
   var bpath = document.getElementById('boutarc'), btxt = document.getElementById('bouttxt'), btp = btxt && btxt.querySelector('textPath');
@@ -4564,8 +4570,9 @@ function startWorld(){
     var P = [], n = ring.length, allv = true, anyv = false, i;
     for(i = 0; i < n; i++){ var q = proj(ring[i][1], ring[i][0]); P.push(q); if(q.v) anyv = true; else allv = false; }
     if(!anyv) return;
-    cx.beginPath();
-    if(allv){ for(i = 0; i < n; i++) i ? cx.lineTo(P[i].x, P[i].y) : cx.moveTo(P[i].x, P[i].y); cx.closePath(); cx.fill(); cx.stroke(); return; }
+    /* no beginPath/fill here: drawLandGrid gathers every ring into ONE path and
+       fills and strokes it once. A fill per ring was ~150 fills a frame. */
+    if(allv){ for(i = 0; i < n; i++) i ? cx.lineTo(P[i].x, P[i].y) : cx.moveTo(P[i].x, P[i].y); cx.closePath(); return; }
     var s0 = 0; while(P[s0].v) s0++;              // start on a hidden point so runs never wrap
     var run = [];
     for(var k = 1; k <= n; k++){ var q2 = P[(s0 + k) % n];
@@ -4573,7 +4580,6 @@ function startWorld(){
       else if(run.length){ cx.moveTo(run[0].x, run[0].y); for(i = 1; i < run.length; i++) cx.lineTo(run[i].x, run[i].y);
         var a1 = ang(run[run.length - 1]), a0 = ang(run[0]), dlt = a0 - a1; while(dlt > Math.PI) dlt -= 2 * Math.PI; while(dlt < -Math.PI) dlt += 2 * Math.PI;
         cx.arc(CX, CY, R, a1, a1 + dlt, dlt < 0); cx.closePath(); run = []; } }
-    cx.fill(); cx.stroke();
   }
   /* LAND AND GRID ARE CACHED: ~3,000 projections a frame for lines that move
      a fraction of a degree between frames. Drawn to an offscreen layer and
@@ -4581,29 +4587,43 @@ function startWorld(){
   var LG = document.createElement('canvas'), lgc = LG.getContext('2d'), lgLam = 99, lgTilt = 99, lgW = 0;
   function drawLandGrid(){
     if(LG.width !== wcv.width || LG.height !== wcv.height){ LG.width = wcv.width; LG.height = wcv.height; lgc.setTransform(DPR, 0, 0, DPR, 0, 0); lgLam = 99; }
-    /* the coastlines and the grid are the most expensive thing in the frame and
-       the cheapest to be slightly late with: the cache is rebuilt once the
-       sphere has turned a fifth of a degree (about three frames of spin, 0.4px
-       at this radius), so land redraws ~20 times a second while the dots, arcs
-       and packs stay on every frame. A drag moves further than that per frame
-       and so still rebuilds every frame. */
-    if(Math.abs(lam - lgLam) > 0.0038 || Math.abs(tilt - lgTilt) > 0.0038 || W !== lgW){
+    /* EVERY frame while it moves. Rebuilding every third frame (v217) saved
+       work on average and cost smoothness: one heavy frame in three is a
+       stutter at a steady rhythm, which is exactly what a slow spin shows up.
+       Even pacing beats a lower average -- the batching above is what made
+       every frame affordable. The cache still saves everything when still. */
+    if(Math.abs(lam - lgLam) > 0.0004 || tilt !== lgTilt || W !== lgW){
       lgLam = lam; lgTilt = tilt; lgW = W;
       lgc.clearRect(0, 0, W, H);
       var real = cx; cx = lgc;
       cx.save(); cx.beginPath(); cx.arc(CX, CY, R, 0, 7); cx.clip();
     cx.fillStyle = 'rgba(150,130,225,.16)'; cx.strokeStyle = 'rgba(190,175,255,.22)'; cx.lineWidth = .6;
-    for(var ri = 0; ri < LAND.length; ri++) landRing(LAND[ri]);
+    cx.beginPath(); for(var ri = 0; ri < LAND.length; ri++) landRing(LAND[ri]); cx.fill(); cx.stroke();
     cx.restore();
     cx.lineWidth = .7;
-    for(var lo = -180; lo < 180; lo += 20){ cx.beginPath(); var on = false; for(var la = -90; la <= 90; la += 3){ var p = proj(la, lo); if(p.v){ on ? cx.lineTo(p.x, p.y) : cx.moveTo(p.x, p.y); on = true; } else on = false; } cx.strokeStyle = 'rgba(167,139,250,.17)'; cx.stroke(); }
-    for(var la2 = -60; la2 <= 60; la2 += 20){ cx.beginPath(); var on2 = false; for(var lo2 = -180; lo2 <= 180; lo2 += 3){ var q2 = proj(la2, lo2); if(q2.v){ on2 ? cx.lineTo(q2.x, q2.y) : cx.moveTo(q2.x, q2.y); on2 = true; } else on2 = false; } cx.strokeStyle = la2 === 0 ? 'rgba(167,139,250,.30)' : 'rgba(167,139,250,.13)'; cx.stroke(); }
+    /* the grid in three strokes, not 25: every meridian shares a colour, and so
+       does every parallel but the equator. Sampled every 6 degrees, not 3: on a
+       120px sphere a 6-degree chord sits 0.16px off the true circle, and it
+       halves the ~2,000 projections the grid cost every frame. */
+    cx.beginPath();
+    for(var lo = -180; lo < 180; lo += 20){ var on = false; for(var la = -90; la <= 90; la += 6){ var p = proj(la, lo); if(p.v){ on ? cx.lineTo(p.x, p.y) : cx.moveTo(p.x, p.y); on = true; } else on = false; } }
+    cx.strokeStyle = 'rgba(167,139,250,.17)'; cx.stroke();
+    var eqp = new Path2D(); cx.beginPath();
+    for(var la2 = -60; la2 <= 60; la2 += 20){ var on2 = false, tgt = la2 === 0 ? eqp : cx; for(var lo2 = -180; lo2 <= 180; lo2 += 6){ var q2 = proj(la2, lo2); if(q2.v){ on2 ? tgt.lineTo(q2.x, q2.y) : tgt.moveTo(q2.x, q2.y); on2 = true; } else on2 = false; } }
+    cx.strokeStyle = 'rgba(167,139,250,.13)'; cx.stroke();
+    cx.strokeStyle = 'rgba(167,139,250,.30)'; cx.stroke(eqp);
       cx = real;
     }
     cx.drawImage(LG, 0, 0, W, H);
   }
-  function frame(){
-    if(hidden || currentTab !== 'home'){ raf = 0; return; }   // nothing to draw for; resume on return
+  function frame(now){
+    if(hidden || currentTab !== 'home'){ raf = 0; lastT = 0; return; }   // nothing to draw for; resume on return
+    /* MOTION BY THE CLOCK, NOT BY THE FRAME. The spin used to add a fixed step
+       per frame, so a dropped frame was a visible hitch and a phone refreshing
+       at 120Hz spun twice as fast as one at 60. `k` is this frame's length in
+       60Hz frames, capped so coming back from a background tab is not a lurch. */
+    now = now || performance.now();
+    var k = lastT ? Math.min(3, (now - lastT) / 16.667) : 1; lastT = now;
     /* 30fps while nobody is touching it: the spin is slow enough that every
        other frame is invisible, and it halves the work on the phone */
     /* THE PHONE ROTATED AND CAME BACK. `resize` fires mid-rotation, when the
@@ -4662,9 +4682,9 @@ function startWorld(){
       if(worldFace && !worldFaced && !dailyUp){
         var tl = -worldFace[1] * rad, dfl = tl - lam; dfl = Math.atan2(Math.sin(dfl), Math.cos(dfl));   // shortest way round
         var tt = Math.max(-0.3, Math.min(0.72, worldFace[0] * rad)), dft = tt - tilt;   // the card's latitude to the centre of the disc (positive tilt shows the north)
-        lam += dfl * 0.07; tilt += dft * 0.07;
+        var ease = 1 - Math.pow(0.93, k); lam += dfl * ease; tilt += dft * ease;
         if(Math.abs(dfl) < 0.01 && Math.abs(dft) < 0.005) worldFaced = true;
-      } else { lam += spin + vel; vel *= .955; } }
+      } else { lam += (spin + vel) * k; vel *= Math.pow(.955, k); } }
     if(worldCtl.onFrame) worldCtl.onFrame();   /* the daily packs ride this loop rather than starting a second one */
     raf = requestAnimationFrame(frame);
   }
@@ -9279,7 +9299,7 @@ function startDiscBloom(){
   cv.width = S*dpr; cv.height = S*dpr; ctx.scale(dpr, dpr);
 
   var IDLE = 0.16;
-  var si = IDLE, target = IDLE, vel = 0, sweep = 0, bloom = 0, t = 0, held = false;
+  var si = IDLE, target = IDLE, vel = 0, sweep = 0, bloom = 0, t = 0, held = false, idleSkip = 0;
   var TAU = Math.PI*2;
 
   discPull  = function(f){ if(!held) target = IDLE + Math.max(0, Math.min(1, f)) * (0.74 - IDLE); };
@@ -9315,7 +9335,15 @@ function startDiscBloom(){
     requestAnimationFrame(loop);
     /* An animation nobody is looking at is a battery bill. */
     if(document.hidden) return;
-    t++;
+    /* AT REST IT RUNS AT HALF RATE. Twelve wide strokes in 'screen' blending is
+       expensive on a phone CPU, and it was spending that 60 times a second
+       beside the globe for a slow travelling arc. Resting, every other frame
+       is skipped and the drawn one takes a double step; a pull, a hold or a
+       bloom is back on every frame. */
+    var rest = !held && bloom === 0 && Math.abs(target - si) < 0.002 && Math.abs(vel) < 0.0005;
+    if(rest && (++idleSkip & 1)) return;
+    var st = rest ? 2 : 1;
+    t += st;
 
     if(bloom > 0){ bloom = Math.max(0, bloom - 0.014); if(bloom === 0 && !held) target = IDLE; }
     /* Spring, not a lerp: stiffer going up than coming down, so it opens with
@@ -9323,12 +9351,12 @@ function startDiscBloom(){
     var stiff = si < target ? 0.020 : 0.006, damp = si < target ? 0.68 : 0.60;
     vel = (vel + (target - si) * stiff) * damp;
     si = Math.max(0, Math.min(1, si + vel));
-    sweep += 0.010 + si*0.030 + bloom*0.05;
+    sweep += (0.010 + si*0.030 + bloom*0.05) * st;
 
     /* The trail, and the only way to fade a TRANSPARENT canvas: destination-out
        lowers the alpha of what is there. A dark fill paints a box. */
     ctx.globalCompositeOperation = 'destination-out';
-    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fillStyle = st === 2 ? 'rgba(0,0,0,0.39)' : 'rgba(0,0,0,0.22)';   /* 1-(1-.22)^2: the same trail over a double step */
     ctx.fillRect(0, 0, S, S);
     ctx.globalCompositeOperation = 'source-over';
 
