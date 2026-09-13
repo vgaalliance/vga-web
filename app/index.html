@@ -1291,7 +1291,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 
 /* The server's own words, not a guess at them. A refusal ("betting is locked",
    "over the daily limit") is information, so it gets the same slot as a win. */
-#toast{position:fixed;left:16px;right:16px;z-index:60;
+#toast{position:fixed;left:16px;right:16px;z-index:96;
   bottom:calc(74px + env(safe-area-inset-bottom,0px));
   padding:13px 15px;border-radius:12px;font-size:14px;font-weight:600;line-height:1.4;
   background:linear-gradient(150deg,#2F2A55,#1B1638);border:1px solid rgba(110,231,183,.45);
@@ -1451,7 +1451,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    would almost never appear. */
 .pv{position:relative;margin:0 15px;height:258px;border-radius:16px;overflow:hidden;
   isolation:isolate;background:#07050F;touch-action:pan-y}
-.pvgh{background:rgba(255,255,255,.035)}
+.pvgh{background:rgba(255,255,255,.035);margin-bottom:24px}   /* the real card carries a 24px dots row; without this everything below jumped when it loaded */
 .pv .bg{position:absolute;inset:0;z-index:1;pointer-events:none;background:
   linear-gradient(11deg,transparent 32%,rgba(190,180,255,.09) 47%,transparent 62%),
   radial-gradient(66% 46% at 50% 82%,rgba(120,95,200,.20),transparent 74%),
@@ -1662,7 +1662,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .world svg{position:absolute;left:0;right:0;top:0;width:100%;height:340px;pointer-events:none;z-index:3}
 #feedtxt{transition:opacity .3s}
 .pv.home.offscreen .stand i{animation-play-state:paused}
-#turn{display:none;position:fixed;inset:0;z-index:200;background:#02010A;color:#EFEAFF;align-items:center;justify-content:center;flex-direction:column;gap:8px;text-align:center}
+#turn{display:none;position:fixed;inset:0;z-index:200;background:#02010A;opacity:.995;color:#EFEAFF;align-items:center;justify-content:center;flex-direction:column;gap:8px;text-align:center}
 #turn .ic{font-size:44px;color:#A78BFA;animation:turnspin 2.4s ease-in-out infinite}
 #turn .t{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:.04em}
 #turn .s{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#8B83AC}
@@ -2369,7 +2369,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .world .dpkcap.on{opacity:1}
 .world .seat,#feedtxt,#bouttxt{transition:opacity .5s}
 .world.picking .seat,.world.picking #feedtxt,.world.picking #bouttxt{opacity:0 !important;pointer-events:none}
-.dfly{position:fixed !important;left:0;top:0;z-index:95;pointer-events:none;will-change:transform;margin:0}
+.dfly{position:fixed !important;left:0;top:0;z-index:95;pointer-events:none;will-change:transform;margin:0;transition:none !important}   /* .wrapper's .12s transform transition made the flyer trail and ghost onto the tear */
 .dfly.wrapper{width:42px;height:56px;border-radius:6px;transform-origin:50% 50%;box-shadow:0 0 22px rgba(176,139,250,.6)}
 #tear.daily{background:rgba(10,7,26,.42);-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2)}
 #tear .sin.dly .sfan{height:250px}
@@ -3184,7 +3184,16 @@ document.querySelectorAll('.bar button').forEach(function(b){
 
    pushState now, except when the move IS a back button — `fromHistory` stops
    a popstate from pushing the entry it just consumed, which would trap you. */
-function goTabWorldHook(){ if(worldResume) worldResume(); }
+/* HOME SHOWS AGAIN. Anything on Home that measures itself and was asked to
+   while Home was hidden (a rotation on another tab fires resize there) got a 0
+   width and parked itself; this is where it catches up. */
+var rankFitPending = false, seatsPending = false, wmFit = null;
+function goTabWorldHook(){
+  if(worldResume) worldResume();
+  if(rankFitPending){ var rk = document.getElementById('ranks'); if(rk && rk.clientWidth && rk.querySelector('.rgrid')){ rankFitPending = false; fitRankNames(rk); } }
+  if(seatsPending) placeSeats();
+  if(wmFit) setTimeout(wmFit, 0);
+}
 function goTab(name, fromHistory){
   if(!panels[name]) return;
   if(name === currentTab){
@@ -3206,7 +3215,7 @@ function goTab(name, fromHistory){
   if(tabBtns[currentTab]) tabBtns[currentTab].classList.remove('on');
   currentTab = name;
   panels[name].classList.add('live');
-  if(name === 'home') goTabWorldHook();   /* the globe's loop stops on any other tab and nothing else restarts it */
+  if(name === 'home'){ goTabWorldHook(); maybeDailyPick(); }   /* the globe's loop stops on any other tab and nothing else restarts it; a pick skipped because Home was not showing is offered now */
   if(tabBtns[name]) tabBtns[name].classList.add('on');
   panels[name].scrollTop = scrollMem[name] || 0;
   if(name === 'betting') renderBetting();
@@ -3420,6 +3429,8 @@ async function loadHome(){
   if(!evs){
     retryHandlers['home'] = loadHome;
     document.getElementById('fan').innerHTML = failHTML("Couldn't load what's next.", 'home');
+    /* the visible block, not only the hidden stub: offline used to read as "Nothing on the schedule" */
+    ['home-next', 'news-next'].forEach(function(id){ var nx = document.getElementById(id); if(nx){ nx.__nxHtml = null; nx.innerHTML = failHTML("Couldn't load what's next.", 'home'); } });
     document.getElementById('cds').style.display = 'none';
   } else {
     fanEvents = evs;
@@ -4156,6 +4167,9 @@ function paintRanks(el, data){
    ellipsis. */
 var RANK_FIT_FLOOR = 0.6;
 function fitRankNames(el){
+  /* hidden (another tab): clearing the squeeze and then skipping every 0-wide
+     slot left long names cut off with an ellipsis until the board repainted */
+  if(!el.clientWidth){ rankFitPending = true; return; }
   var items = [];
   /* Four passes, and the split is deliberate: every read happens before every
      write, so 60 names cost two layouts instead of 60. */
@@ -4330,7 +4344,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v220';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v221';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -4344,6 +4358,7 @@ var APP_BUILD = 'uba-v220';   // keep equal to CACHE_VERSION in sw.js
   if(!band || !svg) return;
   var fx = svg.querySelector('.t1.fx'), grad = svg.querySelector('#wmlav'), pad = band.parentNode, down = false, offT = null;
   function fit(){ var t = svg.querySelector('text.t1:not(.fx):not(.halo)'); if(!t) return; var b = t.getBoundingClientRect(), r = pad.getBoundingClientRect();
+    if(!r.width || !b.width) return;   /* hidden: a 0 measure shrank the touch band to a 16x12 corner */
     band.style.left = (b.left - r.left - 8) + 'px'; band.style.top = (b.top - r.top + pad.scrollTop - 8) + 'px'; band.style.width = (b.width + 16) + 'px'; band.style.height = (b.height + 12) + 'px'; }
   function at(e){ var m = svg.getScreenCTM(); if(!m) return null; var p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; return p.matrixTransform(m.inverse()); }
   function paint(e){ var p = at(e); if(!p) return; grad.setAttribute('cx', p.x); grad.setAttribute('cy', p.y); fx.classList.add('on'); clearTimeout(offT); }
@@ -4352,7 +4367,13 @@ var APP_BUILD = 'uba-v220';   // keep equal to CACHE_VERSION in sw.js
   band.addEventListener('pointermove', function(e){ if(!down) return; e.preventDefault(); paint(e); });
   band.addEventListener('pointerup', lift); band.addEventListener('pointercancel', lift);
   band.addEventListener('touchmove', function(e){ e.preventDefault(); }, { passive: false });
-  addEventListener('resize', fit); document.fonts && document.fonts.ready.then(fit); setTimeout(fit, 600); setTimeout(fit, 2500);
+  /* debounced, and again after the rotation settles: iOS fires the last resize
+     before layout is final, and a band left at its landscape spot sat over the
+     Sign in pill and swallowed its taps */
+  var fitT = null; wmFit = fit;
+  addEventListener('resize', function(){ clearTimeout(fitT); fitT = setTimeout(fit, 150); });
+  addEventListener('orientationchange', function(){ setTimeout(fit, 500); });
+  document.fonts && document.fonts.ready.then(fit); setTimeout(fit, 600); setTimeout(fit, 2500);
   /* ON ITS OWN, every so often: the same light crosses the title left to
      right in about a second and a half, roughly every twenty seconds, only
      while Home is showing and nobody is touching the title. */
@@ -4398,7 +4419,11 @@ async function loadWorldData(){
 var seatFlags = [];
 function placeSeats(){
   var wd = document.getElementById('world'); if(!wd) return;
-  var W = wd.clientWidth || 393, CX = W / 2, CY = 170, R = 120, ROWS = [133, 155, 177]   /* a hair lower, so the US flag lines up with the US glow */, top = seatFlags;
+  /* hidden: placing for a guessed 393 column put the flags 18-24px off the
+     sphere's shoulders on a Plus/Pro Max; wait for Home to show instead */
+  if(!wd.clientWidth){ seatsPending = true; return; }
+  seatsPending = false;
+  var W = wd.clientWidth, CX = W / 2, CY = 170, R = 120, ROWS = [133, 155, 177]   /* a hair lower, so the US flag lines up with the US glow */, top = seatFlags;
   var base = Math.sqrt(Math.max(R * R - (CY - ROWS[0]) * (CY - ROWS[0]), 0)), html = '';
   top.forEach(function(f, k){
     var n = f.n, c = f.c, side = k < 3 ? 'l' : 'r', row = k % 3, y = ROWS[row];
@@ -4547,6 +4572,7 @@ function makeWorldGL(cv){
         g.lineTo((lo + acc + off + 180) / 360 * TW, (90 - ring[i][1]) / 180 * TH); }
       g.closePath(); }
     function all(){ g.beginPath(); LAND.forEach(function(r){ trace(r, -360); trace(r, 0); trace(r, 360); }); }
+    g.fillStyle = '#000'; g.fillRect(0, 0, TW, TH);   /* opaque, so edge coverage lives in the colour channels: a transparent canvas is un-premultiplied on upload and every soft coastline pixel came back at full strength */
     g.fillStyle = '#f00'; all(); g.fill();
     g.globalCompositeOperation = 'lighter'; g.strokeStyle = '#0f0'; g.lineWidth = 2.2; g.lineJoin = 'round'; all(); g.stroke();
     var tx = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tx);
@@ -4585,13 +4611,33 @@ function startWorld(){
   var wd = document.getElementById('world'), cx = wcv.getContext('2d');
   var W, H = 340, CX, CY = 170, R = 120, DPR = Math.min(devicePixelRatio || 1, 1.5);   /* 2 was 4x the pixels of 1 for a difference nobody can see on a 240px sphere */
   var wglc = document.getElementById('wgl'), GDPR = Math.min(devicePixelRatio || 1, 2), wgl = wglc ? makeWorldGL(wglc) : null;
+  /* `sized`, not W, says whether the canvases were ever measured: opening a
+     shared link (#f/..., #you) leaves Home hidden at boot, size() bails on a 0
+     width, and W is already the 393 default -- which on a 393pt iPhone equals
+     the real width, so "width changed?" never fired and the sphere drew into a
+     300x150 default buffer for the whole session. */
+  var sized = false;
+  /* under the opaque "Turn your phone" screen the globe was still rendering at
+     landscape size -- heat, and a buffer resized twice for nothing */
+  var turnMQ = matchMedia('(orientation:landscape) and (max-height:500px) and (pointer:coarse)');
+  function onTurn(){ if(!turnMQ.matches) setTimeout(go, 60); }
+  if(turnMQ.addEventListener) turnMQ.addEventListener('change', onTurn); else if(turnMQ.addListener) turnMQ.addListener(onTurn);
   function size(){
     if(!wd.clientWidth) return;   // a hidden tab measures 0 -- keep the last real width
-    W = wd.clientWidth; CX = W / 2;
+    W = wd.clientWidth; CX = W / 2; sized = true;
     wcv.width = W * DPR; wcv.height = H * DPR; wcv.style.width = W + 'px'; wcv.style.height = H + 'px'; cx.setTransform(DPR, 0, 0, DPR, 0, 0);
     if(wglc){ wglc.width = Math.round(W * GDPR); wglc.height = Math.round(H * GDPR); wglc.style.width = W + 'px'; wglc.style.height = H + 'px'; }
   }
   W = 393; CX = W / 2; size();
+  /* iOS drops a backgrounded app's GL context. The 2D renderer covers the gap;
+     when the browser hands the context back, the GPU globe is rebuilt (programs
+     and land texture) on the next frame instead of staying on the CPU until a
+     relaunch. The dead canvas is hidden meanwhile so no stale frame shows. */
+  var glRestore = false;
+  if(wglc){
+    wglc.addEventListener('webglcontextlost', function(e){ e.preventDefault(); wglc.style.visibility = 'hidden'; });
+    wglc.addEventListener('webglcontextrestored', function(){ glRestore = true; });
+  }
   /* rotate the phone, or open on a tablet: the sphere re-centres and the flags follow */
   var rsz; addEventListener('resize', function(){ clearTimeout(rsz); rsz = setTimeout(function(){ size(); placeSeats(); }, 120); });
   var gb = document.getElementById('wgrab');
@@ -4630,7 +4676,10 @@ function startWorld(){
        8.5px run past 200px */
     /* measured once per label, not per frame: getComputedTextLength forces an
        SVG layout, and the text only changes when a different bout is lit */
-    if(btLen <= 0){ try{ btLen = btp.getComputedTextLength(); }catch(e){ btLen = 0; } }   /* 0 = not laid out yet (hidden tab, font still loading): ask again next frame */
+    /* measured on a long straight line: WebKit only counts the glyphs that FIT
+       on a textPath, so measuring on the previous bout's short arc (or the
+       initial M 0,0) cached a short length and clipped long names for good */
+    if(btLen <= 0){ bpath.setAttribute('d', 'M -2000,0 L 2000,0'); try{ btLen = btp.getComputedTextLength(); }catch(e){ btLen = 0; } }   /* 0 = not laid out yet (hidden tab, font still loading): ask again next frame */
     var tl = btLen;
     var pts = r.pts; if(pts[0].x > pts[pts.length - 1].x) pts = pts.slice().reverse();   // text reads left to right
     var len = 0; for(var i = 1; i < pts.length; i++) len += Math.hypot(pts[i].x - pts[i-1].x, pts[i].y - pts[i-1].y);
@@ -4690,7 +4739,7 @@ function startWorld(){
   }
   /* one loop, always: cancel whatever is pending and request afresh. a flag
      went stale when a frame was pending in a hidden tab and the globe froze. */
-  function go(){ if(wd.clientWidth && wd.clientWidth !== W){ size(); placeSeats(); } cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); }
+  function go(){ if(wd.clientWidth && (!sized || wd.clientWidth !== W)){ size(); placeSeats(); } cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); }
   document.addEventListener('visibilitychange', function(){ hidden = document.hidden; if(!hidden) go(); });
   /* a point round the back lands INSIDE the disc under orthographic projection
      (mirrored), so it cannot simply be drawn; pushed out to the limb instead,
@@ -4754,20 +4803,25 @@ function startWorld(){
     cx.drawImage(LG, 0, 0, W, H);
   }
   function frame(now){
-    if(hidden || currentTab !== 'home'){ raf = 0; lastT = 0; return; }   // nothing to draw for; resume on return
+    if(hidden || currentTab !== 'home' || turnMQ.matches){ raf = 0; lastT = 0; return; }   // nothing to draw for (incl. under "Turn your phone"); resume on return
     /* MOTION BY THE CLOCK, NOT BY THE FRAME. The spin used to add a fixed step
        per frame, so a dropped frame was a visible hitch and a phone refreshing
-       at 120Hz spun twice as fast as one at 60. `k` is this frame's length in
+       at 120Hz spun twice as fast as one at 60. `step` is this frame's length in
        60Hz frames, capped so coming back from a background tab is not a lurch. */
     now = now || performance.now();
-    var k = lastT ? Math.min(3, (now - lastT) / 16.667) : 1; lastT = now;
+    /* named `step`, not `k`: the arc loop below is `for(var k ...)`, and var is
+       function-scoped -- so from v218 to v220 the spin was multiplied by the
+       NUMBER OF ARCS (8 on FN 31's card). The globe turned 8x too fast and the
+       daily packs raced round the back of it. */
+    var step = lastT ? Math.min(3, (now - lastT) / 16.667) : 1; lastT = now;
     /* 30fps while nobody is touching it: the spin is slow enough that every
        other frame is invisible, and it halves the work on the phone */
     /* THE PHONE ROTATED AND CAME BACK. `resize` fires mid-rotation, when the
        column is momentarily neither width, and the sphere then drew off-centre
        until the next resize -- which never came. Re-measure twice a second. */
-    if((++fc & 15) === 0 && wd.clientWidth && wd.clientWidth !== W){ size(); placeSeats(); }
+    if((++fc & 15) === 0 && wd.clientWidth && (!sized || wd.clientWidth !== W)){ size(); placeSeats(); }
     cx.clearRect(0, 0, W, H);
+    if(glRestore){ glRestore = false; wgl = makeWorldGL(wglc); if(wgl){ wglc.style.visibility = ''; gW = -1; } }
     var onGPU = wgl && !wgl.lost;
     if(onGPU) wgl.draw(worldPts, lam, tilt, CX, CY, R, GDPR);   /* sphere, land, grid and dots; the 2D layer keeps only the arcs */
     else {
@@ -4822,22 +4876,25 @@ function startWorld(){
       dp.moveTo(p2.x + dr, p2.y); dp.arc(p2.x, p2.y, dr, 0, 7); }
     for(var b = 0; b < 5; b++){ cx.fillStyle = 'rgba(230,255,246,' + (.37 + b * .14).toFixed(2) + ')'; cx.fill(DOTP[b]); }
     }
+    if(worldCtl.onFrame) worldCtl.onFrame();   /* the daily packs ride this loop, placed at the rotation this frame drew with (after the update they led the land by a frame) */
     if(!drag){
-      if(worldFace && !worldFaced && !dailyUp){
+      if(worldFace && !worldFaced && !(dailyRun && dailyRun.run)){
         var tl = -worldFace[1] * rad, dfl = tl - lam; dfl = Math.atan2(Math.sin(dfl), Math.cos(dfl));   // shortest way round
         var tt = Math.max(-0.3, Math.min(0.72, worldFace[0] * rad)), dft = tt - tilt;   // the card's latitude to the centre of the disc (positive tilt shows the north)
-        var ease = 1 - Math.pow(0.93, k); lam += dfl * ease; tilt += dft * ease;
+        var ease = 1 - Math.pow(0.93, step); lam += dfl * ease; tilt += dft * ease;
         if(Math.abs(dfl) < 0.01 && Math.abs(dft) < 0.005) worldFaced = true;
-      } else { lam += (spin + vel) * k; vel *= Math.pow(.955, k); } }
-    if(worldCtl.onFrame) worldCtl.onFrame();   /* the daily packs ride this loop rather than starting a second one */
+      } else { lam += (spin + vel) * step; vel *= Math.pow(.955, step); } }
     raf = requestAnimationFrame(frame);
   }
   go();
   worldResume = go;
-  gb.addEventListener('pointerdown', function(e){ drag = { x: e.clientX, y: e.clientY, l: lam, t: tilt }; showUntil = Infinity; worldFaced = true; gb.setPointerCapture(e.pointerId); });
-  gb.addEventListener('pointermove', function(e){ if(!drag) return; var d = (e.clientX - drag.x) / R; vel = d - (lam - drag.l); lam = drag.l + d;
+  /* a touch stops a fling, and a drag that paused before the lift does not
+     throw the globe with the speed of a move from half a second ago */
+  var moveAt = 0;
+  gb.addEventListener('pointerdown', function(e){ drag = { x: e.clientX, y: e.clientY, l: lam, t: tilt }; vel = 0; showUntil = Infinity; worldFaced = true; gb.setPointerCapture(e.pointerId); });
+  gb.addEventListener('pointermove', function(e){ if(!drag) return; var d = (e.clientX - drag.x) / R; vel = d - (lam - drag.l); lam = drag.l + d; moveAt = performance.now();
     tilt = Math.max(-1.35, Math.min(1.35, drag.t - (e.clientY - drag.y) / R)); });
-  function up(){ if(drag) showUntil = Date.now() + 4000; drag = null; }
+  function up(){ if(drag){ showUntil = Date.now() + 4000; if(performance.now() - moveAt > 60) vel = 0; } drag = null; }
   addEventListener('pointerup', up); addEventListener('pointercancel', up);
 }
 var worldResume = null, worldCtl = null;
@@ -5060,7 +5117,14 @@ function renderNextInto(id, home){
   if(nextIdx >= list.rows.length) nextIdx = 0;
   var row = list.rows[nextIdx];
   if(lab) lab.textContent = row && row.__past ? 'Last time out' : 'Next card';
-  el.innerHTML = posterHTML(row, !!(row && row.__past), nextIdx, list.rows.length, home);
+  /* THE SAME CARD IS NOT REBUILT. Boot, the live check, the news repaint and a
+     pull-to-refresh each asked for this block, so one load rebuilt it three to
+     five times: the ticker restarted, the cut-outs flickered, and on a live
+     night the stream reloaded. Unchanged markup is now left alone. */
+  var html = posterHTML(row, !!(row && row.__past), nextIdx, list.rows.length, home);
+  if(el.__nxHtml === html && el.querySelector('.pv')) return;
+  el.__nxHtml = html;
+  el.innerHTML = html;
 }
 
 /* Dots and a swipe, on the block itself. The tap-through to the event is the
@@ -5108,11 +5172,25 @@ var hSwipe = false;
   el.addEventListener('touchend', function(e){
     if(x0 === null || lock !== 'h'){ done(); return; }
     var dx = e.changedTouches[0].clientX - x0;
-    var n = nextEventList().rows.length;
-    done();
-    if(Math.abs(dx) < 42 || n < 2) return;
-    nextIdx = (nextIdx + (dx < 0 ? 1 : n - 1)) % n;
-    renderNextEvent();
+    var n = nextEventList().rows.length, old = pv, box = old && old.parentNode;
+    if(Math.abs(dx) < 42 || n < 2){ done(); return; }
+    x0 = null; lock = null; hSwipe = false; pv = null;
+    /* A SWIPE SLIDES. It used to spring the old card back and swap the new one
+       in on the same tick, so the card followed the finger and then SNAPPED.
+       The old card leaves the way it was thrown, the next one comes in from
+       the other side. */
+    var dir = dx < 0 ? -1 : 1;
+    old.style.transition = 'transform .18s cubic-bezier(.4,0,1,1), opacity .18s';
+    old.style.transform = 'translateX(' + (dir * 110) + '%)'; old.style.opacity = '0';
+    setTimeout(function(){
+      nextIdx = (nextIdx + (dir < 0 ? 1 : n - 1)) % n;
+      renderNextEvent();
+      var nw = box && box.querySelector('.pv'); if(!nw) return;
+      nw.style.transition = 'none'; nw.style.transform = 'translateX(' + (-dir * 110) + '%)'; nw.style.opacity = '0';
+      void nw.offsetWidth;
+      nw.style.transition = 'transform .26s cubic-bezier(.2,.8,.2,1), opacity .2s';
+      nw.style.transform = ''; nw.style.opacity = '';
+    }, 170);
   }, { passive: true });
   el.addEventListener('touchcancel', done, { passive: true });
 });
@@ -5469,6 +5547,9 @@ document.addEventListener('click', function(e){
   var n = e.target.closest('[data-news]');
   if(n){ e.preventDefault(); openSheet({kind:'news', id:n.getAttribute('data-news')}); return; }
   var ev = e.target.closest('[data-event]');
+  /* a UBAe night's id is tm:<uuid>, which is not an events row: opening it as
+     one could only ever answer "Couldn't load that event" */
+  if(ev && String(ev.getAttribute('data-event')).indexOf('tm:') === 0){ e.preventDefault(); return; }
   if(ev){ e.preventDefault(); openSheet({kind:'event', id:ev.getAttribute('data-event')}); return; }
   if(e.target.closest('[data-all-events]')){ openSheet({kind:'events'}); return; }
   var be = e.target.closest('[data-bevent]');
@@ -5698,6 +5779,10 @@ function mountFighterGlobe(stage, home, arcs, name, selEl){
   function frame(){
     if(!stage.isConnected){ raf = 0; return; }
     var el2 = (performance.now() - t0) / 1000;
+    /* rotated while the profile was open: follow the column instead of staying
+       at the landscape width, cropped and off-centre */
+    if(stage.clientWidth && stage.clientWidth !== W){ W = stage.clientWidth; R = W * 0.865; CY = H - 60 + 0.3376 * R; CX = W / 2;
+      cv.width = W * DPR; cv.height = H * DPR; cv.style.width = W + 'px'; cx.setTransform(DPR, 0, 0, DPR, 0, 0); }
     if(!drag){ lam += 0.0006 + vel; vel *= 0.94; }
     cx.clearRect(0, 0, W, H);
     var sky = cx.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#02010A'); sky.addColorStop(1, '#0B0824');
@@ -7327,7 +7412,15 @@ function wireTear(itemId){
     var daily = String(itemId).indexOf('daily:') === 0;
     var r = daily ? await rpc('app_daily_pick', { p_slot: +String(itemId).slice(6) })
                   : await rpc('app_open_pack', { p_player_item_id: itemId });
-    if(!r.ok && daily){ toast(r.message || 'The daily pick did not go through.', true); closeTear(); dailyEnd(); dailyUp = false; return; }
+    if(!r.ok && daily){
+      closeTear(); dailyEnd();
+      /* a dropped connection can still have claimed the day and minted the
+         card on the server: ask, rather than offering a pick that will refuse */
+      var t2 = await rpc('app_daily_pick_today');
+      if(t2 && t2.picked === true){ toast("Today's card is already in your binder."); loadBinder(); }
+      else { toast(r.message || 'The daily pick did not go through.', true); dailyUp = false; }
+      return;
+    }
     if(!r.ok){
       /* Reseal. A torn pack that never opened is worse than an error. */
       opened = false;
@@ -7360,7 +7453,7 @@ async function showSpread(pulls, pity, daily){
              g: c.grade };
   });
   var el = document.getElementById('tear');
-  if(!list.length){ toast('The pack came back empty. The league office has a bug.', true);
+  if(!list.length){ toast('The pack came back empty. The league office has a bug.', true); if(daily) dailyEnd();
     closeTear(); return; }
   /* THE ACTUAL CARD. A pull comes back as a name, a rarity, a print and a
      grade; the slab the binder draws needs the cards_public row behind it
@@ -7603,9 +7696,11 @@ function dailyChoose(P, i, sd){
   P.forEach(function(p, j){
     p.gone = true; p.sh.style.transition = 'opacity .4s'; p.sh.style.opacity = '0';
     if(j === i) return;
-    var r = p.el.getBoundingClientRect(), x0 = r.left - ob.left, y0 = r.top - ob.top, away = j < i ? -1 : 1;
+    /* from the pack's CENTRE at its drawn size: starting at the box corner at
+       scale 1 made both jump down-right and grow 40% before they drifted */
+    var r = p.el.getBoundingClientRect(), x0 = r.left - ob.left + (r.width - PW) / 2, y0 = r.top - ob.top + (r.height - PH) / 2, away = j < i ? -1 : 1, s0 = Math.max(.3, r.width / PW);
     p.el.style.transformOrigin = '50% 50%';
-    dpPath(p.el, [{x:x0,y:y0},{x:x0,y:y0-50},{x:x0+away*120,y:y0-140},{x:x0+away*200,y:y0-240}], 900, 1, .4, away * 30, null, 1, 0);
+    dpPath(p.el, [{x:x0,y:y0},{x:x0,y:y0-50},{x:x0+away*120,y:y0-140},{x:x0+away*200,y:y0-240}], 900, s0, .4, away * 30, null, 1, 0);
   });
   /* the chosen one flies into the real tear, which waits invisible until it lands */
   var el = P[i].el, from = el.getBoundingClientRect();
@@ -7638,7 +7733,7 @@ function dailyPassedHTML(passed, keptRarity, all){
     var r = String(o.rarity || 'common'), close = RSORT.indexOf(r) > kr;
     var row = (all || []).filter(function(k){ return k.card_id === o.card_id; })[0];
     return '<div class="dpo' + (close ? ' close' : '') + '"><div class="dpc">'
-      + (row ? slabHTML(row, { qty: 1 }, false) : '<div class="dpn r-' + esc(r) + '">' + esc(o.fighter || 'Card') + '</div>')
+      + (row ? slabHTML(row, { qty: 1, passed: true }, false) : '<div class="dpn r-' + esc(r) + '">' + esc(o.fighter || 'Card') + '</div>')
       + '</div><span>' + (close ? 'So close' : esc(r)) + '</span></div>';
   }).join('') + '</div></div>';
 }
@@ -9217,7 +9312,7 @@ function slabHTML(card, have, big){
         + '<div class="txt">'
           + '<div class="l1">'+esc(card.set_code || '')+' &middot; '+esc(r)+'</div>'
           + '<div class="l2">'+esc(card.name || 'Card')+'</div>'
-          + '<div class="l3">' + (have
+          + '<div class="l3">' + (have && have.passed ? '<span class="miss">Passed on</span>' : have
               ? '<span class="bars">'+bars(card.card_id)+'</span><span>'+esc(serial)
                 + (print != null && total ? ' &middot; #'+print+'/'+total : '') + '</span>'
               : '<span class="miss">Not in your binder</span>') + '</div>'
@@ -9228,7 +9323,7 @@ function slabHTML(card, have, big){
       + '<div class="well"><div class="inner">' + art
         + '<span class="scrim"></span><span class="fx"></span>' + ink
         + '<div class="cfoot"><div class="n">'+esc(card.name || 'Card')+'</div>'
-        + '<div class="p">' + (have
+        + '<div class="p">' + (have && have.passed ? 'Not minted' : have
             ? (print != null ? '#'+print+(total ? ' / '+total : '') : 'Owned')
             : (total ? total + ' in circulation' : 'Unreleased')) + '</div></div>'
       + '</div></div>'
@@ -9588,7 +9683,9 @@ function wirePullToRefresh(){
   function letGo(){ pulling = false; dist = 0; }
 
   document.addEventListener('touchstart', function(e){
+    pulling = false;   /* a gesture iOS cancelled (rotation, Control Center) must not leak into this one */
     if(busy || e.touches.length !== 1) return;
+    if(e.target.closest && e.target.closest('#turn')) return;   /* a swipe on "Turn your phone" is not a refresh */
     /* A sheet has its own scroller on top of the panel; pulling there should
        do nothing rather than refresh whatever is behind it. */
     var sheet = document.getElementById('sheet');
@@ -9619,6 +9716,7 @@ function wirePullToRefresh(){
     schedule(dist);
   }, { passive: false });
 
+  document.addEventListener('touchcancel', function(){ if(!pulling) return; retract(); letGo(); }, { passive: true });
   document.addEventListener('touchend', function(){
     if(!pulling || busy) return;
     if(dist < TRIGGER){ retract(); letGo(); return; }
@@ -9661,8 +9759,11 @@ function registerWorker(){
        second lock on the same door, because the cost of being wrong is
        somebody's session and the cost of skipping one reload is nothing. */
     if((location.hash || '').indexOf('access_token') !== -1) return;
+    /* nor on top of a pack being ripped or a daily pick in the air: the
+       update waits until the overlay has closed */
+    var busyNow = function(){ var t = document.getElementById('tear'); return (t && t.classList.contains('live')) || (typeof dailyRun !== 'undefined' && dailyRun && dailyRun.run); };
     swReloaded = true;
-    location.reload();
+    (function when(){ if(busyNow()) return setTimeout(when, 1500); location.reload(); })();
   });
   navigator.serviceWorker.register('./sw.js').then(function(reg){
     reg.update().catch(function(){});          // ask on THIS load, not the next
