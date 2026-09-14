@@ -1584,6 +1584,8 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   padding:4px 9px;border-radius:999px;background:rgba(4,3,10,.78);border:1px solid rgba(232,54,43,.55);
   font-family:'Space Mono',monospace;font-size:7px;font-weight:700;letter-spacing:.18em;
   text-transform:uppercase;color:#FFD9D9;pointer-events:none}
+.pv .livetag.rerun{border-color:rgba(167,139,250,.55);color:#E4DAFF}
+.pv .livetag.rerun i{background:#A78BFA;box-shadow:0 0 8px #A78BFA}   /* a rerun is not live: violet, not red */
 .pv .livetag i{width:6px;height:6px;border-radius:50%;background:#FF4D4D;box-shadow:0 0 8px #FF4D4D;
   animation:pulse 1.6s ease-in-out infinite}
 /* No card published yet is a REAL state, not a broken poster: an event can sit
@@ -4363,7 +4365,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v222';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v223';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -4935,7 +4937,7 @@ function paintFeedArc(text){
 var arcFaces = [], arcAt = 0, arcTimer = null;
 function buildArcFaces(){
   var f = [];
-  if(liveNow && liveNow.video_id) f.push('LIVE NOW · ' + (liveNow.event_name || liveNow.title || 'VGA'));
+  if(liveNow && liveNow.video_id) f.push(liveNow.match_kind === 'rerun' ? 'RERUN ON NOW' : 'LIVE NOW · ' + (liveNow.event_name || liveNow.title || 'VGA'));
   (stripFaces || []).forEach(function(x){ if(x.tab === 'Feed') f.push(String(x.v || '').replace(/<[^>]+>/g, '')); });
   var mv = rankMover();
   if(mv) f.push(mv);
@@ -5002,6 +5004,16 @@ function nextEventList(){
     .sort(function(x, y){ return new Date(y.event_date) - new Date(x.event_date); })
     .slice(0, 2).map(function(e){ e.__past = true; return e; });
   var rows = soon.concat(done);
+  /* A STREAM WITH NO EVENT gets its own card, in front. A rerun (or any stream
+     the bot could not tie to an event) used to borrow the card of whatever
+     was scheduled that day -- a 6am rerun played on GFL 9's poster eleven
+     hours before GFL 9. The bot now refuses those matches (live-match.js) and
+     says why in match_kind; here they become a player card that exists only
+     while the stream does, with the events untouched behind it. */
+  if(liveNow && liveNow.video_id && !liveNow.event_id){
+    rows.unshift({ id: 'stream:' + liveNow.video_id, __stream: true, __past: false,
+      name: liveNow.match_kind === 'rerun' ? 'Rerun' : (liveNow.title || 'VGA') });
+  }
   return { rows: rows, past: rows.length ? !!rows[Math.min(nextIdx, rows.length - 1)].__past : false };
 }
 
@@ -5035,16 +5047,19 @@ function posterHTML(e, past, i, n, home){
   /* LIVE: the same frame becomes the player. Nothing else on the page moves.
      Only the event the bot matched flips; every other card stays a poster,
      and a stream the bot could not match flips nothing — the live bar has it. */
-  if(liveNow && liveNow.event_id && liveNow.event_id === e.id){
+  if(e.__stream || (liveNow && liveNow.event_id && liveNow.event_id === e.id)){
     var dots0 = n > 1
       ? '<div class="pvdots lv">' + Array.apply(null, Array(n)).map(function(_, k){
           return '<s class="' + (k === i ? 'on' : '') + '" data-nxi="' + k + '"></s>'; }).join('') + '</div>'
       : '';
-    return '<div class="pv live" data-event="' + esc(e.id) + '">'
+    /* a stream card has no event behind it, so it opens nothing when tapped */
+    var tag = !e.__stream ? 'Live \u00b7 ' + esc(e.name)
+      : liveNow.match_kind === 'rerun' ? 'Rerun' : 'Live \u00b7 ' + esc(e.name);
+    return '<div class="pv live"' + (e.__stream ? '' : ' data-event="' + esc(e.id) + '"') + '>'
       + '<iframe src="https://www.youtube.com/embed/' + esc(liveNow.video_id)
       + '?autoplay=1&mute=1&playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen"'
-      + ' allowfullscreen loading="lazy" title="' + esc(e.name) + ' — live"></iframe>'
-      + '<div class="livetag"><i></i>Live \u00b7 ' + esc(e.name) + '</div>'
+      + ' allowfullscreen loading="lazy" title="' + esc(e.name) + '"></iframe>'
+      + '<div class="livetag' + (e.__stream && liveNow.match_kind === 'rerun' ? ' rerun' : '') + '"><i></i>' + tag + '</div>'
       + '</div>' + dots0;
   }
   /* Everything on this app states event times in ET, because the league runs
