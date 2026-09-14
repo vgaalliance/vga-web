@@ -1592,7 +1592,14 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.13em;
   text-transform:uppercase;color:#8A81A8}
 .pvdots{display:flex;gap:5px;justify-content:center;padding:9px 0 10px}
-.pvdots s{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.20);cursor:pointer}
+.pvdots s{position:relative;width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.20);cursor:pointer}
+/* a 5px dot was the only way off a live card: each one now takes a thumb */
+.pvdots s::after{content:'';position:absolute;left:-7px;right:-7px;top:-12px;bottom:-12px}
+/* LIVE: the whole card is YouTube's, so its touches never reach the page. The
+   dots row under it becomes the swipe strip -- taller, and it says so. */
+.pvdots.lv{padding:14px 0 15px;gap:9px;align-items:center}
+.pvdots.lv::before,.pvdots.lv::after{font-family:'Space Mono',monospace;font-size:10px;color:rgba(255,255,255,.35);pointer-events:none}
+.pvdots.lv::before{content:'\2039';margin-right:6px}.pvdots.lv::after{content:'\203A';margin-left:6px}
 .pvdots s.on{background:#A78BFA}
 .pvnone{margin:0 15px;height:258px;border-radius:16px;border:1px solid rgba(255,255,255,.11);
   background:rgba(255,255,255,.035);padding:26px 15px;text-align:center;
@@ -2373,7 +2380,8 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .dfly.wrapper{width:42px;height:56px;border-radius:6px;transform-origin:50% 50%;box-shadow:0 0 22px rgba(176,139,250,.6)}
 #tear.daily{background:rgba(10,7,26,.42);-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2)}
 #tear .sin.dly .sfan{height:250px}
-#tear .sin.dly .dsk{margin-bottom:64px}   /* the raised card rises 74px and grows 1.4x out of the fan; without this it sits on the streak */
+#tear .sin.dly .dsk{margin-bottom:64px}
+   /* the raised card rises 74px and grows 1.4x out of the fan; without this it sits on the streak */
 #tear .dsk{width:100%;margin-bottom:6px}
 #tear .dskh{display:flex;align-items:baseline;justify-content:space-between;padding:0 4px}
 #tear .dskh b{font-family:'Bebas Neue',sans-serif;font-size:22px;font-weight:400;letter-spacing:.03em;color:#EFEAFF}
@@ -2399,6 +2407,17 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 @keyframes dpin{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 @keyframes dpop{0%{transform:scale(1)}40%{transform:scale(1.28);box-shadow:0 0 0 6px rgba(245,200,66,.35),0 0 30px rgba(245,200,66,.6)}100%{transform:scale(1)}}
 .dpop{animation:dpop .7s cubic-bezier(.2,.8,.2,1)}
+/* A SMALL PHONE (SE, mini). The reveal is ~640px tall in an overlay that does
+   not scroll, so on 667px the streak and "Into the binder" left the screen.
+   Everything tightens a step; nothing is hidden. */
+@media (max-height:720px){
+  #tear .sin.dly .sfan{height:196px}
+  #tear .sin.dly .dsk{margin-bottom:94px}
+  #tear .dskr{margin-top:5px}#tear .dd{height:32px}#tear .dd b{font-size:13px}
+  #tear .dskh b{font-size:18px}
+  #tear .dpass{margin:-2px 0 8px}#tear .dpr{margin-top:5px;gap:12px}#tear .dpc{zoom:.34}
+  #tear .sin.dly .sdots{margin:6px 0 9px}
+}   /* after the daily rules, or they win the cascade */
 @media (prefers-reduced-motion:reduce){
   #tear .scard{transition:opacity .2s}
   #tear .scard.holo:after{animation:none;opacity:.35}
@@ -4344,7 +4363,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v221';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v222';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -5018,7 +5037,7 @@ function posterHTML(e, past, i, n, home){
      and a stream the bot could not match flips nothing — the live bar has it. */
   if(liveNow && liveNow.event_id && liveNow.event_id === e.id){
     var dots0 = n > 1
-      ? '<div class="pvdots">' + Array.apply(null, Array(n)).map(function(_, k){
+      ? '<div class="pvdots lv">' + Array.apply(null, Array(n)).map(function(_, k){
           return '<s class="' + (k === i ? 'on' : '') + '" data-nxi="' + k + '"></s>'; }).join('') + '</div>'
       : '';
     return '<div class="pv live" data-event="' + esc(e.id) + '">'
@@ -5153,7 +5172,9 @@ var hSwipe = false;
   el.addEventListener('touchstart', function(e){
     if(e.touches.length !== 1) return;
     var box = e.target.closest('#news-next, #home-next'); if(!box) return;
-    pv = box.querySelector('.pv'); if(!pv || pv.classList.contains('live')) { pv = null; return; }
+    /* a live card is swiped from its dots strip; touches on the player itself
+       belong to YouTube and never arrive here */
+    pv = box.querySelector('.pv'); if(!pv) return;
     x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; lock = null;
     pv.style.transition = 'none';
   }, { passive: true });
