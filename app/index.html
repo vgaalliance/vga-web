@@ -4430,7 +4430,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v224';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v225';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -5875,11 +5875,25 @@ function mountFighterGlobe(stage, home, arcs, name, selEl, opts){
       if(p.z > -0.02){ st ? cx.lineTo(p.x, p.y) : cx.moveTo(p.x, p.y); st = true; } else st = false; }
     cx.strokeStyle = col; cx.lineWidth = w; if(glow){ cx.shadowBlur = glow; cx.shadowColor = col; }
     cx.stroke(); cx.shadowBlur = 0; }
+  /* Labels never sit on each other. Two fighters from the same country land a
+     few pixels apart, and their names printed over one another read as one
+     smudge, so a label that would collide with one already placed this frame
+     steps up a line and hangs off a short leader to its own dot. */
+  var placed = [];
   function tag(p, txt, col, alpha, bold){ if(p.y < 22) return;
     cx.font = (bold ? 'bold ' : '') + '11px Barlow, system-ui, sans-serif';
-    cx.textAlign = 'center'; cx.textBaseline = 'bottom'; cx.globalAlpha = alpha;
+    var w = cx.measureText(txt).width + 8, y = p.y - 11, lift = 0;
+    function hits(yy){ return placed.some(function(r){
+      return Math.abs(r.x - p.x) < (r.w + w) / 2 && Math.abs(r.y - yy) < 13; }); }
+    while(hits(y) && lift < 5){ y -= 14; lift++; }
+    if(y < 14) return;
+    placed.push({ x: p.x, y: y, w: w });
+    cx.globalAlpha = alpha;
+    if(lift){ cx.beginPath(); cx.moveTo(p.x, p.y - 5); cx.lineTo(p.x, y + 1);
+      cx.strokeStyle = 'rgba(237,234,246,.35)'; cx.lineWidth = 1; cx.stroke(); }
+    cx.textAlign = 'center'; cx.textBaseline = 'bottom';
     cx.lineWidth = 3.5; cx.lineJoin = 'round'; cx.strokeStyle = 'rgba(4,3,12,.92)';
-    cx.strokeText(txt, p.x, p.y - 11); cx.fillStyle = col; cx.fillText(txt, p.x, p.y - 11); cx.globalAlpha = 1; }
+    cx.strokeText(txt, p.x, y); cx.fillStyle = col; cx.fillText(txt, p.x, y); cx.globalAlpha = 1; }
   function frame(){
     if(!stage.isConnected){ raf = 0; return; }
     /* My page keeps this globe behind the photo: nothing is drawn while it is
@@ -5892,7 +5906,7 @@ function mountFighterGlobe(stage, home, arcs, name, selEl, opts){
     if(stage.clientWidth && stage.clientWidth !== W){ W = stage.clientWidth; R = W * 0.865; CY = H - 60 + 0.3376 * R; CX = W / 2;
       cv.width = W * DPR; cv.height = H * DPR; cv.style.width = W + 'px'; cx.setTransform(DPR, 0, 0, DPR, 0, 0); }
     if(!drag){ lam += 0.0006 + vel; vel *= 0.94; }
-    cx.clearRect(0, 0, W, H);
+    cx.clearRect(0, 0, W, H); placed = [];
     var sky = cx.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#02010A'); sky.addColorStop(1, '#0B0824');
     cx.fillStyle = sky; cx.fillRect(0, 0, W, H);
     var h = 7; for(var i = 0; i < 60; i++){
