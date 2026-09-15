@@ -728,6 +728,70 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    the biggest type on the screen because it is the number a fighter actually
    chases; the name sits beside it rather than above it, so the two read as
    one identity instead of a heading and a stat. */
+.mepro{position:relative;overflow:hidden;margin-top:-4px}
+/* MY PAGE (fighters). F1 poster + B3 head + T3 switch, picked by Castle 2026-09-15.
+   The photo and the globe share one frame; the switch trades them and trades
+   the info underneath. */
+.mp-hero{position:relative;height:400px;overflow:hidden;background:radial-gradient(ellipse at 50% 30%,#3a2f78,#15112b 70%)}
+.mp-photo{position:absolute;inset:0;transition:transform .7s cubic-bezier(.65,0,.25,1),opacity .5s}
+.mp-photo img{position:absolute;left:50%;top:34px;height:118%;transform:translateX(-50%)}
+.mp-photo .init{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',sans-serif;font-size:120px;color:rgba(237,234,246,.12)}
+.mp-world{position:absolute;inset:0;touch-action:pan-y;user-select:none;transform:translateY(100%);
+  transition:transform .7s cubic-bezier(.65,0,.25,1)}
+.mp-world canvas{position:absolute;inset:0;display:block}
+.mp-fade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(26,21,51,0) 45%,#1A1533 97%)}
+.mepro.on-world .mp-world{transform:none}
+.mepro.on-world .mp-photo{transform:translateY(-35%);opacity:0}
+.mp-head{position:relative;z-index:2;margin-top:-82px;padding:0 18px}
+.mp-nm{font-family:'Bebas Neue',sans-serif;font-size:64px;line-height:.84;letter-spacing:.5px;white-space:nowrap;text-transform:uppercase}
+.mp-sub{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:5px;min-height:44px}
+.mp-sub>div{min-width:0}
+.mp-nick{font-family:'Barlow Condensed',sans-serif;font-style:italic;font-weight:600;font-size:17px;color:#E8C351}
+.mp-line{font-weight:600;font-size:13px;color:#9C95B8;margin-top:1px}
+.mp-sw{position:relative;width:60px;height:60px;flex:none;border:0;background:none;padding:0;cursor:pointer;color:inherit;-webkit-tap-highlight-color:transparent}
+.mp-sw:focus-visible{outline:2px solid #E8C351;outline-offset:4px;border-radius:12px}
+.mp-sw .gl,.mp-sw .me{position:absolute;inset:0;transition:opacity .35s,transform .45s cubic-bezier(.2,.8,.2,1)}
+.mp-sw canvas{width:100%;height:100%;display:block;filter:drop-shadow(0 0 9px rgba(176,139,250,.5))}
+.mp-sw .me{opacity:0;transform:scale(.6)}
+.mp-sw .me img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 4%;
+  -webkit-mask:linear-gradient(#000 72%,transparent);mask:linear-gradient(#000 72%,transparent)}
+.mp-sw .me .ec{transform:translate(5px,-3px);filter:brightness(0) invert(58%) sepia(62%) saturate(2800%) hue-rotate(228deg)}
+.mp-sw .me .bob{position:absolute;inset:0;animation:mpbob 2.6s ease-in-out infinite}
+.mp-sw .mi{position:absolute;inset:6px;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:26px;color:#EDEAF6;text-shadow:5px -3px 0 #9b7bf0}
+@keyframes mpbob{50%{transform:translateY(-3px)}}
+.mp-sw small{position:absolute;left:50%;transform:translateX(-50%);bottom:-14px;font-family:'Space Mono',monospace;
+  font-size:9px;font-weight:700;letter-spacing:.14em;color:#9C95B8;white-space:nowrap;transition:opacity .3s}
+.mp-sw .lp{opacity:0}
+.mepro.on-world .mp-sw .gl{opacity:0;transform:scale(.6) rotate(-40deg)}
+.mepro.on-world .mp-sw .me{opacity:1;transform:none}
+.mepro.on-world .mp-sw .lw{opacity:0}.mepro.on-world .mp-sw .lp{opacity:1}
+.mp-bodies{display:grid;margin-top:16px}
+.mp-bodies>div{grid-area:1/1;min-width:0;transition:transform .6s cubic-bezier(.65,0,.25,1),opacity .5s}
+.mp-w{transform:translateX(110%);opacity:0;pointer-events:none}
+.mepro.on-world .mp-p{transform:translateX(-110%);opacity:0;pointer-events:none}
+.mepro.on-world .mp-w{transform:none;opacity:1;pointer-events:auto}
+.mp-bodies>.gone{display:none}
+.mp-big{display:flex;margin:0 18px;border-top:1px solid rgba(237,234,246,.12);border-bottom:1px solid rgba(237,234,246,.12)}
+.mp-big div{flex:1;padding:11px 0 9px;min-width:0}
+.mp-big div+div{border-left:1px solid rgba(237,234,246,.12);padding-left:14px}
+.mp-big s{display:block;text-decoration:none;font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#9C95B8}
+.mp-big b{display:block;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:34px;line-height:1}
+.mp-big .gd{color:#E8C351}.mp-big .w{color:#5FD98A}.mp-big .l{color:#F19C96}
+.mp-rows .bout,.mp-map .bout{display:flex;align-items:center;gap:12px;margin:0 18px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.mp-rows .wl,.mp-map .wl{width:26px;height:26px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+.mp-rows .wl.w,.mp-map .wl.w{background:rgba(74,222,128,.16);color:#6EE7B7}
+.mp-rows .wl.l,.mp-map .wl.l{background:rgba(232,54,43,.16);color:#F19C96}
+.mp-map .wl.n{background:rgba(245,200,66,.16);color:#F5C842;font-size:9px}
+.mp-rows .mid,.mp-map .mid{flex:1;min-width:0}
+.mp-rows .op,.mp-map .op{font-size:15.5px;font-weight:600}
+.mp-rows .ev,.mp-map .ev{font-size:12.5px;color:#9C94BE}
+.mp-rows .via{font-size:11px;color:#9C94BE;font-weight:600}
+.mp-map .where{font-size:12.5px;color:#9C94BE;text-align:right;max-width:40%}
+@media (prefers-reduced-motion:reduce){
+  .mp-photo,.mp-world,.mp-bodies>div,.mp-sw .gl,.mp-sw .me,.mp-sw small{transition:none}
+  .mp-sw .me .bob{animation:none}
+}
 .crd{margin:4px 14px 0;border-radius:16px;position:relative;overflow:hidden;
   background:linear-gradient(155deg,#4C3F8A 0%,#2A2150 46%,#171130 100%);
   border:1px solid rgba(245,200,66,.38)}
@@ -3236,6 +3300,7 @@ function goTab(name, fromHistory){
   if(tabBtns[currentTab]) tabBtns[currentTab].classList.remove('on');
   currentTab = name;
   panels[name].classList.add('live');
+  if(name === 'you') mpResume();
   if(name === 'home'){ goTabWorldHook(); maybeDailyPick(); }   /* the globe's loop stops on any other tab and nothing else restarts it; a pick skipped because Home was not showing is offered now */
   if(tabBtns[name]) tabBtns[name].classList.add('on');
   panels[name].scrollTop = scrollMem[name] || 0;
@@ -4365,7 +4430,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v223';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v224';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -5786,12 +5851,15 @@ async function loadFighterWorld(f, all){
   mountFighterGlobe(el.querySelector('.fworld'), home, arcs, f.display_name, el.querySelector('.fsel'));
 }
 
-function mountFighterGlobe(stage, home, arcs, name, selEl){
+function mountFighterGlobe(stage, home, arcs, name, selEl, opts){
+  opts = opts || {};
   var rad = Math.PI / 180;   /* the home globe's own `rad` is scoped inside startWorld() */
   var cv = stage.querySelector('canvas'), cx = cv.getContext('2d');
-  var W = stage.clientWidth || 393, H = 340, R = W * 0.865, CY = H - 60 + 0.3376 * R, CX = W / 2;
+  var W = stage.clientWidth || 393, H = opts.height || 340, R = W * 0.865, CY = H - 60 + 0.3376 * R, CX = W / 2;
   var lam = 66 * rad, tilt = -33 * rad, vel = 0, drag = null, axis = null, sel = 0, t0 = performance.now();
-  var DPR = Math.min(devicePixelRatio || 1, 1.5), raf = 0;
+  /* my page opens facing the fighter rather than the league's usual view */
+  if(opts.center) lam = -home[1] * rad;
+  var DPR = Math.min(devicePixelRatio || 1, 1.5), raf = 0, drawn = false;
   cv.width = W * DPR; cv.height = H * DPR; cv.style.width = W + 'px'; cv.style.height = H + 'px';
   cx.setTransform(DPR, 0, 0, DPR, 0, 0);
   function proj(la, lo, lift){ la *= rad; lo = lo * rad + lam; lift = lift || 1;
@@ -5814,6 +5882,10 @@ function mountFighterGlobe(stage, home, arcs, name, selEl){
     cx.strokeText(txt, p.x, p.y - 11); cx.fillStyle = col; cx.fillText(txt, p.x, p.y - 11); cx.globalAlpha = 1; }
   function frame(){
     if(!stage.isConnected){ raf = 0; return; }
+    /* My page keeps this globe behind the photo: nothing is drawn while it is
+       out of sight, and resume() starts it again. */
+    if(drawn && opts.paused && opts.paused()){ raf = 0; return; }
+    drawn = true;   /* the first frame always paints, so it is never blank when it shows */
     var el2 = (performance.now() - t0) / 1000;
     /* rotated while the profile was open: follow the column instead of staying
        at the landscape width, cropped and off-centre */
@@ -5890,13 +5962,14 @@ function mountFighterGlobe(stage, home, arcs, name, selEl){
   stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
   stage.addEventListener('touchmove', function(e){ if(axis === 'h') e.preventDefault(); }, { passive: false });
   function select(i){
-    sel = i; var a = arcs[i]; if(!selEl) return;
+    sel = i; var a = arcs[i]; if(!selEl || !a) return;
     selEl.querySelector('.bar').className = 'bar' + (a.up ? ' up' : '');
     selEl.querySelector('b').textContent = (a.up ? 'Next: ' : '') + name + ' v ' + a.n;
     selEl.querySelector('span:not(.bar)').textContent =
       [a.ev, a.when, a.up ? '' : (a.res + (a.how ? ' \u00b7 ' + a.how : ''))].filter(Boolean).join(' \u00b7 ');
   }
   select(0); frame();
+  return { resume: function(){ if(!raf) frame(); } };
 }
 
 /* ── news article ── */
@@ -6423,12 +6496,10 @@ async function loadMe(){
   /* The block opens the public fighter page -- the one everyone else sees.
      Only for fighters: a fan has no public profile, and a tappable thing that
      does nothing is worse than one that never invited the tap. */
-  var html = '<div class="crd' + (p.fighter_slug ? ' tap" data-slug="' + esc(p.fighter_slug) + '"' : '"')
+  var html = p.fighter_slug ? meProShellHTML(p) : '';
+  if(!p.fighter_slug) html += '<div class="crd' + (p.fighter_slug ? ' tap" data-slug="' + esc(p.fighter_slug) + '"' : '"')
     + '><span class="glow"></span><div class="cin"><div class="crt">';
-  if(p.fighter_slug){
-    html += '<div class="rnk" id="me-rank"><div class="h">RANKED</div>'
-      + '<div class="num">&mdash;</div><div class="of">&nbsp;</div></div>';
-  } else {
+  if(!p.fighter_slug){
     html += '<div class="rnk fan"><div class="h">MEMBER</div>'
       + '<div class="ava">' + (window.__meAvatar
           ? '<img src="'+esc(window.__meAvatar)+'" alt="">' : '') + '</div></div>';
@@ -6441,7 +6512,7 @@ async function loadMe(){
     + (face ? '<img src="'+esc(face)+'" alt="" onerror="this.parentNode.className=\'pfp none\'">' : '')
     + '<svg><use href="#i-user"/></svg></div>';
 
-  html += '<div class="who"><div class="nm4">'
+  if(!p.fighter_slug) html += '<div class="who"><div class="nm4">'
     + esc(p.fighter_name || p.display_name || window.__meName || 'Signed in') + '</div>'
     + '<div class="sub4" id="me-sub4">'
     + esc(p.fighter_slug ? wc(p.weight_class) : 'Fan account')
@@ -6530,7 +6601,7 @@ async function loadMe(){
 
   html += '<div id="me-media"></div>';
   el.innerHTML = html;
-  if(p.fighter_slug) loadCareer(p.fighter_slug);
+  if(p.fighter_slug) loadMePro(p.fighter_slug);
 }
 
 
@@ -6952,6 +7023,269 @@ async function loadCareer(slug){
   }
   loadMyMedia(done);
 }
+
+/* ── MY PAGE ─────────────────────────────────────────────────────────────
+   A fighter's own page at the top of You: the photo as a poster with the name
+   across it, then record, tape and fights. The small globe beside the
+   nickname trades the photo for the same horizon globe the public fighter page
+   ends on, and trades the info underneath for where they have fought.
+   Designed with Castle 2026-09-15 (F1 poster, B3 head, T3 horizon switch).
+
+   Everything on it is a column that exists. A number that cannot be counted
+   is left out rather than shown as zero: most fighters' records predate the
+   bouts on file, so the World side counts places and titles, never fights. */
+var MP = null;   /* the live page: { root, f, home, globe, mini } */
+
+function meProShellHTML(p){
+  var face = p.photo_url || '';
+  return '<div class="mepro" id="me-pro">'
+    + '<div class="mp-hero"><div class="mp-photo">'
+    + (face ? '<img src="' + esc(face) + '" alt="" onerror="this.remove()">'
+            : '<span class="init">' + esc(initials(p.fighter_name || '')) + '</span>')
+    + '</div><div class="mp-world"></div><div class="mp-fade"></div></div>'
+    + '<div class="mp-head"><div class="mp-nm">' + mpNameLines(p.fighter_name) + '</div>'
+    + '<div class="mp-sub"><div><div class="mp-nick" id="mp-nick"></div>'
+    + '<div class="mp-line" id="mp-line">' + esc(wc(p.weight_class)) + '</div></div>'
+    + '<button class="mp-sw" type="button" id="mp-sw" aria-label="Show your world" hidden>'
+    + '<span class="gl"><canvas></canvas></span>'
+    + '<span class="me"><span class="bob">' + (face
+        ? '<img class="ec" src="' + esc(face) + '" alt=""><img src="' + esc(face) + '" alt="">'
+        : '<span class="mi">' + esc(initials(p.fighter_name || '')) + '</span>')
+    + '</span></span><small class="lw">WORLD</small><small class="lp">PROFILE</small></button>'
+    + '</div></div>'
+    + '<div class="mp-bodies"><div class="mp-p" id="mp-p"><div class="skel" style="height:60px"></div>'
+    + '<div class="skel" style="width:70%"></div></div><div class="mp-w gone" id="mp-w"></div></div>'
+    + '</div>';
+}
+
+/* Two lines at most, split where the halves are closest in length; one long
+   word stays one line and is shrunk by mpFitName instead. */
+function mpNameLines(name){
+  var w = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if(w.length < 2) return esc(w.join(' '));
+  var best = 1, bd = 1e9;
+  for(var i = 1; i < w.length; i++){
+    var d = Math.abs(w.slice(0, i).join(' ').length - w.slice(i).join(' ').length);
+    if(d < bd){ bd = d; best = i; }
+  }
+  return esc(w.slice(0, best).join(' ')) + '<br>' + esc(w.slice(best).join(' '));
+}
+function mpFitName(){
+  var nm = document.querySelector('#me-pro .mp-nm'); if(!nm || !nm.clientWidth) return;   /* hidden tab: measure when it shows */
+  var size = 64; nm.style.fontSize = size + 'px';
+  while(nm.scrollWidth > nm.clientWidth + 1 && size > 28){ size -= 2; nm.style.fontSize = size + 'px'; }
+}
+
+async function loadMePro(slug){
+  var root = document.getElementById('me-pro'); if(!root) return;
+  mpFitName();
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(mpFitName);
+  var got = await Promise.all([
+    q("fighter_cards?select=id,display_name,slug,weight_class,headline_wins,headline_losses,headline_draws,"
+      + "rank,is_champion,nickname,country,region,gym,height,reach,stance,profile_photo_url"
+      + "&slug=eq." + encodeURIComponent(slug) + "&limit=1"),
+  ]);
+  if(!root.isConnected) return;
+  var f = got[0] && got[0][0];
+  var pEl = document.getElementById('mp-p');
+  if(!f){
+    retryHandlers['mepro'] = function(){ loadMePro(slug); };
+    pEl.innerHTML = failHTML("Couldn't load your page.", 'mepro'); return;
+  }
+  var all = await q("fighter_matches?select=won,method,opponent_name,opponent_slug,event_name,"
+    + "event_date,status,is_title_fight,vod_link,weight_class&fighter_id=eq." + f.id
+    + "&order=event_date.desc.nullslast&limit=40");
+  if(!root.isConnected) return;
+  all = all || [];
+
+  /* The roster photo if the profile row had none. */
+  var photo = root.querySelector('.mp-photo');
+  if(!photo.querySelector('img') && f.profile_photo_url){
+    photo.innerHTML = '<img src="' + esc(f.profile_photo_url) + '" alt="" onerror="this.remove()">';
+    var bob = root.querySelector('.mp-sw .bob');
+    if(bob) bob.innerHTML = '<img class="ec" src="' + esc(f.profile_photo_url) + '" alt=""><img src="' + esc(f.profile_photo_url) + '" alt="">';
+  }
+  var nick = document.getElementById('mp-nick');
+  if(f.nickname){ nick.textContent = '"' + String(f.nickname).replace(/^["“”']+|["“”']+$/g, '') + '"'; }
+  else nick.remove();
+  var where = [f.country, f.region].filter(Boolean).join(', ');
+  document.getElementById('mp-line').textContent =
+    wc(f.weight_class) + (f.is_champion ? ' Champion' : '') + (where ? ' · ' + where : '');
+
+  var done = all.filter(function(b){ return b.status === 'completed'; });
+  var soon = all.filter(isUpcomingBout)
+    .sort(function(a, b){ return new Date(a.event_date) - new Date(b.event_date); })[0];
+
+  pEl.innerHTML = mpProfileHTML(f, done, soon);
+  loadMyMedia(done);
+
+  var home = placeFighter(f.country, f.region, f.slug);
+  MP = { root: root, f: f, home: home, all: all, globe: null, mini: null, arcs: null };
+  var sw = document.getElementById('mp-sw');
+  if(!home){ sw.remove(); return; }       /* nowhere to stand: no World side at all */
+  sw.hidden = false;
+  MP.mini = mountMiniGlobe(sw.querySelector('canvas'), home, root);
+  sw.addEventListener('click', mpToggle);
+  await mpBuildWorld();
+  /* No photo: the globe always has something to show, so open on it. */
+  if(!root.querySelector('.mp-photo img') && MP.arcs && MP.arcs.length) mpToggle();
+}
+
+function mpProfileHTML(f, done, soon){
+  var W = Number(f.headline_wins || 0), L = Number(f.headline_losses || 0), D = Number(f.headline_draws || 0);
+  var last = done.slice(0, 3);
+  var mid = f.is_champion ? '<div><s>Title</s><b class="gd">CHAMP</b></div>'
+    : '<div><s>Rank</s><b>' + (f.rank ? '#' + f.rank : '—') + '</b></div>';
+  var third = last.length
+    ? '<div><s>Last ' + last.length + '</s><b>' + last.map(function(b){
+        return '<span class="' + (b.won ? 'w' : 'l') + '">' + (b.won ? 'W' : 'L') + '</span>'; }).join('') + '</b></div>'
+    : '<div><s>Fights</s><b>0</b></div>';
+  var html = '<div class="mp-big"><div><s>Record</s><b>' + W + '-' + L + (D ? '-' + D : '') + '</b></div>'
+    + mid + third + '</div>'
+    + tapeHTML(f);
+  if(soon){
+    html += '<div class="lab"><b>Next</b><i></i></div>'
+      + '<div class="fnext"' + (soon.opponent_slug ? ' data-slug="' + esc(soon.opponent_slug) + '"' : '') + '>'
+      + '<span class="bar"></span><div><b>' + esc(soon.opponent_name || 'Opponent TBA') + '</b>'
+      + '<span>' + esc(soon.event_name || '') + (soon.event_date ? ' · ' + esc(dstr(soon.event_date)) : '')
+      + (soon.is_title_fight ? ' · title' : '') + '</span></div>'
+      + '<em>' + esc(wc(soon.weight_class) || '') + '</em></div>';
+  }
+  if(done.length){
+    html += '<div class="lab"><b>Last fights</b><i></i></div><div class="mp-rows">'
+      + done.slice(0, 5).map(function(b){
+          return '<div class="bout"' + (b.opponent_slug ? ' data-slug="' + esc(b.opponent_slug) + '"' : '') + '>'
+            + '<span class="wl ' + (b.won ? 'w' : 'l') + '">' + (b.won ? 'W' : 'L') + '</span>'
+            + '<div class="mid"><div class="op">' + esc(b.opponent_name || 'Unknown') + '</div>'
+            + '<div class="ev">' + esc(b.event_name || '') + (b.event_date ? ' · ' + esc(dstr(b.event_date)) : '')
+            + (b.is_title_fight ? ' · title' : '') + '</div></div>'
+            + '<span class="via">' + esc(String(b.method || '').toUpperCase()) + '</span></div>';
+        }).join('') + '</div>';
+  }
+  return html;
+}
+
+/* The World side's info, and the lines the globe will draw. Opponents are
+   placed by the same rule as everywhere else; one with no country or region
+   is listed as unknown and never guessed onto the map. */
+async function mpBuildWorld(){
+  var m = MP, all = m.all, slugs = [], seen = {};
+  all.forEach(function(b){ if(b.opponent_slug && !seen[b.opponent_slug]){ seen[b.opponent_slug] = 1; slugs.push(b.opponent_slug); } });
+  var ops = slugs.length ? await q("fighter_cards?select=slug,country,region&slug=in.(" + slugs.join(',') + ")") : [];
+  if(!m.root.isConnected) return;
+  var info = {}; (ops || []).forEach(function(o){ info[o.slug] = o; });
+  var arcs = [], rows = [], countries = {};
+  all.forEach(function(b){
+    var next = isUpcomingBout(b), fin = b.status === 'completed';
+    if(!fin && !next) return;
+    var o = info[b.opponent_slug], at = o ? placeFighter(o.country, o.region, o.slug) : null;
+    if(o && o.country && fin) countries[o.country] = 1;
+    rows.push({ b: b, next: next, where: o ? [o.country, o.region].filter(Boolean).join(', ') : '' });
+    if(!at || (at[0] === m.home[0] && at[1] === m.home[1])) return;
+    if(arcs.some(function(a){ return a.slug === b.opponent_slug; })) return;
+    arcs.push({ slug: b.opponent_slug, at: at, n: b.opponent_name || b.opponent_slug,
+      ev: b.event_name || '', when: b.event_date ? dstr(b.event_date) : '',
+      up: next, res: fin ? (b.won ? 'W' : 'L') : 'NEXT', how: fin ? String(b.method || '').toUpperCase() : '' });
+  });
+  arcs.sort(function(a, b){ return (b.up ? 1 : 0) - (a.up ? 1 : 0); });
+  m.arcs = arcs;
+  var done = all.filter(function(b){ return b.status === 'completed'; });
+  var titles = done.filter(function(b){ return b.is_title_fight; }).length;
+  var fins = done.filter(function(b){ return b.won && /KO|TKO|SUB/i.test(String(b.method || '')); }).length;
+  var html = '<div class="mp-big"><div><s>Countries</s><b>' + Object.keys(countries).length + '</b></div>'
+    + '<div><s>Title fights</s><b class="gd">' + titles + '</b></div>'
+    + '<div><s>Finishes</s><b>' + fins + '</b></div></div>';
+  if(rows.length){
+    html += '<div class="lab"><b>Where you\'ve fought</b><i></i></div><div class="mp-map">'
+      + rows.slice(0, 12).map(function(r){
+          var b = r.b, cls = r.next ? 'n' : (b.won ? 'w' : 'l'), tagx = r.next ? 'NEXT' : (b.won ? 'W' : 'L');
+          return '<div class="bout"' + (b.opponent_slug ? ' data-slug="' + esc(b.opponent_slug) + '"' : '') + '>'
+            + '<span class="wl ' + cls + '">' + tagx + '</span>'
+            + '<div class="mid"><div class="op">' + esc(b.opponent_name || 'Unknown') + '</div>'
+            + '<div class="ev">' + esc(b.event_name || '') + (b.event_date ? ' · ' + esc(dstr(b.event_date)) : '')
+            + (b.is_title_fight ? ' · title' : '') + '</div></div>'
+            + '<span class="where">' + esc(r.where || 'location unknown') + '</span></div>';
+        }).join('') + '</div>';
+  } else {
+    html += '<div class="empty">No fights on the map yet.</div>';
+  }
+  document.getElementById('mp-w').innerHTML = html;
+}
+
+function mpToggle(){
+  var m = MP; if(!m || !m.root.isConnected) return;
+  var on = m.root.classList.toggle('on-world');
+  var sw = document.getElementById('mp-sw');
+  if(sw) sw.setAttribute('aria-label', on ? 'Show your profile' : 'Show your world');
+  var pEl = document.getElementById('mp-p'), wEl = document.getElementById('mp-w');
+  /* both halves take part in the slide, then the hidden one leaves the layout
+     so the page is as tall as what is showing */
+  pEl.classList.remove('gone'); wEl.classList.remove('gone');
+  void pEl.offsetWidth;
+  clearTimeout(m.t);
+  m.t = setTimeout(function(){ (on ? pEl : wEl).classList.add('gone'); }, 720);
+  if(on){
+    if(!m.globe){
+      var stage = m.root.querySelector('.mp-world');
+      stage.innerHTML = '<canvas></canvas>';
+      m.globe = mountFighterGlobe(stage, m.home, m.arcs || [], m.f.display_name, null, {
+        height: 400, center: true,
+        paused: function(){ return !m.root.classList.contains('on-world') || !mpVisible(m.root); }
+      });
+    } else m.globe.resume();
+  } else if(m.mini) m.mini.resume();
+}
+
+/* On screen: the You tab is live and the app is in front. */
+function mpVisible(root){
+  var panel = root.closest('.panel');
+  return !document.hidden && (!panel || panel.classList.contains('live'));
+}
+
+/* The switch: a small globe turning under the fighter's own dot. Drawn at a
+   modest rate and not at all while hidden, on World, or off the You tab. */
+function mountMiniGlobe(cv, home, root){
+  var rad = Math.PI / 180, S = 60, DPR = Math.min(devicePixelRatio || 1, 2), ctx = cv.getContext('2d');
+  cv.width = S * DPR; cv.height = S * DPR; ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  var R = S * 0.46, C = S / 2, lam = -home[1] * rad, tilt = home[0] * 0.6 * rad, raf = 0, last = 0;
+  function proj(la, lo){ la *= rad; lo = lo * rad + lam;
+    var cl = Math.cos(la), sl = Math.sin(la), cp = Math.cos(tilt), sp = Math.sin(tilt);
+    return { x: C + R * cl * Math.sin(lo), y: C - R * (cp * sl - sp * cl * Math.cos(lo)), z: sp * sl + cp * cl * Math.cos(lo) }; }
+  function draw(){
+    ctx.clearRect(0, 0, S, S);
+    var g = ctx.createRadialGradient(C - R * .3, C - R * .35, R * .1, C, C, R);
+    g.addColorStop(0, '#3a2f78'); g.addColorStop(1, '#15112d');
+    ctx.beginPath(); ctx.arc(C, C, R, 0, 7); ctx.fillStyle = g; ctx.fill();
+    ctx.save(); ctx.beginPath(); ctx.arc(C, C, R, 0, 7); ctx.clip();
+    ctx.fillStyle = 'rgba(165,145,240,.42)';
+    for(var r2 = 0; r2 < LAND.length; r2++){ var ring = LAND[r2]; if(ring.length < 8) continue;
+      var ok = true; ctx.beginPath();
+      for(var i = 0; i < ring.length; i += 2){ var p = proj(ring[i][1], ring[i][0]); if(p.z < 0){ ok = false; break; }
+        i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); }
+      if(ok){ ctx.closePath(); ctx.fill(); } }
+    ctx.restore();
+    var h = proj(home[0], home[1]);
+    if(h.z > 0){ ctx.beginPath(); ctx.arc(h.x, h.y, 2.4, 0, 7); ctx.fillStyle = '#E8C351'; ctx.fill(); }
+  }
+  function frame(t){
+    if(!cv.isConnected){ raf = 0; return; }
+    if(root.classList.contains('on-world') || !mpVisible(root)){ raf = 0; return; }
+    if(t - last > 50){ lam += 0.012; draw(); last = t; }
+    raf = requestAnimationFrame(frame);
+  }
+  draw();
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!reduce) raf = requestAnimationFrame(frame);
+  return { resume: function(){ if(!raf && !reduce) raf = requestAnimationFrame(frame); } };
+}
+/* Coming back to the tab or the app restarts whichever globe is showing. */
+function mpResume(){
+  if(document.hidden || !MP || !MP.root.isConnected) return;
+  mpFitName();
+  if(MP.root.classList.contains('on-world')){ if(MP.globe) MP.globe.resume(); } else if(MP.mini) MP.mini.resume();
+}
+document.addEventListener('visibilitychange', mpResume);
+window.addEventListener('resize', function(){ if(MP && MP.root.isConnected) mpFitName(); });
 
 /* WHAT YOU ARE IN. A poster or a VOD only counts if you were on that card,
    so this is driven by your own fight history rather than by the calendar. */
