@@ -728,7 +728,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    the biggest type on the screen because it is the number a fighter actually
    chases; the name sits beside it rather than above it, so the two read as
    one identity instead of a heading and a stat. */
-.mepro{position:relative;overflow:hidden;margin-top:-4px}
+.mepro{position:relative;overflow:hidden;margin-top:-4px;background:#1A1533}  /* the sheet's ground is darker; the poster fade ends on this one */
 /* MY PAGE (fighters). F1 poster + B3 head + T3 switch, picked by Castle 2026-09-15.
    The photo and the globe share one frame; the switch trades them and trades
    the info underneath. */
@@ -4451,7 +4451,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v225';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v226';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -5719,38 +5719,8 @@ async function renderFighter(slug){
     if(more && more[0]) for(var k in more[0]) f[k] = more[0][k];
   }
 
-  var art = f.profile_photo_url
-    ? '<span class="init">'+esc(initials(f.display_name))+'</span>'
-      + '<img src="'+esc(f.profile_photo_url)+'" alt="" onerror="this.remove()">'
-    : '<span class="init">'+esc(initials(f.display_name))+'</span>';
-
-  body.innerHTML =
-      '<div class="hero">' + art + backButton()
-    + '<div class="name">'
-    + (f.is_champion ? '<span class="bt">Champion</span>' : '')
-    + '<h2>'+esc(f.display_name)+'</h2>'
-    + (f.nickname ? '<div class="nick">"'+esc(f.nickname)+'"</div>' : '')
-    + '</div></div>'
-    + '<div class="stats">'
-    + '<div><b>'+(f.headline_wins||0)+'</b><s>wins</s></div>'
-    + '<div><b>'+(f.headline_losses||0)+'</b><s>losses</s></div>'
-    + '<div><b>'+(f.headline_draws||0)+'</b><s>draws</s></div>'
-    + '<div><b>'+(f.rank != null ? f.rank : '—')+'</b><s>p4p</s></div>'
-    + '</div>'
-    + '<dl class="meta">'
-    + '<dt>Division</dt><dd>'+esc(wc(f.weight_class))+'</dd>'
-    + '<dt>Team</dt><dd>'+esc(f.team || 'Free agent')+'</dd>'
-    + (f.country ? '<dt>From</dt><dd>'+esc(f.country)+'</dd>' : '')
-    + (f.gym ? '<dt>Gym</dt><dd>'+esc(f.gym)+'</dd>' : '')
-    + '</dl>'
-    + tapeHTML(f)
-    + '<div id="sheet-next"></div>'
-    + '<div class="lab"><b>Fights</b><i></i></div>'
-    + '<div id="sheet-bouts"><div class="skel"></div><div class="skel" style="width:70%"></div></div>'
-    + '<div id="sheet-media"></div>'
-    + '<div id="sheet-world"></div>';
-
-  loadBouts(f);
+  body.innerHTML = fighterPageHTML(f);
+  loadFighterPage(f.slug);
 }
 
 /* THE TALE OF THE TAPE. Every row is a column the database already held and
@@ -5769,108 +5739,14 @@ function tapeHTML(f){
     + '</dl>';
 }
 
-async function loadBouts(f){
-  var el = document.getElementById('sheet-bouts');
-  if(!el || !f.id){ if(el) el.innerHTML = '<div class="empty">No fight history.</div>'; return; }
-  /* ONE read for the whole tail of the page. The old one asked only for
-     completed bouts, so the page could never say what was coming next. */
-  var all = await q("fighter_matches?select=won,method,opponent_name,opponent_slug,event_name,"
-    + "event_date,status,is_title_fight,vod_link,weight_class&fighter_id=eq." + f.id
-    + "&order=event_date.desc.nullslast&limit=40");
-  if(!el.isConnected) return;
-  if(!all){
-    retryHandlers['bouts'] = function(){ loadBouts(f); };
-    el.innerHTML = failHTML("Couldn't load the fight history.", 'bouts'); return;
-  }
-  var rows = all.filter(function(b){ return b.status === 'completed'; });
-  /* A bout is only COMING if its date has not passed. UBA 15 sat unresolved
-     with status `scheduled` a fortnight after it happened, and the page
-     announced it as the next fight. A stale row is not a fixture. */
-  var soon = all.filter(function(b){ return isUpcomingBout(b); })
-                .sort(function(a2, b2){ return new Date(a2.event_date) - new Date(b2.event_date); })[0];
-  paintNext(soon);
-  paintMedia(all);
-  loadFighterWorld(f, all);
-  if(!rows.length){ el.innerHTML = '<div class="empty">No fights recorded yet.</div>'; return; }
-  el.innerHTML = rows.map(function(b){
-    return '<div class="bout"'+(b.opponent_slug ? ' data-slug="'+esc(b.opponent_slug)+'"' : '')+'>'
-      + '<span class="wl '+(b.won?'w':'l')+'">'+(b.won?'W':'L')+'</span>'
-      + '<div class="mid"><div class="op">'+esc(b.opponent_name || 'Unknown')+'</div>'
-      + '<div class="ev">'+esc(b.event_name || '')+(b.event_date ? ' · '+esc(dstr(b.event_date)) : '')
-      + (b.is_title_fight ? ' · title' : '')+'</div></div>'
-      + '<span class="via">'+esc((b.method||'').toUpperCase())+'</span></div>';
-  }).join('');
-}
 
 function isUpcomingBout(b){
   if(!b || b.status === 'completed' || !b.event_date) return false;
   return new Date(b.event_date).getTime() > Date.now() - 12 * 3600 * 1000;
 }
 
-/* WHAT IS COMING. Nothing at all if there is nothing scheduled -- an empty
-   "next fight" block on a fighter between camps is worse than no block. */
-function paintNext(b){
-  var el = document.getElementById('sheet-next'); if(!el) return;
-  if(!b){ el.innerHTML = ''; return; }
-  el.innerHTML = '<div class="lab"><b>Next</b><i></i></div>'
-    + '<div class="fnext"' + (b.opponent_slug ? ' data-slug="' + esc(b.opponent_slug) + '"' : '') + '>'
-    + '<span class="bar"></span><div><b>' + esc(b.opponent_name || 'Opponent TBA') + '</b>'
-    + '<span>' + esc(b.event_name || '') + (b.event_date ? ' \u00b7 ' + esc(dstr(b.event_date)) : '')
-    + (b.is_title_fight ? ' \u00b7 title' : '') + '</span></div>'
-    + '<em>' + esc(wc(b.weight_class) || '') + '</em></div>';
-}
 
-/* WHAT HE APPEARS IN. Only what actually exists: a recording is a chip you can
-   press, an event with a poster is a poster. A fighter with neither gets no
-   section rather than an empty rail. */
-function paintMedia(all){
-  var el = document.getElementById('sheet-media'); if(!el) return;
-  var vods = (all || []).filter(function(b){ return b.vod_link; });
-  if(!vods.length){ el.innerHTML = ''; return; }
-  el.innerHTML = '<div class="lab"><b>Appears in</b><i></i></div><div class="frail">'
-    + vods.slice(0, 8).map(function(b){
-        return '<a class="fmedia" href="' + esc(b.vod_link) + '" target="_blank" rel="noopener">'
-          + '<span class="tag">FULL FIGHT</span><span class="play">\u25b6</span>'
-          + '<span class="lbl"><b>v ' + esc(b.opponent_name || '') + '</b>'
-          + '<s>' + esc(b.event_name || '') + '</s></span></a>';
-      }).join('')
-    + '</div>';
-}
 
-/* HIS WORLD, and it closes the page. The sphere's centre sits below the frame,
-   so what you see is a horizon rather than a ball, and the view centre is put
-   in the deep south so that everyone from his own country to the far side of
-   the Atlantic lands in the visible band. Sideways drags travel; up and down
-   scrolls the sheet, decided on the first 8px. */
-async function loadFighterWorld(f, all){
-  var el = document.getElementById('sheet-world'); if(!el) return;
-  var home = placeFighter(f.country, f.region, f.slug);
-  if(!home){ el.innerHTML = ''; return; }
-  var slugs = [], seen = {};
-  (all || []).forEach(function(b){ if(b.opponent_slug && !seen[b.opponent_slug]){ seen[b.opponent_slug] = 1; slugs.push(b.opponent_slug); } });
-  var ops = slugs.length
-    ? await q("fighter_cards?select=slug,country,region&slug=in.(" + slugs.join(',') + ")")
-    : [];
-  if(!el.isConnected) return;
-  var at = {}; (ops || []).forEach(function(o){ at[o.slug] = placeFighter(o.country, o.region, o.slug); });
-  var arcs = [];
-  (all || []).forEach(function(b){
-    var p = at[b.opponent_slug]; if(!p) return;
-    if(p[0] === home[0] && p[1] === home[1]) return;
-    if(arcs.some(function(a){ return a.slug === b.opponent_slug; })) return;
-    var done = b.status === 'completed', next = isUpcomingBout(b);
-    arcs.push({ slug: b.opponent_slug, at: p, n: b.opponent_name || b.opponent_slug,
-      ev: b.event_name || '', when: b.event_date ? dstr(b.event_date) : '',
-      up: next, res: done ? (b.won ? 'W' : 'L') : (next ? 'NEXT' : ''),
-      how: done ? String(b.method || '').toUpperCase() : '' });
-  });
-  if(!arcs.length){ el.innerHTML = ''; return; }
-  arcs.sort(function(a, b){ return (b.up ? 1 : 0) - (a.up ? 1 : 0); });
-  el.innerHTML = '<div class="lab"><b>His world</b><i></i></div>'
-    + '<div class="fworld"><canvas></canvas><div class="hint">drag to travel</div></div>'
-    + '<div class="fsel"><span class="bar"></span><div><b>&nbsp;</b><span>&nbsp;</span></div></div>';
-  mountFighterGlobe(el.querySelector('.fworld'), home, arcs, f.display_name, el.querySelector('.fsel'));
-}
 
 function mountFighterGlobe(stage, home, arcs, name, selEl, opts){
   opts = opts || {};
@@ -6528,13 +6404,16 @@ async function loadMe(){
 
   /* THE CAREER BLOCK. A fan has no fighter, so the same block carries a
      different left-hand column rather than an empty ring where a rank goes. */
-  /* The block opens the public fighter page -- the one everyone else sees.
-     Only for fighters: a fan has no public profile, and a tappable thing that
-     does nothing is worse than one that never invited the tap. */
-  var html = p.fighter_slug ? meProShellHTML(p) : '';
-  if(!p.fighter_slug) html += '<div class="crd' + (p.fighter_slug ? ' tap" data-slug="' + esc(p.fighter_slug) + '"' : '"')
+  /* Tapping it opens the public fighter page -- the one everyone else sees,
+     and the only place the poster and the world live (2026-09-15). Fighters
+     only: a fan has no public page, and a tappable thing that does nothing is
+     worse than one that never invited the tap. */
+  var html = '<div class="crd' + (p.fighter_slug ? ' tap" data-slug="' + esc(p.fighter_slug) + '"' : '"')
     + '><span class="glow"></span><div class="cin"><div class="crt">';
-  if(!p.fighter_slug){
+  if(p.fighter_slug){
+    html += '<div class="rnk" id="me-rank"><div class="h">RANKED</div>'
+      + '<div class="num">&mdash;</div><div class="of">&nbsp;</div></div>';
+  } else {
     html += '<div class="rnk fan"><div class="h">MEMBER</div>'
       + '<div class="ava">' + (window.__meAvatar
           ? '<img src="'+esc(window.__meAvatar)+'" alt="">' : '') + '</div></div>';
@@ -6547,7 +6426,7 @@ async function loadMe(){
     + (face ? '<img src="'+esc(face)+'" alt="" onerror="this.parentNode.className=\'pfp none\'">' : '')
     + '<svg><use href="#i-user"/></svg></div>';
 
-  if(!p.fighter_slug) html += '<div class="who"><div class="nm4">'
+  html += '<div class="who"><div class="nm4">'
     + esc(p.fighter_name || p.display_name || window.__meName || 'Signed in') + '</div>'
     + '<div class="sub4" id="me-sub4">'
     + esc(p.fighter_slug ? wc(p.weight_class) : 'Fan account')
@@ -6636,7 +6515,7 @@ async function loadMe(){
 
   html += '<div id="me-media"></div>';
   el.innerHTML = html;
-  if(p.fighter_slug) loadMePro(p.fighter_slug);
+  if(p.fighter_slug) loadCareer(p.fighter_slug);
 }
 
 
@@ -7059,11 +6938,13 @@ async function loadCareer(slug){
   loadMyMedia(done);
 }
 
-/* ── MY PAGE ─────────────────────────────────────────────────────────────
-   A fighter's own page at the top of You: the photo as a poster with the name
-   across it, then record, tape and fights. The small globe beside the
-   nickname trades the photo for the same horizon globe the public fighter page
-   ends on, and trades the info underneath for where they have fought.
+/* ── THE FIGHTER PAGE ────────────────────────────────────────────────────
+   Every fighter's public page, your own included: the photo as a poster with
+   the name across it, then record, tape and fights. The small globe beside the
+   nickname trades the photo for the horizon globe, and trades the info
+   underneath for where they have fought. It was briefly the top of the You
+   tab; You is a hub of rooms, and a page about a fighter belongs where
+   everybody reaches it.
    Designed with Castle 2026-09-15 (F1 poster, B3 head, T3 horizon switch).
 
    Everything on it is a column that exists. A number that cannot be counted
@@ -7071,26 +6952,26 @@ async function loadCareer(slug){
    bouts on file, so the World side counts places and titles, never fights. */
 var MP = null;   /* the live page: { root, f, home, globe, mini } */
 
-function meProShellHTML(p){
-  var face = p.photo_url || '';
+function fighterPageHTML(p){
+  var face = p.photo_url || p.profile_photo_url || '';
   return '<div class="mepro" id="me-pro">'
-    + '<div class="mp-hero"><div class="mp-photo">'
+    + '<div class="mp-hero">' + backButton() + '<div class="mp-photo">'
     + (face ? '<img src="' + esc(face) + '" alt="" onerror="this.remove()">'
-            : '<span class="init">' + esc(initials(p.fighter_name || '')) + '</span>')
+            : '<span class="init">' + esc(initials(p.fighter_name || p.display_name || '')) + '</span>')
     + '</div><div class="mp-world"></div><div class="mp-fade"></div></div>'
-    + '<div class="mp-head"><div class="mp-nm">' + mpNameLines(p.fighter_name) + '</div>'
+    + '<div class="mp-head"><div class="mp-nm">' + mpNameLines(p.fighter_name || p.display_name) + '</div>'
     + '<div class="mp-sub"><div><div class="mp-nick" id="mp-nick"></div>'
     + '<div class="mp-line" id="mp-line">' + esc(wc(p.weight_class)) + '</div></div>'
-    + '<button class="mp-sw" type="button" id="mp-sw" aria-label="Show your world" hidden>'
+    + '<button class="mp-sw" type="button" id="mp-sw" aria-label="Show their world" hidden>'
     + '<span class="gl"><canvas></canvas></span>'
     + '<span class="me"><span class="bob">' + (face
         ? '<img class="ec" src="' + esc(face) + '" alt=""><img src="' + esc(face) + '" alt="">'
-        : '<span class="mi">' + esc(initials(p.fighter_name || '')) + '</span>')
+        : '<span class="mi">' + esc(initials(p.fighter_name || p.display_name || '')) + '</span>')
     + '</span></span><small class="lw">WORLD</small><small class="lp">PROFILE</small></button>'
     + '</div></div>'
     + '<div class="mp-bodies"><div class="mp-p" id="mp-p"><div class="skel" style="height:60px"></div>'
     + '<div class="skel" style="width:70%"></div></div><div class="mp-w gone" id="mp-w"></div></div>'
-    + '</div>';
+    + '<div id="fp-media"></div></div>';
 }
 
 /* Two lines at most, split where the halves are closest in length; one long
@@ -7111,7 +6992,7 @@ function mpFitName(){
   while(nm.scrollWidth > nm.clientWidth + 1 && size > 28){ size -= 2; nm.style.fontSize = size + 'px'; }
 }
 
-async function loadMePro(slug){
+async function loadFighterPage(slug){
   var root = document.getElementById('me-pro'); if(!root) return;
   mpFitName();
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(mpFitName);
@@ -7124,8 +7005,8 @@ async function loadMePro(slug){
   var f = got[0] && got[0][0];
   var pEl = document.getElementById('mp-p');
   if(!f){
-    retryHandlers['mepro'] = function(){ loadMePro(slug); };
-    pEl.innerHTML = failHTML("Couldn't load your page.", 'mepro'); return;
+    retryHandlers['mepro'] = function(){ loadFighterPage(slug); };
+    pEl.innerHTML = failHTML("Couldn't load that fighter.", 'mepro'); return;
   }
   var all = await q("fighter_matches?select=won,method,opponent_name,opponent_slug,event_name,"
     + "event_date,status,is_title_fight,vod_link,weight_class&fighter_id=eq." + f.id
@@ -7152,12 +7033,13 @@ async function loadMePro(slug){
     .sort(function(a, b){ return new Date(a.event_date) - new Date(b.event_date); })[0];
 
   pEl.innerHTML = mpProfileHTML(f, done, soon);
-  loadMyMedia(done);
+  loadMyMedia(done, 'fp-media');
 
   var home = placeFighter(f.country, f.region, f.slug);
   MP = { root: root, f: f, home: home, all: all, globe: null, mini: null, arcs: null };
   var sw = document.getElementById('mp-sw');
   if(!home){ sw.remove(); return; }       /* nowhere to stand: no World side at all */
+  sw.setAttribute('aria-label', 'Show ' + (mpMine(f) ? 'your' : 'their') + ' world');
   sw.hidden = false;
   MP.mini = mountMiniGlobe(sw.querySelector('canvas'), home, root);
   sw.addEventListener('click', mpToggle);
@@ -7231,7 +7113,8 @@ async function mpBuildWorld(){
     + '<div><s>Title fights</s><b class="gd">' + titles + '</b></div>'
     + '<div><s>Finishes</s><b>' + fins + '</b></div></div>';
   if(rows.length){
-    html += '<div class="lab"><b>Where you\'ve fought</b><i></i></div><div class="mp-map">'
+    html += '<div class="lab"><b>' + (mpMine(m.f) ? 'Where you\'ve fought' : 'Where they have fought')
+      + '</b><i></i></div><div class="mp-map">'
       + rows.slice(0, 12).map(function(r){
           var b = r.b, cls = r.next ? 'n' : (b.won ? 'w' : 'l'), tagx = r.next ? 'NEXT' : (b.won ? 'W' : 'L');
           return '<div class="bout"' + (b.opponent_slug ? ' data-slug="' + esc(b.opponent_slug) + '"' : '') + '>'
@@ -7251,7 +7134,7 @@ function mpToggle(){
   var m = MP; if(!m || !m.root.isConnected) return;
   var on = m.root.classList.toggle('on-world');
   var sw = document.getElementById('mp-sw');
-  if(sw) sw.setAttribute('aria-label', on ? 'Show your profile' : 'Show your world');
+  if(sw) sw.setAttribute('aria-label', on ? 'Show the profile' : 'Show the world');
   var pEl = document.getElementById('mp-p'), wEl = document.getElementById('mp-w');
   /* both halves take part in the slide, then the hidden one leaves the layout
      so the page is as tall as what is showing */
@@ -7271,10 +7154,13 @@ function mpToggle(){
   } else if(m.mini) m.mini.resume();
 }
 
-/* On screen: the You tab is live and the app is in front. */
+/* Whether this page belongs to the signed-in fighter. */
+function mpMine(f){ return !!(myFighter && f && f.slug === myFighter.fighter_slug); }
+
+/* On screen: the sheet is open and the app is in front. */
 function mpVisible(root){
-  var panel = root.closest('.panel');
-  return !document.hidden && (!panel || panel.classList.contains('live'));
+  var sh = root.closest('.sheet');
+  return !document.hidden && (!sh || sh.classList.contains('live'));
 }
 
 /* The switch: a small globe turning under the fighter's own dot. Drawn at a
@@ -7324,8 +7210,8 @@ window.addEventListener('resize', function(){ if(MP && MP.root.isConnected) mpFi
 
 /* WHAT YOU ARE IN. A poster or a VOD only counts if you were on that card,
    so this is driven by your own fight history rather than by the calendar. */
-async function loadMyMedia(fights){
-  var el = document.getElementById('me-media');
+async function loadMyMedia(fights, elId){
+  var el = document.getElementById(elId || 'me-media');
   if(!el || !fights.length) return;
   var names = fights.map(function(m){ return m.event_name; })
     .filter(function(v,i,a){ return v && a.indexOf(v) === i; }).slice(0, 12);
