@@ -715,10 +715,12 @@ function playTape(){
   clearTimeout(autoHideTimer);
   autoHideTimer = setTimeout(() => { if (tapeShown) hideTape() }, TAPE_AUTO_HIDE_MS);
   if (window.__tapeReport) window.__tapeReport(true);
-  tapeRoot.style.transition = 'opacity .28s ease';
-  tapeRoot.style.opacity = '1';
-  tapeRoot.style.transform = 'none';
 
+  // ORDER MATTERS. The root used to be revealed HERE, before the inner
+  // elements were put back to their pre-entrance state -- so there was a
+  // window in which a fully-built tape could be painted before it reset and
+  // animated. Reset first, reveal second.
+  //
   // back to the pre-entrance state, or a replay starts from wherever the last
   // one finished and nothing appears to move
   centerCol.style.transition = 'none';
@@ -731,13 +733,32 @@ function playTape(){
   statRows.forEach(r=>{ r.style.transition='none'; r.style.opacity='0'; r.style.transform='translateY(-14px)'; });
 
   if(window.__playWraps) window.__playWraps();
-  requestAnimationFrame(()=>{
-    requestAnimationFrame(()=>{
-      centerCol.style.transition = 'opacity 0.7s cubic-bezier(.16,.6,.25,1), transform 0.85s cubic-bezier(.16,.6,.25,1)';
-      centerCol.style.opacity = '1';
-      centerCol.style.transform = 'translateY(0) scale(1)';
-    });
-  });
+
+  // A FORCED REFLOW, NOT A DOUBLE requestAnimationFrame.
+  //
+  // This is why the entrance played "sometimes". showTape() awaits the photos
+  // for up to 1500ms and then calls this -- so playTape runs at exactly the
+  // moment the tab is busiest decoding two large cut-outs. Under that load the
+  // two rAF callbacks can land in the same frame, the from-state and the
+  // to-state are then set without a paint between them, and the browser has
+  // nothing to interpolate: every element jumps straight to its finished
+  // position. That reads as the tape popping in with no transition, and it
+  // depends on how fast the photos happened to decode, which is why it was
+  // intermittent rather than broken.
+  //
+  // Reading offsetWidth forces the style to be flushed NOW, synchronously, so
+  // the from-state is committed before the to-state is assigned. Same fix the
+  // overlay already uses on its cards (void f.offsetWidth).
+  void tapeRoot.offsetWidth;
+
+  // Now reveal the root, and start the inner entrance in the same pass.
+  tapeRoot.style.transition = 'opacity .28s ease';
+  tapeRoot.style.opacity = '1';
+  tapeRoot.style.transform = 'none';
+
+  centerCol.style.transition = 'opacity 0.7s cubic-bezier(.16,.6,.25,1), transform 0.85s cubic-bezier(.16,.6,.25,1)';
+  centerCol.style.opacity = '1';
+  centerCol.style.transform = 'translateY(0) scale(1)';
 
   tapeTimers.push(setTimeout(()=>{
     boutLabel.style.transition = 'opacity 0.55s ease-out';
