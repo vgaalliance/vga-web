@@ -3007,6 +3007,69 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   text-transform:uppercase;color:#ADA4D6}
 @media (max-width:359px){.sa-socials em{letter-spacing:0;font-size:7.5px}}   /* INSTAGRAM on a 320px phone */
 /* ═══ end SMALL ADDS ═══ */
+
+/* ═══ SPARRING (2026-09-20) ═══════════════════════════════════════════
+   The open-lobby model, designed with Castle: going on the board IS opening a
+   room, so the code is typed once up front and ACCEPTING is what hands it over.
+   Discord's flow is untouched — a card with no room_code behaves as it always
+   has, and both boards are the same rows.
+
+   The shapes carry one rule: anything you PRESS leans, anything you READ stands
+   straight. A plate is one leaning slab cut into pieces (the action, then an
+   end-cap for the smaller choice beside it); the words inside are un-skewed so
+   nothing is typeset on a slant. SPAR on a fighter's row is deliberately the
+   one square button on the screen — it lives in a list, not in a plate. */
+.sp-plate{display:flex;transform:skewX(-20deg);background:#5FD98A;margin:0 18px;min-height:52px}
+.sp-plate.v{background:#A78BFA}
+.sp-plate.o{background:none;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.22)}
+.sp-plate.sm{min-height:44px}
+.sp-plate .go{flex:1;display:flex;align-items:center;justify-content:center;transform:skewX(20deg);
+  font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.07em;color:#082416;white-space:nowrap}
+.sp-plate.v .go{color:#190F33}
+.sp-plate.o .go{color:#EDEAF6;font-size:18px}
+.sp-plate.sm .go{font-size:19px}
+.sp-plate .cap{width:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  background:rgba(0,0,0,.22)}
+.sp-plate .cap > *{transform:skewX(20deg)}
+.sp-plate .cap b{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11.5px;letter-spacing:.07em;
+  text-transform:uppercase;color:#DFFFE9}
+.sp-plate.v .cap b{color:#E6DCFF}
+.sp-plate .cap s{text-decoration:none;font-size:10px;line-height:1;color:rgba(255,255,255,.6)}
+.sp-hint{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.05em;color:#6F6790;text-align:center;margin:8px 18px 0}
+.sp-hint u{text-decoration:none;color:#ADA4D6}
+.sp-stack{display:flex;flex-direction:column;gap:7px;margin-top:14px}
+.sp-count{display:flex;align-items:center;gap:12px;padding:6px 18px 0}
+.sp-count b{font-family:'Bebas Neue',sans-serif;font-size:58px;line-height:.85;color:#5FD98A}
+.sp-count span{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.07em;
+  text-transform:uppercase;color:#ADA4D6}
+.sp-room{display:flex;align-items:center;gap:10px;margin:12px 18px 0;padding:8px 12px;
+  background:#13281D;border:1px solid rgba(95,217,138,.35)}
+.sp-room .k{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.16em;color:#4E7F62}
+.sp-room .c{font-family:'Space Mono',monospace;font-weight:700;font-size:17px;color:#EDEAF6;margin-top:2px}
+.sp-field{margin:12px 18px 0;background:rgba(255,255,255,.05);border:1px dashed rgba(255,255,255,.28);padding:0}
+.sp-field input{width:100%;box-sizing:border-box;background:none;border:0;outline:none;padding:15px 12px;text-align:center;
+  font-family:'Space Mono',monospace;font-weight:700;font-size:22px;letter-spacing:.06em;color:#EDEAF6}
+.sp-field input::placeholder{color:#4F4870}
+.sp-code{margin:12px 18px 0;background:#101A16;border:1px solid rgba(95,217,138,.45);padding:14px 0;text-align:center}
+.sp-code .c{font-family:'Space Mono',monospace;font-weight:700;font-size:30px;letter-spacing:.05em;color:#5FD98A}
+.sp-row{display:flex;align-items:center;gap:9px;padding:7px 18px;border-bottom:1px solid rgba(255,255,255,.1);min-height:46px}
+.sp-row .fg{flex:1;min-width:0}
+.sp-row .n{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-row .l{font-family:'Space Mono',monospace;font-size:8.3px;color:#ADA4D6;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-row.off{opacity:.4}
+.sp-av{width:32px;height:32px;flex:0 0 auto;overflow:hidden;background:linear-gradient(160deg,#2A1650,#120E22);
+  display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:rgba(214,200,255,.8)}
+.sp-av img{width:100%;height:100%;object-fit:cover;object-position:top center}
+.sp-spar{background:#A78BFA;color:#1A0F38;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.08em;
+  line-height:1;padding:8px 15px;border:0}
+.sp-spar.gold{background:#F5C842;color:#2A1F00}
+.sp-spar.dead{background:rgba(255,255,255,.1);color:#8B82AE}
+.sp-clock{font-family:'Space Mono',monospace;font-weight:700;font-size:16px;color:#C3A6FF;font-variant-numeric:tabular-nums}
+.sp-who{display:flex;align-items:center;gap:10px;margin:12px 18px 0;padding:9px 12px;background:#221B42;
+  border-left:3px solid #A78BFA}
+.sp-who .t{font-weight:700;font-size:13px}
+.sp-who .s{font-family:'Space Mono',monospace;font-size:8.5px;color:#8B82AE;margin-top:2px}
+
 </style>
 </head>
 <body>
@@ -6107,6 +6170,7 @@ function hashFor(entry){
        : entry.kind === 'card'     ? '#c/' + entry.id
        : entry.kind === 'mybets'   ? '#mybets'
        : entry.kind === 'train'    ? '#train'
+       : entry.kind === 'spar'     ? '#spar'
        : entry.kind === 'kit'       ? '#kit'
        : entry.kind === 'kit-photo' ? '#kit/p/' + entry.id
        : entry.kind.indexOf('kit-') === 0 ? '#kit/' + entry.kind.slice(4) : '';
@@ -6182,6 +6246,7 @@ function renderSheet(entry){
   if(entry.kind === 'card')     return renderCard(entry.id);
   if(entry.kind === 'mybets')   return renderMyBets();
   if(entry.kind === 'train')    return renderTrain();
+  if(entry.kind === 'spar')      return renderSpar();
   if(entry.kind === 'kit')       return renderKit();
   if(entry.kind === 'kit-photo') return renderKitPhoto(entry.id);
   if(entry.kind === 'kit-press') return renderKitPress();
@@ -6902,7 +6967,8 @@ async function loadMe(){
     q("shop_public?select=id"),
     q("market_public?select=listing_id"),
     qMe("my_listings?select=listing_id"),
-    qMe("my_signature_requests?select=*&order=created_at.asc")
+    qMe("my_signature_requests?select=*&order=created_at.asc"),
+    q("spar_lobbies_public?select=card_id")
   ]);
   if(!el.isConnected) return;
   var rows = got[0];
@@ -6918,6 +6984,9 @@ async function loadMe(){
   /* Unpacked on its own like every other read here: a dead signature inbox
      must not cost somebody their record. */
   window.__sigReqs = got[9] || [];
+  /* How many lobbies are open, for the Sparring row's right-hand number. Its
+     own read like every other: an empty board must never blank a record. */
+  window.__sparOpen = (got[10] || []).length;
 
   if(!rows){
     retryHandlers['me'] = loadMe;
@@ -7049,6 +7118,8 @@ async function loadMe(){
        same way training and your cards are. The number is how many fighters
        have a photo you can take, and it is blank until the kit has been opened
        once rather than costing every visit to this tab a 557-row read. */
+    + mrow('\uD83E\uDD4B','spar','Sparring','Open a lobby, or join one',
+        (window.__sparOpen ? window.__sparOpen + ' open' : 'Board'), (window.__sparOpen ? 'go' : ''))
     + mrow('\uD83C\uDFAC','kit','Creator kit','Cut-outs, logos and clips \u2014 free to use',
         kitFighters ? String(kitFighters.filter(function(f){ return f.cutout_url; }).length) : '', '');
 
@@ -10718,6 +10789,7 @@ function registerWorker(){
   if(hash.indexOf('f/') === 0){ goTab('fighters'); openSheet({kind:'fighter', id:hash.slice(2)}); }
   else if(hash.indexOf('n/') === 0){ goTab('news'); openSheet({kind:'news', id:hash.slice(2)}); }
   else if(hash.indexOf('e/') === 0){ openSheet({kind:'event', id:hash.slice(2)}); }
+  else if(hash === 'spar'){ goTab('you'); openSheet({kind:'spar'}); }
   else if(hash === 'kit' || hash.indexOf('kit/') === 0){
     goTab('you'); openSheet({kind:'kit'});
     if(hash.indexOf('kit/p/') === 0) openSheet({kind:'kit-photo', id:hash.slice(6)});
@@ -10730,6 +10802,245 @@ function registerWorker(){
   loadNews();
   loadFighters();
 })();
+
+/* ═══ SPARRING ═══════════════════════════════════════════════════════
+   One screen, five states, and the state comes from the DATABASE on every
+   render — never from what the last tap probably did. app_spar_state() answers
+   all of it in one round trip: am I hosting, is a request out, is one in, am I
+   in a spar, and the code (which only ever reaches the two people in it).
+
+   Every button calls an app_spar_* function that resolves who you are from your
+   login and then calls the same spar_* logic the bot calls, so this screen can
+   never be a softer door than Discord: the cooldown after a Not now, one card
+   each, one request each way and "accepting takes both cards down" are all
+   still decided in SQL. */
+var sparType = 'open', sparTick = null;
+var SPAR_TYPES = [['open','OPEN'], ['rounds_3','3 RDS'], ['rounds_5','5 RDS']];
+function sparTypeLabel(v){
+  for(var i=0;i<SPAR_TYPES.length;i++) if(SPAR_TYPES[i][0] === v) return SPAR_TYPES[i][1];
+  return 'OPEN';
+}
+/* A plate: the action, and optionally the smaller choice cut into its end. */
+function spPlate(label, act, opts){
+  opts = opts || {};
+  return '<div class="sp-plate ' + (opts.cls || '') + '"' + (act ? ' data-sp="' + act + '"' : '')
+    + (opts.id ? ' data-id="' + esc(opts.id) + '"' : '') + '>'
+    + '<span class="go">' + esc(label) + '</span>'
+    + (opts.cap ? '<span class="cap" data-sp="' + esc(opts.capAct || 'type') + '"'
+        + (opts.id ? ' data-id="' + esc(opts.id) + '"' : '') + '><b>' + esc(opts.cap) + '</b>'
+        + (opts.capSub ? '<s>' + opts.capSub + '</s>' : '') + '</span>' : '')
+    + '</div>';
+}
+/* "#4 MW · 8-6 · NA" — the same line the Discord card prints, from the same
+   numbers (spar-core.js cardLine). A rank only shows with its division, a
+   record only when there is one. */
+function sparLine(r){
+  var parts = [];
+  var short = { lightweight:'LW', middleweight:'MW', light_heavyweight:'LHW', heavyweight:'HW' }[r.weight_class] || '';
+  parts.push(r.rank != null ? ('#' + r.rank + ' ' + short).trim() : short);
+  if((Number(r.wins)||0) + (Number(r.losses)||0) > 0) parts.push((r.wins||0) + '-' + (r.losses||0));
+  else if(r.rank == null) parts.push('unranked');
+  if(r.region) parts.push(r.region);
+  return parts.filter(Boolean).join(' · ');
+}
+function sparMins(iso){
+  var m = Math.round((new Date(iso).getTime() - Date.now()) / 60000);
+  return m <= 0 ? 'ending' : (m + ' min');
+}
+function sparClock(iso){
+  var s = Math.max(0, Math.round((new Date(iso).getTime() - Date.now()) / 1000));
+  return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2);
+}
+function sparAv(r){
+  var src = r.photo_square_url || r.photo_thumb_url;
+  return '<span class="sp-av">' + (src ? '<img src="' + esc(src) + '" alt="">'
+    : esc((r.name || '?').slice(0, 2).toUpperCase())) + '</span>';
+}
+/* A lobby in the list. The NAME opens that fighter's page — the tale of the
+   tape already lives there, so this screen never grows a second copy of it. */
+function sparLobbyRow(r, blocked){
+  return '<div class="sp-row' + (blocked ? ' off' : '') + '">' + sparAv(r)
+    + '<div class="fg"' + (r.slug ? ' data-slug="' + esc(r.slug) + '"' : '') + '>'
+    + '<div class="n">' + esc(r.name || 'A fighter')
+    + (r.champion ? ' <span style="color:#F5C842;font-family:\'Space Mono\',monospace;font-size:8px">CHAMP</span>' : '')
+    + '</div><div class="l">' + esc(sparLine(r)) + ' · ' + esc(sparMins(r.ends_at)) + ' left</div></div>'
+    + '<button class="sp-spar' + (blocked ? ' dead' : '') + '" data-sp="ask" data-id="' + esc(r.card_id) + '">SPAR</button></div>';
+}
+
+async function renderSpar(){
+  var body = document.getElementById('sheet-body');
+  body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'
+    + '<div class="kick">Find someone to spar</div><h3>Sparring</h3></div>'
+    + '<div id="spb"><div class="skel" style="height:90px"></div><div class="skel" style="width:60%"></div></div>';
+  sparPaint();
+}
+
+async function sparPaint(){
+  var el = document.getElementById('spb');
+  if(!el) return;
+  if(!me){ el.innerHTML = '<div class="empty">Sign in to spar. The board is the same one the bot posts in the server.</div>'; return; }
+  var got = await Promise.all([
+    rpc('app_spar_state'),
+    q('spar_lobbies_public?select=*&order=started_at.asc')
+  ]);
+  if(!el.isConnected) return;
+  var st = got[0], lobbies = got[1];
+  if(!st || st.ok === false){
+    if(st && st.reason === 'not_signed_in'){ el.innerHTML = '<div class="empty">Sign in to spar.</div>'; return; }
+    retryHandlers['spar'] = sparPaint;
+    el.innerHTML = failHTML("Couldn't load the spar board.", 'spar'); return;
+  }
+  if(!lobbies) lobbies = [];
+  window.__sparState = st;
+
+  /* IN A SPAR — the code, and the two ways out. */
+  if(st.spar){
+    el.innerHTML = '<div class="lab"><b>Spar on · ' + esc(st.spar.partner) + '</b><i></i></div>'
+      + (st.spar.code
+          ? '<div class="sp-code"><div class="c">' + esc(st.spar.code) + '</div></div>'
+            + '<div class="sp-hint">' + (st.spar.code_by_me ? 'your room' : esc(st.spar.partner) + '’s room')
+            + ' · <u>put it into the game</u></div>'
+          : '<div class="sp-field"><input id="sp-code" placeholder="441-72-208" maxlength="24" autocomplete="off"></div>'
+            + '<div class="sp-hint">no code yet · <u>make the room and send it</u></div>')
+      + '<div class="sp-stack">'
+      + (st.spar.code
+          ? spPlate('Copy code', 'copy', { cls:'v', cap:'New', capSub:'code', capAct:'newcode', id:st.spar.id })
+          : spPlate('Send code', 'sendcode', { id:st.spar.id }))
+      + spPlate('Call it off', 'calloff', { cls:'o sm', id:st.spar.id })
+      + '</div>';
+    return;
+  }
+
+  /* SOMEONE IS ASKING — accepting hands them your code. */
+  if(st.incoming){
+    el.innerHTML = '<div class="sp-who"><div style="flex:1"><div class="t">' + esc(st.incoming.from_name)
+      + ' wants to spar</div><div class="s">answer within 5 min</div></div>'
+      + '<span class="sp-clock">' + sparClock(st.incoming.expires_at) + '</span></div>'
+      + '<div class="sp-hint" style="margin-top:10px">accepting hands over your room code · '
+      + '<u>Not now = they can’t ask again for 10 min</u></div>'
+      + '<div class="sp-stack">'
+      + spPlate('Accept', 'yes', { cap:'Not', capSub:'now', capAct:'no', id:st.incoming.id })
+      + '</div>';
+    return;
+  }
+
+  /* A REQUEST IS OUT — you stay on the board while they decide. */
+  if(st.asked){
+    el.innerHTML = '<div class="sp-who"><div style="flex:1"><div class="t">Asked ' + esc(st.asked.to_name) + '</div>'
+      + '<div class="s">5 min to answer · you’re still on the board</div></div>'
+      + '<span class="sp-clock">' + sparClock(st.asked.expires_at) + '</span></div>'
+      + '<div class="sp-stack">'
+      + spPlate('Cancel request', 'cancel', { cls:'v sm', id:st.asked.id })
+      + '</div>'
+      + '<div class="sp-hint">one request out at a time</div>'
+      + '<div class="lab"><b>Open lobbies</b><i></i><s>' + lobbies.length + '</s></div>'
+      + lobbies.map(function(r){ return sparLobbyRow(r, true); }).join('');
+    return;
+  }
+
+  var mine = st.lobby;
+  var others = lobbies.filter(function(r){ return !mine || r.card_id !== mine.card_id; });
+
+  /* HOSTING — a state, not an action: nothing to press but the way out. */
+  if(mine){
+    el.innerHTML = '<div class="sp-count"><b>' + others.length + '</b><span>other lobbies open<br>'
+      + esc(sparTypeLabel(mine.spar_type)) + ' · ' + esc(sparMins(mine.ends_at)) + ' left</span></div>'
+      + '<div class="sp-room"><div style="flex:1"><div class="k">YOUR ROOM</div><div class="c">'
+      + esc(mine.room_code || 'no code') + '</div></div>'
+      + '<button class="sp-spar" data-sp="recode">CHANGE</button></div>'
+      + '<div class="sp-stack">'
+      + spPlate('Give me 30 more', 'more', { cls:'o sm' })
+      + spPlate('Close lobby', 'close', { cls:'o sm' })
+      + '</div>'
+      + '<div class="sp-hint">waiting on someone to ask · <u>your code stays hidden until you accept</u></div>'
+      + '<div class="lab"><b>Join one instead</b><i></i><s>' + others.length + '</s></div>'
+      + (others.length ? others.map(function(r){ return sparLobbyRow(r, false); }).join('')
+                       : '<div class="empty">Nobody else is hosting right now.</div>');
+    return;
+  }
+
+  /* AT REST — host one, or join one. Those are the only two roles. */
+  var head = lobbies.length
+    ? '<div class="sp-count"><b>' + lobbies.length + '</b><span>lobbies open<br>tap SPAR on anyone</span></div>'
+    : '<div class="empty"><b>Nobody is hosting right now.</b><br>Open a lobby and people come to you.</div>';
+  el.innerHTML = head
+    + '<div class="sp-field"><input id="sp-code" placeholder="your room code" maxlength="24" autocomplete="off"></div>'
+    + '<div class="sp-stack">'
+    + spPlate('Open lobby', 'open', { cap:sparTypeLabel(sparType), capSub:'⇄' })
+    + '</div>'
+    + '<div class="sp-hint">make the room in the game, type its code · <u>nobody sees it until you accept them</u></div>'
+    + (lobbies.length ? '<div class="lab"><b>Open lobbies</b><i></i><s>' + lobbies.length + '</s></div>'
+        + lobbies.map(function(r){ return sparLobbyRow(r, false); }).join('') : '');
+}
+
+/* Every spar write lands here: disable the plate, say what the SERVER said,
+   then re-read the screen rather than guessing the new state. */
+var SPAR_SAID = {
+  self: "That's your own lobby.",
+  not_on: 'That lobby just closed.',
+  cooldown: 'They said not now — you can ask again in 10 min.',
+  recent: 'You just asked them — give it 10 min.',
+  you_have_one: 'You already have a request out.',
+  they_have_one: "They're answering someone else.",
+  no_code: 'Type the code from your room first.',
+  code_too_long: 'That is longer than a room code.',
+  bad_code: 'Type the code from your room.',
+  no_profile: 'Set your weight in the server first (#sparring).',
+  not_signed_in: 'Sign in first.',
+  slow_down: 'You just closed a lobby. Try again in a minute.',
+  busy: 'Your lobby is going up.',
+  not_pending: 'That request already closed.',
+  expired: 'That request timed out.',
+  not_yours: "That request isn't yours.",
+  gone: 'That request no longer exists.',
+  already: 'That was already answered.'
+};
+async function sparDo(act, id, btn){
+  var codeEl = document.getElementById('sp-code');
+  var code = codeEl ? codeEl.value : '';
+  var r;
+  busy(btn, true);
+  if(act === 'open')        r = await rpc('app_spar_open',   { p_code: code, p_type: sparType });
+  else if(act === 'recode') { var c = prompt('New room code'); if(c == null){ busy(btn,false); return; }
+                              r = await rpc('app_spar_open', { p_code: c, p_type: (window.__sparState && window.__sparState.lobby && window.__sparState.lobby.spar_type) || sparType }); }
+  else if(act === 'more')   r = await rpc('app_spar_open',   { p_code: (window.__sparState.lobby || {}).room_code || '', p_type: (window.__sparState.lobby || {}).spar_type || 'open' });
+  else if(act === 'close')  r = await rpc('app_spar_close');
+  else if(act === 'ask')    r = await rpc('app_spar_ask',    { p_card: id });
+  else if(act === 'cancel') r = await rpc('app_spar_cancel', { p_request: id });
+  else if(act === 'yes')    r = await rpc('app_spar_answer', { p_request: id, p_accept: true });
+  else if(act === 'no')     r = await rpc('app_spar_answer', { p_request: id, p_accept: false });
+  else if(act === 'sendcode' || act === 'newcode'){
+    var nc = act === 'newcode' ? prompt('New room code') : code;
+    if(nc == null || nc === ''){ busy(btn, false); if(act==='newcode') return; toast('Type the code from your room.'); return; }
+    r = await rpc('app_spar_code', { p_request: id, p_code: nc });
+  }
+  else if(act === 'calloff') r = await rpc('app_spar_call_off', { p_request: id });
+  busy(btn, false);
+  if(r && r.ok === false) toast(SPAR_SAID[r.reason] || r.message || "That didn't go through.");
+  else if(act === 'ask') toast('Asked — they have 5 min.');
+  else if(act === 'yes' && r && r.code) toast('Spar on — code sent.');
+  sparPaint();
+}
+
+document.addEventListener('click', function(e){
+  var t = e.target.closest('[data-sp]');
+  if(!t) return;
+  var act = t.getAttribute('data-sp');
+  if(act === 'type'){
+    var i = 0;
+    for(var k = 0; k < SPAR_TYPES.length; k++) if(SPAR_TYPES[k][0] === sparType) i = k;
+    sparType = SPAR_TYPES[(i + 1) % SPAR_TYPES.length][0];
+    sparPaint();
+    return;
+  }
+  if(act === 'copy'){
+    var s = window.__sparState && window.__sparState.spar;
+    if(s && s.code && navigator.clipboard){ navigator.clipboard.writeText(s.code); toast('Code copied.'); }
+    return;
+  }
+  sparDo(act, t.getAttribute('data-id'), t);
+});
+
 </script>
 </body>
 </html>
