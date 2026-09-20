@@ -1473,6 +1473,15 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .2s,transform .2s}
 #toast.live{opacity:1;transform:none}
 #toast.bad{border-color:rgba(241,156,150,.5)}
+/* the offline pill — top centre, under the notch. Amber while offline (nothing
+   to press), green when the network is back (tap reloads). */
+#offpill{position:fixed;left:50%;top:calc(8px + env(safe-area-inset-top,0px));z-index:97;
+  transform:translate(-50%,-14px);opacity:0;pointer-events:none;
+  padding:6px 13px;border-radius:999px;font:600 12px/1.2 inherit;letter-spacing:.02em;white-space:nowrap;
+  background:#2A2113;border:1px solid rgba(245,196,94,.55);color:#F5D48A;
+  box-shadow:0 8px 22px rgba(4,2,14,.55);transition:opacity .2s,transform .2s}
+#offpill.live{opacity:1;transform:translate(-50%,0)}
+#offpill.back{pointer-events:auto;background:#12281F;border-color:rgba(110,231,183,.55);color:#B8F3D9}
 
 /* SHOP — a price list, not a checkout. */
 .shp{display:flex;align-items:flex-start;gap:12px;margin:0 16px 8px;padding:12px 14px;
@@ -3202,9 +3211,59 @@ async function q(path){
     var j = await r.json();
     if(!Array.isArray(j)) return null;
     cachePut(path, j);
+    wentOnline();
     return Object.assign(j, { _status: st.code });
-  }catch(e){ console.warn('[uba] query error', path, e); return null; }
+  }catch(e){
+    /* A THROW is the network — no signal, airplane mode, a tunnel. A 4xx above
+       is a mistake in the query and never falls back, or a broken read would
+       hide behind last week's rows for ever. Offline, the last good answer is
+       handed back and the pill says how old it is: saved data is only a lie
+       when nothing on screen admits it is saved. */
+    console.warn('[uba] query error', path, e);
+    var old = cachedAt(path);
+    if(old){ wentOffline(old.t); return Object.assign(old.d, { _status: 0, _stale: true }); }
+    wentOffline(0);
+    return null;
+  }
 }
+
+/* ── THE OFFLINE PILL ──────────────────────────────────────────────────
+   Driven by what fetch actually did, not by navigator.onLine — that flag says
+   whether a network INTERFACE exists, and is true on hotel wifi that goes
+   nowhere. It shows the OLDEST saved answer on screen, because "saved 2m ago"
+   over a fight card from Tuesday is the lie this exists to prevent. */
+var offlineOldest = 0, isOffline = false;
+function agoWords(t){
+  var m = Math.max(1, Math.round((Date.now() - t) / 60000));
+  if(m < 60) return m + 'm ago';
+  if(m < 48 * 60) return Math.round(m / 60) + 'h ago';
+  return Math.round(m / 1440) + 'd ago';
+}
+function offlinePill(){
+  var p = document.getElementById('offpill');
+  if(!p){
+    p = document.createElement('button'); p.id = 'offpill'; p.type = 'button';
+    p.onclick = function(){ if(p.className.indexOf('back') >= 0) location.reload(); };
+    document.body.appendChild(p);
+  }
+  return p;
+}
+function wentOffline(t){
+  isOffline = true;
+  if(t && (!offlineOldest || t < offlineOldest)) offlineOldest = t;
+  var p = offlinePill();
+  p.textContent = offlineOldest ? 'Offline · saved ' + agoWords(offlineOldest) : 'Offline';
+  p.className = 'live';
+}
+function wentOnline(){
+  if(!isOffline) return;
+  isOffline = false; offlineOldest = 0;
+  var p = offlinePill();
+  p.textContent = 'Back online · tap to refresh';
+  p.className = 'live back';
+}
+window.addEventListener('offline', function(){ wentOffline(0); });
+window.addEventListener('online', wentOnline);
 
 /* ── LAST KNOWN GOOD ───────────────────────────────────────────────────
    Every open showed a skeleton, even when nothing had changed since the last
@@ -3246,6 +3305,11 @@ function cachePut(path, rows){
 /* Synchronous on purpose: the caller paints with it before it awaits anything,
    which is the entire point. */
 function cached(path){
+  var o = cachedAt(path);
+  return o ? o.d : null;
+}
+/* The same read with its timestamp, for the offline pill. */
+function cachedAt(path){
   try{
     var raw = localStorage.getItem(cacheKey(path));
     if(!raw) return null;
@@ -3254,7 +3318,7 @@ function cached(path){
     if(Date.now() - (o.t || 0) > CACHE_MAX_AGE){
       localStorage.removeItem(cacheKey(path)); return null;
     }
-    return o.d;
+    return { t: o.t || 0, d: o.d };
   }catch(e){ return null; }
 }
 /* Same shape, but reports the status of a call that returned nothing. */
@@ -4561,7 +4625,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v228';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v229';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
