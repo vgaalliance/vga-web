@@ -6,7 +6,8 @@
    1. The SHELL is cache-first. index.html, the manifest and the icons come
       from cache so the app opens instantly and works with no signal.
 
-   2. SUPABASE IS NEVER CACHED. Not stale-while-revalidate, not anything —
+   2. SUPABASE DATA IS NEVER CACHED (photos in public storage are the one
+      exception — see the fetch handler). Not stale-while-revalidate, not anything —
       it goes straight to the network every time. Caching a league's
       rankings or a fight card would show somebody a result that is hours
       old with no way to tell, which is worse than showing nothing.
@@ -19,7 +20,11 @@
    old app until they clear site data.
    ═══════════════════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'uba-v229';
+const CACHE_VERSION = 'uba-v230';
+// Photos live in their OWN cache, which a version bump does not wipe: a new
+// shell is 400KB, the photos are most of what a phone has downloaded.
+const IMG_CACHE = 'uba-img-v1';
+const IMG_MAX = 400;            // entries. Oldest go first.
 const SHELL = [
   './',
   './index.html',
@@ -45,17 +50,51 @@ self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(
-        keys.filter(k => k !== CACHE_VERSION).map(k => caches.delete(k))
+        keys.filter(k => k !== CACHE_VERSION && k !== IMG_CACHE).map(k => caches.delete(k))
       ))
       .then(() => self.clients.claim())
   );
 });
+
+// keys() comes back in insertion order, so the front of the list is the oldest.
+function trimImages(cache) {
+  return cache.keys().then(keys => {
+    if (keys.length <= IMG_MAX) return;
+    return Promise.all(keys.slice(0, keys.length - IMG_MAX).map(k => cache.delete(k)));
+  });
+}
 
 self.addEventListener('fetch', event => {
   const req = event.request;
   if (req.method !== 'GET') return;
 
   const url = new URL(req.url);
+
+  // PHOTOS are the one thing on supabase.co that is not live data. A fighter's
+  // face from last week is still their face, and offline a roster of blank
+  // squares reads as broken. Cached copy first so it paints at once, refreshed
+  // behind it so a replaced photo heals on the next open.
+  //
+  // The refetch is CORS on purpose. An <img> asks no-cors and gets an OPAQUE
+  // response, which Chrome bills at ~7MB of quota EACH whatever its real size
+  // — 400 of those evicts the whole origin. Storage sends ACAO:*, so asking
+  // properly costs nothing and a photo is billed as the 40KB it is.
+  if (url.hostname.endsWith('supabase.co') &&
+      url.pathname.startsWith('/storage/v1/object/public/')) {
+    event.respondWith(
+      caches.open(IMG_CACHE).then(cache => cache.match(req.url).then(hit => {
+        const fresh = fetch(req.url, { mode: 'cors', credentials: 'omit' }).then(res => {
+          if (res && res.status === 200) {
+            cache.put(req.url, res.clone()).then(() => trimImages(cache)).catch(() => {});
+          }
+          return res;
+        });
+        if (hit) { event.waitUntil(fresh.catch(() => {})); return hit; }
+        return fresh.catch(() => new Response('', { status: 504, statusText: 'Offline' }));
+      }))
+    );
+    return;
+  }
 
   // Rule 2. Live data and auth always go to the network, untouched.
   if (url.hostname.endsWith('supabase.co')) return;
