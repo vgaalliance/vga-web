@@ -10,12 +10,16 @@
       it goes straight to the network every time. Caching a league's
       rankings or a fight card would show somebody a result that is hours
       old with no way to tell, which is worse than showing nothing.
+      (Offline reads are the PAGE's job, not this file's: q() in index.html
+      keeps the last good answer in localStorage and hands it back only when
+      fetch throws, under a pill that says how old it is. Here, a cached
+      response would be served silently and to every caller alike.)
 
    Bump CACHE_VERSION on any change to the shell files, or people keep the
    old app until they clear site data.
    ═══════════════════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'uba-v228';
+const CACHE_VERSION = 'uba-v229';
 const SHELL = [
   './',
   './index.html',
