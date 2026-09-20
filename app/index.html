@@ -457,15 +457,6 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    wordmark tone-on-tone in violet for exactly that reason: gold in this app
    means champion or "press this", and spending it on a background is how it
    stops meaning either. */
-.ckdoor{display:flex;align-items:center;gap:12px;margin:4px 18px 0;padding:13px 14px;border-radius:13px;
-  border:1px solid rgba(255,255,255,.14);background:linear-gradient(150deg,#2E2459,#1B1533);cursor:pointer}
-.ckdoor .fc{display:flex;flex-shrink:0}
-.ckdoor .fc img{width:34px;height:34px;border-radius:50%;object-fit:cover;background:#241A48;border:2px solid #1B1533}
-.ckdoor .fc img+img{margin-left:-11px}
-.ckdoor b{display:block;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:22px;letter-spacing:.06em;line-height:1}
-.ckdoor span{display:block;font-size:12.5px;color:#ADA4D6;margin-top:2px}
-.ckdoor i{margin-left:auto;color:#7E7699;font-style:normal;font-size:18px}
-
 .ck-search{margin:0 18px 10px}
 .ck-search input{width:100%;height:42px;border-radius:10px;border:1px solid rgba(255,255,255,.14);
   background:rgba(2,1,10,.45);color:#EDEAF6;font:inherit;font-size:14px;padding:0 13px;outline:none}
@@ -4570,7 +4561,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v227';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v228';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -5495,15 +5486,6 @@ function paintNews(rows){
         + '<a data-goto="events">All events</a></div>'
         + '<div id="news-next"><div class="pv pvgh"></div></div>';
 
-  /* THE CREATOR KIT'S DOOR. Between what is next and what is written, because
-     it is neither: it is the league's material, for somebody about to make
-     something. Faces only once the roster is in hand -- never an empty frame. */
-  var ckf = (kitFighters || []).filter(function(f){ return f.square_url; }).slice(0, 3);
-  html += '<div class="lab"><b>Make something</b><i></i></div>'
-    + '<a class="ckdoor" data-hub="kit">' + (ckf.length ? '<span class="fc">' + ckf.map(function(f){
-        return '<img src="' + esc(f.square_url) + '" alt="" loading="lazy" onerror="this.remove()">'; }).join('') + '</span>' : '')
-    + '<div><b>Creator kit</b><span>Fighter cut-outs, logos and clips — free to use</span></div><i>›</i></a>';
-
   html += '<div class="lab"><b>The wire</b><i></i>'
     + (vids.length ? '<s>newest first</s>' : '') + '</div>';
 
@@ -5557,7 +5539,7 @@ function paintNews(rows){
 }
 
 /* ═══ CREATOR KIT ═══════════════════════════════════════════════════════
-   The content library behind News: anyone can take fighter photos, logos,
+   The content library, a room on the You tab: anyone can take fighter photos, logos,
    clips and full shows to make their own edits. Design and reasoning live in
    VGA Systems/docs/creator-kit-plan.md.
 
@@ -5633,13 +5615,13 @@ async function renderKit(){
     kitSince = prev;
   }
   if(!kitFighters){
-    body.innerHTML = kitHead('News', 'Creator kit') + '<div class="skel"></div><div class="skel" style="width:70%"></div>';
+    body.innerHTML = kitHead('You', 'Creator kit') + '<div class="skel"></div><div class="skel" style="width:70%"></div>';
   } else kitPaint();
   var ok = await kitLoad();
   if(!sheetStack.length || sheetStack[sheetStack.length - 1].kind !== 'kit') return;
   if(!ok){
     retryHandlers['kit'] = renderKit;
-    body.innerHTML = kitHead('News', 'Creator kit') + failHTML("Couldn't load the kit.", 'kit');
+    body.innerHTML = kitHead('You', 'Creator kit') + failHTML("Couldn't load the kit.", 'kit');
     return;
   }
   kitPaint();
@@ -5648,7 +5630,7 @@ async function renderKit(){
 function kitPaint(){
   var body = document.getElementById('sheet-body');
   var keep = document.activeElement && document.activeElement.id === 'ck-q';
-  body.innerHTML = kitHead('News', 'Creator kit')
+  body.innerHTML = kitHead('You', 'Creator kit')
     + '<div class="ck-search"><input id="ck-q" type="search" autocomplete="off" placeholder="Search fighters"'
     + ' aria-label="Search the creator kit" value="' + esc(kitQuery) + '"></div>'
     + '<div class="ck-tabs"><button data-ck-tab="browse" class="' + (kitTab === 'browse' ? 'on' : '') + '">Browse</button>'
@@ -6802,6 +6784,7 @@ function renderYou(){
       + perk('i-wallet','Your wallet','VC balance and where it went')
       + perk('i-fighters','Your fighter','Record, next bout, your own card')
       + perk('i-game','Training progress','Level, streak and VC earned')
+      + perk('i-news','Creator kit','Fighter cut-outs, logos and clips to make your own edits')
       + perk('i-bell','Fight night alerts','Sent as a Discord DM')
       + '<div class="lab"><b>Want to fight?</b><i></i></div>'
       + '<div class="join"><div class="h">FIGHT IN THE UBA</div>'
@@ -6990,7 +6973,15 @@ async function loadMe(){
         Number(p.vc_balance||0).toLocaleString() + ' VC', 'q')
     + mrow('\uD83E\uDD4A','train','Training','Tap the bag, earn VC',
         myGame && Number(myGame.vc_earned_total) > 0
-          ? Number(myGame.vc_earned_total).toLocaleString() + ' VC' : 'NEW', 'q');
+          ? Number(myGame.vc_earned_total).toLocaleString() + ' VC' : 'NEW', 'q')
+    /* THE CREATOR KIT LIVES HERE, not under News. It started there because the
+       league's media is there, but News is something you READ and this is
+       something you DO -- making things for the league is a room of yours, the
+       same way training and your cards are. The number is how many fighters
+       have a photo you can take, and it is blank until the kit has been opened
+       once rather than costing every visit to this tab a 557-row read. */
+    + mrow('\uD83C\uDFAC','kit','Creator kit','Cut-outs, logos and clips \u2014 free to use',
+        kitFighters ? String(kitFighters.filter(function(f){ return f.cutout_url; }).length) : '', '');
 
   html += '<div id="me-media"></div>';
   el.innerHTML = html;
@@ -10659,7 +10650,7 @@ function registerWorker(){
   else if(hash.indexOf('n/') === 0){ goTab('news'); openSheet({kind:'news', id:hash.slice(2)}); }
   else if(hash.indexOf('e/') === 0){ openSheet({kind:'event', id:hash.slice(2)}); }
   else if(hash === 'kit' || hash.indexOf('kit/') === 0){
-    goTab('news'); openSheet({kind:'kit'});
+    goTab('you'); openSheet({kind:'kit'});
     if(hash.indexOf('kit/p/') === 0) openSheet({kind:'kit-photo', id:hash.slice(6)});
     else if(hash.length > 4) openSheet({kind:'kit-' + hash.slice(4)});
   }
