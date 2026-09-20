@@ -20,11 +20,15 @@
    old app until they clear site data.
    ═══════════════════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'uba-v231';
+const CACHE_VERSION = 'uba-v232';
 // Photos live in their OWN cache, which a version bump does not wipe: a new
 // shell is 400KB, the photos are most of what a phone has downloaded.
 const IMG_CACHE = 'uba-img-v1';
 const IMG_MAX = 400;            // entries. Oldest go first.
+// ...and a ceiling per photo, because a count is not a size: the originals are
+// 2MB and `graphics` holds 15MB GIFs, and 400 of those is a phone's storage.
+// A thumb is ~165KB. Anything heavier still loads, it just is not kept.
+const IMG_MAX_BYTES = 600 * 1024;
 const SHELL = [
   './',
   './index.html',
@@ -40,7 +44,11 @@ self.addEventListener('install', event => {
       // addAll rejects the whole install if any single file 404s, so each
       // one is added on its own and a miss is logged rather than fatal.
       .then(cache => Promise.all(SHELL.map(url =>
-        cache.add(url).catch(err => console.warn('[uba sw] skipped', url, err))
+        // cache:'reload' skips the HTTP cache. Pages serves max-age=600, so a
+        // plain add() inside ten minutes of the last deploy stored the OLD
+        // index.html under the NEW version — and cache-first kept it there.
+        cache.add(new Request(url, { cache: 'reload' }))
+          .catch(err => console.warn('[uba sw] skipped', url, err))
       )))
       .then(() => self.skipWaiting())
   );
@@ -79,13 +87,20 @@ self.addEventListener('fetch', event => {
   // response, which Chrome bills at ~7MB of quota EACH whatever its real size
   // — 400 of those evicts the whole origin. Storage sends ACAO:*, so asking
   // properly costs nothing and a photo is billed as the 40KB it is.
-  if (url.hostname.endsWith('supabase.co') &&
+  if (url.hostname.endsWith('supabase.co') && req.destination === 'image' &&
       url.pathname.startsWith('/storage/v1/object/public/')) {
     event.respondWith(
       caches.open(IMG_CACHE).then(cache => cache.match(req.url).then(hit => {
         const fresh = fetch(req.url, { mode: 'cors', credentials: 'omit' }).then(res => {
           if (res && res.status === 200) {
-            cache.put(req.url, res.clone()).then(() => trimImages(cache)).catch(() => {});
+            const copy = res.clone();
+            copy.blob().then(b => {
+              if (b.size > IMG_MAX_BYTES) return;
+              return cache.put(req.url, new Response(b, { headers: copy.headers }))
+                .then(() => trimImages(cache));
+            }).catch(() => {});
+          } else if (res && res.status === 404) {
+            cache.delete(req.url).catch(() => {});   // a deleted photo must not live on here
           }
           return res;
         });

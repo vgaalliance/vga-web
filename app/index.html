@@ -3210,7 +3210,7 @@ async function q(path){
     }
     var j = await r.json();
     if(!Array.isArray(j)) return null;
-    cachePut(path, j);
+    if(!NO_FALLBACK.test(path)) cachePut(path, j);
     wentOnline();
     return Object.assign(j, { _status: st.code });
   }catch(e){
@@ -3220,12 +3220,18 @@ async function q(path){
        handed back and the pill says how old it is: saved data is only a lie
        when nothing on screen admits it is saved. */
     console.warn('[uba] query error', path, e);
-    var old = cachedAt(path);
+    var old = NO_FALLBACK.test(path) ? null : cachedAt(path);
     if(old){ wentOffline(old.t); return Object.assign(old.d, { _status: 0, _stale: true }); }
     wentOffline(0);
     return null;
   }
 }
+
+/* NEVER from the saved copy, whatever the pill says. `live_public` flips the
+   Home card into a stream player, and a saved row did that for a show that
+   ended days ago. `shop_public` feeds a one-tap Buy with no confirm, so an old
+   price on screen is a price nobody agreed to. Both are better empty. */
+var NO_FALLBACK = /^(live_public|shop_public)\b/;
 
 /* ── THE OFFLINE PILL ──────────────────────────────────────────────────
    Driven by what fetch actually did, not by navigator.onLine — that flag says
@@ -3302,6 +3308,21 @@ function cachePut(path, rows){
     }catch(e2){}
   }
 }
+/* Saved answers were only ever dropped when READ again, and a fighter page
+   opened once is never read again. Left alone they march to the 5MB quota —
+   and the casualty there is not this cache but saveSession(), which swallows
+   the same quota error and loses a rotated refresh token. Once per open, late,
+   off the boot path. */
+setTimeout(function(){
+  try{
+    Object.keys(localStorage).forEach(function(k){
+      if(k.indexOf(CACHE_PREFIX) !== 0) return;
+      var m = /^\{"t":(\d+)/.exec(localStorage.getItem(k) || '');
+      if(!m || Date.now() - Number(m[1]) > CACHE_MAX_AGE) localStorage.removeItem(k);
+    });
+  }catch(e){}
+}, 8000);
+
 /* Synchronous on purpose: the caller paints with it before it awaits anything,
    which is the entire point. */
 function cached(path){
@@ -4098,7 +4119,10 @@ document.addEventListener('visibilitychange', function(){
    An event counts as live from its start until LIVE_WINDOW_MS after it. */
 async function loadLive(){
   var now = Date.now();
-  var since = new Date(now - LIVE_WINDOW_MS).toISOString();
+  /* Floored to the hour: the path is the cache key, and a millisecond-fresh
+     timestamp minted a new saved answer on every single open. The exact window
+     is re-applied to the rows below, so a wider read changes nothing. */
+  var since = new Date(Math.floor((now - LIVE_WINDOW_MS) / 3600000) * 3600000).toISOString();
   var rows = await q("events_public?select=name,event_date,status,stream_platform"
     + "&event_date=gte." + since + "&order=event_date.desc&limit=5");
   if(!rows) return;
@@ -4628,7 +4652,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v231';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v232';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -7246,7 +7270,9 @@ document.addEventListener('click', async function(e){
     busy(b, false);
     toast(r3.ok ? (r3.message || 'Bought.') + ' Balance ' + Number(r3.new_balance||0).toLocaleString() + ' VC'
                 : r3.message, !r3.ok);
-    if(r3.ok){ renderShop(); loadMe(); }
+    /* loadBinder too: the binder's set row sells packs with this same button,
+       and left alone it still said "2,500 VC" — one more tap, one more pack. */
+    if(r3.ok){ renderShop(); loadMe(); loadBinder(); }
     return;
   }
 
@@ -7406,13 +7432,17 @@ document.addEventListener('click', async function(e){
     busy(b, true, 'Placing…');
     var r4 = await rpc('app_place_bet',
       { p_match_id: b.getAttribute('data-place'), p_side: box2.getAttribute('data-side'), p_amount: amt });
-    busy(b, false);
+    /* NOT re-enabled here on success. The amount is still in the box while
+       loadBetting() runs four reads, and a second tap in that gap is a second
+       real bet — the server allows several on one fight, so it is not refused. */
+    if(!r4.ok) busy(b, false);
     toast(r4.ok ? 'Bet placed. Balance ' + Number(r4.new_balance||0).toLocaleString() + ' VC' : r4.message, !r4.ok);
     if(r4.ok){
       var back = betEvent;
       await loadBetting();
       if(back) renderBetEvent(back);
       loadMe();
+      if(b.isConnected) busy(b, false);   /* the reload failed and nothing replaced it */
     }
     return;
   }
@@ -8262,6 +8292,10 @@ function wireTear(itemId){
       setTimeout(function(){ top.style.transition = ''; }, 360);
       hint.textContent = 'Drag the strip across \u2192';
       toast(r.message || 'That pack could not be opened.', true);
+      /* rpc() reports a dropped connection as a refusal, but the server may
+         have opened the pack before the answer was lost. Re-read rather than
+         leave a pack on screen that will refuse the next tear. */
+      loadBinder();
       return;
     }
     kick.textContent = r.message === 'god' ? 'God pack' : 'Opened';
@@ -8941,7 +8975,7 @@ async function renderTrain(){
     var price = rules.prices[l - 1], can = balance !== null && balance >= price;
     return '<div class="row"><span>Now</span><b>' + t.unit(rules[t.key][l - 1]) + '</b></div>'
       + '<div class="row"><span>Next</span><b>' + t.unit(rules[t.key][l]) + '</b></div>'
-      + '<button class="buy" data-buy="' + t.key + '"' + (can ? '' : ' disabled') + '>'
+      + '<button class="buy" data-upg="' + t.key + '"' + (can ? '' : ' disabled') + '>'
       + (guest ? 'Sign in to upgrade' : can ? 'Buy \u2014 ' + price.toLocaleString() + ' VC'
                 : 'Need ' + price.toLocaleString() + ' VC') + '</button>'
       /* The chip button says what it skips: a chip is worth 100 VC on a
@@ -9097,9 +9131,13 @@ async function renderTrain(){
       paint(); drawTracks();
       return;
     }
-    var b = e.target.closest('[data-buy]');
+    /* data-upg, NOT data-buy: the document-level shop handler listens for
+       data-buy, this click bubbles to it, and every upgrade was followed by a
+       shop purchase of an item called "power" — a red 400 toast over an upgrade
+       that had in fact worked. */
+    var b = e.target.closest('[data-upg]');
     if(!b || guest) return;
-    var key = b.getAttribute('data-buy');
+    var key = b.getAttribute('data-upg');
     busy(b, true, 'Buying\u2026');
     clearTimeout(flushT); await flush();          // settle in-flight punches at the OLD level first
     var r = await rpc('app_train_upgrade', { p_track: key });
