@@ -2727,6 +2727,37 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   text-transform:uppercase;color:#8F86AF;margin-left:auto}
 .sheet .body p{font-size:16px;line-height:1.62;color:#DAD5EC;margin:14px 18px 0}
 
+/* THE RESULTS BLOCK inside a story. A news post carrying an event_id is a
+   results post, and this is the card it opens into: one line per finished
+   bout, read live from event_matches rather than written into the body. */
+.rsb{margin:16px 18px 0;border:1px solid rgba(255,255,255,.1);border-radius:10px;
+  background:linear-gradient(#1B1533,#120E22);overflow:hidden}
+.rsh{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;
+  border-bottom:1px solid rgba(255,255,255,.1)}
+.rsh b{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  color:#F5C842;font-weight:700}
+.rsh s{text-decoration:none;font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:#9A92C0}
+.rsg{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.2em;text-transform:uppercase;
+  color:#7E7699;padding:9px 12px 5px}
+.rsr{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:8px 12px;
+  border-top:1px solid rgba(255,255,255,.06)}
+.rsr.ttl{background:linear-gradient(90deg,rgba(245,200,66,.1),rgba(245,200,66,0) 75%)}
+.rsav{width:34px;height:34px;border-radius:6px;overflow:hidden;background:#241844;position:relative;flex:none}
+.rsav img{position:absolute;width:150%;left:-25%;top:4%;display:block}
+.rsr.ttl .rsav{box-shadow:0 0 0 1px rgba(245,200,66,.6)}
+.rsn{min-width:0}
+.rsn b{display:block;font-size:14.5px;font-weight:600;color:#F4F1FB}
+.rsn span{display:block;font-size:11.5px;color:#8F86AF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rsm{text-align:right;display:flex;flex-direction:column;gap:3px;align-items:flex-end}
+.rsm b{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:#9A92C0;font-weight:700}
+.rsm b.fin{color:#F5C842}
+.rsm span{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:#6D6489}
+.rsf{display:flex;align-items:center;justify-content:space-between;padding:11px 12px;
+  border-top:1px solid rgba(255,255,255,.1);font-family:'Space Mono',monospace;font-size:9px;
+  letter-spacing:.16em;text-transform:uppercase;color:#C3A6FF}
+
 /* fight card inside a sheet */
 .train{display:flex;flex-direction:column;align-items:center;gap:16px;padding:8px 18px 40px}
 .train .guest{font-size:13.5px;color:#DAD5EC;background:rgba(255,255,255,.06);border-radius:10px;padding:10px 14px;text-align:center;line-height:1.5}
@@ -4595,7 +4626,7 @@ var newsCache = null, newsFailWasMissing = false, newsInFlight = null;
 /* A8 — loadHomeNews, loadStrip and loadNews all want this at boot and none
    of them has resolved yet, so a plain cache check fired three identical
    requests. The promise itself is the cache. */
-var NEWS_PATH = "news_public?select=id,kicker,headline,body,reporter,posted_at,graphic_url,photo_url"
+var NEWS_PATH = "news_public?select=id,kicker,headline,body,reporter,posted_at,graphic_url,photo_url,event_id"
   + "&order=posted_at.desc&limit=25";
 async function getNews(){
   if(newsCache !== null) return newsCache;
@@ -6506,7 +6537,7 @@ async function renderArticle(id){
   var got = (newsCache || []).filter(function(n){ return String(n.id) === String(id); });
   var n = got[0];
   if(!n){
-    var rows = await q("news_public?select=id,kicker,headline,body,reporter,posted_at,graphic_url"
+    var rows = await q("news_public?select=id,kicker,headline,body,reporter,posted_at,graphic_url,event_id"
       + "&id=eq." + encodeURIComponent(id) + "&limit=1");
     if(!rows){
       retryHandlers['article'] = function(){ renderArticle(id); };
@@ -6528,7 +6559,86 @@ async function renderArticle(id){
     + '<div class="by"><span class="av2"></span><span class="who">'+esc(n.reporter || 'UBA')+'</span>'
     + '<span class="when">'+esc(dstr(n.posted_at))+'</span></div>'
     + '<div class="body">' + paras.map(function(t){ return '<p>'+esc(t)+'</p>'; }).join('') + '</div>'
+    + (n.event_id ? '<div id="art-res"></div>' : '')
     + '<div class="foot">VGA Esports</div>';
+  if(n.event_id) loadArticleResults(n.event_id, 'art-res');
+}
+
+/* ── THE RESULTS A STORY OPENS INTO ───────────────────────────────────
+   A news post carrying an event_id is a results post. The bouts are READ
+   here, from the same card-gated `event_matches` the event sheet uses --
+   never written into the body -- so a result corrected in the panel
+   corrects every post that reports it. A body paragraph naming the wrong
+   winner is a correction nobody can make without republishing the story.
+
+   IT RENDERS NOTHING WHEN THERE IS NOTHING. An event with no finished
+   bouts (a card pulled, a post written early) leaves an ordinary story
+   rather than an empty box that reads as broken.
+
+   A bout with no winner is a real row -- a draw, a no-contest -- and it
+   says so instead of quietly crowning corner B, which is what treating
+   "not corner A" as "corner B won" would do. */
+var RS_SEG = { main_card:'Main card', featured:'Featured', undercard:'Undercard',
+               prelim:'Prelims', prelims:'Prelims' };
+async function loadArticleResults(eventId, elId){
+  var el = document.getElementById(elId);
+  if(!el) return;
+  var rows = await q("event_matches?select=bout_number,card_segment,weight_class,is_title_fight,"
+    + "title_name,method,fighter_a_name,fighter_a_slug,fighter_b_name,fighter_b_slug,winner_corner"
+    + "&event_id=eq." + encodeURIComponent(eventId)
+    + "&status=eq.completed&order=bout_number.asc");
+  if(!el.isConnected || !rows || !rows.length) return;
+
+  var bouts = rows.map(function(b){
+    var decided = b.winner_corner === 'a' || b.winner_corner === 'b';
+    var aw = b.winner_corner === 'a';
+    return { seg: b.card_segment || 'undercard', title: !!b.is_title_fight, decided: decided,
+             div: wc(b.weight_class), method: (b.method || 'Result'),
+             w:  decided ? (aw ? b.fighter_a_name : b.fighter_b_name) : b.fighter_a_name,
+             ws: decided ? (aw ? b.fighter_a_slug : b.fighter_b_slug) : b.fighter_a_slug,
+             l:  decided ? (aw ? b.fighter_b_name : b.fighter_a_name) : b.fighter_b_name };
+  });
+
+  /* The winner's face on every row, in ONE query -- the thumbnail, never the
+     full photo: these are 34px boxes and the full images are ~2MB each. */
+  var slugs = [], pic = {};
+  bouts.forEach(function(b){ if(b.ws && slugs.indexOf(b.ws) === -1) slugs.push(b.ws); });
+  if(slugs.length){
+    var fs = await q("fighter_cards?select=slug,profile_photo_thumb_url,profile_photo_url&slug=in.("
+      + slugs.join(',') + ")");
+    if(fs) fs.forEach(function(f){ pic[f.slug] = f.profile_photo_thumb_url || f.profile_photo_url; });
+  }
+  if(!el.isConnected) return;
+
+  var fins = bouts.filter(function(b){ return b.decided && !/^dec/i.test(b.method); }).length;
+  var order = ['main_card','featured','undercard','prelim','prelims'];
+  var groups = {}, keys = [];
+  bouts.forEach(function(b){ if(!groups[b.seg]){ groups[b.seg] = []; keys.push(b.seg); } groups[b.seg].push(b); });
+  keys.sort(function(a,b){
+    var ia = order.indexOf(a), ib = order.indexOf(b);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+  });
+
+  el.innerHTML = '<div class="rsb"><div class="rsh"><b>Full results</b><s>'
+      + bouts.length + (bouts.length === 1 ? ' bout' : ' bouts')
+      + (fins ? ' · ' + fins + (fins === 1 ? ' finish' : ' finishes') : '') + '</s></div>'
+    + keys.map(function(k){
+        return '<div class="rsg">' + esc(RS_SEG[k] || k.replace(/_/g, ' ')) + '</div>'
+          + groups[k].map(function(b){
+              var face = pic[b.ws]
+                ? '<span class="rsav"><img src="'+esc(pic[b.ws])+'" alt="" loading="lazy" onerror="this.remove()"></span>'
+                : '<span class="rsav"></span>';
+              var fin = b.decided && !/^dec/i.test(b.method) ? ' fin' : '';
+              return '<div class="rsr'+(b.title ? ' ttl' : '')+'"'
+                + (b.ws ? ' data-slug="'+esc(b.ws)+'"' : '') + '>'
+                + face
+                + '<span class="rsn"><b>'+esc(b.w)+'</b><span>'
+                + (b.decided ? 'def. ' : 'vs ') + esc(b.l) + '</span></span>'
+                + '<span class="rsm"><b class="'+fin.trim()+'">'+esc(b.method)+'</b>'
+                + '<span>'+esc(b.title ? (b.div + ' title') : b.div)+'</span></span></div>';
+            }).join('');
+      }).join('')
+    + '<div class="rsf" data-event="'+esc(eventId)+'"><span>Full card</span><span>&rarr;</span></div></div>';
 }
 
 /* ── EVERY EVENT, its own page ────────────────────────────────────────
