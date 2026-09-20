@@ -3544,12 +3544,15 @@ async function loadFaceoffs(ids){
   /* The RECORD comes along for the ride. The next-event poster wants it and
      this is already the one query that resolves these exact fighters — a
      second request for two more columns is a request for nothing. */
-  var ph = await q("fighter_cards?select=slug,profile_photo_url,headline_wins,headline_losses,"
+  /* THE THUMB, not the original. A roster photo is a 1400x2160 PNG of about
+     1.9MB and this slot draws it under 200px wide; the 300x463 thumb is 11x
+     lighter and is what the UBAe faceoff in this same slot always used. */
+  var ph = await q("fighter_cards?select=slug,profile_photo_url,profile_photo_thumb_url,headline_wins,headline_losses,"
     + "headline_draws&slug=in.(" + slugs.join(',') + ")");
   if(!ph) return;
   var byslug = {}, recs = {};
   ph.forEach(function(f){
-    if(f.profile_photo_url) byslug[f.slug] = f.profile_photo_url;
+    if(f.profile_photo_thumb_url || f.profile_photo_url) byslug[f.slug] = f.profile_photo_thumb_url || f.profile_photo_url;
     recs[f.slug] = rec(f);
   });
   Object.keys(main).forEach(function(k){
@@ -4625,7 +4628,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v230';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v231';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -6555,7 +6558,7 @@ async function loadCard(e){
   });
   var tape = {};
   if(slugs.length){
-    var fs = await q("fighter_cards?select=slug,profile_photo_url,headline_wins,headline_losses,"
+    var fs = await q("fighter_cards?select=slug,profile_photo_url,profile_photo_thumb_url,headline_wins,headline_losses,"
       + "headline_draws,height,reach,stance,country,headline_ko_wins&slug=in.(" + slugs.join(',') + ")");
     if(fs) fs.forEach(function(f){ tape[f.slug] = f; });
   }
@@ -6615,8 +6618,10 @@ function rec(f){
        + (f.headline_draws ? '-' + f.headline_draws : '');
 }
 function corner(f, slug, won, flip){
-  var inner = f.profile_photo_url
-    ? '<img class="cut2 ' + flip + '" src="' + esc(f.profile_photo_url) + '" alt="">'
+  /* 118px tall on screen — the thumb (463px) covers a 3x phone with room over. */
+  var cut = f.profile_photo_thumb_url || f.profile_photo_url;
+  var inner = cut
+    ? '<img class="cut2 ' + flip + '" src="' + esc(cut) + '" alt="" loading="lazy" decoding="async">'
     : '<svg class="sil2" viewBox="0 0 60 100" preserveAspectRatio="xMidYMax meet">'
       + '<circle cx="30" cy="21" r="14"/>'
       + '<path d="M30 38c-14 0-24 9-26 22l-4 40h60l-4-40c-2-13-12-22-26-22z"/></svg>';
