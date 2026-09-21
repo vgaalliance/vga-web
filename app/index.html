@@ -3050,7 +3050,14 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
    end-cap for the smaller choice beside it); the words inside are un-skewed so
    nothing is typeset on a slant. SPAR on a fighter's row is deliberately the
    one square button on the screen — it lives in a list, not in a plate. */
-.sp-plate{display:flex;transform:skewX(-20deg);background:#5FD98A;margin:0 18px;min-height:52px}
+/* A skewed box is visually WIDER than its box: 52px of height at 20deg throws
+   ~19px past each edge, which ran the plates off the side of the sheet. The
+   margin pays for the lean and #spb clips whatever is left. */
+#spb{overflow-x:hidden;padding-bottom:18px;animation:spIn .18s ease both}
+@keyframes spIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.sp-plate{display:flex;transform:skewX(-20deg);background:#5FD98A;margin:0 24px;min-height:52px;
+  transition:filter .12s ease,transform .12s ease}
+.sp-plate:active{filter:brightness(1.1);transform:skewX(-20deg) scale(.985)}
 .sp-plate.v{background:#A78BFA}
 .sp-plate.o{background:none;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.22)}
 .sp-plate.sm{min-height:44px}
@@ -3066,28 +3073,31 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   text-transform:uppercase;color:#DFFFE9}
 .sp-plate.v .cap b{color:#E6DCFF}
 .sp-plate .cap s{text-decoration:none;font-size:10px;line-height:1;color:rgba(255,255,255,.6)}
-.sp-hint{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.05em;color:#6F6790;text-align:center;margin:8px 18px 0}
+.sp-hint{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.05em;color:#6F6790;text-align:center;margin:8px 24px 0;line-height:1.5}
 .sp-hint u{text-decoration:none;color:#ADA4D6}
 .sp-stack{display:flex;flex-direction:column;gap:7px;margin-top:14px}
 .sp-count{display:flex;align-items:center;gap:12px;padding:6px 18px 0}
 .sp-count b{font-family:'Bebas Neue',sans-serif;font-size:58px;line-height:.85;color:#5FD98A}
 .sp-count span{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.07em;
   text-transform:uppercase;color:#ADA4D6}
-.sp-room{display:flex;align-items:center;gap:10px;margin:12px 18px 0;padding:8px 12px;
+.sp-room{display:flex;align-items:center;gap:10px;margin:12px 24px 0;padding:8px 12px;
   background:#13281D;border:1px solid rgba(95,217,138,.35)}
 .sp-room .k{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.16em;color:#4E7F62}
 .sp-room .c{font-family:'Space Mono',monospace;font-weight:700;font-size:17px;color:#EDEAF6;margin-top:2px}
-.sp-field{margin:12px 18px 0;background:rgba(255,255,255,.05);border:1px dashed rgba(255,255,255,.28);padding:0}
+.sp-field{margin:12px 24px 0;background:rgba(255,255,255,.05);border:1px dashed rgba(255,255,255,.28);padding:0}
 .sp-field input{width:100%;box-sizing:border-box;background:none;border:0;outline:none;padding:15px 12px;text-align:center;
   font-family:'Space Mono',monospace;font-weight:700;font-size:22px;letter-spacing:.06em;color:#EDEAF6}
 .sp-field input::placeholder{color:#4F4870}
-.sp-code{margin:12px 18px 0;background:#101A16;border:1px solid rgba(95,217,138,.45);padding:14px 0;text-align:center}
+.sp-code{margin:12px 24px 0;background:#101A16;border:1px solid rgba(95,217,138,.45);padding:14px 0;text-align:center}
 .sp-code .c{font-family:'Space Mono',monospace;font-weight:700;font-size:30px;letter-spacing:.05em;color:#5FD98A}
-.sp-row{display:flex;align-items:center;gap:9px;padding:7px 18px;border-bottom:1px solid rgba(255,255,255,.1);min-height:46px}
+.sp-row{display:flex;align-items:center;gap:9px;padding:7px 18px;transition:background .12s ease;border-bottom:1px solid rgba(255,255,255,.1);min-height:46px}
 .sp-row .fg{flex:1;min-width:0}
 .sp-row .n{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sp-row .l{font-family:'Space Mono',monospace;font-size:8.3px;color:#ADA4D6;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sp-row.off{opacity:.4}
+.sp-row:active{background:rgba(255,255,255,.05)}
+.sp-spar{transition:filter .12s ease}
+.sp-spar:active{filter:brightness(1.12)}
 .sp-av{width:32px;height:32px;flex:0 0 auto;overflow:hidden;background:linear-gradient(160deg,#2A1650,#120E22);
   display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:rgba(214,200,255,.8)}
 .sp-av img{width:100%;height:100%;object-fit:cover;object-position:top center}
@@ -3096,7 +3106,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .sp-spar.gold{background:#F5C842;color:#2A1F00}
 .sp-spar.dead{background:rgba(255,255,255,.1);color:#8B82AE}
 .sp-clock{font-family:'Space Mono',monospace;font-weight:700;font-size:16px;color:#C3A6FF;font-variant-numeric:tabular-nums}
-.sp-who{display:flex;align-items:center;gap:10px;margin:12px 18px 0;padding:9px 12px;background:#221B42;
+.sp-who{display:flex;align-items:center;gap:10px;margin:12px 24px 0;padding:9px 12px;background:#221B42;
   border-left:3px solid #A78BFA}
 .sp-who .t{font-weight:700;font-size:13px}
 .sp-who .s{font-family:'Space Mono',monospace;font-size:8.5px;color:#8B82AE;margin-top:2px}
@@ -11015,12 +11025,24 @@ function sparLobbyRow(r, blocked){
     + '<button class="sp-spar' + (blocked ? ' dead' : '') + '" data-sp="ask" data-id="' + esc(r.card_id) + '">SPAR</button></div>';
 }
 
+/* The clock on a request is real — 5 minutes, decided in SQL — so the screen
+   re-reads itself every 15s while it is open rather than showing a countdown
+   that is only true when you arrived. Cleared as soon as the sheet is gone. */
+function sparTickOn(){
+  clearInterval(sparTick);
+  sparTick = setInterval(function(){
+    if(!document.getElementById('spb')){ clearInterval(sparTick); sparTick = null; return; }
+    sparPaint();
+  }, 15000);
+}
+
 async function renderSpar(){
   var body = document.getElementById('sheet-body');
   body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'
     + '<div class="kick">Find someone to spar</div><h3>Sparring</h3></div>'
     + '<div id="spb"><div class="skel" style="height:90px"></div><div class="skel" style="width:60%"></div></div>';
   sparPaint();
+  sparTickOn();
 }
 
 async function sparPaint(){
@@ -11115,6 +11137,7 @@ async function sparPaint(){
     + '<div class="sp-field"><input id="sp-code" placeholder="your room code" maxlength="24" autocomplete="off"></div>'
     + '<div class="sp-stack">'
     + spPlate('Open lobby', 'open', { cap:sparTypeLabel(sparType), capSub:'⇄' })
+    + (lobbies.length ? spPlate('Find a spar', 'find', { cls:'v sm', cap:String(lobbies.length), capSub:'open' }) : '')
     + '</div>'
     + '<div class="sp-hint">make the room in the game, type its code · <u>nobody sees it until you accept them</u></div>'
     + (lobbies.length ? '<div class="lab"><b>Open lobbies</b><i></i><s>' + lobbies.length + '</s></div>'
@@ -11143,11 +11166,37 @@ var SPAR_SAID = {
   gone: 'That request no longer exists.',
   already: 'That was already answered.'
 };
+/* app_spar_suggest() returns a SET, so it comes back as an array — rpc() hands
+   back the first row of one, which would throw the rest away. */
+async function sparSuggest(){
+  if(!session) return [];
+  if(!(await ensureFreshSession())) return [];
+  try{
+    var r = await fetch(SB + '/rest/v1/rpc/app_spar_suggest', {
+      method:'POST', headers:{ apikey: KEY, Authorization:'Bearer ' + session.access_token,
+        'Content-Type':'application/json' }, body:'{}' });
+    var j = await r.json();
+    return Array.isArray(j) ? j : [];
+  }catch(e){ return []; }
+}
+
 async function sparDo(act, id, btn){
   var codeEl = document.getElementById('sp-code');
   var code = codeEl ? codeEl.value : '';
   var r;
   busy(btn, true);
+  if(act === 'find'){
+    /* The ORDER is the rule and it lives in app_spar_suggest(): your division,
+       then your region, then the closest rank. The app asks the first row and
+       never sorts anything itself. */
+    var picks = await sparSuggest();
+    if(!picks.length){ busy(btn, false); toast('Nobody to match you with right now.'); return; }
+    r = await rpc('app_spar_ask', { p_card: picks[0].card_id });
+    busy(btn, false);
+    if(r && r.ok === false) toast(SPAR_SAID[r.reason] || "That didn't go through.");
+    else toast('Asked ' + (picks[0].name || 'them') + ' — 5 min to answer.');
+    sparPaint(); return;
+  }
   if(act === 'open')        r = await rpc('app_spar_open',   { p_code: code, p_type: sparType });
   else if(act === 'recode') { var c = prompt('New room code'); if(c == null){ busy(btn,false); return; }
                               r = await rpc('app_spar_open', { p_code: c, p_type: (window.__sparState && window.__sparState.lobby && window.__sparState.lobby.spar_type) || sparType }); }
