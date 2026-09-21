@@ -3105,6 +3105,36 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .sp-spar.gold{background:#F5C842;color:#2A1F00}
 .sp-spar.dead{background:rgba(255,255,255,.1);color:#8B82AE}
 .sp-clock{font-family:'Space Mono',monospace;font-weight:700;font-size:16px;color:#C3A6FF;font-variant-numeric:tabular-nums}
+/* THE FACEOFF — only on Find a spar, where the app picked for you and you have
+   to judge somebody you did not choose. Tapping SPAR on a name is a decision
+   you already made, so that path still asks straight away.
+   Art in three tiers, best first: cut-out, square photo over the silhouette,
+   silhouette with initials. Every fighter has a picture either way. */
+.sp-fo{display:flex;align-items:flex-end;justify-content:space-between;gap:6px;padding:12px 14px 0;position:relative}
+.sp-fo::before{content:'';position:absolute;left:0;right:0;top:0;bottom:24px;
+  background:radial-gradient(50% 60% at 24% 78%,rgba(123,47,255,.4),transparent 70%),
+             radial-gradient(50% 60% at 76% 78%,rgba(245,200,66,.18),transparent 70%)}
+.sp-fig{position:relative;width:44%;height:132px;display:flex;align-items:flex-end;justify-content:center;background:none;border:0}
+.sp-fig img{max-height:132px;max-width:100%;object-fit:contain;filter:drop-shadow(0 8px 16px rgba(0,0,0,.55))}
+.sp-fig img.sq{width:62px;height:62px;object-fit:cover;object-position:top center;position:absolute;top:2px;
+  border:2px solid rgba(255,255,255,.18)}
+.sp-fig svg{width:88px;height:132px;fill:#332A5E;stroke:none}
+.sp-fig.them svg{fill:#4E3D14}
+.sp-fig .ini{position:absolute;bottom:18px;font-family:'Bebas Neue',sans-serif;font-size:22px;color:rgba(255,255,255,.5)}
+.sp-vs{align-self:center;font-family:'Bebas Neue',sans-serif;font-size:22px;color:rgba(255,255,255,.3);padding-bottom:40px}
+.sp-names{display:flex;justify-content:space-between;padding:2px 18px 0;font-family:'Bebas Neue',sans-serif;
+  font-size:21px;line-height:1;letter-spacing:.03em}
+.sp-names span:last-child{text-align:right;color:#F5C842}
+.sp-names small{display:block;font-family:'Space Mono',monospace;font-size:8.5px;color:#ADA4D6;letter-spacing:.02em;margin-top:2px}
+.sp-tape{margin:10px 18px 0}
+.sp-tp{display:grid;grid-template-columns:1fr 78px 1fr;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.1)}
+.sp-tp:last-child{border-bottom:0}
+.sp-tp b{font-family:'Space Mono',monospace;font-size:11px;font-variant-numeric:tabular-nums}
+.sp-tp b:last-child{text-align:right}
+.sp-tp b.sp-up{color:#5FD98A;font-weight:700}
+.sp-tp s{text-decoration:none;text-align:center;font-family:'Space Mono',monospace;font-size:7px;letter-spacing:.13em;
+  text-transform:uppercase;color:#585174}
+
 .sp-who{display:flex;align-items:center;gap:10px;margin:12px 24px 0;padding:9px 12px;background:#221B42;
   border-left:3px solid #A78BFA}
 .sp-who .t{font-weight:700;font-size:13px}
@@ -3119,6 +3149,14 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.5 10.6 12 3.8l8.5 6.8V20a.9.9 0 0 1-.9.9h-4.8v-6h-5.6v6H4.4a.9.9 0 0 1-.9-.9z"/></symbol>
   <symbol id="i-news" viewBox="0 0 24 24"><rect x="3" y="4.6" width="18" height="14.8" rx="2"/><path d="M6.6 8.6h7M6.6 12h7M6.6 15.2h4.4M16.6 12h1"/></symbol>
   <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.6" r="3.9"/><path d="M4.9 20.2a7.4 7.4 0 0 1 14.2 0"/></symbol>
+  <!-- A fighter with the guard up, for anybody without a cut-out. 90 of 448
+       have one and 355 have no photo at all, so this is the COMMON case, not
+       the fallback nobody sees: one flat shape, tinted by corner. -->
+  <symbol id="i-boxer" viewBox="0 0 120 200">
+    <path d="M44 62h32c11 0 20 8 22 19l6 33c1 7-3 12-9 13s-11-3-12-10l-4-21-2 30 9 58c1 8-4 13-11 13s-12-5-13-12l-5-38-5 38c-1 7-6 12-13 12s-12-5-11-13l9-58-2-30-4 21c-1 7-6 11-12 10s-10-6-9-13l6-33c2-11 11-19 22-19z"/>
+    <circle cx="60" cy="38" r="17"/>
+    <circle cx="33" cy="72" r="15"/><circle cx="87" cy="72" r="15"/>
+  </symbol>
   <symbol id="i-fighters" viewBox="0 0 24 24"><rect x="3.4" y="3.4" width="7.2" height="7.2" rx="1.4"/><rect x="13.4" y="3.4" width="7.2" height="7.2" rx="1.4"/><rect x="3.4" y="13.4" width="7.2" height="7.2" rx="1.4"/><rect x="13.4" y="13.4" width="7.2" height="7.2" rx="1.4"/></symbol>
   <symbol id="i-bet" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6"/><path d="M12 7.2v9.6M9.4 9.5h3.9a1.9 1.9 0 0 1 0 3.8h-2.8a1.9 1.9 0 0 0 0 3.8H14"/></symbol>
   <symbol id="i-cards" viewBox="0 0 24 24"><rect x="7.4" y="4.2" width="12.4" height="15.6" rx="2"/><path d="M4.2 7v12a1.8 1.8 0 0 0 1.8 1.8h9.4"/></symbol>
@@ -11165,6 +11203,71 @@ var SPAR_SAID = {
   gone: 'That request no longer exists.',
   already: 'That was already answered.'
 };
+/* ── the faceoff screen ──────────────────────────────────────────────
+   Reached only from Find a spar: the app chose, so it has to show its work.
+   The picks come from app_spar_suggest() in the order the database decided
+   (your division, then your region, then the closest rank) — the arrows walk
+   that list and nothing here re-sorts it. */
+var sparPicks = [], sparPick = 0, sparMine = null;
+
+function sparArt(f, side){
+  var art = f.cutout_url
+      ? '<img src="' + esc(f.cutout_url) + '" alt="">'
+      : '<svg><use href="#i-boxer"/></svg>'
+        + (f.photo_square_url || f.photo_thumb_url
+            ? '<img class="sq" src="' + esc(f.photo_square_url || f.photo_thumb_url) + '" alt="">'
+            : '<span class="ini">' + esc((f.name || '?').slice(0, 2).toUpperCase()) + '</span>');
+  return '<div class="sp-fig ' + side + '">' + art + '</div>';
+}
+/* A row of the tape. The lead is marked only when BOTH numbers are real —
+   an empty reach must never look like somebody is shorter. */
+function sparTapeRow(label, a, b, better){
+  var lead = '';
+  if(a != null && b != null && a !== '' && b !== '' && better){
+    var na = parseFloat(String(a).replace(/[^\d.]/g,'')), nb = parseFloat(String(b).replace(/[^\d.]/g,''));
+    if(isFinite(na) && isFinite(nb) && na !== nb) lead = (better === 'high' ? (na > nb) : (na < nb)) ? 'a' : 'b';
+  }
+  return '<div class="sp-tp"><b class="' + (lead === 'a' ? 'sp-up' : '') + '">' + esc(a == null || a === '' ? '\u2014' : a)
+    + '</b><s>' + esc(label) + '</s><b class="' + (lead === 'b' ? 'sp-up' : '') + '">'
+    + esc(b == null || b === '' ? '\u2014' : b) + '</b></div>';
+}
+function sparRecord(w, l){ return (w == null ? 0 : w) + '-' + (l == null ? 0 : l); }
+function sparHeight(inches){
+  var n = parseInt(inches, 10);
+  if(!isFinite(n) || !n) return '';
+  return Math.floor(n / 12) + "'" + (n % 12) + '"';
+}
+
+function sparFaceoff(){
+  var el = document.getElementById('spb');
+  if(!el) return;
+  var f = sparPicks[sparPick];
+  if(!f){ sparPaint(); return; }
+  var m = sparMine || {};
+  el.innerHTML = '<div class="lab"><b>Found you one</b><i></i><s>' + (sparPick + 1) + ' of ' + sparPicks.length + '</s></div>'
+    + '<div class="sp-fo">' + sparArt({ cutout_url:m.cutout_url, photo_square_url:m.photo_square_url || m.photo_thumb_url, name:m.name }, 'me')
+    + '<span class="sp-vs">VS</span>' + sparArt(f, 'them') + '</div>'
+    + '<div class="sp-names"><span>' + esc((m.name || 'You').toUpperCase())
+    + '<small>' + esc(sparLine({ weight_class:m.weight_class, rank:m.rank, wins:m.wins, losses:m.losses, region:m.region })) + '</small></span>'
+    + '<span>' + esc((f.name || 'Them').toUpperCase()) + '<small>' + esc(sparLine(f)) + '</small></span></div>'
+    + '<div class="sp-tape">'
+    + sparTapeRow('record', sparRecord(m.wins, m.losses), sparRecord(f.wins, f.losses))
+    + sparTapeRow('rank', m.rank ? '#' + m.rank : '', f.rank ? '#' + f.rank : '', 'low')
+    + sparTapeRow('height', sparHeight(m.height), sparHeight(f.height), 'high')
+    + sparTapeRow('reach', m.reach ? m.reach + '"' : '', f.reach ? f.reach + '"' : '', 'high')
+    + sparTapeRow('stance', m.stance || '', f.stance || '')
+    + sparTapeRow('region', m.region || '', f.region || '')
+    + sparTapeRow('spar', sparTypeLabel(sparType), sparTypeLabel(f.spar_type))
+    + '</div>'
+    + '<div class="sp-stack">'
+    + '<div class="sp-plate" data-sp="askpick"><span class="cap" data-sp="prev">\u2039</span>'
+    + '<span class="go" data-sp="askpick">Ask to join</span>'
+    + '<span class="cap" data-sp="next">\u203A</span></div>'
+    + '</div>'
+    + '<div class="sp-hint">' + esc(sparMins(f.ends_at)) + ' left on their lobby · '
+    + '<u>\u2039 \u203A steps through the ' + sparPicks.length + '</u></div>';
+}
+
 /* app_spar_suggest() returns a SET, so it comes back as an array — rpc() hands
    back the first row of one, which would throw the rest away. */
 async function sparSuggest(){
@@ -11184,17 +11287,32 @@ async function sparDo(act, id, btn){
   var code = codeEl ? codeEl.value : '';
   var r;
   busy(btn, true);
+  if(act === 'prev' || act === 'next'){
+    sparPick = (sparPick + (act === 'next' ? 1 : sparPicks.length - 1)) % sparPicks.length;
+    busy(btn, false); sparFaceoff(); return;
+  }
+  if(act === 'askpick'){
+    var pick = sparPicks[sparPick];
+    r = await rpc('app_spar_ask', { p_card: pick.card_id });
+    busy(btn, false);
+    if(r && r.ok === false) toast(SPAR_SAID[r.reason] || "That didn't go through.");
+    else toast('Asked ' + (pick.name || 'them') + ' \u2014 5 min to answer.');
+    sparPaint(); return;
+  }
   if(act === 'find'){
     /* The ORDER is the rule and it lives in app_spar_suggest(): your division,
        then your region, then the closest rank. The app asks the first row and
        never sorts anything itself. */
-    var picks = await sparSuggest();
-    if(!picks.length){ busy(btn, false); toast('Nobody to match you with right now.'); return; }
-    r = await rpc('app_spar_ask', { p_card: picks[0].card_id });
+    var got = await Promise.all([ sparSuggest(), qMe('my_profile?select=*&limit=1') ]);
     busy(btn, false);
-    if(r && r.ok === false) toast(SPAR_SAID[r.reason] || "That didn't go through.");
-    else toast('Asked ' + (picks[0].name || 'them') + ' — 5 min to answer.');
-    sparPaint(); return;
+    sparPicks = got[0] || []; sparPick = 0;
+    var mp = (got[1] || [])[0] || {};
+    sparMine = { name: mp.fighter_name || mp.display_name || 'You', weight_class: mp.weight_class,
+                 rank: mp.rank, wins: mp.wins, losses: mp.losses, region: mp.region,
+                 height: mp.height, reach: mp.reach, stance: mp.stance,
+                 photo_square_url: mp.photo_thumb_url || mp.photo_url, cutout_url: null };
+    if(!sparPicks.length){ toast('Nobody to match you with right now.'); return; }
+    sparFaceoff(); return;
   }
   if(act === 'open')        r = await rpc('app_spar_open',   { p_code: code, p_type: sparType });
   else if(act === 'recode') { var c = prompt('New room code'); if(c == null){ busy(btn,false); return; }
