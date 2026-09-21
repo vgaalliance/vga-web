@@ -20,7 +20,7 @@
    old app until they clear site data.
    ═══════════════════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'uba-v232';
+const CACHE_VERSION = 'uba-v233';
 // Photos live in their OWN cache, which a version bump does not wipe: a new
 // shell is 400KB, the photos are most of what a phone has downloaded.
 const IMG_CACHE = 'uba-img-v1';
