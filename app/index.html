@@ -11009,7 +11009,7 @@ function registerWorker(){
    never be a softer door than Discord: the cooldown after a Not now, one card
    each, one request each way and "accepting takes both cards down" are all
    still decided in SQL. */
-var sparType = 'open', sparTick = null;
+var sparType = 'open', sparTick = null, sparRate = 20000, sparSeen = '';
 var SPAR_TYPES = [['open','OPEN'], ['rounds_3','3 RDS'], ['rounds_5','5 RDS']];
 function sparTypeLabel(v){
   for(var i=0;i<SPAR_TYPES.length;i++) if(SPAR_TYPES[i][0] === v) return SPAR_TYPES[i][1];
@@ -11063,14 +11063,23 @@ function sparLobbyRow(r, blocked){
 }
 
 /* The clock on a request is real — 5 minutes, decided in SQL — so the screen
-   re-reads itself every 15s while it is open rather than showing a countdown
-   that is only true when you arrived. Cleared as soon as the sheet is gone. */
+   re-reads itself while it is open. HOW OFTEN depends on whether anything can
+   change: 3s while a request is out or in (the other side accepting is the one
+   moment worth catching straight away), 20s when you are just browsing. A poll
+   that only ever costs a couple of hundred bytes is worth spending there and
+   nowhere else. */
+function sparEvery(){
+  var st = window.__sparState;
+  return (st && (st.asked || st.incoming)) ? 3000 : 20000;
+}
 function sparTickOn(){
   clearInterval(sparTick);
   sparTick = setInterval(function(){
     if(!document.getElementById('spb')){ clearInterval(sparTick); sparTick = null; return; }
-    sparPaint();
-  }, 15000);
+    if(document.visibilityState !== 'visible') return;   /* a backgrounded tab polls nothing */
+    if(sparEvery() !== sparRate){ sparRate = sparEvery(); sparTickOn(); }
+    sparPaint(true);
+  }, sparRate);
 }
 
 async function renderSpar(){
@@ -11078,11 +11087,13 @@ async function renderSpar(){
   body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'
     + '<div class="kick">Find someone to spar</div><h3>Sparring</h3></div>'
     + '<div id="spb"><div class="skel" style="height:90px"></div><div class="skel" style="width:60%"></div></div>';
+  sparSeen = '';
   sparPaint();
+  sparRate = 20000;
   sparTickOn();
 }
 
-async function sparPaint(){
+async function sparPaint(quiet){
   var el = document.getElementById('spb');
   if(!el) return;
   if(!me){ el.innerHTML = '<div class="empty">Sign in to spar. The board is the same one the bot posts in the server.</div>'; return; }
@@ -11099,6 +11110,12 @@ async function sparPaint(){
   }
   if(!lobbies) lobbies = [];
   window.__sparState = st;
+  /* A tick that found the same world leaves the screen alone — re-rendering
+     identical HTML is what made the list flash and the scroll jump. */
+  var seen = JSON.stringify([st.lobby, st.asked, st.incoming, st.spar,
+    lobbies.map(function(r){ return [r.card_id, r.ends_at]; })]);
+  if(quiet && seen === sparSeen) return;
+  sparSeen = seen;
 
   /* IN A SPAR — the code, and the two ways out. */
   if(st.spar){
@@ -11167,6 +11184,7 @@ async function sparPaint(){
   }
 
   /* AT REST — host one, or join one. Those are the only two roles. */
+  if(lobbies.length && !sparPicks.length) sparPrefetch();   /* ready before you press Find a spar */
   var head = lobbies.length
     ? '<div class="sp-count"><b>' + lobbies.length + '</b><span>lobbies open<br>tap SPAR on anyone</span></div>'
     : '<div class="empty"><b>Nobody is hosting right now.</b><br>Open a lobby and people come to you.</div>';
@@ -11179,6 +11197,16 @@ async function sparPaint(){
     + '<div class="sp-hint">make the room in the game, type its code · <u>nobody sees it until you accept them</u></div>'
     + (lobbies.length ? '<div class="lab"><b>Open lobbies</b><i></i><s>' + lobbies.length + '</s></div>'
         + lobbies.map(function(r){ return sparLobbyRow(r, false); }).join('') : '');
+}
+
+/* What the screen says the moment you press, before the server has answered.
+   The server still decides — sparPaint() overwrites this with the truth a
+   moment later — but a button that goes dead for half a second with nothing on
+   screen reads as broken. */
+function sparPending(html){
+  var el = document.getElementById('spb');
+  if(el) el.innerHTML = html + '<div class="sp-hint">saving\u2026</div>';
+  sparSeen = '';
 }
 
 /* Every spar write lands here: disable the plate, say what the SERVER said,
@@ -11268,6 +11296,22 @@ function sparFaceoff(){
     + '<u>\u2039 \u203A steps through the ' + sparPicks.length + '</u></div>';
 }
 
+/* The two reads Find a spar needs, fetched while you are still looking at the
+   lobby rather than after you press it. Your own row comes from my_profile,
+   which the You tab has usually loaded already. */
+async function sparPrefetch(){
+  var got = await Promise.all([ sparSuggest(), sparMine ? null : qMe('my_profile?select=*&limit=1') ]);
+  sparPicks = got[0] || [];
+  if(got[1]){
+    var mp = (got[1] || [])[0] || {};
+    sparMine = { name: mp.fighter_name || mp.display_name || 'You', weight_class: mp.weight_class,
+                 rank: mp.rank, wins: mp.wins, losses: mp.losses, region: mp.region,
+                 height: mp.height, reach: mp.reach, stance: mp.stance,
+                 photo_square_url: mp.photo_thumb_url || mp.photo_url, cutout_url: null };
+  }
+  return sparPicks;
+}
+
 /* app_spar_suggest() returns a SET, so it comes back as an array — rpc() hands
    back the first row of one, which would throw the rest away. */
 async function sparSuggest(){
@@ -11293,6 +11337,8 @@ async function sparDo(act, id, btn){
   }
   if(act === 'askpick'){
     var pick = sparPicks[sparPick];
+    sparPending('<div class="sp-who"><div style="flex:1"><div class="t">Asking ' + esc(pick.name || 'them') + '\u2026</div>'
+      + '<div class="s">5 minutes to answer</div></div></div>');
     r = await rpc('app_spar_ask', { p_card: pick.card_id });
     busy(btn, false);
     if(r && r.ok === false) toast(SPAR_SAID[r.reason] || "That didn't go through.");
@@ -11300,17 +11346,14 @@ async function sparDo(act, id, btn){
     sparPaint(); return;
   }
   if(act === 'find'){
+    /* Prefetched when the screen opened, so this is usually instant. */
+    if(sparPicks.length && sparMine){ busy(btn, false); sparPick = 0; sparFaceoff(); return; }
     /* The ORDER is the rule and it lives in app_spar_suggest(): your division,
        then your region, then the closest rank. The app asks the first row and
        never sorts anything itself. */
-    var got = await Promise.all([ sparSuggest(), qMe('my_profile?select=*&limit=1') ]);
+    await sparPrefetch();
     busy(btn, false);
-    sparPicks = got[0] || []; sparPick = 0;
-    var mp = (got[1] || [])[0] || {};
-    sparMine = { name: mp.fighter_name || mp.display_name || 'You', weight_class: mp.weight_class,
-                 rank: mp.rank, wins: mp.wins, losses: mp.losses, region: mp.region,
-                 height: mp.height, reach: mp.reach, stance: mp.stance,
-                 photo_square_url: mp.photo_thumb_url || mp.photo_url, cutout_url: null };
+    sparPick = 0;
     if(!sparPicks.length){ toast('Nobody to match you with right now.'); return; }
     sparFaceoff(); return;
   }
@@ -11319,9 +11362,17 @@ async function sparDo(act, id, btn){
                               r = await rpc('app_spar_open', { p_code: c, p_type: (window.__sparState && window.__sparState.lobby && window.__sparState.lobby.spar_type) || sparType }); }
   else if(act === 'more')   r = await rpc('app_spar_open',   { p_code: (window.__sparState.lobby || {}).room_code || '', p_type: (window.__sparState.lobby || {}).spar_type || 'open' });
   else if(act === 'close')  r = await rpc('app_spar_close');
-  else if(act === 'ask')    r = await rpc('app_spar_ask',    { p_card: id });
+  else if(act === 'ask'){
+    sparPending('<div class="sp-who"><div style="flex:1"><div class="t">Asking\u2026</div>'
+      + '<div class="s">they get 5 minutes to answer</div></div></div>');
+    r = await rpc('app_spar_ask', { p_card: id });
+  }
   else if(act === 'cancel') r = await rpc('app_spar_cancel', { p_request: id });
-  else if(act === 'yes')    r = await rpc('app_spar_answer', { p_request: id, p_accept: true });
+  else if(act === 'yes'){
+    sparPending('<div class="sp-who"><div style="flex:1"><div class="t">Accepting\u2026</div>'
+      + '<div class="s">handing over your room code</div></div></div>');
+    r = await rpc('app_spar_answer', { p_request: id, p_accept: true });
+  }
   else if(act === 'no')     r = await rpc('app_spar_answer', { p_request: id, p_accept: false });
   else if(act === 'sendcode' || act === 'newcode'){
     var nc = act === 'newcode' ? prompt('New room code') : code;
@@ -11330,6 +11381,7 @@ async function sparDo(act, id, btn){
   }
   else if(act === 'calloff') r = await rpc('app_spar_call_off', { p_request: id });
   busy(btn, false);
+  sparSeen = '';                                   /* a write always repaints */
   if(r && r.ok === false) toast(SPAR_SAID[r.reason] || r.message || "That didn't go through.");
   else if(act === 'ask') toast('Asked — they have 5 min.');
   else if(act === 'yes' && r && r.code) toast('Spar on — code sent.');
