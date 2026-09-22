@@ -11115,6 +11115,10 @@ async function sparPaint(quiet){
   var seen = JSON.stringify([st.lobby, st.asked, st.incoming, st.spar,
     lobbies.map(function(r){ return [r.card_id, r.ends_at]; })]);
   if(quiet && seen === sparSeen) return;
+  /* Somebody typing their room code is mid-sentence: a background tick that
+     repaints the field throws the code away. Wait for the next one. */
+  var typing = document.activeElement;
+  if(quiet && typing && typing.id === 'sp-code') return;
   sparSeen = seen;
 
   /* IN A SPAR — the code, and the two ways out. */
@@ -11360,7 +11364,12 @@ async function sparDo(act, id, btn){
   if(act === 'open')        r = await rpc('app_spar_open',   { p_code: code, p_type: sparType });
   else if(act === 'recode') { var c = prompt('New room code'); if(c == null){ busy(btn,false); return; }
                               r = await rpc('app_spar_open', { p_code: c, p_type: (window.__sparState && window.__sparState.lobby && window.__sparState.lobby.spar_type) || sparType }); }
-  else if(act === 'more')   r = await rpc('app_spar_open',   { p_code: (window.__sparState.lobby || {}).room_code || '', p_type: (window.__sparState.lobby || {}).spar_type || 'open' });
+  else if(act === 'more'){
+    /* an empty code means "keep the one I have" — including a card that was
+       opened in Discord and never had one */
+    var lob = (window.__sparState && window.__sparState.lobby) || {};
+    r = await rpc('app_spar_open', { p_code: '', p_type: lob.spar_type || 'open' });
+  }
   else if(act === 'close')  r = await rpc('app_spar_close');
   else if(act === 'ask'){
     sparPending('<div class="sp-who"><div style="flex:1"><div class="t">Asking\u2026</div>'
@@ -11400,8 +11409,21 @@ document.addEventListener('click', function(e){
     return;
   }
   if(act === 'copy'){
-    var s = window.__sparState && window.__sparState.spar;
-    if(s && s.code && navigator.clipboard){ navigator.clipboard.writeText(s.code); toast('Code copied.'); }
+    /* navigator.clipboard is missing on older iOS and on any non-https origin;
+       falling back to a selected field beats a button that does nothing. */
+    var sp = window.__sparState && window.__sparState.spar;
+    if(!sp || !sp.code) return;
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(sp.code).then(function(){ toast('Code copied.'); },
+        function(){ toast('Copy failed — the code is ' + sp.code); });
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = sp.code; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); toast('Code copied.'); }
+      catch(err){ toast('The code is ' + sp.code); }
+      document.body.removeChild(ta);
+    }
     return;
   }
   sparDo(act, t.getAttribute('data-id'), t);
