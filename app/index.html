@@ -11141,10 +11141,14 @@ async function sparPaint(quiet){
 
   /* SOMEONE IS ASKING — accepting hands them your code. */
   if(st.incoming){
+    var again = !!st.incoming.again;
     el.innerHTML = '<div class="sp-who"><div style="flex:1"><div class="t">' + esc(st.incoming.from_name)
-      + ' wants to spar</div><div class="s">answer within 5 min</div></div>'
+      + (again ? ' wants to go again' : ' wants to spar') + '</div><div class="s">'
+      + (again ? 'same room as last time' : 'answer within 5 min') + '</div></div>'
       + '<span class="sp-clock">' + sparClock(st.incoming.expires_at) + '</span></div>'
-      + '<div class="sp-hint" style="margin-top:10px">accepting hands over your room code · '
+      + '<div class="sp-hint" style="margin-top:10px">'
+      + (again ? 'accepting puts you straight back in the same room' : 'accepting hands over your room code')
+      + ' · '
       + '<u>Not now = they can’t ask again for 10 min</u></div>'
       + '<div class="sp-stack">'
       + spPlate('Accept', 'yes', { cap:'Not', capSub:'now', capAct:'no', id:st.incoming.id })
@@ -11166,12 +11170,19 @@ async function sparPaint(quiet){
     return;
   }
 
+  /* THE 30 MINUTES AFTER A SPAR. Walking the whole board again is where a
+     rematch goes to die, so the person you just fought stays one tap away —
+     same room, nothing typed. */
+  var again = st.last ? '<div class="sp-who" style="border-left-color:#5FD98A"><div style="flex:1">'
+      + '<div class="t">You just sparred ' + esc(st.last.partner) + '</div>'
+      + '<div class="s">same room, one tap</div></div>'
+      + '<button class="sp-spar" data-sp="again" data-id="' + esc(st.last.id) + '">GO AGAIN</button></div>' : '';
   var mine = st.lobby;
   var others = lobbies.filter(function(r){ return !mine || r.card_id !== mine.card_id; });
 
   /* HOSTING — a state, not an action: nothing to press but the way out. */
   if(mine){
-    el.innerHTML = '<div class="sp-count"><b>' + others.length + '</b><span>other lobbies open<br>'
+    el.innerHTML = again + '<div class="sp-count"><b>' + others.length + '</b><span>other lobbies open<br>'
       + esc(sparTypeLabel(mine.spar_type)) + ' · ' + esc(sparMins(mine.ends_at)) + ' left</span></div>'
       + '<div class="sp-room"><div style="flex:1"><div class="k">YOUR ROOM</div><div class="c">'
       + esc(mine.room_code || 'no code') + '</div></div>'
@@ -11192,7 +11203,7 @@ async function sparPaint(quiet){
   var head = lobbies.length
     ? '<div class="sp-count"><b>' + lobbies.length + '</b><span>lobbies open<br>tap SPAR on anyone</span></div>'
     : '<div class="empty"><b>Nobody is hosting right now.</b><br>Open a lobby and people come to you.</div>';
-  el.innerHTML = head
+  el.innerHTML = again + head
     + '<div class="sp-field"><input id="sp-code" placeholder="your room code" maxlength="24" autocomplete="off"></div>'
     + '<div class="sp-stack">'
     + spPlate('Open lobby', 'open', { cap:sparTypeLabel(sparType), capSub:'⇄' })
@@ -11230,6 +11241,7 @@ var SPAR_SAID = {
   slow_down: 'You just closed a lobby. Try again in a minute.',
   busy: 'Your lobby is going up.',
   not_pending: 'That request already closed.',
+  too_late: 'That spar is too old for a rematch — find them on the board.',
   expired: 'That request timed out.',
   not_yours: "That request isn't yours.",
   gone: 'That request no longer exists.',
@@ -11370,6 +11382,11 @@ async function sparDo(act, id, btn){
     var lob = (window.__sparState && window.__sparState.lobby) || {};
     r = await rpc('app_spar_open', { p_code: '', p_type: lob.spar_type || 'open' });
   }
+  else if(act === 'again'){
+    sparPending('<div class="sp-who"><div style="flex:1"><div class="t">Asking for a rematch\u2026</div>'
+      + '<div class="s">same room as last time</div></div></div>');
+    r = await rpc('app_spar_rematch', { p_request: id });
+  }
   else if(act === 'close')  r = await rpc('app_spar_close');
   else if(act === 'ask'){
     sparPending('<div class="sp-who"><div style="flex:1"><div class="t">Asking\u2026</div>'
@@ -11393,6 +11410,7 @@ async function sparDo(act, id, btn){
   sparSeen = '';                                   /* a write always repaints */
   if(r && r.ok === false) toast(SPAR_SAID[r.reason] || r.message || "That didn't go through.");
   else if(act === 'ask') toast('Asked — they have 5 min.');
+  else if(act === 'again' && r && r.ok) toast('Rematch asked — 5 min to answer.');
   else if(act === 'yes' && r && r.code) toast('Spar on — code sent.');
   sparPaint();
 }
