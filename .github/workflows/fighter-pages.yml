@@ -1,0 +1,35 @@
+# Rebuild the fighter link-preview pages (app/f/*.html) every night.
+#
+# Discord, iMessage and Twitter read a pasted profile link's <meta> tags
+# without running JavaScript, so each fighter has a static page. Those pages
+# are a SNAPSHOT: a fighter wins on Saturday and the link keeps previewing the
+# old record until somebody reruns the generator. Nobody did for weeks
+# (2026-09-24: 76 missing, 65 stale). This reruns it nightly and commits only
+# when something changed. It reads the PUBLIC publishable key already in the
+# generator -- no secrets.
+name: fighter pages
+on:
+  schedule:
+    - cron: '0 9 * * *'   # 05:00 ET -- after every show night has finished
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: fighter-pages
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Rebuild
+        run: node app/build-fighter-pages.mjs
+      - name: Commit if anything changed
+        run: |
+          git add -A app/f
+          if git diff --cached --quiet; then echo "pages already current"; exit 0; fi
+          git config user.name "vga-pages-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git commit -m "chore(app): nightly fighter page rebuild"
+          git push
