@@ -9635,13 +9635,18 @@ async function renderMyContract(){
       + 'Contracts are offered by the matchmakers as a Discord DM once you have fought.</div>';
     return;
   }
+  // Flat pay per fight (2026-09-24): show_vc/win_vc. A contract signed before
+  // the switch and never moved still has only the old % of revenue.
+  function pay(vc, pct){
+    return vc != null ? Number(vc).toLocaleString('en-US') + ' VC' : Number(pct||0) + '%';
+  }
   function terms(c, tag){
     return '<div class="deal '+(tag==='offer'?'offer':'')+'">'
       + '<div class="tier">'+esc(String(c.tier||'Signed').toUpperCase())+'</div>'
       + (tag==='offer' ? '<div class="tag">On the table</div>' : '')
       + '<div class="grid">'
-      + '<div><span class="k">Show</span><span class="v">'+Number(c.show_pct||0)+'%</span></div>'
-      + '<div><span class="k">Win bonus</span><span class="v">'+Number(c.win_bonus_pct||0)+'%</span></div>'
+      + '<div><span class="k">Show</span><span class="v">'+pay(c.show_vc, c.show_pct)+'</span></div>'
+      + '<div><span class="k">Win bonus</span><span class="v">'+(c.show_vc != null ? '+' : '')+pay(c.win_vc, c.win_bonus_pct)+'</span></div>'
       + '<div><span class="k">Guaranteed</span><span class="v">'
         + (c.guaranteed_fights ? c.guaranteed_fights + ' fights' : '\u2014')+'</span></div>'
       + '<div><span class="k">Used</span><span class="v">'
