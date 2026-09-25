@@ -17,6 +17,11 @@
    signed out. Write down what you could and could not verify.
 6. Stop an item (don't guess) if it needs a design decision not written here — note it in the PR and move on.
 
+## If you were stopped and started again (usage limit, a new session)
+Before doing anything, list the `cloud/*` branches and open draft PRs. An item whose PR exists and whose checks
+passed is **done — skip it**. An item with a branch but no PR is **half-done — finish it on that branch**. Then carry
+on from the first item with nothing. Never redo a finished item, never start a second branch for the same item.
+
 ## The items
 ### 1 · Works offline, slice 3  *(build)*
 Buttons that need the network — **bet, buy, rip (open a pack)** — say **"Needs a connection"** (disabled or a clear
