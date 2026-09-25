@@ -38,12 +38,20 @@ From the roadmap line "Feels like an app, not a page", only these three: **touch
 **no layout shift** as data lands (reserve space / skeletons), and **every failure says something** (no silent empty
 states). Nothing else from that line in this run.
 
-### 4 · Staff home in the app — plan only  *(write, don't build)*
-`docs/cloud-run/staff-home-plan.md`: the screens for crew (My jobs, Open jobs with ✋ I want it, my rung + the ladder,
-my pay, my department's 📘 playbook) and for leads (the jobs board, Assign, applications). Base it on
-`vga-systems/docs/staff-system-plan.md` §5 and the Discord dashboards that exist now (`bot/src/lib/desk-core.js`).
-List every read it needs as a proposed `my_*` view / `app_*` function in SQL (identity from `app_me()`, never a
-caller-supplied id — the F98 rule). Wireframe each screen in plain text. No code.
+### 4 · Staff home in the app — full design pass  *(build mockups, not the real thing)*
+Castle wants to SEE the whole staff app before anyone builds it. Make **`docs/cloud-run/staff-app-mockups.html`**: a
+self-contained, clickable mockup of every staff screen, in the app's own look (reuse `app/index.html`'s styles and
+tab bar), with example data — nothing wired to the database. Mirror what the Discord Production server does today
+(read `vga-systems/bot/src/lib/desk-core.js`, `job-core.js`, `door-core.js`, `playbook-core.js` and
+`vga-systems/docs/staff-system-plan.md` §5):
+- **Crew:** Home (what's waiting on me) · Open work (jobs with **✋ I want it**, crew calls with **I'm in**) · My jobs
+  (Hand in, Drop) · My pay (weekly + per show, Claim) · My department's **📘 playbook** · The ladder (where I am, what's next).
+- **Lead:** the jobs board (Assign · ✋ n / Assign…, Review, Approve / Send back) · show cards (Pick crew, Assign…
+  invite, Close) · applications (Approve / Decline) · **Edit playbook**.
+- **Producer:** the producer desk (problems, shows, Pay, Force-close, Cancel/postpone, Leads).
+Phone-first (it's the app), every screen reachable by tapping. Also write `docs/cloud-run/staff-home-plan.md`: every
+read each screen needs as a proposed `my_*` view / `app_*` function in SQL (identity from `app_me()`, never a
+caller-supplied id — the F98 rule). No real app code.
 
 ### 5 · Photo weight, fix 2 — script only  *(write, don't run)*
 The roadmap line "Photo weight, fix 2": news photos, collectible card art and the fighter page hero load full size.
