@@ -27,6 +27,14 @@ var stf = { home: null, views: null, sub: 'home', panel: null, rt: null, busy: f
 var CREW = { request: '\u270B Request', requested: 'Requested', booked: 'Booked', submit: 'Submit', submitAgain: 'Submit again',
   accept: 'Accept', backup: 'Backup', out: "I'm out", free: "I'm free if needed", cant: 'Can\u2019t', drop: 'Drop it', claim: 'Claim' };
 
+/* Which hat this person wears, for the title and the order of the room:
+   a producer (the Production Manager role, mirrored to production_managers),
+   a lead of any department, or crew. */
+function stfRole(h){
+  if(!h || !h.me) return 'Staff';
+  if(h.me.producer) return 'Producer';
+  return (h.depts || []).some(function(d){ return d.role === 'lead'; }) ? 'Lead' : 'Crew';
+}
 function stfBack(){ return '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'; }
 
 async function renderStaff(sub){
@@ -38,6 +46,10 @@ async function renderStaff(sub){
     + '<div id="stb"><div class="skel" style="height:90px"></div><div class="skel" style="width:60%"></div></div>'
     + '<div id="stpanel" class="stpanel" aria-hidden="true"></div>';
   await stfLoad();
+  if(stf.sub === 'home' && stf.home && stf.home.me){
+    var h3 = document.querySelector('#sheet-body .evhead h3');
+    if(h3) h3.textContent = stfRole(stf.home);
+  }
   stfPaint();
   stfRealtime();
 }
@@ -144,16 +156,18 @@ function stfHomeHTML(h){
   });
   (h.my_jobs || []).filter(function(j){ return !(j.review && j.review.status === 'submitted') && !stfJobDone(j); }).forEach(function(j){ wait += stfMyJob(j); });
   if((h.pay.pending || []).length) wait += stfPayBlock(h.pay);
-  html += stfLab('Waiting on you') + (wait || '<div class="stc stq">Nothing. You\'re clear.</div>');
-
+  /* A producer or a lead opens on their dashboards: that is the work they
+     came for. Crew open on what is waiting on them. */
+  var dash = '';
   if(views.length){
-    html += stfLab('Your dashboards', 'Open', 'desks');
-    html += views.filter(function(v){ return v.key === 'producer' || v.key.indexOf('desk:') === 0; }).map(function(v){
-      return '<a href="#" class="mrow" data-stsub="desk:' + esc(v.key) + '"><span class="mic">' + (v.key === 'producer' ? '🎬' : '📋') + '</span>'
+    dash += stfLab('Your dashboards', views.length > 1 ? 'Open all' : '', 'desks');
+    dash += views.filter(function(v){ return v.key === 'producer' || v.key.indexOf('desk:') === 0; }).map(function(v){
+      return '<a href="#" class="mrow" data-stsub="desk:' + esc(v.key) + '"><span class="mic">' + (v.key === 'producer' ? '\uD83C\uDFAC' : '\uD83D\uDCCB') + '</span>'
         + '<div style="flex:1;min-width:0"><div class="t">' + esc(stfViewTitle(v)) + '</div><div class="s">The same card as Discord · live</div></div>'
         + '<span class="rr"><span class="c">&rsaquo;</span></span></a>';
     }).join('');
   }
+  html += dash + stfLab('Waiting on you') + (wait || '<div class="stc stq">Nothing. You\'re clear.</div>');
 
   var calls = h.calls || [], open = h.open_jobs || [];
   html += stfLab('Up for grabs', (calls.length + open.length) > 2 ? 'See all ' + (calls.length + open.length) : '', 'open');
@@ -476,6 +490,7 @@ async function stfYouRow(){
   var h = await stfHome();
   if(!slot.isConnected || !h || !h.me) return;
   var waiting = (h.my_jobs || []).filter(function(j){ return !stfJobDone(j) && !(j.review && j.review.status === 'submitted'); }).length + (h.pay.pending || []).length + (h.my_shows || []).filter(function(s){ return s.status === 'invited'; }).length;
-  slot.innerHTML = mrow('🎬', 'staff', 'Staff', (h.depts || []).map(function(d){ return d.name; }).join(' · ') || 'Your staff work',
+  var role = stfRole(h);
+  slot.innerHTML = mrow('🎬', 'staff', role === 'Crew' ? 'Staff' : 'Staff · ' + role, (h.depts || []).map(function(d){ return d.name; }).join(' · ') || 'Your staff work',
     waiting ? waiting + ' waiting' : ((h.calls || []).length + (h.open_jobs || []).length) + ' open', waiting ? 'g' : 'q');
 }
