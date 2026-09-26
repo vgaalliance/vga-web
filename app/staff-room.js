@@ -19,6 +19,14 @@
 
 var stf = { home: null, views: null, sub: 'home', panel: null, rt: null, busy: false };
 
+/* The crew's words -- a COPY of vga-systems bot/src/lib/crew-words.js WORDS
+   (staff plan S44: Apply > Request > Booked > Submit > Claim). The app must say
+   exactly what Discord says, one word per moment; change both together. The
+   retired words ("I'm in", "I want it", "Hand in", "hands up", "Assign") must
+   never appear here. */
+var CREW = { request: '\u270B Request', requested: 'Requested', booked: 'Booked', submit: 'Submit', submitAgain: 'Submit again',
+  accept: 'Accept', backup: 'Backup', out: "I'm out", free: "I'm free if needed", cant: 'Can\u2019t', drop: 'Drop it', claim: 'Claim' };
+
 function stfBack(){ return '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'; }
 
 async function renderStaff(sub){
@@ -34,9 +42,23 @@ async function renderStaff(sub){
   stfRealtime();
 }
 
+/* app_staff_home() answers NULL for somebody who is not on staff, and the
+   shared rpc() turns a null answer into "No answer from the server" -- which
+   would tell a fan the app is broken. So this read tells the two apart. */
+async function stfHome(){
+  if(!session) return null;
+  if(!(await ensureFreshSession())) return { ok:false, message:'Your session expired. Sign in again.' };
+  try{
+    var r = await fetch(SB + '/rest/v1/rpc/app_staff_home', { method:'POST',
+      headers:{ apikey: KEY, Authorization:'Bearer ' + session.access_token, 'Content-Type':'application/json' }, body:'{}' });
+    if(!r.ok) return { ok:false, message:"Couldn't load your staff work (" + r.status + ")." };
+    var j = await r.json();
+    return j && j.me ? j : null;
+  }catch(e){ return { ok:false, message:'No connection. Try again.' }; }
+}
 async function stfLoad(){
-  var got = await Promise.all([ rpc('app_staff_home'), qMe('staff_views?select=key,audience,dept_id,sort,payload,updated_at&order=sort.asc') ]);
-  stf.home = got[0] && got[0].me ? got[0] : (got[0] && got[0].ok === false ? got[0] : null);
+  var got = await Promise.all([ stfHome(), qMe('staff_views?select=key,audience,dept_id,sort,payload,updated_at&order=sort.asc') ]);
+  stf.home = got[0];
   stf.views = got[1] || [];
 }
 
@@ -60,31 +82,39 @@ function stfCallCard(c, depts){
   var d = (depts || []).filter(function(x){ return x.id === c.dept_id; })[0] || {};
   var backup = d.rung === 'onboarded';
   var line = esc(c.dept) + ' · ' + esc(stfWhen(c.at)) + ' · ' + vcs(c.rate) + ' · '
-    + c.needed + (c.needed === 1 ? ' seat' : ' seats') + (c.hands ? ' · ' + c.hands + ' hands up' : '');
-  var act;
-  if(c.mine === 'in') act = '<span class="stok">You\'re in · your lead picks</span>' + stfBtn('prod_out:' + c.pd_id, 'Take it back', 'ghost');
-  else if(c.mine === 'booked' || c.mine === 'confirmed') act = '<span class="stok">Booked</span>';
-  else if(c.mine === 'standby') act = '<span class="stok">On standby</span>' + stfBtn('prod_out:' + c.pd_id, 'Take it back', 'ghost');
-  else if(c.mine === 'invited') act = stfBtn('inv_yes:' + c.mine_id, "I'm in", 'gold') + stfBtn('inv_no:' + c.mine_id, "Can't", 'ghost');
-  else if(c.status === 'calling') act = backup ? stfBtn('prod_backup:' + c.pd_id, 'Backup', 'violet') : stfBtn('prod_in:' + c.pd_id, "I'm in", 'gold');
-  else act = '<span class="stq">Crewed</span>';
+    + c.needed + (c.needed === 1 ? ' seat' : ' seats') + (c.hands ? ' · ' + c.hands + (c.hands === 1 ? ' request' : ' requests') : '');
+  /* The same three buttons as the call post (bot/src/lib/call-buttons.js):
+     Request -- "I'm free if needed" once it is booked -- Backup, and I'm out.
+     A call stays answerable after the pick on purpose; it closes at delivered. */
+  var act, open = c.status === 'calling' || c.status === 'crewed';
+  var ask = stfBtn('prod_in:' + c.pd_id, c.status === 'crewed' ? CREW.free : CREW.request, 'gold');
+  var bk = stfBtn('prod_backup:' + c.pd_id, CREW.backup, 'ghost');
+  var out = stfBtn('prod_out:' + c.pd_id, CREW.out, 'ghost');
+  if(c.mine === 'in') act = '<span class="stok">' + CREW.requested + ' · your lead books</span>' + out;
+  else if(c.mine === 'booked' || c.mine === 'confirmed') act = '<span class="stok">' + CREW.booked + '</span>' + out;
+  else if(c.mine === 'standby') act = '<span class="stok">Backup</span>' + out;
+  else if(c.mine === 'invited') act = stfBtn('inv_yes:' + c.mine_id, CREW.accept, 'gold') + stfBtn('inv_no:' + c.mine_id, CREW.cant, 'ghost');
+  else if(open) act = (backup ? '' : ask) + bk;
+  else act = '<span class="stq">Closed</span>';
   return '<div class="stc"><div class="t">' + esc(c.show) + '</div><div class="s">' + line + '</div>'
-    + (backup && c.status === 'calling' && !c.mine ? '<div class="s">You\'re onboarded: Backup puts you on the list. Your first booking makes you a tryout.</div>' : '')
+    + (backup && open && !c.mine ? '<div class="s">You\'re onboarded: Backup puts you on the list. Your first booking makes you a tryout.</div>' : '')
     + '<div class="sta">' + act + '</div></div>';
 }
 function stfJobCard(j){
   var meta = esc(j.dept) + (j.show ? ' · ' + esc(j.show) : '') + (j.due ? ' · due ' + esc(stfWhen(j.due)) : '') + ' · ' + vcs(j.rate)
-    + (j.asks ? ' · ' + j.asks + ' asked' : '');
-  var act = j.mine === 'in' ? '<span class="stok">Asked · your lead decides</span>' : stfBtn('job_take:' + j.id, 'I want it', 'violet');
+    + (j.asks ? ' · ' + j.asks + (j.asks === 1 ? ' request' : ' requests') : '');
+  var act = j.mine === 'in' ? '<span class="stok">' + CREW.requested + ' · your lead books</span>' : stfBtn('job_take:' + j.id, CREW.request, 'violet');
   return '<div class="stc"><div class="t">' + esc(j.title) + '</div><div class="s">' + meta + '</div>'
     + (j.brief ? '<div class="stbrief">' + esc(j.brief) + '</div>' : '') + '<div class="sta">' + act + '</div></div>';
 }
+function stfJobDone(j){ return j.status === 'published' || (j.review && j.review.status === 'approved'); }
 function stfMyJob(j){
   var r = j.review;
-  var state = r && r.status === 'submitted' ? 'Handed in · round ' + r.round + ' · waiting for review'
+  if(stfJobDone(j)) return '<div class="stc"><div class="t">' + esc(j.title) + '</div><div class="s">' + esc(j.dept) + ' · Approved' + (j.amount ? ' · ' + vcs(j.amount) + ' when it pays' : '') + '</div></div>';
+  var state = r && r.status === 'submitted' ? 'Submitted · round ' + r.round + ' · waiting for review'
     : r && r.status === 'revise' ? 'Sent back' + (r.note ? ': ' + r.note : '') : (j.due ? 'Due ' + stfWhen(j.due) : 'In progress');
-  var act = r && r.status === 'submitted' ? '' : stfBtn('job_handin:' + j.crew_id, r && r.status === 'revise' ? 'Hand in again' : 'Hand in', 'gold')
-    + '<button class="stb ghost" data-stdrop="' + esc(j.crew_id) + '" data-sttitle="' + esc(j.title) + '">Drop it…</button>';
+  var act = r && r.status === 'submitted' ? '' : stfBtn('job_handin:' + j.crew_id, r && r.status === 'revise' ? CREW.submitAgain : CREW.submit, 'gold')
+    + '<button class="stb ghost" data-stdrop="' + esc(j.crew_id) + '" data-sttitle="' + esc(j.title) + '">' + CREW.drop + '…</button>';
   return '<div class="stc"><div class="t">' + esc(j.title) + '</div><div class="s">' + esc(j.dept) + ' · ' + esc(state) + (j.amount ? ' · ' + vcs(j.amount) : '') + '</div>'
     + (j.brief ? '<div class="stbrief">' + esc(j.brief) + '</div>' : '') + (act ? '<div class="sta">' + act + '</div>' : '') + '</div>';
 }
@@ -95,7 +125,7 @@ function stfPayBlock(pay){
     + '<div><div class="big dim">' + Number(pay.month || 0).toLocaleString() + '</div><div class="s">this month</div></div></div>';
   pend.forEach(function(r){
     html += '<div class="stc strow"><div><div class="t">' + esc(r.reason || 'Pay') + '</div><div class="s">' + vcs(r.vc) + '</div></div>'
-      + stfBtn('reward_claim:' + r.id, 'Claim', 'gold') + '</div>';
+      + stfBtn('reward_claim:' + r.id, CREW.claim, 'gold') + '</div>';
   });
   return html;
 }
@@ -110,9 +140,9 @@ function stfHomeHTML(h){
   var wait = '';
   (h.my_shows || []).filter(function(s){ return s.status === 'invited'; }).forEach(function(s){
     wait += '<div class="stc"><div class="t">' + esc(s.show) + ' · ' + esc(s.dept) + '</div><div class="s">Your lead invited you · ' + esc(stfWhen(s.at)) + '</div>'
-      + '<div class="sta">' + stfBtn('inv_yes:' + s.crew_id, "I'm in", 'gold') + stfBtn('inv_no:' + s.crew_id, "Can't", 'ghost') + '</div></div>';
+      + '<div class="sta">' + stfBtn('inv_yes:' + s.crew_id, CREW.accept, 'gold') + stfBtn('inv_no:' + s.crew_id, CREW.cant, 'ghost') + '</div></div>';
   });
-  (h.my_jobs || []).filter(function(j){ return !(j.review && j.review.status === 'submitted'); }).forEach(function(j){ wait += stfMyJob(j); });
+  (h.my_jobs || []).filter(function(j){ return !(j.review && j.review.status === 'submitted') && !stfJobDone(j); }).forEach(function(j){ wait += stfMyJob(j); });
   if((h.pay.pending || []).length) wait += stfPayBlock(h.pay);
   html += stfLab('Waiting on you') + (wait || '<div class="stc stq">Nothing. You\'re clear.</div>');
 
@@ -201,7 +231,7 @@ function stfPaint(){
   if(sub === 'home') html = stfHomeHTML(h);
   else if(sub === 'open'){
     html = stfLab('Show calls') + ((h.calls || []).map(function(c){ return stfCallCard(c, h.depts); }).join('') || '<div class="stc stq">No open calls.</div>')
-      + stfLab('Jobs') + '<div class="s" style="margin:0 18px 8px">Your lead picks who gets each one. Asking puts your name in front of them.</div>'
+      + stfLab('Jobs') + '<div class="s" style="margin:0 18px 8px">Your lead books who gets each one. A request puts your name in front of them.</div>'
       + ((h.open_jobs || []).map(stfJobCard).join('') || '<div class="stc stq">No open jobs.</div>');
   }
   else if(sub === 'jobs'){
@@ -383,7 +413,7 @@ document.addEventListener('click', function(e){
   if(dr){
     stf.panel = { kind: 'confirm' };
     stfPanel('<div class="v2h2">Drop ' + esc(dr.getAttribute('data-sttitle')) + '?</div><div class="v2t">It goes back up for somebody else and your lead is told. A drop is never a no-show.</div>'
-      + '<div class="v2row">' + '<button class="v2b s4" data-stpress="job_drop:' + esc(dr.getAttribute('data-stdrop')) + '">Drop it</button><button class="v2b s2" data-stclose="1">Keep it</button></div>');
+      + '<div class="v2row">' + '<button class="v2b s4" data-stpress="job_drop:' + esc(dr.getAttribute('data-stdrop')) + '">' + CREW.drop + '</button><button class="v2b s2" data-stclose="1">Keep it</button></div>');
     return;
   }
   var go = e.target.closest('[data-stselgo]');
@@ -443,9 +473,9 @@ function stfRealtime(){
 async function stfYouRow(){
   var slot = document.getElementById('me-staff');
   if(!slot || !me) return;
-  var h = await rpc('app_staff_home');
+  var h = await stfHome();
   if(!slot.isConnected || !h || !h.me) return;
-  var waiting = (h.my_jobs || []).length + (h.pay.pending || []).length + (h.my_shows || []).filter(function(s){ return s.status === 'invited'; }).length;
+  var waiting = (h.my_jobs || []).filter(function(j){ return !stfJobDone(j) && !(j.review && j.review.status === 'submitted'); }).length + (h.pay.pending || []).length + (h.my_shows || []).filter(function(s){ return s.status === 'invited'; }).length;
   slot.innerHTML = mrow('🎬', 'staff', 'Staff', (h.depts || []).map(function(d){ return d.name; }).join(' · ') || 'Your staff work',
     waiting ? waiting + ' waiting' : ((h.calls || []).length + (h.open_jobs || []).length) + ' open', waiting ? 'g' : 'q');
 }
