@@ -11073,14 +11073,53 @@ function sparLobbyRow(r, blocked){
    moment worth catching straight away), 20s when you are just browsing. A poll
    that only ever costs a couple of hundred bytes is worth spending there and
    nowhere else. */
+/* WHAT MAKES THE HANDSHAKE FEEL INSTANT. The screen used to poll: 3s while a
+   request was out, 20s otherwise, so being accepted could sit for seconds doing
+   nothing. Postgres tells us instead — spar_requests and spar_cards are in the
+   realtime publication, and a policy lets a signed-in client see ONLY the rows
+   it is a party to, so the notice carries nothing the screen could not already
+   ask for.
+
+   Polling never goes away, it just slows down: a websocket dies when a phone
+   sleeps, on hotel wifi, behind some VPNs. Realtime is the fast path, the poll
+   is the floor. */
+var sparRT = null, sparRTon = false;
 function sparEvery(){
   var st = window.__sparState;
+  if(sparRTon) return 30000;                       /* the socket is doing the work */
   return (st && (st.asked || st.incoming)) ? 3000 : 20000;
+}
+function sparRealtime(){
+  if(!session || sparRT) return;
+  if(!window.supabase || !window.supabase.createClient){
+    if(document.getElementById('sb-rt')) return;   /* already loading */
+    var sc = document.createElement('script');
+    sc.id = 'sb-rt';
+    sc.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+    sc.onload = sparRealtime;
+    document.head.appendChild(sc);
+    return;
+  }
+  try{
+    var sb = window.supabase.createClient(SB, KEY, { auth: { persistSession: false } });
+    sb.realtime.setAuth(session.access_token);
+    sparRT = sb.channel('spar-' + Date.now())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'spar_requests' }, function(){ sparPaint(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'spar_cards' }, function(){ sparPaint(); })
+      .subscribe(function(status){
+        sparRTon = (status === 'SUBSCRIBED');
+        sparRate = sparEvery();
+      });
+  }catch(e){ sparRT = null; sparRTon = false; }
+}
+function sparRealtimeOff(){
+  try{ if(sparRT) sparRT.unsubscribe(); }catch(e){}
+  sparRT = null; sparRTon = false;
 }
 function sparTickOn(){
   clearInterval(sparTick);
   sparTick = setInterval(function(){
-    if(!document.getElementById('spb')){ clearInterval(sparTick); sparTick = null; return; }
+    if(!document.getElementById('spb')){ clearInterval(sparTick); sparTick = null; sparRealtimeOff(); return; }
     if(document.visibilityState !== 'visible') return;   /* a backgrounded tab polls nothing */
     if(sparEvery() !== sparRate){ sparRate = sparEvery(); sparTickOn(); }
     sparPaint(true);
@@ -11096,18 +11135,18 @@ async function renderSpar(){
   sparPaint();
   sparRate = 20000;
   sparTickOn();
+  sparRealtime();
 }
 
 async function sparPaint(quiet){
   var el = document.getElementById('spb');
   if(!el) return;
   if(!me){ el.innerHTML = '<div class="empty">Sign in to spar. The board is the same one the bot posts in the server.</div>'; return; }
-  var got = await Promise.all([
-    rpc('app_spar_state'),
-    q('spar_lobbies_public?select=*&order=started_at.asc')
-  ]);
+  /* ONE round trip. The board used to be a second read; app_spar_state()
+     carries it now (2.7ms for both), so a poll costs one call, not two. */
+  var st = await rpc('app_spar_state');
   if(!el.isConnected) return;
-  var st = got[0], lobbies = got[1];
+  var lobbies = (st && st.lobbies) || [];
   if(!st || st.ok === false){
     if(st && st.reason === 'not_signed_in'){ el.innerHTML = '<div class="empty">Sign in to spar.</div>'; return; }
     retryHandlers['spar'] = sparPaint;
