@@ -4,13 +4,18 @@
    action opens the show's own dashboard card, whose buttons press Discord's
    own handlers through the bridge -- one implementation of every rule.
 
-   The look is the CRT tachometer with seat blocks (Castle, 09-29): one ring per opened
+   The look is the CRT tachometer with seat blocks, one amber, colour = status (Castle, 09-29): one ring per opened
    department, each starting at the bottom middle and running clockwise, the
    bottom-right quarter left open for flat labels, and a health tank in the
    middle (seats filled across every opened department). */
 
 var mc = { data: null, ev: 0, dept: null };
-var MC_COL = ['#39FF88', '#39D5FF', '#FF5CE1', '#FF5147', '#FFE14D'];
+/* Colour is STATUS, never identity (Castle, 09-29): every ring is the same
+   CRT amber, and a department's name and seat blocks are green when every
+   seat is booked, amber when short, red when nobody is. Colour then says what
+   needs you; position (each name at its ring's start) says which ring is which. */
+var MC_AMBER = '#FFB000', MC_OK = '#39FF88', MC_EMPTY = '#FF5147';
+function mcCol(d){ return !mcSeated(d) ? '#B37A00' : mcBooked(d) >= Number(d.needed) ? MC_OK : mcBooked(d) ? MC_AMBER : MC_EMPTY; }
 
 async function mcLoad(){
   if(!session) return null;
@@ -72,7 +77,7 @@ function mcRing(ev){
     if(k % 5 === 0 && k < 20){ var p3 = pt(R0 + 28, a); body += '<text x="' + p3[0].toFixed(1) + '" y="' + (p3[1] + 4).toFixed(1) + '" text-anchor="middle" fill="#B37A00" style="font:400 13px VT323,monospace">' + (k * 5) + '</text>'; }
   }
   seated.forEach(function(d, i){
-    var r = R0 - i * gap, col = MC_COL[i], circ = 2 * Math.PI * r, arc = circ * span / 360;
+    var r = R0 - i * gap, col = MC_AMBER, st = mcCol(d), circ = 2 * Math.PI * r, arc = circ * span / 360;
     var f = Math.max(Math.min(1, mcBooked(d) / Number(d.needed)), .012);
     var idx = ev.depts.indexOf(d), dim = mc.dept != null && mc.dept !== idx ? .25 : 1;
     var rot = ' transform="rotate(' + a0 + ' ' + c + ' ' + c + ')"';
@@ -90,11 +95,11 @@ function mcRing(ev){
        count says it. */
     var on = mc.dept === idx, y = c + r + 4.5, x = c + 9, name = String(d.name).toUpperCase();
     var bx = x + name.length * 6.9 + 8, seats = Number(d.needed), shown = Math.min(seats, 8), bl = '';
-    for(var k = 0; k < shown; k++){ var lit = k < mcBooked(d); bl += '<rect x="' + (bx + k * 11).toFixed(1) + '" y="' + (y - 9) + '" width="8" height="8" fill="' + (lit ? col : 'none') + '" stroke="' + col + '" stroke-width="1"/>'; }
+    for(var k = 0; k < shown; k++){ var lit = k < mcBooked(d); bl += '<rect x="' + (bx + k * 11).toFixed(1) + '" y="' + (y - 9) + '" width="8" height="8" fill="' + (lit ? st : 'none') + '" stroke="' + st + '" stroke-width="1"/>'; }
     if(seats > shown) bl += '<text x="' + (bx + shown * 11 + 2).toFixed(1) + '" y="' + y + '" fill="#FFB000" style="font:400 13px VT323,monospace">' + mcBooked(d) + '/' + seats + '</text>';
     labels += '<g data-mcdept="' + idx + '" style="cursor:pointer"' + (mc.dept != null && !on ? ' opacity=".4"' : '') + '>'
       + (on ? '<rect x="' + (x - 3) + '" y="' + (y - 11) + '" width="' + (R0 - 4) + '" height="14" fill="#FFB000" opacity=".18"/>' : '')
-      + '<text x="' + x + '" y="' + y + '" fill="' + col + '" style="font:400 14px VT323,monospace;letter-spacing:.8px">' + esc(name) + '</text>' + bl + '</g>';
+      + '<text x="' + x + '" y="' + y + '" fill="' + st + '" style="font:400 14px VT323,monospace;letter-spacing:.8px">' + esc(name) + '</text>' + bl + '</g>';
   });
   var inner = n ? Math.min(R0 - (n - 1) * gap - w / 2 - 8, 60) : 60;
   return '<div class="mcring"><svg viewBox="0 0 300 300"><defs><filter id="mcglow" x="-25%" y="-25%" width="150%" height="150%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>'
@@ -118,8 +123,8 @@ function mcTank(ev, r){
 function mcDetail(ev){
   if(mc.dept == null) return '<div class="mchint">&gt; tap a department</div>';
   var d = ev.depts[mc.dept]; if(!d) return '';
-  var st = mcState(ev, d), seated = ev.depts.filter(mcSeated), ci = seated.indexOf(d);
-  var h = '<div class="mcdet"><div class="mcp"><span style="color:' + (ci >= 0 ? MC_COL[ci] : '#B37A00') + '">■</span><span>' + esc(String(d.name).toUpperCase()) + '</span><em>' + (mcSeated(d) ? mcBooked(d) + '/' + d.needed : st.word) + '</em></div>'
+  var st = mcState(ev, d);
+  var h = '<div class="mcdet"><div class="mcp"><span style="color:' + mcCol(d) + '">■</span><span>' + esc(String(d.name).toUpperCase()) + '</span><em>' + (mcSeated(d) ? mcBooked(d) + '/' + d.needed : st.word) + '</em></div>'
     + '<div class="mcp"><span>LEAD</span><em>' + esc(d.lead || 'none') + '</em></div>';
   (d.booked || []).forEach(function(n){ h += '<div class="mcp"><span>' + esc(n) + '</span><em>booked</em></div>'; });
   if(mcSeated(d) && mcBooked(d) < Number(d.needed)) (d.requests || []).forEach(function(r){ h += '<div class="mcp"><span>' + esc(r.name) + '</span><em>requested · ' + esc(RUNG_WORD[r.rung] || r.rung || 'crew') + '</em></div>'; });
@@ -150,8 +155,8 @@ function mcHTML(){
     + '<div class="mcsub">' + esc(ev.name) + ' · ' + esc(mcWhen(ev.at)) + ' · ' + esc(String(ev.status).toUpperCase()) + '</div>'
     + mcRing(ev)
     + '<div class="mcdg">' + ev.depts.map(function(d, i){
-        var st = mcState(ev, d), seated = ev.depts.filter(mcSeated), ci = seated.indexOf(d);
-        return '<button data-mcdept="' + i + '" class="' + (mc.dept === i ? 'on' : '') + (ci < 0 ? ' off' : '') + '"><i style="background:' + (ci >= 0 ? MC_COL[ci] : 'transparent') + ';color:' + (ci >= 0 ? MC_COL[ci] : '#5A3C00') + '"></i><span>' + esc(String(d.name).toUpperCase()) + '</span><em>' + (ci >= 0 ? mcBooked(d) + '/' + d.needed : esc(st.word)) + '</em></button>';
+        var st = mcState(ev, d), on = mcSeated(d), c = mcCol(d);
+        return '<button data-mcdept="' + i + '" class="' + (mc.dept === i ? 'on' : '') + (on ? '' : ' off') + '"><i style="background:' + (on ? c : 'transparent') + ';color:' + (on ? c : '#5A3C00') + '"></i><span>' + esc(String(d.name).toUpperCase()) + '</span><em>' + (on ? mcBooked(d) + '/' + d.needed : esc(st.word)) + '</em></button>';
       }).join('') + '</div>'
     + mcDetail(ev) + mcNeeds(ev) + '</div>';
 }
