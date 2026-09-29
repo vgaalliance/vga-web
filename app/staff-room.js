@@ -40,7 +40,7 @@ function stfBack(){ return '<div class="evhead">' + backButton() + '<div style="
 async function renderStaff(sub){
   stf.sub = sub || 'home';
   var body = document.getElementById('sheet-body');
-  var title = { home: 'Staff', open: 'Up for grabs', jobs: 'My jobs', pay: 'Pay', ladder: 'Ladder', desks: 'Dashboards' }[stf.sub.split(':')[0]]
+  var title = { home: 'Staff', open: 'Up for grabs', jobs: 'My jobs', pay: 'Pay', ladder: 'Ladder', desks: 'Dashboards', mission: 'Mission Control' }[stf.sub.split(':')[0]]
     || (stf.sub.indexOf('playbook:') === 0 ? 'Playbook' : 'Dashboard');
   body.innerHTML = stfBack() + '<div class="kick">You · Staff</div><h3>' + esc(title) + '</h3></div>'
     + '<div id="stb"><div class="skel" style="height:90px"></div><div class="skel" style="width:60%"></div></div>'
@@ -72,6 +72,8 @@ async function stfLoad(){
   var got = await Promise.all([ stfHome(), qMe('staff_views?select=key,audience,dept_id,sort,payload,updated_at&order=sort.asc') ]);
   stf.home = got[0];
   stf.views = got[1] || [];
+  /* Mission Control is the producer's (mission-control.js); nobody else asks. */
+  if(stf.home && stf.home.me && stf.home.me.producer && typeof mcLoad === 'function') mc.data = await mcLoad();
 }
 
 /* ── the crew half ─────────────────────────────────────────────────────── */
@@ -167,6 +169,8 @@ function stfHomeHTML(h){
         + '<span class="rr"><span class="c">&rsaquo;</span></span></a>';
     }).join('');
   }
+  /* A producer's room opens on Mission Control: every coming show at a glance. */
+  if(me.producer && typeof mcTile === 'function') dash = mcTile() + dash;
   html += dash + stfLab('Waiting on you') + (wait || '<div class="stc stq">Nothing. You\'re clear.</div>');
 
   var calls = h.calls || [], open = h.open_jobs || [];
@@ -263,6 +267,7 @@ function stfPaint(){
       + '<div class="s" style="margin:10px 18px">Crew pay lands every Monday. A show pays when the producer pays it; a job when your lead approves it.</div>';
   }
   else if(sub === 'ladder') html = stfLadderHTML(h);
+  else if(sub === 'mission') html = typeof mcHTML === 'function' ? mcHTML() : '';
   else if(sub.indexOf('playbook:') === 0) html = stfPlaybookHTML(h, sub.slice(9));
   else if(sub === 'desks'){
     html = (stf.views || []).map(function(v){ return '<div class="v2wrap" data-stview="' + esc(v.key) + '">' + v2HTML(v.payload, 'view:' + v.key) + '</div>'; }).join('')
@@ -477,6 +482,8 @@ function stfRealtime(){
       .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_views' }, async function(){
         if(!document.getElementById('stb')){ try{ stf.rt.unsubscribe(); }catch(e){} stf.rt = null; return; }
         var got = await qMe('staff_views?select=key,audience,dept_id,sort,payload,updated_at&order=sort.asc');
+        /* A redrawn dashboard means a show changed: Mission Control re-reads too. */
+        if(got && stf.home && stf.home.me && stf.home.me.producer && typeof mcLoad === 'function'){ var m = await mcLoad(); if(m) mc.data = m; }
         if(got){ stf.views = got; if(!stf.panel) stfPaint(); }
       }).subscribe();
   }catch(e){ stf.rt = null; }

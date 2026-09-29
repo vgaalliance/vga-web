@@ -20,7 +20,7 @@
    old app until they clear site data.
    ═══════════════════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'uba-v236';
+const CACHE_VERSION = 'uba-v237';
 // Photos live in their OWN cache, which a version bump does not wipe: a new
 // shell is 400KB, the photos are most of what a phone has downloaded.
 const IMG_CACHE = 'uba-img-v1';
@@ -32,7 +32,8 @@ const IMG_MAX_BYTES = 600 * 1024;
 const SHELL = [
   './',
   './index.html',
-  './staff-room.js',   // the staff room (You tab) -- presses Discord's own buttons through the bot
+  './staff-room.js',
+  './mission-control.js', // Mission Control (producers): the CRT tachometer over every coming show   // the staff room (You tab) -- presses Discord's own buttons through the bot
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',

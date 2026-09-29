@@ -23,7 +23,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=Bebas+Neue&family=Space+Mono:wght@400;700&family=VT323&display=swap" rel="stylesheet">
 <!-- The six signing hands. A fighter is assigned one at random on their first
      signature and keeps it forever, so these are not interchangeable: the same
      person must sign the same way on every card. Google serves the @font-face
@@ -1465,6 +1465,36 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 
 /* The server's own words, not a guess at them. A refusal ("betting is locked",
    "over the daily limit") is information, so it gets the same slot as a win. */
+/* ═══ MISSION CONTROL (2026-09-29) — see mission-control.js ═══
+   A CRT screen inside the app: amber phosphor, scanlines, the tachometer. */
+.mcscr{position:relative;margin:4px 14px 14px;border-radius:24px;padding:12px 12px 14px;overflow:hidden;
+  background:radial-gradient(120% 90% at 50% 45%,#1A1004 0%,#0C0703 60%,#050201 100%);border:1px solid #3A2600;
+  color:#FFB000;font-family:'VT323',ui-monospace,monospace;text-shadow:0 0 6px rgba(255,176,0,.55)}
+.mcscr::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:5;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.3) 0 1px,transparent 1px 3px),radial-gradient(ellipse at center,transparent 58%,rgba(0,0,0,.75) 100%)}
+.mcscr,.mcscr *{box-sizing:border-box}.mcscr>*{position:relative;z-index:2}
+.mcevs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}.mcevs::-webkit-scrollbar{display:none}
+.mcevs button{flex:1 0 auto;background:transparent;border:1px solid #5A3C00;color:#B37A00;font:400 18px/1 'VT323',monospace;padding:6px 8px;text-shadow:inherit}
+.mcevs button.on{background:#FFB000;color:#0A0602;border-color:#FFB000;text-shadow:none}
+.mcsub{color:#B37A00;font-size:16px;letter-spacing:.06em;margin-top:8px;text-align:center}
+.mcring{position:relative;width:100%;aspect-ratio:1;margin-top:2px}.mcring svg{position:absolute;inset:0;width:100%;height:100%}
+.mcflick{animation:mcflick 3.8s infinite}@keyframes mcflick{0%,48%,52%,100%{opacity:1}50%{opacity:.86}}
+.mcwv1{animation:mcwave 3.2s linear infinite}.mcwv2{animation:mcwave 5.4s linear infinite reverse}@keyframes mcwave{to{transform:translateX(-100px)}}
+.mcdg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px;margin-top:6px}
+.mcdg button{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid #5A3C00;color:#FFB000;font:400 17px/1 'VT323',monospace;padding:7px 8px;text-align:left;min-height:40px;text-shadow:inherit}
+.mcdg button i{width:10px;height:10px;flex:none;box-shadow:0 0 6px currentColor;border:1px solid currentColor}
+.mcdg button{min-width:0}.mcdg button span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mcdg button em{font-style:normal;color:#B37A00;flex:none}
+.mcdg button.off{color:#B37A00}
+.mcdg button.on{background:#FFB000;color:#0A0602;border-color:#FFB000;text-shadow:none}.mcdg button.on em{color:#3A2600}
+.mcdet{margin-top:8px;border:1px solid #5A3C00;padding:6px 9px;font-size:17px}
+.mcp{display:flex;align-items:center;gap:8px;padding:3px 0}.mcp span{flex:1;min-width:0}.mcp em{font-style:normal;color:#B37A00}
+.mcline{border-top:1px solid #3A2600;margin-top:4px;padding-top:6px}
+.mcscr button[data-stsub]{background:#FFB000;color:#0A0602;border:0;font:400 17px/1 'VT323',monospace;padding:5px 10px;text-shadow:none;flex:none}
+.mchint{text-align:center;color:#B37A00;font-size:16px;margin-top:6px}
+.mcnd{margin-top:10px;border-top:1px solid #5A3C00;padding-top:6px}.mch{color:#B37A00;font-size:15px;letter-spacing:.1em}
+.mcr{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:17px}.mcr span{flex:1;min-width:0}.mcr b{width:8px;height:8px;background:#FFB000;flex:none}
+.mctile .mic{background:rgba(255,176,0,.18)}
+@media (prefers-reduced-motion:reduce){.mcflick,.mcwv1,.mcwv2{animation:none}}
 /* ═══ STAFF ROOM (2026-09-26) — see staff-room.js ═══ */
 .stc{margin:0 14px 8px;padding:13px 14px;border-radius:13px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}
 .stc .t{font-size:15px;font-weight:600;line-height:1.3}
@@ -3350,6 +3380,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 </nav>
 
 <script src="./staff-room.js"></script>
+<script src="./mission-control.js"></script>
 <script>
 /* ═══════════════════════════════════════════════════════════════════════
    Config. The publishable key is public by design — it is the same one
@@ -4858,7 +4889,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v236';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v237';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
