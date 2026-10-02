@@ -1494,6 +1494,14 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .mcnd{margin-top:10px;border-top:1px solid #5A3C00;padding-top:6px}.mch{color:#B37A00;font-size:15px;letter-spacing:.1em}
 .mcr{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:17px}.mcr span{flex:1;min-width:0}.mcr b{width:8px;height:8px;background:#FFB000;flex:none}
 .mctile .mic{background:rgba(255,176,0,.18)}
+/* The full page: the sheet itself is the tube. */
+.sheet.mcpage{background:radial-gradient(130% 80% at 50% 35%,#1A1004 0%,#0C0703 55%,#050201 100%) #0C0703}
+.sheet.mcpage::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:6;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px),radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.7) 100%)}
+.sheet.mcpage .mcscr{margin:0;border:0;border-radius:0;background:transparent;padding:4px 16px calc(28px + env(safe-area-inset-bottom))}
+.sheet.mcpage .mcscr::after{display:none}
+.sheet.mcpage .kick{color:#B37A00;font-family:'VT323',monospace;font-size:16px;letter-spacing:.12em}
+.sheet.mcpage h3{color:#FFB000;font-family:'VT323',monospace;font-weight:400;font-size:38px;letter-spacing:.02em;text-shadow:0 0 10px rgba(255,176,0,.6)}
 @media (prefers-reduced-motion:reduce){.mcflick,.mcwv1,.mcwv2{animation:none}}
 /* ═══ STAFF ROOM (2026-09-26) — see staff-room.js ═══ */
 .stc{margin:0 14px 8px;padding:13px 14px;border-radius:13px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}
@@ -4889,7 +4897,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v238';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v239';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -6432,6 +6440,8 @@ document.addEventListener('click', function(e){
 });
 
 function renderSheet(entry){
+  /* Mission Control is the whole page, not a screen inside one (2026-10-02). */
+  sheetEl().classList.toggle('mcpage', entry.kind === 'staff' && entry.sub === 'mission');
   if(entry.kind === 'fighter') return renderFighter(entry.id);
   if(entry.kind === 'news')    return renderArticle(entry.id);
   if(entry.kind === 'event')   return renderEvent(entry.id);
@@ -10852,7 +10862,13 @@ function wirePullToRefresh(){
   /* TRIGGER is where the flower is wound fully up. MAX is as far as the page
      can be dragged. There is deliberately no HOLD -- see the note in the CSS. */
   var TRIGGER = 72, MAX = 108;
-  var startY = 0, pulling = false, dist = 0, busy = false;
+  /* SLOP (2026-10-02): a drag is only a pull after this many pixels of
+     clearly-downward movement -- the iOS / Android rule. Before it, nothing
+     moves and nothing is prevented, so a tap with a little downward wobble
+     stays a tap. Pulling on the very first pixel is what made buttons, sliders
+     and cards feel imprecise. */
+  var SLOP = 12;
+  var startY = 0, startX = 0, pulling = false, engaged = false, dist = 0, busy = false;
   var panel = null, frame = 0, pending = 0;
 
   /* Asymptotic resistance: the first pixels track the finger almost 1:1 and it
@@ -10882,7 +10898,7 @@ function wirePullToRefresh(){
       p.style.transform = ''; p.style.willChange = '';
     }, 380);
   }
-  function letGo(){ pulling = false; dist = 0; }
+  function letGo(){ pulling = false; engaged = false; dist = 0; }
 
   document.addEventListener('touchstart', function(e){
     pulling = false;   /* a gesture iOS cancelled (rotation, Control Center) must not leak into this one */
@@ -10899,18 +10915,30 @@ function wirePullToRefresh(){
        flipping it; neither is a pull, and the panel following them down was
        what made the sphere feel broken. */
     if(e.target.closest('.world, .pv, .wmband')) return;
+    /* A control the finger is working is never a pull: a text box, a slider,
+       a menu, a row that scrolls sideways. And nothing pulls while typing. */
+    if(e.target.closest('input, textarea, select, [contenteditable], [role=slider], .mcevs, .noptr')) return;
+    var ae = document.activeElement;
+    if(ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return;
     panel = p;
     /* Promote the layer BEFORE the first move; promoting mid-gesture is its
        own stutter. Easing off so the page tracks the finger with no lag. */
     panel.style.willChange = 'transform';
     panel.classList.remove('ptrback');
-    startY = e.touches[0].clientY; pulling = true; dist = 0;
+    startY = e.touches[0].clientY; startX = e.touches[0].clientX; pulling = true; engaged = false; dist = 0;
   }, { passive: true });
 
   document.addEventListener('touchmove', function(e){
     if(!pulling || busy) return;
     if(hSwipe){ retract(); letGo(); return; }   /* a poster flip owns this finger */
-    var dy = e.touches[0].clientY - startY;
+    var t = e.touches[0];
+    if(!engaged){
+      var dy0 = t.clientY - startY, dx0 = t.clientX - startX;
+      if(dy0 <= 0 || Math.abs(dx0) > dy0){ letGo(); return; }   /* up is a scroll, sideways is a swipe */
+      if(dy0 < SLOP) return;                                    /* still a tap's wobble */
+      engaged = true; startY = t.clientY;                       /* the pull starts HERE, so it never jumps */
+    }
+    var dy = t.clientY - startY;
     /* Dragging back UP is a normal scroll, so hand it back rather than fight it. */
     if(dy <= 0 || panel.scrollTop > 0){ retract(); letGo(); return; }
     e.preventDefault();                       /* needs passive:false */
@@ -10921,6 +10949,7 @@ function wirePullToRefresh(){
   document.addEventListener('touchcancel', function(){ if(!pulling) return; retract(); letGo(); }, { passive: true });
   document.addEventListener('touchend', function(){
     if(!pulling || busy) return;
+    if(!engaged){ letGo(); return; }   /* it was a tap */
     if(dist < TRIGGER){ retract(); letGo(); return; }
     busy = true; letGo();
     var tab = currentTab;
