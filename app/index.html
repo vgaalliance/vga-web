@@ -20,10 +20,24 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="VGA Esports">
+<!-- the launch picture on an iPhone: the same white screen and black mark boot.js starts from (graphics: app/icons/make-splash.py) -->
+<link rel="apple-touch-startup-image" href="./icons/splash-640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="./icons/splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="./icons/splash-1242x2208.png" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="./icons/splash-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="./icons/splash-828x1792.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="./icons/splash-1242x2688.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="./icons/splash-1170x2532.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="./icons/splash-1284x2778.png" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="./icons/splash-1179x2556.png" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="./icons/splash-1290x2796.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="./icons/splash-1206x2622.png" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="./icons/splash-1320x2868.png" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="./icons/splash-1260x2736.png" media="(device-width: 420px) and (device-height: 912px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=Bebas+Neue&family=Space+Mono:wght@400;700&family=VT323&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,800&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=Bebas+Neue&family=Space+Mono:wght@400;700&family=VT323&display=swap" rel="stylesheet">
 <!-- The six signing hands. A fighter is assigned one at random on their first
      signature and keeps it forever, so these are not interchangeable: the same
      person must sign the same way on every card. Google serves the @font-face
@@ -3243,8 +3257,48 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .sp-who .s{font-family:'Space Mono',monospace;font-size:8.5px;color:#8B82AE;margin-top:2px}
 
 </style>
+<!-- ═══ FIRST OPEN · the splash, the loader and the welcome (boot.js) ═══
+     White with the black mark, because that is what the phone itself shows
+     while it launches the app: the first thing this page paints has to be the
+     same picture, or the hand-over is a flash. -->
+<style>
+#boot{position:fixed;inset:0;z-index:2147483000;background:#fff;overflow:hidden;transition:opacity .35s ease;touch-action:none}
+#boot.dark{background:#02010A}
+#boot.out{opacity:0;pointer-events:none}
+#boot canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#boot .bmark{position:absolute;left:50%;top:44%;width:min(70.7vw,325px);transform:translate(-50%,-50%);display:block}
+#boot .bwel{position:absolute;left:50%;bottom:0;width:100%;max-width:460px;transform:translate(-50%,14px);box-sizing:border-box;
+  padding:0 24px calc(22px + env(safe-area-inset-bottom));display:grid;gap:8px;opacity:0;pointer-events:none;
+  transition:opacity .5s ease .25s,transform .5s ease .25s}
+#boot .bwel.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+#boot .bline{margin:0 0 12px;text-align:center;font-family:'Archivo','Barlow',system-ui,sans-serif;font-stretch:125%;font-weight:800;
+  font-size:30px;line-height:.92;letter-spacing:-.01em;text-transform:uppercase;color:#fff}
+#boot .bbtn{height:54px;border-radius:14px;border:0;background:#fff;color:#0D0B14;font:700 16px 'Barlow',system-ui,sans-serif;width:100%;
+  display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer}
+#boot .bbtn svg{width:22px;height:22px;flex:none}
+#boot .bguest{background:none;border:0;color:#fff;font:600 15px 'Barlow',system-ui,sans-serif;min-height:44px;cursor:pointer;
+  text-decoration:underline;text-underline-offset:4px;text-decoration-color:#5A5275}
+#boot .bslow{position:absolute;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom));display:grid;justify-items:center;gap:10px;
+  color:#C9C3DC;font:500 14px 'Barlow',system-ui,sans-serif}
+#boot .bslow[hidden]{display:none}
+#boot .bslow button{height:44px;padding:0 22px;border-radius:22px;border:1.5px solid #8E86AA;background:transparent;color:#F3F1F8;
+  font:600 15px 'Barlow',system-ui,sans-serif;cursor:pointer}
+@media (prefers-reduced-motion: reduce){ #boot,#boot .bwel{transition:none} }
+</style>
 </head>
 <body>
+<div id="boot">
+  <svg class="bmark" viewBox="96 162 319 187" aria-hidden="true"><polygon fill="#000" points="96,162 155,162 211,290 267,162 333,162 415,349 357,349 300,222 244,349 178,349"/></svg>
+  <canvas aria-hidden="true"></canvas>
+  <div class="bslow" hidden><span>Slow connection. Still loading.</span><button type="button" data-boot="skip">Skip</button></div>
+  <div class="bwel">
+    <p class="bline">VR esports<br>lives here.</p>
+    <button class="bbtn" type="button" data-boot="discord"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#0D0B14" d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg>Continue with Discord</button>
+    <button class="bguest" type="button" data-boot="guest">Look around first</button>
+  </div>
+</div>
+<script src="./boot.js"></script>
+<noscript><style>#boot{display:none}</style></noscript>
 <div id="ground"></div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -4897,7 +4951,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v240';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v241';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -11106,6 +11160,11 @@ function registerWorker(){
   renderJoinSlot();
   renderHomeHeader();   // <- boot is where `me` gets set; without this the
                         //    Sign in pill stayed up for signed-in people
+  /* The first-open loader (boot.js) lifts HERE: the app knows who is looking.
+     Not after loadHome() — every home block paints last-known-good at once and
+     a skeleton otherwise, so holding the loader over them would hide a screen
+     that is already there. */
+  if(window.VGABoot) VGABoot.ready();
   installHint();
   showDiag();
 
