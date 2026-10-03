@@ -4,9 +4,11 @@
    as the app is really loading, then either the app or the welcome.
 
    Three rules.
-   NEVER A FAKE DELAY. Somebody the app already knows (signed in, came in as a
-   guest before, or followed a link to a page) goes in the moment the app says
-   it is ready. If that is before the blinds have started, there are no blinds.
+   THE OPENING ALWAYS PLAYS, and then it waits only for what is real. The
+   blinds are about a second and a half; after them the shimmer holds until the
+   home screen has loaded, and never longer than CAP seconds — past that the
+   app's own skeleton is the honest picture. (Lifting the moment the app knew
+   who was looking showed that skeleton on every open, with no opening at all.)
    THE LOOP HAS NO SEAM. It is drawn live as a function of a phase that wraps,
    so it can run for one second or sixty.
    THE WELCOME IS FOR A STRANGER ONLY: no session, never chose guest, and
@@ -28,7 +30,7 @@
      set under it. */
   var MARK = [[96,162],[155,162],[211,290],[267,162],[333,162],[415,349],[357,349],[300,222],[244,349],[178,349]];
   var MC = [255.5,255.5], VOID = '#02010A', INK = '#000', TAU = Math.PI * 2;
-  var HOLD = .4, INTRO = 1.15, EXIT = .5, COUNT = 6.5, R = 10, B = 4000;
+  var HOLD = .4, INTRO = 1.15, EXIT = .5, CAP = 1.5, COUNT = 6.5, R = 10, B = 4000;
   var REST = .66, CY = .44, RY = .37;   /* the welcome's mark: smaller, a little higher */
   var W = 0, H = 0, S = 1;
 
@@ -117,10 +119,8 @@
   function tick(){
     if(state !== 'run') return;
     var t = now() - t0, tt = t - HOLD, cx = W/2, cy = H * CY;
-    /* a stranger is not kept waiting on a slow load: the welcome needs nothing
-       from the app, so four seconds of shimmer is the most they see */
-    var go = ready || (!known && tt > INTRO + 4);
-    if(go && known && t < HOLD){ leave(); return; }   /* loaded before the blinds began: no blinds */
+    /* a stranger waits on nothing: the welcome needs nothing from the app */
+    var go = !known || ready || tt > INTRO + CAP;
     if(tt >= 0){
       still.style.display = 'none';
       if(tt < INTRO) blinds(tt, cx, cy);
@@ -141,7 +141,6 @@
       if(state !== 'run') return;
       if(calm){ finish(); return; }
       var t = now() - t0;
-      if(known && t < HOLD){ leave(); return; }
       /* The frames decide when it ends, but a tab that is not on screen gets no
          frames at all — and a loader that waits on one never lifts. So the end
          is also on a plain timer, a beat after the frames would have got there. */
@@ -166,6 +165,8 @@
   } else {
     raf = requestAnimationFrame(tick);
   }
+  /* the cap, on a plain timer as well: a tab off screen gets no frames */
+  setTimeout(function(){ if(state === 'run') finish(); }, (HOLD + INTRO + (known ? CAP : 0) + EXIT + .15) * 1000);
   /* an app that never says ready must not trap anybody behind this screen */
   slowT = setTimeout(function(){ if(state === 'run') slow.hidden = false; }, 8000);
 })();

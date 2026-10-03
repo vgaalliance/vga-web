@@ -4951,7 +4951,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v241';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v242';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -11160,11 +11160,6 @@ function registerWorker(){
   renderJoinSlot();
   renderHomeHeader();   // <- boot is where `me` gets set; without this the
                         //    Sign in pill stayed up for signed-in people
-  /* The first-open loader (boot.js) lifts HERE: the app knows who is looking.
-     Not after loadHome() — every home block paints last-known-good at once and
-     a skeleton otherwise, so holding the loader over them would hide a screen
-     that is already there. */
-  if(window.VGABoot) VGABoot.ready();
   installHint();
   showDiag();
 
@@ -11186,7 +11181,10 @@ function registerWorker(){
   }
   else if(panels[hash] && hash !== 'home') goTab(hash);
 
-  await loadHome();
+  /* The first-open loader (boot.js) lifts when the home screen has loaded — or
+     at its own cap, whichever is first. `finally`: a home that fails to load
+     must still let people in. */
+  try{ await loadHome(); } finally { if(window.VGABoot) VGABoot.ready(); }
   loadLive2();
   loadNews();
   loadFighters();
