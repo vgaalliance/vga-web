@@ -4,11 +4,13 @@
    as the app is really loading, then either the app or the welcome.
 
    Three rules.
-   THE OPENING ALWAYS PLAYS, and then it waits only for what is real. The
-   blinds are about a second and a half; after them the shimmer holds until the
-   home screen has loaded, and never longer than CAP seconds — past that the
-   app's own skeleton is the honest picture. (Lifting the moment the app knew
-   who was looking showed that skeleton on every open, with no opening at all.)
+   THE OPENING ALWAYS PLAYS, and then it stays until the home screen is REALLY
+   there: its data in and the pictures on the first screen drawn. Twice this
+   lifted early — once the moment the app knew who was looking, once on a
+   1.5 second cap — and both times people watched an opening and then an empty
+   screen loading, which is the one thing a loader exists to cover. The only
+   limits left are for a load that has gone wrong: a Skip button at 8 seconds
+   and a hard stop at CAP.
    THE LOOP HAS NO SEAM. It is drawn live as a function of a phase that wraps,
    so it can run for one second or sixty.
    THE WELCOME IS FOR A STRANGER ONLY: no session, never chose guest, and
@@ -30,7 +32,7 @@
      set under it. */
   var MARK = [[96,162],[155,162],[211,290],[267,162],[333,162],[415,349],[357,349],[300,222],[244,349],[178,349]];
   var MC = [255.5,255.5], VOID = '#02010A', INK = '#000', TAU = Math.PI * 2;
-  var HOLD = .4, INTRO = 1.15, EXIT = .5, CAP = 1.5, COUNT = 6.5, R = 10, B = 4000;
+  var HOLD = .4, INTRO = 1.15, EXIT = .5, CAP = 20, COUNT = 6.5, R = 10, B = 4000;
   var REST = .66, CY = .44, RY = .37;   /* the welcome's mark: smaller, a little higher */
   var W = 0, H = 0, S = 1;
 
@@ -159,6 +161,12 @@
 
   size();
   t0 = now();
+  /* The app reloaded itself for a new build while this loader was up: carry on
+     from the shimmer. A second white splash and a second set of blinds is the
+     seam showing. */
+  var cont = false;
+  try{ cont = sessionStorage.getItem('uba.boot.cont') === '1'; sessionStorage.removeItem('uba.boot.cont'); }catch(e){}
+  if(cont){ t0 -= HOLD + INTRO + .8; root.classList.add('dark'); still.style.display = 'none'; bg(VOID); mark(W/2, H*CY, S, '#fff'); }
   if(calm){
     /* no motion: the splash stands until the app is ready; a stranger gets the welcome at once */
     if(!known) land();

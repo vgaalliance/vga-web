@@ -4006,6 +4006,12 @@ async function loadHome(){
   // EVERY scheduled event, not the next three. The hand still shows three at
   // a time — swiping rotates the rest through it — so a fourth event widens
   // the deck rather than the screen.
+  /* Three reads that do not depend on each other, asked for TOGETHER. They
+     were one after another, and the first-open loader waits on all of them:
+     three round trips in a row was most of what it was waiting for. */
+  var pastP = q("events_public?select=id,name,type,status,event_date,stream_platform"
+      + "&status=eq.completed&order=event_date.desc&limit=2");
+  var ubP = loadUbae();
   var evs = await q("events_public?select=id,name,type,status,event_date,stream_platform&status=eq.scheduled&order=event_date.asc&limit=40");
   // Drop anything that has plainly already happened, whatever its status says.
   if(evs) evs = evs.filter(function(e){ return !eventIsOver(e); });
@@ -4014,14 +4020,13 @@ async function loadHome(){
     // This used to backfill only when fewer than three were scheduled, which
     // was the fan's rule; the next-card block pages back into the past on
     // purpose, and with four scheduled it had nothing to page into.
-    var past = await q("events_public?select=id,name,type,status,event_date,stream_platform"
-      + "&status=eq.completed&order=event_date.desc&limit=2");
+    var past = await pastP;
     if(past) evs = evs.concat(past.filter(function(pe){ return !evs.some(function(e){ return e.id === pe.id; }); }));
   }
   // UBAe nights sit in the same hand, ordered with everything else by date —
   // a playoff night is a night the league is on, and hiding it because it
   // lives in a different table is a filing detail leaking onto the screen.
-  var ub = await loadUbae();
+  var ub = await ubP;
   if(evs && ub.length){
     evs = evs.concat(ub).sort(function(x, y){
       var xo = eventIsOver(x), yo = eventIsOver(y);
@@ -4951,7 +4956,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v242';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v243';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -11105,15 +11110,56 @@ function registerWorker(){
     /* nor on top of a pack being ripped or a daily pick in the air: the
        update waits until the overlay has closed */
     var busyNow = function(){ var t = document.getElementById('tear'); return (t && t.classList.contains('live')) || (typeof dailyRun !== 'undefined' && dailyRun && dailyRun.run); };
+    /* The very first worker taking over is not an update: the page on screen
+       came off the network a second ago and is already the newest there is.
+       Reloading for it restarted the opening on everybody's first visit. */
+    if(!swHadController){ swHadController = true; return; }
     swReloaded = true;
-    (function when(){ if(busyNow()) return setTimeout(when, 1500); location.reload(); })();
+    (function when(){
+      if(busyNow()) return setTimeout(when, 1500);
+      /* tell boot.js the loader was already up, so it carries on in the dark
+         instead of playing the white splash and the blinds a second time */
+      try{ if(document.getElementById('boot')) sessionStorage.setItem('uba.boot.cont', '1'); }catch(e){}
+      location.reload();
+    })();
   });
   navigator.serviceWorker.register('./sw.js').then(function(reg){
-    reg.update().catch(function(){});          // ask on THIS load, not the next
+    /* ask on THIS load, not the next — and tell the loader the answer. If a new
+       build is on its way in, the page is about to reload: the loader stays up
+       and covers it, where it used to lift, show Home, and then start over. */
+    reg.update().then(function(){
+      if(reg.installing || reg.waiting) return;   /* a reload is coming */
+      swSettle();
+    }).catch(swSettle);                           /* offline: nothing is coming */
     document.addEventListener('visibilitychange', function(){
       if(document.visibilityState === 'visible') reg.update().catch(function(){});
     });
   }).catch(function(e){ console.warn('[uba] sw', e); });
+}
+
+/* Resolves once the app knows no new build is about to reload the page. */
+var swHadController = !!(navigator.serviceWorker && navigator.serviceWorker.controller);
+var swSettle, swSettled = new Promise(function(res){ swSettle = res; });
+if(!('serviceWorker' in navigator)) swSettle();
+setTimeout(function(){ swSettle(); }, 6000);      /* never hold the door on a check that hangs */
+
+/* Resolves when the fonts are in and every picture on the first screen of
+   Home has loaded or failed. Bounded: one slow photo must not hold the door. */
+function homePainted(){
+  var home = document.getElementById('p-home');
+  var vh = window.innerHeight || 800;
+  var imgs = home ? Array.prototype.filter.call(home.querySelectorAll('img'), function(im){
+    if(im.complete) return false;
+    var r = im.getBoundingClientRect();
+    return r.width > 0 && r.top < vh * 1.2 && r.bottom > 0;
+  }) : [];
+  var waits = imgs.map(function(im){ return new Promise(function(res){
+    im.addEventListener('load', res, { once: true }); im.addEventListener('error', res, { once: true }); }); });
+  if(document.fonts && document.fonts.ready) waits.push(document.fonts.ready);
+  return Promise.race([
+    Promise.all(waits),
+    new Promise(function(res){ setTimeout(res, 4000); })
+  ]).then(function(){ return new Promise(function(res){ setTimeout(res, 60); }); });   /* one beat for the paint */
 }
 
 (async function(){
@@ -11181,10 +11227,11 @@ function registerWorker(){
   }
   else if(panels[hash] && hash !== 'home') goTab(hash);
 
-  /* The first-open loader (boot.js) lifts when the home screen has loaded — or
-     at its own cap, whichever is first. `finally`: a home that fails to load
-     must still let people in. */
-  try{ await loadHome(); } finally { if(window.VGABoot) VGABoot.ready(); }
+  /* The first-open loader (boot.js) lifts when the home screen is REALLY there:
+     loadHome() has every block's data in, and then the pictures on the first
+     screen have drawn (a face-off with two grey boxes is still a loading
+     screen). `finally`: a home that fails to load must still let people in. */
+  try{ await loadHome(); await homePainted(); await swSettled; } finally { if(window.VGABoot) VGABoot.ready(); }
   loadLive2();
   loadNews();
   loadFighters();
