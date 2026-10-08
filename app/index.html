@@ -557,6 +557,25 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .ck-file .tt{flex:1;min-width:0}
 .ck-file .tt b{display:block;font-size:14px;font-weight:600}
 .ck-file .tt span{display:block;font-family:'Space Mono',monospace;font-size:9px;color:#7E7699;margin-top:2px}
+.ck-file[data-kit-file]{cursor:pointer}
+.ck-file .th.ic{display:grid;place-items:center;color:#C3A6FF}
+.ck-file .th.ic svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ck-file .go{color:#7E7699}
+.ck-prev{margin:0 18px;border-radius:14px;overflow:hidden;background:#15102A;min-height:120px;display:grid;place-items:center}
+.ck-prev img,.ck-prev video{display:block;width:100%;max-height:62vh;object-fit:contain;background:#000}
+.ck-prev .wait{padding:44px 0;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#7E7699}
+.ck-facts{margin:12px 18px 0;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.04em;color:#ADA4D6;line-height:1.7}
+.ck-get{display:flex;align-items:center;justify-content:center;gap:9px;width:calc(100% - 36px);margin:14px 18px 0;padding:13px 0;border:0;
+  border-radius:12px;background:#F5C842;color:#1A1430;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;
+  letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.ck-get svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.ck-get[disabled]{opacity:.55}
+.ck-faces{display:flex;gap:12px;margin:0 18px;overflow-x:auto;scrollbar-width:none}
+.ck-faces a{display:block;width:58px;flex-shrink:0;text-align:center;color:inherit;text-decoration:none;cursor:pointer}
+.ck-faces .f{display:block;width:58px;height:58px;border-radius:50%;overflow:hidden;background:#241A48}
+.ck-faces .f img{width:100%;height:100%;object-fit:cover}
+.ck-faces b{display:block;margin-top:5px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11.5px;text-transform:uppercase;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ck-note{margin:12px 18px 0;font-family:'Space Mono',monospace;font-size:9.5px;line-height:1.6;color:#7E7699}
 .ck-note a{color:#C3A6FF}
 .ck-p{margin:0 18px 12px;font-size:14px;line-height:1.5;color:#ADA4D6}
@@ -4956,7 +4975,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v243';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v244';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -5962,10 +5981,30 @@ var KIT_SEEN = 'uba.kit.seen';
 var KIT_ICON = {
   folder:'<path d="M3 7a2 2 0 012-2h4l2 2.5h8a2 2 0 012 2V18a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>',
   dl:'<path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/>',
-  book:'<path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3z"/><path d="M5 17a3 3 0 013-3h11"/>'
+  book:'<path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3z"/><path d="M5 17a3 3 0 013-3h11"/>',
+  play:'<path d="M8 5.5v13l11-6.5z"/>',
+  img:'<rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M3.5 15.5l4.5-4 4 3.5 3-2.5 5.5 4.5"/><circle cx="9" cy="9.5" r="1.3"/>'
 };
 var KIT_GHOST = '<svg viewBox="0 0 100 120"><circle cx="50" cy="30" r="17"/><path d="M14 120c0-34 14-58 36-58s36 24 36 58z"/>'
   + '<rect x="6" y="58" width="22" height="26" rx="10"/><rect x="72" y="58" width="22" height="26" rx="10"/></svg>';
+/* THE LIBRARY (2026-10): the clips, graphics and footage staff make, filed by
+   the bot. Read through kit_library, which only a signed-in person can see and
+   which hides a show's files until its card is announced. A file is never
+   reached by address: the bot signs a five-minute link for whoever is asking
+   (POST /library/sign), so a download always goes through kitSign(). */
+var BOT = 'https://vga-system-production.up.railway.app';
+var KIT_LIB = "kit_library?select=id,work_id,name,type,kind,aspect,version,event_id,event_name,event_date,match_id,"
+  + "mime_type,size_bytes,width,height,duration_ms,rights,approved_at,fighters"
+  + "&order=event_date.desc.nullslast,approved_at.desc&limit=2000";
+var KIT_TYPES = [['Replays', 'full fights'], ['Highlights', 'knockouts, finishes, recaps'],
+  ['Interviews', 'pre-fight, post-fight, pressers'], ['Promos', 'trailers and face-offs'], ['Talk', 'shows and podcasts'],
+  ['Graphics', 'posters, fight cards, thumbnails'], ['Photos', 'walkouts and shoots'], ['Footage', 'sparring, b-roll, angles']];
+var KIT_KIND = { 'full-fight':'Full fight', ko:'Knockout', finish:'Finish', walkout:'Walkout', recap:'Recap', moment:'Moment',
+  'pre-fight':'Pre-fight interview', 'post-fight':'Post-fight interview', 'press-conference':'Press conference',
+  trailer:'Trailer', 'face-off':'Face-off', episode:'Episode', poster:'Poster', 'fight-card':'Fight card',
+  thumbnail:'Thumbnail', results:'Results', 'stat-card':'Stat card', 'walkout-photo':'Walkout photo', portrait:'Portrait',
+  'media-day':'Media day', 'b-roll':'B-roll', angle:'Camera angle', sparring:'Sparring', feature:'Feature' };
+var kitLib = null;
 var KIT_FOLDERS = [['replays', 'Replays', 'clips, by show'], ['footage', 'Footage', 'shoots, walkouts, angles'],
   ['vods', 'VODs', 'full shows']];
 
@@ -5991,8 +6030,11 @@ function kitTile(f){
 async function kitLoad(){
   var seed = cached(KIT_FIGHTERS);
   if(seed && seed.length && !kitFighters) kitFighters = seed;
-  var got = await Promise.all([q(KIT_FIGHTERS), q(KIT_SECTIONS)]);
+  var got = await Promise.all([q(KIT_FIGHTERS), q(KIT_SECTIONS), session ? qMe(KIT_LIB) : Promise.resolve(null)]);
   if(got[0]) kitFighters = got[0];
+  /* Same rule as the catalog below: a failed read keeps what it already had. */
+  if(got[2]) kitLib = got[2];
+  if(!session) kitLib = null;
   /* A failed read of the file catalog must not invent folders OR hide real
      ones it already knew about -- keep whatever was there. */
   if(got[1]){
@@ -6089,6 +6131,20 @@ function kitBrowseHTML(){
     html += '<a class="ck-row" data-hub="kit-' + fo[0] + '"><span class="ico">' + kitIcon('folder') + '</span><span class="tt"><b>' + fo[1] + '</b>'
       + '<span>' + n + (n === 1 ? ' file' : ' files') + ' · ' + fo[2] + '</span></span><span class="go">›</span></a>';
   });
+  /* The library's folders. Same rule: one is drawn only when it has a file. */
+  if(session){
+    var byType = {};
+    (kitLib || []).forEach(function(f){ byType[f.type] = (byType[f.type] || 0) + 1; });
+    KIT_TYPES.forEach(function(t){
+      var n = byType[t[0]];
+      if(!n) return;
+      html += '<a class="ck-row" data-hub="kit-lib-' + t[0] + '"><span class="ico">' + kitIcon('folder') + '</span><span class="tt"><b>' + t[0] + '</b>'
+        + '<span>' + n + (n === 1 ? ' file' : ' files') + ' · ' + t[1] + '</span></span><span class="go">›</span></a>';
+    });
+  } else {
+    html += '<a class="ck-row" data-signin="1"><span class="ico">' + kitIcon('play') + '</span><span class="tt"><b>Clips, graphics and footage</b>'
+      + '<span>sign in to open the library</span></span><span class="go">›</span></a>';
+  }
   html += '<a class="ck-row" data-hub="kit-rules"><span class="ico">' + kitIcon('book') + '</span><span class="tt"><b>The rules</b>'
     + '<span>what you can and can’t do with all this</span></span><span class="go">›</span></a>'
     + '<div class="foot">Creator kit</div>';
@@ -6122,7 +6178,11 @@ document.addEventListener('click', function(e){
   if(h){ kitHas = h.getAttribute('data-ck-has') === '1'; kitShown = 60; kitPaint(); return; }
   if(e.target.closest('[data-ck-more]')){ kitShown += 60; kitPaint(); return; }
   var p = e.target.closest('[data-kit-photo]');
-  if(p){ e.preventDefault(); openSheet({ kind: 'kit-photo', id: p.getAttribute('data-kit-photo') }); }
+  if(p){ e.preventDefault(); openSheet({ kind: 'kit-photo', id: p.getAttribute('data-kit-photo') }); return; }
+  var kf = e.target.closest('[data-kit-file]');
+  if(kf && !e.target.closest('[data-slug]')){ e.preventDefault(); openSheet({ kind: 'kit-file', id: kf.getAttribute('data-kit-file') }); return; }
+  var kg = e.target.closest('[data-kit-get]');
+  if(kg){ e.preventDefault(); kitDownload(kg); }
 });
 document.addEventListener('change', function(e){
   if(e.target && e.target.id === 'ck-div'){ kitDiv = e.target.value; kitShown = 60; kitPaint(); }
@@ -6234,6 +6294,114 @@ function kitSize(b){
   return b >= 1073741824 ? (b / 1073741824).toFixed(1) + ' GB' : b >= 1048576 ? Math.round(b / 1048576) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
 }
 
+/* ── THE LIBRARY'S SCREENS ─────────────────────────────────────────────
+   A folder (one type, grouped by show) and a file (preview, facts, who is in
+   it, Download). What a file is CALLED on screen is built from its tags, never
+   from its stored name: the stored name is for the file system. */
+function kitIsVideo(f){ return String(f.mime_type || '').indexOf('video/') === 0; }
+function kitFileTitle(f){
+  var who = (f.fighters || []).map(function(x){ return x.name; });
+  var what = KIT_KIND[f.kind] || f.kind || 'File';
+  return who.length === 2 ? who[0] + ' vs ' + who[1] + ' · ' + what : who.length === 1 ? who[0] + ' · ' + what : what;
+}
+function kitFileInfo(f){
+  var secs = f.duration_ms ? Math.round(f.duration_ms / 1000) : 0;
+  var len = secs ? Math.floor(secs / 60) + ':' + ('0' + (secs % 60)).slice(-2) : '';
+  var shape = f.aspect && f.aspect !== 'orig' ? f.aspect.replace('x', ':') : '';
+  return [len, kitIsVideo(f) && f.height ? f.height + 'p' : '', shape, kitSize(f.size_bytes)].filter(Boolean).join(' · ');
+}
+function kitFileRow(f){
+  return '<div class="ck-file" data-kit-file="' + esc(f.id) + '"><span class="th ic">' + kitIcon(kitIsVideo(f) ? 'play' : 'img') + '</span>'
+    + '<span class="tt"><b>' + esc(kitFileTitle(f)) + '</b><span>' + esc(kitFileInfo(f)) + '</span></span><span class="go">›</span></div>';
+}
+async function kitLibRows(){
+  if(kitLib) return kitLib;
+  var rows = session ? await qMe(KIT_LIB) : null;
+  if(rows) kitLib = rows;
+  return rows;
+}
+/* A five-minute link for one file. `inline` is a preview; without it the link
+   saves under the file's name. Returns { url } or { error } -- never throws. */
+async function kitSign(id, inline){
+  if(!session) return { error: 'Sign in to download.' };
+  try{
+    await ensureFreshSession();
+    var r = await fetch(BOT + '/library/sign', { method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+      body: JSON.stringify({ file_id: id, inline: !!inline }) });
+    var j = await r.json().catch(function(){ return {}; });
+    if(!r.ok) return { error: j.error || "Couldn't get that file." };
+    return j;
+  }catch(e){ return { error: "Couldn't reach the library. Check your connection." }; }
+}
+async function kitDownload(btn){
+  if(btn.disabled) return;
+  var label = btn.innerHTML;
+  btn.disabled = true; btn.innerHTML = 'Getting it…';
+  var got = await kitSign(btn.getAttribute('data-kit-get'), false);
+  btn.disabled = false; btn.innerHTML = label;
+  if(got.error){ var n = document.getElementById('ck-get-note'); if(n) n.textContent = got.error; return; }
+  /* The link answers with an attachment header, so this saves the file and
+     leaves the app where it is. */
+  location.href = got.url;
+}
+
+async function renderKitLib(type){
+  var body = document.getElementById('sheet-body');
+  body.innerHTML = kitHead('Creator kit', type) + '<div class="skel"></div><div class="skel" style="width:70%"></div>';
+  if(!session){ body.innerHTML = kitHead('Creator kit', type) + '<div class="empty">Sign in to open the library.</div>'; return; }
+  var all = await kitLibRows();
+  if(!sheetStack.length || sheetStack[sheetStack.length - 1].kind !== 'kit-lib-' + type) return;
+  if(!all){ retryHandlers['kitlib'] = function(){ renderKitLib(type); };
+    body.innerHTML = kitHead('Creator kit', type) + failHTML("Couldn't load these files.", 'kitlib'); return; }
+  var rows = all.filter(function(f){ return f.type === type; });
+  if(!rows.length){ body.innerHTML = kitHead('Creator kit', type) + '<div class="empty">Nothing here yet.</div>'; return; }
+  var order = [], by = {};
+  rows.forEach(function(f){ var k = f.event_name || 'Other'; if(!by[k]){ by[k] = []; order.push(k); } by[k].push(f); });
+  body.innerHTML = kitHead('Creator kit', type) + order.map(function(k){
+    return '<div class="lab"><b>' + esc(k) + '</b><i></i><s>' + by[k].length + '</s></div>' + by[k].map(kitFileRow).join('');
+  }).join('') + '<div class="ck-note">Free to use in your edits — <a data-hub="kit-rules">the rules</a>.</div>'
+    + '<div class="foot">Creator kit</div>';
+}
+
+async function renderKitFile(id){
+  var body = document.getElementById('sheet-body');
+  body.innerHTML = kitHead('Creator kit', 'File') + '<div class="skel"></div><div class="skel" style="width:70%"></div>';
+  if(!session){ body.innerHTML = kitHead('Creator kit', 'File') + '<div class="empty">Sign in to open the library.</div>'; return; }
+  var all = await kitLibRows();
+  var top = sheetStack[sheetStack.length - 1];
+  if(!top || top.kind !== 'kit-file' || top.id !== id) return;
+  if(!all){ retryHandlers['kitfile'] = function(){ renderKitFile(id); };
+    body.innerHTML = kitHead('Creator kit', 'File') + failHTML("Couldn't load this file.", 'kitfile'); return; }
+  var f = all.filter(function(x){ return x.id === id; })[0];
+  /* Not in the window = not for this person, or not released. Never "not yet". */
+  if(!f){ body.innerHTML = kitHead('Creator kit', 'File') + '<div class="empty">That file is not in the library.</div>'; return; }
+  var faces = (f.fighters || []).map(function(x){
+    return '<a data-slug="' + esc(x.slug || '') + '"><span class="f">' + (x.square ? '<img src="' + esc(x.square) + '" alt="" loading="lazy" onerror="this.remove()">' : '')
+      + '</span><b>' + esc(x.name || '') + '</b></a>';
+  }).join('');
+  var more = all.filter(function(x){ return x.id !== f.id && f.event_id && x.event_id === f.event_id; }).slice(0, 12);
+  var when = f.event_date ? new Date(f.event_date).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', year: 'numeric' }) : '';
+  body.innerHTML = kitHead(f.type || 'Creator kit', kitFileTitle(f))
+    + '<div class="ck-prev" id="ck-prev"><div class="wait">Loading preview…</div></div>'
+    + '<div class="ck-facts">' + esc([f.event_name, when].filter(Boolean).join(' · ')) + '<br>' + esc(kitFileInfo(f)) + '</div>'
+    + '<button class="ck-get" data-kit-get="' + esc(f.id) + '">' + kitIcon('dl') + 'Download</button>'
+    + '<div class="ck-note" id="ck-get-note">' + (f.rights && f.rights !== 'vga'
+        ? 'Watch and share only — this one carries music or footage we can’t pass on. '
+        : 'Free to use in your edits. ') + '<a data-hub="kit-rules">The rules</a>.</div>'
+    + (faces ? '<div class="lab"><b>In this</b><i></i></div><div class="ck-faces">' + faces + '</div>' : '')
+    + (more.length ? '<div class="lab"><b>More from ' + esc(f.event_name || 'this show') + '</b><i></i><s>' + more.length + '</s></div>' + more.map(kitFileRow).join('') : '')
+    + '<div class="foot">Creator kit</div>';
+  var got = await kitSign(f.id, true);
+  var box = document.getElementById('ck-prev');
+  top = sheetStack[sheetStack.length - 1];
+  if(!box || !top || top.kind !== 'kit-file' || top.id !== id) return;
+  if(got.error){ box.innerHTML = '<div class="wait">' + esc(got.error) + '</div>'; return; }
+  box.innerHTML = kitIsVideo(f)
+    ? '<video controls playsinline preload="metadata" src="' + esc(got.url) + '"></video>'
+    : '<img src="' + esc(got.url) + '" alt="">';
+}
+
 /* ── the rules ── what makes "free to use" a promise instead of a caption */
 function renderKitRules(){
   document.getElementById('sheet-body').innerHTML = kitHead('Creator kit', 'The rules')
@@ -6243,7 +6411,7 @@ function renderKitRules(){
     + '<div>Monetise your edit. It is your work.</div>'
     + '<div>Use fighters’ names and cut-outs in thumbnails.</div></div>'
     + '<div class="lab"><b>You can’t</b><i></i></div><div class="ck-rules no">'
-    + '<div>Re-upload a full show. Clip it.</div>'
+    + '<div>Re-upload a full show or a full fight. Clip it.</div>'
     + '<div>Sell the files themselves, or bundle them into a pack.</div>'
     + '<div>Put a fighter in something hateful, or imply they endorse a product.</div></div>'
     + '<div class="lab"><b>Credit</b><i></i></div>'
@@ -6254,6 +6422,7 @@ function renderKitRules(){
 /* ── a video folder ── drawn only once the sync has put a file in it, so this
    is reachable only when there is something to list. Shoots first, files under. */
 async function renderKitSection(section){
+  if(section.indexOf('lib-') === 0) return renderKitLib(section.slice(4));
   var body = document.getElementById('sheet-body');
   var meta = KIT_FOLDERS.filter(function(f){ return f[0] === section; })[0] || [section, section, ''];
   body.innerHTML = kitHead('Creator kit', meta[1]) + '<div class="skel"></div><div class="skel" style="width:70%"></div>';
@@ -6439,6 +6608,7 @@ function hashFor(entry){
        : entry.kind === 'staff'    ? '#staff' + (entry.sub && entry.sub !== 'home' ? '/' + entry.sub : '')
        : entry.kind === 'kit'       ? '#kit'
        : entry.kind === 'kit-photo' ? '#kit/p/' + entry.id
+       : entry.kind === 'kit-file'  ? '#kit/file/' + entry.id
        : entry.kind.indexOf('kit-') === 0 ? '#kit/' + entry.kind.slice(4) : '';
 }
 
@@ -6518,6 +6688,7 @@ function renderSheet(entry){
   if(entry.kind === 'staff')     return renderStaff(entry.sub);
   if(entry.kind === 'kit')       return renderKit();
   if(entry.kind === 'kit-photo') return renderKitPhoto(entry.id);
+  if(entry.kind === 'kit-file')  return renderKitFile(entry.id);
   if(entry.kind === 'kit-press') return renderKitPress();
   if(entry.kind === 'kit-rules') return renderKitRules();
   if(entry.kind.indexOf('kit-') === 0) return renderKitSection(entry.kind.slice(4));
@@ -11223,6 +11394,7 @@ function homePainted(){
   else if(hash === 'kit' || hash.indexOf('kit/') === 0){
     goTab('you'); openSheet({kind:'kit'});
     if(hash.indexOf('kit/p/') === 0) openSheet({kind:'kit-photo', id:hash.slice(6)});
+    else if(hash.indexOf('kit/file/') === 0) openSheet({kind:'kit-file', id:hash.slice(9)});
     else if(hash.length > 4) openSheet({kind:'kit-' + hash.slice(4)});
   }
   else if(panels[hash] && hash !== 'home') goTab(hash);
