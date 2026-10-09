@@ -3496,6 +3496,11 @@ function eventIsOver(e){
   return isFinite(t) && (Date.now() - t) > STALE_EVENT_MS;
 }
 
+/* Shop copy is written in Discord, so it arrives carrying <:NAME:id> custom
+   emoji. Discord renders those; a browser prints them. */
+function noEmojiTokens(t){
+  return String(t == null ? '' : t).replace(/<a?:([a-zA-Z0-9_]+):\d+>/g, '').replace(/\s{2,}/g, ' ').trim();
+}
 function esc(s){ return String(s == null ? '' : s)
   .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -9226,7 +9231,7 @@ async function renderShop(){
         var out = r.stock !== null && Number(r.stock) <= 0;
         return '<div class="shp'+(out?' out':'')+'">'
           + '<div style="flex:1;min-width:0"><div class="t">'+esc(r.name)+'</div>'
-          + (r.description ? '<div class="s">'+esc(r.description)+'</div>' : '')
+          + (r.description ? '<div class="s">'+esc(noEmojiTokens(r.description))+'</div>' : '')
           + (r.stock !== null ? '<div class="stk">'+(out ? 'Sold out' : Number(r.stock)+' left')+'</div>' : '')
           + '</div><div class="prw"><div class="pr">'+Number(r.vc_price||0).toLocaleString()+'<em>VC</em></div>'
           + (out ? '' : '<button class="act buy" data-buy="'+esc(r.id)+'">Buy</button>')
@@ -9921,6 +9926,28 @@ async function rpc0(fn){
 }
 
 /* ── WALLET ── the balance, and every move behind it. */
+/* The ledger is the screen people open when money is missing, so it must not
+   answer in the database's own words. Anything not on this list falls back to
+   its own text with the underscores taken out. */
+var VC_REASON = {
+  shop_purchase:'Bought in the shop', purchase:'Purchase', refund:'Refunded',
+  reward:'Reward', payout:'Payout', fight_payout:'Fight purse',
+  bet_placed:'Bet placed', bet:'Bet placed', bet_payout:'Bet won',
+  staff_job:'Staff job', staff_pay:'Staff pay', signature:'Autograph',
+  trade:'Trade', trade_tax:'Trade tax', trade_escrow:'Held for a trade',
+  trade_refund:'Trade called off', transfer:'Transfer',
+  transfer_in:'Sent to you', transfer_out:'Sent by you',
+  loan:'Loan', loan_out:'Loan paid out', loan_payment:'Loan payment',
+  loan_collect:'Loan collected', gym:'Gym', gym_buy:'Bought a gym',
+  gym_purchase:'Bought a gym', gym_deposit:'Paid into the gym bank',
+  gym_payout:'Gym payout', gym_refund:'Gym refund', gym_tax:'Gym tax',
+  gym_session_fee:'Training session', manual:'Adjusted by staff'
+};
+function vcReason(r){
+  if(!r) return 'Adjustment';
+  return VC_REASON[r] || String(r).replace(/_/g, ' ').replace(/^./, function(c){ return c.toUpperCase(); });
+}
+
 async function renderWallet(){
   var body = document.getElementById('sheet-body');
   body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'
@@ -9950,7 +9977,7 @@ async function renderWallet(){
         var up = Number(t.amount) >= 0;
         return '<div class="tx"><span class="amt '+(up?'up':'dn')+'">'
           + (up?'+':'') + Number(t.amount).toLocaleString() + '</span>'
-          + '<span class="why">'+esc(t.reason || 'Adjustment')+'</span>'
+          + '<span class="why">'+esc(vcReason(t.reason))+'</span>'
           + '<span class="when">'+esc(dstr(t.created_at))+'</span></div>';
       }).join('')
       : '<div class="empty">No VC movement yet.</div>')
@@ -10260,19 +10287,32 @@ function stripsHTML(bets, isOpen){
   }).join('');
 }
 
+/* ONE record, read by the Betting tab and by My bets. The two screens used to
+   count it differently — this one divided wins by everything that was not still
+   open, so a REFUND counted as a miss, while My bets divided by wins+losses —
+   and the same 13 bets read 23% in one place and 43% in the other. A refund is
+   a bet that never ran: it is not a miss, and it is not a win. */
+function betRecord(list){
+  /* takes the rows it is given — My bets fetches its own, the Betting tab holds
+     them in myBets — so the two screens can never count different lists */
+  var all = list || myBets || [];
+  var won = all.filter(function(b){ return b.bet_status === 'won'; }).length;
+  var lost = all.filter(function(b){ return b.bet_status === 'lost'; }).length;
+  var settled = won + lost;
+  var net = all.filter(function(b){ return b.bet_status !== 'placed'; })
+    .reduce(function(n,b){ return n + Number(b.payout_amount||0) - Number(b.amount||0); }, 0);
+  return { placed: all.length, won: won, lost: lost, settled: settled, net: net,
+           hit: settled ? Math.round(won / settled * 100) : null };
+}
 function recordHTML(){
-  var done = (myBets || []).filter(function(b){ return b.bet_status !== 'placed'; });
-  if(!done.length) return '';
-  var won = done.filter(function(b){ return b.bet_status === 'won'; }).length;
-  var net = done.reduce(function(n,b){
-    return n + Number(b.payout_amount||0) - Number(b.amount||0); }, 0);
-  var hit = Math.round(won / done.length * 100);
+  var r = betRecord();
+  if(!r.settled && !r.net) return '';
   return '<div class="lab"><b>Your record</b><i></i><s>all time</s></div>'
     + '<div class="brec" data-hub="mybets">'
-    + '<div><b>'+done.length.toLocaleString()+'</b><s>Settled</s></div>'
-    + '<div><b>'+hit+'%</b><s>Hit rate</s></div>'
-    + '<div><b style="color:'+(net >= 0 ? '#6EE7B7' : '#FF8A80')+'">'
-    + (net >= 0 ? '+' : '') + net.toLocaleString()+'</b><s>Net VC</s></div></div>';
+    + '<div><b>'+r.settled.toLocaleString()+'</b><s>Settled</s></div>'
+    + '<div><b>'+(r.hit == null ? '\u2014' : r.hit + '%')+'</b><s>Hit rate</s></div>'
+    + '<div><b style="color:'+(r.net >= 0 ? '#6EE7B7' : '#FF8A80')+'">'
+    + (r.net >= 0 ? '+' : '') + r.net.toLocaleString()+'</b><s>Net VC</s></div></div>';
 }
 
 /* What a stake pays AT THE CURRENT POOL. Pari-mutuel: your side's share of the
@@ -10430,11 +10470,9 @@ async function renderMyBets(){
       + 'Pools open when a card is published and lock at the first bell.</div>';
     return;
   }
-  var won = rows.filter(function(b){ return b.bet_status === 'won'; });
-  var lost = rows.filter(function(b){ return b.bet_status === 'lost'; });
-  var settled = won.length + lost.length;
-  var net = rows.reduce(function(n,b){
-    return n + Number(b.payout_amount||0) - Number(b.amount||0); }, 0);
+  /* the tallies live in betRecord() so this screen and the Betting tab can
+     never disagree; the only list this one needs of its own is the group. */
+  var done = rows.filter(function(b){ return b.state === 'settled'; });
 
   function group(title, list, note){
     if(!list.length) return '';
@@ -10463,16 +10501,17 @@ async function renderMyBets(){
         }).join('');
   }
 
+  /* the SAME numbers the Betting tab shows — one function, one denominator */
+  var rec = betRecord(rows);
   el.innerHTML = '<div class="summ">'
-      + '<div><b>'+rows.length+'</b><s>placed</s></div>'
-      + '<div><b class="'+(settled && won.length/settled >= .5 ? 'g' : '')+'">'
-        + (settled ? Math.round(won.length/settled*100) + '%' : '\u2014') + '</b><s>hit rate</s></div>'
-      + '<div><b class="'+(net >= 0 ? 'g' : 'r')+'">'+(net >= 0 ? '+' : '')
-        + net.toLocaleString()+'</b><s>net VC</s></div></div>'
+      + '<div><b>'+rec.settled+'</b><s>settled</s></div>'
+      + '<div><b class="'+(rec.hit != null && rec.hit >= 50 ? 'g' : '')+'">'
+        + (rec.hit == null ? '\u2014' : rec.hit + '%') + '</b><s>hit rate</s></div>'
+      + '<div><b class="'+(rec.net >= 0 ? 'g' : 'r')+'">'+(rec.net >= 0 ? '+' : '')
+        + rec.net.toLocaleString()+'</b><s>net VC</s></div></div>'
     + group('Open', rows.filter(function(b){ return b.state === 'open'; }))
     + group('Locked', rows.filter(function(b){ return b.state === 'locked'; }), 'settling at the bell')
-    + group('Settled', rows.filter(function(b){ return b.state === 'settled'; }).slice(0, 40),
-        settled + ' resolved')
+    + group('Settled', done.slice(0, 40), done.length + ' resolved')
     + '<div class="foot">Pari-mutuel &middot; no rake &middot; a price is only final once it settles</div>';
 }
 
@@ -11449,9 +11488,11 @@ function sparLine(r){
   if(r.region) parts.push(r.region);
   return parts.filter(Boolean).join(' · ');
 }
+/* Returns a WHOLE phrase, because the caller used to append ' left' to it and a
+   lobby in its last minute read "ending left". */
 function sparMins(iso){
   var m = Math.round((new Date(iso).getTime() - Date.now()) / 60000);
-  return m <= 0 ? 'ending' : (m + ' min');
+  return m <= 0 ? 'ending now' : (m + ' min left');
 }
 function sparClock(iso){
   var s = Math.max(0, Math.round((new Date(iso).getTime() - Date.now()) / 1000));
@@ -11469,7 +11510,7 @@ function sparLobbyRow(r, blocked){
     + '<div class="fg"' + (r.slug ? ' data-slug="' + esc(r.slug) + '"' : '') + '>'
     + '<div class="n">' + esc(r.name || 'A fighter')
     + (r.champion ? ' <span style="color:#F5C842;font-family:\'Space Mono\',monospace;font-size:8px">CHAMP</span>' : '')
-    + '</div><div class="l">' + esc(sparLine(r)) + ' · ' + esc(sparMins(r.ends_at)) + ' left</div></div>'
+    + '</div><div class="l">' + esc(sparLine(r)) + ' · ' + esc(sparMins(r.ends_at)) + '</div></div>'
     + '<button class="sp-spar' + (blocked ? ' dead' : '') + '" data-sp="ask" data-id="' + esc(r.card_id) + '">SPAR</button></div>';
 }
 
@@ -11633,7 +11674,7 @@ async function sparPaint(quiet){
   /* HOSTING — a state, not an action: nothing to press but the way out. */
   if(mine){
     el.innerHTML = again + '<div class="sp-count"><b>' + others.length + '</b><span>other lobbies open<br>'
-      + esc(sparTypeLabel(mine.spar_type)) + ' · ' + esc(sparMins(mine.ends_at)) + ' left</span></div>'
+      + esc(sparTypeLabel(mine.spar_type)) + ' · ' + esc(sparMins(mine.ends_at)) + '</span></div>'
       + '<div class="sp-room"><div style="flex:1"><div class="k">YOUR ROOM</div><div class="c">'
       + esc(mine.room_code || 'no code') + '</div></div>'
       + '<button class="sp-spar" data-sp="recode">CHANGE</button></div>'
@@ -11758,7 +11799,7 @@ function sparFaceoff(){
     + '<span class="go" data-sp="askpick">Ask to join</span>'
     + '<span class="cap" data-sp="next">\u203A</span></div>'
     + '</div>'
-    + '<div class="sp-hint">' + esc(sparMins(f.ends_at)) + ' left on their lobby · '
+    + '<div class="sp-hint">' + esc(sparMins(f.ends_at)) + ' on their lobby · '
     + '<u>\u2039 \u203A steps through the ' + sparPicks.length + '</u></div>';
 }
 

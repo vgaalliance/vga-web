@@ -95,8 +95,11 @@ var RUNG_WORD = { onboarded:'Onboarded', tryout:'Tryout · half pay', full_time:
 function stfCallCard(c, depts){
   var d = (depts || []).filter(function(x){ return x.id === c.dept_id; })[0] || {};
   var backup = d.rung === 'onboarded';
-  var line = esc(c.dept) + ' · ' + esc(stfWhen(c.at)) + ' · ' + vcs(c.rate) + ' · '
-    + c.needed + (c.needed === 1 ? ' seat' : ' seats') + (c.hands ? ' · ' + c.hands + (c.hands === 1 ? ' request' : ' requests') : '');
+  /* app_staff_home returns needed: null once a call is crewed, and this line
+     used to print "null seats" straight onto the card. */
+  var seats = c.needed == null ? '' : ' · ' + c.needed + (c.needed === 1 ? ' seat' : ' seats');
+  var line = esc(c.dept) + ' · ' + esc(stfWhen(c.at)) + ' · ' + vcs(c.rate) + seats
+    + (c.hands ? ' · ' + c.hands + (c.hands === 1 ? ' request' : ' requests') : '');
   /* The same three buttons as the call post (bot/src/lib/call-buttons.js):
      Request -- "I'm free if needed" once it is booked -- Backup, and I'm out.
      A call stays answerable after the pick on purpose; it closes at delivered. */
