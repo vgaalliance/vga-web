@@ -572,7 +572,16 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .ck-get[disabled]{opacity:.55}
 .ck-faces{display:flex;gap:12px;margin:0 18px;overflow-x:auto;scrollbar-width:none}
 .ck-faces a{display:block;width:58px;flex-shrink:0;text-align:center;color:inherit;text-decoration:none;cursor:pointer}
-.ck-faces .f{display:block;width:58px;height:58px;border-radius:50%;overflow:hidden;background:#241A48}
+.ck-faces .f{display:block;width:58px;height:58px;border-radius:14px;overflow:hidden;background:#241A48;box-shadow:0 0 0 2px #F5C842}
+.ck-faces{padding:3px 2px 2px}
+.ck-back{position:absolute;top:calc(14px + env(safe-area-inset-top));left:14px;z-index:4;display:flex;align-items:center;gap:3px;height:36px;
+  padding:0 15px 0 9px;border:0;border-radius:999px;background:rgba(10,8,20,.6);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  color:#EDEAF6;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;
+  max-width:70%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ck-back svg{width:18px;height:18px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.ck-snd{width:100%;padding:26px 16px 18px;display:grid;justify-items:center;gap:14px;color:#C3A6FF}
+.ck-snd svg{width:54px;height:54px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round}
+.ck-snd audio{width:100%}
 .ck-faces .f img{width:100%;height:100%;object-fit:cover}
 .ck-faces b{display:block;margin-top:5px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11.5px;text-transform:uppercase;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -4980,7 +4989,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v244';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v245';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -5988,7 +5997,17 @@ var KIT_ICON = {
   dl:'<path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/>',
   book:'<path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3z"/><path d="M5 17a3 3 0 013-3h11"/>',
   play:'<path d="M8 5.5v13l11-6.5z"/>',
-  img:'<rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M3.5 15.5l4.5-4 4 3.5 3-2.5 5.5 4.5"/><circle cx="9" cy="9.5" r="1.3"/>'
+  img:'<rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M3.5 15.5l4.5-4 4 3.5 3-2.5 5.5 4.5"/><circle cx="9" cy="9.5" r="1.3"/>',
+  /* One per library folder, so nine folders do not read as nine of the same row. */
+  film:'<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M8 4.5v15M16 4.5v15M3.5 9.5H8M3.5 14.5H8M16 9.5h4.5M16 14.5h4.5"/>',
+  bolt:'<path d="M13 3L5 13.5h6L10.5 21 19 10h-6z"/>',
+  mic:'<rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0013 0M12 18v3M8.5 21h7"/>',
+  horn:'<path d="M4 10v4h3l7 4.5v-13L7 10zM17.5 9a4.5 4.5 0 010 6M7 14l1.2 5h2.6L9.8 15.8"/>',
+  chat:'<path d="M4.5 6.5a2 2 0 012-2h11a2 2 0 012 2v8a2 2 0 01-2 2H11l-4.5 3.5v-3.5a2 2 0 01-2-2z"/>',
+  cam:'<path d="M4 8.5a2 2 0 012-2h2l1.5-2h5l1.5 2h2a2 2 0 012 2V17a2 2 0 01-2 2H6a2 2 0 01-2-2z"/><circle cx="12" cy="12.8" r="3.4"/>',
+  vid:'<rect x="3.5" y="6.5" width="12" height="11" rx="2"/><path d="M15.5 10.5l5-3v9l-5-3z"/>',
+  wave:'<path d="M4 10v4M8 6.5v11M12 3.5v17M16 7.5v9M20 10v4"/>',
+  back:'<path d="M14.5 5.5L8 12l6.5 6.5"/>'
 };
 var KIT_GHOST = '<svg viewBox="0 0 100 120"><circle cx="50" cy="30" r="17"/><path d="M14 120c0-34 14-58 36-58s36 24 36 58z"/>'
   + '<rect x="6" y="58" width="22" height="26" rx="10"/><rect x="72" y="58" width="22" height="26" rx="10"/></svg>';
@@ -5999,16 +6018,17 @@ var KIT_GHOST = '<svg viewBox="0 0 100 120"><circle cx="50" cy="30" r="17"/><pat
    (POST /library/sign), so a download always goes through kitSign(). */
 var BOT = 'https://vga-system-production.up.railway.app';
 var KIT_LIB = "kit_library?select=id,work_id,name,type,kind,aspect,version,event_id,event_name,event_date,match_id,"
-  + "mime_type,size_bytes,width,height,duration_ms,rights,approved_at,fighters"
+  + "mime_type,size_bytes,width,height,duration_ms,rights,approved_at,fighters,shoot_id,shoot_name,shoot_date,subject"
   + "&order=event_date.desc.nullslast,approved_at.desc&limit=2000";
-var KIT_TYPES = [['Replays', 'full fights'], ['Highlights', 'knockouts, finishes, recaps'],
-  ['Interviews', 'pre-fight, post-fight, pressers'], ['Promos', 'trailers and face-offs'], ['Talk', 'shows and podcasts'],
-  ['Graphics', 'posters, fight cards, thumbnails'], ['Photos', 'walkouts and shoots'], ['Footage', 'sparring, b-roll, angles']];
+var KIT_TYPES = [['Replays', 'full fights', 'film'], ['Highlights', 'knockouts, finishes, recaps', 'bolt'],
+  ['Interviews', 'pre-fight, post-fight, pressers', 'mic'], ['Promos', 'trailers and face-offs', 'horn'], ['Talk', 'shows and podcasts', 'chat'],
+  ['Graphics', 'posters, fight cards, thumbnails', 'img'], ['Photos', 'walkouts and shoots', 'cam'], ['Footage', 'sparring, b-roll, angles', 'vid'],
+  ['Audio', 'voicelines', 'wave']];
 var KIT_KIND = { 'full-fight':'Full fight', ko:'Knockout', finish:'Finish', walkout:'Walkout', recap:'Recap', moment:'Moment',
   'pre-fight':'Pre-fight interview', 'post-fight':'Post-fight interview', 'press-conference':'Press conference',
   trailer:'Trailer', 'face-off':'Face-off', episode:'Episode', poster:'Poster', 'fight-card':'Fight card',
   thumbnail:'Thumbnail', results:'Results', 'stat-card':'Stat card', 'walkout-photo':'Walkout photo', portrait:'Portrait',
-  'media-day':'Media day', 'b-roll':'B-roll', angle:'Camera angle', sparring:'Sparring', feature:'Feature' };
+  'media-day':'Media day', 'b-roll':'B-roll', angle:'Camera angle', sparring:'Sparring', voiceline:'Voiceline' };
 var kitLib = null;
 var KIT_FOLDERS = [['replays', 'Replays', 'clips, by show'], ['footage', 'Footage', 'shoots, walkouts, angles'],
   ['vods', 'VODs', 'full shows']];
@@ -6018,7 +6038,18 @@ function kitRec(f){
   var d = Number(f.headline_draws || 0);
   return Number(f.headline_wins || 0) + '–' + Number(f.headline_losses || 0) + (d ? '–' + d : '');
 }
-function kitHead(kick, title){
+/* The back button on a library screen is a pill that NAMES where it goes
+   ("‹ Footage"): three levels deep, a bare arrow does not say which one. */
+function kitBackTo(){
+  var prev = sheetStack[sheetStack.length - 2];
+  if(!prev) return 'You';
+  if(prev.kind === 'kit') return 'Creator kit';
+  if(prev.kind.indexOf('kit-lib-') === 0) return prev.kind.slice(8);
+  return 'Back';
+}
+function kitHead(kick, title, named){
+  if(named) return '<div class="evhead"><button class="ck-back" data-sheet-back>' + kitIcon('back') + esc(kitBackTo()) + '</button>'
+    + '<div style="height:34px"></div><div class="kick">' + esc(kick) + '</div><h3>' + esc(title) + '</h3></div>';
   return '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'
     + '<div class="kick">' + esc(kick) + '</div><h3>' + esc(title) + '</h3></div>';
 }
@@ -6143,7 +6174,7 @@ function kitBrowseHTML(){
     KIT_TYPES.forEach(function(t){
       var n = byType[t[0]];
       if(!n) return;
-      html += '<a class="ck-row" data-hub="kit-lib-' + t[0] + '"><span class="ico">' + kitIcon('folder') + '</span><span class="tt"><b>' + t[0] + '</b>'
+      html += '<a class="ck-row" data-hub="kit-lib-' + t[0] + '"><span class="ico">' + kitIcon(t[2]) + '</span><span class="tt"><b>' + t[0] + '</b>'
         + '<span>' + n + (n === 1 ? ' file' : ' files') + ' · ' + t[1] + '</span></span><span class="go">›</span></a>';
     });
   } else {
@@ -6304,19 +6335,38 @@ function kitSize(b){
    it, Download). What a file is CALLED on screen is built from its tags, never
    from its stored name: the stored name is for the file system. */
 function kitIsVideo(f){ return String(f.mime_type || '').indexOf('video/') === 0; }
+function kitIsAudio(f){ return f.type === 'Audio' || String(f.mime_type || '').indexOf('audio/') === 0; }
+/* Two fighters are "A vs B" only when they are AGAINST each other: a fight, or
+   a subject the bot wrote as a-vs-b. Two people sparring other people in the
+   same room are "A & B". */
 function kitFileTitle(f){
   var who = (f.fighters || []).map(function(x){ return x.name; });
   var what = KIT_KIND[f.kind] || f.kind || 'File';
-  return who.length === 2 ? who[0] + ' vs ' + who[1] + ' · ' + what : who.length === 1 ? who[0] + ' · ' + what : what;
+  var versus = who.length === 2 && (f.match_id || String(f.subject || '').indexOf('-vs-') > -1);
+  /* The tags come back A to Z; a fight is written in CARD order, and the
+     subject the bot wrote is the one place that order survives. */
+  if(versus && f.subject){
+    var slug = function(n){ return String(n).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); };
+    if(String(f.subject).indexOf(slug(who[1]) + '-vs-') === 0) who.reverse();
+  }
+  var names = versus ? who[0] + ' vs ' + who[1] : who.length > 3 ? who.slice(0, 3).join(', ') + ' +' + (who.length - 3) : who.join(' & ');
+  return names ? names + ' · ' + what : what;
+}
+/* Where a file came from: its show, or its shoot. */
+function kitFrom(f){ return f.event_name || (f.shoot_name ? f.shoot_name + ' shoot' : ''); }
+function kitWhen(f){
+  if(f.event_date) return new Date(f.event_date).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', year: 'numeric' });
+  /* A shoot's date is a plain day: read as UTC so it never slips to the day before. */
+  return f.shoot_date ? new Date(f.shoot_date + 'T00:00:00Z').toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' }) : '';
 }
 function kitFileInfo(f){
   var secs = f.duration_ms ? Math.round(f.duration_ms / 1000) : 0;
   var len = secs ? Math.floor(secs / 60) + ':' + ('0' + (secs % 60)).slice(-2) : '';
-  var shape = f.aspect && f.aspect !== 'orig' ? f.aspect.replace('x', ':') : '';
+  var shape = f.aspect && f.aspect !== 'orig' && f.aspect !== 'audio' ? f.aspect.replace('x', ':') : '';
   return [len, kitIsVideo(f) && f.height ? f.height + 'p' : '', shape, kitSize(f.size_bytes)].filter(Boolean).join(' · ');
 }
 function kitFileRow(f){
-  return '<div class="ck-file" data-kit-file="' + esc(f.id) + '"><span class="th ic">' + kitIcon(kitIsVideo(f) ? 'play' : 'img') + '</span>'
+  return '<div class="ck-file" data-kit-file="' + esc(f.id) + '"><span class="th ic">' + kitIcon(kitIsAudio(f) ? 'wave' : kitIsVideo(f) ? 'play' : 'img') + '</span>'
     + '<span class="tt"><b>' + esc(kitFileTitle(f)) + '</b><span>' + esc(kitFileInfo(f)) + '</span></span><span class="go">›</span></div>';
 }
 async function kitLibRows(){
@@ -6353,17 +6403,18 @@ async function kitDownload(btn){
 
 async function renderKitLib(type){
   var body = document.getElementById('sheet-body');
-  body.innerHTML = kitHead('Creator kit', type) + '<div class="skel"></div><div class="skel" style="width:70%"></div>';
-  if(!session){ body.innerHTML = kitHead('Creator kit', type) + '<div class="empty">Sign in to open the library.</div>'; return; }
+  body.innerHTML = kitHead('Creator kit', type, true) + '<div class="skel"></div><div class="skel" style="width:70%"></div>';
+  if(!session){ body.innerHTML = kitHead('Creator kit', type, true) + '<div class="empty">Sign in to open the library.</div>'; return; }
   var all = await kitLibRows();
   if(!sheetStack.length || sheetStack[sheetStack.length - 1].kind !== 'kit-lib-' + type) return;
   if(!all){ retryHandlers['kitlib'] = function(){ renderKitLib(type); };
-    body.innerHTML = kitHead('Creator kit', type) + failHTML("Couldn't load these files.", 'kitlib'); return; }
+    body.innerHTML = kitHead('Creator kit', type, true) + failHTML("Couldn't load these files.", 'kitlib'); return; }
   var rows = all.filter(function(f){ return f.type === type; });
-  if(!rows.length){ body.innerHTML = kitHead('Creator kit', type) + '<div class="empty">Nothing here yet.</div>'; return; }
+  if(!rows.length){ body.innerHTML = kitHead('Creator kit', type, true) + '<div class="empty">Nothing here yet.</div>'; return; }
   var order = [], by = {};
-  rows.forEach(function(f){ var k = f.event_name || 'Other'; if(!by[k]){ by[k] = []; order.push(k); } by[k].push(f); });
-  body.innerHTML = kitHead('Creator kit', type) + order.map(function(k){
+  rows.sort(function(a, b){ return String(b.event_date || b.shoot_date || '').localeCompare(String(a.event_date || a.shoot_date || '')); });
+  rows.forEach(function(f){ var k = kitFrom(f) || 'Other'; if(!by[k]){ by[k] = []; order.push(k); } by[k].push(f); });
+  body.innerHTML = kitHead('Creator kit', type, true) + order.map(function(k){
     return '<div class="lab"><b>' + esc(k) + '</b><i></i><s>' + by[k].length + '</s></div>' + by[k].map(kitFileRow).join('');
   }).join('') + '<div class="ck-note">Free to use in your edits — <a data-hub="kit-rules">the rules</a>.</div>'
     + '<div class="foot">Creator kit</div>';
@@ -6371,38 +6422,40 @@ async function renderKitLib(type){
 
 async function renderKitFile(id){
   var body = document.getElementById('sheet-body');
-  body.innerHTML = kitHead('Creator kit', 'File') + '<div class="skel"></div><div class="skel" style="width:70%"></div>';
-  if(!session){ body.innerHTML = kitHead('Creator kit', 'File') + '<div class="empty">Sign in to open the library.</div>'; return; }
+  body.innerHTML = kitHead('Creator kit', 'File', true) + '<div class="skel"></div><div class="skel" style="width:70%"></div>';
+  if(!session){ body.innerHTML = kitHead('Creator kit', 'File', true) + '<div class="empty">Sign in to open the library.</div>'; return; }
   var all = await kitLibRows();
   var top = sheetStack[sheetStack.length - 1];
   if(!top || top.kind !== 'kit-file' || top.id !== id) return;
   if(!all){ retryHandlers['kitfile'] = function(){ renderKitFile(id); };
-    body.innerHTML = kitHead('Creator kit', 'File') + failHTML("Couldn't load this file.", 'kitfile'); return; }
+    body.innerHTML = kitHead('Creator kit', 'File', true) + failHTML("Couldn't load this file.", 'kitfile'); return; }
   var f = all.filter(function(x){ return x.id === id; })[0];
   /* Not in the window = not for this person, or not released. Never "not yet". */
-  if(!f){ body.innerHTML = kitHead('Creator kit', 'File') + '<div class="empty">That file is not in the library.</div>'; return; }
+  if(!f){ body.innerHTML = kitHead('Creator kit', 'File', true) + '<div class="empty">That file is not in the library.</div>'; return; }
   var faces = (f.fighters || []).map(function(x){
     return '<a data-slug="' + esc(x.slug || '') + '"><span class="f">' + (x.square ? '<img src="' + esc(x.square) + '" alt="" loading="lazy" onerror="this.remove()">' : '')
       + '</span><b>' + esc(x.name || '') + '</b></a>';
   }).join('');
-  var more = all.filter(function(x){ return x.id !== f.id && f.event_id && x.event_id === f.event_id; }).slice(0, 12);
-  var when = f.event_date ? new Date(f.event_date).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', year: 'numeric' }) : '';
-  body.innerHTML = kitHead(f.type || 'Creator kit', kitFileTitle(f))
+  var more = all.filter(function(x){ return x.id !== f.id && ((f.event_id && x.event_id === f.event_id) || (f.shoot_id && x.shoot_id === f.shoot_id)); }).slice(0, 12);
+  var when = kitWhen(f);
+  body.innerHTML = kitHead(f.type || 'Creator kit', kitFileTitle(f), true)
     + '<div class="ck-prev" id="ck-prev"><div class="wait">Loading preview…</div></div>'
-    + '<div class="ck-facts">' + esc([f.event_name, when].filter(Boolean).join(' · ')) + '<br>' + esc(kitFileInfo(f)) + '</div>'
+    + '<div class="ck-facts">' + esc([kitFrom(f), when].filter(Boolean).join(' · ')) + '<br>' + esc(kitFileInfo(f)) + '</div>'
     + '<button class="ck-get" data-kit-get="' + esc(f.id) + '">' + kitIcon('dl') + 'Download</button>'
     + '<div class="ck-note" id="ck-get-note">' + (f.rights && f.rights !== 'vga'
         ? 'Watch and share only — this one carries music or footage we can’t pass on. '
         : 'Free to use in your edits. ') + '<a data-hub="kit-rules">The rules</a>.</div>'
     + (faces ? '<div class="lab"><b>In this</b><i></i></div><div class="ck-faces">' + faces + '</div>' : '')
-    + (more.length ? '<div class="lab"><b>More from ' + esc(f.event_name || 'this show') + '</b><i></i><s>' + more.length + '</s></div>' + more.map(kitFileRow).join('') : '')
+    + (more.length ? '<div class="lab"><b>More from ' + esc(kitFrom(f) || 'this show') + '</b><i></i><s>' + more.length + '</s></div>' + more.map(kitFileRow).join('') : '')
     + '<div class="foot">Creator kit</div>';
   var got = await kitSign(f.id, true);
   var box = document.getElementById('ck-prev');
   top = sheetStack[sheetStack.length - 1];
   if(!box || !top || top.kind !== 'kit-file' || top.id !== id) return;
   if(got.error){ box.innerHTML = '<div class="wait">' + esc(got.error) + '</div>'; return; }
-  box.innerHTML = kitIsVideo(f)
+  box.innerHTML = kitIsAudio(f)
+    ? '<div class="ck-snd">' + kitIcon('wave') + '<audio controls preload="metadata" src="' + esc(got.url) + '"></audio></div>'
+    : kitIsVideo(f)
     ? '<video controls playsinline preload="metadata" src="' + esc(got.url) + '"></video>'
     : '<img src="' + esc(got.url) + '" alt="">';
 }
