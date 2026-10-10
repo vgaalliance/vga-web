@@ -218,10 +218,6 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .szn{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;
   color:#CFC8F0;border:1px solid rgba(255,255,255,.22);border-radius:3px;padding:4px 9px;
   min-width:52px;text-align:center;overflow:hidden}
-.szn span{display:inline-block;transition:transform .34s cubic-bezier(.4,0,.2,1),opacity .34s}
-.szn span.out{transform:translateY(-110%);opacity:0}
-.szn span.in{transform:translateY(110%);opacity:0;transition:none}
-@media (prefers-reduced-motion:reduce){.szn span{transition:none}}
 /* The whole recruiting ask is now this one pill. It routes to You, which is
    where signing in and registering already live — rather than a strip on Home
    repeating a pitch the You tab makes properly. */
@@ -1333,9 +1329,23 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .tape .split .sb{background:linear-gradient(90deg,#7C5CE0,#A78BFA)}
 .tape .pct{display:flex;justify-content:space-between;margin:5px 12px 0;
   font-family:'Space Mono',monospace;font-size:6.5px;letter-spacing:.1em;color:#7E7699}
+.tape .split.none{background:rgba(255,255,255,.06)}
 .tape .pays{display:flex;margin:9px 0 0;border-top:1px solid rgba(255,255,255,.07)}
 .tape .pays .pick{flex:1;min-width:0;padding:11px 8px;text-align:left}
 .tape .pays .pick + .pick{border-left:1px solid rgba(255,255,255,.07);text-align:right}
+/* A BUTTON HAS TO LOOK LIKE ONE. The fill and the underline are the whole
+   difference between a price you read and a price you press. */
+.tape .pays button.pick{appearance:none;-webkit-appearance:none;border:0;width:100%;
+  color:inherit;font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;
+  background:rgba(167,139,250,.10);box-shadow:inset 0 -2px 0 rgba(167,139,250,.55)}
+.tape .pays button.pick:active{background:rgba(167,139,250,.22)}
+.tape .pays button.pick.yours{background:rgba(110,231,183,.10);
+  box-shadow:inset 0 -2px 0 rgba(110,231,183,.6)}
+.tape .pays .pick .v{display:block;font-family:'Space Mono',monospace;font-size:6.5px;
+  font-weight:700;letter-spacing:.17em;text-transform:uppercase;color:#C3A6FF;margin-bottom:5px}
+.tape .pays .pick.yours .v{color:#6EE7B7}
+/* Nobody has bet yet, so there is no figure to set in tabular numerals. */
+.tape .pays .pick.fresh b{font-size:12.5px;letter-spacing:.02em;color:#C8C2E0}
 /* A PRICE IS NOT A SIDE. Both prices used to be mint, which made mint mean
    two things at once on the same card — "this is a price" and "this is yours"
    — and the second meaning is the one that has to survive a card where every
@@ -1960,7 +1970,6 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .wm .t1.fx.on{opacity:1;transition:none}
 .wmband{position:absolute;z-index:5;touch-action:none;pointer-events:auto;left:0;top:0;width:0;height:0}
 .wm .signin{position:absolute;right:16px;top:10px;z-index:9}
-.wm .szn{position:absolute;right:16px;top:10px}
 
 /* ── THE WORLD ─────────────────────────────────────────────────────── */
 .world{position:relative;height:340px;margin:0 0 -36px;overflow:hidden;z-index:3;pointer-events:none}   /* the 14px the top gained comes out here, so the board does not move */   /* above the wordmark; only the grab and the flags take touches, so Sign in stays tappable under the frame */
@@ -3344,7 +3353,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
       <text class="t1"><textPath href="#wmarc" startOffset="50%" text-anchor="middle">VGA <tspan class="e">ESPORTS</tspan></textPath></text>
       <text class="t1 fx"><textPath href="#wmarc" startOffset="50%" text-anchor="middle">VGA ESPORTS</textPath></text></svg>
     <button class="signin" id="home-signin" data-goto="you">Sign in</button>
-    <div class="szn" id="home-szn" hidden><span id="szn-txt">UBA</span></div></div>
+    </div>
   <!-- THE WORLD. Canvas: the sphere, land, grid, the dots (one per country,
        sized by how many fighters are there) and the arcs (one per bout on the
        next card, corner to corner). SVG: the feed arc under it. The flags are
@@ -4545,33 +4554,15 @@ document.addEventListener('click', function(e){
      - not signed in, or signed in and not a fighter  -> come and fight
      - a fighter with a bout coming                   -> that bout
      - a fighter with nothing booked                  -> get on the next card */
-/* Signed out shows the Sign in pill; signed in shows the season chip back. */
-/* The chip turns UBA -> GFL -> UBA, slow enough to read and to ignore. */
-var sznAt = 0, sznTimer = null;
-var SZN = ['UBA','GFL'];
-function startSznRotate(){
-  clearInterval(sznTimer);
-  var el = document.getElementById('szn-txt');
-  if(!el) return;
-  sznTimer = setInterval(function(){
-    if(!document.body.contains(el)) return;
-    el.classList.add('out');
-    setTimeout(function(){
-      sznAt = (sznAt + 1) % SZN.length;
-      el.textContent = SZN[sznAt];
-      el.classList.remove('out'); el.classList.add('in');
-      requestAnimationFrame(function(){ el.classList.remove('in'); });
-    }, 340);
-  }, 4200);
-}
-
+/* Signed out shows the Sign in pill; signed in, the corner is left alone.
+   A chip here used to turn UBA -> GFL -> UBA every 4.2 seconds. It was
+   decoration: it sat 250px above the REAL league control on the rankings
+   board (`rankLeague`) and disagreed with it half the time, and a moving
+   word in the corner pulled the eye off the globe. */
 function renderHomeHeader(){
   var pill = document.getElementById('home-signin');
-  var szn  = document.getElementById('home-szn');
-  if(!pill || !szn) return;
+  if(!pill) return;
   pill.hidden = !!me;
-  szn.hidden  = !me;
-  if(!szn.hidden) startSznRotate(); else clearInterval(sznTimer);
 }
 
 function renderJoinSlot(){
@@ -10247,13 +10238,26 @@ function boardHTML(r, billing){
 
   /* The price cell and the pick control are one object. `data-name` carries
      the label the stake row's button needs \u2014 reading it off textContent would
-     pick up the price and the caption too. */
+     pick up the price and the caption too.
+
+     THE VERB IS THE POINT. This rendered as a bare figure with a PAYS NOW
+     caption, which is the shape of a readout, so a ten-bout page said nothing
+     anywhere about being able to press it. `Back` rides above the price, and
+     the button carries a fill and an underline so the eye reads a control.
+
+     A market nobody has bet on has no price to show \u2014 pays() returns an
+     em dash for both sides, and two dashes over a flat 50/50 bar is what a
+     half-loaded page looks like. It says `Be first` instead, which is true
+     and is also the thing we want somebody to do. */
   function cell(side, name, total, amt){
-    var cls = 'pick' + (amt ? ' yours' : '');
-    var inner = '<b>'+pays(total)+'</b><s>'+(amt ? 'Yours \u00b7 pays now' : 'Pays now')+'</s>';
+    var cls = 'pick' + (amt ? ' yours' : '') + (tot ? '' : ' fresh');
+    var inner = tot
+      ? '<b>'+pays(total)+'</b><s>'+(amt ? 'Yours \u00b7 pays now' : 'Pays now')+'</s>'
+      : '<b>Be first</b><s>no bets yet</s>';
     if(!me) return '<span class="'+cls+'">'+inner+'</span>';
     return '<button class="'+cls+'" data-bet="'+esc(r.match_id)+'" data-side="'+side+'" '
-      + 'data-name="'+esc(name || side.toUpperCase())+'">'+inner+'</button>';
+      + 'data-name="'+esc(name || side.toUpperCase())+'">'
+      + '<span class="v">Back</span>' + inner + '</button>';
   }
   function stakeline(amt, name, total){
     if(!amt) return '';
@@ -10272,10 +10276,13 @@ function boardHTML(r, billing){
       + (recA ? '<div class="rec">'+esc(recA)+'</div>' : '') + '</div>'
       + '<div class="rt"><div class="nm'+(onB ? ' backed' : '')+'">'+esc(r.side_b || 'B')+'</div>'
       + (recB ? '<div class="rec">'+esc(recB)+'</div>' : '') + '</div></div>'
-    + '<div class="split"><i class="sa" style="width:'+pa+'%"></i>'
-      + '<i class="sb" style="width:'+pb+'%"></i></div>'
-    + '<div class="pct"><span>'+pa+'% \u00b7 '+a.toLocaleString()+'</span>'
-      + '<span>'+b.toLocaleString()+' \u00b7 '+pb+'%</span></div>'
+    /* An empty pool is ONE empty track, never a 50/50 split: a bar cut down
+       the middle is a claim about where the money is, and there is no money. */
+    + (tot ? '<div class="split"><i class="sa" style="width:'+pa+'%"></i>'
+               + '<i class="sb" style="width:'+pb+'%"></i></div>'
+           + '<div class="pct"><span>'+pa+'% \u00b7 '+a.toLocaleString()+'</span>'
+               + '<span>'+b.toLocaleString()+' \u00b7 '+pb+'%</span></div>'
+           : '<div class="split none"></div>')
     + '<div class="pays">'+cell('a', r.side_a, a, onA)+cell('b', r.side_b, b, onB)+'</div>'
     + (me ? '<div class="stake" id="stake-'+esc(r.match_id)+'" hidden></div>'
           : '<div class="picks off">Sign in on the You tab to bet</div>')
