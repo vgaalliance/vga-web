@@ -926,6 +926,18 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .bout3.open .more2 i{transform:rotate(180deg)}
 @media (prefers-reduced-motion:reduce){.tape2{transition:none}.more2 i{transition:none}}
 
+/* THE MAIN EVENT, one scale up. Nothing is redrawn — the same card with the
+   dial turned, which is how bout 1 outweighs bout 7 without a second design. */
+.bout3.me3 .wc4 em{font-style:normal;color:#F5C842;letter-spacing:.16em}
+.bout3.me3 .pw2{height:152px}
+.bout3.me3 .vsx2{font-size:20px;padding-bottom:46px}
+.bout3.me3 .tr2.nm2 b{font-size:23px}
+.bout3.me3 .tr2 b{font-size:21px}
+.bout3.me3 .tr2 b.wd2{font-size:16px}
+.bout3.me3 .tr2{padding-top:8px;padding-bottom:8px}
+.bout3.me3 .rfig{height:100%}
+@media (max-width:360px){ .bout3.me3 .pw2{height:132px} .bout3.me3 .tr2 b{font-size:19px} }
+
 .allev{display:block;width:100%;margin:9px 0 0;text-align:center;border:1px solid rgba(255,255,255,.2);
   border-radius:7px;padding:10px 0;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;
   letter-spacing:.15em;text-transform:uppercase;color:#C3A6FF}
@@ -2890,9 +2902,14 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .sheet .meta dd{font-weight:600}
 /* the tail of a fighter's page: tape, next, the media rail, and his world */
 .ftape{display:grid;grid-template-columns:1fr 1fr;margin:0;padding:0 18px 4px}
-.ftape div{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.ftape div{padding:9px 0;border-bottom:1px solid rgba(255,255,255,.07)}
 .ftape div:nth-child(odd){padding-right:14px}.ftape div:nth-child(even){padding-left:14px}
-.ftape dt{font-size:13px;color:#9C94BE}.ftape dd{margin:0;font-weight:600;font-size:15px}
+.ftape dt{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:11px;
+  letter-spacing:.1em;text-transform:uppercase;color:#8E86B0;margin-bottom:3px}
+.ftape dd{margin:0;font-family:'Anton',sans-serif;font-size:19px;line-height:1;
+  font-variant-numeric:tabular-nums}
+.ftape dd em{font-style:normal;font-family:'Barlow Condensed',sans-serif;font-weight:600;
+  font-size:11px;color:#8E86B0;margin-left:.5px;margin-right:2px}
 .fnext{display:flex;align-items:center;gap:13px;min-height:60px;margin:0 18px;padding:10px 14px;
   background:#1B1740;border:1px solid rgba(245,200,66,.28);border-radius:12px}
 .fnext .bar{width:5px;align-self:stretch;border-radius:3px;background:#F5C842;flex:none}
@@ -6882,15 +6899,33 @@ async function renderFighter(slug){
    the page never showed. A missing measurement prints nothing rather than a
    dash: half the roster has no height on file and four dashes reads as broken.
    Height is stored in inches. */
-function tapeHTML(f){
+/* THE TAPE — not "tale of the tape", which is a comparison between two
+   fighters and promises a face-off this section cannot deliver. The real one
+   lives under a bout on the event page (tapeRows). This is a spec sheet for
+   one person and is now named like one.
+   The value sits UNDER its own label, not beside it: the pairs used to read
+   `Height  5'10"  Reach  70"` across the row, so the big number was nearer the
+   label it did not belong to and the eye had to back up on every pair.
+   Gym is gone — free text on 159 of 660 — and KO rate and debut take its
+   place, both derived from what the page has already loaded. */
+function tapeHTML(f, done){
   var rows = [];
-  if(f.height) rows.push(['Height', Math.floor(f.height / 12) + '\u2032' + (f.height % 12) + '\u2033']);
-  if(f.reach)  rows.push(['Reach', f.reach + '\u2033']);
-  if(f.stance) rows.push(['Stance', f.stance.charAt(0).toUpperCase() + f.stance.slice(1)]);
-  if(f.gym)    rows.push(['Gym', f.gym]);
+  if(f.height) rows.push(['Height', Math.floor(f.height / 12) + '<em>\u2032</em>'
+                                  + (f.height % 12) + '<em>\u2033</em>']);
+  if(f.reach)  rows.push(['Reach', Math.round(f.reach) + '<em>\u2033</em>']);
+  if(f.stance) rows.push(['Stance', esc(f.stance.charAt(0).toUpperCase() + f.stance.slice(1))]);
+  var W = Number(f.headline_wins || 0), KO = Number(f.headline_ko_wins || 0);
+  if(W) rows.push(['KO rate', Math.round(KO / W * 100) + '<em>%</em>']);
+  var first = (done && done.length) ? done[done.length - 1] : null;
+  if(first && first.event_date){
+    var d = new Date(first.event_date);
+    if(isFinite(d)) rows.push(['Debut', d.toLocaleDateString('en-US',
+      { month: 'short', year: 'numeric' })]);
+  }
   if(!rows.length) return '';
-  return '<div class="lab"><b>Tale of the tape</b><i></i></div><dl class="ftape">'
-    + rows.map(function(r){ return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(String(r[1])) + '</dd></div>'; }).join('')
+  return '<div class="lab"><b>The Tape</b><i></i></div><dl class="ftape">'
+    + rows.map(function(r){
+        return '<div><dt>' + esc(r[0]) + '</dt><dd>' + r[1] + '</dd></div>'; }).join('')
     + '</dl>';
 }
 
@@ -7285,9 +7320,15 @@ async function loadCard(e){
   // the row it pushes down is the rest of the card. The chevron plus the
   // words "Tale of the tape" are the affordance; they do not need a
   // demonstration.
+  /* THE MAIN EVENT IS THE FIRST BOUT OF THE FIRST SEGMENT. `bout_number` is
+     card order read top down and segment outranks it — the same rule
+     card-format.js uses, reused rather than invented a second time. It gets
+     the design one scale up; it is not a different card. */
+  var topSeg = keys[0];
   el.innerHTML = keys.map(function(k){
     return '<div class="seg">'+esc(SEGS[k] || k.replace(/_/g,' '))+'</div>'
-      + groups[k].map(function(b){
+      + groups[k].map(function(b, bi){
+          var isMain = (k === topSeg && bi === 0);
           var mine = myFighter && (b.fighter_a_slug === myFighter.fighter_slug
                                 || b.fighter_b_slug === myFighter.fighter_slug);
           var done = b.status === 'completed' && b.winner_corner;
@@ -7296,9 +7337,10 @@ async function loadCard(e){
              reason you opened the bout, so the chevron hides it rather than
              revealing it. The record line that used to sit under the names is
              gone — the tape's own Record row already says it. */
-          return '<div class="bout3 open'+(mine?' you':'')+'" data-bout>'
+          return '<div class="bout3 open'+(isMain?' me3':'')+(mine?' you':'')+'" data-bout>'
             + (mine ? '<span class="youtag">Your bout</span>' : '')
             + '<div class="wc4">'
+            + (isMain ? '<em>Main event</em> \u00b7 ' : '')
             + esc(b.is_title_fight ? (b.title_name || 'Title fight')
                                    : (wc(b.weight_class) || 'Catch weight')) + '</div>'
             /* A bout with a recap shows it in the fighters' slot; the tape
@@ -8370,7 +8412,7 @@ async function loadFighterPage(slug){
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(mpFitName);
   var got = await Promise.all([
     q("fighter_cards?select=id,display_name,slug,weight_class,headline_wins,headline_losses,headline_draws,"
-      + "rank,is_champion,nickname,country,region,gym,height,reach,stance,profile_photo_url"
+      + "rank,is_champion,nickname,country,region,gym,height,reach,stance,headline_ko_wins,profile_photo_url"
       + "&slug=eq." + encodeURIComponent(slug) + "&limit=1"),
   ]);
   if(!root.isConnected) return;
@@ -8432,7 +8474,7 @@ function mpProfileHTML(f, done, soon){
     : '<div><s>Fights</s><b>0</b></div>';
   var html = '<div class="mp-big"><div><s>Record</s><b>' + W + '-' + L + (D ? '-' + D : '') + '</b></div>'
     + mid + third + '</div>'
-    + tapeHTML(f);
+    + tapeHTML(f, done);
   if(soon){
     html += '<div class="lab"><b>Next</b><i></i></div>'
       + '<div class="fnext"' + (soon.opponent_slug ? ' data-slug="' + esc(soon.opponent_slug) + '"' : '') + '>'
