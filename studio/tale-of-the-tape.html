@@ -50,7 +50,7 @@ let CONFIG = {
      degrade, never blank the graphic. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Barlow:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Barlow:wght@500;600;700;800&family=Bebas+Neue&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;}
 html,body{width:1920px;height:1080px;overflow:hidden;background:transparent;font-family:'Barlow Condensed',Arial,sans-serif;}
@@ -678,7 +678,16 @@ function stageFighterImages(leftPath, rightPath) {
 function photosSettled() {
   return Promise.race([_photosReady, new Promise(r => setTimeout(r, PHOTO_WAIT_MS))]);
 }
-async function showTape() { await photosSettled(); playTape(); }
+// {intro:true} plays the matchup intro first and hands off to playTape when it
+// zooms through. Only a deliberate Show from the deck asks for it: the restore
+// after an OBS source reload must put the tape straight back, not replay eight
+// seconds of intro over a graphic that was already on air.
+async function showTape(opts) {
+  await photosSettled();
+  if (opts && opts.intro && window.__playIntro) { window.__playIntro(playTape); return; }
+  if (window.__cancelIntro) window.__cancelIntro();
+  playTape();
+}
 const slugPhoto = slug => slug ? ASSETS+'fighters/'+String(slug).toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.png' : '';
 applyFighterImage('imgBoxLeft', '');    // silhouette until a bout is fired
 applyFighterImage('imgBoxRight', '');
@@ -798,6 +807,9 @@ function playTape(){
 // the first row wherever it actually sits, and the card's height changes with
 // every collapsed row.
 function hideTape(){
+  // Hide pressed mid-intro has to stop the intro too, or it finishes and puts
+  // the tape on air after the operator took it off.
+  if (window.__cancelIntro) window.__cancelIntro();
   tapeTimers.forEach(clearTimeout); tapeTimers.length = 0;
   clearTimeout(autoHideTimer); autoHideTimer = null;
   tapeShown = false;
@@ -1659,6 +1671,350 @@ editOverlay.addEventListener('click', (e) => {
 </script>
 
 
+<!-- ============================================================
+     MATCHUP INTRO — plays BEFORE the tape when the deck asks for it.
+     Mark → fighter A on a light ground → VS → fighter B on a dark ground →
+     both names locked up → the camera pushes through the lock-up and the tape
+     plays behind it as normal.
+
+     It is the one OPAQUE thing in this file: the tape sits over whatever scene
+     is behind it in OBS, the intro covers the frame, and the push at the end is
+     what hands the frame back. It has no data of its own -- fill() reads the
+     names, records and photos the tape has already been given, so the intro
+     and the tape can never introduce two different matchups.
+============================================================= -->
+<style>
+  #intro{position:fixed; top:0; left:0; width:1920px; height:1080px; z-index:200; display:none;
+    overflow:hidden; pointer-events:none; --iv-hot:hsl(276,100%,72%); --iv-deep:hsl(272,82%,50%);
+    --iv-ink:#17102a;}
+  #introCam{position:absolute; inset:0; transform-origin:50% 50%; will-change:transform,opacity;}
+  .iv{position:absolute; inset:0; overflow:hidden; visibility:hidden;}
+  .iv.on{visibility:visible;}
+  .iv-bebas{font-family:'Bebas Neue','Barlow Condensed',Arial,sans-serif; font-weight:400;}
+
+  /* Mid-bright on purpose. A near-black ground here would sit a black intro in
+     front of an already dark stage and the fighters would have no edge. */
+  .iv-dark{color:#fff; background:
+    repeating-linear-gradient(118deg, hsla(276,90%,80%,0.03) 0 2px, transparent 2px 10px),
+    radial-gradient(ellipse 60% 75% at 68% 46%, hsla(276,92%,58%,0.55), transparent 72%),
+    linear-gradient(118deg,#33196a 0%,#24124c 52%,#1a0d38 100%);}
+  .iv-light{color:var(--iv-ink); background:
+    repeating-linear-gradient(118deg, rgba(60,30,110,0.045) 0 2px, transparent 2px 10px),
+    radial-gradient(ellipse 60% 80% at 26% 42%, #ffffff, transparent 72%),
+    linear-gradient(118deg,#f4f2fa 0%,#e1dcee 100%);}
+
+  /* THE WIPE. A new scene draws itself over the old one behind a slanted edge;
+     the old one is switched off underneath once it is covered. */
+  .iv.on.iv-fromL{animation:ivWipeL .5s cubic-bezier(.7,0,.2,1) both;}
+  .iv.on.iv-fromR{animation:ivWipeR .5s cubic-bezier(.7,0,.2,1) both;}
+  .iv.on.iv-fade {animation:ivFade .28s ease both;}
+  @keyframes ivWipeL{from{clip-path:polygon(0 0, 0 0, -12% 100%, 0 100%);}
+                     to  {clip-path:polygon(0 0, 112% 0, 100% 100%, 0 100%);}}
+  @keyframes ivWipeR{from{clip-path:polygon(100% 0, 100% 0, 112% 100%, 100% 100%);}
+                     to  {clip-path:polygon(100% 0, -12% 0, 0 100%, 100% 100%);}}
+  @keyframes ivFade{from{opacity:0;} to{opacity:1;}}
+  /* the hot band that rides the wipe's leading edge and leaves with it */
+  .iv-band{position:absolute; top:-10%; bottom:-10%; width:190px; background:var(--iv-hot);
+    transform:skewX(-12.5deg); opacity:0; z-index:9;}
+  .iv.on.iv-fromL .iv-band{animation:ivBandL .62s cubic-bezier(.7,0,.2,1) both;}
+  .iv.on.iv-fromR .iv-band{animation:ivBandR .62s cubic-bezier(.7,0,.2,1) both;}
+  @keyframes ivBandL{0%{left:-14%; opacity:1;} 80%{opacity:1;} 100%{left:108%; opacity:1;}}
+  @keyframes ivBandR{0%{left:104%; opacity:1;} 80%{opacity:1;} 100%{left:-18%; opacity:1;}}
+
+  /* corner furniture, the same on every scene so the eye stops reading it */
+  .iv-tl,.iv-bl,.iv-br{position:absolute; font-size:20px; font-weight:700; letter-spacing:4px; text-transform:uppercase; opacity:.72;}
+  .iv-tl{top:48px; left:60px;} .iv-bl{bottom:42px; left:60px;} .iv-br{bottom:42px; right:60px;}
+  .iv-tr{position:absolute; top:38px; right:58px; border:3px solid currentColor; padding:1px 11px 0;
+    font-size:38px; letter-spacing:2px; line-height:1.08;}
+  .iv-light .iv-tl,.iv-light .iv-bl,.iv-light .iv-br{opacity:.62;}
+
+  /* ── STING ── */
+  #ivSting .iv-line{position:absolute; left:8%; right:8%; top:50%; height:2px; margin-top:-1px;
+    background:linear-gradient(90deg, transparent, #fff 30%, #fff 70%, transparent); transform:scaleX(0);}
+  #ivSting.on .iv-line{animation:ivLine .9s cubic-bezier(.3,0,.2,1) both;}
+  @keyframes ivLine{0%{transform:scaleX(0); opacity:1;} 45%{transform:scaleX(1); opacity:1;} 100%{transform:scaleX(1); opacity:0;}}
+  #ivSting .iv-stack{position:absolute; left:0; right:0; top:50%; transform:translateY(-50%);
+    display:flex; flex-direction:column; align-items:center; gap:22px;}
+  #ivSting .iv-markbox{border:8px solid #fff; padding:6px 34px 0; font-size:190px; line-height:1; letter-spacing:6px; opacity:0;
+    box-shadow:0 0 70px hsla(276,100%,70%,.55), inset 0 0 40px hsla(276,100%,70%,.25);}
+  #ivSting.on .iv-markbox{animation:ivPop .5s cubic-bezier(.16,.7,.25,1) .32s both;}
+  @keyframes ivPop{from{opacity:0; transform:scale(1.22);} to{opacity:1; transform:scale(1);}}
+  .iv-chip{display:inline-block; background:var(--iv-hot); color:var(--iv-ink); font-weight:800; text-transform:uppercase;
+    font-size:30px; letter-spacing:3px; padding:5px 18px 4px; white-space:nowrap;}
+  .iv-chip.white{background:#fff;}
+  #ivSting .iv-chip, #ivSting .iv-sub{opacity:0;}
+  #ivSting.on .iv-chip{animation:ivUp .4s ease-out .58s both;}
+  #ivSting .iv-sub{font-size:22px; font-weight:600; letter-spacing:6px; text-transform:uppercase; color:hsla(276,40%,92%,.8);}
+  #ivSting.on .iv-sub{animation:ivUp .4s ease-out .7s both;}
+  @keyframes ivUp{from{opacity:0; transform:translateY(14px);} to{opacity:1; transform:none;}}
+
+  /* ── ONE FIGHTER ── photo on one side, the name owns the other */
+  .iv-pic{position:absolute; bottom:0; background-size:contain; background-position:bottom center; background-repeat:no-repeat;}
+  /* The silhouette is solid black on transparent: fine on the light ground,
+     invisible on the dark one, so it is lifted to a pale shape there. */
+  .iv-dark .iv-pic.sil{filter:invert(1) opacity(.2);}
+  .iv-light .iv-pic.sil{opacity:.85;}
+  .iv-solo .iv-drift{position:absolute; inset:0;}
+  .iv-solo.on .iv-drift{animation:ivDrift 3.2s linear both;}
+  @keyframes ivDrift{from{transform:scale(1);} to{transform:scale(1.045);}}
+  .iv-solo .iv-pic{width:900px; height:1096px; opacity:0;}
+  #ivA .iv-pic{left:10px; transform-origin:30% 100%;}
+  #ivB .iv-pic{right:10px; transform-origin:70% 100%;}
+  #ivA.on .iv-pic{animation:ivPicL .85s cubic-bezier(.16,.6,.25,1) .16s both;}
+  #ivB.on .iv-pic{animation:ivPicR .85s cubic-bezier(.16,.6,.25,1) .16s both;}
+  @keyframes ivPicL{from{opacity:0; transform:translateX(-90px) scale(1.07);} to{opacity:1; transform:none;}}
+  @keyframes ivPicR{from{opacity:0; transform:translateX(90px) scale(1.07);} to{opacity:1; transform:none;}}
+  .iv-id{position:absolute; top:50%; width:950px; transform:translateY(-52%);}
+  #ivA .iv-id{left:880px;} #ivB .iv-id{left:96px;}
+  .iv-small{font-size:30px; font-weight:800; letter-spacing:6px; text-transform:uppercase; margin:0 0 6px 34px; opacity:0;}
+  .iv-nameRow{display:flex; align-items:stretch;}
+  .iv-bar{flex:0 0 12px; background:var(--iv-deep); margin:10px 22px 26px 0; transform:scaleY(0);}
+  .iv-dark .iv-bar{background:var(--iv-hot);}
+  .iv-name{white-space:nowrap; line-height:.88; letter-spacing:1px; font-size:260px; padding-top:.06em;}
+  .iv-solo .iv-name{clip-path:inset(0 100% 0 0);}
+  .iv-solo.on .iv-bar{animation:ivBar .34s cubic-bezier(.3,0,.2,1) .3s both;}
+  .iv-solo.on .iv-name{animation:ivName .6s cubic-bezier(.2,.7,.2,1) .4s both;}
+  .iv-solo.on .iv-small{animation:ivUp .4s ease-out .62s both;}
+  @keyframes ivBar{from{transform:scaleY(0);} to{transform:scaleY(1);}}
+  @keyframes ivName{from{clip-path:inset(0 100% 0 0); transform:translateX(-26px);} to{clip-path:inset(0 0 0 0); transform:none;}}
+  .iv-stats{display:flex; gap:46px; margin:4px 0 0 34px;}
+  .iv-stat{opacity:0;}
+  .iv-solo.on .iv-stat{animation:ivUp .4s ease-out both;}
+  .iv-stat b{display:block; font-size:66px; font-weight:800; line-height:1;}
+  .iv-stat i{display:block; font-style:normal; font-size:17px; font-weight:700; letter-spacing:3.5px; text-transform:uppercase; opacity:.62; margin-top:4px;}
+  .iv-dark .iv-stat.hot b{color:var(--iv-hot);} .iv-light .iv-stat.hot b{color:var(--iv-deep);}
+
+  /* ── VS ── */
+  #ivVs .iv-row{position:absolute; left:0; right:0; top:50%; transform:translateY(-54%);
+    display:flex; align-items:center; justify-content:center; gap:120px;}
+  .iv-chev{width:170px; height:330px; background:var(--iv-hot); opacity:0;
+    clip-path:polygon(0 0, 40% 0, 100% 50%, 40% 100%, 0 100%, 60% 50%);
+    filter:drop-shadow(0 0 30px hsla(276,100%,70%,.6));}
+  .iv-chev.r{transform:scaleX(-1);}
+  #ivVs .iv-vs{font-size:330px; line-height:.86; letter-spacing:4px; padding-top:.06em; opacity:0;}
+  #ivVs .iv-chipRow{position:absolute; left:0; right:0; top:742px; text-align:center; opacity:0;}
+  #ivVs.on .iv-chev.l{animation:ivChevL .45s cubic-bezier(.16,.7,.25,1) .18s both;}
+  #ivVs.on .iv-chev.r{animation:ivChevR .45s cubic-bezier(.16,.7,.25,1) .18s both;}
+  #ivVs.on .iv-vs{animation:ivPop .4s cubic-bezier(.16,.7,.25,1) .26s both;}
+  #ivVs.on .iv-chipRow{animation:ivUp .35s ease-out .42s both;}
+  @keyframes ivChevL{from{opacity:0; transform:translateX(-260px);} to{opacity:1; transform:none;}}
+  @keyframes ivChevR{from{opacity:0; transform:translateX(260px) scaleX(-1);} to{opacity:1; transform:scaleX(-1);}}
+  /* the way out: VS comes at the camera, the chevrons part */
+  #ivVs.on.out .iv-vs{animation:ivVsOut .42s cubic-bezier(.6,0,.9,.4) both;}
+  #ivVs.on.out .iv-chev.l{animation:ivChevLOut .42s cubic-bezier(.6,0,.9,.4) both;}
+  #ivVs.on.out .iv-chev.r{animation:ivChevROut .42s cubic-bezier(.6,0,.9,.4) both;}
+  #ivVs.on.out .iv-chipRow{animation:none; opacity:0;}
+  @keyframes ivVsOut{from{opacity:1; transform:scale(1);} to{opacity:.0; transform:scale(7);}}
+  @keyframes ivChevLOut{from{opacity:1; transform:none;} to{opacity:0; transform:translateX(-700px);}}
+  @keyframes ivChevROut{from{opacity:1; transform:scaleX(-1);} to{opacity:0; transform:translateX(700px) scaleX(-1);}}
+
+  /* ── LOCK-UP ── light over dark, a fighter on each wing, the names on the seam */
+  #ivLock .iv-top{position:absolute; left:0; right:0; top:0; height:540px;}
+  #ivLock .iv-bot{position:absolute; left:0; right:0; top:540px; height:540px;}
+  #ivLock .iv-pic{width:720px; height:1030px; opacity:0;}
+  #ivLock .iv-pic.a{left:-40px;} #ivLock .iv-pic.b{right:-40px;}
+  #ivLock.on .iv-pic.a{animation:ivPicL .8s cubic-bezier(.16,.6,.25,1) .28s both;}
+  #ivLock.on .iv-pic.b{animation:ivPicR .8s cubic-bezier(.16,.6,.25,1) .28s both;}
+  #ivLock .iv-mid{position:absolute; left:460px; width:1000px; text-align:center; z-index:4;}
+  #ivLock .iv-mid.a{bottom:540px; color:var(--iv-ink); padding-bottom:26px;}
+  #ivLock .iv-mid.b{top:540px; color:#fff; padding-top:30px;}
+  #ivLock .iv-name{display:inline-block; font-size:200px; opacity:0;}
+  #ivLock .iv-rec{font-size:30px; font-weight:800; letter-spacing:7px; text-transform:uppercase; opacity:0;}
+  #ivLock .iv-mid.a .iv-rec{margin-bottom:2px; color:var(--iv-deep);} #ivLock .iv-mid.b .iv-rec{margin-top:6px; color:var(--iv-hot);}
+  #ivLock.on .iv-mid.a .iv-name{animation:ivNmL .55s cubic-bezier(.16,.7,.25,1) .34s both;}
+  #ivLock.on .iv-mid.b .iv-name{animation:ivNmR .55s cubic-bezier(.16,.7,.25,1) .42s both;}
+  #ivLock.on .iv-rec{animation:ivUp .4s ease-out .72s both;}
+  @keyframes ivNmL{from{opacity:0; transform:translateX(-140px);} to{opacity:1; transform:none;}}
+  @keyframes ivNmR{from{opacity:0; transform:translateX(140px);} to{opacity:1; transform:none;}}
+  #ivLock .iv-seam{position:absolute; left:50%; top:540px; transform:translate(-50%,-50%); z-index:5;
+    background:var(--iv-hot); color:var(--iv-ink); font-size:46px; letter-spacing:4px; line-height:1; padding:7px 20px 2px; opacity:0;}
+  #ivLock.on .iv-seam{animation:ivSeam .35s cubic-bezier(.16,.7,.25,1) .6s both;}
+  @keyframes ivSeam{from{opacity:0; transform:translate(-50%,-50%) scale(1.6);} to{opacity:1; transform:translate(-50%,-50%) scale(1);}}
+  #ivLock .iv-chips{position:absolute; left:0; right:0; bottom:44px; display:flex; justify-content:center; gap:12px; z-index:5; opacity:0;}
+  #ivLock .iv-chips .iv-chip{font-size:24px; padding:4px 14px 3px;}
+  #ivLock.on .iv-chips{animation:ivUp .4s ease-out .85s both;}
+</style>
+
+<div id="intro">
+ <div id="introCam">
+
+  <div class="iv iv-dark iv-fade" id="ivSting">
+    <div class="iv-line"></div>
+    <div class="iv-stack">
+      <div class="iv-markbox iv-bebas" data-iv="league"></div>
+      <div class="iv-chip" data-iv="sub"></div>
+      <div class="iv-sub" data-iv="title"></div>
+    </div>
+  </div>
+
+  <div class="iv iv-light iv-solo iv-fromL" id="ivA">
+    <div class="iv-drift"><div class="iv-pic" data-pic="Left"></div></div>
+    <div class="iv-id">
+      <div class="iv-small" data-iv="countryA"></div>
+      <div class="iv-nameRow"><i class="iv-bar"></i><div class="iv-name iv-bebas" data-iv="nameA" data-max="260" data-room="880"></div></div>
+      <div class="iv-stats" data-stats="Left"></div>
+    </div>
+    <div class="iv-tl" data-iv="title"></div><div class="iv-tr iv-bebas" data-iv="league"></div>
+    <div class="iv-br" data-iv="sub"></div>
+    <div class="iv-band"></div>
+  </div>
+
+  <div class="iv iv-dark iv-fromL" id="ivVs">
+    <div class="iv-row">
+      <div class="iv-chev l"></div><div class="iv-vs iv-bebas">VS</div><div class="iv-chev r"></div>
+    </div>
+    <div class="iv-chipRow"><span class="iv-chip" data-iv="title"></span></div>
+    <div class="iv-band"></div>
+  </div>
+
+  <div class="iv iv-dark iv-solo iv-fromR" id="ivB">
+    <div class="iv-drift"><div class="iv-pic" data-pic="Right"></div></div>
+    <div class="iv-id">
+      <div class="iv-small" data-iv="countryB"></div>
+      <div class="iv-nameRow"><i class="iv-bar"></i><div class="iv-name iv-bebas" data-iv="nameB" data-max="260" data-room="880"></div></div>
+      <div class="iv-stats" data-stats="Right"></div>
+    </div>
+    <div class="iv-tl" data-iv="title"></div><div class="iv-tr iv-bebas" data-iv="league"></div>
+    <div class="iv-bl" data-iv="sub"></div>
+    <div class="iv-band"></div>
+  </div>
+
+  <div class="iv iv-fromL" id="ivLock">
+    <div class="iv-top iv-light"></div><div class="iv-bot iv-dark"></div>
+    <div class="iv-light" style="background:none;"><div class="iv-pic a" data-pic="Left"></div></div>
+    <div class="iv-dark" style="background:none;"><div class="iv-pic b" data-pic="Right"></div></div>
+    <div class="iv-mid a">
+      <div class="iv-rec" data-iv="lineA"></div>
+      <div class="iv-name iv-bebas" data-iv="nameA" data-max="200" data-room="900"></div>
+    </div>
+    <div class="iv-seam iv-bebas">VS</div>
+    <div class="iv-mid b">
+      <div class="iv-name iv-bebas" data-iv="nameB" data-max="200" data-room="900"></div>
+      <div class="iv-rec" data-iv="lineB"></div>
+    </div>
+    <div class="iv-chips"><span class="iv-chip" data-iv="league"></span><span class="iv-chip white" data-iv="sub"></span><span class="iv-chip white" data-iv="title"></span></div>
+    <div class="iv-band"></div>
+  </div>
+
+ </div>
+</div>
+
+<script>
+(function(){
+  const root = document.getElementById('intro'), cam = document.getElementById('introCam');
+  if(!root || !cam) return;
+  const timers = [];
+  const at = (ms, fn) => timers.push(setTimeout(fn, ms));
+  const blank = v => { const t = String(v ?? '').trim(); return t==='' || t==='—' || t==='-' || t==='TBA' };
+  const txt = id => { const e = document.getElementById(id); return e ? e.textContent.trim() : '' };
+  let z = 1;
+
+  // When each beat starts, in ms. One list, so the pacing is tuned in one place.
+  const T = { a:1150, vs:3250, vsOut:4050, b:4200, lock:6300, push:8300 };
+
+  // Read off the tape, never from a payload of its own: whatever the tape is
+  // about to show is what the intro announces, including a matchup typed into
+  // the edit panel that no deck ever sent.
+  function fill(){
+    const side = S => {
+      const flagOn = (document.getElementById('flagRow'+S)||{style:{}}).style.display !== 'none';
+      const rec = txt('record'+S), rank = txt('rank'+S);
+      return { name: txt('name'+S), country: flagOn ? txt('flagText'+S) : '', rec, rank,
+        line: [blank(rec)?'':rec, blank(rank)?'':rank].filter(Boolean).join('  ·  ') };
+    };
+    const L = side('Left'), R = side('Right');
+    const vals = { league: txt('tapeMark'), title: txt('boutTitleText'), sub: txt('boutSubtitleText'),
+      nameA: L.name, nameB: R.name, countryA: L.country, countryB: R.country, lineA: L.line, lineB: R.line };
+    root.querySelectorAll('[data-iv]').forEach(el => {
+      const v = vals[el.dataset.iv];
+      el.textContent = blank(v) ? '' : v;
+      // An empty chip is a coloured box with nothing in it. Gone, not blank.
+      el.style.display = blank(v) ? 'none' : '';
+    });
+    // W / L / D as three numbers, the way the reference reads -- but only when
+    // the record really is three numbers. Anything else is skipped rather than
+    // split into something that looks like a stat and is not one.
+    root.querySelectorAll('[data-stats]').forEach(box => {
+      const f = box.dataset.stats === 'Left' ? L : R;
+      box.textContent = '';
+      const parts = f.rec.split('-').map(s => s.trim());
+      const cells = (parts.length === 3 && parts.every(p => /^\d+$/.test(p)))
+        ? [[parts[0],'Wins'],[parts[1],'Losses'],[parts[2],'Draws']] : [];
+      if(!blank(f.rank)) cells.push([f.rank,'Rank',true]);
+      cells.forEach(([n,label,hot], i) => {
+        const c = document.createElement('div'); c.className = 'iv-stat' + (hot ? ' hot' : '');
+        c.style.animationDelay = (0.72 + i*0.07) + 's';
+        const b = document.createElement('b'); b.textContent = n;
+        const l = document.createElement('i'); l.textContent = label;
+        c.append(b, l); box.append(c);
+      });
+    });
+    // The same picture the tape has painted, silhouette included.
+    root.querySelectorAll('[data-pic]').forEach(p => {
+      const box = document.getElementById('imgBox'+p.dataset.pic);
+      const bg = box ? box.style.backgroundImage : '';
+      p.style.backgroundImage = bg;
+      p.classList.toggle('sil', !bg || bg.indexOf('avatar-blank') !== -1);
+    });
+    // Names are whatever length a fighter chose. Shrink to the room, measured
+    // with a Range for the reason fitBoutTitle gives.
+    root.querySelectorAll('.iv-name[data-max]').forEach(el => {
+      const room = +el.dataset.room, max = +el.dataset.max;
+      const w = () => { const r = document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect().width };
+      let size = max; el.style.fontSize = size + 'px';
+      while(size > 70 && w() > room){ size -= 4; el.style.fontSize = size + 'px' }
+    });
+  }
+
+  function scene(id){
+    const el = document.getElementById(id); if(!el) return;
+    // The outgoing scene is switched off only once the wipe has covered it.
+    root.querySelectorAll('.iv.on').forEach(s => { if(s !== el) at(560, () => s.classList.remove('on','out')) });
+    el.classList.remove('on','out'); void el.offsetWidth;
+    el.style.zIndex = ++z;
+    el.classList.add('on');
+  }
+
+  function reset(){
+    timers.forEach(clearTimeout); timers.length = 0;
+    root.querySelectorAll('.iv').forEach(s => { s.classList.remove('on','out'); s.style.zIndex = '' });
+    z = 1;
+    cam.style.transition = 'none'; cam.style.transform = 'none'; cam.style.opacity = '1';
+  }
+  function cancel(){ reset(); root.style.display = 'none' }
+
+  // then() is playTape. It is called as the push begins, so the tape builds
+  // behind the lock-up while the camera goes through it.
+  function play(then){
+    reset();
+    root.style.display = 'block';
+    fill();
+    void root.offsetWidth;
+    scene('ivSting');
+    at(T.a,     () => scene('ivA'));
+    at(T.vs,    () => scene('ivVs'));
+    at(T.vsOut, () => { const v = document.getElementById('ivVs'); if(v) v.classList.add('out') });
+    at(T.b,     () => scene('ivB'));
+    at(T.lock,  () => scene('ivLock'));
+    at(T.push,  () => {
+      cam.style.transition = 'transform .85s cubic-bezier(.7,0,.84,.3), opacity .45s ease .38s';
+      cam.style.transform = 'scale(3.8)'; cam.style.opacity = '0';
+      at(260, () => { if(then) then() });
+      at(900, cancel);
+    });
+  }
+
+  // Warm the display face before the first press: every name is fitted by
+  // measuring it, and measured in the fallback it settles on the wrong size.
+  if(document.fonts && document.fonts.load) document.fonts.load('200px "Bebas Neue"').catch(()=>{});
+
+  window.__playIntro = play;
+  window.__cancelIntro = cancel;
+  // One beat held still, for checking a layout: __introScene('ivLock').
+  window.__introScene = id => { reset(); root.style.display = 'block'; fill(); scene(id) };
+})();
+</script>
+
 <!-- ── VGA STUDIO WIRE — deck listener (added 2026-07-24, visuals untouched) ── -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
@@ -1883,7 +2239,7 @@ editOverlay.addEventListener('click', (e) => {
     }
     if(c.type!=='tape') return   // tape-state is our own report; ignore it here
     if(c.on===false){ remember(null,false); hideTape(); return }
-    if(c.show===true){ remember(null,true); showTape(); return }   // reveal what's loaded
+    if(c.show===true){ remember(null,true); showTape({ intro: c.intro===true }); return }   // reveal what's loaded
     const d=c.d||{}
     apply(d)
     remember(d, tapeShown)
@@ -1909,6 +2265,10 @@ editOverlay.addEventListener('click', (e) => {
   // console without pushing a fake matchup onto the live broadcast channel,
   // which every other OBS source in the building is also listening to.
   window.__resolveSponsor = resolveSponsor
+  // Same reason: the intro can be loaded and played from a console without a
+  // push on the live channel.
+  window.__tapeApply = apply
+  window.__tapeShow  = showTape
   window.__setSponsor = key => {
     if(!pinSponsor(key)) return                  // a deliberate pick outranks the deck
     startSponsorRotator(activeSponsor())

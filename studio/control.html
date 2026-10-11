@@ -475,6 +475,11 @@
       <input id="mnBoutA" placeholder="LEFT FIGHTER NAME…" style="width:200px" oninput="voArmed()">
       <input id="mnBoutB" placeholder="RIGHT FIGHTER NAME…" style="width:200px" oninput="voArmed()">
       <button id="tapeBtn" onclick="tapeToggle()">▶ Show tale of the tape</button>
+      <!-- The matchup intro (mark, fighter, VS, fighter, lock-up, ~8s) plays in
+           front of the tape and hands off to it. A tick, not a second button:
+           it is the same press, and the choice is remembered for the night. -->
+      <label style="display:inline-flex;align-items:center;gap:6px;font-size:15px;cursor:pointer">
+        <input type="checkbox" id="tapeIntro" onchange="tapeIntroSave()"> intro first (8s)</label>
       <span class="only-ubae" style="color:var(--gdim);font-size:15px">retires itself after 2 min</span>
       <span class="only-uba" style="color:var(--gdim);font-size:15px">retires itself after 2 min</span>
     </div>
@@ -1524,10 +1529,17 @@ window.tapeToggle = async ()=>{
     // mnTape warns and returns if no bout is armed -- don't claim it is showing
     const ok = await mnTape()
     if(ok === false) return
-    send({type:'tape', show:true})
+    send({type:'tape', show:true, intro: tapeIntroOn()})
     setTapeBtn(true)
   }
 }
+// On unless it was turned off: the intro is the bout's entrance, and a tick
+// that resets every reload would be off on exactly the night it was wanted.
+const TAPE_INTRO_KEY = 'vga.tapeIntro'
+function tapeIntroOn(){ const b=document.getElementById('tapeIntro'); return !!(b && b.checked) }
+window.tapeIntroSave = ()=>{ try{ localStorage.setItem(TAPE_INTRO_KEY, tapeIntroOn() ? '1' : '0') }catch{} }
+{ const b=document.getElementById('tapeIntro')
+  if(b){ let v=null; try{ v=localStorage.getItem(TAPE_INTRO_KEY) }catch{}; b.checked = v!=='0' } }
 
 window.fireMsg=()=>{
   const t=document.getElementById('msgText').value.trim(); if(!t) return
