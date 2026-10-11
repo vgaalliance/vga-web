@@ -2003,7 +2003,7 @@ editOverlay.addEventListener('click', (e) => {
   .iv-seamLine{position:absolute; left:0; right:0; top:539px; height:3px; z-index:4; background:var(--iv-hot); transform:scaleX(0); transform-origin:50% 50%;}
   #ivLock.on .iv-seamLine{animation:ivSeamLine .9s var(--iv-io) .5s both;}
   @keyframes ivSeamLine{to{transform:scaleX(1);}}
-  #ivLock.push .iv-seamLine{animation:ivGone .2s ease both;}
+  #ivLock.push .iv-seamLine{animation:ivGone .01s linear both;}
   /* the stand goes with the card: left behind, it hung in the open doorway */
   #ivLock.on.title.push > .iv-arcs, #ivLock.on.push .iv-cornerMark{animation:ivGone .22s ease both;}   /* as specific as the rule that brought it in, or that one wins */
   #ivLock .iv-pill{position:absolute; left:50%; top:50px; transform:translateX(-50%); z-index:5; opacity:0;}
@@ -2028,24 +2028,24 @@ editOverlay.addEventListener('click', (e) => {
   #ivLock.on.title .iv-seam{animation:ivSeamOut .3s ease-in both;}
   @keyframes ivNameOutA{from{opacity:1; transform:none;} to{opacity:0; transform:translateX(-220px);}}
   @keyframes ivNameOutB{from{opacity:1; transform:none;} to{opacity:0; transform:translateX(220px);}}
-  #ivLock.on.title .iv-mid.a .iv-tname{animation:ivTtlA .9s var(--iv-out) .3s both, ivIn .4s ease .3s both, ivSheen 1.1s ease-in-out 1.05s both;}
-  #ivLock.on.title .iv-mid.b .iv-tname{animation:ivTtlB .9s var(--iv-out) .38s both, ivIn .4s ease .38s both, ivSheen 1.1s ease-in-out 1.2s both;}
+  #ivLock.on.title .iv-mid.a .iv-tname{animation:ivTtlA .9s var(--iv-out) .3s both, ivIn .4s ease .3s both;}
+  #ivLock.on.title .iv-mid.b .iv-tname{animation:ivTtlB .9s var(--iv-out) .38s both, ivIn .4s ease .38s both;}
   /* Keyframes, not transitions, like every other move in here: one clock. */
-  #ivLock.push .iv-top,#ivLock.push .iv-mid.a{animation:ivDoorUp 1.25s var(--iv-io) .18s both;}
-  #ivLock.push .iv-bot,#ivLock.push .iv-mid.b{animation:ivDoorDown 1.25s var(--iv-io) .18s both;}
+  #ivLock.push .iv-top,#ivLock.push .iv-mid.a{animation:ivDoorUp 1.1s var(--iv-io) both;}
+  #ivLock.push .iv-bot,#ivLock.push .iv-mid.b{animation:ivDoorDown 1.1s var(--iv-io) both;}
   @keyframes ivDoorUp{from{transform:none;} to{transform:translateY(-640px);}}
   @keyframes ivDoorDown{from{transform:none;} to{transform:translateY(640px);}}
-  #ivLock.push .iv-top{box-shadow:0 8px 70px 10px hsla(276,100%,74%,.95);}
-  #ivLock.push .iv-bot{box-shadow:0 -8px 70px 10px hsla(276,100%,74%,.95);}
+  /* plain on purpose: a flare and a glow were here, and they made the cleanest
+     move in the piece the busiest. Each half just carries the seam's hairline. */
+  #ivLock.push .iv-top{box-shadow:0 3px 0 0 var(--iv-hot);}
+  #ivLock.push .iv-bot{box-shadow:0 -3px 0 0 var(--iv-hot);}
   /* inset:0 so a moving wing is still the full frame its photo stands in */
   #ivLock .iv-wing{position:absolute; inset:0; z-index:5;}
   @keyframes ivGone{from{opacity:1;} to{opacity:0;}}
   .iv-flare{position:absolute; left:-5%; right:-5%; top:537px; height:6px; z-index:6; opacity:0; background:#fff;
     box-shadow:0 0 30px 8px #fff, 0 0 120px 40px hsla(276,100%,72%,.9);}
-  #ivLock.push .iv-flare{animation:ivFlare 1.15s ease-out both;}
   @keyframes ivFlare{0%{opacity:1; transform:scaleX(0);} 22%{opacity:1; transform:scaleX(1);} 100%{opacity:0; transform:scaleX(1) scaleY(5);}}
   /* a slow lean in while the doors open */
-  #introCam.push{animation:ivLean 1.45s cubic-bezier(.65,0,.35,1) both;}
   @keyframes ivLean{from{transform:scale(1);} to{transform:scale(1.12);}}
   #introCam.push::after{animation:ivGone .8s ease both;}
   #ivLock .iv-chips{position:absolute; left:0; right:0; bottom:52px; display:flex; justify-content:center; gap:12px; z-index:5;}
@@ -2178,7 +2178,7 @@ editOverlay.addEventListener('click', (e) => {
   function place(x){ if(!x) return null;
     if(x.country === 'United States' && GEO.US_REGION[x.region]) return GEO.US_REGION[x.region];
     return GEO.CENTROID[x.country] || GEO.REGION_AT[x.region] || null }
-  const PUSH_MS = 1560, TAPE_AT = 640;   // the hand-off's length, and how far into it the tape starts
+  const PUSH_MS = 1200, TAPE_AT = 420;   // the hand-off's length, and how far into it the tape starts
 
   // Read off the tape, never from a payload of its own: whatever the tape is
   // about to show is what the intro announces, including a matchup typed into
@@ -2319,8 +2319,7 @@ editOverlay.addEventListener('click', (e) => {
     whoosh(T.settle - 150, 0.9, 1800, 320, 0.36, 0, 0, 0.35);  hit(T.lock + 2756, 0.7)          // they settle; the VS tab lands
     whoosh(T.lock + 3550, 1.1, 2500, 6500, 0.1, -0.5, 0.5)                                      // the light crossing the two fighters
     whoosh(T.title, 0.7, 400, 3000, 0.36, -0.6, 0.6)                                            // TALE OF THE TAPE (it arrives, nothing lands)
-    whoosh(T.push - 450, 0.5, 500, 6000, 0.28, 0, 0, 0.9);  hit(T.push + 200, 0.85)             // the flare, then the card breaks
-    whoosh(T.push, PUSH_MS/1000, 160, 1300, 0.5, 0, 0, 0.4)                                     // they open onto the tape
+    whoosh(T.push, 1.0, 1600, 240, 0.4, 0, 0, 0.3)                                              // the card parts onto the tape
     return bus;
   }
   let actx = null, bus = null;
