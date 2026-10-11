@@ -37,7 +37,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,800&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=Bebas+Neue&family=Space+Mono:wght@400;700&family=VT323&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,800&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=Bebas+Neue&family=Space+Mono:wght@400;700&family=Anton&family=VT323&display=swap" rel="stylesheet">
 <!-- The six signing hands. A fighter is assigned one at random on their first
      signature and keeps it forever, so these are not interchangeable: the same
      person must sign the same way on every card. Google serves the @font-face
@@ -823,39 +823,120 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   padding:3px 7px;border-radius:3px}
 .wc4{text-align:center;font-family:'Space Mono',monospace;font-size:8px;font-weight:700;
   letter-spacing:.16em;text-transform:uppercase;color:#9990B4}
-.duo2{display:grid;grid-template-columns:1fr 52px 1fr;align-items:end;margin-top:10px}
+/* THE FIGHTER ZONE. A vignette, not a flat field: the corners fall away so the
+   two cut-outs sit in a space rather than on a panel. It ends exactly where the
+   name row begins, and the figures stand ON that line (zero padding under the
+   feet) so the boundary reads as a floor instead of a divider. */
+.fz2{position:relative;margin:10px -12px 0;padding:0 12px;background:
+  radial-gradient(ellipse 86% 96% at 50% 56%, rgba(255,255,255,.055), rgba(0,0,0,.3) 100%)}
+.duo2{display:grid;grid-template-columns:1fr 52px 1fr;align-items:end}
 .pw2{height:118px;position:relative;display:flex;align-items:flex-end;justify-content:center;cursor:pointer}
 .pw2 .cut2{height:100%;width:auto;max-width:none;object-fit:contain;object-position:bottom center}
 .pw2 .cut2.flip{transform:scaleX(-1)}
-.pw2 .sil2{height:86%;width:auto;fill:rgba(190,175,235,.3)}
-.pw2.win::after{content:'';position:absolute;left:16%;right:16%;bottom:-4px;height:3px;
+.pw2 .sil2{height:100%;width:auto;fill:rgba(190,175,235,.28)}
+/* The feet are ON the boundary now, so a -4px underline would sit inside the
+   name row. It rides just above the line instead. */
+.pw2.win::after{content:'';position:absolute;left:16%;right:16%;bottom:2px;height:3px;
   border-radius:2px;background:#6EE7B7}
 .vsx2{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#7E7699;text-align:center;
   padding-bottom:36px;letter-spacing:.06em}
-.nms2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
-.nms2 b{font-family:'Bebas Neue',sans-serif;font-size:20px;line-height:1.05;letter-spacing:.02em;
-  text-align:center;cursor:pointer}
-.nms2 b.win{color:#6EE7B7}
-.recs2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:3px}
-.recs2 s{text-decoration:none;font-family:'Space Mono',monospace;font-size:9px;text-align:center;
-  color:#8B83AC;display:block}
-.tape2{max-height:0;overflow:hidden;transition:max-height .34s ease}
-.bout3.open .tape2{max-height:320px}
-.tr2{display:grid;grid-template-columns:1fr 92px 1fr;align-items:center;padding:7px 0;
-  border-top:1px solid rgba(255,255,255,.07)}
-.tr2 b{font-size:14px;font-weight:600}
+/* The names are a ROW of the tape now, not a block above it — same spine, same
+   red and blue, one less piece of furniture. They live OUTSIDE .tape2 on
+   purpose: a bout card whose chevron can hide who is fighting is broken. */
+.keep2{margin:0 -12px;background:rgba(6,5,15,.55);border-top:1px solid rgba(255,255,255,.09)}
+.keep2 .tr2{border-top:0}
+.tr2.nm2 b{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;
+  line-height:1.04;cursor:pointer}
+.tr2.nm2{padding:8px 12px}
+.tr2.nm2 b.win{color:#6EE7B7}
+.tape2{max-height:0;overflow:hidden;transition:max-height .34s ease;margin:0 -12px;
+  background:radial-gradient(ellipse 58% 120% at 50% 50%, rgba(167,139,250,.13), transparent 72%),
+    rgba(6,5,15,.55)}
+.bout3.open .tape2{max-height:340px}
+.tr2{display:grid;grid-template-columns:1fr 84px 1fr;align-items:center;padding:6px 12px;
+  position:relative;border-top:1px solid rgba(255,255,255,.055)}
+/* Anton is for NUMBERS. A stance set as loudly as a reach is the thing that
+   made this read as shouting; words drop to condensed and step back a shade. */
+.tr2 b{font-family:'Anton',sans-serif;font-size:17px;line-height:1;
+  font-variant-numeric:tabular-nums}
+.tr2 b em{font-style:normal;font-size:11px;color:#8E86B0;margin-left:.5px;margin-right:2px;
+  font-family:'Barlow Condensed',sans-serif;font-weight:600}
 .tr2 b.l{text-align:right;padding-right:12px;color:#F19C96}
 .tr2 b.r{text-align:left;padding-left:12px;color:#8FC6FF}
-.tr2 s{text-decoration:none;text-align:center;font-family:'Space Mono',monospace;font-size:7.5px;
-  font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#6E6688}
+.tr2 b.wd2{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:13px;color:#9D96BE}
+.tr2 b.na2{font-family:'Space Mono',monospace;font-weight:400;font-size:10px;color:#5C557A;
+  letter-spacing:.1em}
+.tr2 s{text-decoration:none;text-align:center;font-family:'Barlow Condensed',sans-serif;
+  font-weight:600;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8E86B0}
+/* ONE row lights per bout, and only a gap big enough to be worth saying. */
+.tr2.big2.toA{background:linear-gradient(90deg,rgba(241,156,150,.14),rgba(241,156,150,.02) 62%)}
+.tr2.big2.toB{background:linear-gradient(270deg,rgba(143,198,255,.14),rgba(143,198,255,.02) 62%)}
+.tr2.big2.toA s{color:#F19C96} .tr2.big2.toB s{color:#8FC6FF}
+.gap2{position:absolute;top:50%;transform:translateY(-50%);font-family:'Space Mono',monospace;
+  font-size:7.5px;font-weight:700;letter-spacing:.08em;opacity:.85}
+.tr2.big2.toA .gap2{left:12px;color:#F19C96}
+.tr2.big2.toB .gap2{right:12px;color:#8FC6FF}
 .notape{padding:10px 0;text-align:center;font-family:'Space Mono',monospace;font-size:8px;
   letter-spacing:.08em;color:#6E6688}
-.more2{display:flex;align-items:center;justify-content:center;gap:7px;padding:10px 0 11px;
+/* ══ THE RECAP ══ A bout that has been fought can show its replay in the
+   fighters' own slot — the tape never moves, the photos step aside. Only drawn
+   when the bout carries recap data; today nothing does, because the ToTF
+   per-round export is not ingested yet. */
+.rtab2{display:flex;margin:0 -12px;border-top:1px solid rgba(255,255,255,.07)}
+.rtab2 span{flex:1;text-align:center;padding:6px;font-family:'Space Mono',monospace;
+  font-size:7.5px;letter-spacing:.15em;text-transform:uppercase;color:#7E7699;cursor:pointer;
+  border-bottom:1px solid transparent}
+.rtab2 span.on{color:#EDEAF6;border-bottom-color:#A78BFA}
+/* One frame of a per-fighter sheet, filling the corner slot. The sheet's
+   frames carry the cut-outs' own aspect, so a replaying bout and a photo bout
+   are the same shape. */
+.rfig{display:block;height:100%;aspect-ratio:154/236;background-repeat:no-repeat;
+  background-position:0% 0%}
+.rfig.flip{transform:scaleX(-1)}
+@media (prefers-reduced-motion:no-preference){
+  .rfig{animation:rplay 2.4s steps(1) infinite}
+}
+@keyframes rplay{
+  0%{background-position:0% 0%}      12.5%{background-position:14.2857% 0%}
+  25%{background-position:28.5714% 0%} 37.5%{background-position:42.857% 0%}
+  50%{background-position:57.142% 0%}  62.5%{background-position:71.428% 0%}
+  75%{background-position:85.714% 0%}  87.5%{background-position:100% 0%}
+  100%{background-position:0% 20%}
+}
+.dmg2{padding:7px 12px 2px}
+.dmg2 .hd{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;
+  font-size:6px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#5C557A;
+  margin-bottom:3px}
+.dmg2 .hd em{font-style:normal;letter-spacing:.08em}
+.dmg2 .hd em.a{color:#F19C96} .dmg2 .hd em.b{color:#8FC6FF}
+.dmg2 svg{display:block;width:100%;height:24px;overflow:visible}
+.dmg2 .zr{stroke:rgba(173,160,226,.16);stroke-width:1}
+.dmg2 .la{fill:none;stroke:#F19C96;stroke-width:1.4;stroke-linejoin:round;stroke-linecap:round}
+.dmg2 .lb{fill:none;stroke:#8FC6FF;stroke-width:1.4;stroke-linejoin:round;stroke-linecap:round}
+.dmg2 .kol{stroke:#F2B544;stroke-width:1;stroke-dasharray:2 2}
+.dmg2 .kot{fill:#F2B544;font-family:'Space Mono',monospace;font-size:5.5px;letter-spacing:.1em}
+.dmg2 .rds{display:flex;margin-top:3px}
+.dmg2 .rds b{flex:1;text-align:center;font-family:'Space Mono',monospace;font-size:5.5px;
+  font-weight:400;letter-spacing:.11em;color:#4E4768}
+.more2{display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 0 10px;
+  margin:0 -12px;background:rgba(0,0,0,.22);
   font-family:'Space Mono',monospace;font-size:7.5px;font-weight:700;letter-spacing:.16em;
   text-transform:uppercase;color:#7E7699;cursor:pointer}
 .more2 i{font-style:normal;transition:transform .3s}
 .bout3.open .more2 i{transform:rotate(180deg)}
 @media (prefers-reduced-motion:reduce){.tape2{transition:none}.more2 i{transition:none}}
+
+/* THE MAIN EVENT, one scale up. Nothing is redrawn — the same card with the
+   dial turned, which is how bout 1 outweighs bout 7 without a second design. */
+.bout3.me3 .wc4 em{font-style:normal;color:#F5C842;letter-spacing:.16em}
+.bout3.me3 .pw2{height:152px}
+.bout3.me3 .vsx2{font-size:20px;padding-bottom:46px}
+.bout3.me3 .tr2.nm2 b{font-size:23px}
+.bout3.me3 .tr2 b{font-size:21px}
+.bout3.me3 .tr2 b.wd2{font-size:16px}
+.bout3.me3 .tr2{padding-top:8px;padding-bottom:8px}
+.bout3.me3 .rfig{height:100%}
+@media (max-width:360px){ .bout3.me3 .pw2{height:132px} .bout3.me3 .tr2 b{font-size:19px} }
 
 .allev{display:block;width:100%;margin:9px 0 0;text-align:center;border:1px solid rgba(255,255,255,.2);
   border-radius:7px;padding:10px 0;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;
@@ -2821,9 +2902,14 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .sheet .meta dd{font-weight:600}
 /* the tail of a fighter's page: tape, next, the media rail, and his world */
 .ftape{display:grid;grid-template-columns:1fr 1fr;margin:0;padding:0 18px 4px}
-.ftape div{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.ftape div{padding:9px 0;border-bottom:1px solid rgba(255,255,255,.07)}
 .ftape div:nth-child(odd){padding-right:14px}.ftape div:nth-child(even){padding-left:14px}
-.ftape dt{font-size:13px;color:#9C94BE}.ftape dd{margin:0;font-weight:600;font-size:15px}
+.ftape dt{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:11px;
+  letter-spacing:.1em;text-transform:uppercase;color:#8E86B0;margin-bottom:3px}
+.ftape dd{margin:0;font-family:'Anton',sans-serif;font-size:19px;line-height:1;
+  font-variant-numeric:tabular-nums}
+.ftape dd em{font-style:normal;font-family:'Barlow Condensed',sans-serif;font-weight:600;
+  font-size:11px;color:#8E86B0;margin-left:.5px;margin-right:2px}
 .fnext{display:flex;align-items:center;gap:13px;min-height:60px;margin:0 18px;padding:10px 14px;
   background:#1B1740;border:1px solid rgba(245,200,66,.28);border-radius:12px}
 .fnext .bar{width:5px;align-self:stretch;border-radius:3px;background:#F5C842;flex:none}
@@ -4103,9 +4189,14 @@ async function loadHome(){
 /* What stands on the stage above the card, in order of what exists:
    posters, then the main event's two cut-outs, then just the name. Nothing
    here draws a background — every branch is transparent with a shadow. */
+/* ONE silhouette, everywhere a fighter has no photo — the face-off on a card,
+   the preview, a bout's corner. It is a real cut-out's outline traced to a
+   path, not a circle on a trapezoid: 490 of 660 fighters have no photo, so
+   this is on screen more than the photographs are, and the pictogram read as
+   a missing-image icon rather than as a boxer. Keep it as ONE constant; a
+   second copy somewhere is how the app ends up with two of them. */
 var SILHOUETTE = '<svg class="sil" viewBox="0 0 60 100" preserveAspectRatio="xMidYMax meet">'
-  + '<circle cx="30" cy="21" r="14"/>'
-  + '<path d="M30 38c-14 0-24 9-26 22l-4 40h60l-4-40c-2-13-12-22-26-22z"/></svg>';
+  + '<path d="M27.7,0.4 32.3,0.4 35.5,2.1 38.6,7.2 37.8,14.8 39.0,15.7 39.0,17.4 35.5,22.0 33.9,27.5 48.3,35.2 52.6,41.1 53.8,48.3 56.9,56.4 59.2,72.9 58.4,78.0 56.1,79.7 51.0,80.5 43.2,78.8 39.4,76.7 37.4,77.1 37.4,81.4 40.9,91.9 41.3,99.6 0.8,99.6 1.2,94.5 3.9,83.1 5.8,79.7 6.2,72.5 7.4,69.5 7.0,68.6 3.1,69.1 0.4,64.8 1.2,33.9 3.1,29.7 5.8,27.5 21.8,25.4 19.9,13.1 21.4,10.6 22.2,5.1 24.5,2.1 27.7,0.4Z"/></svg>';
 
 function cutCorner(url, side){
   if(!url) return SILHOUETTE.replace('class="sil"', 'class="sil ' + side + '"');
@@ -6808,15 +6899,33 @@ async function renderFighter(slug){
    the page never showed. A missing measurement prints nothing rather than a
    dash: half the roster has no height on file and four dashes reads as broken.
    Height is stored in inches. */
-function tapeHTML(f){
+/* THE TAPE — not "tale of the tape", which is a comparison between two
+   fighters and promises a face-off this section cannot deliver. The real one
+   lives under a bout on the event page (tapeRows). This is a spec sheet for
+   one person and is now named like one.
+   The value sits UNDER its own label, not beside it: the pairs used to read
+   `Height  5'10"  Reach  70"` across the row, so the big number was nearer the
+   label it did not belong to and the eye had to back up on every pair.
+   Gym is gone — free text on 159 of 660 — and KO rate and debut take its
+   place, both derived from what the page has already loaded. */
+function tapeHTML(f, done){
   var rows = [];
-  if(f.height) rows.push(['Height', Math.floor(f.height / 12) + '\u2032' + (f.height % 12) + '\u2033']);
-  if(f.reach)  rows.push(['Reach', f.reach + '\u2033']);
-  if(f.stance) rows.push(['Stance', f.stance.charAt(0).toUpperCase() + f.stance.slice(1)]);
-  if(f.gym)    rows.push(['Gym', f.gym]);
+  if(f.height) rows.push(['Height', Math.floor(f.height / 12) + '<em>\u2032</em>'
+                                  + (f.height % 12) + '<em>\u2033</em>']);
+  if(f.reach)  rows.push(['Reach', Math.round(f.reach) + '<em>\u2033</em>']);
+  if(f.stance) rows.push(['Stance', esc(f.stance.charAt(0).toUpperCase() + f.stance.slice(1))]);
+  var W = Number(f.headline_wins || 0), KO = Number(f.headline_ko_wins || 0);
+  if(W) rows.push(['KO rate', Math.round(KO / W * 100) + '<em>%</em>']);
+  var first = (done && done.length) ? done[done.length - 1] : null;
+  if(first && first.event_date){
+    var d = new Date(first.event_date);
+    if(isFinite(d)) rows.push(['Debut', d.toLocaleDateString('en-US',
+      { month: 'short', year: 'numeric' })]);
+  }
   if(!rows.length) return '';
-  return '<div class="lab"><b>Tale of the tape</b><i></i></div><dl class="ftape">'
-    + rows.map(function(r){ return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(String(r[1])) + '</dd></div>'; }).join('')
+  return '<div class="lab"><b>The Tape</b><i></i></div><dl class="ftape">'
+    + rows.map(function(r){
+        return '<div><dt>' + esc(r[0]) + '</dt><dd>' + r[1] + '</dd></div>'; }).join('')
     + '</dl>';
 }
 
@@ -7191,7 +7300,7 @@ async function loadCard(e){
   var tape = {};
   if(slugs.length){
     var fs = await q("fighter_cards?select=slug,profile_photo_url,profile_photo_thumb_url,headline_wins,headline_losses,"
-      + "headline_draws,height,reach,stance,country,headline_ko_wins&slug=in.(" + slugs.join(',') + ")");
+      + "headline_draws,height,reach,stance,headline_ko_wins&slug=in.(" + slugs.join(',') + ")");
     if(fs) fs.forEach(function(f){ tape[f.slug] = f; });
   }
   if(!el.isConnected) return;
@@ -7211,34 +7320,47 @@ async function loadCard(e){
   // the row it pushes down is the rest of the card. The chevron plus the
   // words "Tale of the tape" are the affordance; they do not need a
   // demonstration.
+  /* THE MAIN EVENT IS THE FIRST BOUT OF THE FIRST SEGMENT. `bout_number` is
+     card order read top down and segment outranks it — the same rule
+     card-format.js uses, reused rather than invented a second time. It gets
+     the design one scale up; it is not a different card. */
+  var topSeg = keys[0];
   el.innerHTML = keys.map(function(k){
     return '<div class="seg">'+esc(SEGS[k] || k.replace(/_/g,' '))+'</div>'
-      + groups[k].map(function(b){
+      + groups[k].map(function(b, bi){
+          var isMain = (k === topSeg && bi === 0);
           var mine = myFighter && (b.fighter_a_slug === myFighter.fighter_slug
                                 || b.fighter_b_slug === myFighter.fighter_slug);
           var done = b.status === 'completed' && b.winner_corner;
           var A = tape[b.fighter_a_slug] || {}, Bf = tape[b.fighter_b_slug] || {};
-          return '<div class="bout3'+(mine?' you':'')+'" data-bout>'
+          /* The tape is OPEN on arrival: on an event page the comparison is the
+             reason you opened the bout, so the chevron hides it rather than
+             revealing it. The record line that used to sit under the names is
+             gone — the tape's own Record row already says it. */
+          return '<div class="bout3 open'+(isMain?' me3':'')+(mine?' you':'')+'" data-bout>'
             + (mine ? '<span class="youtag">Your bout</span>' : '')
             + '<div class="wc4">'
+            + (isMain ? '<em>Main event</em> \u00b7 ' : '')
             + esc(b.is_title_fight ? (b.title_name || 'Title fight')
                                    : (wc(b.weight_class) || 'Catch weight')) + '</div>'
-            + '<div class="duo2">'
-            + corner(A, b.fighter_a_slug, done && b.winner_corner === 'a', '')
-            + '<span class="vsx2">' + (done ? esc((b.method||'').toUpperCase() || 'RESULT') : 'VS') + '</span>'
-            + corner(Bf, b.fighter_b_slug, done && b.winner_corner === 'b', 'flip')
-            + '</div>'
-            + '<div class="nms2">'
-            + '<b class="' + (done && b.winner_corner === 'a' ? 'win' : '') + '"'
+            /* A bout with a recap shows it in the fighters' slot; the tape
+               below never moves either way. */
+            + (b.recap ? boutRecap(b.recap, done ? b.method : '')
+               : '<div class="fz2"><div class="duo2">'
+                 + corner(A, b.fighter_a_slug, done && b.winner_corner === 'a', '')
+                 + '<span class="vsx2">' + (done ? esc((b.method||'').toUpperCase() || 'RESULT') : 'VS') + '</span>'
+                 + corner(Bf, b.fighter_b_slug, done && b.winner_corner === 'b', 'flip')
+                 + '</div></div>')
+            + '<div class="keep2"><div class="tr2 nm2">'
+            + '<b class="l' + (done && b.winner_corner === 'a' ? ' win' : '') + '"'
             + (b.fighter_a_slug ? ' data-slug="'+esc(b.fighter_a_slug)+'"' : '') + '>'
-            + esc(b.fighter_a_name || 'TBA') + '</b>'
-            + '<b class="' + (done && b.winner_corner === 'b' ? 'win' : '') + '"'
+            + esc(b.fighter_a_name || 'TBA') + '</b><s></s>'
+            + '<b class="r' + (done && b.winner_corner === 'b' ? ' win' : '') + '"'
             + (b.fighter_b_slug ? ' data-slug="'+esc(b.fighter_b_slug)+'"' : '') + '>'
-            + esc(b.fighter_b_name || 'TBA') + '</b></div>'
-            + '<div class="recs2"><s>'+rec(A)+'</s><s>'+rec(Bf)+'</s></div>'
+            + esc(b.fighter_b_name || 'TBA') + '</b></div></div>'
             + poolHTML(pools[b.match_id])
             + '<div class="tape2">' + tapeRows(A, Bf) + '</div>'
-            + '<div class="more2"><span>Tale of the tape</span><i>&#9662;</i></div>'
+            + '<div class="more2"><span>Hide the tape</span><i>&#9662;</i></div>'
             + '</div>';
         }).join('');
   }).join('') + '<div class="foot">'+rows.length+' bouts</div>';
@@ -7249,14 +7371,74 @@ function rec(f){
   return (f.headline_wins||0) + '-' + (f.headline_losses||0)
        + (f.headline_draws ? '-' + f.headline_draws : '');
 }
+/* THE RECAP BLOCK. A fought bout replays IN THE CORNERS — one figure per
+   `.pw2` slot, at the cut-outs' own aspect and height, so the layout is
+   identical whether a bout is showing photos or motion. Under it the damage
+   runs as a sliver: two lines, one per corner, stoppage marked.
+
+   `r.sheets` is [leftUrl, rightUrl], each a transparent sprite sheet of
+   `r.cols` x `r.rows` frames; `r.series` is [[a..],[b..]] normalised 0..1 and
+   `r.ko` is the index of the stopping blow. Nothing supplies these yet — the
+   ToTF per-round export is the thing that will. */
+function boutFig(url, cols, rows, flip){
+  return '<span class="pw2"><i class="rfig' + (flip ? ' flip' : '') + '"'
+    + ' style="background-image:url(' + esc(url) + ');'
+    + 'background-size:' + (cols * 100) + '% ' + (rows * 100) + '%"></i></span>';
+}
+function boutRecap(r, method){
+  if(!r || !r.series || !r.sheets) return '';
+  var A = r.series[0] || [], B = r.series[1] || [], N = Math.max(A.length, B.length);
+  if(N < 2) return '';
+  var cols = r.cols || 8, rows = r.rows || 6;
+  var W = 300, H = 24, PAD = 1.5;
+  function pts(a){
+    var o = [];
+    for(var i = 0; i < a.length; i++)
+      o.push((i / (N - 1) * W).toFixed(1) + ',' + (H - PAD - a[i] * (H - PAD * 2 - 1)).toFixed(1));
+    return o.join(' ');
+  }
+  var ko = r.ko != null ? (r.ko / (N - 1) * W) : null;
+  var rd = '';
+  for(var k = 1; k <= (r.rounds || 5); k++) rd += '<b>R' + k + '</b>';
+  return '<div class="rtab2"><span data-rtab="f">Fighters</span>'
+       + '<span class="on" data-rtab="r">Replay</span></div>'
+       + '<div class="fz2"><div class="duo2">'
+       +   boutFig(r.sheets[0], cols, rows, false)
+       +   '<span class="vsx2">' + esc((method || '').toUpperCase() || 'VS') + '</span>'
+       +   boutFig(r.sheets[1], cols, rows, true)
+       + '</div></div>'
+       + '<div class="dmg2"><div class="hd"><span>Damage</span>'
+       +   '<span><em class="a">\u2014 ' + esc(r.a || 'Red') + '</em> '
+       +   '<em class="b">\u2014 ' + esc(r.b || 'Blue') + '</em></span></div>'
+       + '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">'
+       +   '<line class="zr" x1="0" y1="' + (H - 1) + '" x2="' + W + '" y2="' + (H - 1) + '"/>'
+       +   (ko != null ? '<line class="kol" x1="' + ko.toFixed(1) + '" y1="0" x2="'
+                       + ko.toFixed(1) + '" y2="' + H + '"/>'
+                       + '<text class="kot" x="' + Math.min(ko + 4, W - 20).toFixed(1) + '" y="7">'
+                       + esc(r.koLabel || 'TKO') + '</text>' : '')
+       +   '<polyline class="la" points="' + pts(A) + '"/>'
+       +   '<polyline class="lb" points="' + pts(B) + '"/>'
+       + '</svg><div class="rds">' + rd + '</div></div>';
+}
+
+/* Swaps a bout cut-out that failed to load for the shared silhouette. */
+function boutSil(img){
+  img.outerHTML = SILHOUETTE.replace('class="sil"', 'class="sil2"');
+}
 function corner(f, slug, won, flip){
   /* 118px tall on screen — the thumb (463px) covers a 3x phone with room over. */
   var cut = f.profile_photo_thumb_url || f.profile_photo_url;
+  /* A dead photo URL must fall back to the SAME stand-in a photoless fighter
+     gets — every other image path in this app guards itself and this one did
+     not, so a 404 left an empty 118px hole in the middle of a bout.
+     The stand-in is a REAL fighter's cut-out flattened to a shape, not a
+     pictogram: it is framed like the photos beside it and it reads as a boxer
+     with his guard up rather than as a missing-image icon. */
+  var SIL = SILHOUETTE.replace('class="sil"', 'class="sil2"');
   var inner = cut
-    ? '<img class="cut2 ' + flip + '" src="' + esc(cut) + '" alt="" loading="lazy" decoding="async">'
-    : '<svg class="sil2" viewBox="0 0 60 100" preserveAspectRatio="xMidYMax meet">'
-      + '<circle cx="30" cy="21" r="14"/>'
-      + '<path d="M30 38c-14 0-24 9-26 22l-4 40h60l-4-40c-2-13-12-22-26-22z"/></svg>';
+    ? '<img class="cut2 ' + flip + '" src="' + esc(cut) + '" alt="" loading="lazy"'
+      + ' decoding="async" onerror="boutSil(this)">'
+    : SIL;
   return '<span class="pw2' + (won ? ' win' : '') + '"'
        + (slug ? ' data-slug="' + esc(slug) + '"' : '') + '>' + inner + '</span>';
 }
@@ -7265,23 +7447,70 @@ function corner(f, slug, won, flip){
    has no reach or stance, and six empty rows is not a tale of the tape. */
 function inches(v){
   var n = Number(v); if(!isFinite(n) || !n) return null;
-  return Math.floor(n/12) + "' " + (n%12) + '"';
+  /* the prime marks drop to grey via <em>, so the eye reads a figure */
+  return Math.floor(n/12) + '<em>\u2032</em>' + (n%12) + '<em>\u2033</em>';
 }
+/* WHAT COUNTS AS A STANDOUT. One row lights per bout: the biggest gap that
+   clears its own floor. The floors are not taste — each is about the 85th
+   percentile of that gap across every real pairing in the database (175 bouts,
+   167 with both corners on file), so a lit row means a gap bigger than roughly
+   six bouts in seven. Hand-picked floors of 3/2/3 lit 101 of 167, and a device
+   that fires on three bouts in five is wallpaper.
+   RE-READ THESE as the roster grows: a league of 660 has different spreads
+   from a league of 2,000. */
+var TAPE_FLOORS = { reach: 10, height: 3, record: 4 };
+
+/* A one-sided row can NEVER light. JaysWay has a 78" reach and I AM AURA has
+   none on file; lighting that would claim an advantage nobody measured. */
+function tapeStandout(A, B){
+  var c = [];
+  if(A.reach != null && B.reach != null)
+    c.push({ key:'Reach', gap: Math.round(A.reach) - Math.round(B.reach), unit:'\u2033', floor: TAPE_FLOORS.reach });
+  if(A.height != null && B.height != null)
+    c.push({ key:'Height', gap: A.height - B.height, unit:'\u2033', floor: TAPE_FLOORS.height });
+  if(A.headline_wins != null && B.headline_wins != null)
+    c.push({ key:'Record', gap: (A.headline_wins||0) - (B.headline_wins||0), unit:' W', floor: TAPE_FLOORS.record });
+  var best = null;
+  c.forEach(function(x){
+    var m = Math.abs(x.gap);
+    if(m < x.floor) return;
+    x.score = m / x.floor;          /* normalised, so inches and wins compare */
+    if(!best || x.score > best.score) best = x;
+  });
+  return best;
+}
+
+/* Height comes back in inches. A row where NEITHER fighter has the value is
+   left out entirely; one where only one has it prints N/A on the other side —
+   LETTERS, never a bare dash, because punctuation in a column of values reads
+   as a failed load rather than as a field nobody filled in. */
 function tapeRows(A, B){
+  var so = tapeStandout(A, B);
   var rows = [
-    ['Record', rec(A) === '&mdash;' ? null : rec(A), rec(B) === '&mdash;' ? null : rec(B)],
-    ['Height', inches(A.height), inches(B.height)],
-    ['Reach',  A.reach ? Math.round(A.reach)+'"' : null, B.reach ? Math.round(B.reach)+'"' : null],
-    ['Stance', A.stance, B.stance],
+    ['Record', rec(A) === '&mdash;' ? null : rec(A), rec(B) === '&mdash;' ? null : rec(B), false],
+    ['Height', inches(A.height), inches(B.height), false],
+    ['Reach',  A.reach ? Math.round(A.reach)+'<em>\u2033</em>' : null,
+               B.reach ? Math.round(B.reach)+'<em>\u2033</em>' : null, false],
+    ['Stance', A.stance, B.stance, true],
     ['By KO',  A.headline_ko_wins != null ? String(A.headline_ko_wins) : null,
-               B.headline_ko_wins != null ? String(B.headline_ko_wins) : null],
-    ['From',   A.country, B.country]
+               B.headline_ko_wins != null ? String(B.headline_ko_wins) : null, false]
   ].filter(function(r){ return r[1] || r[2]; });
   if(!rows.length) return '<div class="notape">No tape on either corner yet.</div>';
   return rows.map(function(r){
-    return '<div class="tr2"><b class="l">'+esc(r[1] || '—')+'</b>'
-         + '<s>'+esc(r[0])+'</s>'
-         + '<b class="r">'+esc(r[2] || '—')+'</b></div>';
+    var lit = so && so.key === r[0];
+    var side = lit ? (so.gap > 0 ? ' big2 toA' : ' big2 toB') : '';
+    var gap = lit ? '<span class="gap2">' + (so.gap > 0 ? '+' : '\u2212')
+                  + Math.abs(so.gap) + so.unit + '</span>' : '';
+    /* r[3] marks the rows whose value is TYPED BY A FIGHTER (stance) — those
+       are escaped. The rest we build ourselves, and Height carries the <em>
+       that greys its prime marks, so it must not be. */
+    function cell(v, cls){
+      if(v == null) return '<b class="' + cls + ' na2">N/A</b>';
+      return '<b class="' + cls + (r[3] ? ' wd2' : '') + '">'
+           + (r[3] ? esc(v) : v) + '</b>';
+    }
+    return '<div class="tr2' + side + '">' + cell(r[1], 'l')
+         + '<s>' + esc(r[0]) + '</s>' + cell(r[2], 'r') + gap + '</div>';
   }).join('');
 }
 
@@ -8183,7 +8412,7 @@ async function loadFighterPage(slug){
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(mpFitName);
   var got = await Promise.all([
     q("fighter_cards?select=id,display_name,slug,weight_class,headline_wins,headline_losses,headline_draws,"
-      + "rank,is_champion,nickname,country,region,gym,height,reach,stance,profile_photo_url"
+      + "rank,is_champion,nickname,country,region,gym,height,reach,stance,headline_ko_wins,profile_photo_url"
       + "&slug=eq." + encodeURIComponent(slug) + "&limit=1"),
   ]);
   if(!root.isConnected) return;
@@ -8245,7 +8474,7 @@ function mpProfileHTML(f, done, soon){
     : '<div><s>Fights</s><b>0</b></div>';
   var html = '<div class="mp-big"><div><s>Record</s><b>' + W + '-' + L + (D ? '-' + D : '') + '</b></div>'
     + mid + third + '</div>'
-    + tapeHTML(f);
+    + tapeHTML(f, done);
   if(soon){
     html += '<div class="lab"><b>Next</b><i></i></div>'
       + '<div class="fnext"' + (soon.opponent_slug ? ' data-slug="' + esc(soon.opponent_slug) + '"' : '') + '>'
