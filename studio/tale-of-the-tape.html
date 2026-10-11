@@ -1736,8 +1736,8 @@ editOverlay.addEventListener('click', (e) => {
     radial-gradient(circle at -8% 112%, transparent 0 1130px, rgba(225,215,255,.17) 1130px 1132px, transparent 1132px),
     radial-gradient(circle at -8% 112%, transparent 0 1220px, rgba(225,215,255,.09) 1220px 1221.5px, transparent 1221.5px),
     radial-gradient(circle at -8% 112%, rgba(72,60,138,.5) 0 934px, rgba(40,30,84,.3) 1190px, transparent 1420px);
-    -webkit-mask:linear-gradient(90deg,#000 0%,#000 46%,transparent 80%),linear-gradient(180deg,#000 0%,#000 58%,transparent 86%);
-    -webkit-mask-composite:source-in; mask:linear-gradient(90deg,#000 0%,#000 46%,transparent 80%),linear-gradient(180deg,#000 0%,#000 58%,transparent 86%); mask-composite:intersect;}
+    /* faded to the RIGHT only: the lip runs off the bottom edge, it does not stop short of it */
+    -webkit-mask:linear-gradient(90deg,#000 0%,#000 56%,transparent 88%); mask:linear-gradient(90deg,#000 0%,#000 56%,transparent 88%);}
   .iv-arcs i{position:absolute; border-radius:50%; background:#fff; opacity:0; box-shadow:0 0 12px 3px rgba(255,245,230,.6);
     animation:ivCam ease-out infinite;}
   @keyframes ivCam{0%,88%{opacity:0; transform:scale(.6);} 90%{opacity:1; transform:scale(1.3);} 94%{opacity:.35;} 100%{opacity:0; transform:scale(.8);}}
@@ -2146,7 +2146,7 @@ editOverlay.addEventListener('click', (e) => {
 
   // When each beat starts, in ms. One list, read by the pictures AND the
   // sound, so the pacing is tuned in one place and the two cannot drift.
-  const GEO_MS = 2850, OPEN_MS = 5900;
+  const GEO_MS = 2850, OPEN_MS = 6400;
   // 'open' = icon, through the letter, globe.  'geo' = the plain mark, then the
   // flat globe (a league with no icon).  'none' = the mark alone (nobody placed).
   const PRE = { open: OPEN_MS, geo: 1750 + GEO_MS, none: 1750 };
@@ -2286,8 +2286,8 @@ editOverlay.addEventListener('click', (e) => {
     const ticks = (ms, n) => { for(let i = 0; i < n; i++) blip(ms + i*110) };
     whoosh(0, 0.5, 900, 3600, 0.3, -1, -0.1, 0.85);  whoosh(0, 0.5, 900, 3600, 0.3, 1, 0.1, 0.85);  hit(720, 0.9)   // two lines in, the mark slams
     if(mode === 'open'){
-      whoosh(OP.push*1000, 1.25, 180, 2400, 0.42, 0, 0, 0.94);  hit(OP.through*1000, 0.6)        // the run-up, and through the letter
-      whoosh(OP.through*1000, 1.5, 2600, 240, 0.4, -0.5, 0.5, 0.12)                              // out the far side, the globe coming up
+      whoosh(OP.push*1000, 1.35, 180, 2400, 0.42, 0, 0, 0.94);  hit(OP.through*1000, 0.6)        // the run-up, and through the letter
+      whoosh(OP.through*1000, 2.6, 2400, 200, 0.4, -0.5, 0.5, 0.1)                               // out the far side, the long arrival
       blip(OP.dotA*1000);  blip(OP.dotB*1000);  whoosh(OP.arc*1000, 0.7, 900, 3200, 0.16, -0.4, 0.4)   // each fighter's dot, the line between them
     }
     if(geo){ whoosh(T.geo, 0.8, 300, 1800, 0.3, 0, 0);  blip(T.geo + 560);  blip(T.geo + 1660);  whoosh(T.geo + 1750, 0.8, 900, 3200, 0.16, -0.4, 0.4) }   // the globe: each fighter's dot, then the line between them
@@ -2462,7 +2462,10 @@ editOverlay.addEventListener('click', (e) => {
     return PANES[text] = { canvas: c, w: w/K, h: h/K, hx: best ? best.cx/w : 0.5, hy: best ? best.cy/h : 0.5 };
   }
   // the beats inside it, in seconds: lines, slam, hold, push, through, arrive, dots, line
-  const OP = { slam:0.38, land:0.72, push:1.45, pushLen:3.0, through:2.62, dotA:3.95, dotB:4.4, arc:4.5 };
+  // push = the camera starts for the mark; through = it passes the letter;
+  // run = the approach to the globe, which begins BEHIND the mark so the world
+  // is already moving when it is first seen.
+  const OP = { slam:0.38, land:0.72, push:1.45, through:2.75, run:1.6, runLen:3.7, dotA:4.3, dotB:4.75, arc:4.85 };
   let opClock = null, opRaf = 0;
   function openStop(){ if(opRaf) cancelAnimationFrame(opRaf); opRaf = 0; if(opClock){ try { opClock.cancel() } catch {} opClock = null } }
   function openRun(icon){
@@ -2480,16 +2483,21 @@ editOverlay.addEventListener('click', (e) => {
     // the mark at rest: centred. The counter it will go through is where the camera is looking.
     const W = icon.w, Hh = icon.h, HX = 960 - W/2 + icon.hx*W, HY = 520 - Hh/2 + icon.hy*Hh;
     img.style.transformOrigin = (icon.hx*W) + 'px ' + (icon.hy*Hh) + 'px';
-    const FAR = 120, PANE = 96, NEAR_D = Math.max(3.1, Math.min(4.2, 2.4 + sep*1.6)), AZ0 = 66*Math.PI/180;
+    const FAR = 52, NEAR_D = Math.max(3.1, Math.min(4.2, 2.4 + sep*1.6)), AZ0 = 66*Math.PI/180;
     const labs = [...sc.querySelectorAll('.iv-geoL')], head = sc.querySelector('.iv-geoHead'), pill = sc.querySelector('.iv-openPill');
     labs.forEach((el, i) => { el.querySelector('b').textContent = geoNames[i][0]; el.querySelector('i').textContent = geoNames[i][1]; el.style.opacity = 0 });
     // fixed points in the same space; a streak is nothing but our own speed
     const stars = []; { let sd = 23; const r = () => (sd = (sd*16807) % 2147483647) / 2147483647;
       while(stars.length < 520){ const x = (r()*2-1)*120, y = (r()*2-1)*120, z = (r()*2-1)*120, d = Math.hypot(x, y, z); if(d > 120 || d < 6) continue; stars.push({ P:[x,y,z], b:.35 + r()*.65 }) } }
-    const camAt = t => { const e = io5(Math.pow(p(t, OP.push, OP.pushLen), .9)), d = FAR - (FAR - NEAR_D)*e, sw = io3(p(t, OP.push + 1.0, 1.9)), az = AZ0*(1 - sw);
-      const n = rotY(N, az), x = V.norm(V.cross([0,1,0], n)), bank = Math.sin(Math.PI*sw)*.4, k = io3(p(t, OP.through - .1, 1.5));
+    // The app trailer's arrival, beat for beat: a long quintic run in from far
+    // out, the globe turning under us on a banked arc that starts a second in,
+    // the frame's centre settling last. And it never quite stops turning --
+    // the two dots and the line ride the globe, so they turn with it.
+    const camAt = t => { const e = io5(Math.pow(p(t, OP.run, OP.runLen), .9)), d = FAR - (FAR - NEAR_D)*e, sw = io3(p(t, OP.run + .95, 2.9));
+      const az = AZ0*(1 - sw) - 0.035*Math.max(0, t - (OP.run + 2.4));
+      const n = rotY(N, az), x = V.norm(V.cross([0,1,0], n)), bank = Math.sin(Math.PI*sw)*.42, k = io3(p(t, OP.run + 1.6, 1.8));
       return { pos: V.mul(n, d), target:[0,0,0], up: V.norm(V.add([0,1,0], V.mul(x, bank))), f: 1500 + 500*e, cx: HX + (960 - HX)*k, cy: HY + (610 - HY)*k, d } };
-    const aLeft = (() => { const c = camAt(99), Bz = G3.basis(c); return G3.toScreen(G3.toView(pa, c, Bz), c)[0] <= G3.toScreen(G3.toView(pb, c, Bz), c)[0] })();
+    const aLeft = (() => { const c = camAt(OP.run + OP.runLen), Bz = G3.basis(c); return G3.toScreen(G3.toView(pa, c, Bz), c)[0] <= G3.toScreen(G3.toView(pb, c, Bz), c)[0] })();
     opClock = sc.animate([{ outlineOffset:'0px' }, { outlineOffset:'0px' }], { duration:600000 });
     function frame(){
       opRaf = requestAnimationFrame(frame);
@@ -2504,9 +2512,12 @@ editOverlay.addEventListener('click', (e) => {
         g.lineWidth = Math.max(1.1, Math.min(4, 26/a[2])); g.beginPath(); g.moveTo(sa[0]-dx, sa[1]-dy); g.lineTo(sa[0]+.01, sa[1]+.01); g.stroke() });
       // the globe, with a soft rim of the league's light
       const c0 = G3.toScreen(G3.toView([0,0,0], cam, Bz), cam), R = G3.radiusOnScreen(cam);
-      const gl = g.createRadialGradient(c0[0], c0[1], R*.96, c0[0], c0[1], R*1.18); gl.addColorStop(0, 'hsla(276,100%,72%,.3)'); gl.addColorStop(1, 'hsla(276,100%,72%,0)');
+      // THE WORLD IS NOT THERE until the camera is in the letter: it comes up
+      // in the opening the B makes, already on its way toward us.
+      const world = io3(p(t, OP.through - .28, .5));
+      const gl = g.createRadialGradient(c0[0], c0[1], R*.96, c0[0], c0[1], R*1.18); gl.addColorStop(0, 'hsla(276,100%,72%,' + (.3*world) + ')'); gl.addColorStop(1, 'hsla(276,100%,72%,0)');
       g.fillStyle = gl; g.beginPath(); g.arc(c0[0], c0[1], R*1.18, 0, 7); g.fill();
-      G3.draw(g, cam, { spin:0, alpha:1, gridWidth: cam.d > 14 ? 1 : 1.6, rimWidth: cam.d > 14 ? 1.5 : 3, grid: cam.d < 30, landWidth: cam.d > 14 ? 1 : 2 });
+      G3.draw(g, cam, { spin:0, alpha:world, gridWidth: cam.d > 14 ? 1 : 1.6, rimWidth: cam.d > 14 ? 1.5 : 3, grid: cam.d < 30, landWidth: cam.d > 14 ? 1 : 2 });
       // the line between them, lifted off the surface, drawn on as it goes
       const ch = V.norm(cam.pos), kk = 1/cam.d, seen = P => V.dot(P, ch) > kk, scr = P => G3.toScreen(G3.toView(P, cam, Bz), cam);
       const prog = io3(p(t, OP.arc, .8));
@@ -2524,9 +2535,9 @@ editOverlay.addEventListener('click', (e) => {
         el.style.transform = 'translate(' + (left ? x - 40 : x + 40) + 'px,' + (y - 56 + 14*(1-o)) + 'px)' + (left ? ' translateX(-100%)' : '') });
       const ho = out3(p(t, OP.dotA - .3, .5)); head.style.opacity = ho; head.style.transform = 'translateY(' + (14*(1-ho)) + 'px)';
       // the icon: slams in, holds, then swells as the camera closes on its pane and is gone as we pass through it
-      const sl = p(t, OP.slam, OP.land - OP.slam), slam = sl*sl, gap = cam.d - PANE;
-      if(gap <= .05 || sl <= 0) img.style.opacity = 0;
-      else { const s = (FAR - PANE)/gap, land = t > OP.land ? 1 - .05*Math.sin(Math.PI*p(t, OP.land, .16)) : 1;
+      const sl = p(t, OP.slam, OP.land - OP.slam), slam = sl*sl, gap = 1 - Math.pow(p(t, OP.push, OP.through - OP.push), 2.3);
+      if(gap <= .012 || sl <= 0) img.style.opacity = 0;
+      else { const s = Math.pow(gap, -1.25), land = t > OP.land ? 1 - .05*Math.sin(Math.PI*p(t, OP.land, .16)) : 1;
         img.style.opacity = slam;
         img.style.transform = 'translate(' + (cam.cx - icon.hx*W) + 'px,' + (cam.cy - icon.hy*Hh) + 'px) scale(' + (s*(1 + 2.6*(1 - slam))*land) + ')' }
       const po = out3(p(t, OP.land + .2, .4))*(1 - p(t, OP.push - .05, .3)); pill.style.opacity = po; pill.style.transform = 'translateY(' + (14*(1 - out3(p(t, OP.land + .2, .4)))) + 'px)';
@@ -2657,7 +2668,7 @@ editOverlay.addEventListener('click', (e) => {
     root.querySelectorAll('.iv-arcs').forEach(box => { const t = document.createElement('div'); t.className = 'tiers'; box.append(t);
       for(let r = 965; r <= 1400; r += 58) for(let a = 14; a <= 84; a += 5.5){
         const k = (a + rnd()*5 - 2.5)*Math.PI/180, x = -154 + r*Math.cos(k), y = 1210 - r*Math.sin(k);
-        if(x < 30 || x > 1100 || y < 40 || y > 820 || rnd() < 0.6) continue;
+        if(x < 30 || x > 1150 || y < 40 || y > 1040 || rnd() < 0.6) continue;
         const d = document.createElement('i'), z = 4 + Math.round(rnd()*3);
         d.style.cssText = 'left:'+x.toFixed(0)+'px;top:'+y.toFixed(0)+'px;width:'+z+'px;height:'+z+'px;animation-duration:'+(3 + rnd()*7).toFixed(1)+'s;animation-delay:-'+(rnd()*10).toFixed(1)+'s';
         box.append(d) } }) }
