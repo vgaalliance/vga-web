@@ -475,11 +475,11 @@
       <input id="mnBoutA" placeholder="LEFT FIGHTER NAME…" style="width:200px" oninput="voArmed()">
       <input id="mnBoutB" placeholder="RIGHT FIGHTER NAME…" style="width:200px" oninput="voArmed()">
       <button id="tapeBtn" onclick="tapeToggle()">▶ Show tale of the tape</button>
-      <!-- The matchup intro (mark, fighter, VS, fighter, lock-up, title, ~16s) plays in
+      <!-- The matchup intro (mark, fighter, VS, fighter, lock-up, title, ~17s) plays in
            front of the tape and hands off to it. A tick, not a second button:
            it is the same press, and the choice is remembered for the night. -->
       <label style="display:inline-flex;align-items:center;gap:6px;font-size:15px;cursor:pointer">
-        <input type="checkbox" id="tapeIntro" onchange="tapeIntroSave()"> intro first (16s)</label>
+        <input type="checkbox" id="tapeIntro" onchange="tapeIntroSave()"> intro first (17s)</label>
       <span class="only-ubae" style="color:var(--gdim);font-size:15px">retires itself after 2 min</span>
       <span class="only-uba" style="color:var(--gdim);font-size:15px">retires itself after 2 min</span>
     </div>
@@ -1432,7 +1432,7 @@ window.mnTape=async()=>{
       document.getElementById('mnBoutB').value=bn }
   }
   if(!an||!bn){ warn('⚠ tale of the tape: arm a bout first, or type both names'); return false }
-  const COLS='display_name,slug,profile_photo_url,wins:headline_wins,losses:headline_losses,draws:headline_draws,rank,height,reach,age,country,weight_class,stance,team'
+  const COLS='display_name,slug,profile_photo_url,wins:headline_wins,losses:headline_losses,draws:headline_draws,rank,height,reach,age,country,weight_class,stance,team,region,kos:headline_ko_wins'
   const one=async n=>{
     // Exact first -- ilike with no wildcards is a case-insensitive equality.
     const {data:exact}=await sb.from('fighter_cards_roster').select(COLS).ilike('display_name',n).limit(2)
@@ -1472,6 +1472,8 @@ window.mnTape=async()=>{
     // gym is free text 76 people filled in, while the team is league data the
     // draft maintains. Either missing collapses its row on the tape.
     stance:cap(x.stance||'')||null, team:x.team||null,
+    // for the intro only: where the globe puts them, and the KOs its record row ends on
+    region:x.region||null, kos:x.kos??null,
     // slug drives the photo lookup by convention; photo_url wins if one
     // is actually set on the fighter
     slug:x.slug, photo:x.profile_photo_url||null })
