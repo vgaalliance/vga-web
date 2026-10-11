@@ -1748,9 +1748,7 @@ editOverlay.addEventListener('click', (e) => {
 
   /* ── THE GLOBE ── where the two of them fight out of. Drawn on a canvas off
      one clock; the labels are type, placed on the dots every frame. */
-  #ivGeo canvas{position:absolute; inset:0;}
   .iv-geoHead{position:absolute; left:0; right:0; top:56px; text-align:center; font-size:26px; font-weight:700; letter-spacing:6px; text-transform:uppercase; color:rgba(226,220,250,.8); opacity:0;}
-  #ivGeo.on .iv-geoHead{animation:ivUp .5s var(--iv-out) .3s both;}
   .iv-geoL{position:absolute; left:0; top:0; opacity:0; white-space:nowrap; will-change:transform,opacity;}
   .iv-geoL b{display:block; font-family:'Anton','Bebas Neue',sans-serif; font-weight:400; font-size:64px; line-height:1.05; text-transform:uppercase; color:#fff; text-shadow:0 4px 26px rgba(6,6,20,.9);}
   .iv-geoL i{display:block; font-style:normal; font-size:18px; font-weight:700; letter-spacing:5px; text-transform:uppercase; color:var(--iv-hot); text-shadow:0 2px 14px rgba(6,6,20,.9);}
@@ -2081,13 +2079,6 @@ editOverlay.addEventListener('click', (e) => {
     </div>
   </div>
 
-  <div class="iv iv-dark iv-fade" id="ivGeo">
-    <canvas id="ivGeoCv" width="1920" height="1080"></canvas>
-    <div class="iv-geoHead">Fighting out of</div>
-    <div class="iv-geoL" data-geo="Left"><b></b><i></i></div>
-    <div class="iv-geoL" data-geo="Right"><b></b><i></i></div>
-  </div>
-
   <div class="iv iv-light iv-solo iv-fromL" id="ivA">
     <div class="iv-inner">
       <div class="iv-drift"><div class="iv-pic" data-pic="Left"></div></div>
@@ -2164,10 +2155,10 @@ editOverlay.addEventListener('click', (e) => {
 
   // When each beat starts, in ms. One list, read by the pictures AND the
   // sound, so the pacing is tuned in one place and the two cannot drift.
-  const GEO_MS = 2850, OPEN_MS = 7050;
-  // 'open' = icon, through the letter, globe.  'geo' = the plain mark, then the
-  // flat globe (a league with no icon).  'none' = the mark alone (nobody placed).
-  const PRE = { open: OPEN_MS, geo: 1750 + GEO_MS, none: 1750 };
+  const OPEN_MS = 7050;
+  // 'open' = the mark, through its letter, the globe.  'none' = the mark alone
+  // (a fighter with no country or region on file cannot be placed).
+  const PRE = { open: OPEN_MS, none: 1750 };
   const times = mode => { const g = PRE[mode] - 1750;
     return { geo:1750, a:1750+g, aOut:4050+g, vs:4250+g, vsOut:5700+g, b:5900+g, bOut:8200+g, lock:8400+g, settle:10200+g, title:14000+g, push:15700+g } };
   let T = times('open'), mode = 'open';
@@ -2271,7 +2262,7 @@ editOverlay.addEventListener('click', (e) => {
      context stays suspended until the page is clicked, and the intro simply
      runs silent -- it must never wait on sound. */
   function score(ctx, t0, nA = 4, nB = 4, mode = 'open'){
-    const T = times(mode), geo = mode === 'geo';
+    const T = times(mode);
     const bus = ctx.createGain(); bus.gain.value = 0.5;
     const comp = ctx.createDynamicsCompressor(); bus.connect(comp); comp.connect(ctx.destination);
     const nb = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), ch = nb.getChannelData(0);
@@ -2602,83 +2593,8 @@ editOverlay.addEventListener('click', (e) => {
     frame();
   }
 
-  /* ── THE GLOBE ── an orthographic globe turning from the left fighter to a
-     view that holds both, a dot for each and the line between them.
-     It runs off ONE clock -- a do-nothing Web Animation -- rather than
-     performance.now(), so it keeps time with everything else in here and a
-     frame-by-frame capture shows the frame it should. */
-  let geoClock = null, geoRaf = 0;
-  function globeStop(){ if(geoRaf) cancelAnimationFrame(geoRaf); geoRaf = 0; if(geoClock){ try { geoClock.cancel() } catch {} geoClock = null } }
-  function globeRun(){
-    globeStop();
-    const sc = document.getElementById('ivGeo'), cv = document.getElementById('ivGeoCv'); if(!sc || !cv || !geoA || !geoB) return;
-    const g = cv.getContext('2d'), D = Math.PI/180, CX = 960, CY = 630;
-    // two fighters in one place still need two dots
-    let A = geoA.slice(), B = geoB.slice();
-    if(Math.abs(A[0]-B[0]) < 1.5 && Math.abs(A[1]-B[1]) < 1.5){ A[1] -= 4; B[1] += 4 }
-    const v = p => { const a = p[0]*D, b = p[1]*D; return [Math.cos(a)*Math.cos(b), Math.cos(a)*Math.sin(b), Math.sin(a)] };
-    const ll = u => [Math.asin(Math.max(-1, Math.min(1, u[2])))/D, Math.atan2(u[1], u[0])/D];
-    const va = v(A), vb = v(B), dot = Math.max(-1, Math.min(1, va[0]*vb[0]+va[1]*vb[1]+va[2]*vb[2])), sep = Math.acos(dot);
-    const slerp = t => { if(sep < 1e-4) return va; const s = Math.sin(sep), k1 = Math.sin((1-t)*sep)/s, k2 = Math.sin(t*sep)/s;
-      return [va[0]*k1+vb[0]*k2, va[1]*k1+vb[1]*k2, va[2]*k1+vb[2]*k2] };
-    // near neighbours get a closer globe, so the two dots are never one blob
-    const R1 = Math.max(480, Math.min(640, 300/Math.max(0.04, Math.sin(sep/2)))), R0 = R1*1.16;
-    const ease = t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2, cl = t => Math.max(0, Math.min(1, t));
-    const labs = [...sc.querySelectorAll('.iv-geoL')];
-    labs.forEach((el, i) => { el.querySelector('b').textContent = geoNames[i][0]; el.querySelector('i').textContent = geoNames[i][1] });
-    const cF = ll(slerp(0.5)), xF = q => Math.cos(q[0]*D)*Math.sin((q[1]-cF[1])*D), aLeft = xF(A) <= xF(B);
-    geoClock = sc.animate([{ outlineOffset:'0px' }, { outlineOffset:'0px' }], { duration:600000 });
-    function frame(){
-      geoRaf = requestAnimationFrame(frame);
-      const t = (geoClock && geoClock.currentTime || 0)/1000;
-      const turn = ease(cl((t - 0.7)/1.3)), c = ll(slerp(turn*0.5)), R = R0 + (R1-R0)*ease(cl(t/2.4));
-      const p0 = c[0]*D, l0 = c[1]*D;
-      const pr = p => { const a = p[0]*D, dl = p[1]*D - l0, z = Math.sin(p0)*Math.sin(a) + Math.cos(p0)*Math.cos(a)*Math.cos(dl);
-        return [Math.cos(a)*Math.sin(dl), -(Math.cos(p0)*Math.sin(a) - Math.sin(p0)*Math.cos(a)*Math.cos(dl)), z] };
-      g.clearRect(0, 0, 1920, 1080);
-      // the ball, lit from the upper left, with a soft rim
-      const gl = g.createRadialGradient(CX, CY, R*0.96, CX, CY, R*1.16); gl.addColorStop(0, 'hsla(276,100%,72%,.34)'); gl.addColorStop(1, 'hsla(276,100%,72%,0)');
-      g.fillStyle = gl; g.beginPath(); g.arc(CX, CY, R*1.16, 0, 7); g.fill();
-      const sh = g.createRadialGradient(CX - R*0.35, CY - R*0.4, R*0.1, CX, CY, R); sh.addColorStop(0, '#242a63'); sh.addColorStop(1, '#0c0e24');
-      g.fillStyle = sh; g.beginPath(); g.arc(CX, CY, R, 0, 7); g.fill();
-      g.save(); g.beginPath(); g.arc(CX, CY, R, 0, 7); g.clip();
-      // the grid
-      g.strokeStyle = 'rgba(190,185,255,.085)'; g.lineWidth = 1.2;
-      for(let lo = -180; lo < 180; lo += 20){ g.beginPath(); let pen = false;
-        for(let la = -88; la <= 88; la += 4){ const q = pr([la, lo]); if(q[2] > 0){ pen ? g.lineTo(CX+q[0]*R, CY+q[1]*R) : g.moveTo(CX+q[0]*R, CY+q[1]*R); pen = true } else pen = false } g.stroke() }
-      for(let la = -60; la <= 60; la += 20){ g.beginPath(); let pen = false;
-        for(let lo = -180; lo <= 180; lo += 4){ const q = pr([la, lo]); if(q[2] > 0){ pen ? g.lineTo(CX+q[0]*R, CY+q[1]*R) : g.moveTo(CX+q[0]*R, CY+q[1]*R); pen = true } else pen = false } g.stroke() }
-      // the land: a point round the back is pushed out to the edge, so a
-      // coastline that runs over the horizon closes along it
-      g.fillStyle = 'rgba(168,150,246,.26)'; g.strokeStyle = 'rgba(214,202,255,.6)'; g.lineWidth = 1.4;
-      GEO.LAND.forEach(poly => { let any = false; g.beginPath();
-        poly.forEach((pt, i) => { const q = pr([pt[1], pt[0]]); let x = q[0], y = q[1];
-          if(q[2] > 0) any = true; else { const m = Math.hypot(x, y) || 1; x /= m; y /= m }
-          i ? g.lineTo(CX+x*R, CY+y*R) : g.moveTo(CX+x*R, CY+y*R) });
-        if(any){ g.closePath(); g.fill(); g.stroke() } });
-      g.restore();
-      g.strokeStyle = 'rgba(214,202,255,.5)'; g.lineWidth = 2; g.beginPath(); g.arc(CX, CY, R, 0, 7); g.stroke();
-      // the line between them, lifted off the surface, drawn on as it goes
-      const prog = ease(cl((t - 1.75)/0.8));
-      if(prog > 0){ g.save(); g.shadowColor = 'hsla(276,100%,72%,.95)'; g.shadowBlur = 22; g.strokeStyle = 'hsl(276,100%,80%)'; g.lineWidth = 5; g.lineCap = 'round'; g.beginPath();
-        const N = 60; for(let i = 0; i <= N*prog; i++){ const k = i/N, q = pr(ll(slerp(k))), lift = 1 + (0.1 + 0.2*Math.min(1, sep))*Math.sin(Math.PI*k);
-          i ? g.lineTo(CX+q[0]*R*lift, CY+q[1]*R*lift) : g.moveTo(CX+q[0]*R*lift, CY+q[1]*R*lift) } g.stroke(); g.restore() }
-      // the two dots, and the names riding them
-      const qa = pr(A), qb = pr(B);
-      [[qa, 0.55, aLeft], [qb, 1.65, !aLeft]].forEach(([q, at, left], i) => { const k = cl((t - at)/0.35), x = CX+q[0]*R, y = CY+q[1]*R;
-        if(k > 0){ const pop = 1 + 0.9*(1-k)*(1-k), ring = (t - at) % 1.4 / 1.4;
-          g.strokeStyle = 'hsla(276,100%,78%,' + (0.7*(1-ring)) + ')'; g.lineWidth = 3; g.beginPath(); g.arc(x, y, 14 + 46*ring, 0, 7); g.stroke();
-          g.fillStyle = 'hsl(276,100%,74%)'; g.beginPath(); g.arc(x, y, 17*pop, 0, 7); g.fill();
-          g.fillStyle = '#fff'; g.beginPath(); g.arc(x, y, 8*pop, 0, 7); g.fill() }
-        const el = labs[i], o = 1 - Math.pow(1 - cl((t - at - 0.1)/0.5), 3);
-        el.classList.toggle('r', left);
-        el.style.opacity = o; el.style.transform = 'translate(' + (left ? x - 40 : x + 40) + 'px,' + (y - 56 + 14*(1-o)) + 'px)' + (left ? ' translateX(-100%)' : '') });
-    }
-    frame();
-  }
-
   function reset(){
-    globeStop(); openStop();
+    openStop();
     timers.forEach(clearTimeout); timers.length = 0;
     root.querySelectorAll('.iv').forEach(s => { s.classList.remove('on','out','push','title'); s.style.zIndex = '' });
     cam.classList.remove('push');
@@ -2699,7 +2615,7 @@ editOverlay.addEventListener('click', (e) => {
     void root.offsetWidth;
     soundOn();
     if(mode === 'open'){ scene('ivOpen'); openRun(icon) }
-    else { scene('ivSting'); if(mode === 'geo') at(T.geo, () => { scene('ivGeo'); globeRun() }) }
+    else scene('ivSting');
     at(T.a,     () => scene('ivA'));
     at(T.aOut,  () => out('ivA'));
     at(T.vs,    () => scene('ivVs'));
