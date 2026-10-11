@@ -1727,7 +1727,7 @@ editOverlay.addEventListener('click', (e) => {
   @keyframes ivBandR{0%{left:104%; opacity:1;} 100%{left:-18%; opacity:1;}}
 
   /* THE SHEEN. One bright bar crossing a name -- the letters are the window. */
-  .iv-name,.iv-vs{background:linear-gradient(100deg, var(--nm) 0 42%, var(--sh) 50%, var(--nm) 58% 100%) 100% 0 / 320% 100% no-repeat;
+  .iv-name,.iv-vs,.iv-tname{background:linear-gradient(100deg, var(--nm) 0 42%, var(--sh) 50%, var(--nm) 58% 100%) 100% 0 / 320% 100% no-repeat;
     -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent;}
   @keyframes ivSheen{from{background-position:100% 0;} to{background-position:0 0;}}
   /* THE GLINT. The same idea across a fighter: a band of light masked to the
@@ -1859,12 +1859,16 @@ editOverlay.addEventListener('click', (e) => {
   @keyframes ivFloodClose{from{transform:scaleY(190);} to{transform:scaleY(0);}}
 
   /* ── GIANT TYPE ── both names too big for the frame, sliding past each other */
-  .iv-giant{position:absolute; left:50%; white-space:nowrap; font-size:600px; line-height:.8; letter-spacing:4px;}
-  .iv-giant.a{bottom:-64px; color:var(--iv-ink);} .iv-giant.b{top:36px; color:#fff;}
-  #ivType.on .iv-giant.a{animation:ivGiantA 1.5s linear both;}
-  #ivType.on .iv-giant.b{animation:ivGiantB 1.5s linear both;}
-  @keyframes ivGiantA{from{transform:translateX(-72%);} to{transform:translateX(-38%);}}
-  @keyframes ivGiantB{from{transform:translateX(-30%);} to{transform:translateX(-62%);}}
+  /* Each name is FITTED to the frame first, so the whole name is always on
+     screen whatever its length, and then drifts a few percent -- the two in
+     opposite directions. It read as a blur when the type was bigger than the
+     frame and crossed a third of it. */
+  .iv-giant{position:absolute; left:50%; white-space:nowrap; font-size:430px; line-height:.8; letter-spacing:4px;}
+  .iv-giant.a{bottom:-.105em; color:var(--iv-ink);} .iv-giant.b{top:.06em; color:#fff;}
+  #ivType.on .iv-giant.a{animation:ivGiantA 2s linear both;}
+  #ivType.on .iv-giant.b{animation:ivGiantB 2s linear both;}
+  @keyframes ivGiantA{from{transform:translateX(-53.5%);} to{transform:translateX(-46.5%);}}
+  @keyframes ivGiantB{from{transform:translateX(-46.5%);} to{transform:translateX(-53.5%);}}
   #ivType .iv-seamMark{position:absolute; left:50%; top:540px; transform:translate(-50%,-50%); z-index:21;
     background:var(--iv-ink); color:#fff; border:5px solid var(--iv-hot); font-size:92px; line-height:1; letter-spacing:4px; padding:10px 22px 2px; opacity:0;}
   #ivType.on .iv-seamMark{animation:ivSeam .5s var(--iv-out) .3s both;}
@@ -1903,6 +1907,20 @@ editOverlay.addEventListener('click', (e) => {
      them, and the scene behind is simply there. The two fighters do not leave
      -- they drift to where the tape stands its fighters and give way to them,
      so it reads as one shot rather than a cut between two graphics. */
+  /* THE TITLE. The lock-up says who; before it opens it says what is coming.
+     The names step off the seam and TALE OF / THE TAPE takes their place, with
+     the two fighters still standing either side, so the tape that follows is
+     announced rather than sprung. It rides the doors out like the names did. */
+  #ivLock .iv-tname{display:inline-block; font-size:210px; line-height:.88; letter-spacing:3px; padding-top:.06em; white-space:nowrap; opacity:0;}
+  #ivLock .iv-mid.a .iv-tname{transform-origin:50% 100%;} #ivLock .iv-mid.b .iv-tname{transform-origin:50% 0;}
+  #ivLock.on.title .iv-mid.a .iv-name{animation:ivNameOutA .45s var(--iv-io) both;}
+  #ivLock.on.title .iv-mid.b .iv-name{animation:ivNameOutB .45s var(--iv-io) both;}
+  #ivLock.on.title .iv-rec{animation:ivGone .25s ease both;}
+  #ivLock.on.title .iv-seam{animation:ivSeamOut .3s ease-in both;}
+  @keyframes ivNameOutA{from{opacity:1; transform:none;} to{opacity:0; transform:translateX(-220px);}}
+  @keyframes ivNameOutB{from{opacity:1; transform:none;} to{opacity:0; transform:translateX(220px);}}
+  #ivLock.on.title .iv-mid.a .iv-tname{animation:ivNmA .8s var(--iv-out) .3s both, ivSheen 1.1s ease-in-out 1s both;}
+  #ivLock.on.title .iv-mid.b .iv-tname{animation:ivNmB .8s var(--iv-out) .38s both, ivSheen 1.1s ease-in-out 1.15s both;}
   /* Keyframes, not transitions, like every other move in here: one clock. */
   #ivLock.push .iv-top,#ivLock.push .iv-mid.a{animation:ivDoorUp 1.3s var(--iv-io) both;}
   #ivLock.push .iv-bot,#ivLock.push .iv-mid.b{animation:ivDoorDown 1.3s var(--iv-io) both;}
@@ -1920,8 +1938,7 @@ editOverlay.addEventListener('click', (e) => {
   #ivLock.push .iv-wing.b{animation:ivWingB 1.3s var(--iv-io) both;}
   @keyframes ivWingA{0%{transform:none; opacity:1;} 62%{opacity:1;} 100%{transform:translateX(55px) scale(.824); opacity:0;}}
   @keyframes ivWingB{0%{transform:none; opacity:1;} 62%{opacity:1;} 100%{transform:translateX(-55px) scale(.824); opacity:0;}}
-  #ivLock.on.push .iv-seam{animation:ivSeamOut .3s ease-in both;}
-  @keyframes ivSeamOut{from{opacity:1; transform:translate(-50%,-50%) scale(1);} to{opacity:0; transform:translate(-50%,-50%) scale(9,.12);}}
+    @keyframes ivSeamOut{from{opacity:1; transform:translate(-50%,-50%) scale(1);} to{opacity:0; transform:translate(-50%,-50%) scale(9,.12);}}
   #ivLock.push .iv-chips{animation:ivGone .25s ease both;}
   @keyframes ivGone{to{opacity:0;}}
   .iv-flare{position:absolute; left:-5%; right:-5%; top:537px; height:6px; z-index:6; opacity:0; background:#fff;
@@ -1990,8 +2007,8 @@ editOverlay.addEventListener('click', (e) => {
   </div>
 
   <div class="iv iv-fromL" id="ivType">
-    <div class="iv-top iv-light"><div class="iv-giant a iv-bebas" data-iv="nameA"></div></div>
-    <div class="iv-bot iv-dark"><div class="iv-giant b iv-bebas" data-iv="nameB"></div></div>
+    <div class="iv-top iv-light"><div class="iv-giant a iv-bebas" data-iv="nameA" data-max="430" data-room="1640"></div></div>
+    <div class="iv-bot iv-dark"><div class="iv-giant b iv-bebas" data-iv="nameB" data-max="430" data-room="1640"></div></div>
     <div class="iv-flood"></div>
     <div class="iv-seamMark iv-bebas" data-iv="league"></div>
     <div class="iv-band"></div>
@@ -2006,6 +2023,8 @@ editOverlay.addEventListener('click', (e) => {
       <div class="iv-name iv-bebas" data-iv="nameA" data-max="200" data-room="900"></div>
     </div>
     <div class="iv-seam iv-bebas">VS</div>
+    <div class="iv-mid a"><div class="iv-tname iv-bebas">TALE OF</div></div>
+    <div class="iv-mid b"><div class="iv-tname iv-bebas">THE TAPE</div></div>
     <div class="iv-flare"></div>
     <div class="iv-mid b">
       <div class="iv-name iv-bebas" data-iv="nameB" data-max="200" data-room="900"></div>
@@ -2030,7 +2049,7 @@ editOverlay.addEventListener('click', (e) => {
 
   // When each beat starts, in ms. One list, read by the pictures AND the
   // sound, so the pacing is tuned in one place and the two cannot drift.
-  const T = { a:1500, aOut:3950, vs:4150, vsOut:5350, b:5500, bOut:7950, type:8150, flood:9350, lock:9520, push:12700 };
+  const T = { a:1500, aOut:3950, vs:4150, vsOut:5350, b:5500, bOut:7950, type:8150, flood:9950, lock:10120, title:12800, push:14800 };
   const PUSH_MS = 1450, TAPE_AT = 520;   // the hand-off's length, and how far into it the tape starts
 
   // Read off the tape, never from a payload of its own: whatever the tape is
@@ -2083,7 +2102,7 @@ editOverlay.addEventListener('click', (e) => {
     });
     // Names are whatever length a fighter chose. Shrink to the room, measured
     // with a Range for the reason fitBoutTitle gives.
-    root.querySelectorAll('.iv-name[data-max]').forEach(el => {
+    root.querySelectorAll('[data-max]').forEach(el => {
       const room = +el.dataset.room, max = +el.dataset.max;
       const w = () => { const r = document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect().width };
       let size = max; el.style.fontSize = size + 'px';
@@ -2103,10 +2122,9 @@ editOverlay.addEventListener('click', (e) => {
 
   /* ── SOUND ─────────────────────────────────────────────────────────────
      Synthesised, not sampled: no files to host, nothing to licence, and every
-     cue is placed off the same T the pictures use. Three instruments --
-     a whoosh (noise through a filter that sweeps), a hit (a sine that drops)
-     and a shimmer (air and three high partials) -- which is the whole kit of a
-     broadcast sting. It takes a context and a start time so the same score can
+     cue is placed off the same T the pictures use. Two instruments --
+     a whoosh (noise through a filter that sweeps) and a low hit (a sine that
+     drops). Nothing pitched: a run of chimes was tried and read as a toy. It takes a context and a start time so the same score can
      be rendered offline for a preview.
      In OBS the source plays without a click. In a normal browser tab the
      context stays suspended until the page is clicked, and the intro simply
@@ -2132,24 +2150,18 @@ editOverlay.addEventListener('click', (e) => {
       const s = noise(), f = ctx.createBiquadFilter(), b = ctx.createGain(); f.type = 'lowpass'; f.frequency.value = 1500;
       b.gain.setValueAtTime(g * 0.4, t); b.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
       s.connect(f); f.connect(b); b.connect(bus); s.start(t); s.stop(t + 0.16) };
-    const shimmer = (ms, dur, g = 0.1) => { const t = t0 + ms/1000;
-      const s = noise(), f = ctx.createBiquadFilter(), a = ctx.createGain(); f.type = 'highpass'; f.frequency.value = 6500;
-      a.gain.setValueAtTime(0.0001, t); a.gain.exponentialRampToValueAtTime(g, t + dur*0.4); a.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      s.connect(f); f.connect(a); a.connect(bus); s.start(t); s.stop(t + dur + 0.05);
-      [2093, 3136, 4186].forEach((hz, i) => { const o = ctx.createOscillator(), e = ctx.createGain(), st = t + dur*0.16*i;
-        o.frequency.value = hz; e.gain.setValueAtTime(0.0001, st); e.gain.exponentialRampToValueAtTime(g*0.3, st + 0.04); e.gain.exponentialRampToValueAtTime(0.0001, st + 1.0);
-        o.connect(e); e.connect(bus); o.start(st); o.stop(st + 1.05) }) };
 
-    whoosh(40, 0.7, 500, 3200, 0.3, -0.6, 0.6);  hit(430, 0.85);  shimmer(600, 0.8, 0.06)       // the line, the mark lands
-    whoosh(T.a, 0.75, 350, 2600, 0.42, -0.8, 0.7);  shimmer(T.a + 1300, 1.0, 0.07)              // left corner
-    whoosh(T.vs, 0.75, 350, 2600, 0.4, -0.8, 0.7);  hit(T.vs + 340, 0.75)                       // VS lands
+    whoosh(40, 0.7, 500, 3200, 0.3, -0.6, 0.6);  hit(430, 0.7)                                  // the line, the mark lands
+    whoosh(T.a, 0.75, 350, 2600, 0.42, -0.8, 0.7);  whoosh(T.a + 1300, 0.9, 2500, 6500, 0.1, -0.5, 0.5)   // left corner, its light sweep
+    whoosh(T.vs, 0.75, 350, 2600, 0.4, -0.8, 0.7);  hit(T.vs + 340, 0.6)                        // VS lands
     whoosh(T.vsOut, 0.55, 600, 5200, 0.42, 0, 0, 0.8)                                           // VS at the camera
-    whoosh(T.b, 0.75, 350, 2600, 0.42, 0.8, -0.7);  shimmer(T.b + 1300, 1.0, 0.07)              // right corner
+    whoosh(T.b, 0.75, 350, 2600, 0.42, 0.8, -0.7);  whoosh(T.b + 1300, 0.9, 2500, 6500, 0.1, 0.5, -0.5)   // right corner, its light sweep
     whoosh(T.type, 0.75, 300, 2200, 0.38, -0.8, 0.7)                                            // giant type
-    whoosh(T.flood - 600, 0.8, 400, 7000, 0.4, 0, 0, 0.92)                                      // rising into the flood
-    hit(T.lock, 0.95);  shimmer(T.lock + 1700, 1.5, 0.11)                                       // the lock-up, then its sheen
-    whoosh(T.push - 500, 0.55, 500, 6000, 0.3, 0, 0, 0.9);  hit(T.push + 40, 1.0)                // the flare, the doors break
-    whoosh(T.push, PUSH_MS/1000, 160, 1300, 0.5, 0, 0, 0.4);  hit(T.push + TAPE_AT + 60, 0.5)   // they open, the tape arrives
+    whoosh(T.flood - 600, 0.8, 400, 7000, 0.4, 0, 0, 0.92);  hit(T.lock, 0.8)                   // rising into the flood, the lock-up
+    whoosh(T.lock + 1700, 1.1, 2500, 6500, 0.1, -0.5, 0.5)                                      // its light sweep
+    whoosh(T.title, 0.6, 400, 3000, 0.36, -0.6, 0.6);  hit(T.title + 420, 0.7)                  // TALE OF THE TAPE
+    whoosh(T.push - 450, 0.5, 500, 6000, 0.28, 0, 0, 0.9);  hit(T.push + 40, 0.85)              // the flare, the doors break
+    whoosh(T.push, PUSH_MS/1000, 160, 1300, 0.5, 0, 0, 0.4)                                     // they open onto the tape
     return bus;
   }
   let actx = null, bus = null;
@@ -2168,7 +2180,7 @@ editOverlay.addEventListener('click', (e) => {
 
   function reset(){
     timers.forEach(clearTimeout); timers.length = 0;
-    root.querySelectorAll('.iv').forEach(s => { s.classList.remove('on','out','push'); s.style.zIndex = '' });
+    root.querySelectorAll('.iv').forEach(s => { s.classList.remove('on','out','push','title'); s.style.zIndex = '' });
     cam.classList.remove('push');
     z = 1;
     cam.style.transform = 'none';
@@ -2194,6 +2206,7 @@ editOverlay.addEventListener('click', (e) => {
     at(T.type,  () => scene('ivType'));
     at(T.flood, () => out('ivType'));
     at(T.lock,  () => scene('ivLock'));
+    at(T.title, () => { const l = document.getElementById('ivLock'); if(l) l.classList.add('title') });
     at(T.push,  () => {
       // A slow lean in while the doors open. No fade on the camera: every
       // piece leaves on its own, which is what keeps the frame from emptying.
