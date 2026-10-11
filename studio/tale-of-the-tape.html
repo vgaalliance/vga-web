@@ -50,7 +50,7 @@ let CONFIG = {
      degrade, never blank the graphic. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Barlow:wght@500;600;700;800&family=Bebas+Neue&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Barlow:wght@500;600;700;800&family=Bebas+Neue&family=Anton&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;}
 html,body{width:1920px;height:1080px;overflow:hidden;background:transparent;font-family:'Barlow Condensed',Arial,sans-serif;}
@@ -1686,7 +1686,7 @@ editOverlay.addEventListener('click', (e) => {
 <style>
   #intro{position:fixed; top:0; left:0; width:1920px; height:1080px; z-index:200; display:none;
     overflow:hidden; pointer-events:none; --iv-hot:hsl(276,100%,72%); --iv-deep:hsl(272,82%,50%);
-    --iv-ink:#17102a;
+    --iv-ink:#0e1022;
     /* two curves, used everywhere: things ARRIVE on the first and CROSS on the second */
     --iv-out:cubic-bezier(.16,1,.3,1); --iv-io:cubic-bezier(.76,0,.24,1);}
   #introCam{position:absolute; inset:0; transform-origin:50% 50%; will-change:transform,opacity;}
@@ -1695,18 +1695,24 @@ editOverlay.addEventListener('click', (e) => {
     background:radial-gradient(ellipse 75% 75% at 50% 50%, transparent 58%, rgba(10,4,24,.34) 100%);}
   .iv{position:absolute; inset:0; overflow:hidden; visibility:hidden;}
   .iv.on{visibility:visible;}
-  .iv-bebas{font-family:'Bebas Neue','Barlow Condensed',Arial,sans-serif; font-weight:400;}
+  /* Anton, not Bebas: the names are the graphic, and a light condensed face
+     at this size reads as a caption. The class kept its old name. */
+  .iv-bebas{font-family:'Anton','Bebas Neue','Barlow Condensed',Arial,sans-serif; font-weight:400;}
 
-  /* Mid-bright on purpose. A near-black ground here would sit a black intro in
-     front of an already dark stage and the fighters would have no edge. */
-  .iv-dark{color:#fff; --nm:#fff; --sh:hsl(276,100%,76%); background:
-    repeating-linear-gradient(118deg, hsla(276,90%,80%,0.03) 0 2px, transparent 2px 10px),
-    radial-gradient(ellipse 60% 75% at 68% 46%, hsla(276,92%,58%,0.55), transparent 72%),
-    linear-gradient(118deg,#33196a 0%,#24124c 52%,#1a0d38 100%);}
-  .iv-light{color:var(--iv-ink); --nm:var(--iv-ink); --sh:hsl(272,95%,64%); background:
-    repeating-linear-gradient(118deg, rgba(60,30,110,0.045) 0 2px, transparent 2px 10px),
-    radial-gradient(ellipse 60% 80% at 26% 42%, #ffffff, transparent 72%),
-    linear-gradient(118deg,#f4f2fa 0%,#e1dcee 100%);}
+  /* THE GROUNDS. Near-black navy and a neutral white, each under a field of
+     broken diagonal streaks -- drawn once as an SVG tile, because evenly
+     repeating lines read as wallpaper and these have to read as texture. The
+     violet stays for the accent only, so it is the one colour on screen. */
+  #intro{--iv-streak-l:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI5MDAiIGhlaWdodD0iOTAwIj48bGluZSB4MT0iMjI0IiB5MT0iMTY2IiB4Mj0iMzYzIiB5Mj0iLTExOSIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4wNiIgc3Ryb2tlLXdpZHRoPSIxLjIiLz48bGluZSB4MT0iMjY2IiB5MT0iNjQiIHgyPSIzNzkiIHkyPSItMTY4IiBzdHJva2U9IiMxYTFjMzAiIHN0cm9rZS1vcGFjaXR5PSIwLjA2IiBzdHJva2Utd2lkdGg9IjEuMSIvPjxsaW5lIHgxPSItMzAiIHkxPSIxMDAiIHgyPSI2OCIgeTI9Ii0xMDIiIHN0cm9rZT0iIzFhMWMzMCIgc3Ryb2tlLW9wYWNpdHk9IjAuMTciIHN0cm9rZS13aWR0aD0iMC44Ii8+PGxpbmUgeDE9IjEyMyIgeTE9IjY5MCIgeDI9IjMxNSIgeTI9IjI5NiIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4xNCIgc3Ryb2tlLXdpZHRoPSIxLjEiLz48bGluZSB4MT0iODc2IiB5MT0iNTEiIHgyPSIxMDUyIiB5Mj0iLTMxMCIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4wOSIgc3Ryb2tlLXdpZHRoPSIwLjgiLz48bGluZSB4MT0iMTgiIHkxPSIzMzkiIHgyPSIxODYiIHkyPSItNiIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4wOCIgc3Ryb2tlLXdpZHRoPSIxLjMiLz48bGluZSB4MT0iNTM5IiB5MT0iNDEwIiB4Mj0iNjU5IiB5Mj0iMTYzIiBzdHJva2U9IiMxYTFjMzAiIHN0cm9rZS1vcGFjaXR5PSIwLjA2IiBzdHJva2Utd2lkdGg9IjAuOCIvPjxsaW5lIHgxPSIxMDYiIHkxPSI3NDgiIHgyPSIyMDUiIHkyPSI1NDYiIHN0cm9rZT0iIzFhMWMzMCIgc3Ryb2tlLW9wYWNpdHk9IjAuMTAiIHN0cm9rZS13aWR0aD0iMS4zIi8+PGxpbmUgeDE9IjM1MyIgeTE9IjMzMCIgeDI9IjUxOCIgeTI9Ii04IiBzdHJva2U9IiMxYTFjMzAiIHN0cm9rZS1vcGFjaXR5PSIwLjE1IiBzdHJva2Utd2lkdGg9IjAuOSIvPjxsaW5lIHgxPSI0NzQiIHkxPSI1NzgiIHgyPSI2NTQiIHkyPSIyMTAiIHN0cm9rZT0iIzFhMWMzMCIgc3Ryb2tlLW9wYWNpdHk9IjAuMTYiIHN0cm9rZS13aWR0aD0iMS4wIi8+PGxpbmUgeDE9Ijg4MCIgeTE9IjEzMCIgeDI9Ijk3NyIgeTI9Ii02OSIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4xNiIgc3Ryb2tlLXdpZHRoPSIwLjkiLz48bGluZSB4MT0iMzg5IiB5MT0iNDMiIHgyPSI1MzEiIHkyPSItMjQ4IiBzdHJva2U9IiMxYTFjMzAiIHN0cm9rZS1vcGFjaXR5PSIwLjE2IiBzdHJva2Utd2lkdGg9IjEuMyIvPjxsaW5lIHgxPSI3NzUiIHkxPSIzNDUiIHgyPSI5MjIiIHkyPSI0NCIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4xNCIgc3Ryb2tlLXdpZHRoPSIxLjMiLz48bGluZSB4MT0iMzU2IiB5MT0iOTI0IiB4Mj0iNTQ4IiB5Mj0iNTMxIiBzdHJva2U9IiMxYTFjMzAiIHN0cm9rZS1vcGFjaXR5PSIwLjEyIiBzdHJva2Utd2lkdGg9IjEuNCIvPjxsaW5lIHgxPSItMzkiIHkxPSI3NzIiIHgyPSI5OSIgeTI9IjQ4OCIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4yMCIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48bGluZSB4MT0iMTg1IiB5MT0iNDI0IiB4Mj0iMzI3IiB5Mj0iMTMzIiBzdHJva2U9IiMxYTFjMzAiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEuMiIvPjxsaW5lIHgxPSI2OCIgeTE9IjEyOSIgeDI9IjEwMSIgeTI9IjYyIiBzdHJva2U9IiMxYTFjMzAiIHN0cm9rZS1vcGFjaXR5PSIwLjE3IiBzdHJva2Utd2lkdGg9IjAuOCIvPjxsaW5lIHgxPSIxNDgiIHkxPSI0MzAiIHgyPSIzMjYiIHkyPSI2NCIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4wNiIgc3Ryb2tlLXdpZHRoPSIxLjEiLz48bGluZSB4MT0iNDQ5IiB5MT0iOTcyIiB4Mj0iNjE5IiB5Mj0iNjI1IiBzdHJva2U9IiMxYTFjMzAiIHN0cm9rZS1vcGFjaXR5PSIwLjE4IiBzdHJva2Utd2lkdGg9IjEuMCIvPjxsaW5lIHgxPSIzMTUiIHkxPSIzOTUiIHgyPSI0OTYiIHkyPSIyNCIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4xOSIgc3Ryb2tlLXdpZHRoPSIwLjkiLz48bGluZSB4MT0iNzYiIHkxPSIyNTUiIHgyPSIxNDAiIHkyPSIxMjQiIHN0cm9rZT0iIzFhMWMzMCIgc3Ryb2tlLW9wYWNpdHk9IjAuMTIiIHN0cm9rZS13aWR0aD0iMS4zIi8+PGxpbmUgeDE9IjE2MyIgeTE9IjUiIHgyPSIyNjAiIHkyPSItMTk1IiBzdHJva2U9IiMxYTFjMzAiIHN0cm9rZS1vcGFjaXR5PSIwLjExIiBzdHJva2Utd2lkdGg9IjEuMyIvPjxsaW5lIHgxPSI4NTMiIHkxPSI3NjAiIHgyPSI5NjgiIHkyPSI1MjUiIHN0cm9rZT0iIzFhMWMzMCIgc3Ryb2tlLW9wYWNpdHk9IjAuMTQiIHN0cm9rZS13aWR0aD0iMS40Ii8+PGxpbmUgeDE9Ii00NiIgeTE9Ijk4OSIgeDI9IjExNiIgeTI9IjY1NyIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4xOCIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48bGluZSB4MT0iMjkyIiB5MT0iNDM5IiB4Mj0iMzMzIiB5Mj0iMzU2IiBzdHJva2U9IiMxYTFjMzAiIHN0cm9rZS1vcGFjaXR5PSIwLjE1IiBzdHJva2Utd2lkdGg9IjAuOCIvPjxsaW5lIHgxPSItMzMiIHkxPSIyMzAiIHgyPSIxOCIgeTI9IjEyNSIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4xMCIgc3Ryb2tlLXdpZHRoPSIwLjgiLz48bGluZSB4MT0iLTEwMCIgeTE9IjE2NiIgeDI9Ii02MCIgeTI9Ijg0IiBzdHJva2U9IiMxYTFjMzAiIHN0cm9rZS1vcGFjaXR5PSIwLjEwIiBzdHJva2Utd2lkdGg9IjAuNyIvPjxsaW5lIHgxPSI3NzQiIHkxPSI2NzUiIHgyPSI4MjMiIHkyPSI1NzYiIHN0cm9rZT0iIzFhMWMzMCIgc3Ryb2tlLW9wYWNpdHk9IjAuMDkiIHN0cm9rZS13aWR0aD0iMS4wIi8+PGxpbmUgeDE9IjI2NCIgeTE9IjEzNSIgeDI9IjQzOSIgeTI9Ii0yMjMiIHN0cm9rZT0iIzFhMWMzMCIgc3Ryb2tlLW9wYWNpdHk9IjAuMjAiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjM4NCIgeTE9Ijk0IiB4Mj0iNDI0IiB5Mj0iMTIiIHN0cm9rZT0iIzFhMWMzMCIgc3Ryb2tlLW9wYWNpdHk9IjAuMTAiIHN0cm9rZS13aWR0aD0iMS4wIi8+PGxpbmUgeDE9IjcyOSIgeTE9IjE3OCIgeDI9Ijc1NSIgeTI9IjEyNCIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4xOSIgc3Ryb2tlLXdpZHRoPSIxLjIiLz48bGluZSB4MT0iNDciIHkxPSI1OTciIHgyPSI3MyIgeTI9IjU0MyIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4xMyIgc3Ryb2tlLXdpZHRoPSIxLjciLz48bGluZSB4MT0iNzYzIiB5MT0iNzY2IiB4Mj0iODMyIiB5Mj0iNjI1IiBzdHJva2U9IiMxYTFjMzAiIHN0cm9rZS1vcGFjaXR5PSIwLjExIiBzdHJva2Utd2lkdGg9IjAuOSIvPjxsaW5lIHgxPSI2NzIiIHkxPSI1ODYiIHgyPSI4MzQiIHkyPSIyNTQiIHN0cm9rZT0iIzFhMWMzMCIgc3Ryb2tlLW9wYWNpdHk9IjAuMTAiIHN0cm9rZS13aWR0aD0iMC45Ii8+PGxpbmUgeDE9IjcxMiIgeTE9IjEwODMiIHgyPSI4ODciIHkyPSI3MjQiIHN0cm9rZT0iIzFhMWMzMCIgc3Ryb2tlLW9wYWNpdHk9IjAuMTciIHN0cm9rZS13aWR0aD0iMS41Ii8+PGxpbmUgeDE9IjY0MCIgeTE9IjI0OSIgeDI9Ijc1NSIgeTI9IjE0IiBzdHJva2U9IiMxYTFjMzAiIHN0cm9rZS1vcGFjaXR5PSIwLjEwIiBzdHJva2Utd2lkdGg9IjAuNyIvPjxsaW5lIHgxPSItNzIiIHkxPSIzMDciIHgyPSItNCIgeTI9IjE2NyIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4xNSIgc3Ryb2tlLXdpZHRoPSIxLjciLz48bGluZSB4MT0iMzQ3IiB5MT0iMTAzMSIgeDI9IjU0NyIgeTI9IjYyMiIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4xOSIgc3Ryb2tlLXdpZHRoPSIxLjEiLz48bGluZSB4MT0iMTIwIiB5MT0iMjUwIiB4Mj0iMTc4IiB5Mj0iMTMyIiBzdHJva2U9IiMxYTFjMzAiIHN0cm9rZS1vcGFjaXR5PSIwLjA4IiBzdHJva2Utd2lkdGg9IjEuMyIvPjxsaW5lIHgxPSI4MDAiIHkxPSI5MjQiIHgyPSI5MDgiIHkyPSI3MDMiIHN0cm9rZT0iIzFhMWMzMCIgc3Ryb2tlLW9wYWNpdHk9IjAuMTUiIHN0cm9rZS13aWR0aD0iMS41Ii8+PGxpbmUgeDE9Ii0xNSIgeTE9IjcyNyIgeDI9IjE3MCIgeTI9IjM0NiIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4xNyIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48bGluZSB4MT0iMzc4IiB5MT0iMTk2IiB4Mj0iNTQyIiB5Mj0iLTEzOSIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4xMCIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48bGluZSB4MT0iODcyIiB5MT0iNDM1IiB4Mj0iOTY2IiB5Mj0iMjQzIiBzdHJva2U9IiMxYTFjMzAiIHN0cm9rZS1vcGFjaXR5PSIwLjE5IiBzdHJva2Utd2lkdGg9IjEuNCIvPjxsaW5lIHgxPSI3MCIgeTE9IjE0MCIgeDI9IjExOSIgeTI9IjM5IiBzdHJva2U9IiMxYTFjMzAiIHN0cm9rZS1vcGFjaXR5PSIwLjE5IiBzdHJva2Utd2lkdGg9IjEuNSIvPjxsaW5lIHgxPSI0NiIgeTE9IjkwOSIgeDI9IjI0NCIgeTI9IjUwMyIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4xNSIgc3Ryb2tlLXdpZHRoPSIxLjEiLz48bGluZSB4MT0iNDQ5IiB5MT0iMTQ0IiB4Mj0iNDczIiB5Mj0iOTQiIHN0cm9rZT0iIzFhMWMzMCIgc3Ryb2tlLW9wYWNpdHk9IjAuMjAiIHN0cm9rZS13aWR0aD0iMS4zIi8+PGxpbmUgeDE9IjQyNyIgeTE9IjEwMjciIHgyPSI1MjYiIHkyPSI4MjIiIHN0cm9rZT0iIzFhMWMzMCIgc3Ryb2tlLW9wYWNpdHk9IjAuMTgiIHN0cm9rZS13aWR0aD0iMS41Ii8+PGxpbmUgeDE9IjExMSIgeTE9IjI3NyIgeDI9IjE4NiIgeTI9IjEyNCIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4wOSIgc3Ryb2tlLXdpZHRoPSIxLjMiLz48bGluZSB4MT0iMTU5IiB5MT0iNDYxIiB4Mj0iMjA1IiB5Mj0iMzY4IiBzdHJva2U9IiMxYTFjMzAiIHN0cm9rZS1vcGFjaXR5PSIwLjE5IiBzdHJva2Utd2lkdGg9IjEuMSIvPjxsaW5lIHgxPSIzNTgiIHkxPSI2NDIiIHgyPSI1NDMiIHkyPSIyNjQiIHN0cm9rZT0iIzFhMWMzMCIgc3Ryb2tlLW9wYWNpdHk9IjAuMTEiIHN0cm9rZS13aWR0aD0iMS42Ii8+PGxpbmUgeDE9IjQwMiIgeTE9IjU4NSIgeDI9IjUxOCIgeTI9IjM0NyIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4wNSIgc3Ryb2tlLXdpZHRoPSIxLjEiLz48bGluZSB4MT0iODMiIHkxPSI0IiB4Mj0iMjQ5IiB5Mj0iLTMzNSIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4wOCIgc3Ryb2tlLXdpZHRoPSIxLjIiLz48bGluZSB4MT0iNjI1IiB5MT0iNjEyIiB4Mj0iNzA2IiB5Mj0iNDQ3IiBzdHJva2U9IiMxYTFjMzAiIHN0cm9rZS1vcGFjaXR5PSIwLjEzIiBzdHJva2Utd2lkdGg9IjEuMyIvPjxsaW5lIHgxPSI2ODQiIHkxPSIxMTciIHgyPSI4MDciIHkyPSItMTM1IiBzdHJva2U9IiMxYTFjMzAiIHN0cm9rZS1vcGFjaXR5PSIwLjA5IiBzdHJva2Utd2lkdGg9IjEuMCIvPjxsaW5lIHgxPSI2NzIiIHkxPSI1NTgiIHgyPSI3OTUiIHkyPSIzMDciIHN0cm9rZT0iIzFhMWMzMCIgc3Ryb2tlLW9wYWNpdHk9IjAuMTYiIHN0cm9rZS13aWR0aD0iMS42Ii8+PGxpbmUgeDE9IjM0MyIgeTE9IjY3NCIgeDI9IjQ1NiIgeTI9IjQ0MyIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4xMyIgc3Ryb2tlLXdpZHRoPSIxLjQiLz48bGluZSB4MT0iMzUyIiB5MT0iNTg3IiB4Mj0iNDYwIiB5Mj0iMzY2IiBzdHJva2U9IiMxYTFjMzAiIHN0cm9rZS1vcGFjaXR5PSIwLjE5IiBzdHJva2Utd2lkdGg9IjEuNCIvPjxsaW5lIHgxPSI3NzciIHkxPSIxMDM2IiB4Mj0iODQ1IiB5Mj0iODk2IiBzdHJva2U9IiMxYTFjMzAiIHN0cm9rZS1vcGFjaXR5PSIwLjEzIiBzdHJva2Utd2lkdGg9IjEuNiIvPjxsaW5lIHgxPSI3NDAiIHkxPSIxNTEiIHgyPSI3ODQiIHkyPSI2MSIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4xMiIgc3Ryb2tlLXdpZHRoPSIwLjgiLz48bGluZSB4MT0iMTQxIiB5MT0iODAiIHgyPSIyODMiIHkyPSItMjExIiBzdHJva2U9IiMxYTFjMzAiIHN0cm9rZS1vcGFjaXR5PSIwLjE3IiBzdHJva2Utd2lkdGg9IjEuNiIvPjxsaW5lIHgxPSI1NCIgeTE9Ijc4OCIgeDI9IjE5NSIgeTI9IjQ5OSIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4wNyIgc3Ryb2tlLXdpZHRoPSIxLjYiLz48bGluZSB4MT0iODY4IiB5MT0iMjQyIiB4Mj0iMTA2MSIgeTI9Ii0xNTQiIHN0cm9rZT0iIzFhMWMzMCIgc3Ryb2tlLW9wYWNpdHk9IjAuMTEiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9Ijg5MCIgeTE9IjkxNiIgeDI9Ijk0MSIgeTI9IjgxMSIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4xMSIgc3Ryb2tlLXdpZHRoPSIxLjIiLz48bGluZSB4MT0iMjM5IiB5MT0iMjE1IiB4Mj0iMzE4IiB5Mj0iNTMiIHN0cm9rZT0iIzFhMWMzMCIgc3Ryb2tlLW9wYWNpdHk9IjAuMTYiIHN0cm9rZS13aWR0aD0iMC43Ii8+PGxpbmUgeDE9IjQ1NCIgeTE9IjQ4NSIgeDI9IjQ3OSIgeTI9IjQzMyIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4xMCIgc3Ryb2tlLXdpZHRoPSIxLjMiLz48bGluZSB4MT0iNDEyIiB5MT0iNzEiIHgyPSI2MTEiIHkyPSItMzM3IiBzdHJva2U9IiMxYTFjMzAiIHN0cm9rZS1vcGFjaXR5PSIwLjE3IiBzdHJva2Utd2lkdGg9IjEuNyIvPjxsaW5lIHgxPSI1IiB5MT0iMjkyIiB4Mj0iMzQiIHkyPSIyMzMiIHN0cm9rZT0iIzFhMWMzMCIgc3Ryb2tlLW9wYWNpdHk9IjAuMTciIHN0cm9rZS13aWR0aD0iMS4wIi8+PGxpbmUgeDE9IjMwIiB5MT0iNDY0IiB4Mj0iMjE1IiB5Mj0iODQiIHN0cm9rZT0iIzFhMWMzMCIgc3Ryb2tlLW9wYWNpdHk9IjAuMTciIHN0cm9rZS13aWR0aD0iMS4wIi8+PGxpbmUgeDE9IjQ5IiB5MT0iMTAxMSIgeDI9IjE3NCIgeTI9Ijc1NiIgc3Ryb2tlPSIjMWExYzMwIiBzdHJva2Utb3BhY2l0eT0iMC4xNiIgc3Ryb2tlLXdpZHRoPSIwLjgiLz48bGluZSB4MT0iLTQyIiB5MT0iNzU3IiB4Mj0iNTYiIHkyPSI1NTUiIHN0cm9rZT0iIzFhMWMzMCIgc3Ryb2tlLW9wYWNpdHk9IjAuMDYiIHN0cm9rZS13aWR0aD0iMS42Ii8+PC9zdmc+"); --iv-streak-d:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI5MDAiIGhlaWdodD0iOTAwIj48bGluZSB4MT0iNTM0IiB5MT0iODgyIiB4Mj0iNTcxIiB5Mj0iODA2IiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjE4IiBzdHJva2Utd2lkdGg9IjAuOCIvPjxsaW5lIHgxPSI3NjMiIHkxPSI0OTkiIHgyPSI4NDYiIHkyPSIzMjkiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuMTMiIHN0cm9rZS13aWR0aD0iMS42Ii8+PGxpbmUgeDE9IjE2OCIgeTE9IjE0MiIgeDI9IjI4NCIgeTI9Ii05NyIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4wOSIgc3Ryb2tlLXdpZHRoPSIwLjgiLz48bGluZSB4MT0iNjEiIHkxPSI1NSIgeDI9IjEyMCIgeTI9Ii02NCIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4xMCIgc3Ryb2tlLXdpZHRoPSIxLjAiLz48bGluZSB4MT0iNjU5IiB5MT0iMzE5IiB4Mj0iNzcxIiB5Mj0iOTAiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuMDgiIHN0cm9rZS13aWR0aD0iMS4wIi8+PGxpbmUgeDE9Ii04MiIgeTE9IjI3NSIgeDI9Ii01NyIgeTI9IjIyNSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4xNiIgc3Ryb2tlLXdpZHRoPSIxLjMiLz48bGluZSB4MT0iODkiIHkxPSI1MjIiIHgyPSIyNzkiIHkyPSIxMzMiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuMDciIHN0cm9rZS13aWR0aD0iMS41Ii8+PGxpbmUgeDE9IjMzMiIgeTE9IjU0NSIgeDI9IjUwNCIgeTI9IjE5MiIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4xMSIgc3Ryb2tlLXdpZHRoPSIxLjIiLz48bGluZSB4MT0iNTg4IiB5MT0iMTA4MSIgeDI9IjY3MSIgeTI9IjkwOSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4xNyIgc3Ryb2tlLXdpZHRoPSIxLjQiLz48bGluZSB4MT0iNTM2IiB5MT0iNDQ1IiB4Mj0iNjIwIiB5Mj0iMjcyIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjA2IiBzdHJva2Utd2lkdGg9IjAuOCIvPjxsaW5lIHgxPSItMjkiIHkxPSI4MTUiIHgyPSIzOSIgeTI9IjY3NiIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4wNyIgc3Ryb2tlLXdpZHRoPSIwLjgiLz48bGluZSB4MT0iNzQxIiB5MT0iOTU4IiB4Mj0iODg0IiB5Mj0iNjY2IiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjA5IiBzdHJva2Utd2lkdGg9IjAuOSIvPjxsaW5lIHgxPSIxOTMiIHkxPSI1MDUiIHgyPSIyNDMiIHkyPSI0MDIiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuMTIiIHN0cm9rZS13aWR0aD0iMS4wIi8+PGxpbmUgeDE9Ijg2MiIgeTE9IjEwNzAiIHgyPSI5ODIiIHkyPSI4MjMiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuMDkiIHN0cm9rZS13aWR0aD0iMS43Ii8+PGxpbmUgeDE9IjIxMCIgeTE9IjM5MiIgeDI9IjIzMiIgeTI9IjM0NyIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4xMSIgc3Ryb2tlLXdpZHRoPSIxLjIiLz48bGluZSB4MT0iNDAzIiB5MT0iMjIxIiB4Mj0iNTE1IiB5Mj0iLTEwIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEuMCIvPjxsaW5lIHgxPSItMTAiIHkxPSI0MzkiIHgyPSIxOSIgeTI9IjM3OSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4wNSIgc3Ryb2tlLXdpZHRoPSIxLjAiLz48bGluZSB4MT0iMTMzIiB5MT0iNjQ0IiB4Mj0iMjUwIiB5Mj0iNDA0IiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjE2IiBzdHJva2Utd2lkdGg9IjEuNCIvPjxsaW5lIHgxPSI2MTYiIHkxPSI5NjciIHgyPSI3MDgiIHkyPSI3NzkiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuMTAiIHN0cm9rZS13aWR0aD0iMS43Ii8+PGxpbmUgeDE9IjQ5IiB5MT0iNzk3IiB4Mj0iMTg3IiB5Mj0iNTE1IiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjA2IiBzdHJva2Utd2lkdGg9IjEuNSIvPjxsaW5lIHgxPSI3OTIiIHkxPSI2OTAiIHgyPSI5NDYiIHkyPSIzNzUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuMTciIHN0cm9rZS13aWR0aD0iMC44Ii8+PGxpbmUgeDE9IjQyNCIgeTE9IjU1NSIgeDI9IjU5NiIgeTI9IjIwMiIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4xNyIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48bGluZSB4MT0iNDg0IiB5MT0iOTgyIiB4Mj0iNjI5IiB5Mj0iNjg2IiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjE1IiBzdHJva2Utd2lkdGg9IjAuOSIvPjxsaW5lIHgxPSItNjkiIHkxPSIxNDYiIHgyPSIxOCIgeTI9Ii0zMSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4wNyIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48bGluZSB4MT0iNDU5IiB5MT0iNjkxIiB4Mj0iNTkzIiB5Mj0iNDE1IiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjE1IiBzdHJva2Utd2lkdGg9IjEuMiIvPjxsaW5lIHgxPSItOTciIHkxPSI4NzciIHgyPSI2MCIgeTI9IjU1NyIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4xMyIgc3Ryb2tlLXdpZHRoPSIxLjIiLz48bGluZSB4MT0iNTU5IiB5MT0iNzMiIHgyPSI3MTQiIHkyPSItMjQ0IiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjA5IiBzdHJva2Utd2lkdGg9IjAuOCIvPjxsaW5lIHgxPSIxNjYiIHkxPSI4MDIiIHgyPSIyMjQiIHkyPSI2ODIiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuMTYiIHN0cm9rZS13aWR0aD0iMS43Ii8+PGxpbmUgeDE9IjM5NCIgeTE9IjQyMSIgeDI9IjUwMiIgeTI9IjE5OSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4xNSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48bGluZSB4MT0iNTE3IiB5MT0iNzA3IiB4Mj0iNTUzIiB5Mj0iNjM0IiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjA3IiBzdHJva2Utd2lkdGg9IjEuMCIvPjxsaW5lIHgxPSI2NDMiIHkxPSIzMzUiIHgyPSI3NjciIHkyPSI4MSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4wNSIgc3Ryb2tlLXdpZHRoPSIwLjgiLz48bGluZSB4MT0iMTY5IiB5MT0iNzM5IiB4Mj0iMzE1IiB5Mj0iNDM5IiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjE1IiBzdHJva2Utd2lkdGg9IjEuMCIvPjxsaW5lIHgxPSI0MTciIHkxPSI1MTEiIHgyPSI1MjIiIHkyPSIyOTQiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuMDciIHN0cm9rZS13aWR0aD0iMS42Ii8+PGxpbmUgeDE9Ijk5IiB5MT0iMTA3NiIgeDI9IjI4OSIgeTI9IjY4NiIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4wNSIgc3Ryb2tlLXdpZHRoPSIxLjIiLz48bGluZSB4MT0iNzIwIiB5MT0iMTA2NSIgeDI9IjgyMyIgeTI9Ijg1NCIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4wOSIgc3Ryb2tlLXdpZHRoPSIwLjkiLz48bGluZSB4MT0iODQ2IiB5MT0iMjMyIiB4Mj0iOTcyIiB5Mj0iLTI3IiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjA3IiBzdHJva2Utd2lkdGg9IjEuMiIvPjxsaW5lIHgxPSI4NTMiIHkxPSIxNDYiIHgyPSIxMDIyIiB5Mj0iLTIwMSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4xMyIgc3Ryb2tlLXdpZHRoPSIxLjYiLz48bGluZSB4MT0iNjAzIiB5MT0iMjU1IiB4Mj0iNzg3IiB5Mj0iLTEyMSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4xMiIgc3Ryb2tlLXdpZHRoPSIwLjciLz48bGluZSB4MT0iLTk2IiB5MT0iNTQxIiB4Mj0iNyIgeTI9IjMzMCIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4xMCIgc3Ryb2tlLXdpZHRoPSIwLjgiLz48bGluZSB4MT0iMjQ0IiB5MT0iMzQ4IiB4Mj0iNDE3IiB5Mj0iLTciIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuMDUiIHN0cm9rZS13aWR0aD0iMS41Ii8+PGxpbmUgeDE9IjczOSIgeTE9IjEzMiIgeDI9IjkyOCIgeTI9Ii0yNTQiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuMTYiIHN0cm9rZS13aWR0aD0iMS42Ii8+PGxpbmUgeDE9IjE5MCIgeTE9IjQwOSIgeDI9IjI4MiIgeTI9IjIyMCIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4yMCIgc3Ryb2tlLXdpZHRoPSIxLjMiLz48bGluZSB4MT0iMjYxIiB5MT0iNDcxIiB4Mj0iMzMyIiB5Mj0iMzI1IiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjA2IiBzdHJva2Utd2lkdGg9IjAuOCIvPjxsaW5lIHgxPSI3MzUiIHkxPSIzMTQiIHgyPSI5MjUiIHkyPSItNzYiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuMDkiIHN0cm9rZS13aWR0aD0iMS4wIi8+PGxpbmUgeDE9IjQxMSIgeTE9IjIwOSIgeDI9IjUwMCIgeTI9IjI2IiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjE5IiBzdHJva2Utd2lkdGg9IjEuNiIvPjxsaW5lIHgxPSI3MTIiIHkxPSI2OTQiIHgyPSI4OTgiIHkyPSIzMTIiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuMTkiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjYyMCIgeTE9IjU0IiB4Mj0iNzczIiB5Mj0iLTI2MCIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4xMiIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48bGluZSB4MT0iNTQ0IiB5MT0iMzE1IiB4Mj0iNTc1IiB5Mj0iMjUyIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjE5IiBzdHJva2Utd2lkdGg9IjAuOCIvPjxsaW5lIHgxPSIzNzIiIHkxPSIzNzgiIHgyPSI0NDgiIHkyPSIyMjMiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuMTYiIHN0cm9rZS13aWR0aD0iMS43Ii8+PGxpbmUgeDE9IjE2MCIgeTE9IjcyMiIgeDI9IjIzNiIgeTI9IjU2NiIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4xMyIgc3Ryb2tlLXdpZHRoPSIxLjEiLz48bGluZSB4MT0iNjciIHkxPSIxNzgiIHgyPSIxMjciIHkyPSI1NiIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4xOSIgc3Ryb2tlLXdpZHRoPSIxLjIiLz48bGluZSB4MT0iMTIwIiB5MT0iOTk3IiB4Mj0iMzIxIiB5Mj0iNTg1IiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjEyIiBzdHJva2Utd2lkdGg9IjAuOCIvPjxsaW5lIHgxPSI5MiIgeTE9IjEwMCIgeDI9IjE3NiIgeTI9Ii03MSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4wNiIgc3Ryb2tlLXdpZHRoPSIwLjkiLz48bGluZSB4MT0iMTU4IiB5MT0iNjI3IiB4Mj0iMzQwIiB5Mj0iMjU1IiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjE2IiBzdHJva2Utd2lkdGg9IjEuMSIvPjxsaW5lIHgxPSIzMTQiIHkxPSI1NzciIHgyPSI0MDQiIHkyPSIzOTMiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuMTAiIHN0cm9rZS13aWR0aD0iMC44Ii8+PGxpbmUgeDE9IjE3OCIgeTE9IjEwNjQiIHgyPSIyMjIiIHkyPSI5NzMiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuMTMiIHN0cm9rZS13aWR0aD0iMS4zIi8+PGxpbmUgeDE9Ijc2MyIgeTE9IjIzOCIgeDI9IjgzMyIgeTI9IjkzIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjA5IiBzdHJva2Utd2lkdGg9IjEuMSIvPjxsaW5lIHgxPSIzNDYiIHkxPSIxMDQ5IiB4Mj0iNTIwIiB5Mj0iNjkyIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjE4IiBzdHJva2Utd2lkdGg9IjAuNyIvPjxsaW5lIHgxPSItNjgiIHkxPSI3ODAiIHgyPSIxMTUiIHkyPSI0MDUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuMTIiIHN0cm9rZS13aWR0aD0iMS4zIi8+PGxpbmUgeDE9Ii0xMDAiIHkxPSI0MzEiIHgyPSI4OSIgeTI9IjQ0IiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjE3IiBzdHJva2Utd2lkdGg9IjEuNiIvPjxsaW5lIHgxPSI4NzIiIHkxPSIyNzMiIHgyPSI5MTQiIHkyPSIxODgiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuMDciIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjU4MiIgeTE9IjEwMzYiIHgyPSI3MzQiIHkyPSI3MjUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuMTUiIHN0cm9rZS13aWR0aD0iMS41Ii8+PGxpbmUgeDE9IjM1NyIgeTE9IjYwNyIgeDI9IjM4NiIgeTI9IjU0NyIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4xNyIgc3Ryb2tlLXdpZHRoPSIwLjkiLz48bGluZSB4MT0iODIwIiB5MT0iNzEwIiB4Mj0iODk2IiB5Mj0iNTUzIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjA3IiBzdHJva2Utd2lkdGg9IjEuMCIvPjxsaW5lIHgxPSI1MzYiIHkxPSI3NjgiIHgyPSI1NzgiIHkyPSI2ODIiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuMDYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjQ4MyIgeTE9IjQyNyIgeDI9IjU0NSIgeTI9IjMwMCIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4xNCIgc3Ryb2tlLXdpZHRoPSIwLjciLz48bGluZSB4MT0iMjAyIiB5MT0iNTA3IiB4Mj0iMzk2IiB5Mj0iMTA4IiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjE1IiBzdHJva2Utd2lkdGg9IjEuNiIvPjxsaW5lIHgxPSIzNzUiIHkxPSIyNTgiIHgyPSI0NDIiIHkyPSIxMjIiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuMTkiIHN0cm9rZS13aWR0aD0iMS40Ii8+PGxpbmUgeDE9IjIwNyIgeTE9IjI0IiB4Mj0iMzE5IiB5Mj0iLTIwNSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4xNSIgc3Ryb2tlLXdpZHRoPSIxLjEiLz48bGluZSB4MT0iMTU3IiB5MT0iNzM0IiB4Mj0iMzQ1IiB5Mj0iMzQ4IiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjA4IiBzdHJva2Utd2lkdGg9IjAuNyIvPjwvc3ZnPg==");}
+  .iv-dark{color:#fff; --nm:#fff; --sh:hsl(276,100%,76%); --iv-floor:#0c0e22; background:
+    var(--iv-streak-d) 0 0 / 900px 900px,
+    radial-gradient(ellipse 55% 60% at 88% 10%, rgba(124,72,200,.30), transparent 70%),
+    radial-gradient(ellipse 70% 80% at 50% 45%, rgba(40,44,90,.55), transparent 75%),
+    linear-gradient(180deg,#11132c 0%,#0b0d21 100%);}
+  .iv-light{color:var(--iv-ink); --nm:var(--iv-ink); --sh:hsl(272,95%,60%); background:
+    var(--iv-streak-l) 0 0 / 900px 900px,
+    radial-gradient(ellipse 55% 70% at 45% 40%, #fdfdfc, transparent 72%),
+    linear-gradient(115deg,#ebeae8 0%,#cdcbc8 100%);}
 
   /* THE WIPE. A new scene draws itself over the old one behind a slanted edge;
      the old one is switched off underneath once it is covered. */
@@ -1727,7 +1733,7 @@ editOverlay.addEventListener('click', (e) => {
   @keyframes ivBandR{0%{left:104%; opacity:1;} 100%{left:-18%; opacity:1;}}
 
   /* THE SHEEN. One bright bar crossing a name -- the letters are the window. */
-  .iv-name,.iv-vs,.iv-tname{background:linear-gradient(100deg, var(--nm) 0 42%, var(--sh) 50%, var(--nm) 58% 100%) 100% 0 / 320% 100% no-repeat;
+  .iv-name,.iv-vs,.iv-tname{background:linear-gradient(100deg, var(--nm) 0 46.5%, var(--sh) 50%, var(--nm) 53.5% 100%) 100% 0 / 320% 100% no-repeat;
     -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent;}
   @keyframes ivSheen{from{background-position:100% 0;} to{background-position:0 0;}}
   /* THE GLINT. The same idea across a fighter: a band of light masked to the
@@ -1743,11 +1749,11 @@ editOverlay.addEventListener('click', (e) => {
   /* corner furniture, the same on every scene so the eye stops reading it */
   .iv-tl,.iv-bl,.iv-br{position:absolute; font-size:20px; font-weight:700; letter-spacing:4px; text-transform:uppercase; opacity:.72;}
   .iv-tl{top:48px; left:60px;} .iv-bl{bottom:42px; left:60px;} .iv-br{bottom:42px; right:60px;}
-  .iv-tr{position:absolute; top:38px; right:58px; border:3px solid currentColor; padding:1px 11px 0;
-    font-size:38px; letter-spacing:2px; line-height:1.08;}
+  .iv-tr{position:absolute; top:38px; right:58px; border:3px solid currentColor; padding:0 12px 3px;
+    font-size:32px; letter-spacing:2px; line-height:1.2;}
   .iv-light .iv-tl,.iv-light .iv-bl,.iv-light .iv-br{opacity:.62;}
   .iv-chip{display:inline-block; background:var(--iv-hot); color:var(--iv-ink); font-weight:800; text-transform:uppercase;
-    font-size:30px; letter-spacing:3px; padding:5px 18px 4px; white-space:nowrap;}
+    font-size:30px; letter-spacing:3px; padding:5px 22px 4px; white-space:nowrap; border-radius:999px;}
   .iv-chip.white{background:#fff;}
   @keyframes ivUp{from{opacity:0; transform:translateY(16px);} to{opacity:1; transform:none;}}
   @keyframes ivPop{from{opacity:0; transform:scale(1.22);} to{opacity:1; transform:scale(1);}}
@@ -1759,7 +1765,7 @@ editOverlay.addEventListener('click', (e) => {
   @keyframes ivLine{0%{transform:scaleX(0); opacity:1;} 55%{transform:scaleX(1); opacity:.9;} 100%{transform:scaleX(1); opacity:0;}}
   #ivSting .iv-stack{position:absolute; left:0; right:0; top:50%; transform:translateY(-50%);
     display:flex; flex-direction:column; align-items:center; gap:22px;}
-  #ivSting .iv-markbox{border:8px solid #fff; padding:6px 34px 0; font-size:190px; line-height:1; letter-spacing:6px; opacity:0;}
+  #ivSting .iv-markbox{border:8px solid #fff; padding:0 36px 6px; font-size:170px; line-height:1.15; letter-spacing:6px; opacity:0;}
   #ivSting.on .iv-markbox{animation:ivMark .85s var(--iv-out) .3s both, ivRings 1.3s ease-out .55s both;}
   @keyframes ivMark{from{opacity:0; transform:scale(2.3); filter:blur(16px);} 35%{opacity:1;} to{opacity:1; transform:scale(1); filter:blur(0);}}
   @keyframes ivRings{
@@ -1772,7 +1778,11 @@ editOverlay.addEventListener('click', (e) => {
   #ivSting.on .iv-sub{animation:ivUp .5s var(--iv-out) 1s both;}
 
   /* ── ONE FIGHTER ── photo on one side, the name owns the other */
-  .iv-pic{position:absolute; bottom:0; background-size:contain; background-position:bottom center; background-repeat:no-repeat;}
+  /* Every fighter in the intro dissolves into the ground from the waist down
+     -- a cut-out that ends in a hard edge at the bottom of the frame reads as
+     a sticker. Intro only: the tape's own fighters are untouched. */
+  .iv-pic{position:absolute; bottom:0; background-size:contain; background-position:bottom center; background-repeat:no-repeat;
+    -webkit-mask-image:linear-gradient(to top, transparent 0, rgba(0,0,0,.55) 16%, #000 36%); mask-image:linear-gradient(to top, transparent 0, rgba(0,0,0,.55) 16%, #000 36%);}
   /* The silhouette is solid black on transparent: fine on the light ground,
      invisible on the dark one, so it is lifted to a pale shape there. */
   .iv-dark .iv-sil{filter:invert(1) opacity(.2);}
@@ -1780,10 +1790,11 @@ editOverlay.addEventListener('click', (e) => {
   .iv-solo .iv-inner{position:absolute; inset:0; transition:opacity .3s ease;}
   /* the way out: the scene lets go of its content a breath before it is covered */
   .iv-solo.out .iv-inner{opacity:.12;}
-  .iv-solo .iv-drift{position:absolute; inset:0;}
+  .iv-solo .iv-drift{position:absolute; inset:0; transform-origin:50% 100%;}
   .iv-solo.on .iv-drift{animation:ivDrift 3.4s linear both;}
-  @keyframes ivDrift{from{transform:scale(1);} to{transform:scale(1.05);}}
-  .iv-solo .iv-pic{width:900px; height:1096px; opacity:0;}
+  @keyframes ivDrift{from{transform:scale(1);} to{transform:scale(1.035);}}
+  /* 990 tall, so a head has clear air above it even at the end of the drift */
+  .iv-solo .iv-pic{width:900px; height:990px; opacity:0;}
   #ivA .iv-pic{left:10px; transform-origin:30% 100%;}
   #ivB .iv-pic{right:10px; transform-origin:70% 100%;}
   #ivA.on .iv-pic{animation:ivPicL 1.05s var(--iv-out) .2s both, ivBlur .6s ease-out .2s both;}
@@ -1795,20 +1806,22 @@ editOverlay.addEventListener('click', (e) => {
   #ivA .iv-id{left:880px;} #ivB .iv-id{left:96px;}
   .iv-small{font-size:30px; font-weight:800; letter-spacing:6px; text-transform:uppercase; margin:0 0 6px 34px; opacity:0;}
   .iv-nameRow{display:flex; align-items:stretch;}
-  .iv-bar{flex:0 0 12px; background:var(--iv-deep); margin:10px 22px 26px 0; transform:scaleY(0);}
+  .iv-bar{flex:0 0 10px; background:var(--iv-deep); margin:34px 22px 34px 0; transform:scaleY(0);}
   .iv-dark .iv-bar{background:var(--iv-hot);}
-  .iv-name{white-space:nowrap; line-height:.88; letter-spacing:1px; font-size:260px; padding-top:.06em;}
+  .iv-name{white-space:nowrap; line-height:1.04; letter-spacing:1px; font-size:250px; text-transform:uppercase;}
   .iv-solo .iv-name{clip-path:inset(0 100% 0 0);}
   .iv-solo.on .iv-bar{animation:ivBar .45s var(--iv-out) .38s both;}
   .iv-solo.on .iv-name{animation:ivName .8s var(--iv-out) .5s both, ivSheen 1.15s ease-in-out 1.3s both;}
   .iv-solo.on .iv-small{animation:ivUp .5s var(--iv-out) .78s both;}
   @keyframes ivBar{from{transform:scaleY(0);} to{transform:scaleY(1);}}
   @keyframes ivName{from{clip-path:inset(0 100% 0 0); transform:translateX(-34px);} to{clip-path:inset(0 0 0 0); transform:none;}}
-  .iv-stats{display:flex; gap:46px; margin:4px 0 0 34px;}
-  .iv-stat{opacity:0;}
-  .iv-solo.on .iv-stat{animation:ivUp .5s var(--iv-out) both;}
-  .iv-stat b{display:block; font-size:66px; font-weight:800; line-height:1;}
-  .iv-stat i{display:block; font-style:normal; font-size:17px; font-weight:700; letter-spacing:3.5px; text-transform:uppercase; opacity:.62; margin-top:4px;}
+  .iv-stats{display:flex; margin:6px 0 0 34px;}
+  .iv-stat{opacity:0; padding:0 26px; text-align:center;}
+  .iv-stat:first-child{padding-left:0;}
+  .iv-stat + .iv-stat{border-left:2px solid rgba(128,128,150,.38);}
+  .iv.on .iv-stat{animation:ivUp .5s var(--iv-out) both;}
+  .iv-stat b{display:block; font-family:'Anton','Bebas Neue',sans-serif; font-weight:400; font-size:58px; line-height:1.05;}
+  .iv-stat i{display:block; font-style:normal; font-size:16px; font-weight:700; letter-spacing:3px; text-transform:uppercase; opacity:.62; margin-top:2px;}
   .iv-dark .iv-stat.hot b{color:var(--iv-hot);} .iv-light .iv-stat.hot b{color:var(--iv-deep);}
 
   /* ── VS ── */
@@ -1816,26 +1829,34 @@ editOverlay.addEventListener('click', (e) => {
     display:flex; align-items:center; justify-content:center; gap:120px;}
   .iv-chev{width:170px; height:330px; background:var(--iv-hot); opacity:0;
     clip-path:polygon(0 0, 40% 0, 100% 50%, 40% 100%, 0 100%, 60% 50%);}
-  #ivVs .iv-vs{font-size:330px; line-height:.86; letter-spacing:4px; padding-top:.06em; opacity:0;}
+  #ivVs .iv-vs{font-size:310px; line-height:1.04; letter-spacing:6px; opacity:0;}
   #ivVs .iv-chipRow{position:absolute; left:0; right:0; top:742px; text-align:center; opacity:0;}
-  #ivVs .iv-topMark{position:absolute; left:50%; top:236px; transform:translateX(-50%); border:3px solid #fff; padding:1px 11px 0;
-    font-size:38px; letter-spacing:2px; line-height:1.08; opacity:0;}
+  #ivVs .iv-topMark{position:absolute; left:50%; top:236px; transform:translateX(-50%); border:3px solid #fff; padding:0 12px 3px;
+    font-size:32px; letter-spacing:2px; line-height:1.2; opacity:0;}
   /* hairlines in from two corners, and one soft flash as the chevrons land */
   .iv-ray{position:absolute; width:620px; height:2px; background:var(--iv-hot); opacity:0;}
   .iv-ray.a{right:-60px; top:150px; transform-origin:100% 50%; --r:-28deg;}
   .iv-ray.b{left:-60px; bottom:150px; transform-origin:0 50%; --r:-28deg;}
-  #ivVs.on .iv-ray{animation:ivRay .7s var(--iv-out) .12s both;}
+  #ivVs.on .iv-ray{animation:ivRay .7s var(--iv-out) .4s both;}
   @keyframes ivRay{0%{opacity:.9; transform:rotate(var(--r)) scaleX(0);} 60%{opacity:.9; transform:rotate(var(--r)) scaleX(1);} 100%{opacity:0; transform:rotate(var(--r)) scaleX(1);}}
   .iv-flash{position:absolute; inset:0; background:#fff; opacity:0; z-index:8;}
-  #ivVs.on .iv-flash{animation:ivFlash .5s ease-out .34s both;}
-  @keyframes ivFlash{from{opacity:.42;} to{opacity:0;}}
-  #ivVs.on .iv-chev.l{animation:ivChevL .7s var(--iv-out) .24s both;}
-  #ivVs.on .iv-chev.r{animation:ivChevR .7s var(--iv-out) .24s both;}
-  #ivVs.on .iv-vs{animation:ivPop .6s var(--iv-out) .32s both, ivSheen .9s ease-in-out .62s both;}
-  #ivVs.on .iv-chipRow{animation:ivUp .45s var(--iv-out) .56s both;}
-  #ivVs.on .iv-topMark{animation:ivFade .45s ease .56s both;}
-  @keyframes ivChevL{from{opacity:0; transform:translateX(-340px);} to{opacity:1; transform:none;}}
-  @keyframes ivChevR{from{opacity:0; transform:translateX(340px) scaleX(-1);} to{opacity:1; transform:scaleX(-1);}}
+  #ivVs.on .iv-flash{animation:ivFlash .4s ease-out .82s both;}
+  @keyframes ivFlash{from{opacity:.38;} to{opacity:0;}}
+  /* THE SLAM. Everything arrives ACCELERATING and stops dead on the same
+     frame -- chevrons from the edges, VS from the camera -- then the flash and
+     a short shake. An ease-out entrance is a thing settling; this is a thing
+     landing. */
+  #ivVs.on .iv-chev.l{animation:ivChevL .36s cubic-bezier(.55,0,.9,.35) .46s both;}
+  #ivVs.on .iv-chev.r{animation:ivChevR .36s cubic-bezier(.55,0,.9,.35) .46s both;}
+  #ivVs.on .iv-vs{animation:ivSlam .46s cubic-bezier(.55,0,.9,.35) .46s both, ivSheen .9s ease-in-out 1.15s both;}
+  @keyframes ivSlam{0%{opacity:0; transform:scale(4);} 78%{opacity:1; transform:scale(1);} 88%{transform:scale(.95);} 100%{opacity:1; transform:scale(1);}}
+  #ivVs.on .iv-row{animation:ivShake .34s linear .82s both;}
+  @keyframes ivShake{0%,100%{transform:translate(0,-54%);} 15%{transform:translate(-14px,calc(-54% + 8px));} 35%{transform:translate(12px,calc(-54% - 7px));}
+    55%{transform:translate(-8px,calc(-54% + 4px));} 78%{transform:translate(4px,calc(-54% - 2px));}}
+  #ivVs.on .iv-chipRow{animation:ivUp .45s var(--iv-out) 1s both;}
+  #ivVs.on .iv-topMark{animation:ivFade .45s ease 1s both;}
+  @keyframes ivChevL{from{opacity:0; transform:translateX(-760px);} to{opacity:1; transform:none;}}
+  @keyframes ivChevR{from{opacity:0; transform:translateX(760px) scaleX(-1);} to{opacity:1; transform:scaleX(-1);}}
   /* the way out: VS comes at the camera, the chevrons part */
   #ivVs.on.out .iv-vs{animation:ivVsOut .5s cubic-bezier(.6,0,.9,.4) both;}
   #ivVs.on.out .iv-chev.l{animation:ivChevLOut .5s cubic-bezier(.6,0,.9,.4) both;}
@@ -1853,7 +1874,7 @@ editOverlay.addEventListener('click', (e) => {
      size while the fighters rise either side. One scene and one pair of
      elements, so there is no cut to hide: a hot bar opening across the frame
      was tried for that join and it read as a glitch. */
-  #ivLock .iv-pic{width:720px; height:1030px; opacity:0;}
+  #ivLock .iv-pic{width:720px; height:930px; opacity:0;}
   #ivLock .iv-pic.a{left:-40px;} #ivLock .iv-pic.b{right:-40px;}
   #ivLock.on .iv-pic.a{animation:ivRiseL 1.1s var(--iv-out) 2s both;}
   #ivLock.on .iv-pic.b{animation:ivRiseR 1.1s var(--iv-out) 2.08s both;}
@@ -1861,17 +1882,17 @@ editOverlay.addEventListener('click', (e) => {
   @keyframes ivRiseR{from{opacity:0; transform:translate(70px,90px);} 30%{opacity:1;} to{opacity:1; transform:none;}}
   #ivLock.on .iv-glint::before{animation:ivGlint 1.25s ease-in-out 3.6s both;}
   #ivLock.on .iv-pic.b .iv-glint::before{animation-delay:3.8s;}
-  #ivLock .iv-mid{position:absolute; left:460px; width:1000px; text-align:center; z-index:4;}
-  #ivLock .iv-mid.a{bottom:540px; color:var(--iv-ink); --nm:var(--iv-ink); --sh:hsl(272,95%,64%); padding-bottom:26px;}
-  #ivLock .iv-mid.b{top:540px; color:#fff; --nm:#fff; --sh:hsl(276,100%,76%); padding-top:30px;}
-  #ivLock .iv-name{display:inline-block; font-size:200px; opacity:0;}
-  #ivLock .iv-rec{font-size:30px; font-weight:800; letter-spacing:7px; text-transform:uppercase; opacity:0;}
-  #ivLock .iv-mid.a .iv-rec{margin-bottom:2px; color:var(--iv-deep);} #ivLock .iv-mid.b .iv-rec{margin-top:6px; color:var(--iv-hot);}
+  #ivLock .iv-mid{position:absolute; left:360px; width:1200px; text-align:center; z-index:4;}
+  #ivLock .iv-mid.a{bottom:540px; color:var(--iv-ink); --nm:var(--iv-ink); --sh:hsl(272,95%,64%); padding-bottom:74px;}
+  #ivLock .iv-mid.b{top:540px; color:#fff; --nm:#fff; --sh:hsl(276,100%,76%); padding-top:14px;}
+  #ivLock .iv-name{display:inline-block; font-size:250px; opacity:0;}
+  #ivLock .iv-stats{justify-content:center; margin:0;}
+  #ivLock .iv-stat b{font-size:42px;} #ivLock .iv-stat i{font-size:14px;}
+  #ivLock .iv-stat:first-child{padding-left:26px;}
   /* --g is how much bigger than its lock-up size each name can go and still
      fit the frame; fill() works it out per name. */
   #ivLock.on .iv-mid.a .iv-name{animation:ivNmA 2.9s linear both, ivSheen 1.25s ease-in-out 3.5s both;}
   #ivLock.on .iv-mid.b .iv-name{animation:ivNmB 2.9s linear both, ivSheen 1.25s ease-in-out 3.7s both;}
-  #ivLock.on .iv-rec{animation:ivUp .5s var(--iv-out) 2.75s both;}
   @keyframes ivNmA{0%{opacity:1; transform:translateX(-46px) scale(var(--g,2));}
     62%{opacity:1; transform:translateX(46px) scale(var(--g,2)); animation-timing-function:cubic-bezier(.76,0,.24,1);} 100%{opacity:1; transform:none;}}
   @keyframes ivNmB{0%{opacity:1; transform:translateX(46px) scale(var(--g,2));}
@@ -1880,15 +1901,24 @@ editOverlay.addEventListener('click', (e) => {
   @keyframes ivTtlA{from{opacity:0; transform:scale(1.5) translateY(-10px);} 25%{opacity:1;} to{opacity:1; transform:none;}}
   @keyframes ivTtlB{from{opacity:0; transform:scale(1.5) translateY(10px);} 25%{opacity:1;} to{opacity:1; transform:none;}}
   #ivLock .iv-seamMark{position:absolute; left:50%; top:540px; transform:translate(-50%,-50%); z-index:6;
-    background:var(--iv-ink); color:#fff; border:5px solid var(--iv-hot); font-size:92px; line-height:1; letter-spacing:4px; padding:10px 22px 2px; opacity:0;}
+    background:var(--iv-ink); color:#fff; border:5px solid var(--iv-hot); font-size:80px; line-height:1.15; letter-spacing:4px; padding:0 24px 4px; opacity:0;}
   #ivLock.on .iv-seamMark{animation:ivMarkInOut 1.9s var(--iv-out) .35s both;}
   @keyframes ivMarkInOut{0%{opacity:0; transform:translate(-50%,-50%) scale(1.5);} 22%{opacity:1; transform:translate(-50%,-50%) scale(1);}
     80%{opacity:1; transform:translate(-50%,-50%) scale(1);} 100%{opacity:0; transform:translate(-50%,-50%) scale(.6);}}
   #ivLock .iv-mid.a .iv-name{transform-origin:50% 100%;} #ivLock .iv-mid.b .iv-name{transform-origin:50% 0;}
-  #ivLock .iv-seam{position:absolute; left:50%; top:540px; transform:translate(-50%,-50%); z-index:5;
-    background:var(--iv-hot); color:var(--iv-ink); font-size:46px; letter-spacing:4px; line-height:1; padding:7px 20px 2px; opacity:0;}
-  #ivLock.on .iv-seam{animation:ivSeam .5s var(--iv-out) 2.5s both;}
-  @keyframes ivSeam{from{opacity:0; transform:translate(-50%,-50%) scale(1.6);} to{opacity:1; transform:translate(-50%,-50%) scale(1);}}
+  /* VS is a TAB: a dark trapezoid standing on the seam, cut from the lower
+     ground, so the two names are joined by a piece of the picture rather than
+     by a label floating on top of it. It slams down like the VS beat did. */
+  #ivLock .iv-seam{position:absolute; left:50%; top:541px; width:330px; height:66px; transform:translate(-50%,-100%); transform-origin:50% 100%; z-index:6;
+    background:#11132c; clip-path:polygon(15% 0, 85% 0, 100% 100%, 0 100%); opacity:0;
+    display:flex; align-items:center; justify-content:center; color:var(--iv-hot); font-size:44px; line-height:1; letter-spacing:20px; text-indent:20px;}
+  #ivLock .iv-seam span{display:block; transform:skewX(-12deg);}
+  #ivLock.on .iv-seam{animation:ivSeam .32s cubic-bezier(.55,0,.9,.35) 2.5s both;}
+  @keyframes ivSeam{0%{opacity:0; transform:translate(-50%,-100%) scale(2.6);} 80%{opacity:1; transform:translate(-50%,-100%) scale(1);} 90%{transform:translate(-50%,-100%) scale(.94);} 100%{opacity:1; transform:translate(-50%,-100%) scale(1);}}
+  @keyframes ivSeamOut{from{opacity:1; transform:translate(-50%,-100%) scale(1);} to{opacity:0; transform:translate(-50%,-100%) scale(1,0);}}
+  #ivLock .iv-pill{position:absolute; left:50%; top:40px; transform:translateX(-50%); z-index:5; opacity:0;}
+  #ivLock.on .iv-pill{animation:ivFade .45s ease 2.85s both;}
+  #ivLock .iv-cornerMark{right:auto; left:58px; z-index:5; color:var(--iv-ink);}
   /* THE HAND-OFF. Nothing fades: the title card OPENS. A flare runs the seam,
      the light half lifts and the dark half drops like doors with the words
      riding them, and the scene behind is simply there for the tape to build on. */
@@ -1896,11 +1926,11 @@ editOverlay.addEventListener('click', (e) => {
      The names, the fighters and the chips all step off and TALE OF / THE TAPE
      stands alone on the seam, so the tape that follows is announced rather
      than sprung. It rides the doors out. */
-  #ivLock .iv-tname{display:inline-block; font-size:250px; line-height:.88; letter-spacing:3px; padding-top:.06em; white-space:nowrap; opacity:0;}
+  #ivLock .iv-tname{display:inline-block; font-size:230px; line-height:1.04; letter-spacing:3px; text-transform:uppercase; white-space:nowrap; opacity:0;}
   #ivLock .iv-mid.a .iv-tname{transform-origin:50% 100%;} #ivLock .iv-mid.b .iv-tname{transform-origin:50% 0;}
   #ivLock.on.title .iv-mid.a .iv-name{animation:ivNameOutA .45s var(--iv-io) both;}
   #ivLock.on.title .iv-mid.b .iv-name{animation:ivNameOutB .45s var(--iv-io) both;}
-  #ivLock.on.title .iv-rec, #ivLock.on.title .iv-chips{animation:ivGone .25s ease both;}
+  #ivLock.on.title .iv-stats, #ivLock.on.title .iv-chips, #ivLock.on.title .iv-pill{animation:ivGone .25s ease both;}
   #ivLock.on.title .iv-wing.a{animation:ivWingOutA .55s var(--iv-io) both;}
   #ivLock.on.title .iv-wing.b{animation:ivWingOutB .55s var(--iv-io) both;}
   @keyframes ivWingOutA{from{opacity:1; transform:none;} to{opacity:0; transform:translateX(-260px);}}
@@ -1918,7 +1948,7 @@ editOverlay.addEventListener('click', (e) => {
   #ivLock.push .iv-top{box-shadow:0 8px 70px 10px hsla(276,100%,74%,.95);}
   #ivLock.push .iv-bot{box-shadow:0 -8px 70px 10px hsla(276,100%,74%,.95);}
   /* inset:0 so a moving wing is still the full frame its photo stands in */
-  #ivLock .iv-wing{position:absolute; inset:0;}
+  #ivLock .iv-wing{position:absolute; inset:0; z-index:5;}
   @keyframes ivGone{to{opacity:0;}}
   .iv-flare{position:absolute; left:-5%; right:-5%; top:537px; height:6px; z-index:6; opacity:0; background:#fff;
     box-shadow:0 0 30px 8px #fff, 0 0 120px 40px hsla(276,100%,72%,.9);}
@@ -1951,7 +1981,7 @@ editOverlay.addEventListener('click', (e) => {
       <div class="iv-drift"><div class="iv-pic" data-pic="Left"></div></div>
       <div class="iv-id">
         <div class="iv-small" data-iv="countryA"></div>
-        <div class="iv-nameRow"><i class="iv-bar"></i><div class="iv-name iv-bebas" data-iv="nameA" data-max="260" data-room="880"></div></div>
+        <div class="iv-nameRow"><i class="iv-bar"></i><div class="iv-name iv-bebas" data-iv="nameA" data-max="250" data-room="900"></div></div>
         <div class="iv-stats" data-stats="Left"></div>
       </div>
     </div>
@@ -1976,7 +2006,7 @@ editOverlay.addEventListener('click', (e) => {
       <div class="iv-drift"><div class="iv-pic" data-pic="Right"></div></div>
       <div class="iv-id">
         <div class="iv-small" data-iv="countryB"></div>
-        <div class="iv-nameRow"><i class="iv-bar"></i><div class="iv-name iv-bebas" data-iv="nameB" data-max="260" data-room="880"></div></div>
+        <div class="iv-nameRow"><i class="iv-bar"></i><div class="iv-name iv-bebas" data-iv="nameB" data-max="250" data-room="900"></div></div>
         <div class="iv-stats" data-stats="Right"></div>
       </div>
     </div>
@@ -1990,18 +2020,20 @@ editOverlay.addEventListener('click', (e) => {
     <div class="iv-light iv-wing a" style="background:none;"><div class="iv-pic a" data-pic="Left"><div class="iv-glint"></div></div></div>
     <div class="iv-dark iv-wing b" style="background:none;"><div class="iv-pic b" data-pic="Right"><div class="iv-glint"></div></div></div>
     <div class="iv-mid a">
-      <div class="iv-rec" data-iv="lineA"></div>
-      <div class="iv-name iv-bebas" data-iv="nameA" data-max="200" data-room="900"></div>
+      <div class="iv-stats" data-stats="Left" data-base="2.8"></div>
+      <div class="iv-name iv-bebas" data-iv="nameA" data-max="250" data-room="900"></div>
     </div>
-    <div class="iv-seam iv-bebas">VS</div>
-    <div class="iv-mid a"><div class="iv-tname iv-bebas">TALE OF</div></div>
+    <div class="iv-seam iv-bebas"><span>VS</span></div>
+    <div class="iv-chip iv-pill" data-iv="title"></div>
+    <div class="iv-tr iv-cornerMark iv-bebas" data-iv="league"></div>
+    <div class="iv-mid a" style="padding-bottom:10px"><div class="iv-tname iv-bebas">TALE OF</div></div>
     <div class="iv-mid b"><div class="iv-tname iv-bebas">THE TAPE</div></div>
     <div class="iv-flare"></div>
     <div class="iv-mid b">
-      <div class="iv-name iv-bebas" data-iv="nameB" data-max="200" data-room="900"></div>
-      <div class="iv-rec" data-iv="lineB"></div>
+      <div class="iv-name iv-bebas" data-iv="nameB" data-max="250" data-room="900"></div>
+      <div class="iv-stats" data-stats="Right" data-base="2.9"></div>
     </div>
-    <div class="iv-chips"><span class="iv-chip" data-iv="league"></span><span class="iv-chip white" data-iv="sub"></span><span class="iv-chip white" data-iv="title"></span></div>
+    <div class="iv-chips"><span class="iv-chip" data-iv="league"></span><span class="iv-chip white" data-iv="sub"></span></div>
     <div class="iv-seamMark iv-bebas" data-iv="league"></div>
     <div class="iv-band"></div>
   </div>
@@ -2021,7 +2053,7 @@ editOverlay.addEventListener('click', (e) => {
 
   // When each beat starts, in ms. One list, read by the pictures AND the
   // sound, so the pacing is tuned in one place and the two cannot drift.
-  const T = { a:1500, aOut:3950, vs:4150, vsOut:5350, b:5500, bOut:7950, lock:8150, settle:9950, title:13100, push:15000 };
+  const T = { a:1500, aOut:3950, vs:4150, vsOut:5650, b:5800, bOut:8250, lock:8450, settle:10250, title:13400, push:15300 };
   const PUSH_MS = 1450, TAPE_AT = 520;   // the hand-off's length, and how far into it the tape starts
 
   // Read off the tape, never from a payload of its own: whatever the tape is
@@ -2055,7 +2087,7 @@ editOverlay.addEventListener('click', (e) => {
       if(!blank(f.rank)) cells.push([f.rank,'Rank',true]);
       cells.forEach(([n,label,hot], i) => {
         const c = document.createElement('div'); c.className = 'iv-stat' + (hot ? ' hot' : '');
-        c.style.animationDelay = (0.9 + i*0.11) + 's';
+        c.style.animationDelay = ((+box.dataset.base || 0.9) + i*0.11) + 's';
         const b = document.createElement('b'); b.textContent = n;
         const l = document.createElement('i'); l.textContent = label;
         c.append(b, l); box.append(c);
@@ -2128,7 +2160,7 @@ editOverlay.addEventListener('click', (e) => {
 
     whoosh(40, 0.7, 500, 3200, 0.3, -0.6, 0.6);  hit(430, 0.7)                                  // the line, the mark lands
     whoosh(T.a, 0.75, 350, 2600, 0.42, -0.8, 0.7);  whoosh(T.a + 1300, 0.9, 2500, 6500, 0.1, -0.5, 0.5)   // left corner, its light sweep
-    whoosh(T.vs, 0.75, 350, 2600, 0.4, -0.8, 0.7);  hit(T.vs + 340, 0.6)                        // VS lands
+    whoosh(T.vs, 0.6, 350, 2600, 0.4, -0.8, 0.7);  whoosh(T.vs + 460, 0.38, 300, 4000, 0.4, 0, 0, 0.92);  hit(T.vs + 820, 1.0)   // VS slams
     whoosh(T.vsOut, 0.55, 600, 5200, 0.42, 0, 0, 0.8)                                           // VS at the camera
     whoosh(T.b, 0.75, 350, 2600, 0.42, 0.8, -0.7);  whoosh(T.b + 1300, 0.9, 2500, 6500, 0.1, 0.5, -0.5)   // right corner, its light sweep
     whoosh(T.lock, 0.75, 300, 2200, 0.38, -0.8, 0.7)                                            // the names, giant
@@ -2192,7 +2224,7 @@ editOverlay.addEventListener('click', (e) => {
 
   // Warm the display face before the first press: every name is fitted by
   // measuring it, and measured in the fallback it settles on the wrong size.
-  if(document.fonts && document.fonts.load) document.fonts.load('200px "Bebas Neue"').catch(()=>{});
+  if(document.fonts && document.fonts.load) document.fonts.load('200px "Anton"').catch(()=>{});
 
   window.__playIntro = play;
   window.__cancelIntro = cancel;
