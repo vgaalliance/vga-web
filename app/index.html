@@ -833,8 +833,10 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .pw2{height:118px;position:relative;display:flex;align-items:flex-end;justify-content:center;cursor:pointer}
 .pw2 .cut2{height:100%;width:auto;max-width:none;object-fit:contain;object-position:bottom center}
 .pw2 .cut2.flip{transform:scaleX(-1)}
-.pw2 .sil2{height:86%;width:auto;fill:rgba(190,175,235,.3)}
-.pw2.win::after{content:'';position:absolute;left:16%;right:16%;bottom:-4px;height:3px;
+.pw2 .sil2{height:100%;width:auto;fill:rgba(190,175,235,.3)}
+/* The feet are ON the boundary now, so a -4px underline would sit inside the
+   name row. It rides just above the line instead. */
+.pw2.win::after{content:'';position:absolute;left:16%;right:16%;bottom:2px;height:3px;
   border-radius:2px;background:#6EE7B7}
 .vsx2{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#7E7699;text-align:center;
   padding-bottom:36px;letter-spacing:.06em}
@@ -876,6 +878,33 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .tr2.big2.toB .gap2{right:12px;color:#8FC6FF}
 .notape{padding:10px 0;text-align:center;font-family:'Space Mono',monospace;font-size:8px;
   letter-spacing:.08em;color:#6E6688}
+/* ══ THE RECAP ══ A bout that has been fought can show its replay in the
+   fighters' own slot — the tape never moves, the photos step aside. Only drawn
+   when the bout carries recap data; today nothing does, because the ToTF
+   per-round export is not ingested yet. */
+.rtab2{display:flex;margin:0 -12px;border-top:1px solid rgba(255,255,255,.07)}
+.rtab2 span{flex:1;text-align:center;padding:6px;font-family:'Space Mono',monospace;
+  font-size:7.5px;letter-spacing:.15em;text-transform:uppercase;color:#7E7699;cursor:pointer;
+  border-bottom:1px solid transparent}
+.rtab2 span.on{color:#EDEAF6;border-bottom-color:#A78BFA}
+.rpl2{position:relative}
+.rpl2 video,.rpl2 img.rp{display:block;width:100%;height:118px;object-fit:contain;
+  object-position:bottom center}
+.dmg2{padding:7px 12px 2px}
+.dmg2 .hd{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;
+  font-size:6px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#5C557A;
+  margin-bottom:3px}
+.dmg2 .hd em{font-style:normal;letter-spacing:.08em}
+.dmg2 .hd em.a{color:#F19C96} .dmg2 .hd em.b{color:#8FC6FF}
+.dmg2 svg{display:block;width:100%;height:24px;overflow:visible}
+.dmg2 .zr{stroke:rgba(173,160,226,.16);stroke-width:1}
+.dmg2 .la{fill:none;stroke:#F19C96;stroke-width:1.4;stroke-linejoin:round;stroke-linecap:round}
+.dmg2 .lb{fill:none;stroke:#8FC6FF;stroke-width:1.4;stroke-linejoin:round;stroke-linecap:round}
+.dmg2 .kol{stroke:#F2B544;stroke-width:1;stroke-dasharray:2 2}
+.dmg2 .kot{fill:#F2B544;font-family:'Space Mono',monospace;font-size:5.5px;letter-spacing:.1em}
+.dmg2 .rds{display:flex;margin-top:3px}
+.dmg2 .rds b{flex:1;text-align:center;font-family:'Space Mono',monospace;font-size:5.5px;
+  font-weight:400;letter-spacing:.11em;color:#4E4768}
 .more2{display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 0 10px;
   margin:0 -12px;background:rgba(0,0,0,.22);
   font-family:'Space Mono',monospace;font-size:7.5px;font-weight:700;letter-spacing:.16em;
@@ -7218,7 +7247,7 @@ async function loadCard(e){
   var tape = {};
   if(slugs.length){
     var fs = await q("fighter_cards?select=slug,profile_photo_url,profile_photo_thumb_url,headline_wins,headline_losses,"
-      + "headline_draws,height,reach,stance,country,headline_ko_wins&slug=in.(" + slugs.join(',') + ")");
+      + "headline_draws,height,reach,stance,headline_ko_wins&slug=in.(" + slugs.join(',') + ")");
     if(fs) fs.forEach(function(f){ tape[f.slug] = f; });
   }
   if(!el.isConnected) return;
@@ -7254,11 +7283,14 @@ async function loadCard(e){
             + '<div class="wc4">'
             + esc(b.is_title_fight ? (b.title_name || 'Title fight')
                                    : (wc(b.weight_class) || 'Catch weight')) + '</div>'
-            + '<div class="fz2"><div class="duo2">'
-            + corner(A, b.fighter_a_slug, done && b.winner_corner === 'a', '')
-            + '<span class="vsx2">' + (done ? esc((b.method||'').toUpperCase() || 'RESULT') : 'VS') + '</span>'
-            + corner(Bf, b.fighter_b_slug, done && b.winner_corner === 'b', 'flip')
-            + '</div></div>'
+            /* A bout with a recap shows it in the fighters' slot; the tape
+               below never moves either way. */
+            + (b.recap ? boutRecap(b.recap)
+               : '<div class="fz2"><div class="duo2">'
+                 + corner(A, b.fighter_a_slug, done && b.winner_corner === 'a', '')
+                 + '<span class="vsx2">' + (done ? esc((b.method||'').toUpperCase() || 'RESULT') : 'VS') + '</span>'
+                 + corner(Bf, b.fighter_b_slug, done && b.winner_corner === 'b', 'flip')
+                 + '</div></div>')
             + '<div class="keep2"><div class="tr2 nm2">'
             + '<b class="l' + (done && b.winner_corner === 'a' ? ' win' : '') + '"'
             + (b.fighter_a_slug ? ' data-slug="'+esc(b.fighter_a_slug)+'"' : '') + '>'
@@ -7279,14 +7311,65 @@ function rec(f){
   return (f.headline_wins||0) + '-' + (f.headline_losses||0)
        + (f.headline_draws ? '-' + f.headline_draws : '');
 }
+/* THE RECAP BLOCK. Drawn only for a bout that carries one — the replay takes
+   the fighters' slot at their exact height, and the damage runs as a sliver
+   under it: two lines, one per corner, with the stoppage marked.
+   `r.series` is [[a…],[b…]] normalised 0..1 and `r.ko` is the index of the
+   stopping blow. Nothing supplies these yet; the ToTF per-round export is the
+   thing that will. */
+function boutRecap(r){
+  if(!r || !r.series) return '';
+  var A = r.series[0] || [], B = r.series[1] || [], N = Math.max(A.length, B.length);
+  if(N < 2) return '';
+  var W = 300, H = 24, PAD = 1.5;
+  function pts(a){
+    var o = [];
+    for(var i = 0; i < a.length; i++)
+      o.push((i / (N - 1) * W).toFixed(1) + ',' + (H - PAD - a[i] * (H - PAD * 2 - 1)).toFixed(1));
+    return o.join(' ');
+  }
+  var ko = r.ko != null ? (r.ko / (N - 1) * W) : null;
+  var rounds = r.rounds || 5, rd = '';
+  for(var k = 1; k <= rounds; k++) rd += '<b>R' + k + '</b>';
+  return '<div class="rtab2"><span data-rtab="f">Fighters</span>'
+       + '<span class="on" data-rtab="r">Replay</span></div>'
+       + '<div class="rpl2">' + (r.clip
+            ? '<video src="' + esc(r.clip) + '" muted loop autoplay playsinline></video>'
+            : '<img class="rp" src="' + esc(r.still || '') + '" alt="" onerror="this.remove()">')
+       + '</div>'
+       + '<div class="dmg2"><div class="hd"><span>Damage</span>'
+       +   '<span><em class="a">\u2014 ' + esc(r.a || 'Red') + '</em> '
+       +   '<em class="b">\u2014 ' + esc(r.b || 'Blue') + '</em></span></div>'
+       + '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">'
+       +   '<line class="zr" x1="0" y1="' + (H - 1) + '" x2="' + W + '" y2="' + (H - 1) + '"/>'
+       +   (ko != null ? '<line class="kol" x1="' + ko.toFixed(1) + '" y1="0" x2="'
+                       + ko.toFixed(1) + '" y2="' + H + '"/>'
+                       + '<text class="kot" x="' + Math.min(ko + 4, W - 20).toFixed(1) + '" y="7">'
+                       + esc(r.koLabel || 'TKO') + '</text>' : '')
+       +   '<polyline class="la" points="' + pts(A) + '"/>'
+       +   '<polyline class="lb" points="' + pts(B) + '"/>'
+       + '</svg><div class="rds">' + rd + '</div></div>';
+}
+
+/* Swaps a bout cut-out that failed to load for the silhouette, in place. */
+function boutSil(img){
+  img.outerHTML = '<svg class="sil2" viewBox="0 0 60 100" preserveAspectRatio="xMidYMax meet">'
+    + '<circle cx="30" cy="21" r="14"/>'
+    + '<path d="M30 38c-14 0-24 9-26 22l-4 40h60l-4-40c-2-13-12-22-26-22z"/></svg>';
+}
 function corner(f, slug, won, flip){
   /* 118px tall on screen — the thumb (463px) covers a 3x phone with room over. */
   var cut = f.profile_photo_thumb_url || f.profile_photo_url;
-  var inner = cut
-    ? '<img class="cut2 ' + flip + '" src="' + esc(cut) + '" alt="" loading="lazy" decoding="async">'
-    : '<svg class="sil2" viewBox="0 0 60 100" preserveAspectRatio="xMidYMax meet">'
+  /* A dead photo URL must fall back to the SAME silhouette a photoless fighter
+     gets — every other image path in this app guards itself and this one did
+     not, so a 404 left an empty 118px hole in the middle of a bout. */
+  var SIL = '<svg class="sil2" viewBox="0 0 60 100" preserveAspectRatio="xMidYMax meet">'
       + '<circle cx="30" cy="21" r="14"/>'
       + '<path d="M30 38c-14 0-24 9-26 22l-4 40h60l-4-40c-2-13-12-22-26-22z"/></svg>';
+  var inner = cut
+    ? '<img class="cut2 ' + flip + '" src="' + esc(cut) + '" alt="" loading="lazy"'
+      + ' decoding="async" onerror="boutSil(this)">'
+    : SIL;
   return '<span class="pw2' + (won ? ' win' : '') + '"'
        + (slug ? ' data-slug="' + esc(slug) + '"' : '') + '>' + inner + '</span>';
 }
