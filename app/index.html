@@ -37,7 +37,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,800&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=Bebas+Neue&family=Space+Mono:wght@400;700&family=VT323&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,800&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=Bebas+Neue&family=Space+Mono:wght@400;700&family=Anton&family=VT323&display=swap" rel="stylesheet">
 <!-- The six signing hands. A fighter is assigned one at random on their first
      signature and keeps it forever, so these are not interchangeable: the same
      person must sign the same way on every card. Google serves the @font-face
@@ -823,7 +823,13 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   padding:3px 7px;border-radius:3px}
 .wc4{text-align:center;font-family:'Space Mono',monospace;font-size:8px;font-weight:700;
   letter-spacing:.16em;text-transform:uppercase;color:#9990B4}
-.duo2{display:grid;grid-template-columns:1fr 52px 1fr;align-items:end;margin-top:10px}
+/* THE FIGHTER ZONE. A vignette, not a flat field: the corners fall away so the
+   two cut-outs sit in a space rather than on a panel. It ends exactly where the
+   name row begins, and the figures stand ON that line (zero padding under the
+   feet) so the boundary reads as a floor instead of a divider. */
+.fz2{position:relative;margin:10px -12px 0;padding:0 12px;background:
+  radial-gradient(ellipse 86% 96% at 50% 56%, rgba(255,255,255,.055), rgba(0,0,0,.3) 100%)}
+.duo2{display:grid;grid-template-columns:1fr 52px 1fr;align-items:end}
 .pw2{height:118px;position:relative;display:flex;align-items:flex-end;justify-content:center;cursor:pointer}
 .pw2 .cut2{height:100%;width:auto;max-width:none;object-fit:contain;object-position:bottom center}
 .pw2 .cut2.flip{transform:scaleX(-1)}
@@ -832,25 +838,46 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   border-radius:2px;background:#6EE7B7}
 .vsx2{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#7E7699;text-align:center;
   padding-bottom:36px;letter-spacing:.06em}
-.nms2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
-.nms2 b{font-family:'Bebas Neue',sans-serif;font-size:20px;line-height:1.05;letter-spacing:.02em;
-  text-align:center;cursor:pointer}
-.nms2 b.win{color:#6EE7B7}
-.recs2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:3px}
-.recs2 s{text-decoration:none;font-family:'Space Mono',monospace;font-size:9px;text-align:center;
-  color:#8B83AC;display:block}
-.tape2{max-height:0;overflow:hidden;transition:max-height .34s ease}
-.bout3.open .tape2{max-height:320px}
-.tr2{display:grid;grid-template-columns:1fr 92px 1fr;align-items:center;padding:7px 0;
-  border-top:1px solid rgba(255,255,255,.07)}
-.tr2 b{font-size:14px;font-weight:600}
+/* The names are a ROW of the tape now, not a block above it — same spine, same
+   red and blue, one less piece of furniture. They live OUTSIDE .tape2 on
+   purpose: a bout card whose chevron can hide who is fighting is broken. */
+.keep2{margin:0 -12px;background:rgba(6,5,15,.55);border-top:1px solid rgba(255,255,255,.09)}
+.keep2 .tr2{border-top:0}
+.tr2.nm2 b{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;
+  line-height:1.04;cursor:pointer}
+.tr2.nm2{padding:8px 12px}
+.tr2.nm2 b.win{color:#6EE7B7}
+.tape2{max-height:0;overflow:hidden;transition:max-height .34s ease;margin:0 -12px;
+  background:radial-gradient(ellipse 58% 120% at 50% 50%, rgba(167,139,250,.13), transparent 72%),
+    rgba(6,5,15,.55)}
+.bout3.open .tape2{max-height:340px}
+.tr2{display:grid;grid-template-columns:1fr 84px 1fr;align-items:center;padding:6px 12px;
+  position:relative;border-top:1px solid rgba(255,255,255,.055)}
+/* Anton is for NUMBERS. A stance set as loudly as a reach is the thing that
+   made this read as shouting; words drop to condensed and step back a shade. */
+.tr2 b{font-family:'Anton',sans-serif;font-size:17px;line-height:1;
+  font-variant-numeric:tabular-nums}
+.tr2 b em{font-style:normal;font-size:11px;color:#8E86B0;margin-left:.5px;margin-right:2px;
+  font-family:'Barlow Condensed',sans-serif;font-weight:600}
 .tr2 b.l{text-align:right;padding-right:12px;color:#F19C96}
 .tr2 b.r{text-align:left;padding-left:12px;color:#8FC6FF}
-.tr2 s{text-decoration:none;text-align:center;font-family:'Space Mono',monospace;font-size:7.5px;
-  font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#6E6688}
+.tr2 b.wd2{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:13px;color:#9D96BE}
+.tr2 b.na2{font-family:'Space Mono',monospace;font-weight:400;font-size:10px;color:#5C557A;
+  letter-spacing:.1em}
+.tr2 s{text-decoration:none;text-align:center;font-family:'Barlow Condensed',sans-serif;
+  font-weight:600;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8E86B0}
+/* ONE row lights per bout, and only a gap big enough to be worth saying. */
+.tr2.big2.toA{background:linear-gradient(90deg,rgba(241,156,150,.14),rgba(241,156,150,.02) 62%)}
+.tr2.big2.toB{background:linear-gradient(270deg,rgba(143,198,255,.14),rgba(143,198,255,.02) 62%)}
+.tr2.big2.toA s{color:#F19C96} .tr2.big2.toB s{color:#8FC6FF}
+.gap2{position:absolute;top:50%;transform:translateY(-50%);font-family:'Space Mono',monospace;
+  font-size:7.5px;font-weight:700;letter-spacing:.08em;opacity:.85}
+.tr2.big2.toA .gap2{left:12px;color:#F19C96}
+.tr2.big2.toB .gap2{right:12px;color:#8FC6FF}
 .notape{padding:10px 0;text-align:center;font-family:'Space Mono',monospace;font-size:8px;
   letter-spacing:.08em;color:#6E6688}
-.more2{display:flex;align-items:center;justify-content:center;gap:7px;padding:10px 0 11px;
+.more2{display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 0 10px;
+  margin:0 -12px;background:rgba(0,0,0,.22);
   font-family:'Space Mono',monospace;font-size:7.5px;font-weight:700;letter-spacing:.16em;
   text-transform:uppercase;color:#7E7699;cursor:pointer}
 .more2 i{font-style:normal;transition:transform .3s}
@@ -7218,27 +7245,30 @@ async function loadCard(e){
                                 || b.fighter_b_slug === myFighter.fighter_slug);
           var done = b.status === 'completed' && b.winner_corner;
           var A = tape[b.fighter_a_slug] || {}, Bf = tape[b.fighter_b_slug] || {};
-          return '<div class="bout3'+(mine?' you':'')+'" data-bout>'
+          /* The tape is OPEN on arrival: on an event page the comparison is the
+             reason you opened the bout, so the chevron hides it rather than
+             revealing it. The record line that used to sit under the names is
+             gone — the tape's own Record row already says it. */
+          return '<div class="bout3 open'+(mine?' you':'')+'" data-bout>'
             + (mine ? '<span class="youtag">Your bout</span>' : '')
             + '<div class="wc4">'
             + esc(b.is_title_fight ? (b.title_name || 'Title fight')
                                    : (wc(b.weight_class) || 'Catch weight')) + '</div>'
-            + '<div class="duo2">'
+            + '<div class="fz2"><div class="duo2">'
             + corner(A, b.fighter_a_slug, done && b.winner_corner === 'a', '')
             + '<span class="vsx2">' + (done ? esc((b.method||'').toUpperCase() || 'RESULT') : 'VS') + '</span>'
             + corner(Bf, b.fighter_b_slug, done && b.winner_corner === 'b', 'flip')
-            + '</div>'
-            + '<div class="nms2">'
-            + '<b class="' + (done && b.winner_corner === 'a' ? 'win' : '') + '"'
+            + '</div></div>'
+            + '<div class="keep2"><div class="tr2 nm2">'
+            + '<b class="l' + (done && b.winner_corner === 'a' ? ' win' : '') + '"'
             + (b.fighter_a_slug ? ' data-slug="'+esc(b.fighter_a_slug)+'"' : '') + '>'
-            + esc(b.fighter_a_name || 'TBA') + '</b>'
-            + '<b class="' + (done && b.winner_corner === 'b' ? 'win' : '') + '"'
+            + esc(b.fighter_a_name || 'TBA') + '</b><s></s>'
+            + '<b class="r' + (done && b.winner_corner === 'b' ? ' win' : '') + '"'
             + (b.fighter_b_slug ? ' data-slug="'+esc(b.fighter_b_slug)+'"' : '') + '>'
-            + esc(b.fighter_b_name || 'TBA') + '</b></div>'
-            + '<div class="recs2"><s>'+rec(A)+'</s><s>'+rec(Bf)+'</s></div>'
+            + esc(b.fighter_b_name || 'TBA') + '</b></div></div>'
             + poolHTML(pools[b.match_id])
             + '<div class="tape2">' + tapeRows(A, Bf) + '</div>'
-            + '<div class="more2"><span>Tale of the tape</span><i>&#9662;</i></div>'
+            + '<div class="more2"><span>Hide the tape</span><i>&#9662;</i></div>'
             + '</div>';
         }).join('');
   }).join('') + '<div class="foot">'+rows.length+' bouts</div>';
@@ -7265,23 +7295,70 @@ function corner(f, slug, won, flip){
    has no reach or stance, and six empty rows is not a tale of the tape. */
 function inches(v){
   var n = Number(v); if(!isFinite(n) || !n) return null;
-  return Math.floor(n/12) + "' " + (n%12) + '"';
+  /* the prime marks drop to grey via <em>, so the eye reads a figure */
+  return Math.floor(n/12) + '<em>\u2032</em>' + (n%12) + '<em>\u2033</em>';
 }
+/* WHAT COUNTS AS A STANDOUT. One row lights per bout: the biggest gap that
+   clears its own floor. The floors are not taste — each is about the 85th
+   percentile of that gap across every real pairing in the database (175 bouts,
+   167 with both corners on file), so a lit row means a gap bigger than roughly
+   six bouts in seven. Hand-picked floors of 3/2/3 lit 101 of 167, and a device
+   that fires on three bouts in five is wallpaper.
+   RE-READ THESE as the roster grows: a league of 660 has different spreads
+   from a league of 2,000. */
+var TAPE_FLOORS = { reach: 10, height: 3, record: 4 };
+
+/* A one-sided row can NEVER light. JaysWay has a 78" reach and I AM AURA has
+   none on file; lighting that would claim an advantage nobody measured. */
+function tapeStandout(A, B){
+  var c = [];
+  if(A.reach != null && B.reach != null)
+    c.push({ key:'Reach', gap: Math.round(A.reach) - Math.round(B.reach), unit:'\u2033', floor: TAPE_FLOORS.reach });
+  if(A.height != null && B.height != null)
+    c.push({ key:'Height', gap: A.height - B.height, unit:'\u2033', floor: TAPE_FLOORS.height });
+  if(A.headline_wins != null && B.headline_wins != null)
+    c.push({ key:'Record', gap: (A.headline_wins||0) - (B.headline_wins||0), unit:' W', floor: TAPE_FLOORS.record });
+  var best = null;
+  c.forEach(function(x){
+    var m = Math.abs(x.gap);
+    if(m < x.floor) return;
+    x.score = m / x.floor;          /* normalised, so inches and wins compare */
+    if(!best || x.score > best.score) best = x;
+  });
+  return best;
+}
+
+/* Height comes back in inches. A row where NEITHER fighter has the value is
+   left out entirely; one where only one has it prints N/A on the other side —
+   LETTERS, never a bare dash, because punctuation in a column of values reads
+   as a failed load rather than as a field nobody filled in. */
 function tapeRows(A, B){
+  var so = tapeStandout(A, B);
   var rows = [
-    ['Record', rec(A) === '&mdash;' ? null : rec(A), rec(B) === '&mdash;' ? null : rec(B)],
-    ['Height', inches(A.height), inches(B.height)],
-    ['Reach',  A.reach ? Math.round(A.reach)+'"' : null, B.reach ? Math.round(B.reach)+'"' : null],
-    ['Stance', A.stance, B.stance],
+    ['Record', rec(A) === '&mdash;' ? null : rec(A), rec(B) === '&mdash;' ? null : rec(B), false],
+    ['Height', inches(A.height), inches(B.height), false],
+    ['Reach',  A.reach ? Math.round(A.reach)+'<em>\u2033</em>' : null,
+               B.reach ? Math.round(B.reach)+'<em>\u2033</em>' : null, false],
+    ['Stance', A.stance, B.stance, true],
     ['By KO',  A.headline_ko_wins != null ? String(A.headline_ko_wins) : null,
-               B.headline_ko_wins != null ? String(B.headline_ko_wins) : null],
-    ['From',   A.country, B.country]
+               B.headline_ko_wins != null ? String(B.headline_ko_wins) : null, false]
   ].filter(function(r){ return r[1] || r[2]; });
   if(!rows.length) return '<div class="notape">No tape on either corner yet.</div>';
   return rows.map(function(r){
-    return '<div class="tr2"><b class="l">'+esc(r[1] || '—')+'</b>'
-         + '<s>'+esc(r[0])+'</s>'
-         + '<b class="r">'+esc(r[2] || '—')+'</b></div>';
+    var lit = so && so.key === r[0];
+    var side = lit ? (so.gap > 0 ? ' big2 toA' : ' big2 toB') : '';
+    var gap = lit ? '<span class="gap2">' + (so.gap > 0 ? '+' : '\u2212')
+                  + Math.abs(so.gap) + so.unit + '</span>' : '';
+    /* r[3] marks the rows whose value is TYPED BY A FIGHTER (stance) — those
+       are escaped. The rest we build ourselves, and Height carries the <em>
+       that greys its prime marks, so it must not be. */
+    function cell(v, cls){
+      if(v == null) return '<b class="' + cls + ' na2">N/A</b>';
+      return '<b class="' + cls + (r[3] ? ' wd2' : '') + '">'
+           + (r[3] ? esc(v) : v) + '</b>';
+    }
+    return '<div class="tr2' + side + '">' + cell(r[1], 'l')
+         + '<s>' + esc(r[0]) + '</s>' + cell(r[2], 'r') + gap + '</div>';
   }).join('');
 }
 
