@@ -833,7 +833,8 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .pw2{height:118px;position:relative;display:flex;align-items:flex-end;justify-content:center;cursor:pointer}
 .pw2 .cut2{height:100%;width:auto;max-width:none;object-fit:contain;object-position:bottom center}
 .pw2 .cut2.flip{transform:scaleX(-1)}
-.pw2 .sil2{height:100%;width:auto;fill:rgba(190,175,235,.3)}
+.pw2 .sil2{height:100%;width:auto;max-width:none;object-fit:contain;
+  object-position:bottom center;opacity:.22}
 /* The feet are ON the boundary now, so a -4px underline would sit inside the
    name row. It rides just above the line instead. */
 .pw2.win::after{content:'';position:absolute;left:16%;right:16%;bottom:2px;height:3px;
@@ -887,9 +888,22 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   font-size:7.5px;letter-spacing:.15em;text-transform:uppercase;color:#7E7699;cursor:pointer;
   border-bottom:1px solid transparent}
 .rtab2 span.on{color:#EDEAF6;border-bottom-color:#A78BFA}
-.rpl2{position:relative}
-.rpl2 video,.rpl2 img.rp{display:block;width:100%;height:118px;object-fit:contain;
-  object-position:bottom center}
+/* One frame of a per-fighter sheet, filling the corner slot. The sheet's
+   frames carry the cut-outs' own aspect, so a replaying bout and a photo bout
+   are the same shape. */
+.rfig{display:block;height:100%;aspect-ratio:154/236;background-repeat:no-repeat;
+  background-position:0% 0%}
+.rfig.flip{transform:scaleX(-1)}
+@media (prefers-reduced-motion:no-preference){
+  .rfig{animation:rplay 2.4s steps(1) infinite}
+}
+@keyframes rplay{
+  0%{background-position:0% 0%}      12.5%{background-position:14.2857% 0%}
+  25%{background-position:28.5714% 0%} 37.5%{background-position:42.857% 0%}
+  50%{background-position:57.142% 0%}  62.5%{background-position:71.428% 0%}
+  75%{background-position:85.714% 0%}  87.5%{background-position:100% 0%}
+  100%{background-position:0% 20%}
+}
 .dmg2{padding:7px 12px 2px}
 .dmg2 .hd{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;
   font-size:6px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#5C557A;
@@ -7285,7 +7299,7 @@ async function loadCard(e){
                                    : (wc(b.weight_class) || 'Catch weight')) + '</div>'
             /* A bout with a recap shows it in the fighters' slot; the tape
                below never moves either way. */
-            + (b.recap ? boutRecap(b.recap)
+            + (b.recap ? boutRecap(b.recap, done ? b.method : '')
                : '<div class="fz2"><div class="duo2">'
                  + corner(A, b.fighter_a_slug, done && b.winner_corner === 'a', '')
                  + '<span class="vsx2">' + (done ? esc((b.method||'').toUpperCase() || 'RESULT') : 'VS') + '</span>'
@@ -7311,16 +7325,25 @@ function rec(f){
   return (f.headline_wins||0) + '-' + (f.headline_losses||0)
        + (f.headline_draws ? '-' + f.headline_draws : '');
 }
-/* THE RECAP BLOCK. Drawn only for a bout that carries one — the replay takes
-   the fighters' slot at their exact height, and the damage runs as a sliver
-   under it: two lines, one per corner, with the stoppage marked.
-   `r.series` is [[a…],[b…]] normalised 0..1 and `r.ko` is the index of the
-   stopping blow. Nothing supplies these yet; the ToTF per-round export is the
-   thing that will. */
-function boutRecap(r){
-  if(!r || !r.series) return '';
+/* THE RECAP BLOCK. A fought bout replays IN THE CORNERS — one figure per
+   `.pw2` slot, at the cut-outs' own aspect and height, so the layout is
+   identical whether a bout is showing photos or motion. Under it the damage
+   runs as a sliver: two lines, one per corner, stoppage marked.
+
+   `r.sheets` is [leftUrl, rightUrl], each a transparent sprite sheet of
+   `r.cols` x `r.rows` frames; `r.series` is [[a..],[b..]] normalised 0..1 and
+   `r.ko` is the index of the stopping blow. Nothing supplies these yet — the
+   ToTF per-round export is the thing that will. */
+function boutFig(url, cols, rows, flip){
+  return '<span class="pw2"><i class="rfig' + (flip ? ' flip' : '') + '"'
+    + ' style="background-image:url(' + esc(url) + ');'
+    + 'background-size:' + (cols * 100) + '% ' + (rows * 100) + '%"></i></span>';
+}
+function boutRecap(r, method){
+  if(!r || !r.series || !r.sheets) return '';
   var A = r.series[0] || [], B = r.series[1] || [], N = Math.max(A.length, B.length);
   if(N < 2) return '';
+  var cols = r.cols || 8, rows = r.rows || 6;
   var W = 300, H = 24, PAD = 1.5;
   function pts(a){
     var o = [];
@@ -7329,14 +7352,15 @@ function boutRecap(r){
     return o.join(' ');
   }
   var ko = r.ko != null ? (r.ko / (N - 1) * W) : null;
-  var rounds = r.rounds || 5, rd = '';
-  for(var k = 1; k <= rounds; k++) rd += '<b>R' + k + '</b>';
+  var rd = '';
+  for(var k = 1; k <= (r.rounds || 5); k++) rd += '<b>R' + k + '</b>';
   return '<div class="rtab2"><span data-rtab="f">Fighters</span>'
        + '<span class="on" data-rtab="r">Replay</span></div>'
-       + '<div class="rpl2">' + (r.clip
-            ? '<video src="' + esc(r.clip) + '" muted loop autoplay playsinline></video>'
-            : '<img class="rp" src="' + esc(r.still || '') + '" alt="" onerror="this.remove()">')
-       + '</div>'
+       + '<div class="fz2"><div class="duo2">'
+       +   boutFig(r.sheets[0], cols, rows, false)
+       +   '<span class="vsx2">' + esc((method || '').toUpperCase() || 'VS') + '</span>'
+       +   boutFig(r.sheets[1], cols, rows, true)
+       + '</div></div>'
        + '<div class="dmg2"><div class="hd"><span>Damage</span>'
        +   '<span><em class="a">\u2014 ' + esc(r.a || 'Red') + '</em> '
        +   '<em class="b">\u2014 ' + esc(r.b || 'Blue') + '</em></span></div>'
@@ -7351,21 +7375,24 @@ function boutRecap(r){
        + '</svg><div class="rds">' + rd + '</div></div>';
 }
 
-/* Swaps a bout cut-out that failed to load for the silhouette, in place. */
+/* A real fighter's cut-out, thresholded to a flat shape — the stand-in for a
+   corner with no photo. 490 of 660 fighters have none, so this is on screen
+   more than the photos are and it has to look like the sport. */
+var BOUT_SIL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJoAAADsCAYAAACMhL/LAAADnElEQVR42u3d0W5iOxBFQTfi/3/ZeY0QIYBw027XkuZx7kSksn0OXEjMOYe0uquH4GHv/BSGhw20Vbju/X3gQFsCDLgHXTwES5Dd/renRQMs+98KiwZZ538XtAO/2RM0yGADDXrQfGMFWmlkEzTIBJofBNCkA6FNXydosmiyaqA5jkCTQBNoAk0CTaBJoAm04Tk00KTh7XaWzKIJNFUpQHNsCjSBJoHm+gw0gSafo3Y6tHDnDJocnRJo7t5Ak0CzyKDJosmagSbQZM1Agww0haNTkIEGGWiC7BBo4WsDTaDJmoEm0KyHLBr4oAk0K2LNQIN9+CC+4X2NKgENJNCg0h7QwNISaGBp6V3nhMwP42poHjg/mEuPTsA+t24BGmTZx6k3p0DmWPUreqxcq0WzZlZuOTTIgPN/bwDXA5o1A86iaT9wF2sGnEVTG3CgAfcVaI5N4Cya9gUHGnCgqQ840LyAD5r6YAMNNtDUBxtoSsEGmlKwgaYUbKDJzYD6rBpoSsEGmhyd6rNqoMmiqc+qgSaLpp7QvF9Ay45PiyZHp0CT4xM0WTSBJoGmza/TQJNFE2jSW9C8/CSLJtAk0ASaxlnPpYEmi6Y+qwaaLJpAk+MTNNVdtPBQaOWqWTS5RlOfVQNNFk2gSS8dn6DJogk06aXjEzRZND0sQNOJ2CZogFk09UcGGnigqc+agSbQ9NKaRfU7T9AcmRZNjk5ZM9AORRagydHpIXBkZtx5gganRQPG0SlIQZOPf9fzF9StvidX39Nt7uDCNZoyV25ucJ02LVrPt7fFLkdnuE47+1dROzrV7nk0n/qotEWDTY5O9YJm1fTxGxSLpq8enVZNaddosCntZuAZbPHrjzTefVEdIJV6esNLWPrThLtObbVo1kxeGRBoAk2qBc31mSyaRomnOECTRdNo88550GTRBJqUCs1TG7JoAk2gSePjHwroQ17qfkqjz0dTOr7p6FQWOh/EJ+D+uxwADbiUa07XaL0/6n1W+ZpAc0OR8rsNrl5+gi7jF2VYNOjujUdUeR7Nmvn1PmP10xuQyfNow8e3t4BmzWTRrFoPaNZMFs2qgSY9Dc2xadUsmkCTQHN81oLm+kwWTaDJ8QmaakFzfSaLJtDkOg001YLm+kwWTaDJdRpoqgXN9ZksmkCT6zTQVAua6zNZNIEmgaZa0FyfyaINT3GAJoEm0HQeNDcCsmgCTQJNoAk0aQ00d5xKgRYeCq3sB/ManruIUApUAAAAAElFTkSuQmCC';
+/* Swaps a bout cut-out that failed to load for the stand-in, in place. */
 function boutSil(img){
-  img.outerHTML = '<svg class="sil2" viewBox="0 0 60 100" preserveAspectRatio="xMidYMax meet">'
-    + '<circle cx="30" cy="21" r="14"/>'
-    + '<path d="M30 38c-14 0-24 9-26 22l-4 40h60l-4-40c-2-13-12-22-26-22z"/></svg>';
+  img.className = 'sil2'; img.removeAttribute('onerror'); img.src = BOUT_SIL;
 }
 function corner(f, slug, won, flip){
   /* 118px tall on screen — the thumb (463px) covers a 3x phone with room over. */
   var cut = f.profile_photo_thumb_url || f.profile_photo_url;
-  /* A dead photo URL must fall back to the SAME silhouette a photoless fighter
+  /* A dead photo URL must fall back to the SAME stand-in a photoless fighter
      gets — every other image path in this app guards itself and this one did
-     not, so a 404 left an empty 118px hole in the middle of a bout. */
-  var SIL = '<svg class="sil2" viewBox="0 0 60 100" preserveAspectRatio="xMidYMax meet">'
-      + '<circle cx="30" cy="21" r="14"/>'
-      + '<path d="M30 38c-14 0-24 9-26 22l-4 40h60l-4-40c-2-13-12-22-26-22z"/></svg>';
+     not, so a 404 left an empty 118px hole in the middle of a bout.
+     The stand-in is a REAL fighter's cut-out flattened to a shape, not a
+     pictogram: it is framed like the photos beside it and it reads as a boxer
+     with his guard up rather than as a missing-image icon. */
+  var SIL = '<img class="sil2" src="' + BOUT_SIL + '" alt="">';
   var inner = cut
     ? '<img class="cut2 ' + flip + '" src="' + esc(cut) + '" alt="" loading="lazy"'
       + ' decoding="async" onerror="boutSil(this)">'
