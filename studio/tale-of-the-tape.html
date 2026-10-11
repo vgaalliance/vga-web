@@ -1811,15 +1811,25 @@ editOverlay.addEventListener('click', (e) => {
   #ivSting.on .iv-line, #ivOpen.on .iv-line{animation:ivLine 1.5s linear both;}
   @keyframes ivLine{0%{transform:scaleX(0); opacity:1; animation-timing-function:cubic-bezier(.5,0,.9,.4);} 34%{transform:scaleX(1); opacity:1;}
     50%{transform:scaleX(1); opacity:1; animation-timing-function:cubic-bezier(.2,.7,.2,1);} 100%{transform:scaleX(0); opacity:0;}}
-  #ivSting.on .iv-flash, #ivOpen.on .iv-flash{animation:ivFlash .45s ease-out .72s forwards;}
+  #ivSting.on .iv-flash{animation:ivFlash .45s ease-out .72s forwards;}
+  /* THE WAY IN is the way out, backwards. The piece ends with the card opening
+     along its seam; it begins with the two lines meeting across the live
+     picture and the ground opening up and down from that line. No fade: a
+     fade is the picture going soft, this is something arriving. */
+  #ivOpen.on{animation:ivDoorsIn 1.05s linear both;}
+  @keyframes ivDoorsIn{0%,36%{clip-path:inset(calc(50% - 2px) 0 calc(50% - 2px) 0); animation-timing-function:cubic-bezier(.76,0,.24,1);} 100%{clip-path:inset(0 0 0 0);}}
   /* ── THE OPENING ── the league's boxed mark, the camera through its letter,
      and the globe arriving on the far side. One space and one move: the mark
      is a pane hanging between the camera and the world, and the globe is
      already there inside the letter it will go through. */
   #ivOpen canvas{position:absolute; inset:0;}
-  #ivOpen .iv-icon{position:absolute; left:0; top:0; opacity:0; will-change:transform,opacity;}
+  /* the mark's letters: type over the pane, one span each so they can leave separately */
+  #ivOpen .op-letters{position:absolute; left:960px; top:540px; display:flex; gap:8px; perspective:900px; opacity:0; will-change:transform,opacity,filter;
+    font-family:'Anton','Bebas Neue',sans-serif; font-size:234px; line-height:1; color:#fff; text-transform:uppercase;}
+  #ivOpen .op-letters span{display:block; will-change:transform,opacity; backface-visibility:hidden;}
+  #ivOpen .iv-openSub{position:absolute; left:0; right:0; top:784px; text-align:center; font-size:18px; font-weight:700; letter-spacing:5px; text-transform:uppercase; color:rgba(230,226,250,.8); opacity:0;}
   #ivOpen .iv-geoHead{opacity:0; animation:none;}
-  #ivOpen .iv-openPill{position:absolute; left:0; right:0; top:716px; text-align:center; opacity:0; will-change:opacity,transform;}
+  #ivOpen .iv-openPill{position:absolute; left:0; right:0; top:722px; text-align:center; opacity:0; will-change:opacity,transform;}
   #ivSting.on .iv-stack{animation:ivShakeC .34s linear .72s both;}
   @keyframes ivShakeC{0%,100%{transform:translate(0,-50%);} 15%{transform:translate(-12px,calc(-50% + 7px));} 35%{transform:translate(10px,calc(-50% - 6px));}
     55%{transform:translate(-7px,calc(-50% + 4px));} 78%{transform:translate(3px,calc(-50% - 2px));}}
@@ -2043,8 +2053,9 @@ editOverlay.addEventListener('click', (e) => {
   <div class="iv iv-dark iv-fade" id="ivOpen">
     <canvas id="ivOpenCv" width="1920" height="1080"></canvas>
     <div class="iv-line l"></div><div class="iv-line r"></div>
-    <canvas class="iv-icon" id="ivOpenIcon"></canvas>
+    <div class="op-letters" id="ivOpenLetters"></div>
     <div class="iv-openPill"><span class="iv-chip" data-iv="sub"></span></div>
+    <div class="iv-openSub" data-iv="title"></div>
     <div class="iv-geoHead">Fighting out of</div>
     <div class="iv-geoL" data-geo="Left"><b></b><i></i></div>
     <div class="iv-geoL" data-geo="Right"><b></b><i></i></div>
@@ -2146,7 +2157,7 @@ editOverlay.addEventListener('click', (e) => {
 
   // When each beat starts, in ms. One list, read by the pictures AND the
   // sound, so the pacing is tuned in one place and the two cannot drift.
-  const GEO_MS = 2850, OPEN_MS = 6400;
+  const GEO_MS = 2850, OPEN_MS = 7300;
   // 'open' = icon, through the letter, globe.  'geo' = the plain mark, then the
   // flat globe (a league with no icon).  'none' = the mark alone (nobody placed).
   const PRE = { open: OPEN_MS, geo: 1750 + GEO_MS, none: 1750 };
@@ -2284,13 +2295,14 @@ editOverlay.addEventListener('click', (e) => {
         e.gain.setValueAtTime(0.0001, t); e.gain.exponentialRampToValueAtTime(g*k, t + 0.006); e.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
         o.connect(e); e.connect(bus); o.start(t); o.stop(t + 0.13) }) };
     const ticks = (ms, n) => { for(let i = 0; i < n; i++) blip(ms + i*110) };
-    whoosh(0, 0.5, 900, 3600, 0.3, -1, -0.1, 0.85);  whoosh(0, 0.5, 900, 3600, 0.3, 1, 0.1, 0.85);  hit(720, 0.9)   // two lines in, the mark slams
+    whoosh(0, 0.5, 900, 3600, 0.3, -1, -0.1, 0.85);  whoosh(0, 0.5, 900, 3600, 0.3, 1, 0.1, 0.85);  hit(mode === 'open' ? OP.land*1000 : 720, mode === 'open' ? 0.55 : 0.9)   // two lines in, the mark lands
     if(mode === 'open'){
-      whoosh(OP.push*1000, 1.35, 180, 2400, 0.42, 0, 0, 0.94);  hit(OP.through*1000, 0.6)        // the run-up, and through the letter
+      whoosh(380, 0.6, 1400, 260, 0.3, 0, 0, 0.25)                                               // the ground opens from the line
+      whoosh(OP.morph*1000 - 80, 0.75, 500, 2200, 0.26, -0.4, 0.4)                               // the box becomes the visor
+      whoosh(OP.run*1000 + 250, 1.05, 180, 2600, 0.44, 0, 0, 0.95);  hit(OP.through*1000, 0.65)  // the run-up, and through the lens
       whoosh(OP.through*1000, 2.6, 2400, 200, 0.4, -0.5, 0.5, 0.1)                               // out the far side, the long arrival
       blip(OP.dotA*1000);  blip(OP.dotB*1000);  whoosh(OP.arc*1000, 0.7, 900, 3200, 0.16, -0.4, 0.4)   // each fighter's dot, the line between them
     }
-    if(geo){ whoosh(T.geo, 0.8, 300, 1800, 0.3, 0, 0);  blip(T.geo + 560);  blip(T.geo + 1660);  whoosh(T.geo + 1750, 0.8, 900, 3200, 0.16, -0.4, 0.4) }   // the globe: each fighter's dot, then the line between them
     ticks(T.a + 900, nA);  ticks(T.b + 900, nB);  ticks(T.lock + 2800, Math.max(nA, nB))            // each stat as it lands
     whoosh(T.a, 0.75, 350, 2600, 0.42, -0.8, 0.7);  whoosh(T.a + 1300, 0.9, 2500, 6500, 0.1, -0.5, 0.5)   // left corner, its light sweep
     whoosh(T.vs + 460, 0.38, 300, 4000, 0.42, 0, 0, 0.92);  hit(T.vs + 820, 1.0)                // VS slams (no wipe in: it dissolves)
@@ -2432,78 +2444,76 @@ editOverlay.addEventListener('click', (e) => {
   })();
   
   const G3 = window.G3; G3.load({ land: GEO.LAND, dots: [] });
-  /* THE PANE: the boxed mark, drawn once at three times its size so it holds
-     up as the camera closes on it. Then found, not typed in: the closed
-     counter nearest the middle of the word (the B of UBA) is where the camera
-     goes through. A mark with no closed letter is run at through its middle. */
-  const PANES = {};
-  function markPane(text){
-    text = String(text).toUpperCase(); if(PANES[text]) return PANES[text];
-    const K = 3, FS = 250, c = document.createElement('canvas'), x = c.getContext('2d');
-    const font = '400 ' + (FS*K) + 'px Anton, "Bebas Neue", sans-serif';
-    x.font = font; try { x.letterSpacing = (6*K) + 'px' } catch {}
-    const tw = x.measureText(text).width, padX = 56*K, bw = 11*K, w = Math.ceil(tw + padX*2 + bw*2), h = Math.ceil(FS*K*1.22 + bw*2);
-    c.width = w; c.height = h; x.font = font; try { x.letterSpacing = (6*K) + 'px' } catch {}
-    x.strokeStyle = '#fff'; x.lineWidth = bw; x.strokeRect(bw/2, bw/2, w - bw, h - bw);
-    x.fillStyle = '#fff'; x.textBaseline = 'alphabetic'; x.fillText(text, bw + padX + 3*K, h/2 + FS*K*0.365);
-    // flood the empty space in from the border's inside; whatever empty space is left over is a closed counter
-    const a = x.getImageData(0, 0, w, h).data, ink = i => a[i*4 + 3] > 90, seen = new Uint8Array(w*h), q = [];
-    const push = i => { if(!seen[i] && !ink(i)){ seen[i] = 1; q.push(i) } };
-    push((bw*2)*w + bw*2);                                   // a point inside the box, clear of the letters
-    for(let k = 0; k < q.length; k++){ const i = q[k], px = i % w; if(px > 0) push(i-1); if(px < w-1) push(i+1); if(i >= w) push(i-w); if(i < w*(h-1)) push(i+w) }
-    let best = null;
-    for(let y0 = bw*2; y0 < h - bw*2; y0 += 2) for(let x0 = bw*2; x0 < w - bw*2; x0 += 2){ const i0 = y0*w + x0; if(seen[i0] || ink(i0)) continue;
-      const r = [i0]; seen[i0] = 2; let sx = 0, sy = 0;
-      for(let k = 0; k < r.length; k++){ const i = r[k], px = i % w, py = (i - px)/w; sx += px; sy += py;
-        [px > 0 ? i-1 : -1, px < w-1 ? i+1 : -1, i-w, i+w].forEach(j => { if(j >= 0 && j < w*h && !seen[j] && !ink(j)){ seen[j] = 2; r.push(j) } }) }
-      if(r.length < 60*K*K) continue;
-      const cxp = sx/r.length, cyp = sy/r.length, dist = Math.abs(cxp - w/2) - r.length*0.002;      // the middle of the word, the bigger counter on a tie
-      if(!best || dist < best.dist) best = { dist, cx: cxp, cy: cyp } }
-    return PANES[text] = { canvas: c, w: w/K, h: h/K, hx: best ? best.cx/w : 0.5, hy: best ? best.cy/h : 0.5 };
-  }
-  // the beats inside it, in seconds: lines, slam, hold, push, through, arrive, dots, line
-  // push = the camera starts for the mark; through = it passes the letter;
-  // run = the approach to the globe, which begins BEHIND the mark so the world
-  // is already moving when it is first seen.
-  const OP = { slam:0.38, land:0.72, push:1.45, through:2.75, run:1.6, runLen:3.7, dotA:4.3, dotB:4.75, arc:4.85 };
+  /* THE PANE is the mark's own box, and it is a real object in the globe's
+     space: a short tube whose outline starts as the box round the letters and
+     becomes a headset's visor (the trailer's own shapes and its own morph).
+     The camera goes through it, so there are inside walls to rush past and a
+     far rim to leave behind. Dark glass fills it until the camera is close:
+     that is what keeps the world out of sight, and what lets it come up. */
+  const NP = 180, TAU = Math.PI*2;
+  const polar = fn => { const o = []; for(let i = 0; i < NP; i++){ const th = i/NP*TAU; let lo = 0, hi = 3; for(let k = 0; k < 26; k++){ const m = (lo+hi)/2; fn(Math.cos(th)*m, Math.sin(th)*m) ? lo = m : hi = m } o.push(lo) } return o };
+  const inVisor = (x, y) => { const b = .366; if(Math.abs(y) > b) return false; const ax = Math.abs(x); if(ax > 1) return false;
+    if(ax > 1 - b){ const dx = ax - (1 - b); if(dx*dx + y*y > b*b) return false }
+    if(y < -b + .16 && ax < .17){ const u = x/.17; if(y < -b + .16*(1 - u*u)) return false } return true };
+  const inBox = (x, y) => Math.abs(x) <= .62 && Math.abs(y) <= .345;
+  const R_VISOR = polar(inVisor), R_BOX = polar(inBox);
+  const shape = (m, k) => R_BOX.map((rb, i) => { const th = i/NP*TAU, r = (rb + (R_VISOR[i] - rb)*m)*k; return [Math.cos(th)*r, Math.sin(th)*r] });
+  // the beats, in seconds from the scene coming on
+  const OP = { arrive:0.62, land:1.0, morph:2.0, back:2.62, run:2.8, runLen:3.7, through:4.05, dotA:5.35, dotB:5.8, arc:5.9 };
   let opClock = null, opRaf = 0;
   function openStop(){ if(opRaf) cancelAnimationFrame(opRaf); opRaf = 0; if(opClock){ try { opClock.cancel() } catch {} opClock = null } }
-  function openRun(icon){
+  function openRun(text){
     openStop();
-    const sc = document.getElementById('ivOpen'), cv = document.getElementById('ivOpenCv'), img = document.getElementById('ivOpenIcon'); if(!sc || !cv || !img) return;
+    const sc = document.getElementById('ivOpen'), cv = document.getElementById('ivOpenCv'), box = document.getElementById('ivOpenLetters'); if(!sc || !cv || !box) return;
     const g = cv.getContext('2d'), V = G3.V, cl = t => Math.max(0, Math.min(1, t)), p = (t, a, d) => cl((t - a)/d);
-    const io3 = x => x < .5 ? 4*x*x*x : 1 - Math.pow(-2*x+2, 3)/2, io5 = x => x < .5 ? 16*x*x*x*x*x : 1 - Math.pow(-2*x+2, 5)/2, out3 = x => 1 - Math.pow(1-x, 3);
+    const io3 = x => x < .5 ? 4*x*x*x : 1 - Math.pow(-2*x+2, 3)/2, io5 = x => x < .5 ? 16*x*x*x*x*x : 1 - Math.pow(-2*x+2, 5)/2;
+    const out3 = x => 1 - Math.pow(1-x, 3), out5 = x => 1 - Math.pow(1-x, 5), in3 = x => x*x*x, back = x => { const c = 1.9; return 1 + (c+1)*Math.pow(x-1, 3) + c*Math.pow(x-1, 2) };
     const rotY = (P, a) => { const c = Math.cos(a), s = Math.sin(a); return [P[0]*c + P[2]*s, P[1], -P[0]*s + P[2]*c] };
-    img.width = icon.canvas.width; img.height = icon.canvas.height; img.style.width = icon.w + 'px'; img.style.height = icon.h + 'px';
-    img.getContext('2d').drawImage(icon.canvas, 0, 0);
+    // the letters, one span each; the middle one is the one that turns
+    box.textContent = ''; const chars = [...String(text).toUpperCase()], mid = Math.floor((chars.length - 1)/2);
+    const spans = chars.map(ch => { const e = document.createElement('span'); e.textContent = ch; box.append(e); return e });
     // two fighters in one place still need two dots
     let A = geoA.slice(), B = geoB.slice();
     if(Math.abs(A[0]-B[0]) < 1.5 && Math.abs(A[1]-B[1]) < 1.5){ A[1] -= 4; B[1] += 4 }
     const pa = G3.dir(A[0], A[1]), pb = G3.dir(B[0], B[1]), N = V.norm(V.add(pa, pb)), sep = Math.acos(Math.max(-1, Math.min(1, V.dot(pa, pb))));
-    // the mark at rest: centred. The counter it will go through is where the camera is looking.
-    const W = icon.w, Hh = icon.h, HX = 960 - W/2 + icon.hx*W, HY = 520 - Hh/2 + icon.hy*Hh;
-    img.style.transformOrigin = (icon.hx*W) + 'px ' + (icon.hy*Hh) + 'px';
-    const FAR = 52, NEAR_D = Math.max(3.1, Math.min(4.2, 2.4 + sep*1.6)), AZ0 = 66*Math.PI/180;
-    const labs = [...sc.querySelectorAll('.iv-geoL')], head = sc.querySelector('.iv-geoHead'), pill = sc.querySelector('.iv-openPill');
+    const FAR = 52, PANE = 46, NEAR_D = Math.max(3.1, Math.min(4.2, 2.4 + sep*1.6)), AZ0 = 66*Math.PI/180;
+    // the pane faces the camera's starting position, six units in front of it
+    const n0 = rotY(N, AZ0), hx = V.norm(V.cross([0,1,0], n0)), hy = V.cross(n0, hx), H = { c: V.mul(n0, PANE), x: hx, y: hy, z: n0, depth: 1.5 };
+    const labs = [...sc.querySelectorAll('.iv-geoL')], head = sc.querySelector('.iv-geoHead'), pill = sc.querySelector('.iv-openPill'), sub = sc.querySelector('.iv-openSub');
     labs.forEach((el, i) => { el.querySelector('b').textContent = geoNames[i][0]; el.querySelector('i').textContent = geoNames[i][1]; el.style.opacity = 0 });
-    // fixed points in the same space; a streak is nothing but our own speed
     const stars = []; { let sd = 23; const r = () => (sd = (sd*16807) % 2147483647) / 2147483647;
       while(stars.length < 520){ const x = (r()*2-1)*120, y = (r()*2-1)*120, z = (r()*2-1)*120, d = Math.hypot(x, y, z); if(d > 120 || d < 6) continue; stars.push({ P:[x,y,z], b:.35 + r()*.65 }) } }
-    // The app trailer's arrival, beat for beat: a long quintic run in from far
-    // out, the globe turning under us on a banked arc that starts a second in,
-    // the frame's centre settling last. And it never quite stops turning --
-    // the two dots and the line ride the globe, so they turn with it.
-    const camAt = t => { const e = io5(Math.pow(p(t, OP.run, OP.runLen), .9)), d = FAR - (FAR - NEAR_D)*e, sw = io3(p(t, OP.run + .95, 2.9));
-      const az = AZ0*(1 - sw) - 0.035*Math.max(0, t - (OP.run + 2.4));
+    // The trailer's arrival, beat for beat: a breath back, then a long quintic
+    // run in, the globe turning under us on a banked arc that starts a second
+    // in, the frame's centre settling last. And it never quite stops turning.
+    const camAt = t => { const e = io5(Math.pow(p(t, OP.run, OP.runLen), .9)), pull = 1.1*Math.sin(Math.PI*p(t, OP.back, .55))*(1 - p(t, OP.run, .4));
+      const d = FAR + pull - (FAR - NEAR_D)*e, sw = io3(p(t, OP.run + .95, 2.9)), az = AZ0*(1 - sw) - 0.035*Math.max(0, t - (OP.run + 2.4));
       const n = rotY(N, az), x = V.norm(V.cross([0,1,0], n)), bank = Math.sin(Math.PI*sw)*.42, k = io3(p(t, OP.run + 1.6, 1.8));
-      return { pos: V.mul(n, d), target:[0,0,0], up: V.norm(V.add([0,1,0], V.mul(x, bank))), f: 1500 + 500*e, cx: HX + (960 - HX)*k, cy: HY + (610 - HY)*k, d } };
+      return { pos: V.mul(n, d), target:[0,0,0], up: V.norm(V.add([0,1,0], V.mul(x, bank))), f: 1500 + 500*e, cx: 960, cy: 540 + 70*k, d } };
     const aLeft = (() => { const c = camAt(OP.run + OP.runLen), Bz = G3.basis(c); return G3.toScreen(G3.toView(pa, c, Bz), c)[0] <= G3.toScreen(G3.toView(pb, c, Bz), c)[0] })();
     opClock = sc.animate([{ outlineOffset:'0px' }, { outlineOffset:'0px' }], { duration:600000 });
+    function pane(cam, Bz, m, size, alpha, ring){
+      const O = shape(m, 1), I = shape(m, .955 - .095*m), P3 = (q, z) => V.add(H.c, V.add(V.add(V.mul(H.x, q[0]*size), V.mul(H.y, q[1]*size)), V.mul(H.z, z)));
+      const poly = (pts, fill, stroke, lw) => { const v = G3.clipNear(pts.map(q => G3.toView(q, cam, Bz))); if(v.length < 3) return;
+        g.beginPath(); v.forEach((w, i) => { const s2 = G3.toScreen(w, cam); i ? g.lineTo(s2[0], s2[1]) : g.moveTo(s2[0], s2[1]) }); g.closePath();
+        if(fill){ g.fillStyle = fill; g.fill() } if(stroke){ g.strokeStyle = stroke; g.lineWidth = lw || 2; g.stroke() } };
+      const front = V.dot(V.sub(cam.pos, H.c), H.z);
+      if(ring){ poly(shape(m, ring[0]).map(q => P3(q, 0)), null, 'rgba(255,255,255,' + ring[1].toFixed(3) + ')', 3); return front }
+      g.save(); g.globalAlpha = alpha;
+      if(front < 2.6) for(let i = 0; i < NP; i++){ const a = I[i], b = I[(i+1) % NP], lit = .5 + .5*Math.sin(i/NP*TAU + .6);      // the inside walls: what rushes past
+        poly([P3(a, 0), P3(b, 0), P3(b, -H.depth), P3(a, -H.depth)], 'rgb(' + Math.round(20 + 30*lit) + ',' + Math.round(16 + 26*lit) + ',' + Math.round(52 + 62*lit) + ')') }
+      if(front < 2.6) poly(I.map(q => P3(q, -H.depth)), null, 'rgba(185,162,255,.5)', 2);
+      if(front > .02){
+        poly(I.map(q => P3(q, 0)), 'rgba(13,12,34,' + (.97*cl(front/2.4)).toFixed(3) + ')');                                     // the glass, clearing as we come up to it
+        const vo = G3.clipNear(O.map(q => G3.toView(P3(q, 0), cam, Bz))), vi = G3.clipNear(I.map(q => G3.toView(P3(q, 0), cam, Bz)));
+        if(vo.length > 2 && vi.length > 2){ g.beginPath(); [vo, vi].forEach(v => { v.forEach((w, i) => { const s2 = G3.toScreen(w, cam); i ? g.lineTo(s2[0], s2[1]) : g.moveTo(s2[0], s2[1]) }); g.closePath() });
+          g.fillStyle = '#fff'; g.fill('evenodd') } }
+      g.restore(); return front;
+    }
     function frame(){
       opRaf = requestAnimationFrame(frame);
       const t = (opClock && opClock.currentTime || 0)/1000, cam = camAt(t), prev = camAt(Math.max(0, t - 1/30)), Bz = G3.basis(cam), Bp = G3.basis(prev);
       g.clearRect(0, 0, 1920, 1080);
-      // stars
       g.lineCap = 'round';
       stars.forEach(st => { const a = G3.toView(st.P, cam, Bz); if(a[2] < .15) return; let b = G3.toView(st.P, prev, Bp); if(b[2] < .15) b = a;
         const sa = G3.toScreen(a, cam), sb = G3.toScreen(b, prev); if(sa[0] < -200 || sa[0] > 2120 || sa[1] < -200 || sa[1] > 1280) return;
@@ -2512,19 +2522,15 @@ editOverlay.addEventListener('click', (e) => {
         g.lineWidth = Math.max(1.1, Math.min(4, 26/a[2])); g.beginPath(); g.moveTo(sa[0]-dx, sa[1]-dy); g.lineTo(sa[0]+.01, sa[1]+.01); g.stroke() });
       // the globe, with a soft rim of the league's light
       const c0 = G3.toScreen(G3.toView([0,0,0], cam, Bz), cam), R = G3.radiusOnScreen(cam);
-      // THE WORLD IS NOT THERE until the camera is in the letter: it comes up
-      // in the opening the B makes, already on its way toward us.
-      const world = io3(p(t, OP.through - .28, .5));
-      const gl = g.createRadialGradient(c0[0], c0[1], R*.96, c0[0], c0[1], R*1.18); gl.addColorStop(0, 'hsla(276,100%,72%,' + (.3*world) + ')'); gl.addColorStop(1, 'hsla(276,100%,72%,0)');
+      const gl = g.createRadialGradient(c0[0], c0[1], R*.96, c0[0], c0[1], R*1.18); gl.addColorStop(0, 'hsla(276,100%,72%,.3)'); gl.addColorStop(1, 'hsla(276,100%,72%,0)');
       g.fillStyle = gl; g.beginPath(); g.arc(c0[0], c0[1], R*1.18, 0, 7); g.fill();
-      G3.draw(g, cam, { spin:0, alpha:world, gridWidth: cam.d > 14 ? 1 : 1.6, rimWidth: cam.d > 14 ? 1.5 : 3, grid: cam.d < 30, landWidth: cam.d > 14 ? 1 : 2 });
+      G3.draw(g, cam, { spin:0, alpha:1, gridWidth: cam.d > 14 ? 1 : 1.6, rimWidth: cam.d > 14 ? 1.5 : 3, grid: cam.d < 30, landWidth: cam.d > 14 ? 1 : 2 });
       // the line between them, lifted off the surface, drawn on as it goes
       const ch = V.norm(cam.pos), kk = 1/cam.d, seen = P => V.dot(P, ch) > kk, scr = P => G3.toScreen(G3.toView(P, cam, Bz), cam);
       const prog = io3(p(t, OP.arc, .8));
       if(prog > 0){ g.save(); g.shadowColor = 'hsla(276,100%,72%,.95)'; g.shadowBlur = 22; g.strokeStyle = 'hsl(276,100%,80%)'; g.lineWidth = 5; g.lineCap = 'round'; g.beginPath();
         const n = 60; for(let i = 0; i <= n*prog; i++){ const u = i/n, q = scr(V.mul(G3.slerp(pa, pb, u), 1 + (0.07 + 0.16*Math.min(1, sep))*Math.sin(Math.PI*u))); i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]) }
         g.stroke(); g.restore() }
-      // the two dots, and the names riding them
       [[pa, OP.dotA, aLeft], [pb, OP.dotB, !aLeft]].forEach(([P, at, left], i) => { const k = p(t, at, .35), q = scr(P), x = q[0], y = q[1], vis = seen(P);
         if(k > 0 && vis){ const pop = 1 + .9*(1-k)*(1-k), ring = ((t - at) % 1.4)/1.4;
           g.strokeStyle = 'hsla(276,100%,78%,' + (.7*(1-ring)) + ')'; g.lineWidth = 3; g.beginPath(); g.arc(x, y, 14 + 46*ring, 0, 7); g.stroke();
@@ -2534,13 +2540,25 @@ editOverlay.addEventListener('click', (e) => {
         el.classList.toggle('r', left); el.style.opacity = o;
         el.style.transform = 'translate(' + (left ? x - 40 : x + 40) + 'px,' + (y - 56 + 14*(1-o)) + 'px)' + (left ? ' translateX(-100%)' : '') });
       const ho = out3(p(t, OP.dotA - .3, .5)); head.style.opacity = ho; head.style.transform = 'translateY(' + (14*(1-ho)) + 'px)';
-      // the icon: slams in, holds, then swells as the camera closes on its pane and is gone as we pass through it
-      const sl = p(t, OP.slam, OP.land - OP.slam), slam = sl*sl, gap = 1 - Math.pow(p(t, OP.push, OP.through - OP.push), 2.3);
-      if(gap <= .012 || sl <= 0) img.style.opacity = 0;
-      else { const s = Math.pow(gap, -1.25), land = t > OP.land ? 1 - .05*Math.sin(Math.PI*p(t, OP.land, .16)) : 1;
-        img.style.opacity = slam;
-        img.style.transform = 'translate(' + (cam.cx - icon.hx*W) + 'px,' + (cam.cy - icon.hy*Hh) + 'px) scale(' + (s*(1 + 2.6*(1 - slam))*land) + ')' }
-      const po = out3(p(t, OP.land + .2, .4))*(1 - p(t, OP.push - .05, .3)); pill.style.opacity = po; pill.style.transform = 'translateY(' + (14*(1 - out3(p(t, OP.land + .2, .4)))) + 'px)';
+
+      /* THE MARK. It arrives big and soft and settles (never a pop), two echoes
+         of its own outline go out from it, the event and the bout come in under
+         it. Then it lets go: the outer letters step aside, the middle one turns
+         edge-on and is gone, and the box around them eases into the visor --
+         past its shape and back, the way a thing with weight would. */
+      const arr = out5(p(t, OP.arrive, .7)), aIn = p(t, OP.arrive, .22), m = p(t, OP.morph + .08, .8), mm = m <= 0 ? 0 : m >= 1 ? 1 : back(io3(m));
+      const size = 1.72*(1 + .5*(1 - arr));
+      [[1.0, .9], [1.18, .6]].forEach(([at, dur], i) => { const k = p(t, OP.land + at - 1 + i*.14, dur); if(k > 0 && k < 1) pane(cam, Bz, mm, size, 1, [1 + (.16 + .2*i)*out3(k), .45*(1 - k)]) });
+      const front = t < OP.arrive ? 9 : pane(cam, Bz, mm, size, aIn);
+      // the letters ride the pane's centre on screen
+      const pc = scr(H.c), ls = (1 + .5*(1 - arr))*(6/Math.max(.5, front)), go = p(t, OP.morph - .1, .34), gone = in3(go);
+      box.style.opacity = aIn*(front > .3 ? 1 : 0); box.style.filter = arr < 1 ? 'blur(' + (12*(1 - arr)).toFixed(1) + 'px)' : 'none';
+      box.style.transform = 'translate(' + (pc[0] - 960) + 'px,' + (pc[1] - 540) + 'px) translate(-50%,-52%) scale(' + ls.toFixed(4) + ')';
+      spans.forEach((e, i) => { if(i === mid){ const f = in3(p(t, OP.morph, .3)); e.style.transform = 'rotateY(' + (90*f) + 'deg) scale(' + (1 - .12*f) + ')'; e.style.opacity = f >= 1 ? 0 : 1 }
+        else { const dir = i < mid ? -1 : 1, lag = Math.abs(i - mid) - 1; const k = in3(p(t, OP.morph - .1 + lag*.05, .34)); e.style.transform = 'translateX(' + (dir*260*k) + 'px)'; e.style.opacity = 1 - k } });
+      const under = out3(p(t, OP.land + .2, .45))*(1 - p(t, OP.morph - .25, .25));
+      pill.style.opacity = under; pill.style.transform = 'translateY(' + (14*(1 - out3(p(t, OP.land + .2, .45)))) + 'px)';
+      const u2 = out3(p(t, OP.land + .34, .45))*(1 - p(t, OP.morph - .25, .25)); sub.style.opacity = u2; sub.style.transform = 'translateY(' + (14*(1 - out3(p(t, OP.land + .34, .45)))) + 'px)';
     }
     frame();
   }
@@ -2637,7 +2655,7 @@ editOverlay.addEventListener('click', (e) => {
     reset();
     root.style.display = 'block';
     fill();
-    const hasGeo = !!(geoA && geoB), icon = hasGeo ? markPane(txt('tapeMark') || 'VGA') : null;
+    const hasGeo = !!(geoA && geoB), icon = hasGeo ? (txt('tapeMark') || 'VGA') : null;
     mode = icon ? 'open' : 'none'; T = times(mode);
     void root.offsetWidth;
     soundOn();
