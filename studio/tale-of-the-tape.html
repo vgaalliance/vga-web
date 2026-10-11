@@ -1674,8 +1674,8 @@ editOverlay.addEventListener('click', (e) => {
 <!-- ============================================================
      MATCHUP INTRO — plays BEFORE the tape when the deck asks for it.
      Mark → fighter A on a light ground → VS → fighter B on a dark ground →
-     both names locked up → the camera pushes through the lock-up and the tape
-     plays behind it as normal.
+     both names giant across the seam → the lock-up → the camera pushes through
+     the lock-up and the tape plays behind it as normal.
 
      It is the one OPAQUE thing in this file: the tape sits over whatever scene
      is behind it in OBS, the intro covers the frame, and the push at the end is
@@ -1686,40 +1686,59 @@ editOverlay.addEventListener('click', (e) => {
 <style>
   #intro{position:fixed; top:0; left:0; width:1920px; height:1080px; z-index:200; display:none;
     overflow:hidden; pointer-events:none; --iv-hot:hsl(276,100%,72%); --iv-deep:hsl(272,82%,50%);
-    --iv-ink:#17102a;}
+    --iv-ink:#17102a;
+    /* two curves, used everywhere: things ARRIVE on the first and CROSS on the second */
+    --iv-out:cubic-bezier(.16,1,.3,1); --iv-io:cubic-bezier(.76,0,.24,1);}
   #introCam{position:absolute; inset:0; transform-origin:50% 50%; will-change:transform,opacity;}
+  /* a soft vignette over every scene, so the frame has edges and the cuts share one lens */
+  #introCam::after{content:''; position:absolute; inset:0; z-index:999; pointer-events:none;
+    background:radial-gradient(ellipse 75% 75% at 50% 50%, transparent 58%, rgba(10,4,24,.34) 100%);}
   .iv{position:absolute; inset:0; overflow:hidden; visibility:hidden;}
   .iv.on{visibility:visible;}
   .iv-bebas{font-family:'Bebas Neue','Barlow Condensed',Arial,sans-serif; font-weight:400;}
 
   /* Mid-bright on purpose. A near-black ground here would sit a black intro in
      front of an already dark stage and the fighters would have no edge. */
-  .iv-dark{color:#fff; background:
+  .iv-dark{color:#fff; --nm:#fff; --sh:hsl(276,100%,76%); background:
     repeating-linear-gradient(118deg, hsla(276,90%,80%,0.03) 0 2px, transparent 2px 10px),
     radial-gradient(ellipse 60% 75% at 68% 46%, hsla(276,92%,58%,0.55), transparent 72%),
     linear-gradient(118deg,#33196a 0%,#24124c 52%,#1a0d38 100%);}
-  .iv-light{color:var(--iv-ink); background:
+  .iv-light{color:var(--iv-ink); --nm:var(--iv-ink); --sh:hsl(272,95%,64%); background:
     repeating-linear-gradient(118deg, rgba(60,30,110,0.045) 0 2px, transparent 2px 10px),
     radial-gradient(ellipse 60% 80% at 26% 42%, #ffffff, transparent 72%),
     linear-gradient(118deg,#f4f2fa 0%,#e1dcee 100%);}
 
   /* THE WIPE. A new scene draws itself over the old one behind a slanted edge;
      the old one is switched off underneath once it is covered. */
-  .iv.on.iv-fromL{animation:ivWipeL .5s cubic-bezier(.7,0,.2,1) both;}
-  .iv.on.iv-fromR{animation:ivWipeR .5s cubic-bezier(.7,0,.2,1) both;}
-  .iv.on.iv-fade {animation:ivFade .28s ease both;}
+  .iv.on.iv-fromL{animation:ivWipeL .66s var(--iv-io) both;}
+  .iv.on.iv-fromR{animation:ivWipeR .66s var(--iv-io) both;}
+  .iv.on.iv-fade {animation:ivFade .35s ease both;}
   @keyframes ivWipeL{from{clip-path:polygon(0 0, 0 0, -12% 100%, 0 100%);}
                      to  {clip-path:polygon(0 0, 112% 0, 100% 100%, 0 100%);}}
   @keyframes ivWipeR{from{clip-path:polygon(100% 0, 100% 0, 112% 100%, 100% 100%);}
                      to  {clip-path:polygon(100% 0, -12% 0, 0 100%, 100% 100%);}}
   @keyframes ivFade{from{opacity:0;} to{opacity:1;}}
   /* the hot band that rides the wipe's leading edge and leaves with it */
-  .iv-band{position:absolute; top:-10%; bottom:-10%; width:190px; background:var(--iv-hot);
+  .iv-band{position:absolute; top:-10%; bottom:-10%; width:210px; background:var(--iv-hot);
     transform:skewX(-12.5deg); opacity:0; z-index:9;}
-  .iv.on.iv-fromL .iv-band{animation:ivBandL .62s cubic-bezier(.7,0,.2,1) both;}
-  .iv.on.iv-fromR .iv-band{animation:ivBandR .62s cubic-bezier(.7,0,.2,1) both;}
-  @keyframes ivBandL{0%{left:-14%; opacity:1;} 80%{opacity:1;} 100%{left:108%; opacity:1;}}
-  @keyframes ivBandR{0%{left:104%; opacity:1;} 80%{opacity:1;} 100%{left:-18%; opacity:1;}}
+  .iv.on.iv-fromL .iv-band{animation:ivBandL .8s var(--iv-io) both;}
+  .iv.on.iv-fromR .iv-band{animation:ivBandR .8s var(--iv-io) both;}
+  @keyframes ivBandL{0%{left:-14%; opacity:1;} 100%{left:108%; opacity:1;}}
+  @keyframes ivBandR{0%{left:104%; opacity:1;} 100%{left:-18%; opacity:1;}}
+
+  /* THE SHEEN. One bright bar crossing a name -- the letters are the window. */
+  .iv-name,.iv-vs{background:linear-gradient(100deg, var(--nm) 0 42%, var(--sh) 50%, var(--nm) 58% 100%) 100% 0 / 320% 100% no-repeat;
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent;}
+  @keyframes ivSheen{from{background-position:100% 0;} to{background-position:0 0;}}
+  /* THE GLINT. The same idea across a fighter: a band of light masked to the
+     cut-out, so it lights the body and never the air around it. */
+  .iv-glint{position:absolute; inset:0; overflow:hidden; -webkit-mask-size:contain; mask-size:contain;
+    -webkit-mask-position:bottom center; mask-position:bottom center; -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;}
+  .iv-glint::before{content:''; position:absolute; top:-20%; bottom:-20%; left:-60%; width:38%;
+    background:linear-gradient(100deg, transparent, rgba(255,255,255,.5) 45%, rgba(255,255,255,.72) 50%, rgba(255,255,255,.5) 55%, transparent);
+    transform:skewX(-14deg);}
+  .iv-pic.sil .iv-glint{display:none;}
+  @keyframes ivGlint{from{left:-60%;} to{left:130%;}}
 
   /* corner furniture, the same on every scene so the eye stops reading it */
   .iv-tl,.iv-bl,.iv-br{position:absolute; font-size:20px; font-weight:700; letter-spacing:4px; text-transform:uppercase; opacity:.72;}
@@ -1727,43 +1746,52 @@ editOverlay.addEventListener('click', (e) => {
   .iv-tr{position:absolute; top:38px; right:58px; border:3px solid currentColor; padding:1px 11px 0;
     font-size:38px; letter-spacing:2px; line-height:1.08;}
   .iv-light .iv-tl,.iv-light .iv-bl,.iv-light .iv-br{opacity:.62;}
-
-  /* ── STING ── */
-  #ivSting .iv-line{position:absolute; left:8%; right:8%; top:50%; height:2px; margin-top:-1px;
-    background:linear-gradient(90deg, transparent, #fff 30%, #fff 70%, transparent); transform:scaleX(0);}
-  #ivSting.on .iv-line{animation:ivLine .9s cubic-bezier(.3,0,.2,1) both;}
-  @keyframes ivLine{0%{transform:scaleX(0); opacity:1;} 45%{transform:scaleX(1); opacity:1;} 100%{transform:scaleX(1); opacity:0;}}
-  #ivSting .iv-stack{position:absolute; left:0; right:0; top:50%; transform:translateY(-50%);
-    display:flex; flex-direction:column; align-items:center; gap:22px;}
-  #ivSting .iv-markbox{border:8px solid #fff; padding:6px 34px 0; font-size:190px; line-height:1; letter-spacing:6px; opacity:0;
-    box-shadow:0 0 70px hsla(276,100%,70%,.55), inset 0 0 40px hsla(276,100%,70%,.25);}
-  #ivSting.on .iv-markbox{animation:ivPop .5s cubic-bezier(.16,.7,.25,1) .32s both;}
-  @keyframes ivPop{from{opacity:0; transform:scale(1.22);} to{opacity:1; transform:scale(1);}}
   .iv-chip{display:inline-block; background:var(--iv-hot); color:var(--iv-ink); font-weight:800; text-transform:uppercase;
     font-size:30px; letter-spacing:3px; padding:5px 18px 4px; white-space:nowrap;}
   .iv-chip.white{background:#fff;}
-  #ivSting .iv-chip, #ivSting .iv-sub{opacity:0;}
-  #ivSting.on .iv-chip{animation:ivUp .4s ease-out .58s both;}
-  #ivSting .iv-sub{font-size:22px; font-weight:600; letter-spacing:6px; text-transform:uppercase; color:hsla(276,40%,92%,.8);}
-  #ivSting.on .iv-sub{animation:ivUp .4s ease-out .7s both;}
-  @keyframes ivUp{from{opacity:0; transform:translateY(14px);} to{opacity:1; transform:none;}}
+  @keyframes ivUp{from{opacity:0; transform:translateY(16px);} to{opacity:1; transform:none;}}
+  @keyframes ivPop{from{opacity:0; transform:scale(1.22);} to{opacity:1; transform:scale(1);}}
+
+  /* ── STING ── the mark arrives big and soft, and settles */
+  #ivSting .iv-line{position:absolute; left:6%; right:6%; top:50%; height:2px; margin-top:-1px;
+    background:linear-gradient(90deg, transparent, #fff 30%, #fff 70%, transparent); transform:scaleX(0);}
+  #ivSting.on .iv-line{animation:ivLine 1.25s var(--iv-out) both;}
+  @keyframes ivLine{0%{transform:scaleX(0); opacity:1;} 55%{transform:scaleX(1); opacity:.9;} 100%{transform:scaleX(1); opacity:0;}}
+  #ivSting .iv-stack{position:absolute; left:0; right:0; top:50%; transform:translateY(-50%);
+    display:flex; flex-direction:column; align-items:center; gap:22px;}
+  #ivSting .iv-markbox{border:8px solid #fff; padding:6px 34px 0; font-size:190px; line-height:1; letter-spacing:6px; opacity:0;}
+  #ivSting.on .iv-markbox{animation:ivMark .85s var(--iv-out) .3s both, ivRings 1.3s ease-out .55s both;}
+  @keyframes ivMark{from{opacity:0; transform:scale(2.3); filter:blur(16px);} 35%{opacity:1;} to{opacity:1; transform:scale(1); filter:blur(0);}}
+  @keyframes ivRings{
+    from{box-shadow:0 0 0 0 rgba(255,255,255,.55), 0 0 0 0 rgba(255,255,255,.3), 0 0 70px hsla(276,100%,70%,.0);}
+    to  {box-shadow:0 0 0 34px rgba(255,255,255,0), 0 0 0 74px rgba(255,255,255,0), 0 0 80px hsla(276,100%,70%,.6);}}
+  #ivSting .iv-chip{clip-path:inset(0 100% 0 0);}
+  #ivSting.on .iv-chip{animation:ivChipIn .5s var(--iv-out) .82s both;}
+  @keyframes ivChipIn{from{clip-path:inset(0 100% 0 0);} to{clip-path:inset(0 0 0 0);}}
+  #ivSting .iv-sub{font-size:22px; font-weight:600; letter-spacing:6px; text-transform:uppercase; color:hsla(276,40%,92%,.8); opacity:0;}
+  #ivSting.on .iv-sub{animation:ivUp .5s var(--iv-out) 1s both;}
 
   /* ── ONE FIGHTER ── photo on one side, the name owns the other */
   .iv-pic{position:absolute; bottom:0; background-size:contain; background-position:bottom center; background-repeat:no-repeat;}
   /* The silhouette is solid black on transparent: fine on the light ground,
      invisible on the dark one, so it is lifted to a pale shape there. */
-  .iv-dark .iv-pic.sil{filter:invert(1) opacity(.2);}
-  .iv-light .iv-pic.sil{opacity:.85;}
+  .iv-dark .iv-sil{filter:invert(1) opacity(.2);}
+  .iv-light .iv-sil{opacity:.85;}
+  .iv-solo .iv-inner{position:absolute; inset:0; transition:opacity .3s ease;}
+  /* the way out: the scene lets go of its content a breath before it is covered */
+  .iv-solo.out .iv-inner{opacity:.12;}
   .iv-solo .iv-drift{position:absolute; inset:0;}
-  .iv-solo.on .iv-drift{animation:ivDrift 3.2s linear both;}
-  @keyframes ivDrift{from{transform:scale(1);} to{transform:scale(1.045);}}
+  .iv-solo.on .iv-drift{animation:ivDrift 3.4s linear both;}
+  @keyframes ivDrift{from{transform:scale(1);} to{transform:scale(1.05);}}
   .iv-solo .iv-pic{width:900px; height:1096px; opacity:0;}
   #ivA .iv-pic{left:10px; transform-origin:30% 100%;}
   #ivB .iv-pic{right:10px; transform-origin:70% 100%;}
-  #ivA.on .iv-pic{animation:ivPicL .85s cubic-bezier(.16,.6,.25,1) .16s both;}
-  #ivB.on .iv-pic{animation:ivPicR .85s cubic-bezier(.16,.6,.25,1) .16s both;}
-  @keyframes ivPicL{from{opacity:0; transform:translateX(-90px) scale(1.07);} to{opacity:1; transform:none;}}
-  @keyframes ivPicR{from{opacity:0; transform:translateX(90px) scale(1.07);} to{opacity:1; transform:none;}}
+  #ivA.on .iv-pic{animation:ivPicL 1.05s var(--iv-out) .2s both, ivBlur .6s ease-out .2s both;}
+  #ivB.on .iv-pic{animation:ivPicR 1.05s var(--iv-out) .2s both, ivBlur .6s ease-out .2s both;}
+  @keyframes ivPicL{from{opacity:0; transform:translateX(-150px) scale(1.08);} 30%{opacity:1;} to{opacity:1; transform:none;}}
+  @keyframes ivPicR{from{opacity:0; transform:translateX(150px) scale(1.08);} 30%{opacity:1;} to{opacity:1; transform:none;}}
+  @keyframes ivBlur{from{filter:blur(14px);} to{filter:blur(0);}}
+  .iv-solo.on .iv-glint::before{animation:ivGlint 1.1s ease-in-out 1.35s both;}
   .iv-id{position:absolute; top:50%; width:950px; transform:translateY(-52%);}
   #ivA .iv-id{left:880px;} #ivB .iv-id{left:96px;}
   .iv-small{font-size:30px; font-weight:800; letter-spacing:6px; text-transform:uppercase; margin:0 0 6px 34px; opacity:0;}
@@ -1772,14 +1800,14 @@ editOverlay.addEventListener('click', (e) => {
   .iv-dark .iv-bar{background:var(--iv-hot);}
   .iv-name{white-space:nowrap; line-height:.88; letter-spacing:1px; font-size:260px; padding-top:.06em;}
   .iv-solo .iv-name{clip-path:inset(0 100% 0 0);}
-  .iv-solo.on .iv-bar{animation:ivBar .34s cubic-bezier(.3,0,.2,1) .3s both;}
-  .iv-solo.on .iv-name{animation:ivName .6s cubic-bezier(.2,.7,.2,1) .4s both;}
-  .iv-solo.on .iv-small{animation:ivUp .4s ease-out .62s both;}
+  .iv-solo.on .iv-bar{animation:ivBar .45s var(--iv-out) .38s both;}
+  .iv-solo.on .iv-name{animation:ivName .8s var(--iv-out) .5s both, ivSheen 1.15s ease-in-out 1.3s both;}
+  .iv-solo.on .iv-small{animation:ivUp .5s var(--iv-out) .78s both;}
   @keyframes ivBar{from{transform:scaleY(0);} to{transform:scaleY(1);}}
-  @keyframes ivName{from{clip-path:inset(0 100% 0 0); transform:translateX(-26px);} to{clip-path:inset(0 0 0 0); transform:none;}}
+  @keyframes ivName{from{clip-path:inset(0 100% 0 0); transform:translateX(-34px);} to{clip-path:inset(0 0 0 0); transform:none;}}
   .iv-stats{display:flex; gap:46px; margin:4px 0 0 34px;}
   .iv-stat{opacity:0;}
-  .iv-solo.on .iv-stat{animation:ivUp .4s ease-out both;}
+  .iv-solo.on .iv-stat{animation:ivUp .5s var(--iv-out) both;}
   .iv-stat b{display:block; font-size:66px; font-weight:800; line-height:1;}
   .iv-stat i{display:block; font-style:normal; font-size:17px; font-weight:700; letter-spacing:3.5px; text-transform:uppercase; opacity:.62; margin-top:4px;}
   .iv-dark .iv-stat.hot b{color:var(--iv-hot);} .iv-light .iv-stat.hot b{color:var(--iv-deep);}
@@ -1788,51 +1816,126 @@ editOverlay.addEventListener('click', (e) => {
   #ivVs .iv-row{position:absolute; left:0; right:0; top:50%; transform:translateY(-54%);
     display:flex; align-items:center; justify-content:center; gap:120px;}
   .iv-chev{width:170px; height:330px; background:var(--iv-hot); opacity:0;
-    clip-path:polygon(0 0, 40% 0, 100% 50%, 40% 100%, 0 100%, 60% 50%);
-    filter:drop-shadow(0 0 30px hsla(276,100%,70%,.6));}
-  .iv-chev.r{transform:scaleX(-1);}
+    clip-path:polygon(0 0, 40% 0, 100% 50%, 40% 100%, 0 100%, 60% 50%);}
   #ivVs .iv-vs{font-size:330px; line-height:.86; letter-spacing:4px; padding-top:.06em; opacity:0;}
   #ivVs .iv-chipRow{position:absolute; left:0; right:0; top:742px; text-align:center; opacity:0;}
-  #ivVs.on .iv-chev.l{animation:ivChevL .45s cubic-bezier(.16,.7,.25,1) .18s both;}
-  #ivVs.on .iv-chev.r{animation:ivChevR .45s cubic-bezier(.16,.7,.25,1) .18s both;}
-  #ivVs.on .iv-vs{animation:ivPop .4s cubic-bezier(.16,.7,.25,1) .26s both;}
-  #ivVs.on .iv-chipRow{animation:ivUp .35s ease-out .42s both;}
-  @keyframes ivChevL{from{opacity:0; transform:translateX(-260px);} to{opacity:1; transform:none;}}
-  @keyframes ivChevR{from{opacity:0; transform:translateX(260px) scaleX(-1);} to{opacity:1; transform:scaleX(-1);}}
+  #ivVs .iv-topMark{position:absolute; left:50%; top:236px; transform:translateX(-50%); border:3px solid #fff; padding:1px 11px 0;
+    font-size:38px; letter-spacing:2px; line-height:1.08; opacity:0;}
+  /* hairlines in from two corners, and one soft flash as the chevrons land */
+  .iv-ray{position:absolute; width:620px; height:2px; background:var(--iv-hot); opacity:0;}
+  .iv-ray.a{right:-60px; top:150px; transform-origin:100% 50%; --r:-28deg;}
+  .iv-ray.b{left:-60px; bottom:150px; transform-origin:0 50%; --r:-28deg;}
+  #ivVs.on .iv-ray{animation:ivRay .7s var(--iv-out) .12s both;}
+  @keyframes ivRay{0%{opacity:.9; transform:rotate(var(--r)) scaleX(0);} 60%{opacity:.9; transform:rotate(var(--r)) scaleX(1);} 100%{opacity:0; transform:rotate(var(--r)) scaleX(1);}}
+  .iv-flash{position:absolute; inset:0; background:#fff; opacity:0; z-index:8;}
+  #ivVs.on .iv-flash{animation:ivFlash .5s ease-out .34s both;}
+  @keyframes ivFlash{from{opacity:.42;} to{opacity:0;}}
+  #ivVs.on .iv-chev.l{animation:ivChevL .7s var(--iv-out) .24s both;}
+  #ivVs.on .iv-chev.r{animation:ivChevR .7s var(--iv-out) .24s both;}
+  #ivVs.on .iv-vs{animation:ivPop .6s var(--iv-out) .32s both, ivSheen .9s ease-in-out .62s both;}
+  #ivVs.on .iv-chipRow{animation:ivUp .45s var(--iv-out) .56s both;}
+  #ivVs.on .iv-topMark{animation:ivFade .45s ease .56s both;}
+  @keyframes ivChevL{from{opacity:0; transform:translateX(-340px);} to{opacity:1; transform:none;}}
+  @keyframes ivChevR{from{opacity:0; transform:translateX(340px) scaleX(-1);} to{opacity:1; transform:scaleX(-1);}}
   /* the way out: VS comes at the camera, the chevrons part */
-  #ivVs.on.out .iv-vs{animation:ivVsOut .42s cubic-bezier(.6,0,.9,.4) both;}
-  #ivVs.on.out .iv-chev.l{animation:ivChevLOut .42s cubic-bezier(.6,0,.9,.4) both;}
-  #ivVs.on.out .iv-chev.r{animation:ivChevROut .42s cubic-bezier(.6,0,.9,.4) both;}
-  #ivVs.on.out .iv-chipRow{animation:none; opacity:0;}
-  @keyframes ivVsOut{from{opacity:1; transform:scale(1);} to{opacity:.0; transform:scale(7);}}
+  #ivVs.on.out .iv-vs{animation:ivVsOut .5s cubic-bezier(.6,0,.9,.4) both;}
+  #ivVs.on.out .iv-chev.l{animation:ivChevLOut .5s cubic-bezier(.6,0,.9,.4) both;}
+  #ivVs.on.out .iv-chev.r{animation:ivChevROut .5s cubic-bezier(.6,0,.9,.4) both;}
+  #ivVs.on.out .iv-chipRow, #ivVs.on.out .iv-topMark{animation:none; opacity:0;}
+  @keyframes ivVsOut{from{opacity:1; transform:scale(1);} to{opacity:0; transform:scale(7);}}
   @keyframes ivChevLOut{from{opacity:1; transform:none;} to{opacity:0; transform:translateX(-700px);}}
   @keyframes ivChevROut{from{opacity:1; transform:scaleX(-1);} to{opacity:0; transform:translateX(700px) scaleX(-1);}}
 
-  /* ── LOCK-UP ── light over dark, a fighter on each wing, the names on the seam */
-  #ivLock .iv-top{position:absolute; left:0; right:0; top:0; height:540px;}
-  #ivLock .iv-bot{position:absolute; left:0; right:0; top:540px; height:540px;}
+  /* ── light over dark: the split both closing scenes share ── */
+  .iv-top{position:absolute; left:0; right:0; top:0; height:540px; overflow:hidden;}
+  .iv-bot{position:absolute; left:0; right:0; top:540px; height:540px; overflow:hidden;}
+  /* THE FLOOD. A hot line on the seam that opens to fill the frame, and the
+     next scene starts full of it and closes back to nothing: the cut happens
+     while the whole picture is one colour, so it is never seen. */
+  .iv-flood{position:absolute; left:0; right:0; top:537px; height:6px; background:var(--iv-hot); z-index:20; transform-origin:50% 50%;}
+  #ivType.on.out .iv-flood{animation:ivFloodOpen .22s cubic-bezier(.6,0,.9,.4) both;}
+  #ivLock.on .iv-flood{animation:ivFloodClose .6s var(--iv-out) both;}
+  @keyframes ivFloodOpen{from{transform:scaleY(1);} to{transform:scaleY(190);}}
+  @keyframes ivFloodClose{from{transform:scaleY(190);} to{transform:scaleY(0);}}
+
+  /* ── GIANT TYPE ── both names too big for the frame, sliding past each other */
+  .iv-giant{position:absolute; left:50%; white-space:nowrap; font-size:600px; line-height:.8; letter-spacing:4px;}
+  .iv-giant.a{bottom:-64px; color:var(--iv-ink);} .iv-giant.b{top:36px; color:#fff;}
+  #ivType.on .iv-giant.a{animation:ivGiantA 1.5s linear both;}
+  #ivType.on .iv-giant.b{animation:ivGiantB 1.5s linear both;}
+  @keyframes ivGiantA{from{transform:translateX(-72%);} to{transform:translateX(-38%);}}
+  @keyframes ivGiantB{from{transform:translateX(-30%);} to{transform:translateX(-62%);}}
+  #ivType .iv-seamMark{position:absolute; left:50%; top:540px; transform:translate(-50%,-50%); z-index:21;
+    background:var(--iv-ink); color:#fff; border:5px solid var(--iv-hot); font-size:92px; line-height:1; letter-spacing:4px; padding:10px 22px 2px; opacity:0;}
+  #ivType.on .iv-seamMark{animation:ivSeam .5s var(--iv-out) .3s both;}
+  #ivType.on.out .iv-seamMark{animation:none; opacity:0;}
+
+  /* ── LOCK-UP ── a fighter on each wing, the names on the seam */
+  #ivLock.on{animation:ivDriftAll 5.2s linear both;}
+  @keyframes ivDriftAll{from{transform:scale(1);} to{transform:scale(1.04);}}
   #ivLock .iv-pic{width:720px; height:1030px; opacity:0;}
   #ivLock .iv-pic.a{left:-40px;} #ivLock .iv-pic.b{right:-40px;}
-  #ivLock.on .iv-pic.a{animation:ivPicL .8s cubic-bezier(.16,.6,.25,1) .28s both;}
-  #ivLock.on .iv-pic.b{animation:ivPicR .8s cubic-bezier(.16,.6,.25,1) .28s both;}
+  #ivLock.on .iv-pic.a{animation:ivRiseL 1.1s var(--iv-out) .22s both;}
+  #ivLock.on .iv-pic.b{animation:ivRiseR 1.1s var(--iv-out) .3s both;}
+  @keyframes ivRiseL{from{opacity:0; transform:translate(-70px,90px);} 30%{opacity:1;} to{opacity:1; transform:none;}}
+  @keyframes ivRiseR{from{opacity:0; transform:translate(70px,90px);} 30%{opacity:1;} to{opacity:1; transform:none;}}
+  #ivLock.on .iv-glint::before{animation:ivGlint 1.25s ease-in-out 1.75s both;}
+  #ivLock.on .iv-pic.b .iv-glint::before{animation-delay:1.95s;}
   #ivLock .iv-mid{position:absolute; left:460px; width:1000px; text-align:center; z-index:4;}
-  #ivLock .iv-mid.a{bottom:540px; color:var(--iv-ink); padding-bottom:26px;}
-  #ivLock .iv-mid.b{top:540px; color:#fff; padding-top:30px;}
+  #ivLock .iv-mid.a{bottom:540px; color:var(--iv-ink); --nm:var(--iv-ink); --sh:hsl(272,95%,64%); padding-bottom:26px;}
+  #ivLock .iv-mid.b{top:540px; color:#fff; --nm:#fff; --sh:hsl(276,100%,76%); padding-top:30px;}
   #ivLock .iv-name{display:inline-block; font-size:200px; opacity:0;}
   #ivLock .iv-rec{font-size:30px; font-weight:800; letter-spacing:7px; text-transform:uppercase; opacity:0;}
   #ivLock .iv-mid.a .iv-rec{margin-bottom:2px; color:var(--iv-deep);} #ivLock .iv-mid.b .iv-rec{margin-top:6px; color:var(--iv-hot);}
-  #ivLock.on .iv-mid.a .iv-name{animation:ivNmL .55s cubic-bezier(.16,.7,.25,1) .34s both;}
-  #ivLock.on .iv-mid.b .iv-name{animation:ivNmR .55s cubic-bezier(.16,.7,.25,1) .42s both;}
-  #ivLock.on .iv-rec{animation:ivUp .4s ease-out .72s both;}
-  @keyframes ivNmL{from{opacity:0; transform:translateX(-140px);} to{opacity:1; transform:none;}}
-  @keyframes ivNmR{from{opacity:0; transform:translateX(140px);} to{opacity:1; transform:none;}}
+  /* the names arrive still carrying the size of the beat before, and settle */
+  #ivLock.on .iv-mid.a .iv-name{animation:ivNmA .95s var(--iv-out) .12s both, ivSheen 1.25s ease-in-out 1.7s both;}
+  #ivLock.on .iv-mid.b .iv-name{animation:ivNmB .95s var(--iv-out) .2s both, ivSheen 1.25s ease-in-out 1.9s both;}
+  #ivLock.on .iv-rec{animation:ivUp .5s var(--iv-out) .8s both;}
+  @keyframes ivNmA{from{opacity:0; transform:scale(1.7) translateY(-12px);} 25%{opacity:1;} to{opacity:1; transform:none;}}
+  @keyframes ivNmB{from{opacity:0; transform:scale(1.7) translateY(12px);} 25%{opacity:1;} to{opacity:1; transform:none;}}
+  #ivLock .iv-mid.a .iv-name{transform-origin:50% 100%;} #ivLock .iv-mid.b .iv-name{transform-origin:50% 0;}
   #ivLock .iv-seam{position:absolute; left:50%; top:540px; transform:translate(-50%,-50%); z-index:5;
     background:var(--iv-hot); color:var(--iv-ink); font-size:46px; letter-spacing:4px; line-height:1; padding:7px 20px 2px; opacity:0;}
-  #ivLock.on .iv-seam{animation:ivSeam .35s cubic-bezier(.16,.7,.25,1) .6s both;}
+  #ivLock.on .iv-seam{animation:ivSeam .5s var(--iv-out) .62s both;}
   @keyframes ivSeam{from{opacity:0; transform:translate(-50%,-50%) scale(1.6);} to{opacity:1; transform:translate(-50%,-50%) scale(1);}}
-  #ivLock .iv-chips{position:absolute; left:0; right:0; bottom:44px; display:flex; justify-content:center; gap:12px; z-index:5; opacity:0;}
-  #ivLock .iv-chips .iv-chip{font-size:24px; padding:4px 14px 3px;}
-  #ivLock.on .iv-chips{animation:ivUp .4s ease-out .85s both;}
+  /* THE HAND-OFF. Nothing fades: the lock-up OPENS. A flare runs the seam, the
+     light half lifts and the dark half drops like doors with the names riding
+     them, and the scene behind is simply there. The two fighters do not leave
+     -- they drift to where the tape stands its fighters and give way to them,
+     so it reads as one shot rather than a cut between two graphics. */
+  /* Keyframes, not transitions, like every other move in here: one clock. */
+  #ivLock.push .iv-top,#ivLock.push .iv-mid.a{animation:ivDoorUp 1.3s var(--iv-io) both;}
+  #ivLock.push .iv-bot,#ivLock.push .iv-mid.b{animation:ivDoorDown 1.3s var(--iv-io) both;}
+  @keyframes ivDoorUp{from{transform:none;} to{transform:translateY(-640px);}}
+  @keyframes ivDoorDown{from{transform:none;} to{transform:translateY(640px);}}
+  #ivLock.push .iv-top{box-shadow:0 8px 70px 10px hsla(276,100%,74%,.95);}
+  #ivLock.push .iv-bot{box-shadow:0 -8px 70px 10px hsla(276,100%,74%,.95);}
+  /* inset:0 so a moving wing is still the full frame its photo stands in */
+  #ivLock .iv-wing{position:absolute; inset:0;}
+  /* Each wing shrinks about its own feet to the size and spot the tape stands
+     its fighter at (a 550px-wide box centred 375px in), so the hand-over is a
+     fighter settling, not one fighter replaced by a smaller one. */
+  #ivLock .iv-wing.a{transform-origin:320px 1080px;} #ivLock .iv-wing.b{transform-origin:1600px 1080px;}
+  #ivLock.push .iv-wing.a{animation:ivWingA 1.3s var(--iv-io) both;}
+  #ivLock.push .iv-wing.b{animation:ivWingB 1.3s var(--iv-io) both;}
+  @keyframes ivWingA{0%{transform:none; opacity:1;} 62%{opacity:1;} 100%{transform:translateX(55px) scale(.824); opacity:0;}}
+  @keyframes ivWingB{0%{transform:none; opacity:1;} 62%{opacity:1;} 100%{transform:translateX(-55px) scale(.824); opacity:0;}}
+  #ivLock.on.push .iv-seam{animation:ivSeamOut .3s ease-in both;}
+  @keyframes ivSeamOut{from{opacity:1; transform:translate(-50%,-50%) scale(1);} to{opacity:0; transform:translate(-50%,-50%) scale(9,.12);}}
+  #ivLock.push .iv-chips{animation:ivGone .25s ease both;}
+  @keyframes ivGone{to{opacity:0;}}
+  .iv-flare{position:absolute; left:-5%; right:-5%; top:537px; height:6px; z-index:6; opacity:0; background:#fff;
+    box-shadow:0 0 30px 8px #fff, 0 0 120px 40px hsla(276,100%,72%,.9);}
+  #ivLock.push .iv-flare{animation:ivFlare 1.15s ease-out both;}
+  @keyframes ivFlare{0%{opacity:1; transform:scaleX(0);} 22%{opacity:1; transform:scaleX(1);} 100%{opacity:0; transform:scaleX(1) scaleY(5);}}
+  /* a slow lean in while the doors open */
+  #introCam.push{animation:ivLean 1.45s cubic-bezier(.65,0,.35,1) both;}
+  @keyframes ivLean{from{transform:scale(1);} to{transform:scale(1.12);}}
+  #introCam.push::after{animation:ivGone .8s ease both;}
+  #ivLock .iv-chips{position:absolute; left:0; right:0; bottom:44px; display:flex; justify-content:center; gap:12px; z-index:5;}
+  #ivLock .iv-chips .iv-chip{font-size:24px; padding:4px 14px 3px; clip-path:inset(0 100% 0 0);}
+  #ivLock.on .iv-chips .iv-chip{animation:ivChipIn .5s var(--iv-out) 1s both;}
+  #ivLock.on .iv-chips .iv-chip:nth-child(2){animation-delay:1.08s;} #ivLock.on .iv-chips .iv-chip:nth-child(3){animation-delay:1.16s;}
 </style>
 
 <div id="intro">
@@ -1848,11 +1951,13 @@ editOverlay.addEventListener('click', (e) => {
   </div>
 
   <div class="iv iv-light iv-solo iv-fromL" id="ivA">
-    <div class="iv-drift"><div class="iv-pic" data-pic="Left"></div></div>
-    <div class="iv-id">
-      <div class="iv-small" data-iv="countryA"></div>
-      <div class="iv-nameRow"><i class="iv-bar"></i><div class="iv-name iv-bebas" data-iv="nameA" data-max="260" data-room="880"></div></div>
-      <div class="iv-stats" data-stats="Left"></div>
+    <div class="iv-inner">
+      <div class="iv-drift"><div class="iv-pic" data-pic="Left"><div class="iv-glint"></div></div></div>
+      <div class="iv-id">
+        <div class="iv-small" data-iv="countryA"></div>
+        <div class="iv-nameRow"><i class="iv-bar"></i><div class="iv-name iv-bebas" data-iv="nameA" data-max="260" data-room="880"></div></div>
+        <div class="iv-stats" data-stats="Left"></div>
+      </div>
     </div>
     <div class="iv-tl" data-iv="title"></div><div class="iv-tr iv-bebas" data-iv="league"></div>
     <div class="iv-br" data-iv="sub"></div>
@@ -1860,40 +1965,54 @@ editOverlay.addEventListener('click', (e) => {
   </div>
 
   <div class="iv iv-dark iv-fromL" id="ivVs">
+    <div class="iv-ray a"></div><div class="iv-ray b"></div>
+    <div class="iv-topMark iv-bebas" data-iv="league"></div>
     <div class="iv-row">
       <div class="iv-chev l"></div><div class="iv-vs iv-bebas">VS</div><div class="iv-chev r"></div>
     </div>
     <div class="iv-chipRow"><span class="iv-chip" data-iv="title"></span></div>
+    <div class="iv-flash"></div>
     <div class="iv-band"></div>
   </div>
 
   <div class="iv iv-dark iv-solo iv-fromR" id="ivB">
-    <div class="iv-drift"><div class="iv-pic" data-pic="Right"></div></div>
-    <div class="iv-id">
-      <div class="iv-small" data-iv="countryB"></div>
-      <div class="iv-nameRow"><i class="iv-bar"></i><div class="iv-name iv-bebas" data-iv="nameB" data-max="260" data-room="880"></div></div>
-      <div class="iv-stats" data-stats="Right"></div>
+    <div class="iv-inner">
+      <div class="iv-drift"><div class="iv-pic" data-pic="Right"><div class="iv-glint"></div></div></div>
+      <div class="iv-id">
+        <div class="iv-small" data-iv="countryB"></div>
+        <div class="iv-nameRow"><i class="iv-bar"></i><div class="iv-name iv-bebas" data-iv="nameB" data-max="260" data-room="880"></div></div>
+        <div class="iv-stats" data-stats="Right"></div>
+      </div>
     </div>
     <div class="iv-tl" data-iv="title"></div><div class="iv-tr iv-bebas" data-iv="league"></div>
     <div class="iv-bl" data-iv="sub"></div>
     <div class="iv-band"></div>
   </div>
 
-  <div class="iv iv-fromL" id="ivLock">
+  <div class="iv iv-fromL" id="ivType">
+    <div class="iv-top iv-light"><div class="iv-giant a iv-bebas" data-iv="nameA"></div></div>
+    <div class="iv-bot iv-dark"><div class="iv-giant b iv-bebas" data-iv="nameB"></div></div>
+    <div class="iv-flood"></div>
+    <div class="iv-seamMark iv-bebas" data-iv="league"></div>
+    <div class="iv-band"></div>
+  </div>
+
+  <div class="iv" id="ivLock">
     <div class="iv-top iv-light"></div><div class="iv-bot iv-dark"></div>
-    <div class="iv-light" style="background:none;"><div class="iv-pic a" data-pic="Left"></div></div>
-    <div class="iv-dark" style="background:none;"><div class="iv-pic b" data-pic="Right"></div></div>
+    <div class="iv-light iv-wing a" style="background:none;"><div class="iv-pic a" data-pic="Left"><div class="iv-glint"></div></div></div>
+    <div class="iv-dark iv-wing b" style="background:none;"><div class="iv-pic b" data-pic="Right"><div class="iv-glint"></div></div></div>
     <div class="iv-mid a">
       <div class="iv-rec" data-iv="lineA"></div>
       <div class="iv-name iv-bebas" data-iv="nameA" data-max="200" data-room="900"></div>
     </div>
     <div class="iv-seam iv-bebas">VS</div>
+    <div class="iv-flare"></div>
     <div class="iv-mid b">
       <div class="iv-name iv-bebas" data-iv="nameB" data-max="200" data-room="900"></div>
       <div class="iv-rec" data-iv="lineB"></div>
     </div>
     <div class="iv-chips"><span class="iv-chip" data-iv="league"></span><span class="iv-chip white" data-iv="sub"></span><span class="iv-chip white" data-iv="title"></span></div>
-    <div class="iv-band"></div>
+    <div class="iv-flood"></div>
   </div>
 
  </div>
@@ -1909,8 +2028,10 @@ editOverlay.addEventListener('click', (e) => {
   const txt = id => { const e = document.getElementById(id); return e ? e.textContent.trim() : '' };
   let z = 1;
 
-  // When each beat starts, in ms. One list, so the pacing is tuned in one place.
-  const T = { a:1150, vs:3250, vsOut:4050, b:4200, lock:6300, push:8300 };
+  // When each beat starts, in ms. One list, read by the pictures AND the
+  // sound, so the pacing is tuned in one place and the two cannot drift.
+  const T = { a:1500, aOut:3950, vs:4150, vsOut:5350, b:5500, bOut:7950, type:8150, flood:9350, lock:9520, push:12700 };
+  const PUSH_MS = 1450, TAPE_AT = 520;   // the hand-off's length, and how far into it the tape starts
 
   // Read off the tape, never from a payload of its own: whatever the tape is
   // about to show is what the intro announces, including a matchup typed into
@@ -1943,18 +2064,22 @@ editOverlay.addEventListener('click', (e) => {
       if(!blank(f.rank)) cells.push([f.rank,'Rank',true]);
       cells.forEach(([n,label,hot], i) => {
         const c = document.createElement('div'); c.className = 'iv-stat' + (hot ? ' hot' : '');
-        c.style.animationDelay = (0.72 + i*0.07) + 's';
+        c.style.animationDelay = (0.9 + i*0.11) + 's';
         const b = document.createElement('b'); b.textContent = n;
         const l = document.createElement('i'); l.textContent = label;
         c.append(b, l); box.append(c);
       });
     });
-    // The same picture the tape has painted, silhouette included.
+    // The same picture the tape has painted, silhouette included. The glint
+    // takes it as a MASK, so the light lands on the fighter and nowhere else.
     root.querySelectorAll('[data-pic]').forEach(p => {
       const box = document.getElementById('imgBox'+p.dataset.pic);
       const bg = box ? box.style.backgroundImage : '';
+      const sil = !bg || bg.indexOf('avatar-blank') !== -1;
       p.style.backgroundImage = bg;
-      p.classList.toggle('sil', !bg || bg.indexOf('avatar-blank') !== -1);
+      p.classList.toggle('sil', sil); p.classList.toggle('iv-sil', sil);
+      const g = p.querySelector('.iv-glint');
+      if(g){ g.style.webkitMaskImage = bg; g.style.maskImage = bg; }
     });
     // Names are whatever length a fighter chose. Shrink to the room, measured
     // with a Range for the reason fitBoutTitle gives.
@@ -1969,38 +2094,113 @@ editOverlay.addEventListener('click', (e) => {
   function scene(id){
     const el = document.getElementById(id); if(!el) return;
     // The outgoing scene is switched off only once the wipe has covered it.
-    root.querySelectorAll('.iv.on').forEach(s => { if(s !== el) at(560, () => s.classList.remove('on','out')) });
+    root.querySelectorAll('.iv.on').forEach(s => { if(s !== el) at(720, () => s.classList.remove('on','out')) });
     el.classList.remove('on','out'); void el.offsetWidth;
     el.style.zIndex = ++z;
     el.classList.add('on');
   }
+  const out = id => { const e = document.getElementById(id); if(e) e.classList.add('out') };
+
+  /* ── SOUND ─────────────────────────────────────────────────────────────
+     Synthesised, not sampled: no files to host, nothing to licence, and every
+     cue is placed off the same T the pictures use. Three instruments --
+     a whoosh (noise through a filter that sweeps), a hit (a sine that drops)
+     and a shimmer (air and three high partials) -- which is the whole kit of a
+     broadcast sting. It takes a context and a start time so the same score can
+     be rendered offline for a preview.
+     In OBS the source plays without a click. In a normal browser tab the
+     context stays suspended until the page is clicked, and the intro simply
+     runs silent -- it must never wait on sound. */
+  function score(ctx, t0){
+    const bus = ctx.createGain(); bus.gain.value = 0.5;
+    const comp = ctx.createDynamicsCompressor(); bus.connect(comp); comp.connect(ctx.destination);
+    const nb = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), ch = nb.getChannelData(0);
+    for(let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
+    const noise = () => { const s = ctx.createBufferSource(); s.buffer = nb; s.loop = true; return s };
+    const whoosh = (ms, dur, f0, f1, g, p0 = 0, p1 = 0, peak = 0.55) => { const t = t0 + ms/1000;
+      const s = noise(), f = ctx.createBiquadFilter(), a = ctx.createGain(), p = ctx.createStereoPanner();
+      f.type = 'bandpass'; f.Q.value = 0.8;
+      f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(f1, t + dur);
+      a.gain.setValueAtTime(0.0001, t); a.gain.exponentialRampToValueAtTime(g, t + dur*peak); a.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      p.pan.setValueAtTime(p0, t); p.pan.linearRampToValueAtTime(p1, t + dur);
+      s.connect(f); f.connect(a); a.connect(p); p.connect(bus); s.start(t); s.stop(t + dur + 0.05) };
+    const hit = (ms, g = 0.8) => { const t = t0 + ms/1000;
+      const o = ctx.createOscillator(), a = ctx.createGain();
+      o.frequency.setValueAtTime(105, t); o.frequency.exponentialRampToValueAtTime(34, t + 0.5);
+      a.gain.setValueAtTime(g, t); a.gain.exponentialRampToValueAtTime(0.0001, t + 0.8);
+      o.connect(a); a.connect(bus); o.start(t); o.stop(t + 0.85);
+      const s = noise(), f = ctx.createBiquadFilter(), b = ctx.createGain(); f.type = 'lowpass'; f.frequency.value = 1500;
+      b.gain.setValueAtTime(g * 0.4, t); b.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+      s.connect(f); f.connect(b); b.connect(bus); s.start(t); s.stop(t + 0.16) };
+    const shimmer = (ms, dur, g = 0.1) => { const t = t0 + ms/1000;
+      const s = noise(), f = ctx.createBiquadFilter(), a = ctx.createGain(); f.type = 'highpass'; f.frequency.value = 6500;
+      a.gain.setValueAtTime(0.0001, t); a.gain.exponentialRampToValueAtTime(g, t + dur*0.4); a.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      s.connect(f); f.connect(a); a.connect(bus); s.start(t); s.stop(t + dur + 0.05);
+      [2093, 3136, 4186].forEach((hz, i) => { const o = ctx.createOscillator(), e = ctx.createGain(), st = t + dur*0.16*i;
+        o.frequency.value = hz; e.gain.setValueAtTime(0.0001, st); e.gain.exponentialRampToValueAtTime(g*0.3, st + 0.04); e.gain.exponentialRampToValueAtTime(0.0001, st + 1.0);
+        o.connect(e); e.connect(bus); o.start(st); o.stop(st + 1.05) }) };
+
+    whoosh(40, 0.7, 500, 3200, 0.3, -0.6, 0.6);  hit(430, 0.85);  shimmer(600, 0.8, 0.06)       // the line, the mark lands
+    whoosh(T.a, 0.75, 350, 2600, 0.42, -0.8, 0.7);  shimmer(T.a + 1300, 1.0, 0.07)              // left corner
+    whoosh(T.vs, 0.75, 350, 2600, 0.4, -0.8, 0.7);  hit(T.vs + 340, 0.75)                       // VS lands
+    whoosh(T.vsOut, 0.55, 600, 5200, 0.42, 0, 0, 0.8)                                           // VS at the camera
+    whoosh(T.b, 0.75, 350, 2600, 0.42, 0.8, -0.7);  shimmer(T.b + 1300, 1.0, 0.07)              // right corner
+    whoosh(T.type, 0.75, 300, 2200, 0.38, -0.8, 0.7)                                            // giant type
+    whoosh(T.flood - 600, 0.8, 400, 7000, 0.4, 0, 0, 0.92)                                      // rising into the flood
+    hit(T.lock, 0.95);  shimmer(T.lock + 1700, 1.5, 0.11)                                       // the lock-up, then its sheen
+    whoosh(T.push - 500, 0.55, 500, 6000, 0.3, 0, 0, 0.9);  hit(T.push + 40, 1.0)                // the flare, the doors break
+    whoosh(T.push, PUSH_MS/1000, 160, 1300, 0.5, 0, 0, 0.4);  hit(T.push + TAPE_AT + 60, 0.5)   // they open, the tape arrives
+    return bus;
+  }
+  let actx = null, bus = null;
+  try { const AC = window.AudioContext || window.webkitAudioContext; if(AC){ actx = new AC(); actx.resume().catch(()=>{}) } } catch {}
+  function soundOn(){
+    soundOff();
+    if(!actx) return;
+    actx.resume().catch(()=>{});
+    if(actx.state !== 'running') return;
+    try { bus = score(actx, actx.currentTime + 0.02) } catch { bus = null }
+  }
+  function soundOff(){
+    if(bus && actx){ try { bus.gain.setTargetAtTime(0, actx.currentTime, 0.03); const b = bus; setTimeout(() => { try { b.disconnect() } catch {} }, 400) } catch {} }
+    bus = null;
+  }
 
   function reset(){
     timers.forEach(clearTimeout); timers.length = 0;
-    root.querySelectorAll('.iv').forEach(s => { s.classList.remove('on','out'); s.style.zIndex = '' });
+    root.querySelectorAll('.iv').forEach(s => { s.classList.remove('on','out','push'); s.style.zIndex = '' });
+    cam.classList.remove('push');
     z = 1;
-    cam.style.transition = 'none'; cam.style.transform = 'none'; cam.style.opacity = '1';
+    cam.style.transform = 'none';
   }
-  function cancel(){ reset(); root.style.display = 'none' }
+  function cancel(){ reset(); soundOff(); root.style.display = 'none' }
 
-  // then() is playTape. It is called as the push begins, so the tape builds
-  // behind the lock-up while the camera goes through it.
+  // then() is playTape. It is called part-way through the push, so the tape
+  // builds behind the lock-up while the camera is still going through it and
+  // the frame is never empty in between.
   function play(then){
     reset();
     root.style.display = 'block';
     fill();
     void root.offsetWidth;
+    soundOn();
     scene('ivSting');
     at(T.a,     () => scene('ivA'));
+    at(T.aOut,  () => out('ivA'));
     at(T.vs,    () => scene('ivVs'));
-    at(T.vsOut, () => { const v = document.getElementById('ivVs'); if(v) v.classList.add('out') });
+    at(T.vsOut, () => out('ivVs'));
     at(T.b,     () => scene('ivB'));
+    at(T.bOut,  () => out('ivB'));
+    at(T.type,  () => scene('ivType'));
+    at(T.flood, () => out('ivType'));
     at(T.lock,  () => scene('ivLock'));
     at(T.push,  () => {
-      cam.style.transition = 'transform .85s cubic-bezier(.7,0,.84,.3), opacity .45s ease .38s';
-      cam.style.transform = 'scale(3.8)'; cam.style.opacity = '0';
-      at(260, () => { if(then) then() });
-      at(900, cancel);
+      // A slow lean in while the doors open. No fade on the camera: every
+      // piece leaves on its own, which is what keeps the frame from emptying.
+      cam.style.transform = ''; cam.classList.add('push');
+      const lock = document.getElementById('ivLock'); if(lock) lock.classList.add('push');
+      at(TAPE_AT, () => { if(then) then() });
+      at(PUSH_MS + 80, () => { reset(); root.style.display = 'none' });   // not cancel(): the last hit is still ringing
     });
   }
 
@@ -2012,6 +2212,8 @@ editOverlay.addEventListener('click', (e) => {
   window.__cancelIntro = cancel;
   // One beat held still, for checking a layout: __introScene('ivLock').
   window.__introScene = id => { reset(); root.style.display = 'block'; fill(); scene(id) };
+  // The score and its length, so a preview can render the same sound offline.
+  window.__introScore = score; window.__introLength = T.push + PUSH_MS;
 })();
 </script>
 
