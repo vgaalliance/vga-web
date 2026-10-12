@@ -1078,14 +1078,14 @@ function ctaCmd(c){
 }
 
 // ── CONTENDER SERIES RIDES IN THIS SOURCE ────────────────────────────────
-// The series has two graphics of its own, a fight clock and the verdict
-// screen. They are separate files (contender-fight-clock.html,
-// contender-verdict.html) but NOT separate OBS sources: this overlay is
-// already in the scenes, so it carries them, each in a see-through frame, and
-// hands them every command they care about. Nothing is added to OBS for a
-// Contender Series night.
-// A frame is only made the first time it is needed, so on every other night
-// this is two ifs and nothing else. The frames take their commands from here
+// The series has a fight clock of its own. It is a separate file
+// (contender-fight-clock.html) but NOT a separate OBS source: this overlay is
+// already in the Match scene, so it carries the clock in a see-through frame
+// and hands it every command it cares about. Nothing is added to OBS.
+// (The series' other graphic, the verdict screen, rides in standby.html the
+// same way: verdicts are given on the Waiting scene, not this one.)
+// The frame is only made the first time it is needed, so on every other night
+// this is one if and nothing else. It takes its commands from here
 // (postMessage), never from the channel: one listener, so nothing is handled
 // twice and nothing is missed while a frame is still loading.
 const CSF = {}
@@ -1105,8 +1105,6 @@ function csPass(key, file, z, c){
   if(o.ready) o.f.contentWindow.postMessage(m, '*'); else o.q.push(m)
 }
 function contenderRide(c){
-  // the verdict screen: over everything
-  if(c.type === 'contender') csPass('verdict', 'contender-verdict.html', 9000, c)
   // the clock: under this overlay's own cards, which lift to clear it. Once it
   // exists it hears EVERYTHING, because a command with no series is how it
   // learns the card changed and it should leave.

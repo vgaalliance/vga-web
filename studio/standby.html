@@ -2508,6 +2508,33 @@ sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
   // A Contender Series card on the deck dresses this screen in Ice; any other
   // card puts it back. Read off the league stamp every command carries.
   if(c.league) document.documentElement.dataset.series = c.series ? 'cs' : ''
+  // THE CONTENDER SERIES VERDICT SCREEN RIDES IN THIS SOURCE. The verdicts are
+  // given at the end of the night, on the Waiting scene, and this is the source
+  // that scene has -- so nothing is added to OBS for them. The screen is its
+  // own file (contender-verdict.html) in a see-through frame, made the first
+  // time it is needed and handed its commands from here (postMessage), never
+  // from the channel: one listener, so nothing is handled twice and nothing is
+  // missed while the frame loads.
+  // It takes the whole frame, and its left window is a HOLE. So whatever board
+  // this screen was showing comes down first: a rankings table must not be
+  // what shows through the host's window.
+  if(c.type==='contender'){
+    if(c.on!==false) show('off')
+    if(!window._csVerdict){
+      const f=document.createElement('iframe')
+      f.src='contender-verdict.html?embed=1'; f.setAttribute('scrolling','no')
+      f.style.cssText='position:absolute;left:0;top:0;width:1920px;height:1080px;border:0;background:transparent;pointer-events:none;z-index:9000'
+      const o=window._csVerdict={ f, ready:false, q:[] }
+      f.addEventListener('load',()=>{ o.ready=true; o.q.splice(0).forEach(m=>f.contentWindow.postMessage(m,'*')) })
+      document.getElementById('board').appendChild(f)
+    }
+    const o=window._csVerdict, m={ vgaCmd:c }
+    if(o.ready) o.f.contentWindow.postMessage(m,'*'); else o.q.push(m)
+    return
+  }
+  // ...and any board put up afterwards takes the screen back from it.
+  if(c.type==='standby' && c.on!==false && window._csVerdict && window._csVerdict.ready)
+    window._csVerdict.f.contentWindow.postMessage({ vgaCmd:{ type:'contender', on:false } },'*')
   if(c.type==='loadbar'){
     if(c.show===false){ barShow(false); return }
     if(c.show===true && !c.d){ barShow(true); return }
