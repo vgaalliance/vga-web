@@ -312,11 +312,11 @@ function frame(){
 // elements take turns: the next pass starts under the last half-second of
 // this one and fades up over it, so a three-second loop has no jump in it.
 let SEATS = []
-const BLOBS = new Map()
+const BLOBS = new Map(), READY = new Map()
 function blob(name){
   if(BLOBS.has(name)) return BLOBS.get(name)
   const p = fetch('assets/fancam/' + name).then(r => { if(!r.ok) throw 0; return r.blob() })
-    .then(b => URL.createObjectURL(b))
+    .then(b => { const u = URL.createObjectURL(b); READY.set(name, u); return u })
     .catch(() => { BLOBS.delete(name); return null })
   BLOBS.set(name, p)
   return p
@@ -328,9 +328,12 @@ async function setClip(name){
   const mine = ++clipGen
   for(const t of tries){
     if(t === clipNow) return true
-    const src = await blob(t)
-    if(mine !== clipGen) return false
-    if(!src) continue
+    // In memory already = use that. Not yet = STREAM it from the file rather
+    // than wait for the whole download: on a first load over a real connection
+    // the whole-file wait outlasted the cut, and the fan came up over the
+    // empty room. The download carries on behind it for the next time.
+    blob(t)
+    const src = READY.get(t) || 'assets/fancam/' + t
     let v
     const ok = await new Promise(res => {
       v = V[1 - live]
@@ -348,7 +351,7 @@ async function setClip(name){
       v.dataset.clip = ''
       v.oncanplay = onCan; v.onerror = onErr
       v.src = src; v.load()
-      timer = setTimeout(() => done(v.readyState >= 2), 1500)
+      timer = setTimeout(() => done(v.readyState >= 2), 6000)
     })
     if(mine !== clipGen) return false
     if(!ok) continue
@@ -443,10 +446,14 @@ async function show(who, over){
   // A photo that will not arrive must not hold the cut: the director pressed
   // the button now. Past the wait the cut goes without a face, and the face
   // lands when it lands.
+  // Coming up from nothing there is no shot on air to protect, so the first
+  // show waits longer and arrives whole.
+  const slow = firstUp ? 2 : 1
+  // no clip named = stay in the room that is up, not back to seat one
+  const clipP = setClip(over.clip || KN.clip || clipNow)
   const [ph] = await Promise.all([
-    Promise.race([media(f && f.slug, url), wait(2600).then(() => undefined)]),
-    // no clip named = stay in the room that is up, not back to seat one
-    Promise.race([setClip(over.clip || KN.clip || clipNow), wait(1800)]),
+    Promise.race([media(f && f.slug, url), wait(2600 * slow).then(() => undefined)]),
+    Promise.race([clipP, wait(1800 * slow)]),
   ])
   if(mine !== gen) return
 
@@ -465,6 +472,10 @@ async function show(who, over){
   if(over.seat) seatKnobs(over)
   PENDING = null
   rollClip()
+  // A clip that missed the wait still has to arrive. It was only ever rolled
+  // AT the cut, so one that loaded a second late was never shown at all and
+  // the fan sat over the empty room until the next cut.
+  clipP.then(ok => { if(ok && mine === gen) rollClip() })
   const holder = $('who')
   const put = p => { if(CUR && CUR.video && CUR !== p) CUR.el.pause()
     CUR = p; if(holder.firstElementChild !== p.el) holder.replaceChildren(p.el)

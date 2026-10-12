@@ -909,6 +909,16 @@ function fcSave(){ fcPut(FC_KEY || fcKeyNow(), FC_Q); fcPrep() }
 let fcPrepT = null
 function fcPrep(){ clearTimeout(fcPrepT)
   fcPrepT = setTimeout(() => { if(FC_Q.length) send({ type:'fancam', prep:FC_Q.slice(0, 40) }) }, 900) }
+// ...and KEEP sending it, quietly. The scene only holds what it was sent since
+// it last loaded, so a browser source refreshed after the list was built had
+// nothing ready and every cut waited on a download. Once with each cut (the
+// next few fans) and every 20 seconds while this stage is open; a photo
+// already held costs nothing to ask for again.
+function fcPrepQuiet(list){
+  if(!list.length) return
+  try{ channel.send({ type:'broadcast', event:'cmd', payload:{ type:'fancam', prep:list.slice(0, 40) } }) }catch(e){}
+}
+setInterval(() => { if(STG === 'fancam') fcPrepQuiet(FC_Q) }, 20000)
 
 function fcFilters(){
   const box = document.getElementById('fcFilters'); if(!box) return
@@ -1002,6 +1012,7 @@ function fcSend(i){
   if(f) d.name = f.display_name          // no roster = let the scene name them, never the slug
   if(seat.clip) Object.assign(d, { clip:seat.clip, x:seat.x ?? 60, y:seat.y ?? 0, scale:seat.scale ?? 1, flip:!!seat.flip })
   fcTx({ type:'fancam', on:true, d })
+  fcPrepQuiet(FC_Q.slice(i + 1, i + 5))
   // the scene takes a held fan down by itself; the deck has to stop saying ON AIR
   clearTimeout(fcHoldT)
   if(FC_HOLD > 0) fcHoldT = setTimeout(() => { if(FC_LIVE === slug){ FC_LIVE = null; fcDraw() } }, FC_HOLD * 1000 + 600)
