@@ -1280,7 +1280,13 @@ const leagueOf = name => /^(GFL|MCS|CCS|HPCS)\b/i.test(name||'') ? 'GFL' : /^AMA
 // a card is loaded. Without that fallback the countdown fell through to the
 // UBAe branch and opened a GFL show under the UBAE wordmark.
 const soloMark = () => UBA.name ? leagueOf(UBA.name) : (EV === 'gfl' ? 'GFL' : 'UBA')
-const tapeMark = () => isSolo() ? soloMark() : 'UBAe'
+// On a Contender Series night the tape and its intro wear the series' own
+// name -- CCS, MCS, HPCS -- because whose night it is is the point of the night.
+// The colours stay the house violet: no league recolours the tape, and one look
+// for every night is one thing fewer to get wrong on air. try/catch because CSN
+// is declared further down this file.
+const seriesMark = () => { try { return CSN.brand || null } catch(e){ return null } }
+const tapeMark = () => isSolo() ? (seriesMark() || soloMark()) : 'UBAe'
 
 function mnPush(){
   send({type:'pickbar', d:{ split:SPLIT_NAME, teamA:MN.a, teamB:MN.b,
