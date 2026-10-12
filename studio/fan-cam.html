@@ -146,8 +146,8 @@
 <div id="cam">
   <div id="room">
     <div id="floor"></div>
-    <video id="bgA" muted playsinline preload="auto"></video>
-    <video id="bgB" muted playsinline preload="auto"></video>
+    <video id="bgA" muted loop playsinline preload="auto"></video>
+    <video id="bgB" muted loop playsinline preload="auto"></video>
   </div>
 
   <div id="who" class="empty"></div>
@@ -178,6 +178,7 @@ const $ = id => document.getElementById(id)
 const Q = new URLSearchParams(location.search)
 const has = v => v !== null && v !== undefined && String(v).trim() !== ''
 const norm = s => String(s ?? '').trim().toLowerCase()
+const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))
 const num = (v, d) => (v === null || v === undefined || v === '' || isNaN(+v)) ? d : +v
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v))
 const wait = ms => new Promise(r => setTimeout(r, ms))
@@ -280,7 +281,12 @@ function media(slug, url){
   const p = (fan && fan.video
       ? moving('assets/fancam/' + fan.video).then(r => r || (url ? still(url) : null))
       : still(url))
-    .then(r => { if(!r) MEDIA.delete(key); else r.base = fan || {}; return r })
+    .then(r => { if(!r) MEDIA.delete(key)
+      else { r.base = fan || {}
+        // the clip did not load and the photo is standing in: good for a
+        // minute, then the clip is tried again rather than lost for the night
+        if(fan && fan.video && !r.video) setTimeout(() => { if(MEDIA.get(key) === p) MEDIA.delete(key) }, 60000) }
+      return r })
   MEDIA.set(key, p)
   return p
 }
@@ -325,16 +331,28 @@ async function setClip(name){
     const src = await blob(t)
     if(mine !== clipGen) return false
     if(!src) continue
+    let v
     const ok = await new Promise(res => {
-      const v = V[1 - live]
-      const done = r => { v.oncanplay = v.onerror = null; res(r) }
-      v.oncanplay = () => done(true); v.onerror = () => done(false)
+      v = V[1 - live]
+      // The timer is cleared when the load answers, and only ever touches
+      // handlers that are still its own: a stale one firing mid-way through the
+      // NEXT load would strip that load's handlers and stall its cut.
+      let timer = null
+      const onCan = () => done(true), onErr = () => done(false)
+      const done = r => { clearTimeout(timer)
+        if(v.oncanplay === onCan) v.oncanplay = null
+        if(v.onerror === onErr) v.onerror = null
+        res(r) }
+      // unlabelled while it loads, so the loop hand-over cannot mistake a
+      // half-loaded NEW clip for the partner of the one on air
+      v.dataset.clip = ''
+      v.oncanplay = onCan; v.onerror = onErr
       v.src = src; v.load()
-      setTimeout(() => done(v.readyState >= 2), 1500)
+      timer = setTimeout(() => done(v.readyState >= 2), 1500)
     })
     if(mine !== clipGen) return false
     if(!ok) continue
-    V[1 - live].dataset.clip = t
+    v.dataset.clip = t
     clipNow = t
     return true
   }
@@ -352,22 +370,26 @@ function rollClip(){
   nx.play().catch(() => {})
   nx.classList.add('up'); old.classList.remove('up')
   live = 1 - live
-  setTimeout(() => { if(old === V[live] || nx.dataset.clip !== clipNow) return
+  // Not if anything has asked for a clip since: that load owns the dark
+  // element now, and writing this clip over it would put the wrong crowd up
+  // under the next fan.
+  const asked = clipGen
+  setTimeout(() => { if(asked !== clipGen || old === V[live] || nx.dataset.clip !== clipNow) return
     old.pause(); old.src = nx.src; old.dataset.clip = nx.dataset.clip; old.load() }, 700)
 }
-// the loop: hand over to the other element before this one runs out
+// the loop: hand over to the other element before this one runs out.
+// Both elements carry the loop attribute, so if this never runs (a source the
+// host has stopped painting) the clip still loops — with its jump, but moving.
 ;(function tick(){
   const v = V[live], o = V[1 - live]
   if(v.duration && !v.paused && v.duration - v.currentTime < .6 &&
-     o.dataset.clip === v.dataset.clip && o.paused && o.readyState >= 2){
+     v.dataset.clip && o.dataset.clip === v.dataset.clip && o.paused && o.readyState >= 2){
     try{ o.currentTime = 0 }catch(e){}
     o.play().catch(() => {})
     o.classList.add('up'); v.classList.remove('up')
     setTimeout(() => { if(v !== V[live]) v.pause() }, 650)
     live = 1 - live
   }
-  // a clip with no partner ready yet still has to loop
-  else if(v.ended) v.play().catch(() => {})
   requestAnimationFrame(tick)
 })()
 
@@ -406,11 +428,12 @@ function fitName(){
   while(el.scrollWidth > 1000 && px > 40){ px -= 3; el.style.fontSize = px + 'px' }
 }
 
-let gen = 0, holdT = null, firstUp = true
+let gen = 0, holdT = null, firstUp = true, PENDING = null
 async function show(who, over){
   over = over || {}
   const mine = ++gen
   clearTimeout(holdT)
+  PENDING = over
 
   // 1. everything is made READY first, with the old shot still on air
   let f = null
@@ -422,7 +445,8 @@ async function show(who, over){
   // lands when it lands.
   const [ph] = await Promise.all([
     Promise.race([media(f && f.slug, url), wait(2600).then(() => undefined)]),
-    Promise.race([setClip(over.clip || KN.clip), wait(1800)]),
+    // no clip named = stay in the room that is up, not back to seat one
+    Promise.race([setClip(over.clip || KN.clip || clipNow), wait(1800)]),
   ])
   if(mine !== gen) return
 
@@ -435,13 +459,20 @@ async function show(who, over){
   }
   firstUp = false
 
+  // The seat's framing lands WITH the fan it belongs to. Applied when the
+  // message arrived it moved (and mirrored) the fan still on air, up to two
+  // seconds before their own cut.
+  if(over.seat) seatKnobs(over)
+  PENDING = null
   rollClip()
   const holder = $('who')
   const put = p => { if(CUR && CUR.video && CUR !== p) CUR.el.pause()
-    CUR = p; holder.replaceChildren(p.el); frame(); holder.classList.remove('empty')
+    CUR = p; if(holder.firstElementChild !== p.el) holder.replaceChildren(p.el)
+    frame(); holder.classList.remove('empty')
     if(p.video){ try{ p.el.currentTime = 0 }catch(e){} p.el.play().catch(() => {}) } }
   if(ph) put(ph)
-  else { CUR = null; holder.classList.add('empty'); holder.replaceChildren()
+  else { if(CUR && CUR.video) CUR.el.pause()
+    CUR = null; holder.classList.add('empty'); holder.replaceChildren()
     if(ph === undefined) media(f && f.slug, url).then(p => { if(p && mine === gen) put(p) }) }
 
   const name = over.name || (f && f.display_name) || (has(who) ? String(who) : 'FAN CAM')
@@ -454,12 +485,14 @@ async function show(who, over){
   let sub = over.sub || Q.get('sub') || ''
   if(!sub && f){
     const bits = []
-    if(f.is_champion) bits.push(`<b>${division(f.weight_class)} CHAMPION</b>`)
-    else if(+f.rank > 0) bits.push(`#${+f.rank} ${division(f.weight_class)}`)
-    else if(has(f.weight_class)) bits.push(division(f.weight_class))
+    if(f.is_champion) bits.push(`<b>${esc(division(f.weight_class))} CHAMPION</b>`)
+    else if(+f.rank > 0) bits.push(`#${+f.rank} ${esc(division(f.weight_class))}`)
+    else if(has(f.weight_class)) bits.push(esc(division(f.weight_class)))
     const w = +f.headline_wins, l = +f.headline_losses, d = +f.headline_draws
     if(w >= 0 && l >= 0 && (w + l + (d||0)) > 0) bits.push(`${w}—${l}${d ? '—' + d : ''}`)
-    if(has(f.team)) bits.push(String(f.team).toUpperCase())
+    // a team name is typed by a person, and this line is set as HTML for the
+    // gold champion tag — so everything that came from the database is escaped
+    if(has(f.team)) bits.push(esc(String(f.team).toUpperCase()))
     sub = bits.join('  ·  ')
   }
   if(over.sub || Q.get('sub')) $('sub').textContent = sub; else $('sub').innerHTML = sub
@@ -473,14 +506,18 @@ async function show(who, over){
   // deck, so a deck tab that was closed or put to sleep cannot strand a fan
   // on air.
   const hold = num(over.hold, 0)
-  if(hold > 0) holdT = setTimeout(() => { if(mine === gen) $('cam').classList.remove('on') }, hold * 1000)
+  if(hold > 0) holdT = setTimeout(() => { if(mine === gen){ $('cam').classList.remove('on')
+    const was = CUR; if(was && was.video) setTimeout(() => { if(!$('cam').classList.contains('on')) was.el.pause() }, 700) } }, hold * 1000)
 }
 
+// A cut that names a clip is naming a SEAT, and a seat is all four numbers:
+// one it leaves out is the default, never whatever the last seat had. (It was
+// the last seat's — so one mirrored seat mirrored every fan after it.)
+const KN0 = { x:KN.x, y:KN.y, scale:KN.scale, flip:KN.flip }
 function seatKnobs(d){
-  if(d.x != null) KN.x = +d.x
-  if(d.y != null) KN.y = +d.y
-  if(d.scale != null) KN.scale = +d.scale
-  if(d.flip != null) KN.flip = !!d.flip
+  if(has(d.clip)){ KN.x = num(d.x, 60); KN.y = num(d.y, 0); KN.scale = num(d.scale, 1); KN.flip = !!d.flip }
+  else { KN.x = num(d.x, KN0.x); KN.y = num(d.y, KN0.y); KN.scale = num(d.scale, KN0.scale)
+         KN.flip = d.flip != null ? !!d.flip : KN0.flip }
   KN.dx = num(d.dx, 0); KN.dy = num(d.dy, 0); KN.ds = num(d.ds, 1)
 }
 
@@ -502,19 +539,28 @@ fetch('assets/fancam/seats.json', { cache:'no-store' })
       if(Q.get('y') == null && s0.y != null) KN.y = +s0.y
       if(Q.get('scale') == null && s0.scale != null) KN.scale = +s0.scale
       if(Q.get('flip') == null && s0.flip != null) KN.flip = !!s0.flip
+      Object.assign(KN0, { x:KN.x, y:KN.y, scale:KN.scale, flip:KN.flip })
     }
   })
   .catch(() => {})
   // Up on load, so cutting to the scene in OBS shows something. Without
   // ?fighter= the room plays under a plain FAN CAM bug — the cutaway before
   // anyone is identified.
-  .finally(() => fansP.then(() => show(Q.get('fighter'), {})))
+  // — unless the deck got here first: a cut that arrived while this was
+  // loading is the newer instruction, and the load show would cancel it.
+  .finally(() => fansP.then(() => { if(!gen) show(Q.get('fighter'), {}) }))
 
 // ── the wire ────────────────────────────────────────────────────────
 //   {type:'fancam', on:false}                    take it down
 //   {type:'fancam', on:true, d:{fighter,…}}      cut to a fan (seat + nudge + hold ride along)
 //   {type:'fancam', adjust:true, d:{dx,dy,ds}}   move the fan who is up, no re-cut
 //   {type:'fancam', prep:[slug,…]}               fetch these photos now, show nothing
+// Realtime does not promise order: three cuts sent inside a few milliseconds
+// were seen arriving shuffled, and the last to ARRIVE won. Each deck numbers
+// its own messages (src + n), so one that arrives behind a newer one from the
+// same deck is dropped. Two decks are never compared — their counters are
+// unrelated.
+const SEEN = {}
 sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, ({ payload: c }) => {
   if(!c || c.type !== 'fancam') return
   const d = c.d || {}
@@ -522,12 +568,23 @@ sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, ({ payload: c }) => {
     cards().then(data => c.prep.forEach(w => { const f = find(data, w); if(f) media(f.slug, f.profile_photo_url) }))
     return
   }
+  if(has(c.src) && c.n != null){
+    if(SEEN[c.src] != null && +c.n < SEEN[c.src]) return
+    SEEN[c.src] = +c.n
+  }
   if(c.adjust){
+    // a nudge sent while a cut is still loading belongs to the fan on the way
+    // in, not the one still up
+    if(PENDING && PENDING.seat){ ['dx','dy','ds'].forEach(k => { if(d[k] != null) PENDING[k] = d[k] }); return }
     KN.dx = num(d.dx, KN.dx); KN.dy = num(d.dy, KN.dy); KN.ds = num(d.ds, KN.ds)
     frame(); return
   }
-  if(c.on === false){ gen++; clearTimeout(holdT); $('cam').classList.remove('on'); return }
-  seatKnobs(d)
+  if(c.on === false){ gen++; PENDING = null; clearTimeout(holdT); $('cam').classList.remove('on')
+    // the fan's own clip stops once the plate has faded; the room keeps
+    // rolling so the next cut comes up moving
+    const was = CUR; setTimeout(() => { if(was && was.video && !$('cam').classList.contains('on')) was.el.pause() }, 700)
+    return }
+  d.seat = true
   if(has(d.tally)) $('tallyText').textContent = String(d.tally).toUpperCase()
   show(d.fighter || d.slug || d.name, d)
 }).subscribe()

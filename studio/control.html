@@ -840,6 +840,10 @@ const deckLog = t => {
 let FC_SEATS = [], FC_FANS = {}, FC_ROSTER = null, FC_ROSTER_ERR = null
 let FC_Q = [], FC_AT = -1, FC_LIVE = null, FC_HOLD = 0, FC_FILTER = 'photo', FC_KEY = null
 const fcNorm = v => String(v ?? '').toLowerCase().replace(/[^a-z0-9]/g,'')
+// fans.json is matched the way the SCENE matches it (trim + lower case, nothing
+// stripped) — a looser match here would badge VIDEO on a fan the scene then
+// plays as a photo.
+const fcKeyOf = v => String(v ?? '').trim().toLowerCase()
 const fcEsc = v => String(v ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))
 // localStorage can throw (private window, blocked site data). The deck must
 // work without it; it just forgets the list on reload.
@@ -851,9 +855,9 @@ let FC_NUDGE = fcGet('vga.fancam.nudge') || {}
 
 ;(async function fcAssets(){
   try{ const r = await fetch('assets/fancam/seats.json', {cache:'no-store'})
-    if(r.ok){ const j = await r.json(); if(Array.isArray(j)) FC_SEATS = j } }catch(e){}
+    if(r.ok){ const j = await r.json(); if(Array.isArray(j)) FC_SEATS = j.filter(x => x && x.clip) } }catch(e){}
   try{ const r = await fetch('assets/fancam/fans.json', {cache:'no-store'})
-    if(r.ok){ const j = await r.json(); if(j && typeof j === 'object') Object.keys(j).forEach(k => FC_FANS[fcNorm(k)] = j[k]) } }catch(e){}
+    if(r.ok){ const j = await r.json(); if(j && typeof j === 'object') Object.keys(j).forEach(k => { if(j[k] && j[k].video) FC_FANS[fcKeyOf(k)] = j[k] }) } }catch(e){}
 })()
 
 async function fcRoster(force){
@@ -876,10 +880,16 @@ const fcTag = f => f.is_champion ? 'CHAMP' : (+f.rank > 0 ? '#' + f.rank : (f.te
 window.fcOpen = async () => {
   await fcRoster()
   if(fcKeyNow() !== FC_KEY){
+    const was = FC_KEY, had = FC_Q
     FC_KEY = fcKeyNow()
     const saved = fcGet(FC_KEY)
     FC_Q = Array.isArray(saved) ? saved.filter(s => !FC_ROSTER || fcBy(s)) : []
-    FC_AT = -1; FC_LIVE = null
+    // A list built before the card was loaded is tonight's list: carry it onto
+    // the card rather than dropping it, unless that card already has its own.
+    if(!FC_Q.length && was && was.endsWith('.no-event') && had.length){ FC_Q = had; fcPut(FC_KEY, FC_Q) }
+    // whoever is on air stays marked on air if they are still in the list
+    FC_AT = FC_LIVE ? FC_Q.indexOf(FC_LIVE) : -1
+    if(FC_AT < 0) FC_LIVE = null
     fcPrep()
   }
   fcFilters(); fcWall(); fcDraw()
@@ -913,7 +923,7 @@ window.fcWall = () => {
   if(!FC_ROSTER){ box.textContent = FC_ROSTER_ERR ? 'ROSTER FAILED TO LOAD — ' + FC_ROSTER_ERR : 'LOADING ROSTER…'
     note.textContent = ''; return }
   const q = fcNorm(document.getElementById('fcFind').value), tonight = fcTonight()
-  const hasPic = f => !!(f.profile_photo_url || FC_FANS[fcNorm(f.slug)])
+  const hasPic = f => !!(f.profile_photo_url || FC_FANS[fcKeyOf(f.slug)])
   let list = FC_ROSTER.filter(f =>
     (q ? fcNorm(f.display_name).includes(q)           // a search looks at everyone
        : FC_FILTER === 'photo' ? hasPic(f)
@@ -926,7 +936,7 @@ window.fcWall = () => {
   const more = Math.max(0, list.length - FC_WALL_MAX)
   box.innerHTML = ''
   list.slice(0, FC_WALL_MAX).forEach(f => {
-    const at = FC_Q.indexOf(f.slug), pic = hasPic(f), vid = !!FC_FANS[fcNorm(f.slug)]
+    const at = FC_Q.indexOf(f.slug), pic = hasPic(f), vid = !!FC_FANS[fcKeyOf(f.slug)]
     const b = document.createElement('button'); b.className = 'fct' + (at >= 0 ? ' sel' : '') + (pic ? '' : ' nopic')
     const src = f.profile_photo_thumb_url || f.profile_photo_url
     b.innerHTML = (src ? `<img loading="lazy" alt="" src="${fcEsc(src)}">` : '<span class="np">NO PICTURE</span>')
@@ -962,26 +972,49 @@ window.fcClear = () => {
   fcClearArmed = 0; FC_Q = []; FC_AT = -1; fcSave(); fcWall(); fcDraw()
 }
 
+// Every fan cam message is numbered by this deck, so the scene can drop one
+// that arrives behind a newer one (realtime does not promise order).
+const FC_SRC = Math.random().toString(36).slice(2, 10)
+let FC_N = 0, FC_SEAT = -1, fcHoldT = null
+const fcTx = c => send(Object.assign(c, { src:FC_SRC, n:++FC_N }))
 function fcSend(i){
   const slug = FC_Q[i]; if(!slug) return
-  const f = fcBy(slug) || { slug, display_name:slug }
-  const seat = FC_SEATS.length ? FC_SEATS[i % FC_SEATS.length] : {}
+  const f = fcBy(slug)
+  // The seat follows the position, except that it never repeats: remove the
+  // fan who is up and the next one would land in the same chair.
+  let si = FC_SEATS.length ? i % FC_SEATS.length : -1
+  if(FC_SEATS.length > 1 && si === FC_SEAT && slug !== FC_LIVE) si = (si + 1) % FC_SEATS.length
+  const seat = si >= 0 ? FC_SEATS[si] : {}
   const n = FC_NUDGE[slug] || {}
-  FC_AT = i; FC_LIVE = slug
-  send({ type:'fancam', on:true, d:{ fighter:f.slug, name:f.display_name,
-    clip:seat.clip, x:seat.x, y:seat.y, scale:seat.scale, flip:seat.flip,
-    dx:n.dx || 0, dy:n.dy || 0, ds:n.ds || 1, hold:FC_HOLD } })
+  FC_AT = i; FC_LIVE = slug; FC_SEAT = si
+  // every seat number is sent, even the ones this seat leaves out — a seat is
+  // all four, and an absent one must not inherit the last seat's
+  const d = { fighter:slug, dx:n.dx || 0, dy:n.dy || 0, ds:n.ds || 1, hold:FC_HOLD }
+  if(f) d.name = f.display_name          // no roster = let the scene name them, never the slug
+  if(seat.clip) Object.assign(d, { clip:seat.clip, x:seat.x ?? 60, y:seat.y ?? 0, scale:seat.scale ?? 1, flip:!!seat.flip })
+  fcTx({ type:'fancam', on:true, d })
+  // the scene takes a held fan down by itself; the deck has to stop saying ON AIR
+  clearTimeout(fcHoldT)
+  if(FC_HOLD > 0) fcHoldT = setTimeout(() => { if(FC_LIVE === slug){ FC_LIVE = null; fcDraw() } }, FC_HOLD * 1000 + 600)
   fcDraw()
 }
 window.fcCut = i => fcSend(i)
 // Manual, both ways. Nothing advances on a timer: the cut happens when the
 // director calls it, and going back one is the fix for cutting too early.
+// Past either end it does nothing — re-sending the last fan would replay
+// their entrance on air for no reason.
 window.fcStep = dir => {
-  if(!FC_Q.length) return
-  fcSend(Math.min(FC_Q.length - 1, Math.max(0, FC_AT + dir)))
+  const j = FC_AT + dir
+  if(j < 0 || j >= FC_Q.length){
+    const out = document.getElementById('fcCheck')
+    if(out && FC_Q.length) out.textContent = dir > 0 ? 'END OF THE LIST — add more faces, or tap a name to go back to one' : 'START OF THE LIST'
+    return }
+  fcSend(j)
 }
-window.fcRepeat = () => { if(FC_AT >= 0) fcSend(FC_AT) }
-window.fcHide = () => { FC_LIVE = null; send({ type:'fancam', on:false }); fcDraw() }
+// Re-cut is the fan who is UP, found by who they are — the position can have
+// moved under them.
+window.fcRepeat = () => { const i = FC_Q.indexOf(FC_LIVE); if(i >= 0) fcSend(i) }
+window.fcHide = () => { FC_LIVE = null; clearTimeout(fcHoldT); fcTx({ type:'fancam', on:false }); fcDraw() }
 
 // The nudge moves the fan who is up without re-cutting them, and is kept by
 // fighter — a pose that needs lifting needs it every time, in every seat.
@@ -993,7 +1026,7 @@ window.fcNudge = (k, by) => {
     if(k === 'ds') n.ds = Math.min(1.5, Math.max(.6, n.ds)) }
   fcPut('vga.fancam.nudge', FC_NUDGE)
   const n = FC_NUDGE[FC_LIVE] || { dx:0, dy:0, ds:1 }
-  send({ type:'fancam', adjust:true, d:{ dx:n.dx, dy:n.dy, ds:n.ds } })
+  fcTx({ type:'fancam', adjust:true, d:{ dx:n.dx, dy:n.dy, ds:n.ds } })
 }
 
 function fcDraw(){
@@ -1007,13 +1040,13 @@ function fcDraw(){
   let noPic = 0
   FC_Q.forEach((slug, i) => {
     const f = fcBy(slug) || { slug, display_name:slug }
-    const pic = !!(f.profile_photo_url || FC_FANS[fcNorm(slug)]); if(!pic) noPic++
+    const pic = !!(f.profile_photo_url || FC_FANS[fcKeyOf(slug)]); if(!pic) noPic++
     const seat = FC_SEATS.length ? (i % FC_SEATS.length) + 1 : 1
     const row = document.createElement('div'); row.className = 'fcrow' + (slug === FC_LIVE ? ' live' : '') + (i === FC_AT + 1 ? ' next' : '')
     const src = f.profile_photo_thumb_url || f.profile_photo_url
     row.innerHTML = (src ? `<img alt="" src="${fcEsc(src)}">` : '<span class="np">—</span>')
       + `<span class="tx" title="Cut to ${fcEsc(f.display_name)}"><b>${i + 1}. ${fcEsc(f.display_name)}</b>`
-      + `<small>${slug === FC_LIVE ? 'ON AIR · ' : i === FC_AT + 1 ? 'NEXT · ' : ''}seat ${seat}${pic ? '' : ' · NO PICTURE'}${FC_FANS[fcNorm(slug)] ? ' · VIDEO' : ''}</small></span>`
+      + `<small>${slug === FC_LIVE ? 'ON AIR · ' : i === FC_AT + 1 ? 'NEXT · ' : ''}seat ${seat}${pic ? '' : ' · NO PICTURE'}${FC_FANS[fcKeyOf(slug)] ? ' · VIDEO' : ''}</small></span>`
     row.querySelector('.tx').onclick = () => fcCut(i)
     ;[['▲', () => fcMove(i, -1)], ['▼', () => fcMove(i, 1)], ['✕', () => fcToggle(slug)]].forEach(([l, fn]) => {
       const b = document.createElement('button'); b.className = 'hide'; b.textContent = l; b.onclick = fn; row.appendChild(b) })
@@ -1974,6 +2007,10 @@ window.setEv=ev=>{
    Picking an event does three things at once: sets the wagers filter, loads
    the full card into the runner, and re-arms the graphics for that card. */
 const UBA={ id:null, name:null, date:null, bouts:[], filter:'all', armed:null }
+// A top-level const is NOT a property of window, and a dozen places on this
+// deck ask `window.UBA && …` — every one of them was reading undefined, so
+// "reads the card you loaded above" read nothing. This is what makes it true.
+window.UBA=UBA
 const SEG_ORDER=['main_card','undercard','prelim']
 const SEG_SHORT={main_card:'MAIN',undercard:'UNDER',prelim:'PRELIM'}
 
@@ -2184,6 +2221,7 @@ window.ubaLoadCard=async(ev)=>{
           : /^(b|fighter_b)$/i.test(r.winner_corner||'')?'b':null }))
   document.getElementById('ubaCardWrap').style.display=UBA.bouts.length?'block':'none'
   ubaDraw()
+  if(STG==='fancam' && window.fcOpen) fcOpen()   // the fan list belongs to the card
   await csCheck(ev)   // a contender night grows its verdict section
   mnCountdown()   // picking the event is when the main event becomes known
 }
