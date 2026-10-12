@@ -27,6 +27,11 @@
      Kept as a variable because it is still the right knob: if the clock ever
      grows past ~180px tall, this is the one number to raise. */
   :root[data-league="ubae"]{ --ll-lift:0px; }
+  /* A Contender Series night has its own clock in that same corner
+     (contender-fight-clock.html: bottom 28px, about 160px tall, so its top
+     edge is 188px up). The base 190px would sit the cards on its lid; 24 more
+     gives them the same air they have over the UBAe clock. */
+  :root[data-series="cs"]{ --ll-lift:24px; }
   /* THE SHARED SLOT. flash, the dossier and the keys card all sit at 190px
      because they are the same thing to a viewer: the one card in the bottom
      left. They are mutually exclusive in CODE (see slotShow) rather than by
@@ -512,6 +517,7 @@
     box-shadow:0 0 18px rgba(155,48,255,.4),inset 0 0 24px rgba(60,0,110,.4);
     padding:18px 22px 16px;}
   :root[data-league="ubae"] #cta{bottom:190px;}
+  :root[data-series="cs"] #cta{bottom:214px;}
   #cta.show{opacity:1;transform:translateX(0);}
   @keyframes ctacyc{
     0%{border-color:#ff0080}17%{border-color:#ff8c00}33%{border-color:#ffe000}
@@ -1071,13 +1077,58 @@ function ctaCmd(c){
   if(hold) ctaTimer = setTimeout(()=>box.classList.remove('show'), hold)
 }
 
+// ── CONTENDER SERIES RIDES IN THIS SOURCE ────────────────────────────────
+// The series has a fight clock of its own. It is a separate file
+// (contender-fight-clock.html) but NOT a separate OBS source: this overlay is
+// already in the Match scene, so it carries the clock in a see-through frame
+// and hands it every command it cares about. Nothing is added to OBS.
+// (The series' other graphic, the verdict screen, rides in standby.html the
+// same way: verdicts are given on the Waiting scene, not this one.)
+// The frame is only made the first time it is needed, so on every other night
+// this is one if and nothing else. It takes its commands from here
+// (postMessage), never from the channel: one listener, so nothing is handled
+// twice and nothing is missed while a frame is still loading.
+const CSF = {}
+function csFrame(key, file, z){
+  if(CSF[key]) return CSF[key]
+  const f = document.createElement('iframe')
+  f.src = file + '?embed=1'
+  f.setAttribute('scrolling', 'no')
+  f.style.cssText = 'position:fixed;left:0;top:0;width:1920px;height:1080px;border:0;background:transparent;pointer-events:none;z-index:' + z
+  const o = CSF[key] = { f, ready:false, q:[] }
+  f.addEventListener('load', () => { o.ready = true; o.q.splice(0).forEach(m => f.contentWindow.postMessage(m, '*')) })
+  document.body.appendChild(f)
+  return o
+}
+function csPass(key, file, z, c){
+  const o = csFrame(key, file, z), m = { vgaCmd:c }
+  if(o.ready) o.f.contentWindow.postMessage(m, '*'); else o.q.push(m)
+}
+function contenderRide(c){
+  // the clock: under this overlay's own cards, which lift to clear it. Once it
+  // exists it hears EVERYTHING, because a command with no series is how it
+  // learns the card changed and it should leave.
+  if(c.series || CSF.clock) csPass('clock', 'contender-fight-clock.html', 1, c)
+}
+// Back from an OBS refresh mid-fight: the clock remembers its own state, so if
+// it was up within the last six hours, give it its frame back straight away.
+try{
+  const old = JSON.parse(localStorage.getItem('vga-cs-clock') || 'null')
+  if(old && old.on && Date.now() - old.at < 6 * 3600e3) csFrame('clock', 'contender-fight-clock.html', 1)
+}catch{}
+
 function handle(c){
+  contenderRide(c)
   // Which show is running decides where the lower-left widgets sit. The UBA
   // fight clock is CENTRED at the bottom, so that corner is free; the UBAe one
   // is pinned bottom-left and the dossier, flash and odds land on top of it.
   // The deck stamps league on every command, so this stays correct even if the
   // operator switches shows mid-session.
   if(c.league) document.documentElement.dataset.league = c.league
+  // ...and whether tonight's card is a Contender Series one, which puts a
+  // clock in the bottom-left on a GFL-league night. Read off the same commands
+  // as the league, so loading a different card puts the cards back down.
+  if(c.league) document.documentElement.dataset.series = c.series ? 'cs' : ''
   // The countdown push carries the branding: d.league is the display acronym
   // (UBA/UBAE/GFL/AMA — distinct from the lowercase layout stamp above) and
   // d.eventMain is the card name. Same push, so both scenes stay in sync.

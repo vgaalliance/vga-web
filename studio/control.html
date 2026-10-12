@@ -98,6 +98,36 @@
   .panel{display:none;} .panel.on{display:block;}
   body.mode-team .only-uba{display:none !important;}
   body.mode-solo .only-ubae{display:none !important;}
+  /* ── FAN CAM: the roster wall and tonight's order ── */
+  .fcgrid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(300px,1fr);gap:22px;align-items:start;}
+  @media(max-width:1000px){.fcgrid{grid-template-columns:minmax(0,1fr);}}
+  .fcwall{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px;
+    max-height:560px;overflow-y:auto;padding-right:4px;}
+  button.fct::before,button.fct::after{content:none;}
+  button.fct{position:relative;padding:0;display:flex;flex-direction:column;text-align:left;overflow:hidden;
+    border-color:var(--gdim);box-shadow:none;min-width:0;}
+  button.fct:hover{background:transparent;color:var(--g);border-color:var(--g);text-shadow:0 0 6px rgba(58,255,110,.45);}
+  button.fct.sel{border-color:var(--g);box-shadow:0 0 14px rgba(58,255,110,.45);}
+  button.fct.nopic{opacity:.6;}
+  button.fct img,button.fct .np{width:100%;aspect-ratio:1;object-fit:cover;object-position:50% 0;display:block;background:#1a1426;}
+  button.fct .np{display:grid;place-items:center;font-size:14px;color:var(--gdim);text-align:center;}
+  button.fct b{font-weight:400;font-size:17px;line-height:1.05;padding:4px 6px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  button.fct small{font-size:14px;padding:0 6px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:18px;}
+  button.fct i{position:absolute;top:4px;font-style:normal;font-size:15px;padding:0 6px;border-radius:2px;text-shadow:none;}
+  button.fct i.n{left:4px;background:var(--g);color:var(--bg);}
+  button.fct i.t{right:4px;background:#ffce00;color:#201800;font-size:12px;}
+  button.fct i.t.v{background:#cc66ff;color:#14001f;}
+  .fclist{display:grid;gap:6px;}
+  .fcrow{display:flex;align-items:center;gap:8px;border:2px solid var(--gdim);border-radius:2px;padding:4px 6px;min-width:0;}
+  .fcrow.next{border-color:var(--g);}
+  .fcrow.live{border-color:#ff5d6c;box-shadow:0 0 12px rgba(255,93,108,.4);}
+  .fcrow img,.fcrow .np{width:44px;height:44px;object-fit:cover;object-position:50% 0;flex:none;background:#1a1426;display:grid;place-items:center;}
+  .fcrow .tx{flex:1;min-width:0;cursor:pointer;line-height:1.05;}
+  .fcrow .tx b{font-weight:400;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase;}
+  .fcrow .tx small{color:var(--gdim);font-size:15px;}
+  .fcrow.live .tx small{color:#ff8b96;}
+  .fcrow button{padding:2px 8px;font-size:17px;}
+  .fcrow button::before,.fcrow button::after{content:none;}
 
   /* uniform tiles — every box the same size regardless of name length */
   #oddsFights,#betFeed,#mnMatches,#ubaEvents{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;align-items:stretch;}
@@ -668,36 +698,78 @@
 
   <!-- ⑤ FAN CAM -->
   <div class="panel" data-panel="fancam"><div class="sec">
-    <h4>FAN CAM — the queue, built before the show</h4>
-    <!-- A QUEUE, not a search box. Typing a name while the scene is live is
-         where a typo becomes a blank plate on air, and searching mid-fight is
-         three actions when there should be one. Names go in before doors, get
-         checked against the database THEN, and on the night the only thing
-         anybody presses is Next. -->
-    <h5>The fans — one name per line, in the order you want them</h5>
-    <div class="row" style="align-items:flex-start">
-      <textarea id="fcQueue" rows="5" style="width:420px"
-        placeholder="Smokinem&#10;Boady&#10;Killer Kam"></textarea>
+    <h4>FAN CAM — pick the faces before doors, press Next on the night</h4>
+    <!-- A WALL OF FACES, not a text box. The old stage took names typed one per
+         line and checked them afterwards; a wall can only offer people who
+         exist, shows who has a picture before you pick them, and is one tap
+         each. The list is kept per event in this browser, so setting up
+         Saturday's show on Thursday survives closing the tab. -->
+    <div class="fcgrid">
       <div>
-        <div class="row"><button onclick="fcLoad()">✓ Check + load queue</button></div>
-        <div class="row"><span id="fcCheck" style="color:var(--gdim);font-size:15px">nothing loaded</span></div>
+        <h5>The roster — tap to add, tap again to remove</h5>
+        <div class="row">
+          <input id="fcFind" placeholder="FIND A NAME…" oninput="fcWall()">
+          <span id="fcFilters" class="row"></span>
+        </div>
+        <div id="fcWall" class="fcwall" style="margin-top:10px">LOADING ROSTER…</div>
+        <div class="row" style="margin-top:8px"><span id="fcWallNote" style="color:var(--gdim);font-size:15px"></span></div>
+      </div>
+      <div>
+        <h5>Tonight's order <span id="fcFor" style="text-transform:none"></span></h5>
+        <div class="row">
+          <button onclick="fcStep(-1)">◀ Prev</button>
+          <button onclick="fcStep(1)">▶ Next fan</button>
+          <button onclick="fcRepeat()">↻ Re-cut</button>
+          <button class="hide" onclick="fcHide()">■ Hide</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <span class="kitlbl">STAYS UP</span><span id="fcHold" class="row"></span>
+        </div>
+        <div id="fcNow" class="fclist" style="margin-top:10px"></div>
+        <div class="row" style="margin-top:8px"><span id="fcCheck" style="color:var(--gdim);font-size:15px"></span></div>
+        <div id="fcNudge" style="display:none">
+          <h5>Nudge <span id="fcNudgeWho"></span> — kept for next time</h5>
+          <div class="row">
+            <button onclick="fcNudge('dx',-1.5)">◀</button><button onclick="fcNudge('dx',1.5)">▶</button>
+            <button onclick="fcNudge('dy',14)">▲</button><button onclick="fcNudge('dy',-14)">▼</button>
+            <button onclick="fcNudge('ds',.05)">+ Bigger</button><button onclick="fcNudge('ds',-.05)">− Smaller</button>
+            <button class="hide" onclick="fcNudge(null)">Reset</button>
+          </div>
+        </div>
+        <div class="row" style="margin-top:12px"><button class="hide" onclick="fcClear()">Clear the list</button></div>
       </div>
     </div>
-    <h5>On the night</h5>
-    <div class="row">
-      <button onclick="fcStep(-1)">◀ Prev</button>
-      <button onclick="fcStep(1)">▶ Next fan</button>
-      <button onclick="fcRepeat()">↻ Re-cut current</button>
-      <button class="hide" onclick="send({type:'fancam',on:false})">■ Hide</button>
-    </div>
-    <div id="fcNow" style="margin-top:10px">QUEUE EMPTY</div>
+  </div></div>
 
-    <h5>Off-queue — somebody who was not on the list</h5>
-    <div class="row">
-      <input id="fcq" placeholder="QUERY FIGHTER NAME…" onkeydown="if(event.key==='Enter')searchFanCam()">
-      <button onclick="searchFanCam()">Search</button>
+  <!-- ⑥ VERDICTS — Contender Series, the end of the night. A stage like the
+       other five, in GFL mode only. It fills when the loaded card is a
+       contender night (contender_nights_public says so, not the name); on any
+       other card it says why it is empty. Deck state only, never writes the DB
+       — same rule as the card runner: the saved record is entered in the admin
+       panel (Results → Contender Series). Verdicts are per FIGHTER, not per
+       bout: a loser can be offered a contract and a winner can miss. -->
+  <div class="panel" data-panel="verdicts"><div class="sec">
+    <h4>VERDICTS — Contender Series <span id="csTitle" style="color:var(--gdim);font-size:15px"></span></h4>
+    <div id="csNone" style="color:var(--gdim);font-size:17px">NOT A CONTENDER SERIES NIGHT — load an MCS / CCS / HPCS card in the Card Runner above and its fighters appear here.</div>
+    <div id="csSec" style="display:none">
+      <!-- Two jobs, kept apart on purpose (Castle, 2026-10-12): DECIDING is off
+           air and can be done for the whole card ahead of time; RUNNING THE
+           SCREEN is one row of buttons for whoever is picked. In one row each,
+           a verdict button was also a screen button, and it was not clear
+           which press went to air. -->
+      <h5>① DECIDE — off air. Nothing here shows on stream. <span id="csCount" style="color:var(--gdim)"></span></h5>
+      <div style="color:var(--gdim);font-size:16px;margin-bottom:6px">tap a NAME to pick who you are on · tap a verdict to set it (tap again to clear)</div>
+      <div id="csRows"></div>
+      <h5 style="margin-top:14px">② ON AIR — <span id="csNow">pick a fighter above</span></h5>
+      <div class="row" style="margin-bottom:6px">
+        <button id="csbSplit" onclick="csShow()">① Split screen</button>
+        <button id="csbReveal" onclick="csReveal()">② Contract screen</button>
+        <button id="csbBoard" onclick="csBoard()">▦ Verdict board</button>
+        <button class="hide" onclick="csHide()">Hide all</button>
+      </div>
+      <div style="color:var(--gdim);font-size:16px">Every button puts up ONE screen and it stays until you press another · Split screen = host + fighter, banner says THE VERDICT · Contract screen = the reveal: the fighter's contract comes up and the verdict you set lands on it · back to Split screen = the result is on the banner · Verdict board = the whole night</div>
+      <div style="color:var(--gdim);font-size:16px;margin-top:4px">the saved record: admin panel → Results → Contender Series</div>
     </div>
-    <div class="row" id="fcresults" style="margin-top:10px"></div>
   </div></div>
 
   <div id="log"></div>
@@ -726,6 +798,12 @@ channel.subscribe(s=>{ const el=document.getElementById('status')
 // the UBA one, which is centred -- so where they sit depends on which show is
 // running, and the overlay cannot know unless we tell it on every message.
 window.send=cmd=>{ if(cmd && cmd.league==null) cmd.league = EV
+  // ...and, while a Contender Series card is loaded, whose series it is. That
+  // one stamp is how every screen knows: the contender fight clock answers,
+  // the solo clock steps aside, and the overlay lifts its lower-left cards
+  // over the box. try/catch because CSN is declared further down this file and
+  // a send during load would otherwise meet it before it exists.
+  try{ if(cmd && CSN.brand && cmd.series==null){ cmd.series = CSN.brand; cmd.seriesNo = CSN.number } }catch(e){}
   const l=document.getElementById('log'); const d=document.createElement('div')
   const label=`${cmd.type}${cmd.on===false?' HIDE':''}`
   d.textContent=`TX ${label}…`; l.prepend(d)
@@ -761,104 +839,242 @@ const deckLog = t => {
 // no typing.
 
 
-// Fan cam. The scene can composite any fighter, but WHERE the person sits is a
-// property of the clip, not of the fighter, so the knobs stay in the browser
-// source's URL and the deck only says who.
-window.searchFanCam=async()=>{
-  const q=document.getElementById('fcq').value.trim(); if(!q) return
-  const box=document.getElementById('fcresults')
-  box.textContent='SEARCHING…'
-  const { data, error } = await sb.from('fighter_cards')
-    .select('slug,display_name,wins:headline_wins,losses:headline_losses,rank,is_champion')
-    .ilike('display_name','%'+q+'%').limit(6)
-  // supabase-js resolves {data:null,error} instead of throwing, so a failed
-  // query must not print "NO RECORD FOUND" over a working database — that
-  // sends an operator hunting for a fighter who is right there.
-  if(error){ box.textContent='SEARCH FAILED — '+error.message; return }
-  if(!data||!data.length){ box.textContent='NO RECORD FOUND'; return }
-  box.innerHTML=''
-  data.forEach(f=>{
-    const b=document.createElement('button')
-    b.innerHTML=`${f.display_name}<small>${f.wins}-${f.losses}${f.rank?' · #'+f.rank:''}${f.is_champion?' · CHAMP':''}</small>`
-    b.onclick=()=>send({type:'fancam', on:true, d:{ fighter:f.slug, name:f.display_name }})
-    box.appendChild(b)
-  })
-}
-
-// ── FAN CAM: the queue and the seats ─────────────────────────────────────
+// ── FAN CAM: the wall, the order, the seats ──────────────────────────────
 // The seats are assets/fancam/seats.json, one entry per clip, carrying the clip
-// AND its framing -- where the chair sits in frame is a property of the
-// footage, not of the graphic. Each fan gets the next seat in turn
-// (seat = position % seats.length), so two fans in a row are never in the same
-// chair and the order is reproducible rather than random. No seats.json and the
-// deck sends no clip, which is the single-loop behaviour the scene always had.
-let FC_SEATS = [], FC_Q = [], FC_AT = -1
-;(async function loadSeats(){
-  try{
-    const r = await fetch('assets/fancam/seats.json', {cache:'no-store'})
-    if(r.ok){ const j = await r.json(); if(Array.isArray(j)) FC_SEATS = j }
-  }catch(e){}
+// AND its framing. Each fan gets the next seat in turn (seat = position %
+// seats.length), so two fans in a row are never in the same chair and the
+// order is reproducible rather than random.
+// fans.json names the fighters who have a cut-out VIDEO instead of a photo; the
+// deck only reads it to badge them — the scene picks the file itself.
+let FC_SEATS = [], FC_FANS = {}, FC_ROSTER = null, FC_ROSTER_ERR = null
+let FC_Q = [], FC_AT = -1, FC_LIVE = null, FC_HOLD = 0, FC_FILTER = 'photo', FC_KEY = null
+const fcNorm = v => String(v ?? '').toLowerCase().replace(/[^a-z0-9]/g,'')
+// fans.json is matched the way the SCENE matches it (trim + lower case, nothing
+// stripped) — a looser match here would badge VIDEO on a fan the scene then
+// plays as a photo.
+const fcKeyOf = v => String(v ?? '').trim().toLowerCase()
+const fcEsc = v => String(v ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))
+// localStorage can throw (private window, blocked site data). The deck must
+// work without it; it just forgets the list on reload.
+const fcGet = k => { try{ return JSON.parse(localStorage.getItem(k)) }catch(e){ return null } }
+const fcPut = (k, v) => { try{ localStorage.setItem(k, JSON.stringify(v)) }catch(e){} }
+const fcEvent = () => (window.UBA && UBA.name) || null
+const fcKeyNow = () => 'vga.fancam.q.' + (fcEvent() || 'no-event')
+let FC_NUDGE = fcGet('vga.fancam.nudge') || {}
+
+;(async function fcAssets(){
+  try{ const r = await fetch('assets/fancam/seats.json', {cache:'no-store'})
+    if(r.ok){ const j = await r.json(); if(Array.isArray(j)) FC_SEATS = j.filter(x => x && x.clip) } }catch(e){}
+  try{ const r = await fetch('assets/fancam/fans.json', {cache:'no-store'})
+    if(r.ok){ const j = await r.json(); if(j && typeof j === 'object') Object.keys(j).forEach(k => { if(j[k] && j[k].video) FC_FANS[fcKeyOf(k)] = j[k] }) } }catch(e){}
 })()
 
-// Checked HERE, before doors, against the same view the scene reads. A name
-// that matches nothing is worth knowing about while there is time to fix it;
-// found out live it is a blank plate with a stranger's name on it.
-window.fcLoad = async () => {
-  const lines = document.getElementById('fcQueue').value.split('\n')
-    .map(x => x.trim()).filter(Boolean)
-  const out = document.getElementById('fcCheck')
-  if(!lines.length){ FC_Q = []; FC_AT = -1; out.textContent = 'nothing loaded'; fcDraw(); return }
-  out.textContent = 'checking…'
+async function fcRoster(force){
+  if(FC_ROSTER && !force) return
   const { data, error } = await sb.from('fighter_cards')
-    .select('slug,display_name,profile_photo_url')
+    .select('slug,display_name,weight_class,rank,is_champion,team,profile_photo_url,profile_photo_thumb_url')
+    .order('display_name')
   // supabase-js resolves {data:null,error} rather than throwing, so a failed
-  // query must never be reported as "none of your fans exist".
-  if(error || !data){ out.textContent = 'CHECK FAILED — ' + (error && error.message || 'no data'); return }
-  const norm = v => String(v ?? '').toLowerCase().replace(/[^a-z0-9]/g,'')
-  FC_Q = lines.map(name => {
-    const f = data.find(c => norm(c.slug) === norm(name)) ||
-              data.find(c => norm(c.display_name) === norm(name)) || null
-    return { typed:name, slug:f && f.slug, name:(f && f.display_name) || name,
-             found:!!f, photo:!!(f && f.profile_photo_url) }
-  })
-  FC_AT = -1
-  const missing = FC_Q.filter(x => !x.found).length
-  const noPhoto = FC_Q.filter(x => x.found && !x.photo).length
-  out.innerHTML = FC_Q.length + ' loaded'
-    + (missing ? ' · <b style="color:#ff6b6b">' + missing + ' NOT FOUND</b>' : '')
-    + (noPhoto ? ' · ' + noPhoto + ' with no photo' : '')
-    + (FC_SEATS.length ? ' · ' + FC_SEATS.length + ' seats' : ' · no seats.json, single clip')
-  fcDraw()
+  // read must never be drawn as an empty roster.
+  if(error || !data){ FC_ROSTER_ERR = (error && error.message) || 'no data'; return }
+  FC_ROSTER_ERR = null; FC_ROSTER = data
+}
+const fcBy = slug => (FC_ROSTER || []).find(f => f.slug === slug) || null
+const fcTonight = () => new Set(((window.UBA && UBA.bouts) || []).flatMap(b => [fcNorm(b.a), fcNorm(b.b)]))
+const fcTag = f => f.is_champion ? 'CHAMP' : (+f.rank > 0 ? '#' + f.rank : (f.team || ''))
+
+// Called whenever the stage is shown. The list belongs to the EVENT, so
+// loading a different card swaps to that card's list rather than carrying
+// Thursday's fans into Saturday.
+window.fcOpen = async () => {
+  await fcRoster()
+  if(fcKeyNow() !== FC_KEY){
+    const was = FC_KEY, had = FC_Q
+    FC_KEY = fcKeyNow()
+    const saved = fcGet(FC_KEY)
+    FC_Q = Array.isArray(saved) ? saved.filter(s => !FC_ROSTER || fcBy(s)) : []
+    // A list built before the card was loaded is tonight's list: carry it onto
+    // the card rather than dropping it, unless that card already has its own.
+    if(!FC_Q.length && was && was.endsWith('.no-event') && had.length){ FC_Q = had; fcPut(FC_KEY, FC_Q) }
+    // whoever is on air stays marked on air if they are still in the list
+    FC_AT = FC_LIVE ? FC_Q.indexOf(FC_LIVE) : -1
+    if(FC_AT < 0) FC_LIVE = null
+    fcPrep()
+  }
+  fcFilters(); fcWall(); fcDraw()
+}
+function fcSave(){ fcPut(FC_KEY || fcKeyNow(), FC_Q); fcPrep() }
+// Send the list ahead so the scene has every face downloaded and measured
+// before its fan is cut to. Debounced: tapping six faces is one message.
+let fcPrepT = null
+function fcPrep(){ clearTimeout(fcPrepT)
+  fcPrepT = setTimeout(() => { if(FC_Q.length) send({ type:'fancam', prep:FC_Q.slice(0, 40) }) }, 900) }
+// ...and KEEP sending it, quietly. The scene only holds what it was sent since
+// it last loaded, so a browser source refreshed after the list was built had
+// nothing ready and every cut waited on a download. Once with each cut (the
+// next few fans) and every 20 seconds while this stage is open; a photo
+// already held costs nothing to ask for again.
+function fcPrepQuiet(list){
+  if(!list.length) return
+  try{ channel.send({ type:'broadcast', event:'cmd', payload:{ type:'fancam', prep:list.slice(0, 40) } }) }catch(e){}
+}
+setInterval(() => { if(STG === 'fancam') fcPrepQuiet(FC_Q) }, 20000)
+
+function fcFilters(){
+  const box = document.getElementById('fcFilters'); if(!box) return
+  box.innerHTML = ''
+  ;[['photo','Has a picture'],['ranked','Champs + ranked'],['team','On a team'],['all','Everyone']].forEach(([k, l]) => {
+    const b = document.createElement('button'); b.textContent = l
+    if(k === FC_FILTER) b.classList.add('active'); else b.classList.add('hide')
+    b.onclick = () => { FC_FILTER = k; fcFilters(); fcWall() }
+    box.appendChild(b) })
+  const h = document.getElementById('fcHold'); h.innerHTML = ''
+  ;[[0,'Until I hide'],[8,'8s'],[12,'12s']].forEach(([v, l]) => {
+    const b = document.createElement('button'); b.textContent = l
+    if(v === FC_HOLD) b.classList.add('active'); else b.classList.add('hide')
+    b.onclick = () => { FC_HOLD = v; fcFilters() }
+    h.appendChild(b) })
 }
 
+const FC_WALL_MAX = 96
+window.fcWall = () => {
+  const box = document.getElementById('fcWall'), note = document.getElementById('fcWallNote'); if(!box) return
+  if(!FC_ROSTER){ box.textContent = FC_ROSTER_ERR ? 'ROSTER FAILED TO LOAD — ' + FC_ROSTER_ERR : 'LOADING ROSTER…'
+    note.textContent = ''; return }
+  const q = fcNorm(document.getElementById('fcFind').value), tonight = fcTonight()
+  const hasPic = f => !!(f.profile_photo_url || FC_FANS[fcKeyOf(f.slug)])
+  let list = FC_ROSTER.filter(f =>
+    (q ? fcNorm(f.display_name).includes(q)           // a search looks at everyone
+       : FC_FILTER === 'photo' ? hasPic(f)
+       : FC_FILTER === 'ranked' ? (f.is_champion || +f.rank > 0)
+       : FC_FILTER === 'team' ? !!f.team : true))
+  // champions, then ranked, then the rest by name — the people most likely
+  // to be worth a cutaway are the ones you should not have to scroll for
+  const w = f => f.is_champion ? 0 : (+f.rank > 0 ? +f.rank : 999)
+  list.sort((a, b) => (hasPic(b) - hasPic(a)) || (w(a) - w(b)) || a.display_name.localeCompare(b.display_name))
+  const more = Math.max(0, list.length - FC_WALL_MAX)
+  box.innerHTML = ''
+  list.slice(0, FC_WALL_MAX).forEach(f => {
+    const at = FC_Q.indexOf(f.slug), pic = hasPic(f), vid = !!FC_FANS[fcKeyOf(f.slug)]
+    const b = document.createElement('button'); b.className = 'fct' + (at >= 0 ? ' sel' : '') + (pic ? '' : ' nopic')
+    const src = f.profile_photo_thumb_url || f.profile_photo_url
+    b.innerHTML = (src ? `<img loading="lazy" alt="" src="${fcEsc(src)}">` : '<span class="np">NO PICTURE</span>')
+      + (at >= 0 ? `<i class="n">${at + 1}</i>` : '')
+      + (vid ? '<i class="t v">VIDEO</i>' : tonight.has(fcNorm(f.display_name)) ? '<i class="t">FIGHTS TONIGHT</i>' : '')
+      + `<b>${fcEsc(f.display_name)}</b><small>${fcEsc(fcTag(f))}</small>`
+    b.title = f.display_name
+    b.onclick = () => fcToggle(f.slug)
+    box.appendChild(b)
+  })
+  if(!list.length) box.textContent = 'NOBODY MATCHES'
+  note.textContent = `${list.length} shown` + (more ? ` · ${more} more — type a name to narrow it` : '')
+    + (q ? '' : FC_FILTER === 'photo' ? ' · no picture = name only on air, so they are under EVERYONE' : '')
+}
+
+window.fcToggle = slug => {
+  const i = FC_Q.indexOf(slug)
+  if(i >= 0){ FC_Q.splice(i, 1); if(i <= FC_AT) FC_AT-- } else FC_Q.push(slug)
+  fcSave(); fcWall(); fcDraw()
+}
+window.fcMove = (i, d) => {
+  const j = i + d; if(j < 0 || j >= FC_Q.length) return
+  ;[FC_Q[i], FC_Q[j]] = [FC_Q[j], FC_Q[i]]
+  if(FC_AT === i) FC_AT = j; else if(FC_AT === j) FC_AT = i
+  fcSave(); fcWall(); fcDraw()
+}
+// Two presses, because alert()/confirm() are not something to rely on in an
+// OBS dock and one stray click must not wipe a list built over an afternoon.
+let fcClearArmed = 0
+window.fcClear = () => {
+  const out = document.getElementById('fcCheck')
+  if(Date.now() - fcClearArmed > 4000){ fcClearArmed = Date.now(); out.textContent = 'PRESS CLEAR AGAIN TO EMPTY THE LIST'; return }
+  fcClearArmed = 0; FC_Q = []; FC_AT = -1; fcSave(); fcWall(); fcDraw()
+}
+
+// Every fan cam message is numbered by this deck, so the scene can drop one
+// that arrives behind a newer one (realtime does not promise order).
+const FC_SRC = Math.random().toString(36).slice(2, 10)
+let FC_N = 0, FC_SEAT = -1, fcHoldT = null
+const fcTx = c => send(Object.assign(c, { src:FC_SRC, n:++FC_N }))
 function fcSend(i){
-  const f = FC_Q[i]; if(!f) return
-  const seat = FC_SEATS.length ? FC_SEATS[i % FC_SEATS.length] : {}
-  send({ type:'fancam', on:true, d:{ fighter:f.slug || f.typed, name:f.name,
-    clip:seat.clip, x:seat.x, y:seat.y, scale:seat.scale, flip:seat.flip } })
+  const slug = FC_Q[i]; if(!slug) return
+  const f = fcBy(slug)
+  // The seat follows the position, except that it never repeats: remove the
+  // fan who is up and the next one would land in the same chair.
+  let si = FC_SEATS.length ? i % FC_SEATS.length : -1
+  if(FC_SEATS.length > 1 && si === FC_SEAT && slug !== FC_LIVE) si = (si + 1) % FC_SEATS.length
+  const seat = si >= 0 ? FC_SEATS[si] : {}
+  const n = FC_NUDGE[slug] || {}
+  FC_AT = i; FC_LIVE = slug; FC_SEAT = si
+  // every seat number is sent, even the ones this seat leaves out — a seat is
+  // all four, and an absent one must not inherit the last seat's
+  const d = { fighter:slug, dx:n.dx || 0, dy:n.dy || 0, ds:n.ds || 1, hold:FC_HOLD }
+  if(f) d.name = f.display_name          // no roster = let the scene name them, never the slug
+  if(seat.clip) Object.assign(d, { clip:seat.clip, x:seat.x ?? 60, y:seat.y ?? 0, scale:seat.scale ?? 1, flip:!!seat.flip })
+  fcTx({ type:'fancam', on:true, d })
+  fcPrepQuiet(FC_Q.slice(i + 1, i + 5))
+  // the scene takes a held fan down by itself; the deck has to stop saying ON AIR
+  clearTimeout(fcHoldT)
+  if(FC_HOLD > 0) fcHoldT = setTimeout(() => { if(FC_LIVE === slug){ FC_LIVE = null; fcDraw() } }, FC_HOLD * 1000 + 600)
   fcDraw()
 }
+window.fcCut = i => fcSend(i)
 // Manual, both ways. Nothing advances on a timer: the cut happens when the
 // director calls it, and going back one is the fix for cutting too early.
+// Past either end it does nothing — re-sending the last fan would replay
+// their entrance on air for no reason.
 window.fcStep = dir => {
-  if(!FC_Q.length) return
-  FC_AT = Math.min(FC_Q.length - 1, Math.max(0, FC_AT + dir))
-  fcSend(FC_AT)
+  const j = FC_AT + dir
+  if(j < 0 || j >= FC_Q.length){
+    const out = document.getElementById('fcCheck')
+    if(out && FC_Q.length) out.textContent = dir > 0 ? 'END OF THE LIST — add more faces, or tap a name to go back to one' : 'START OF THE LIST'
+    return }
+  fcSend(j)
 }
-window.fcRepeat = () => { if(FC_AT >= 0) fcSend(FC_AT) }
+// Re-cut is the fan who is UP, found by who they are — the position can have
+// moved under them.
+window.fcRepeat = () => { const i = FC_Q.indexOf(FC_LIVE); if(i >= 0) fcSend(i) }
+window.fcHide = () => { FC_LIVE = null; clearTimeout(fcHoldT); fcTx({ type:'fancam', on:false }); fcDraw() }
+
+// The nudge moves the fan who is up without re-cutting them, and is kept by
+// fighter — a pose that needs lifting needs it every time, in every seat.
+window.fcNudge = (k, by) => {
+  if(!FC_LIVE) return
+  if(k === null) delete FC_NUDGE[FC_LIVE]
+  else { const n = FC_NUDGE[FC_LIVE] || (FC_NUDGE[FC_LIVE] = { dx:0, dy:0, ds:1 })
+    n[k] = Math.round((n[k] + by) * 100) / 100
+    if(k === 'ds') n.ds = Math.min(1.5, Math.max(.6, n.ds)) }
+  fcPut('vga.fancam.nudge', FC_NUDGE)
+  const n = FC_NUDGE[FC_LIVE] || { dx:0, dy:0, ds:1 }
+  fcTx({ type:'fancam', adjust:true, d:{ dx:n.dx, dy:n.dy, ds:n.ds } })
+}
 
 function fcDraw(){
   const box = document.getElementById('fcNow'); if(!box) return
-  if(!FC_Q.length){ box.textContent = 'QUEUE EMPTY'; return }
-  box.innerHTML = FC_Q.map((f, i) => {
+  document.getElementById('fcFor').textContent = fcEvent() ? '· saved for ' + fcEvent() : '· no card loaded, saved as a spare list'
+  const out = document.getElementById('fcCheck'), nb = document.getElementById('fcNudge')
+  nb.style.display = FC_LIVE ? 'block' : 'none'
+  if(FC_LIVE) document.getElementById('fcNudgeWho').textContent = (fcBy(FC_LIVE) || {}).display_name || FC_LIVE
+  if(!FC_Q.length){ box.textContent = 'NOBODY PICKED YET — TAP FACES ON THE LEFT'; out.textContent = ''; return }
+  box.innerHTML = ''
+  let noPic = 0
+  FC_Q.forEach((slug, i) => {
+    const f = fcBy(slug) || { slug, display_name:slug }
+    const pic = !!(f.profile_photo_url || FC_FANS[fcKeyOf(slug)]); if(!pic) noPic++
     const seat = FC_SEATS.length ? (i % FC_SEATS.length) + 1 : 1
-    const live = i === FC_AT
-    return '<span style="display:inline-block;margin:0 14px 6px 0;'
-      + (live ? 'color:#fff' : 'color:var(--gdim)') + '">'
-      + (live ? '▶ ' : '') + (i + 1) + '. ' + f.name
-      + (f.found ? '' : ' <b style="color:#ff6b6b">?</b>')
-      + ' <small style="opacity:.6">seat ' + seat + '</small></span>'
-  }).join('')
+    const row = document.createElement('div'); row.className = 'fcrow' + (slug === FC_LIVE ? ' live' : '') + (i === FC_AT + 1 ? ' next' : '')
+    const src = f.profile_photo_thumb_url || f.profile_photo_url
+    row.innerHTML = (src ? `<img alt="" src="${fcEsc(src)}">` : '<span class="np">—</span>')
+      + `<span class="tx" title="Cut to ${fcEsc(f.display_name)}"><b>${i + 1}. ${fcEsc(f.display_name)}</b>`
+      + `<small>${slug === FC_LIVE ? 'ON AIR · ' : i === FC_AT + 1 ? 'NEXT · ' : ''}seat ${seat}${pic ? '' : ' · NO PICTURE'}${FC_FANS[fcKeyOf(slug)] ? ' · VIDEO' : ''}</small></span>`
+    row.querySelector('.tx').onclick = () => fcCut(i)
+    ;[['▲', () => fcMove(i, -1)], ['▼', () => fcMove(i, 1)], ['✕', () => fcToggle(slug)]].forEach(([l, fn]) => {
+      const b = document.createElement('button'); b.className = 'hide'; b.textContent = l; b.onclick = fn; row.appendChild(b) })
+    box.appendChild(row)
+  })
+  out.innerHTML = FC_Q.length + ' picked'
+    + (noPic ? ' · <b style="color:#ff6b6b">' + noPic + ' with no picture</b>' : ' · every one has a picture')
+    + (FC_SEATS.length ? ' · ' + FC_SEATS.length + ' seats' : ' · no seats.json, single clip')
 }
 
 // ── VO HIGHLIGHT ─────────────────────────────────────────────────────────
@@ -1108,7 +1324,9 @@ const SPLIT_NAME = 'Summer Split'
 
 // Countdown left badge = the league the toggled event belongs to, read off the
 // event's own name so GFL/AMA cards brand themselves without a deck edit.
-const leagueOf = name => /^GFL/i.test(name||'') ? 'GFL' : /^AMA/i.test(name||'') ? 'AMA' : 'UBA'
+// A Contender Series night (MCS / CCS / HPCS) is a GFL event with an owner's
+// name on it, so it dresses as GFL. Without this it fell through to UBA.
+const leagueOf = name => /^(GFL|MCS|CCS|HPCS)\b/i.test(name||'') ? 'GFL' : /^AMA/i.test(name||'') ? 'AMA' : 'UBA'
 
 // The badge every solo graphic wears. The card's NAME decides it when a card is
 // loaded -- the operator can promote a GFL card during a UBA night and it should
@@ -1116,7 +1334,13 @@ const leagueOf = name => /^GFL/i.test(name||'') ? 'GFL' : /^AMA/i.test(name||'')
 // a card is loaded. Without that fallback the countdown fell through to the
 // UBAe branch and opened a GFL show under the UBAE wordmark.
 const soloMark = () => UBA.name ? leagueOf(UBA.name) : (EV === 'gfl' ? 'GFL' : 'UBA')
-const tapeMark = () => isSolo() ? soloMark() : 'UBAe'
+// On a Contender Series night the tape and its intro wear the series' own
+// name -- CCS, MCS, HPCS -- because whose night it is is the point of the night.
+// The colours stay the house violet: no league recolours the tape, and one look
+// for every night is one thing fewer to get wrong on air. try/catch because CSN
+// is declared further down this file.
+const seriesMark = () => { try { return CSN.brand || null } catch(e){ return null } }
+const tapeMark = () => isSolo() ? (seriesMark() || soloMark()) : 'UBAe'
 
 function mnPush(){
   send({type:'pickbar', d:{ split:SPLIT_NAME, teamA:MN.a, teamB:MN.b,
@@ -1750,7 +1974,9 @@ window.loadStandings=async()=>{
 const STAGES={
   ubae:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ BATTLEROOM'],['match','④ MATCH'],['fancam','⑤ FAN CAM']],
   uba:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ TALE OF TAPE'],['match','④ MATCH'],['fancam','⑤ FAN CAM']],
-  gfl:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ TALE OF TAPE'],['match','④ MATCH'],['fancam','⑤ FAN CAM']]
+  // ⑥ is GFL only: a Contender Series night (MCS / CCS / HPCS) is a GFL card,
+  // and its verdicts are the last thing that happens on it.
+  gfl:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ TALE OF TAPE'],['match','④ MATCH'],['fancam','⑤ FAN CAM'],['verdicts','⑥ VERDICTS']]
 }
 let EV='ubae', STG='countdown'
 // SOLO = one card, bout by bout: UBA and GFL. TEAM = UBAe. Everything on this
@@ -1770,6 +1996,7 @@ function drawRail(){
     rail.appendChild(b)
   })
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on', p.dataset.panel===STG))
+  if(STG==='fancam' && window.fcOpen) fcOpen()   // the list belongs to the loaded card
 }
 
 window.setEv=ev=>{
@@ -1800,6 +2027,10 @@ window.setEv=ev=>{
    Picking an event does three things at once: sets the wagers filter, loads
    the full card into the runner, and re-arms the graphics for that card. */
 const UBA={ id:null, name:null, date:null, bouts:[], filter:'all', armed:null }
+// A top-level const is NOT a property of window, and a dozen places on this
+// deck ask `window.UBA && …` — every one of them was reading undefined, so
+// "reads the card you loaded above" read nothing. This is what makes it true.
+window.UBA=UBA
 const SEG_ORDER=['main_card','undercard','prelim']
 const SEG_SHORT={main_card:'MAIN',undercard:'UNDER',prelim:'PRELIM'}
 
@@ -1858,6 +2089,181 @@ window.ubaReload=async()=>{
   log(`↻ card reloaded — ${UBA.bouts.length} bouts${d?` (${d>0?'+':''}${d})`:' (no change)'}${armedNo&&i<0?' · armed bout is gone':''}`)
 }
 
+/* ── CONTENDER SERIES ─────────────────────────────────────────────────────
+   Is the loaded card a contender night, and the state of its verdicts:
+     v    what was DECIDED for each fighter (off air)
+     rev  which of those have been REVEALED on air
+     sel  who the on-air buttons act on
+     scr  what is on screen now: split / page / board
+     air  WHO is on screen now, which is not always who is picked
+   v and rev live in sessionStorage keyed by the event, so a deck refresh at the
+   end of a show forgets nothing. */
+const CSN={ brand:null, number:null, v:{}, rev:{}, sel:null, scr:null, air:null }
+const csKey=()=>'vga-cs-'+UBA.id
+const csSave=()=>{ try{ sessionStorage.setItem(csKey(), JSON.stringify({ v:CSN.v, rev:CSN.rev })) }catch(e){} }
+const csLoad=()=>{ CSN.v={}; CSN.rev={}
+  try{ const o=JSON.parse(sessionStorage.getItem(csKey())||'{}')||{}
+    // the first build stored the verdicts bare, with no "revealed" beside them
+    if(o.v){ CSN.v=o.v||{}; CSN.rev=o.rev||{} } else CSN.v=o }catch(e){} }
+const csGate=on=>{ document.getElementById('csSec').style.display = on ? '' : 'none'
+  document.getElementById('csNone').style.display = on ? 'none' : ''
+  if(!on) document.getElementById('csTitle').textContent='' }
+async function csCheck(ev){
+  CSN.brand=null; CSN.number=null; CSN.v={}; CSN.rev={}; CSN.sel=null; CSN.scr=null; CSN.air=null
+  // A failed read hides the section and SAYS so: a contender night whose
+  // verdict buttons silently never appear is found at the worst moment.
+  const { data, error } = await sb.from('contender_nights_public')
+    .select('brand,number').eq('event_id',ev.id).maybeSingle()
+  if(error){ csGate(false); deckLog('could not check Contender Series for '+ev.name+' — '+error.message); return }
+  if(!data){ csGate(false); return }
+  CSN.brand=data.brand; CSN.number=data.number
+  csLoad()
+  csGate(true)
+  csDraw()
+  csPrep()
+}
+// One fighter = bout number + corner. Names can repeat and carry quotes, so
+// they never go into an onclick.
+const csId=(b,side)=>b.bout_number+':'+side
+const csFind=id=>{ if(!id) return null
+  const [n,side]=id.split(':'); const b=UBA.bouts.find(x=>String(x.bout_number)===n)
+  return b ? { b, side, name: side==='a'?b.a:b.b } : null }
+const csWord=v=>v==='contract'?'CONTRACT':v==='no_contract'?'NO CONTRACT':''
+
+function csDraw(){
+  const box=document.getElementById('csRows'); if(!box) return
+  document.getElementById('csTitle').textContent = CSN.brand ? '· '+CSN.brand+' '+CSN.number : ''
+  if(!UBA.bouts.length){ box.textContent='NO BOUTS BOOKED'; return }
+  let html='', total=0, decided=0
+  UBA.bouts.forEach((b,i)=>{
+    html+=`<p class="lbl" style="margin:10px 0 4px">// ${b.bout_number===1?'MAIN':'BOUT '+b.bout_number} //</p>`
+    ;['a','b'].forEach(side=>{
+      const id=csId(b,side), v=CSN.v[id], name=side==='a'?b.a:b.b, on=CSN.sel===id
+      total++; if(v) decided++
+      html+=`<div class="row" style="margin-bottom:6px;align-items:center;flex-wrap:nowrap;gap:8px">
+        <span class="mnchip${on?' picked':''}" style="flex:1;min-width:0;text-align:left" onclick="csPick(${i},'${side}')">${on?'▶ ':''}${name}${b.winner===side?' ✔':''}</span>
+        <span style="width:92px;font-size:15px;color:${CSN.rev[id]?'var(--g)':'var(--gdim)'}">${CSN.rev[id]?'revealed':v?'not shown':''}</span>
+        <button style="padding:4px 10px;white-space:nowrap" class="${v==='contract'?'active':''}" onclick="csSet(${i},'${side}','contract')">Contract</button>
+        <button style="padding:4px 10px;white-space:nowrap" class="${v==='no_contract'?'active':''}" onclick="csSet(${i},'${side}','no_contract')">No contract</button>
+      </div>`
+    })
+  })
+  box.innerHTML=html
+  document.getElementById('csCount').textContent=`${decided} of ${total} decided`
+  // the on-air row: who it acts on, and what Reveal would say
+  const f=csFind(CSN.sel), v=f?CSN.v[CSN.sel]:null, rev=f&&CSN.rev[CSN.sel]
+  // Picked and on screen are two things: you pick the next fighter while the
+  // last one is still up. The line says both, and a screen button is only lit
+  // when it is the PICKED fighter that is on that screen.
+  const up=csFind(CSN.air)
+  document.getElementById('csNow').textContent = (f
+    ? 'PICKED: '+f.name+(v ? ' · '+csWord(v)+(rev?' (revealed)':' (not shown yet)') : ' · no verdict set')
+    : 'pick a fighter above')
+    + (CSN.scr==='board' ? '  ·  ON SCREEN: the verdict board' : up ? '  ·  ON SCREEN: '+up.name+' ('+(CSN.scr==='page'?'contract screen, verdict revealed':'split screen')+')' : '  ·  ON SCREEN: nothing')
+  const lit=(id,on)=>document.getElementById(id).classList.toggle('active',!!on)
+  const mine=f&&CSN.air===CSN.sel
+  lit('csbSplit', mine&&CSN.scr==='split'); lit('csbReveal', mine&&CSN.scr==='page'); lit('csbBoard', CSN.scr==='board')
+  // the contract screen IS the reveal, so its button says what it will reveal
+  document.getElementById('csbReveal').textContent = v ? '② Contract screen · reveals '+csWord(v) : '② Contract screen'
+}
+const csPayload=(b,side,verdict)=>({ brand:CSN.brand, number:CSN.number, event:UBA.name,
+  name: side==='a'?b.a:b.b, opponent: side==='a'?b.b:b.a,
+  bout:b.bout_number, wc:b.wc, won: b.winner ? b.winner===side : null,
+  verdict: verdict||null })
+// What the screen is ALLOWED to know: a verdict that has been set but not
+// revealed is still a secret, so it goes out as none.
+const csShown=id=>CSN.rev[id] ? CSN.v[id] : null
+
+/* ① DECIDE — off air. Sets or clears a verdict and sends nothing. Changing a
+   verdict that was already revealed un-reveals it: the banner and the board
+   must not go on showing an answer that is no longer the answer. */
+window.csSet=(i,side,verdict)=>{
+  const b=UBA.bouts[i]; if(!b) return
+  const id=csId(b,side)
+  if(CSN.v[id]===verdict) delete CSN.v[id]; else CSN.v[id]=verdict
+  if(CSN.rev[id]){ delete CSN.rev[id]; deckLog((side==='a'?b.a:b.b)+' — verdict changed after it was revealed. Press Reveal again to show the new one') }
+  csSave(); csDraw()
+}
+/* Pick who the on-air row acts on. Sends nothing: the screen changes when a
+   screen button is pressed, never when a name is tapped. */
+window.csPick=(i,side)=>{
+  const b=UBA.bouts[i]; if(!b) return
+  CSN.sel=csId(b,side); csDraw()
+}
+const csNeed=()=>{ const f=csFind(CSN.sel); if(!f) deckLog('pick a fighter first — tap a name in the list'); return f }
+
+/* ② ON AIR — each acts on the picked fighter. */
+window.csShow=()=>{
+  const f=csNeed(); if(!f) return
+  CSN.scr='split'; CSN.air=CSN.sel
+  send({type:'contender', action:'show', d:csPayload(f.b,f.side,csShown(CSN.sel))})
+  csDraw()
+}
+/* THE CONTRACT SCREEN IS THE REVEAL (Castle, 2026-10-12). One press: the
+   fighter's contract comes up, the line draws its wait, and the verdict that
+   was set lands on it. It stays, like every other screen here, until another
+   button is pressed. There is no contract screen without an answer: a separate
+   "hold it, then reveal" pair was one button more than the moment needs, and
+   the talking is done on the split. With no verdict set it does nothing and
+   says why. */
+window.csReveal=()=>{
+  const f=csNeed(); if(!f) return
+  const v=CSN.v[CSN.sel]
+  if(!v){ deckLog('no verdict set for '+f.name+' — tap Contract or No contract beside the name first, then the contract screen can reveal it'); return }
+  CSN.rev[CSN.sel]=true; csSave()
+  CSN.scr='page'; CSN.air=CSN.sel      // a reveal always ends on the contract screen
+  send({type:'contender', action:'verdict', d:csPayload(f.b,f.side,v)})
+  csDraw()
+}
+window.csHide=()=>{ CSN.scr=null; CSN.air=null; send({type:'contender', on:false}); csDraw() }
+/* THE BOARD — everyone on the night, with only the verdicts that have been
+   REVEALED. For the break between fighters and for the end of the night. The
+   picked fighter sits on the white row. */
+window.csBoard=()=>{
+  if(!UBA.bouts.length){ deckLog('no card loaded — nothing to put on the board'); return }
+  const rows=[]
+  UBA.bouts.forEach(b=>['a','b'].forEach(side=>{
+    const id=csId(b,side)
+    rows.push({ name: side==='a'?b.a:b.b,
+      res: [b.wc, b.winner ? (b.winner===side?'WON':'LOST') : ''].filter(Boolean).join(' · '),
+      verdict: csShown(id), cur: CSN.sel===id })
+  }))
+  send({type:'contender', action:'board', d:{ brand:CSN.brand, number:CSN.number, rows }})
+  CSN.scr='board'; CSN.air=null; csDraw()
+}
+/* Every name on the card, sent the moment the card is loaded. The verdict
+   screen fetches each record and photo then, hours before they are needed, so
+   the first screen of the night has nothing left to wait for. Shows nothing. */
+function csPrep(){
+  const names=[]; UBA.bouts.forEach(b=>{ names.push(b.a, b.b) })
+  if(names.length) send({type:'contender', action:'prep', d:{ names }})
+}
+
+/* DEMO — control.html#csdemo loads a made-up CCS card into the deck so the
+   Verdicts stage can be seen and pressed with no contender night on record.
+   Nothing is read from or written to the database. It exists because a
+   throwaway night in the real database is not a safe test: the bot's clocks
+   act on any scheduled event. The buttons still SEND, so this is also how the
+   verdict screen is rehearsed. */
+window.csDemo=()=>{
+  setEv('gfl')
+  UBA.id='csdemo'; UBA.name='CCS DEMO'; UBA.date=null; UBA.armed=null
+  UBA.bouts=[['Fighter A','Fighter B',null],['Fighter C','Fighter D',null],['Fighter E','Fighter F',null]]
+    .map(([a,b,w],i)=>({ bout_number:i+1, seg:'main_card', a, b, wc:'Demo', title:null, method:null, winner:w }))
+  CSN.brand='CCS'; CSN.number='DEMO'; CSN.sel=null; CSN.scr=null; CSN.air=null
+  csLoad()
+  document.getElementById('ubaCardWrap').style.display='block'
+  csGate(true)
+  csPrep()
+  STG='verdicts'; drawRail()
+  ubaDraw()
+  deckLog('CONTENDER DEMO — a made-up card, nothing from the database. Its buttons SEND for real: not during a live show')
+}
+if(location.hash==='#csdemo') window.addEventListener('load',()=>setTimeout(csDemo,400))
+// Typing #csdemo onto a deck that is already open changes the hash without
+// reloading the page, so the load listener above never runs for it.
+window.addEventListener('hashchange',()=>{ if(location.hash==='#csdemo') csDemo() })
+
 window.ubaLoadCard=async(ev)=>{
   const { data } = await sb.from('event_matches')
     .select('bout_number,card_segment,weight_class,is_title_fight,title_name,status,method,fighter_a_name,fighter_b_name,winner_corner')
@@ -1875,6 +2281,8 @@ window.ubaLoadCard=async(ev)=>{
           : /^(b|fighter_b)$/i.test(r.winner_corner||'')?'b':null }))
   document.getElementById('ubaCardWrap').style.display=UBA.bouts.length?'block':'none'
   ubaDraw()
+  if(STG==='fancam' && window.fcOpen) fcOpen()   // the fan list belongs to the card
+  await csCheck(ev)   // a contender night grows its verdict section
   mnCountdown()   // picking the event is when the main event becomes known
 }
 
@@ -1902,6 +2310,7 @@ function ubaDraw(){
   })
   box.innerHTML=html
   if(window.voCoverage) voCoverage()
+  if(CSN.brand) csDraw()   // a win scored above shows on the verdict rows too
 }
 
 /* ARM = this bout is next on screen: names the fight clock, pre-fills the

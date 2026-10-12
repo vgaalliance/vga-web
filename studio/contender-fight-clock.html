@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920">
+<title>Contender Series Fight Clock</title>
+<!-- THE CONTENDER SERIES FIGHT CLOCK (MCS / CCS / HPCS). A separate graphic
+     from fight-clock.html on purpose: Castle asked for a new clock, not a
+     recolour -- a boxed, bottom-left TV boxing scorebug with a round track
+     (picked 2026-10-12 from two rounds of stills).
+
+     It answers the SAME deck buttons as the solo clock ('clock', 'bout',
+     'corner', 'clockodds', 'round', 'clocktimer'), but only when the command
+     carries `series` -- the deck stamps that on every command while a
+     contender card is loaded (control.html send()). fight-clock.html hides
+     itself on those same commands, so BOTH sources can sit in the Match scene
+     and the right one appears by itself. A command with a league and no
+     series means another card was loaded: this clock leaves.
+
+     Bottom-left like the UBAe clock, so overlay.html lifts its lower-left
+     cards for a contender night the same way (data-series there). If this
+     box ever grows taller, raise that lift.
+
+     Inside overlay.html this page is a FRAME, not a source (?embed=1): it
+     takes its commands from the overlay and does not join the channel itself.
+     That is how a Contender night needs nothing added to OBS. Opened on its
+     own URL it still works as a source, for a scene without the overlay.
+
+     Check it without a deck: contender-fight-clock.html?demo -->
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:relative;font-family:'Barlow Condensed','Arial Narrow',sans-serif}
+:root{ --ice:#4FC3F0; --navy:#0F2C40; --deep:#0A1C29; --ease:cubic-bezier(.2,.8,.2,1); }
+
+/* ── THE BOX ── hard rectangles on a 2px grid; nothing slanted, nothing round */
+.bug{position:absolute;left:48px;bottom:28px;width:384px;background:var(--deep);border:2px solid var(--deep);
+  display:flex;flex-direction:column;gap:2px;color:#fff;text-transform:uppercase;
+  filter:drop-shadow(0 8px 24px rgba(0,0,0,.45));
+  /* IN / OUT. The box is wiped open from its left edge; everything inside
+     waits for the wipe and then settles in a short stagger. Out is the same
+     move backwards and faster -- a graphic should leave quicker than it came. */
+  clip-path:inset(0 100% 0 0);transition:clip-path .30s cubic-bezier(.6,0,.8,.2) .12s}
+.bug.on{clip-path:inset(0 0 0 0);transition:clip-path .46s var(--ease)}
+.bug .cell{opacity:0;transform:translateX(-14px);transition:opacity .14s ease, transform .14s ease}
+.bug.on .cell{opacity:1;transform:none;transition:opacity .30s ease, transform .42s var(--ease)}
+.bug.on .cell.d1{transition-delay:.16s} .bug.on .cell.d2{transition-delay:.23s}
+.bug.on .cell.d3{transition-delay:.30s} .bug.on .cell.d4{transition-delay:.37s}
+
+.hd{background:var(--ice);color:var(--deep);height:24px;display:flex;align-items:center;padding:0 10px;font-weight:800;letter-spacing:2.5px;font-size:14px;white-space:nowrap;overflow:hidden}
+.mid{display:grid;grid-template-columns:1fr 112px;grid-template-rows:46px 46px;gap:2px}
+.row{background:var(--navy);display:flex;align-items:center;gap:10px;position:relative;overflow:hidden;min-width:0}
+.row .bar{width:10px;align-self:stretch;flex:none;background:#E8312A;transition:background .25s ease}
+.row.r .bar{background:#2E6FE8}
+.row .nmw{flex:1;min-width:0;height:100%;overflow:hidden;display:flex;align-items:center;padding-right:8px}
+.row .nm{font-weight:800;letter-spacing:1.5px;font-size:30px;white-space:nowrap;display:block;transition:transform .2s var(--ease), opacity .2s ease}
+.row .nm.out{transform:translateY(-110%);opacity:0}
+.row .nm.pre{transform:translateY(110%);opacity:0;transition:none}
+
+/* corner reveal: the row floods with its corner colour from the bar, holds a beat, drains back */
+.row .flood{position:absolute;inset:0;transform:scaleX(0);transform-origin:left center;pointer-events:none;background:#E8312A;opacity:.92}
+.row.sweep .flood{animation:flood 1.05s var(--ease) 1}
+@keyframes flood{0%{transform:scaleX(0)}38%{transform:scaleX(1)}62%{transform:scaleX(1)}100%{transform:scaleX(0);transform-origin:right center}}
+
+/* odds: a chip slides in at the end of each row, holds, leaves */
+.row .odds{position:absolute;right:0;top:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:var(--ice);color:var(--deep);padding:0 10px;min-width:74px;transform:translateX(102%);transition:transform .36s var(--ease);line-height:1}
+.row .odds small{font-weight:800;font-size:11px;letter-spacing:2px;opacity:.75}
+.row .odds b{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:26px;padding-top:2px}
+.row.showodds .odds{transform:none}
+
+.ck{grid-row:1/3;grid-column:2;background:var(--navy);display:flex;align-items:center;justify-content:center}
+.t{font-family:'Bebas Neue','Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums;font-size:54px;line-height:.9;padding-top:4px;transition:color .3s ease, opacity .3s ease}
+.t.idle{opacity:.28}
+.t.hot{animation:hot 1s ease-in-out infinite}
+@keyframes hot{0%,100%{color:#fff}50%{color:var(--ice)}}
+.t.end{animation:end .5s ease-out 3}
+@keyframes end{0%{color:var(--deep);background:var(--ice)}100%{color:#fff;background:transparent}}
+
+/* the round track: a numbered box per round. The current one fills with Ice
+   from the left; the ones behind it stay white; the ones ahead stay dim. */
+.trk{display:flex;gap:2px;height:30px}
+.trk .lab{flex:0 0 96px;background:var(--navy);display:flex;align-items:center;justify-content:center;font-weight:800;letter-spacing:3px;font-size:14px;color:var(--ice)}
+.trk .rd{flex:1;background:var(--navy);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.trk .rd::before{content:'';position:absolute;inset:0;background:var(--ice);transform:scaleX(0);transform-origin:left center;transition:transform .34s var(--ease)}
+.trk .rd span{position:relative;font-family:'Bebas Neue',sans-serif;font-size:20px;padding-top:2px;color:#6f93a8;transition:color .25s ease}
+.trk .rd.done span{color:#fff}
+.trk .rd.now::before{transform:scaleX(1)}
+.trk .rd.now span{color:var(--deep)}
+</style>
+</head>
+<body>
+<div class="bug" id="bug">
+  <div class="hd cell" id="hd">UBA · CONTENDER SERIES</div>
+  <div class="mid">
+    <div class="row l cell d1"><i class="bar" id="barL"></i><div class="nmw"><span class="nm" id="nameL">RED CORNER</span></div><i class="flood" id="floodL"></i><div class="odds"><small id="oddsLw">ODDS</small><b id="oddsL"></b></div></div>
+    <div class="row r cell d2"><i class="bar" id="barR"></i><div class="nmw"><span class="nm" id="nameR">BLUE CORNER</span></div><i class="flood" id="floodR"></i><div class="odds"><small id="oddsRw">ODDS</small><b id="oddsR"></b></div></div>
+    <div class="ck cell d3"><span class="t idle" id="timer">–:––</span></div>
+  </div>
+  <div class="trk cell d4" id="trk"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id)
+  const KEY = 'vga-cs-clock'
+  const HOLD_ODDS = 9000            // same hold as the solo clock's odds reveal
+  // Everything the box shows. Saved on every change so an OBS source refresh
+  // mid-fight comes back on the same bout, round and time instead of blank.
+  const S = { on:false, brand:null, no:null, a:'RED CORNER', b:'BLUE CORNER', colL:'#E8312A', colR:'#2E6FE8',
+              round:1, rounds:3, end:null, at:0 }
+  const save = () => { S.at = Date.now(); try{ localStorage.setItem(KEY, JSON.stringify(S)) }catch{} }
+
+  // A long name shrinks; it never wraps and is never cut.
+  function fit(el){
+    let px = 30; el.style.fontSize = px + 'px'; el.style.letterSpacing = ''
+    const max = el.parentElement.clientWidth - 8
+    // Tracking goes first (it is decoration), then the size, down to 12px:
+    // measured, that holds a 30-character name in the row.
+    while(px > 12 && el.scrollWidth > max){ px -= 1; el.style.fontSize = px + 'px'; if(px < 24) el.style.letterSpacing = '0' }
+  }
+  function setName(el, text, animate){
+    text = String(text || '').toUpperCase()
+    if(el.textContent === text) return
+    if(!animate || !S.on){ el.textContent = text; fit(el); return }
+    el.classList.add('out')
+    setTimeout(() => {
+      el.textContent = text; fit(el)
+      el.classList.remove('out'); el.classList.add('pre')
+      void el.offsetWidth
+      el.classList.remove('pre')
+    }, 200)
+  }
+  function header(){
+    $('hd').textContent = 'UBA · ' + (S.brand ? S.brand + (S.no != null ? ' ' + S.no : '') + ' · ' : '') + 'CONTENDER SERIES'
+  }
+  function corners(){
+    $('barL').style.background = S.colL; $('floodL').style.background = S.colL
+    $('barR').style.background = S.colR; $('floodR').style.background = S.colR
+  }
+  function sweep(){
+    document.querySelectorAll('.row').forEach((r, i) => {
+      r.classList.remove('sweep'); void r.offsetWidth
+      setTimeout(() => r.classList.add('sweep'), i * 140)
+    })
+  }
+  function track(){
+    const box = $('trk')
+    // Rebuilt only when the NUMBER of rounds changes, so lighting a round is a
+    // class change on a box that is already there and the wipe can play.
+    if(box.dataset.n !== String(S.rounds)){
+      box.dataset.n = S.rounds
+      box.innerHTML = '<div class="lab">ROUND</div>' +
+        Array.from({length:S.rounds}, (_, i) => `<div class="rd"><span>${i + 1}</span></div>`).join('')
+    }
+    box.querySelectorAll('.rd').forEach((el, i) => {
+      el.classList.toggle('done', i + 1 < S.round)
+      el.classList.toggle('now', i + 1 === S.round)
+    })
+  }
+
+  let tick = null
+  const fmt = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+  // Counts against a fixed END time, never a tick counter: setInterval drifts,
+  // and a refresh has to land on the same second the room is already on.
+  function timer(){
+    clearInterval(tick)
+    const el = $('timer')
+    el.classList.remove('hot', 'end')
+    if(S.end == null){ el.textContent = '–:––'; el.classList.add('idle'); return }
+    el.classList.remove('idle')
+    const draw = () => {
+      const left = Math.max(0, Math.round((S.end - Date.now()) / 1000))
+      el.textContent = fmt(left)
+      el.classList.toggle('hot', left > 0 && left <= 10)
+      if(left <= 0){ clearInterval(tick); el.classList.remove('hot'); el.classList.add('end') }
+    }
+    draw(); tick = setInterval(draw, 250)
+  }
+
+  let oddsT = null
+  const oddsWord = v => /%/.test(String(v)) ? 'CHANCE' : 'ODDS'
+  function odds(l, r){
+    $('oddsL').textContent = l || '—'; $('oddsLw').textContent = oddsWord(l)
+    $('oddsR').textContent = r || '—'; $('oddsRw').textContent = oddsWord(r)
+    document.querySelectorAll('.row').forEach((row, i) => setTimeout(() => row.classList.add('showodds'), i * 120))
+    clearTimeout(oddsT)
+    oddsT = setTimeout(() => document.querySelectorAll('.row').forEach(row => row.classList.remove('showodds')), HOLD_ODDS)
+  }
+
+  function show(on){ S.on = on; $('bug').classList.toggle('on', on) }
+  function paint(animate){
+    header(); corners(); track(); timer()
+    setName($('nameL'), S.a, animate); setName($('nameR'), S.b, animate)
+  }
+
+  function handle(c){
+    if(!c || !c.type) return
+    // The verdict screen fills the frame at the end of the night, and its
+    // banner sits where this box does. Leave when it arrives.
+    if(c.type === 'contender'){
+      // ...but only for a screen. 'prep' loads data and shows nothing, and the
+      // deck sends it on every card (re)load, including one in mid-fight.
+      if(['show','page','verdict','board'].includes(c.action) && S.on){ show(false); save() }
+      return
+    }
+    // THE GATE. Only a contender card drives this box. A command that names a
+    // league but carries no series means the deck has a different card loaded:
+    // leave, so the solo clock is never sharing the screen with this one.
+    if(!c.series){
+      if(c.league && S.on){ show(false); save() }
+      return
+    }
+    if(c.league && c.league === 'ubae') return
+    const fresh = S.brand !== c.series || S.no !== (c.seriesNo ?? null)
+    S.brand = c.series; S.no = c.seriesNo ?? null
+    if(fresh) header()
+
+    if(c.type === 'clock'){ show(c.show !== false); save(); return }
+    if(c.type === 'bout'){
+      const d = c.d || {}
+      const was = S.on
+      if(d.a != null) S.a = d.a
+      if(d.b != null) S.b = d.b
+      if(d.colorL) S.colL = d.colorL
+      if(d.colorR) S.colR = d.colorR
+      // A new bout starts at round 1 with no clock running. Five boxes only
+      // when the deck says it is a five-rounder.
+      S.rounds = /5\s*ROUNDS/i.test(d.sub || '') ? 5 : 3
+      S.round = 1; S.end = null
+      paint(was)
+      if(!was) show(true)       // arming a bout is what brings the box in
+      save(); return
+    }
+    if(c.type === 'corner'){
+      const d = c.d || {}
+      if(d.l) S.colL = d.l
+      if(d.r) S.colR = d.r
+      corners(); if(c.reveal) sweep()
+      save(); return
+    }
+    if(c.type === 'clockodds'){ const d = c.d || {}; odds(d.l, d.r); return }
+    if(c.type === 'round'){
+      S.round = Math.max(1, +c.n || 1)
+      if(S.round > S.rounds) S.rounds = 5     // round 4 pressed on a 3-box track: it was a five-rounder
+      track(); save(); return
+    }
+    if(c.type === 'clocktimer'){
+      S.end = c.on === false || c.secs == null ? null : Date.now() + c.secs * 1000
+      timer(); save(); return
+    }
+  }
+  window.__cmd = handle   // for checking the box by hand, and for ?demo
+
+  // Back from an OBS refresh: same bout, same round, same second.
+  try{
+    const old = JSON.parse(localStorage.getItem(KEY) || 'null')
+    if(old && Date.now() - old.at < 6 * 3600e3){ Object.assign(S, old); paint(false); if(S.on) requestAnimationFrame(() => show(true)) }
+    else { track() }
+  }catch{ track() }
+
+  if(new URLSearchParams(location.search).has('demo')){
+    document.body.style.background = '#5d6975'
+    const go = (ms, c) => setTimeout(() => handle({ league:'gfl', series:'CCS', seriesNo:1, ...c }), ms)
+    go(600,  { type:'bout', d:{ a:'Fighter A', b:'Fighter B', sub:'Heavyweight', colorL:'#E8312A', colorR:'#2E6FE8' } })
+    go(2200, { type:'corner', reveal:true, d:{ l:'#E8312A', r:'#2E6FE8' } })
+    go(4200, { type:'clocktimer', secs:14 })
+    go(6500, { type:'clockodds', d:{ l:'-140', r:'+120' } })
+    go(9000, { type:'round', n:2 })
+    return   // a demo never joins the live channel
+  }
+
+  // Riding inside overlay.html: the overlay passes the commands in.
+  if(new URLSearchParams(location.search).has('embed')){
+    addEventListener('message', e => { if(e.data && e.data.vgaCmd) handle(e.data.vgaCmd) })
+    return
+  }
+  const _sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
+    'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
+  _sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, ({ payload:c }) => handle(c)).subscribe()
+})()
+</script>
+</body>
+</html>

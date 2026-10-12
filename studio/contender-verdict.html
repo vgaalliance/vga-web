@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920">
+<title>Contender Series Verdicts</title>
+<!-- THE CONTENDER SERIES VERDICT SCREEN (MCS / CCS / HPCS) — the end of the
+     night, driven by stage 6 (Verdicts) on the deck. One source, three
+     screens, in the order Castle set on 2026-10-12:
+
+       SPLIT SCREEN     host and fighter windows; the banner reads THE
+                        VERDICT, or the result once it has been revealed
+       CONTRACT SCREEN  THE REVEAL: a full-screen contract page comes up, a
+                        line draws its wait, and the verdict lands on it
+       VERDICT BOARD    the whole night, between fighters and at the end
+     (This page can also hold a contract screen with no answer on it, action
+     'page'. The deck does not send it: the talking is done on the split.)
+
+     ONE RULE: every button on the deck puts up one screen, and it stays until
+     another is pressed. Nothing here leaves by itself. (A first build had the
+     reveal return to the split on a timer when pressed from the split, and
+     hold when pressed from the contract screen: two behaviours for one button
+     is one too many on a live show.)
+
+     The two windows in the split are HOLES: this page is transparent there,
+     so the host and fighter cameras sit BEHIND this source in the scene.
+     Left window 56,128 · right window 984,128 · both 880 x 520.
+
+     The look is the tale of the tape intro's, with Ice where it has violet:
+     ink ground with fine diagonal lines, a white slate, one huge face, the
+     boxed mark, tiny tracked labels. Nothing here writes anything: a verdict
+     is saved in the admin panel (Results → Contender Series).
+
+     Inside standby.html this page is a FRAME, not a source (?embed=1): it
+     takes its commands from the standby screen and does not join the channel
+     itself. Verdicts are given on the Waiting scene, which already has
+     standby.html, so a Contender night needs nothing added to OBS. Opened on
+     its own URL it still works as a source, for a scene without standby.
+
+     Check it without a deck: contender-verdict.html?demo
+     With real names, so the record fills in:  ?demo=Sephtis,Xirved
+     (the first gets the contract, the second does not; nothing is saved) -->
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:relative;font-family:'Barlow Condensed','Arial Narrow',sans-serif;text-transform:uppercase;color:#fff}
+:root{ --ice:#4FC3F0; --ice2:#8FDBFA; --iced:#1787BD; --navy:#0A1C29; --ease:cubic-bezier(.2,.8,.2,1); --in:cubic-bezier(.16,1,.3,1) }
+.ink{color:#fff;background:
+  repeating-linear-gradient(112deg,rgba(255,255,255,.055) 0 1px,transparent 1px 132px),
+  repeating-linear-gradient(112deg,rgba(255,255,255,.03) 0 1px,transparent 1px 57px),
+  radial-gradient(ellipse at 72% 18%,#1B5677 0%,#123E59 34%,#0B2233 78%)}
+.paper{color:var(--navy);background:
+  repeating-linear-gradient(112deg,rgba(10,28,41,.05) 0 1px,transparent 1px 132px),
+  repeating-linear-gradient(112deg,rgba(10,28,41,.03) 0 1px,transparent 1px 57px),
+  linear-gradient(180deg,#FBFDFE 0%,#E3EBF0 100%)}
+.abs{position:absolute}
+.mark{position:absolute;border:3px solid currentColor;font-family:'Anton',sans-serif;font-size:26px;letter-spacing:2px;padding:2px 10px 0;line-height:1.25}
+.lab{font-weight:700;letter-spacing:.34em;font-size:22px;white-space:nowrap}
+.big{font-family:'Anton','Barlow Condensed',sans-serif;line-height:.92;letter-spacing:.01em;white-space:nowrap;display:inline-block}
+.rule{display:inline-block;width:8px;background:var(--ice);margin-right:22px;align-self:stretch;flex:none}
+.pill{display:inline-block;border-radius:999px;font-weight:800;letter-spacing:.3em;font-size:20px;padding:7px 22px 6px;white-space:nowrap}
+.pill.i{background:var(--ice);color:var(--navy)} .pill.w{background:#fff;color:var(--navy)}
+.chev{display:inline-block;width:.42em;height:.78em;background:var(--ice);clip-path:polygon(0 0,45% 0,100% 50%,45% 100%,0 100%,55% 50%);flex:none}
+.chev.r{transform:scaleX(-1)}
+.arc{position:absolute;border-radius:50%;border:3px solid rgba(143,219,250,.38);pointer-events:none}
+.screen{position:absolute;inset:0;visibility:hidden}
+
+/* ── 1 · SPLIT ─────────────────────────────────────────────────────────── */
+/* THE ENTRANCE. One sheet of ink is wiped across the screen from the left with
+   the windows still shut; the series' name holds on it for a beat; then the
+   windows open (each a pair of shutters parting), the top furniture drops in
+   and the banner rises. Leaving is one wipe off to the right. It plays when
+   the split comes up from nothing, not when the next fighter replaces the
+   last one on a split that is already there. */
+#split{clip-path:inset(0 100% 0 0)}
+#split.on{visibility:visible;clip-path:inset(0 0 0 0);transition:clip-path .6s var(--in)}
+#split.off{visibility:visible;clip-path:inset(0 0 0 100%);transition:clip-path .48s cubic-bezier(.6,0,.8,.2)}
+/* the frame is one sheet of ink with two windows cut out of it */
+#split .frame{position:absolute;inset:0;clip-path:path(evenodd,'M0 0H1920V1080H0Z M56 128H936V648H56Z M984 128H1864V648H984Z')}
+#split .win{position:absolute;top:128px;width:880px;height:520px;outline:3px solid rgba(143,219,250,.6);outline-offset:-1px;opacity:0}
+#split.on .win{opacity:1;transition:opacity .3s ease 1.5s} #split.off .win{opacity:1}
+/* the shutters: the SAME ink as the sheet, pinned to the screen so its lines
+   run straight through a shut window and it reads as one unbroken sheet. They
+   open by being clipped away, not scaled: a transform would unpin the ink. */
+#split .sh{position:absolute;width:880px;height:261px;background-attachment:fixed;clip-path:inset(0 0 0 0)}
+#split .sh.t{top:128px} #split .sh.b{top:388px}
+#split.on .sh{transition:clip-path .75s var(--in) 1.5s}
+#split.on .sh.two{transition-delay:1.64s}
+#split.on .sh.t,#split.off .sh.t{clip-path:inset(0 0 100% 0)}
+#split.on .sh.b,#split.off .sh.b{clip-path:inset(100% 0 0 0)}
+#sLock{position:absolute;left:0;right:0;top:300px;text-align:center;opacity:0;pointer-events:none}
+#sLock .big{font-size:150px}
+#split.on #sLock{animation:lockup 1.35s ease .3s 1 both}
+@keyframes lockup{0%{opacity:0;transform:translateY(14px)}22%{opacity:1;transform:none}78%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-10px)}}
+/* ...and the SHORT version, for every fighter after the first: the same wipe
+   and the windows opening straight away, no title beat. The long entrance is
+   an opening, and an opening happens once a night. */
+#split.on.quick{transition:clip-path .45s var(--in)}
+#split.on.quick #sLock{animation:none}
+#split.on.quick .sh{transition-delay:.2s} #split.on.quick .sh.two{transition-delay:.28s}
+#split.on.quick .win{transition-delay:.2s}
+#split.on.quick .top{transition-delay:.25s} #split.on.quick .tagc{transition-delay:.6s}
+#split.on.quick #banner{transition-delay:.3s}
+#split .top{opacity:0;transform:translateY(-18px)}
+#split.on .top{opacity:1;transform:none;transition:opacity .4s ease 1.6s, transform .5s var(--in) 1.6s}
+#split.off .top{opacity:1;transform:none}
+#split .tagc{opacity:0}
+#split.on .tagc{opacity:1;transition:opacity .4s ease 2.15s} #split.off .tagc{opacity:1}
+#banner{position:absolute;left:0;right:0;bottom:0;height:372px;border-top:4px solid var(--ice);display:flex;align-items:center;padding:0 90px;gap:60px;
+  background:rgba(10,28,41,.62);transform:translateY(100%)}
+#split.on #banner{transform:none;transition:transform .62s var(--in) 1.72s}
+#split.off #banner{transform:none}
+#banner.yes{background:linear-gradient(180deg,#FBFDFE 0%,#E3EBF0 100%);color:var(--navy)}
+#banner .who{flex:none;max-width:1000px}
+#banner .res{opacity:.65;margin-bottom:10px}
+#banner .word{flex:1;display:flex;align-items:center;justify-content:center;gap:34px;min-width:0}
+#banner .word .big{font-size:138px}
+#banner.wait .word .big{color:transparent;-webkit-text-stroke:4px rgba(143,219,250,.7);animation:waiting 2.4s ease-in-out infinite}
+#banner.no .word .big{font-size:118px;color:transparent;-webkit-text-stroke:4px rgba(255,255,255,.62)}
+#banner .word .chev{font-size:124px;background:var(--iced);display:none}
+#banner.yes .word .chev{display:inline-block}
+@keyframes waiting{0%,100%{opacity:.55}50%{opacity:1}}
+
+/* ── 2 · THE CONTRACT ──────────────────────────────────────────────────── */
+/* Wiped on from the left, wiped off to the right: one direction of travel,
+   the same move the tape intro makes between slates. */
+#contract{clip-path:inset(0 100% 0 0)}
+#contract.on{visibility:visible;clip-path:inset(0 0 0 0);transition:clip-path .62s var(--in)}
+#contract.off{visibility:visible;clip-path:inset(0 0 0 100%);transition:clip-path .5s cubic-bezier(.6,0,.8,.2)}
+#contract .st{opacity:0;transform:translateY(26px)}
+#contract.on .st{opacity:1;transform:none;transition:opacity .45s ease, transform .6s var(--in)}
+#contract.on .s1{transition-delay:.30s} #contract.on .s2{transition-delay:.42s} #contract.on .s4{transition-delay:.86s}
+/* leaving: the page is wiped off WHOLE. Without this its contents drop back to
+   their hidden start the instant .on goes, and an empty slate slides away. */
+#contract.off .st{opacity:1;transform:none} #contract.off .nmw .big{transform:none} #contract.off #cband{transform:none}
+#contract.off #cword .big,#contract.off #cword .chev,#contract.off #csigned{opacity:1;animation:none}
+#contract.off.no #cword .chev,#contract.off.no #csigned{opacity:0}
+#contract.off #csigned{transform:rotate(-4deg)} #contract.off #cdim{opacity:1}
+#contract .nmw{overflow:hidden;display:flex;padding-top:8px}
+#contract .nmw .big{font-size:230px;transform:translateY(108%)}
+#contract.on .nmw .big{transform:none;transition:transform .7s var(--in) .5s}
+#contract .stats{display:flex;gap:40px;margin-top:22px}
+#contract .stats div{font-family:'Anton',sans-serif;font-size:54px;line-height:1}
+#contract .stats div small{display:block;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.3em;opacity:.6;margin-top:6px}
+#contract .stats .acc{color:var(--iced)}
+#cband{position:absolute;left:0;right:0;bottom:0;height:300px;border-top:5px solid var(--ice);display:flex;align-items:center;padding:0 110px;gap:50px;transform:translateY(102%)}
+#contract.on #cband{transform:none;transition:transform .6s var(--in) .7s}
+#cband .dec{color:var(--ice2);width:260px;line-height:1.5;flex:none}
+#cword{flex:1;display:flex;align-items:center;gap:34px;min-width:0}
+#cword .big{font-size:176px;opacity:0}
+#cword .chev{font-size:158px;opacity:0}
+/* the fighter, standing on the page to the right of their name */
+#cPhoto{position:absolute;right:70px;bottom:300px;height:740px;max-width:820px;object-fit:contain;object-position:right bottom;opacity:0;transform:translateX(70px);display:none}
+#contract.on #cPhoto{opacity:1;transform:none;transition:opacity .5s ease .55s, transform .8s var(--in) .55s, filter .5s ease}
+#contract.off #cPhoto{opacity:1;transform:none}
+/* a cut-out stands on the slate; a photo that still has its backdrop is
+   shown edge to edge, where a rectangle reads as a picture and not a mistake */
+#sPhoto{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom}
+#sPhotoBox.full #sPhoto{object-fit:cover;object-position:center 18%}
+#cband > *{position:relative;z-index:1}
+
+/* THE WAIT. A line draws across the band, the label blinks, and the page
+   leans in: the edges close while the room holds its breath. */
+#cline{position:absolute !important;left:420px;right:110px;top:50%;height:3px;background:var(--ice);transform:scaleX(0);transform-origin:left center}
+#contract.on #cline{transform:scaleX(1);transition:transform 1.9s cubic-bezier(.5,0,.9,.6) 1.3s}
+#contract.said #cline{opacity:0;transition:opacity .1s ease}
+/* HELD. The operator brought the page up and is talking: nothing counts down.
+   The line breathes instead of drawing to an end, for as long as it takes. */
+#contract.on.hold:not(.said) #cline{transition:none;transform:scaleX(1);animation:breathe 2.6s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scaleX(.18);opacity:.5}50%{transform:scaleX(1);opacity:1}}
+#contract.on:not(.said) #cDec{animation:blink .5s steps(2,end) 1.3s infinite}
+@keyframes blink{50%{opacity:.25}}
+#cdim{position:absolute;inset:0 0 300px 0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 40% 45%,rgba(6,14,20,0) 30%,rgba(6,14,20,.5) 100%)}
+#contract.on #cdim{opacity:1;transition:opacity 1.9s ease 1.3s}
+
+/* CONTRACT. The whole frame takes the hit: a white flash, the page jolts,
+   Ice floods the band and streaks tear across the slate, the word slams in
+   from three times its size and the chevrons close on it. */
+#contract.said.yes{animation:jolt .5s cubic-bezier(.3,.7,.3,1) 1}
+#contract.said.yes #cdim{opacity:0;transition:opacity .2s ease}
+#contract.said.yes #cflash{animation:flash .7s ease-out 1}
+#contract.said.yes #cstreak{animation:streak .75s cubic-bezier(.2,.7,.2,1) 1}
+#contract.said.yes #cband::before{content:'';position:absolute;inset:0;background:var(--ice);transform-origin:left center;animation:flood .95s var(--in) 1 both}
+#contract.said.yes #cword .big{opacity:1;animation:slam .5s cubic-bezier(.2,1.4,.3,1) 1}
+#contract.said.yes #cword .chev{opacity:1;animation:closeL .55s var(--in) .08s 1 both}
+#contract.said.yes #cword .chev.r{animation:closeR .55s var(--in) .08s 1 both}
+#contract.said.yes #cPhoto{animation:punch .6s var(--in) 1}
+#contract.said.yes #csigned{opacity:1;animation:stamp .45s cubic-bezier(.2,1.5,.3,1) .75s 1 both}
+#contract.said.yes .nmw .rule{animation:rulehit .9s ease-out 1}
+
+/* NO CONTRACT. The same weight, the other way: the lights go down. The page
+   drops, the slate and the fighter fall into shadow, the band goes black and
+   the two words come down heavy and stay. No flash, nothing that celebrates. */
+#contract.said.no{animation:thud .55s cubic-bezier(.3,.7,.3,1) 1}
+#contract.said.no #cdim{opacity:1;background:rgba(6,14,20,.62);transition:background .5s ease}
+#contract.said.no #cPhoto{filter:grayscale(1) brightness(.55)}
+#contract.said.no #cband{border-top-color:#5c6c78;transition:border-color .4s ease}
+#contract.said.no #cband::before{content:'';position:absolute;inset:0;background:#04090d;opacity:.72;animation:fadein .5s ease 1 both}
+#contract.said.no #cword .big{font-size:160px;opacity:1;color:#E6EDF2;animation:drop .6s cubic-bezier(.3,1.2,.4,1) 1}
+#cflash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+#cstreak{position:absolute;inset:0 0 300px 0;pointer-events:none;opacity:0;
+  background:repeating-linear-gradient(112deg,transparent 0 46px,rgba(79,195,240,.85) 46px 50px,transparent 50px 170px)}
+#csigned{opacity:0;flex:none}
+@keyframes jolt{0%{transform:scale(1.035)}18%{transform:translate(-9px,5px) scale(1.02)}36%{transform:translate(8px,-4px)}54%{transform:translate(-5px,3px)}72%{transform:translate(3px,-2px)}100%{transform:none}}
+@keyframes thud{0%{transform:translateY(-10px)}30%{transform:translateY(18px)}60%{transform:translateY(-4px)}100%{transform:none}}
+@keyframes flash{0%{opacity:.95}100%{opacity:0}}
+@keyframes streak{0%{opacity:0;transform:translateX(-45%)}25%{opacity:1}100%{opacity:0;transform:translateX(45%)}}
+@keyframes flood{0%{transform:scaleX(0);opacity:1}40%{transform:scaleX(1);opacity:1}100%{transform:scaleX(1);opacity:0}}
+@keyframes slam{0%{transform:scale(3);opacity:0}55%{transform:scale(.96);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes drop{0%{transform:translateY(-120px) scale(1.5);opacity:0}60%{transform:translateY(6px) scale(1);opacity:1}100%{transform:none;opacity:1}}
+@keyframes closeL{0%{transform:translateX(-420px);opacity:0}100%{transform:none;opacity:1}}
+@keyframes closeR{0%{transform:translateX(420px) scaleX(-1);opacity:0}100%{transform:scaleX(-1);opacity:1}}
+@keyframes punch{0%{transform:scale(1.09)}100%{transform:none}}
+@keyframes stamp{0%{transform:scale(2.2) rotate(-12deg);opacity:0}100%{transform:scale(1) rotate(-4deg);opacity:1}}
+@keyframes rulehit{0%{background:#fff;box-shadow:0 0 0 14px rgba(79,195,240,.5)}100%{background:var(--ice);box-shadow:none}}
+@keyframes fadein{0%{opacity:0}100%{opacity:.72}}
+
+/* ── 4 · THE BOARD ─────────────────────────────────────────────────────── */
+#board{clip-path:inset(0 100% 0 0)}
+#board.on{visibility:visible;clip-path:inset(0 0 0 0);transition:clip-path .62s var(--in)}
+#board.off{visibility:visible;clip-path:inset(0 0 0 100%);transition:clip-path .5s cubic-bezier(.6,0,.8,.2)}
+#brows{position:absolute;left:110px;right:110px;top:330px;bottom:60px;display:grid;column-gap:60px;align-content:start}
+.brow{display:flex;align-items:center;gap:26px;padding:0 26px;border-bottom:2px solid rgba(143,219,250,.22);opacity:0;transform:translateX(-24px);min-width:0}
+#board.on .brow{opacity:1;transform:none;transition:opacity .4s ease, transform .5s var(--in)}
+#board.off .brow{opacity:1;transform:none}
+.brow.cur{background:linear-gradient(180deg,#FBFDFE 0%,#E3EBF0 100%);color:var(--navy);border-bottom-color:transparent}
+.brow .n{flex:none;overflow:hidden}
+.brow .r{flex:1;opacity:.6;min-width:0;overflow:hidden}
+.brow .v{flex:none;display:flex;align-items:center;gap:14px}
+.brow .v .yes{color:var(--ice)} .brow.cur .v .yes{color:var(--navy)}
+.brow.cur .v .chev{background:var(--iced)}
+.brow .v .no{opacity:.38} .brow .v .tc{opacity:.3}
+</style>
+</head>
+<body>
+
+<div class="screen" id="split">
+  <div class="frame ink"></div>
+  <!-- the fighter's window carries their photo when they have one (most
+       fighters are not on camera); with no photo it stays a hole, like the host's -->
+  <div class="abs paper" id="sPhotoBox" style="left:984px;top:128px;width:880px;height:520px;overflow:hidden;display:none"><img id="sPhoto" alt=""></div>
+  <i class="sh t ink" style="left:56px"></i><i class="sh b ink" style="left:56px"></i>
+  <i class="sh t two ink" style="left:984px"></i><i class="sh b two ink" style="left:984px"></i>
+  <div id="sLock"><div class="lab" id="sLockSub" style="color:var(--ice2);margin-bottom:10px"></div><div class="big">THE VERDICTS</div></div>
+  <i class="win" style="left:56px"></i><i class="win" style="left:984px"></i>
+  <span class="mark top" style="left:56px;top:44px">UBA</span>
+  <span class="pill i abs top" id="sPill" style="left:50%;top:46px;margin-left:-190px">CONTENDER SERIES</span>
+  <span class="pill w abs tagc" id="sHost" style="left:76px;top:590px">HOST</span>
+  <span class="pill w abs tagc" id="sFighter" style="right:76px;top:590px">FIGHTER</span>
+  <div id="banner" class="wait">
+    <div class="who"><div class="lab res" id="sRes"></div><div style="display:flex"><span class="rule"></span><span class="big" id="sName" style="font-size:132px"></span></div></div>
+    <div class="word"><span class="chev"></span><span class="big" id="sWord">THE VERDICT</span><span class="chev r"></span></div>
+  </div>
+</div>
+
+<div class="screen paper" id="contract">
+  <div class="arc" style="left:-500px;top:120px;width:1500px;height:1500px;border-color:rgba(23,135,189,.28)"></div>
+  <span class="mark" style="left:110px;top:56px">UBA</span>
+  <span class="lab abs st s1" id="cSeries" style="left:222px;top:66px;opacity:.6"></span>
+  <div class="abs" style="left:110px;top:170px">
+    <div class="lab st s1" style="margin-bottom:16px"><span id="cLead" style="opacity:.6">THE DECISION ON</span></div>
+    <div class="nmw"><span class="rule"></span><span class="big" id="cName"></span></div>
+    <div class="stats st s4" id="cStats"></div>
+  </div>
+  <img id="cPhoto" alt="">
+  <i id="cdim"></i>
+  <div class="ink" id="cband">
+    <span class="lab dec" id="cDec">THE<br>VERDICT</span>
+    <i id="cline"></i>
+    <div id="cword"><span class="chev"></span><span class="big" id="cW"></span><span class="chev r"></span></div>
+    <span class="pill w" id="csigned">SIGNED TO THE UBA</span>
+  </div>
+  <i id="cstreak"></i>
+  <i id="cflash"></i>
+</div>
+
+<div class="screen ink" id="board">
+  <div class="arc" style="right:-420px;top:-300px;width:1300px;height:1300px"></div>
+  <span class="mark" style="left:110px;top:56px">UBA</span>
+  <div class="abs" style="left:110px;top:118px"><div class="lab" id="bSeries" style="color:var(--ice2)"></div><div class="big" style="font-size:120px;margin-top:6px">THE VERDICTS</div></div>
+  <div id="brows"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id)
+  const OWNER = { MCS:'MAKI', CCS:'CASTLE', HPCS:'1HP' }
+  // How long each beat of the reveal holds. The wait is the point of it: the
+  // line draws for a second and a half before a word is said.
+  const T = { build:1300, wait:1900, out:520 }
+  const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
+    'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
+
+  let seq = 0                       // every new command cancels the timeline before it
+  const later = (ms, fn) => { const mine = seq; setTimeout(() => { if(mine === seq) fn() }, ms) }
+  let cur = null                    // the fighter on screen: the deck's payload
+
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]))
+  // A long name shrinks to its box; it is never cut and never wraps.
+  function fit(el, max, start, min){
+    let px = start; el.style.fontSize = px + 'px'
+    while(px > min && el.scrollWidth > max){ px -= 2; el.style.fontSize = px + 'px' }
+  }
+  const series = d => (d.brand ? d.brand + (d.number != null ? ' ' + d.number : '') : '')
+  // Division, and won or lost when the deck has it scored. Never HOW: the
+  // method is entered after the show.
+  const resultLine = d => [d.wc, d.won === true ? 'WON' : d.won === false ? 'LOST' : ''].filter(Boolean).join(' · ')
+
+  // The record, read here rather than sent by the deck: the deck knows a name,
+  // the database knows what they have done. A failed read draws no numbers --
+  // never 0-0-0, which would be a claim about somebody's career.
+  const COLS = 'display_name,wins:headline_wins,losses:headline_losses,draws:headline_draws,ko:headline_ko_wins,photo:profile_photo_url'
+  const REC = new Map()             // name, lower case → their row, or null when there is none (or two)
+  const CUT = new Map()             // photo url → true when it is a cut-out (its corner is transparent)
+  const key = n => String(n || '').trim().toLowerCase()
+  // One corner pixel tells a cut-out from a photo that still has its backdrop.
+  function warm(url){
+    if(!url || CUT.has(url)) return
+    CUT.set(url, new Promise(res => {
+      const im = new Image(); im.crossOrigin = 'anonymous'
+      im.onload = () => { try{ const cv = document.createElement('canvas'); cv.width = cv.height = 4
+        const x = cv.getContext('2d'); x.drawImage(im, 0, 0, 4, 4, 0, 0, 4, 4); res(x.getImageData(0, 0, 1, 1).data[3] < 32) }catch{ res(true) } }
+      im.onerror = () => res(true)
+      im.src = url
+    }))
+  }
+  // THE WHOLE CARD, AHEAD OF TIME. The deck sends every name when a contender
+  // card is loaded, so by the end of the night each record is in hand and each
+  // photo is in the cache: Show puts a fighter up with nothing left to fetch.
+  // Without this the first Show of every fighter waited on two round trips,
+  // and the photo arrived a beat after the window had already opened.
+  async function prep(names){
+    const need = [...new Set((names || []).filter(Boolean))].filter(n => !REC.has(key(n)))
+    if(!need.length) return
+    try{
+      const { data, error } = await sb.from('fighter_cards').select(COLS).in('display_name', need)
+      if(error) return
+      const seen = {}
+      for(const r of data || []){ const k = key(r.display_name); seen[k] = (seen[k] || 0) + 1; REC.set(k, seen[k] === 1 ? r : null) }
+      for(const r of data || []) warm(r.photo)
+    }catch{}
+  }
+  async function record(name){
+    const k = key(name)
+    if(REC.has(k)) return REC.get(k)
+    try{
+      const { data, error } = await sb.from('fighter_cards').select(COLS).ilike('display_name', name).limit(2)
+      REC.set(k, (!error && data && data.length === 1) ? data[0] : null)
+    }catch{ REC.set(k, null) }
+    const r = REC.get(k); if(r) warm(r.photo)
+    return r
+  }
+  async function stats(d){
+    const box = $('cStats'); box.innerHTML = ''
+    const cell = (v, l, acc) => `<div class="${acc ? 'acc' : ''}">${esc(v)}<small>${l}</small></div>`
+    // The record only. A "TONIGHT: KO" cell stood beside it at first, but how
+    // a fight ended is entered in the admin panel AFTER the show: on the night
+    // this screen cannot know it, and a guess beside a real record is worse
+    // than nothing.
+    const r = await record(d.name)
+    if(cur !== d) return             // another fighter was shown while this was loading
+    box.innerHTML = r ? cell(r.wins ?? 0, 'WINS') + cell(r.losses ?? 0, 'LOSSES') + cell(r.draws ?? 0, 'DRAWS') : ''
+  }
+
+  // The fighter's photo, on the contract page and in their window on the split.
+  // Most fighters have none: the page then simply has no figure on it, and the
+  // window stays a hole. ?cams=1 keeps the window a hole always, for a night
+  // when the fighter IS on camera.
+  const CAMS = new URLSearchParams(location.search).get('cams') === '1'
+  async function photo(d){
+    const r = await record(d.name)
+    if(cur !== d) return
+    const url = r && r.photo ? r.photo : null
+    ;[['cPhoto', $('cPhoto')], ['sPhoto', $('sPhotoBox')]].forEach(([id, box]) => {
+      const img = $(id)
+      const showIt = !!url && !(id === 'sPhoto' && CAMS)
+      box.style.display = showIt ? 'block' : 'none'
+      if(showIt && img.getAttribute('src') !== url){ img.crossOrigin = 'anonymous'; img.src = url }
+    })
+    // A photo with its backdrop still on it is not a cut-out. One corner pixel
+    // says which: transparent = a figure to stand on the page; solid = a
+    // picture, which fills its window on the split and is left OFF the
+    // contract page, where a black rectangle on white is worse than no figure.
+    if(url) warm(url)
+    const cut = url ? await CUT.get(url) : true
+    if(cur !== d) return
+    $('sPhotoBox').classList.toggle('full', !cut)
+    if(!cut) $('cPhoto').style.display = 'none'
+    const onPage = !!url && cut
+    // the name gives up the right half of the page to the figure
+    fit($('cName'), onPage ? 1080 : 1680, 230, 90)
+  }
+
+  function banner(v){
+    const b = $('banner')
+    b.className = v === 'contract' ? 'yes' : v === 'no_contract' ? 'no' : 'wait'
+    $('sWord').textContent = v === 'contract' ? 'CONTRACT' : v === 'no_contract' ? 'NO CONTRACT' : 'THE VERDICT'
+  }
+  function fillSplit(d){
+    $('sPill').textContent = (series(d) ? series(d) + ' · ' : '') + 'CONTENDER SERIES'
+    $('sPill').style.marginLeft = (-$('sPill').offsetWidth / 2) + 'px'
+    $('sLockSub').textContent = (series(d) ? series(d) + ' · ' : '') + (OWNER[d.brand] ? OWNER[d.brand] + "'S CONTENDER SERIES" : 'CONTENDER SERIES')
+    $('sHost').textContent = OWNER[d.brand] || 'HOST'
+    $('sFighter').textContent = d.name || 'FIGHTER'
+    $('sRes').textContent = resultLine(d)
+    $('sName').textContent = d.name || ''
+    fit($('sName'), 900, 132, 60)
+  }
+  // Bring the split up. Already up = nothing to do, so the entrance never
+  // replays between fighters. On its way out = cancel the exit and start clean.
+  let heldFor = null                // whose contract page is being held
+  let opened = false                // has tonight's long entrance played yet
+  function splitOn(){
+    const sp = $('split')
+    if(sp.classList.contains('on')) return
+    sp.classList.remove('off'); sp.classList.toggle('quick', opened); void sp.offsetWidth
+    sp.classList.add('on'); opened = true
+  }
+  const off = (el) => { if(!el.classList.contains('on')) return
+    el.classList.remove('on'); el.classList.add('off'); setTimeout(() => el.classList.remove('off','said','yes','no','hold'), T.out + 60) }
+
+  // 1 · SPLIT
+  function showSplit(d){
+    seq++; cur = d
+    prep([d.name, d.opponent])
+    off($('contract')); off($('board'))
+    fillSplit(d); banner(d.verdict); photo(d)
+    splitOn()
+  }
+
+  // what the contract page says before any verdict is on it
+  function fillPage(d){
+    $('cSeries').textContent = (series(d) ? series(d) + ' · ' : '') + (OWNER[d.brand] ? OWNER[d.brand] + "'S CONTENDER SERIES" : 'CONTENDER SERIES')
+    $('cName').textContent = d.name || ''
+    fit($('cName'), 1680, 230, 90)
+    // Nothing on the page says which way it went until the word does: the
+    // first draft opened on "a UBA contract is offered to", which is the answer.
+    $('cLead').textContent = 'THE DECISION ON'
+    $('cDec').innerHTML = (OWNER[d.brand] ? esc(OWNER[d.brand]) + "'S" : 'THE') + '<br>VERDICT'
+    stats(d); photo(d)
+  }
+
+  // 3 · REVEAL: the verdict lands on the contract screen, and stays there
+  function reveal(d){
+    seq++; cur = d
+    const yes = d.verdict === 'contract'
+    off($('board'))
+    // The split is filled in underneath first, still saying THE VERDICT: the
+    // banner only changes once the contract page has had its say.
+    fillSplit(d); banner(null); splitOn()
+    const c = $('contract')
+    // THE PAGE IS ALREADY UP AND HELD (the operator pressed Page and has been
+    // talking): land the word on it now, and stay. Split takes it away when
+    // they are ready. Pressing the other verdict lands again.
+    // ...but only when it is THIS fighter's page that is held. A verdict for
+    // somebody else must never land on the page with another name on it.
+    if(c.classList.contains('on') && c.classList.contains('hold') && heldFor === d.name){
+      $('cW').textContent = yes ? 'CONTRACT' : 'NO CONTRACT'
+      c.classList.remove('said','yes','no'); void c.offsetWidth
+      $('cLead').textContent = yes ? 'A UBA CONTRACT IS OFFERED TO' : 'THE DECISION ON'
+      c.classList.add('said', yes ? 'yes' : 'no')
+      banner(d.verdict)              // under the page, ready for the way back
+      return
+    }
+    // Pressed from anywhere else: the contract screen comes up for this
+    // fighter, the line draws its wait, and the word lands. It then STAYS, the
+    // same as every other screen here: one rule, nothing leaves by itself.
+    fillPage(d)
+    $('cW').textContent = yes ? 'CONTRACT' : 'NO CONTRACT'
+    c.classList.remove('off','said','yes','no','hold'); void c.offsetWidth
+    c.classList.add('on'); heldFor = d.name
+    later(T.build + T.wait, () => {
+      c.classList.add('said', yes ? 'yes' : 'no', 'hold')   // held from here: the other verdict would land again
+      if(yes) $('cLead').textContent = 'A UBA CONTRACT IS OFFERED TO'
+      banner(d.verdict)              // under the page, ready for the way back
+    })
+  }
+
+  // 2, BY HAND · the contract page brought up and HELD. No verdict on it and
+  // no timer: it waits for Contract / No contract, and then for Split.
+  function page(d){
+    seq++; cur = d
+    off($('board'))
+    fillSplit(d); banner(null); splitOn()        // underneath, for the way back
+    fillPage(d)
+    const c = $('contract')
+    c.classList.remove('off','said','yes','no'); void c.offsetWidth
+    c.classList.add('on','hold')
+    heldFor = d.name
+  }
+
+  // 4 · THE BOARD
+  function showBoard(d){
+    seq++
+    off($('contract')); off($('split'))
+    $('bSeries').textContent = (series(d) ? series(d) + ' · ' : '') + 'CONTENDER SERIES'
+    const rows = d.rows || [], box = $('brows')
+    prep(rows.map(r => r.name))
+    // One column to eight fighters, two beyond: a full card is twenty names.
+    const cols = rows.length > 8 ? 2 : 1, per = Math.ceil(rows.length / cols)
+    const h = Math.max(46, Math.min(112, Math.floor(680 / Math.max(1, per))))
+    const fs = Math.round(h * (cols === 2 ? .50 : .59))
+    box.style.gridTemplateColumns = `repeat(${cols}, minmax(0,1fr))`
+    box.style.gridAutoFlow = 'column'; box.style.gridTemplateRows = `repeat(${per}, ${h}px)`
+    box.innerHTML = rows.map((r, i) => {
+      const v = r.verdict === 'contract' ? `<span class="chev" style="font-size:${Math.round(fs * .8)}px"></span><span class="big yes" style="font-size:${fs}px">CONTRACT</span>`
+              : r.verdict === 'no_contract' ? `<span class="big no" style="font-size:${fs}px">NO CONTRACT</span>`
+              : `<span class="lab tc" style="font-size:${Math.max(14, Math.round(fs * .3))}px">TO COME</span>`
+      return `<div class="brow${r.cur ? ' cur' : ''}" style="transition-delay:${(.28 + i * .05).toFixed(2)}s">
+        <span class="big n" style="font-size:${fs}px;max-width:${cols === 2 ? 330 : 560}px">${esc(r.name)}</span>
+        <span class="lab r" style="font-size:${Math.max(13, Math.round(fs * .3))}px">${esc(r.res || '')}</span>
+        <span class="v">${v}</span></div>`
+    }).join('')
+    box.querySelectorAll('.brow .n').forEach(el => { let px = fs; while(px > 16 && el.scrollWidth > el.clientWidth + 1){ px -= 2; el.style.fontSize = px + 'px' } })
+    const b = $('board'); b.classList.remove('off'); void b.offsetWidth; b.classList.add('on')
+  }
+
+  function hideAll(){
+    seq++; cur = null; opened = false   // Hide ends the segment: the next Show opens it again
+    off($('split')); off($('contract')); off($('board'))
+  }
+
+  function handle(c){
+    if(!c || c.type !== 'contender') return
+    if(c.on === false){ hideAll(); return }
+    const d = c.d || {}
+    if(c.action === 'prep'){ prep(d.names); return }      // loads, shows nothing
+    if(c.action === 'show')    return showSplit(d)
+    if(c.action === 'page')    return page(d)
+    if(c.action === 'verdict') return reveal(d)
+    if(c.action === 'board')   return showBoard(d)
+  }
+  window.__cmd = handle
+
+  if(new URLSearchParams(location.search).has('demo')){
+    document.body.style.background = '#5d6975'
+    // Made-up names by default. Real ones only when somebody types them into
+    // the URL: a public page must not carry a real fighter's invented verdict.
+    const [nA, nB] = (new URLSearchParams(location.search).get('demo') || '').split(',').map(x => x.trim()).filter(Boolean)
+    const A = nA || 'Fighter A', B = nB || 'Fighter B'
+    const f = { brand:'CCS', number:1, name:A, opponent:B, bout:1, wc:'Heavyweight', won:true, method:'KO' }
+    const rows = v => [['Fighter C','Lightweight · won','contract'],['Fighter D','Lightweight · lost','no_contract'],[A,'Heavyweight · won KO',v,1],
+      [B,'Heavyweight · lost',null],['Fighter E','Welterweight · won',null],['Fighter F','Welterweight · lost',null]]
+      .map(([name,res,verdict,cur]) => ({ name, res, verdict, cur:!!cur }))
+    const go = (ms, c) => setTimeout(() => handle({ type:'contender', ...c }), ms)
+    // The demo loads its fighters first, the way a real night does when the
+    // card is loaded on the deck: a photo arriving a beat after its window
+    // has opened is not what the room will see.
+    prep([A, B]).then(() => Promise.all([...CUT.values()])).then(run, run)
+    function run(){
+    const g = { ...f, name:B, opponent:A, won:false, method:null }
+    go(500,   { action:'show',    d:{ ...f, verdict:null } })              // 1 · Split screen
+    go(5000,  { action:'verdict', d:{ ...f, verdict:'contract' } })        // 2 · Contract screen (the reveal)
+    go(13000, { action:'show',    d:{ ...f, verdict:'contract' } })        // 1 · Split screen, result on the banner
+    go(17000, { action:'board',   d:{ brand:'CCS', number:1, rows:rows('contract') } })   // 3 · Verdict board
+    go(22500, { action:'show',    d:{ ...g, verdict:null } })              // the next fighter
+    go(25500, { action:'verdict', d:{ ...g, verdict:'no_contract' } })
+    go(33000, { action:'show',    d:{ ...g, verdict:'no_contract' } })
+    }
+    return
+  }
+  // Riding inside overlay.html: the overlay passes the commands in.
+  if(new URLSearchParams(location.search).has('embed')){
+    addEventListener('message', e => { if(e.data && e.data.vgaCmd) handle(e.data.vgaCmd) })
+    return
+  }
+  sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, ({ payload:c }) => handle(c)).subscribe()
+})()
+</script>
+</body>
+</html>
