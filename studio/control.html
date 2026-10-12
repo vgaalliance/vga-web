@@ -788,6 +788,12 @@ channel.subscribe(s=>{ const el=document.getElementById('status')
 // the UBA one, which is centred -- so where they sit depends on which show is
 // running, and the overlay cannot know unless we tell it on every message.
 window.send=cmd=>{ if(cmd && cmd.league==null) cmd.league = EV
+  // ...and, while a Contender Series card is loaded, whose series it is. That
+  // one stamp is how every screen knows: the contender fight clock answers,
+  // the solo clock steps aside, and the overlay lifts its lower-left cards
+  // over the box. try/catch because CSN is declared further down this file and
+  // a send during load would otherwise meet it before it exists.
+  try{ if(cmd && CSN.brand && cmd.series==null){ cmd.series = CSN.brand; cmd.seriesNo = CSN.number } }catch(e){}
   const l=document.getElementById('log'); const d=document.createElement('div')
   const label=`${cmd.type}${cmd.on===false?' HIDE':''}`
   d.textContent=`TX ${label}…`; l.prepend(d)
@@ -2107,7 +2113,7 @@ window.csDemo=()=>{
   csGate(true)
   STG='verdicts'; drawRail()
   ubaDraw()
-  deckLog('CONTENDER DEMO — a made-up card, nothing from the database')
+  deckLog('CONTENDER DEMO — a made-up card, nothing from the database. Its buttons SEND for real: not during a live show')
 }
 if(location.hash==='#csdemo') window.addEventListener('load',()=>setTimeout(csDemo,400))
 // Typing #csdemo onto a deck that is already open changes the hash without

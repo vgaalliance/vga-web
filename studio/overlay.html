@@ -27,6 +27,11 @@
      Kept as a variable because it is still the right knob: if the clock ever
      grows past ~180px tall, this is the one number to raise. */
   :root[data-league="ubae"]{ --ll-lift:0px; }
+  /* A Contender Series night has its own clock in that same corner
+     (contender-fight-clock.html: bottom 28px, about 160px tall, so its top
+     edge is 188px up). The base 190px would sit the cards on its lid; 24 more
+     gives them the same air they have over the UBAe clock. */
+  :root[data-series="cs"]{ --ll-lift:24px; }
   /* THE SHARED SLOT. flash, the dossier and the keys card all sit at 190px
      because they are the same thing to a viewer: the one card in the bottom
      left. They are mutually exclusive in CODE (see slotShow) rather than by
@@ -512,6 +517,7 @@
     box-shadow:0 0 18px rgba(155,48,255,.4),inset 0 0 24px rgba(60,0,110,.4);
     padding:18px 22px 16px;}
   :root[data-league="ubae"] #cta{bottom:190px;}
+  :root[data-series="cs"] #cta{bottom:214px;}
   #cta.show{opacity:1;transform:translateX(0);}
   @keyframes ctacyc{
     0%{border-color:#ff0080}17%{border-color:#ff8c00}33%{border-color:#ffe000}
@@ -1078,6 +1084,10 @@ function handle(c){
   // The deck stamps league on every command, so this stays correct even if the
   // operator switches shows mid-session.
   if(c.league) document.documentElement.dataset.league = c.league
+  // ...and whether tonight's card is a Contender Series one, which puts a
+  // clock in the bottom-left on a GFL-league night. Read off the same commands
+  // as the league, so loading a different card puts the cards back down.
+  if(c.league) document.documentElement.dataset.series = c.series ? 'cs' : ''
   // The countdown push carries the branding: d.league is the display acronym
   // (UBA/UBAE/GFL/AMA — distinct from the lowercase layout stamp above) and
   // d.eventMain is the card name. Same push, so both scenes stay in sync.

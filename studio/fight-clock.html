@@ -1174,6 +1174,16 @@ function flipSwap(el, text){
     // gating on 'uba' alone would have made the deck's GFL mode look dead --
     // every press accepted by the deck and silently dropped here.
     if(c.league && c.league!=='uba' && c.league!=='gfl') return
+    // A CONTENDER SERIES night has its own clock (contender-fight-clock.html),
+    // and the deck stamps `series` on every command while such a card is
+    // loaded. Step aside rather than answer: both sources can then sit in the
+    // Match scene, and two clocks never share the screen. A plain GFL or UBA
+    // command carries no series, so nothing changes on any other night.
+    if(c.series){ document.querySelector('.hud-root').classList.add('off'); window._steppedAside = true; return }
+    // ...and come back by itself when the next card is an ordinary one. Only
+    // if THIS is what hid it: a clock the operator switched off stays off.
+    if(window._steppedAside && c.league){ window._steppedAside = false
+      document.querySelector('.hud-root').classList.remove('off') }
     // THE SKIN. Every command the deck sends carries its league, so the clock
     // re-themes itself off the same stamp it already gates on -- no second
     // scene, no second file, and a GFL card promoted mid-UBA-night is dressed
