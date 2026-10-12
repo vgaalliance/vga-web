@@ -8,13 +8,19 @@
      night, driven by stage 6 (Verdicts) on the deck. One source, three
      screens, in the order Castle set on 2026-10-12:
 
-       1. SPLIT     host and fighter windows, the banner reads THE VERDICT
-                    while they talk                              (Show)
-       2. CONTRACT  the reveal: a full-screen contract page, the verdict as
-                    its last line                    (Contract / No contract)
-       3. SPLIT     again, by itself, the banner now carrying the verdict
-       4. BOARD     the whole night, between fighters and at the end
-                                                               (Show board)
+       SPLIT SCREEN     host and fighter windows; the banner reads THE
+                        VERDICT, or the result once it has been revealed
+       CONTRACT SCREEN  THE REVEAL: a full-screen contract page comes up, a
+                        line draws its wait, and the verdict lands on it
+       VERDICT BOARD    the whole night, between fighters and at the end
+     (This page can also hold a contract screen with no answer on it, action
+     'page'. The deck does not send it: the talking is done on the split.)
+
+     ONE RULE: every button on the deck puts up one screen, and it stays until
+     another is pressed. Nothing here leaves by itself. (A first build had the
+     reveal return to the split on a timer when pressed from the split, and
+     hold when pressed from the contract screen: two behaviours for one button
+     is one too many on a live show.)
 
      The two windows in the split are HOLES: this page is transparent there,
      so the host and fighter cameras sit BEHIND this source in the scene.
@@ -282,7 +288,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   const OWNER = { MCS:'MAKI', CCS:'CASTLE', HPCS:'1HP' }
   // How long each beat of the reveal holds. The wait is the point of it: the
   // line draws for a second and a half before a word is said.
-  const T = { build:1300, wait:1900, holdYes:5200, holdNo:4600, out:520 }
+  const T = { build:1300, wait:1900, out:520 }
   const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
     'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
 
@@ -431,8 +437,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     stats(d); photo(d)
   }
 
-  // 2 → 3 · THE CONTRACT, then back to the split by itself (one press from
-  // the split), or the word landing on a page that is already held (by hand)
+  // 3 · REVEAL: the verdict lands on the contract screen, and stays there
   function reveal(d){
     seq++; cur = d
     const yes = d.verdict === 'contract'
@@ -454,17 +459,17 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
       banner(d.verdict)              // under the page, ready for the way back
       return
     }
+    // Pressed from anywhere else: the contract screen comes up for this
+    // fighter, the line draws its wait, and the word lands. It then STAYS, the
+    // same as every other screen here: one rule, nothing leaves by itself.
     fillPage(d)
     $('cW').textContent = yes ? 'CONTRACT' : 'NO CONTRACT'
     c.classList.remove('off','said','yes','no','hold'); void c.offsetWidth
-    c.classList.add('on')
+    c.classList.add('on'); heldFor = d.name
     later(T.build + T.wait, () => {
-      c.classList.add('said', yes ? 'yes' : 'no')
+      c.classList.add('said', yes ? 'yes' : 'no', 'hold')   // held from here: the other verdict would land again
       if(yes) $('cLead').textContent = 'A UBA CONTRACT IS OFFERED TO'
-    })
-    later(T.build + T.wait + (yes ? T.holdYes : T.holdNo), () => {
-      banner(d.verdict)              // changed while the page still covers it
-      off(c)
+      banner(d.verdict)              // under the page, ready for the way back
     })
   }
 
@@ -540,11 +545,14 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     // has opened is not what the room will see.
     prep([A, B]).then(() => Promise.all([...CUT.values()])).then(run, run)
     function run(){
-    go(500,   { action:'show', d:{ ...f, verdict:null } })
-    go(4000,  { action:'verdict', d:{ ...f, verdict:'contract' } })
-    go(15500, { action:'board', d:{ brand:'CCS', number:1, rows:rows('contract') } })
-    go(21500, { action:'show', d:{ ...f, name:B, won:false, method:null, verdict:null } })
-    go(24500, { action:'verdict', d:{ ...f, name:B, won:false, method:null, verdict:'no_contract' } })
+    const g = { ...f, name:B, opponent:A, won:false, method:null }
+    go(500,   { action:'show',    d:{ ...f, verdict:null } })              // 1 · Split screen
+    go(5000,  { action:'verdict', d:{ ...f, verdict:'contract' } })        // 2 · Contract screen (the reveal)
+    go(13000, { action:'show',    d:{ ...f, verdict:'contract' } })        // 1 · Split screen, result on the banner
+    go(17000, { action:'board',   d:{ brand:'CCS', number:1, rows:rows('contract') } })   // 3 · Verdict board
+    go(22500, { action:'show',    d:{ ...g, verdict:null } })              // the next fighter
+    go(25500, { action:'verdict', d:{ ...g, verdict:'no_contract' } })
+    go(33000, { action:'show',    d:{ ...g, verdict:'no_contract' } })
     }
     return
   }

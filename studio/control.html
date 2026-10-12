@@ -763,12 +763,11 @@
       <h5 style="margin-top:14px">② ON AIR — <span id="csNow">pick a fighter above</span></h5>
       <div class="row" style="margin-bottom:6px">
         <button id="csbSplit" onclick="csShow()">① Split screen</button>
-        <button id="csbPage" onclick="csPage()">② Contract screen</button>
-        <button id="csbReveal" onclick="csReveal()">③ Reveal verdict</button>
+        <button id="csbReveal" onclick="csReveal()">② Contract screen</button>
         <button id="csbBoard" onclick="csBoard()">▦ Verdict board</button>
         <button class="hide" onclick="csHide()">Hide all</button>
       </div>
-      <div style="color:var(--gdim);font-size:16px">Split screen = host + fighter, banner says THE VERDICT · Contract screen = the fighter's contract, held while you talk, no answer on it · Reveal verdict = the one you set lands · Verdict board = the whole night · nothing you set is shown until you reveal it</div>
+      <div style="color:var(--gdim);font-size:16px">Every button puts up ONE screen and it stays until you press another · Split screen = host + fighter, banner says THE VERDICT · Contract screen = the reveal: the fighter's contract comes up and the verdict you set lands on it · back to Split screen = the result is on the banner · Verdict board = the whole night</div>
       <div style="color:var(--gdim);font-size:16px;margin-top:4px">the saved record: admin panel → Results → Contender Series</div>
     </div>
   </div></div>
@@ -2149,11 +2148,12 @@ function csDraw(){
   document.getElementById('csNow').textContent = (f
     ? 'PICKED: '+f.name+(v ? ' · '+csWord(v)+(rev?' (revealed)':' (not shown yet)') : ' · no verdict set')
     : 'pick a fighter above')
-    + (CSN.scr==='board' ? '  ·  ON SCREEN: the verdict board' : up ? '  ·  ON SCREEN: '+up.name+' ('+(CSN.scr==='page'?'contract screen':'split screen')+')' : '  ·  ON SCREEN: nothing')
+    + (CSN.scr==='board' ? '  ·  ON SCREEN: the verdict board' : up ? '  ·  ON SCREEN: '+up.name+' ('+(CSN.scr==='page'?'contract screen, verdict revealed':'split screen')+')' : '  ·  ON SCREEN: nothing')
   const lit=(id,on)=>document.getElementById(id).classList.toggle('active',!!on)
   const mine=f&&CSN.air===CSN.sel
-  lit('csbSplit', mine&&CSN.scr==='split'); lit('csbPage', mine&&CSN.scr==='page'); lit('csbBoard', CSN.scr==='board')
-  document.getElementById('csbReveal').textContent = v ? '③ Reveal verdict: '+csWord(v) : '③ Reveal verdict'
+  lit('csbSplit', mine&&CSN.scr==='split'); lit('csbReveal', mine&&CSN.scr==='page'); lit('csbBoard', CSN.scr==='board')
+  // the contract screen IS the reveal, so its button says what it will reveal
+  document.getElementById('csbReveal').textContent = v ? '② Contract screen · reveals '+csWord(v) : '② Contract screen'
 }
 const csPayload=(b,side,verdict)=>({ brand:CSN.brand, number:CSN.number, event:UBA.name,
   name: side==='a'?b.a:b.b, opponent: side==='a'?b.b:b.a,
@@ -2190,24 +2190,19 @@ window.csShow=()=>{
   send({type:'contender', action:'show', d:csPayload(f.b,f.side,csShown(CSN.sel))})
   csDraw()
 }
-window.csPage=()=>{
-  const f=csNeed(); if(!f) return
-  CSN.scr='page'; CSN.air=CSN.sel
-  send({type:'contender', action:'page', d:csPayload(f.b,f.side,null)})
-  csDraw()
-}
-/* REVEAL lands the verdict that was set. From the split it plays the contract
-   page and comes back by itself; on a held page it lands there and stays until
-   Split is pressed. With no verdict set it does nothing and says why. */
+/* THE CONTRACT SCREEN IS THE REVEAL (Castle, 2026-10-12). One press: the
+   fighter's contract comes up, the line draws its wait, and the verdict that
+   was set lands on it. It stays, like every other screen here, until another
+   button is pressed. There is no contract screen without an answer: a separate
+   "hold it, then reveal" pair was one button more than the moment needs, and
+   the talking is done on the split. With no verdict set it does nothing and
+   says why. */
 window.csReveal=()=>{
   const f=csNeed(); if(!f) return
   const v=CSN.v[CSN.sel]
-  if(!v){ deckLog('no verdict set for '+f.name+' — tap Contract or No contract beside the name first'); return }
+  if(!v){ deckLog('no verdict set for '+f.name+' — tap Contract or No contract beside the name first, then the contract screen can reveal it'); return }
   CSN.rev[CSN.sel]=true; csSave()
-  // on a page that is held FOR THIS FIGHTER it lands there; otherwise the
-  // screen plays the whole reveal and ends on the split
-  if(!(CSN.scr==='page' && CSN.air===CSN.sel)) CSN.scr='split'
-  CSN.air=CSN.sel
+  CSN.scr='page'; CSN.air=CSN.sel      // a reveal always ends on the contract screen
   send({type:'contender', action:'verdict', d:csPayload(f.b,f.side,v)})
   csDraw()
 }
