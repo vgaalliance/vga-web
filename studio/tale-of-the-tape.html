@@ -1827,7 +1827,7 @@ editOverlay.addEventListener('click', (e) => {
   #ivOpen canvas{position:absolute; inset:0;}
   /* the mark's letters: type over the pane, one span each so they can leave separately */
   #ivOpen .op-letters{position:absolute; left:960px; top:540px; display:flex; gap:8px; perspective:900px; opacity:0; will-change:transform,opacity,filter;
-    font-family:'Anton','Bebas Neue',sans-serif; font-size:234px; line-height:1; color:#fff; text-transform:uppercase;}
+    font-family:'Anton','Bebas Neue',sans-serif; font-size:234px; line-height:1; color:#fff;}
   #ivOpen .op-letters span{display:block; will-change:transform,opacity;}
   #ivOpen .op-mid{position:absolute; left:0; top:0; transform-origin:0 0; opacity:0; will-change:transform,opacity;}
   #ivOpen .iv-openSub{position:absolute; left:0; right:0; top:784px; text-align:center; font-size:18px; font-weight:700; letter-spacing:5px; text-transform:uppercase; color:rgba(230,226,250,.8); opacity:0;}
@@ -2246,7 +2246,7 @@ editOverlay.addEventListener('click', (e) => {
       const room = +el.dataset.room, max = +el.dataset.max;
       const w = () => { const r = document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect().width };
       let size = max; el.style.fontSize = size + 'px';
-      while(size > 70 && w() > room){ size -= 4; el.style.fontSize = size + 'px' }
+      while(size > 44 && w() > room){ size -= 4; el.style.fontSize = size + 'px' }
       // How far the lock-up's names can grow for their opening: to 430px tall
       // type or 1640px wide, whichever comes first. A long name grows less.
       if(el.closest('#ivLock')) el.style.setProperty('--g', Math.max(1, Math.min(430/size, 1640/Math.max(1, w()))).toFixed(3));
@@ -2275,7 +2275,7 @@ editOverlay.addEventListener('click', (e) => {
   function score(ctx, t0, nA = 4, nB = 4, mode = 'open'){
     const T = times(mode);
     const bus = ctx.createGain(); bus.gain.value = 0.5;
-    const comp = ctx.createDynamicsCompressor(); bus.connect(comp); comp.connect(ctx.destination);
+    const comp = ctx.createDynamicsCompressor(); bus.connect(comp); comp.connect(ctx.destination); bus.__comp = comp;
     const nb = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), ch = nb.getChannelData(0);
     for(let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
     const noise = () => { const s = ctx.createBufferSource(); s.buffer = nb; s.loop = true; return s };
@@ -2335,7 +2335,7 @@ editOverlay.addEventListener('click', (e) => {
     try { bus = score(actx, actx.currentTime + 0.02, n('ivA'), n('ivB'), mode) } catch { bus = null }
   }
   function soundOff(){
-    if(bus && actx){ try { bus.gain.setTargetAtTime(0, actx.currentTime, 0.03); const b = bus; setTimeout(() => { try { b.disconnect() } catch {} }, 400) } catch {} }
+    if(bus && actx){ try { bus.gain.setTargetAtTime(0, actx.currentTime, 0.03); const b = bus; setTimeout(() => { try { b.disconnect(); if(b.__comp) b.__comp.disconnect() } catch {} }, 400) } catch {} }
     bus = null;
   }
 
@@ -2484,7 +2484,11 @@ editOverlay.addEventListener('click', (e) => {
         if(i >= w && !seen[i-w] && !ink(i-w)){ seen[i-w] = 2; r.push(i-w) } if(i < w*(h-1) && !seen[i+w] && !ink(i+w)){ seen[i+w] = 2; r.push(i+w) } }
       if(r.length < 40*K*K) continue; const cy = sy/r.length; if(!hole || cy > hole.cy) hole = { cx: sx/r.length, cy } }
     // w and h in screen pixels at rest; the hole as an offset from the letter's centre
-    return GLYPHS[ch] = { canvas: c, w: w/K, h: h/K, hx: hole ? (hole.cx - w/2)/K : 0, hy: hole ? (hole.cy - h/2)/K : 0, holed: !!hole };
+    const G = { canvas: c, w: w/K, h: h/K, hx: hole ? (hole.cx - w/2)/K : 0, hy: hole ? (hole.cy - h/2)/K : 0, holed: !!hole };
+    // kept only once the display face is really in: a letter drawn in the fallback
+    // face and cached would be the wrong shape for the rest of the night
+    if(!document.fonts || document.fonts.check('200px "Anton"')) GLYPHS[ch] = G;
+    return G;
   }
   // the beats, in seconds from the scene coming on
   const OP = { arrive:0.62, land:1.0, morph:2.0, zoom:2.2, through:3.85, run:2.55, runLen:3.7, dotA:5.1, dotB:5.55, arc:5.65 };
@@ -2499,7 +2503,8 @@ editOverlay.addEventListener('click', (e) => {
     const rotY = (P, a) => { const c = Math.cos(a), s = Math.sin(a); return [P[0]*c + P[2]*s, P[1], -P[0]*s + P[2]*c] };
     // the letters, one span each. The middle one keeps its place in the row but
     // is drawn by its own layer from the start, so there is never a swap.
-    box.textContent = ''; const chars = [...String(text).toUpperCase()], mid = Math.floor((chars.length - 1)/2);
+    // as the league writes it -- UBAe keeps its small e -- so no upper-casing here
+    box.textContent = ''; const chars = [...String(text)], mid = Math.floor((chars.length - 1)/2);
     const spans = chars.map((ch, i) => { const e = document.createElement('span'); e.textContent = ch; if(i === mid) e.style.visibility = 'hidden'; box.append(e); return e });
     const G = glyph(chars[mid]);
     midEl.width = G.canvas.width; midEl.height = G.canvas.height; midEl.style.width = G.w + 'px'; midEl.style.height = G.h + 'px'; midEl.getContext('2d').drawImage(G.canvas, 0, 0);
@@ -2510,7 +2515,14 @@ editOverlay.addEventListener('click', (e) => {
     let A = geoA.slice(), B = geoB.slice();
     if(Math.abs(A[0]-B[0]) < 1.5 && Math.abs(A[1]-B[1]) < 1.5){ A[1] -= 4; B[1] += 4 }
     const pa = G3.dir(A[0], A[1]), pb = G3.dir(B[0], B[1]), N = V.norm(V.add(pa, pb)), sep = Math.acos(Math.max(-1, Math.min(1, V.dot(pa, pb))));
-    const FAR = 52, PANE = 46, NEAR_D = Math.max(3.1, Math.min(4.2, 2.4 + sep*1.6)), AZ0 = 66*Math.PI/180;
+    // How close the camera ends. From d out, you see acos(1/d) round the globe
+    // from its middle, so two fighters half a world apart need the camera
+    // further back or both are over the horizon (New Zealand v Spain drew no
+    // dots and no names, just a line across the face). Capped at 6.7 so the
+    // globe never shrinks below about 300px; past that the two are pinned to
+    // the edge they are behind.
+    const need = 1/Math.cos(Math.min(81*Math.PI/180, sep/2 + 12*Math.PI/180));
+    const FAR = 52, PANE = 46, NEAR_D = Math.min(6.7, Math.max(3.1, Math.min(4.2, 2.4 + sep*1.6), need)), AZ0 = 66*Math.PI/180;
     const n0 = rotY(N, AZ0), hx = V.norm(V.cross([0,1,0], n0)), hy = V.cross(n0, hx), H = { c: V.mul(n0, PANE), x: hx, y: hy, z: n0 };
     const labs = [...sc.querySelectorAll('.iv-geoL')], head = sc.querySelector('.iv-geoHead'), pill = sc.querySelector('.iv-openPill'), sub = sc.querySelector('.iv-openSub');
     labs.forEach((el, i) => { el.querySelector('b').textContent = geoNames[i][0]; el.querySelector('i').textContent = geoNames[i][1]; el.style.opacity = 0 });
@@ -2535,6 +2547,7 @@ editOverlay.addEventListener('click', (e) => {
       g.beginPath(); trace(1); trace(.955); g.fillStyle = '#fff'; g.fill('evenodd'); g.restore();
     }
     function frame(){
+      if(!sc.classList.contains('on')){ openStop(); return }   /* the opening is over: 60 full-canvas redraws a second for nothing, under everything that follows */
       opRaf = requestAnimationFrame(frame);
       const t = (opClock && opClock.currentTime || 0)/1000, cam = camAt(t), prev = camAt(Math.max(0, t - 1/30)), Bz = G3.basis(cam), Bp = G3.basis(prev);
       g.clearRect(0, 0, 1920, 1080);
@@ -2554,9 +2567,13 @@ editOverlay.addEventListener('click', (e) => {
       const ch = V.norm(cam.pos), kk = 1/cam.d, seen = P => V.dot(P, ch) > kk, scr = P => G3.toScreen(G3.toView(P, cam, Bz), cam);
       const prog = io3(p(t, OP.arc, .8));
       if(prog > 0){ g.save(); g.shadowColor = 'hsla(276,100%,72%,.95)'; g.shadowBlur = 22; g.strokeStyle = 'hsl(276,100%,80%)'; g.lineWidth = 5; g.lineCap = 'round'; g.beginPath();
-        const n = 60; for(let i = 0; i <= n*prog; i++){ const u = i/n, q = scr(V.mul(G3.slerp(pa, pb, u), 1 + (0.07 + 0.16*Math.min(1, sep))*Math.sin(Math.PI*u))); i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]) }
+        const n = 60; let pen = false; for(let i = 0; i <= n*prog; i++){ const u = i/n, P0 = G3.slerp(pa, pb, u); if(!seen(P0)){ pen = false; continue }   /* round the back: lift the pen, never cut across the face */
+          const q = scr(V.mul(P0, 1 + (0.07 + 0.16*Math.min(1, sep))*Math.sin(Math.PI*u))); pen ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]); pen = true }
         g.stroke(); g.restore() }
-      [[pa, OP.dotA, aLeft], [pb, OP.dotB, !aLeft]].forEach(([P, at, left], i) => { const k = p(t, at, .35), q = scr(P), x = q[0], y = q[1], vis = seen(P);
+      [[pa, OP.dotA, aLeft], [pb, OP.dotB, !aLeft]].forEach(([P, at, left], i) => { const k = p(t, at, .35); let q = scr(P); const world = io3(p(t, OP.through - .3, .5)) > .5;
+        // over the horizon: pinned to the edge it is behind, so a fighter is never simply missing
+        if(!seen(P)){ const v = G3.toView(P, cam, Bz), m = Math.hypot(v[0], v[1]) || 1; q = [c0[0] + v[0]/m*R, c0[1] - v[1]/m*R] }
+        const x = q[0], y = q[1], vis = world;
         if(k > 0 && vis){ const pop = 1 + .9*(1-k)*(1-k), ring = ((t - at) % 1.4)/1.4;
           g.strokeStyle = 'hsla(276,100%,78%,' + (.7*(1-ring)) + ')'; g.lineWidth = 3; g.beginPath(); g.arc(x, y, 14 + 46*ring, 0, 7); g.stroke();
           g.fillStyle = 'hsl(276,100%,74%)'; g.beginPath(); g.arc(x, y, 17*pop, 0, 7); g.fill();
@@ -2618,7 +2635,9 @@ editOverlay.addEventListener('click', (e) => {
   // then() is playTape. It is called part-way through the push, so the tape
   // builds behind the lock-up while the camera is still going through it and
   // the frame is never empty in between.
+  let lastThen = null;
   function play(then){
+    lastThen = then;
     reset();
     root.style.display = 'block';
     fill();
@@ -2667,6 +2686,9 @@ editOverlay.addEventListener('click', (e) => {
 
   window.__playIntro = play;
   window.__cancelIntro = cancel;
+  // A matchup loaded mid-intro: the names on screen would no longer be the
+  // names the tape is about to show. Start again from the top on the new one.
+  window.__introReload = () => { if(root.style.display !== 'none' && lastThen) play(lastThen) };
   // One beat held still, for checking a layout: __introScene('ivLock').
   window.__introScene = id => { reset(); root.style.display = 'block'; fill(); scene(id) };
   // The score and its length, so a preview can render the same sound offline.
@@ -2906,6 +2928,7 @@ editOverlay.addEventListener('click', (e) => {
     const d=c.d||{}
     apply(d)
     remember(d, tapeShown)
+    if(window.__introReload) window.__introReload()
     // Loading a matchup does NOT reveal it. If it's already on screen the
     // entrance replays so the change is visible; if it isn't, it waits.
     // showTape, not playTape: the deck's one-press button loads and reveals
