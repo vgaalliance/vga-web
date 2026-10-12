@@ -98,6 +98,36 @@
   .panel{display:none;} .panel.on{display:block;}
   body.mode-team .only-uba{display:none !important;}
   body.mode-solo .only-ubae{display:none !important;}
+  /* ── FAN CAM: the roster wall and tonight's order ── */
+  .fcgrid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(300px,1fr);gap:22px;align-items:start;}
+  @media(max-width:1000px){.fcgrid{grid-template-columns:minmax(0,1fr);}}
+  .fcwall{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px;
+    max-height:560px;overflow-y:auto;padding-right:4px;}
+  button.fct::before,button.fct::after{content:none;}
+  button.fct{position:relative;padding:0;display:flex;flex-direction:column;text-align:left;overflow:hidden;
+    border-color:var(--gdim);box-shadow:none;min-width:0;}
+  button.fct:hover{background:transparent;color:var(--g);border-color:var(--g);text-shadow:0 0 6px rgba(58,255,110,.45);}
+  button.fct.sel{border-color:var(--g);box-shadow:0 0 14px rgba(58,255,110,.45);}
+  button.fct.nopic{opacity:.6;}
+  button.fct img,button.fct .np{width:100%;aspect-ratio:1;object-fit:cover;object-position:50% 0;display:block;background:#1a1426;}
+  button.fct .np{display:grid;place-items:center;font-size:14px;color:var(--gdim);text-align:center;}
+  button.fct b{font-weight:400;font-size:17px;line-height:1.05;padding:4px 6px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  button.fct small{font-size:14px;padding:0 6px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:18px;}
+  button.fct i{position:absolute;top:4px;font-style:normal;font-size:15px;padding:0 6px;border-radius:2px;text-shadow:none;}
+  button.fct i.n{left:4px;background:var(--g);color:var(--bg);}
+  button.fct i.t{right:4px;background:#ffce00;color:#201800;font-size:12px;}
+  button.fct i.t.v{background:#cc66ff;color:#14001f;}
+  .fclist{display:grid;gap:6px;}
+  .fcrow{display:flex;align-items:center;gap:8px;border:2px solid var(--gdim);border-radius:2px;padding:4px 6px;min-width:0;}
+  .fcrow.next{border-color:var(--g);}
+  .fcrow.live{border-color:#ff5d6c;box-shadow:0 0 12px rgba(255,93,108,.4);}
+  .fcrow img,.fcrow .np{width:44px;height:44px;object-fit:cover;object-position:50% 0;flex:none;background:#1a1426;display:grid;place-items:center;}
+  .fcrow .tx{flex:1;min-width:0;cursor:pointer;line-height:1.05;}
+  .fcrow .tx b{font-weight:400;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase;}
+  .fcrow .tx small{color:var(--gdim);font-size:15px;}
+  .fcrow.live .tx small{color:#ff8b96;}
+  .fcrow button{padding:2px 8px;font-size:17px;}
+  .fcrow button::before,.fcrow button::after{content:none;}
 
   /* uniform tiles — every box the same size regardless of name length */
   #oddsFights,#betFeed,#mnMatches,#ubaEvents{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;align-items:stretch;}
@@ -668,36 +698,47 @@
 
   <!-- ⑤ FAN CAM -->
   <div class="panel" data-panel="fancam"><div class="sec">
-    <h4>FAN CAM — the queue, built before the show</h4>
-    <!-- A QUEUE, not a search box. Typing a name while the scene is live is
-         where a typo becomes a blank plate on air, and searching mid-fight is
-         three actions when there should be one. Names go in before doors, get
-         checked against the database THEN, and on the night the only thing
-         anybody presses is Next. -->
-    <h5>The fans — one name per line, in the order you want them</h5>
-    <div class="row" style="align-items:flex-start">
-      <textarea id="fcQueue" rows="5" style="width:420px"
-        placeholder="Smokinem&#10;Boady&#10;Killer Kam"></textarea>
+    <h4>FAN CAM — pick the faces before doors, press Next on the night</h4>
+    <!-- A WALL OF FACES, not a text box. The old stage took names typed one per
+         line and checked them afterwards; a wall can only offer people who
+         exist, shows who has a picture before you pick them, and is one tap
+         each. The list is kept per event in this browser, so setting up
+         Saturday's show on Thursday survives closing the tab. -->
+    <div class="fcgrid">
       <div>
-        <div class="row"><button onclick="fcLoad()">✓ Check + load queue</button></div>
-        <div class="row"><span id="fcCheck" style="color:var(--gdim);font-size:15px">nothing loaded</span></div>
+        <h5>The roster — tap to add, tap again to remove</h5>
+        <div class="row">
+          <input id="fcFind" placeholder="FIND A NAME…" oninput="fcWall()">
+          <span id="fcFilters" class="row"></span>
+        </div>
+        <div id="fcWall" class="fcwall" style="margin-top:10px">LOADING ROSTER…</div>
+        <div class="row" style="margin-top:8px"><span id="fcWallNote" style="color:var(--gdim);font-size:15px"></span></div>
+      </div>
+      <div>
+        <h5>Tonight's order <span id="fcFor" style="text-transform:none"></span></h5>
+        <div class="row">
+          <button onclick="fcStep(-1)">◀ Prev</button>
+          <button onclick="fcStep(1)">▶ Next fan</button>
+          <button onclick="fcRepeat()">↻ Re-cut</button>
+          <button class="hide" onclick="fcHide()">■ Hide</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <span class="kitlbl">STAYS UP</span><span id="fcHold" class="row"></span>
+        </div>
+        <div id="fcNow" class="fclist" style="margin-top:10px"></div>
+        <div class="row" style="margin-top:8px"><span id="fcCheck" style="color:var(--gdim);font-size:15px"></span></div>
+        <div id="fcNudge" style="display:none">
+          <h5>Nudge <span id="fcNudgeWho"></span> — kept for next time</h5>
+          <div class="row">
+            <button onclick="fcNudge('dx',-1.5)">◀</button><button onclick="fcNudge('dx',1.5)">▶</button>
+            <button onclick="fcNudge('dy',14)">▲</button><button onclick="fcNudge('dy',-14)">▼</button>
+            <button onclick="fcNudge('ds',.05)">+ Bigger</button><button onclick="fcNudge('ds',-.05)">− Smaller</button>
+            <button class="hide" onclick="fcNudge(null)">Reset</button>
+          </div>
+        </div>
+        <div class="row" style="margin-top:12px"><button class="hide" onclick="fcClear()">Clear the list</button></div>
       </div>
     </div>
-    <h5>On the night</h5>
-    <div class="row">
-      <button onclick="fcStep(-1)">◀ Prev</button>
-      <button onclick="fcStep(1)">▶ Next fan</button>
-      <button onclick="fcRepeat()">↻ Re-cut current</button>
-      <button class="hide" onclick="send({type:'fancam',on:false})">■ Hide</button>
-    </div>
-    <div id="fcNow" style="margin-top:10px">QUEUE EMPTY</div>
-
-    <h5>Off-queue — somebody who was not on the list</h5>
-    <div class="row">
-      <input id="fcq" placeholder="QUERY FIGHTER NAME…" onkeydown="if(event.key==='Enter')searchFanCam()">
-      <button onclick="searchFanCam()">Search</button>
-    </div>
-    <div class="row" id="fcresults" style="margin-top:10px"></div>
   </div></div>
 
   <!-- ⑥ VERDICTS — Contender Series, the end of the night. A stage like the
@@ -782,104 +823,198 @@ const deckLog = t => {
 // no typing.
 
 
-// Fan cam. The scene can composite any fighter, but WHERE the person sits is a
-// property of the clip, not of the fighter, so the knobs stay in the browser
-// source's URL and the deck only says who.
-window.searchFanCam=async()=>{
-  const q=document.getElementById('fcq').value.trim(); if(!q) return
-  const box=document.getElementById('fcresults')
-  box.textContent='SEARCHING…'
-  const { data, error } = await sb.from('fighter_cards')
-    .select('slug,display_name,wins:headline_wins,losses:headline_losses,rank,is_champion')
-    .ilike('display_name','%'+q+'%').limit(6)
-  // supabase-js resolves {data:null,error} instead of throwing, so a failed
-  // query must not print "NO RECORD FOUND" over a working database — that
-  // sends an operator hunting for a fighter who is right there.
-  if(error){ box.textContent='SEARCH FAILED — '+error.message; return }
-  if(!data||!data.length){ box.textContent='NO RECORD FOUND'; return }
-  box.innerHTML=''
-  data.forEach(f=>{
-    const b=document.createElement('button')
-    b.innerHTML=`${f.display_name}<small>${f.wins}-${f.losses}${f.rank?' · #'+f.rank:''}${f.is_champion?' · CHAMP':''}</small>`
-    b.onclick=()=>send({type:'fancam', on:true, d:{ fighter:f.slug, name:f.display_name }})
-    box.appendChild(b)
-  })
-}
-
-// ── FAN CAM: the queue and the seats ─────────────────────────────────────
+// ── FAN CAM: the wall, the order, the seats ──────────────────────────────
 // The seats are assets/fancam/seats.json, one entry per clip, carrying the clip
-// AND its framing -- where the chair sits in frame is a property of the
-// footage, not of the graphic. Each fan gets the next seat in turn
-// (seat = position % seats.length), so two fans in a row are never in the same
-// chair and the order is reproducible rather than random. No seats.json and the
-// deck sends no clip, which is the single-loop behaviour the scene always had.
-let FC_SEATS = [], FC_Q = [], FC_AT = -1
-;(async function loadSeats(){
-  try{
-    const r = await fetch('assets/fancam/seats.json', {cache:'no-store'})
-    if(r.ok){ const j = await r.json(); if(Array.isArray(j)) FC_SEATS = j }
-  }catch(e){}
+// AND its framing. Each fan gets the next seat in turn (seat = position %
+// seats.length), so two fans in a row are never in the same chair and the
+// order is reproducible rather than random.
+// fans.json names the fighters who have a cut-out VIDEO instead of a photo; the
+// deck only reads it to badge them — the scene picks the file itself.
+let FC_SEATS = [], FC_FANS = {}, FC_ROSTER = null, FC_ROSTER_ERR = null
+let FC_Q = [], FC_AT = -1, FC_LIVE = null, FC_HOLD = 0, FC_FILTER = 'photo', FC_KEY = null
+const fcNorm = v => String(v ?? '').toLowerCase().replace(/[^a-z0-9]/g,'')
+const fcEsc = v => String(v ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))
+// localStorage can throw (private window, blocked site data). The deck must
+// work without it; it just forgets the list on reload.
+const fcGet = k => { try{ return JSON.parse(localStorage.getItem(k)) }catch(e){ return null } }
+const fcPut = (k, v) => { try{ localStorage.setItem(k, JSON.stringify(v)) }catch(e){} }
+const fcEvent = () => (window.UBA && UBA.name) || null
+const fcKeyNow = () => 'vga.fancam.q.' + (fcEvent() || 'no-event')
+let FC_NUDGE = fcGet('vga.fancam.nudge') || {}
+
+;(async function fcAssets(){
+  try{ const r = await fetch('assets/fancam/seats.json', {cache:'no-store'})
+    if(r.ok){ const j = await r.json(); if(Array.isArray(j)) FC_SEATS = j } }catch(e){}
+  try{ const r = await fetch('assets/fancam/fans.json', {cache:'no-store'})
+    if(r.ok){ const j = await r.json(); if(j && typeof j === 'object') Object.keys(j).forEach(k => FC_FANS[fcNorm(k)] = j[k]) } }catch(e){}
 })()
 
-// Checked HERE, before doors, against the same view the scene reads. A name
-// that matches nothing is worth knowing about while there is time to fix it;
-// found out live it is a blank plate with a stranger's name on it.
-window.fcLoad = async () => {
-  const lines = document.getElementById('fcQueue').value.split('\n')
-    .map(x => x.trim()).filter(Boolean)
-  const out = document.getElementById('fcCheck')
-  if(!lines.length){ FC_Q = []; FC_AT = -1; out.textContent = 'nothing loaded'; fcDraw(); return }
-  out.textContent = 'checking…'
+async function fcRoster(force){
+  if(FC_ROSTER && !force) return
   const { data, error } = await sb.from('fighter_cards')
-    .select('slug,display_name,profile_photo_url')
+    .select('slug,display_name,weight_class,rank,is_champion,team,profile_photo_url,profile_photo_thumb_url')
+    .order('display_name')
   // supabase-js resolves {data:null,error} rather than throwing, so a failed
-  // query must never be reported as "none of your fans exist".
-  if(error || !data){ out.textContent = 'CHECK FAILED — ' + (error && error.message || 'no data'); return }
-  const norm = v => String(v ?? '').toLowerCase().replace(/[^a-z0-9]/g,'')
-  FC_Q = lines.map(name => {
-    const f = data.find(c => norm(c.slug) === norm(name)) ||
-              data.find(c => norm(c.display_name) === norm(name)) || null
-    return { typed:name, slug:f && f.slug, name:(f && f.display_name) || name,
-             found:!!f, photo:!!(f && f.profile_photo_url) }
+  // read must never be drawn as an empty roster.
+  if(error || !data){ FC_ROSTER_ERR = (error && error.message) || 'no data'; return }
+  FC_ROSTER_ERR = null; FC_ROSTER = data
+}
+const fcBy = slug => (FC_ROSTER || []).find(f => f.slug === slug) || null
+const fcTonight = () => new Set(((window.UBA && UBA.bouts) || []).flatMap(b => [fcNorm(b.a), fcNorm(b.b)]))
+const fcTag = f => f.is_champion ? 'CHAMP' : (+f.rank > 0 ? '#' + f.rank : (f.team || ''))
+
+// Called whenever the stage is shown. The list belongs to the EVENT, so
+// loading a different card swaps to that card's list rather than carrying
+// Thursday's fans into Saturday.
+window.fcOpen = async () => {
+  await fcRoster()
+  if(fcKeyNow() !== FC_KEY){
+    FC_KEY = fcKeyNow()
+    const saved = fcGet(FC_KEY)
+    FC_Q = Array.isArray(saved) ? saved.filter(s => !FC_ROSTER || fcBy(s)) : []
+    FC_AT = -1; FC_LIVE = null
+    fcPrep()
+  }
+  fcFilters(); fcWall(); fcDraw()
+}
+function fcSave(){ fcPut(FC_KEY || fcKeyNow(), FC_Q); fcPrep() }
+// Send the list ahead so the scene has every face downloaded and measured
+// before its fan is cut to. Debounced: tapping six faces is one message.
+let fcPrepT = null
+function fcPrep(){ clearTimeout(fcPrepT)
+  fcPrepT = setTimeout(() => { if(FC_Q.length) send({ type:'fancam', prep:FC_Q.slice(0, 40) }) }, 900) }
+
+function fcFilters(){
+  const box = document.getElementById('fcFilters'); if(!box) return
+  box.innerHTML = ''
+  ;[['photo','Has a picture'],['ranked','Champs + ranked'],['team','On a team'],['all','Everyone']].forEach(([k, l]) => {
+    const b = document.createElement('button'); b.textContent = l
+    if(k === FC_FILTER) b.classList.add('active'); else b.classList.add('hide')
+    b.onclick = () => { FC_FILTER = k; fcFilters(); fcWall() }
+    box.appendChild(b) })
+  const h = document.getElementById('fcHold'); h.innerHTML = ''
+  ;[[0,'Until I hide'],[8,'8s'],[12,'12s']].forEach(([v, l]) => {
+    const b = document.createElement('button'); b.textContent = l
+    if(v === FC_HOLD) b.classList.add('active'); else b.classList.add('hide')
+    b.onclick = () => { FC_HOLD = v; fcFilters() }
+    h.appendChild(b) })
+}
+
+const FC_WALL_MAX = 96
+window.fcWall = () => {
+  const box = document.getElementById('fcWall'), note = document.getElementById('fcWallNote'); if(!box) return
+  if(!FC_ROSTER){ box.textContent = FC_ROSTER_ERR ? 'ROSTER FAILED TO LOAD — ' + FC_ROSTER_ERR : 'LOADING ROSTER…'
+    note.textContent = ''; return }
+  const q = fcNorm(document.getElementById('fcFind').value), tonight = fcTonight()
+  const hasPic = f => !!(f.profile_photo_url || FC_FANS[fcNorm(f.slug)])
+  let list = FC_ROSTER.filter(f =>
+    (q ? fcNorm(f.display_name).includes(q)           // a search looks at everyone
+       : FC_FILTER === 'photo' ? hasPic(f)
+       : FC_FILTER === 'ranked' ? (f.is_champion || +f.rank > 0)
+       : FC_FILTER === 'team' ? !!f.team : true))
+  // champions, then ranked, then the rest by name — the people most likely
+  // to be worth a cutaway are the ones you should not have to scroll for
+  const w = f => f.is_champion ? 0 : (+f.rank > 0 ? +f.rank : 999)
+  list.sort((a, b) => (hasPic(b) - hasPic(a)) || (w(a) - w(b)) || a.display_name.localeCompare(b.display_name))
+  const more = Math.max(0, list.length - FC_WALL_MAX)
+  box.innerHTML = ''
+  list.slice(0, FC_WALL_MAX).forEach(f => {
+    const at = FC_Q.indexOf(f.slug), pic = hasPic(f), vid = !!FC_FANS[fcNorm(f.slug)]
+    const b = document.createElement('button'); b.className = 'fct' + (at >= 0 ? ' sel' : '') + (pic ? '' : ' nopic')
+    const src = f.profile_photo_thumb_url || f.profile_photo_url
+    b.innerHTML = (src ? `<img loading="lazy" alt="" src="${fcEsc(src)}">` : '<span class="np">NO PICTURE</span>')
+      + (at >= 0 ? `<i class="n">${at + 1}</i>` : '')
+      + (vid ? '<i class="t v">VIDEO</i>' : tonight.has(fcNorm(f.display_name)) ? '<i class="t">FIGHTS TONIGHT</i>' : '')
+      + `<b>${fcEsc(f.display_name)}</b><small>${fcEsc(fcTag(f))}</small>`
+    b.title = f.display_name
+    b.onclick = () => fcToggle(f.slug)
+    box.appendChild(b)
   })
-  FC_AT = -1
-  const missing = FC_Q.filter(x => !x.found).length
-  const noPhoto = FC_Q.filter(x => x.found && !x.photo).length
-  out.innerHTML = FC_Q.length + ' loaded'
-    + (missing ? ' · <b style="color:#ff6b6b">' + missing + ' NOT FOUND</b>' : '')
-    + (noPhoto ? ' · ' + noPhoto + ' with no photo' : '')
-    + (FC_SEATS.length ? ' · ' + FC_SEATS.length + ' seats' : ' · no seats.json, single clip')
-  fcDraw()
+  if(!list.length) box.textContent = 'NOBODY MATCHES'
+  note.textContent = `${list.length} shown` + (more ? ` · ${more} more — type a name to narrow it` : '')
+    + (q ? '' : FC_FILTER === 'photo' ? ' · no picture = name only on air, so they are under EVERYONE' : '')
+}
+
+window.fcToggle = slug => {
+  const i = FC_Q.indexOf(slug)
+  if(i >= 0){ FC_Q.splice(i, 1); if(i <= FC_AT) FC_AT-- } else FC_Q.push(slug)
+  fcSave(); fcWall(); fcDraw()
+}
+window.fcMove = (i, d) => {
+  const j = i + d; if(j < 0 || j >= FC_Q.length) return
+  ;[FC_Q[i], FC_Q[j]] = [FC_Q[j], FC_Q[i]]
+  if(FC_AT === i) FC_AT = j; else if(FC_AT === j) FC_AT = i
+  fcSave(); fcWall(); fcDraw()
+}
+// Two presses, because alert()/confirm() are not something to rely on in an
+// OBS dock and one stray click must not wipe a list built over an afternoon.
+let fcClearArmed = 0
+window.fcClear = () => {
+  const out = document.getElementById('fcCheck')
+  if(Date.now() - fcClearArmed > 4000){ fcClearArmed = Date.now(); out.textContent = 'PRESS CLEAR AGAIN TO EMPTY THE LIST'; return }
+  fcClearArmed = 0; FC_Q = []; FC_AT = -1; fcSave(); fcWall(); fcDraw()
 }
 
 function fcSend(i){
-  const f = FC_Q[i]; if(!f) return
+  const slug = FC_Q[i]; if(!slug) return
+  const f = fcBy(slug) || { slug, display_name:slug }
   const seat = FC_SEATS.length ? FC_SEATS[i % FC_SEATS.length] : {}
-  send({ type:'fancam', on:true, d:{ fighter:f.slug || f.typed, name:f.name,
-    clip:seat.clip, x:seat.x, y:seat.y, scale:seat.scale, flip:seat.flip } })
+  const n = FC_NUDGE[slug] || {}
+  FC_AT = i; FC_LIVE = slug
+  send({ type:'fancam', on:true, d:{ fighter:f.slug, name:f.display_name,
+    clip:seat.clip, x:seat.x, y:seat.y, scale:seat.scale, flip:seat.flip,
+    dx:n.dx || 0, dy:n.dy || 0, ds:n.ds || 1, hold:FC_HOLD } })
   fcDraw()
 }
+window.fcCut = i => fcSend(i)
 // Manual, both ways. Nothing advances on a timer: the cut happens when the
 // director calls it, and going back one is the fix for cutting too early.
 window.fcStep = dir => {
   if(!FC_Q.length) return
-  FC_AT = Math.min(FC_Q.length - 1, Math.max(0, FC_AT + dir))
-  fcSend(FC_AT)
+  fcSend(Math.min(FC_Q.length - 1, Math.max(0, FC_AT + dir)))
 }
 window.fcRepeat = () => { if(FC_AT >= 0) fcSend(FC_AT) }
+window.fcHide = () => { FC_LIVE = null; send({ type:'fancam', on:false }); fcDraw() }
+
+// The nudge moves the fan who is up without re-cutting them, and is kept by
+// fighter — a pose that needs lifting needs it every time, in every seat.
+window.fcNudge = (k, by) => {
+  if(!FC_LIVE) return
+  if(k === null) delete FC_NUDGE[FC_LIVE]
+  else { const n = FC_NUDGE[FC_LIVE] || (FC_NUDGE[FC_LIVE] = { dx:0, dy:0, ds:1 })
+    n[k] = Math.round((n[k] + by) * 100) / 100
+    if(k === 'ds') n.ds = Math.min(1.5, Math.max(.6, n.ds)) }
+  fcPut('vga.fancam.nudge', FC_NUDGE)
+  const n = FC_NUDGE[FC_LIVE] || { dx:0, dy:0, ds:1 }
+  send({ type:'fancam', adjust:true, d:{ dx:n.dx, dy:n.dy, ds:n.ds } })
+}
 
 function fcDraw(){
   const box = document.getElementById('fcNow'); if(!box) return
-  if(!FC_Q.length){ box.textContent = 'QUEUE EMPTY'; return }
-  box.innerHTML = FC_Q.map((f, i) => {
+  document.getElementById('fcFor').textContent = fcEvent() ? '· saved for ' + fcEvent() : '· no card loaded, saved as a spare list'
+  const out = document.getElementById('fcCheck'), nb = document.getElementById('fcNudge')
+  nb.style.display = FC_LIVE ? 'block' : 'none'
+  if(FC_LIVE) document.getElementById('fcNudgeWho').textContent = (fcBy(FC_LIVE) || {}).display_name || FC_LIVE
+  if(!FC_Q.length){ box.textContent = 'NOBODY PICKED YET — TAP FACES ON THE LEFT'; out.textContent = ''; return }
+  box.innerHTML = ''
+  let noPic = 0
+  FC_Q.forEach((slug, i) => {
+    const f = fcBy(slug) || { slug, display_name:slug }
+    const pic = !!(f.profile_photo_url || FC_FANS[fcNorm(slug)]); if(!pic) noPic++
     const seat = FC_SEATS.length ? (i % FC_SEATS.length) + 1 : 1
-    const live = i === FC_AT
-    return '<span style="display:inline-block;margin:0 14px 6px 0;'
-      + (live ? 'color:#fff' : 'color:var(--gdim)') + '">'
-      + (live ? '▶ ' : '') + (i + 1) + '. ' + f.name
-      + (f.found ? '' : ' <b style="color:#ff6b6b">?</b>')
-      + ' <small style="opacity:.6">seat ' + seat + '</small></span>'
-  }).join('')
+    const row = document.createElement('div'); row.className = 'fcrow' + (slug === FC_LIVE ? ' live' : '') + (i === FC_AT + 1 ? ' next' : '')
+    const src = f.profile_photo_thumb_url || f.profile_photo_url
+    row.innerHTML = (src ? `<img alt="" src="${fcEsc(src)}">` : '<span class="np">—</span>')
+      + `<span class="tx" title="Cut to ${fcEsc(f.display_name)}"><b>${i + 1}. ${fcEsc(f.display_name)}</b>`
+      + `<small>${slug === FC_LIVE ? 'ON AIR · ' : i === FC_AT + 1 ? 'NEXT · ' : ''}seat ${seat}${pic ? '' : ' · NO PICTURE'}${FC_FANS[fcNorm(slug)] ? ' · VIDEO' : ''}</small></span>`
+    row.querySelector('.tx').onclick = () => fcCut(i)
+    ;[['▲', () => fcMove(i, -1)], ['▼', () => fcMove(i, 1)], ['✕', () => fcToggle(slug)]].forEach(([l, fn]) => {
+      const b = document.createElement('button'); b.className = 'hide'; b.textContent = l; b.onclick = fn; row.appendChild(b) })
+    box.appendChild(row)
+  })
+  out.innerHTML = FC_Q.length + ' picked'
+    + (noPic ? ' · <b style="color:#ff6b6b">' + noPic + ' with no picture</b>' : ' · every one has a picture')
+    + (FC_SEATS.length ? ' · ' + FC_SEATS.length + ' seats' : ' · no seats.json, single clip')
 }
 
 // ── VO HIGHLIGHT ─────────────────────────────────────────────────────────
@@ -1795,6 +1930,7 @@ function drawRail(){
     rail.appendChild(b)
   })
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on', p.dataset.panel===STG))
+  if(STG==='fancam' && window.fcOpen) fcOpen()   // the list belongs to the loaded card
 }
 
 window.setEv=ev=>{

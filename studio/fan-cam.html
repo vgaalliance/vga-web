@@ -16,6 +16,9 @@
      people. Pushed in and thrown out of focus, the same two layers read
      as one person near the camera with a crowd behind.
 
+     A FAN CAN BE A PHOTO OR A CUT-OUT VIDEO (fans.json) — see the media
+     cache. Either way:
+
      EVERY FIGHTER IS FRAMED THE SAME. The photo is measured when it
      loads (where the head starts, how wide it is) and scaled so every
      head lands the same size in the same place. The seat only says which
@@ -75,7 +78,7 @@
     animation:breathe 5.2s ease-in-out infinite;}
   @keyframes breathe{0%,100%{transform:translateY(0) rotate(-.15deg);}
                      50%{transform:translateY(-5px) rotate(.2deg);}}
-  #who img{position:absolute;display:block;max-width:none;
+  #who > *{position:absolute;display:block;max-width:none;
     filter:brightness(.93) saturate(.9) contrast(1.04)
            drop-shadow(0 0 26px rgba(0,0,0,.5));}
   /* Nothing to composite is a legitimate state — most of the roster has
@@ -211,10 +214,10 @@ const HEAD_TOP = 128    // px — and starts this far down the frame
 // A reading outside what a head can be is thrown away for the average, so a
 // raised glove makes a fighter slightly big rather than absurdly small.
 const HEAD_FRAC = .293
-function measure(img){
+function measure(img, nw, nh){
   const out = { top:.04, head:HEAD_FRAC }
   try{
-    const w = 140, h = Math.round(w * img.naturalHeight / img.naturalWidth)
+    const w = 140, h = Math.round(w * nh / nw)
     const c = document.createElement('canvas'); c.width = w; c.height = h
     const g = c.getContext('2d', { willReadFrequently:true }); g.drawImage(img, 0, 0, w, h)
     const a = g.getImageData(0, 0, w, h).data
@@ -234,37 +237,67 @@ function measure(img){
   return out
 }
 
-// ── the photo cache ─────────────────────────────────────────────────
-// The promise is kept, not the result, so two asks for one photo share one
-// download. The deck sends tonight's queue ahead (prep) and every photo is
+// ── the media cache ─────────────────────────────────────────────────
+// The promise is kept, not the result, so two asks for one fan share one
+// download. The deck sends tonight's queue ahead (prep) and every face is
 // here and measured before its fan is ever cut to.
-const PHOTOS = new Map()
-function photo(url){
-  if(!url) return Promise.resolve(null)
-  if(PHOTOS.has(url)) return PHOTOS.get(url)
-  const p = new Promise(res => {
+//
+// A FAN CAN BE A VIDEO. assets/fancam/fans.json names, per fighter slug, a
+// cut-out clip with a transparent background (WebM, VP9 with alpha — the one
+// transparent format OBS's browser plays). It is measured off its first frame
+// and framed exactly like a photo, so nothing downstream knows the
+// difference. No entry, or a clip that fails to load, is the photo.
+//
+//   { "boady": { "video": "fans/boady.webm", "dx": 0, "dy": 0, "ds": 1 } }
+let FANS = {}
+const MEDIA = new Map()
+function still(url){
+  return new Promise(res => {
     const im = new Image(); im.crossOrigin = 'anonymous'; im.alt = ''
-    im.onload = () => res({ img:im, m:measure(im) })
-    im.onerror = () => { PHOTOS.delete(url); res(null) }
+    im.onload = () => res({ el:im, w:im.naturalWidth, h:im.naturalHeight, m:measure(im, im.naturalWidth, im.naturalHeight) })
+    im.onerror = () => res(null)
     im.src = url
   })
-  PHOTOS.set(url, p)
+}
+function moving(url){
+  return new Promise(res => {
+    const v = document.createElement('video')
+    v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto'
+    const done = r => { v.onloadeddata = v.onerror = null; res(r) }
+    v.onloadeddata = () => done({ el:v, w:v.videoWidth, h:v.videoHeight, video:true,
+                                  m:measure(v, v.videoWidth, v.videoHeight) })
+    v.onerror = () => done(null)
+    setTimeout(() => done(null), 8000)
+    v.src = url; v.load()
+  })
+}
+// slug may be null (a photo passed by URL); url may be null (no photo at all)
+function media(slug, url){
+  const fan = (slug && FANS[norm(slug)]) || null
+  const key = (fan && fan.video) ? 'v:' + fan.video : url ? 'p:' + url : null
+  if(!key) return Promise.resolve(null)
+  if(MEDIA.has(key)) return MEDIA.get(key)
+  const p = (fan && fan.video
+      ? moving('assets/fancam/' + fan.video).then(r => r || (url ? still(url) : null))
+      : still(url))
+    .then(r => { if(!r) MEDIA.delete(key); else r.base = fan || {}; return r })
+  MEDIA.set(key, p)
   return p
 }
 
-let CUR = null      // { img, m } on screen now
+let CUR = null      // what is on screen now
 function frame(){
   if(!CUR) return
-  const { img, m } = CUR
-  const s = clamp(HEAD_W * KN.scale * KN.ds / (m.head * img.naturalWidth), .35, 1.6)
-  let w = img.naturalWidth * s, h = img.naturalHeight * s
-  let top = HEAD_TOP - KN.y - KN.dy - m.top * h
-  // never show the bottom edge of the photo — a waist that ends in mid-air
+  const { el, m, base } = CUR
+  const s = clamp(HEAD_W * KN.scale * KN.ds * num(base.ds, 1) / (m.head * CUR.w), .35, 1.6)
+  let w = CUR.w * s, h = CUR.h * s
+  let top = HEAD_TOP - KN.y - KN.dy - num(base.dy, 0) - m.top * h
+  // never show the bottom edge of the cut-out — a waist that ends in mid-air
   if(top + h < 1090) top = 1090 - h
-  img.style.width = w + 'px'; img.style.height = h + 'px'
-  img.style.left = (1920 * (KN.x + KN.dx) / 100 - w / 2) + 'px'
-  img.style.top = top + 'px'
-  img.style.transform = KN.flip ? 'scaleX(-1)' : 'none'
+  el.style.width = w + 'px'; el.style.height = h + 'px'
+  el.style.left = (1920 * (KN.x + KN.dx + num(base.dx, 0)) / 100 - w / 2) + 'px'
+  el.style.top = top + 'px'
+  el.style.transform = KN.flip ? 'scaleX(-1)' : 'none'
 }
 
 // ── the clips ───────────────────────────────────────────────────────
@@ -388,7 +421,7 @@ async function show(who, over){
   // the button now. Past the wait the cut goes without a face, and the face
   // lands when it lands.
   const [ph] = await Promise.all([
-    Promise.race([photo(url), wait(2600).then(() => undefined)]),
+    Promise.race([media(f && f.slug, url), wait(2600).then(() => undefined)]),
     Promise.race([setClip(over.clip || KN.clip), wait(1800)]),
   ])
   if(mine !== gen) return
@@ -404,10 +437,12 @@ async function show(who, over){
 
   rollClip()
   const holder = $('who')
-  const put = p => { CUR = p; holder.replaceChildren(p.img); frame(); holder.classList.remove('empty') }
+  const put = p => { if(CUR && CUR.video && CUR !== p) CUR.el.pause()
+    CUR = p; holder.replaceChildren(p.el); frame(); holder.classList.remove('empty')
+    if(p.video){ try{ p.el.currentTime = 0 }catch(e){} p.el.play().catch(() => {}) } }
   if(ph) put(ph)
   else { CUR = null; holder.classList.add('empty'); holder.replaceChildren()
-    if(ph === undefined && url) photo(url).then(p => { if(p && mine === gen) put(p) }) }
+    if(ph === undefined) media(f && f.slug, url).then(p => { if(p && mine === gen) put(p) }) }
 
   const name = over.name || (f && f.display_name) || (has(who) ? String(who) : 'FAN CAM')
   $('name').textContent = String(name).toUpperCase()
@@ -451,6 +486,10 @@ function seatKnobs(d){
 
 // Load the seat list, warm every clip, then come up. A missing seats.json is
 // not an error — it means the old single-clip behaviour.
+const fansP = fetch('assets/fancam/fans.json', { cache:'no-store' })
+  .then(r => r.ok ? r.json() : {})
+  .then(j => { if(j && typeof j === 'object') Object.keys(j).forEach(k => FANS[norm(k)] = j[k]) })
+  .catch(() => {})
 fetch('assets/fancam/seats.json', { cache:'no-store' })
   .then(r => r.ok ? r.json() : [])
   .then(list => {
@@ -469,7 +508,7 @@ fetch('assets/fancam/seats.json', { cache:'no-store' })
   // Up on load, so cutting to the scene in OBS shows something. Without
   // ?fighter= the room plays under a plain FAN CAM bug — the cutaway before
   // anyone is identified.
-  .finally(() => show(Q.get('fighter'), {}))
+  .finally(() => fansP.then(() => show(Q.get('fighter'), {})))
 
 // ── the wire ────────────────────────────────────────────────────────
 //   {type:'fancam', on:false}                    take it down
@@ -480,7 +519,7 @@ sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, ({ payload: c }) => {
   if(!c || c.type !== 'fancam') return
   const d = c.d || {}
   if(Array.isArray(c.prep)){
-    cards().then(data => c.prep.forEach(w => { const f = find(data, w); if(f) photo(f.profile_photo_url) }))
+    cards().then(data => c.prep.forEach(w => { const f = find(data, w); if(f) media(f.slug, f.profile_photo_url) }))
     return
   }
   if(c.adjust){

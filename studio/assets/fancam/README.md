@@ -32,3 +32,22 @@ the footage, not of the graphic; a seat added here needs no edit to
 
 Without this file the deck sends no clip and the scene falls back to
 `loop.webm` / `loop.mp4`, which is the single-clip behaviour it always had.
+
+## fans.json — a fan who is a video
+
+A fighter can have a cut-out VIDEO instead of their photo. Put the clip in
+`fans/` and name it here, by fighter slug:
+
+```json
+{ "boady": { "video": "fans/boady.webm", "dx": 0, "dy": 0, "ds": 1 } }
+```
+
+- **The clip must be WebM, VP9, with an alpha channel** (transparent
+  background). That is the one transparent video format OBS's browser plays;
+  a ProRes 4444 or HEVC-alpha export shows a black box. From a roto'd master:
+  `ffmpeg -i in.mov -c:v libvpx-vp9 -pix_fmt yuva420p -b:v 1500k -an out.webm`
+- Head and shoulders at the top of frame, cropped at the waist or lower, a few
+  seconds, loops. It is measured off its first frame and framed like a photo.
+- `dx` (% of frame), `dy` (px up), `ds` (size) are optional and tune that one
+  clip. No entry, or a clip that fails to load, falls back to the photo.
+- The deck badges these fighters VIDEO on the roster wall.
