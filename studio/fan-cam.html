@@ -5,19 +5,30 @@
 <title>VGA — Fan Cam</title>
 <!-- ============================================================
      FAN CAM — a whole scene, like standby and the loading bar, not a
-     corner bug. The clip fills the frame, the fighter is composited
-     into it, and a UFC-style name bug names who you are looking at.
+     corner bug. A crowd clip fills the frame, a fighter is composited
+     in front of it, and a name bug says who you are looking at.
 
-     THE CLIP IS A PROPERTY OF THE SHOOT, NOT OF THIS FILE. Where the
-     chair sits in frame, how big the person is, which way they face —
-     none of that is knowable here, so all of it is dialled in from the
-     URL (?x= ?y= ?scale= ?flip=) and nothing is baked in. Change the
-     clip, change the URL; this file does not need touching.
+     THE SHOT IS A TELEPHOTO CUTAWAY. The fighter is close to the lens,
+     chest-up, and the crowd behind is out of focus. That is a decision,
+     not a style: the cut-outs are in-ring renders about three times the
+     size of anybody in the clips, and for a year this file stood one in
+     front of a sharp wide shot — a giant in front of a crowd of small
+     people. Pushed in and thrown out of focus, the same two layers read
+     as one person near the camera with a crowd behind.
 
-     A missing clip falls back to a lit-seat gradient rather than
-     black. A scene that renders black looks identical to a scene that
-     crashed, and on air that costs a director thirty seconds of
-     wondering which one it is.
+     EVERY FIGHTER IS FRAMED THE SAME. The photo is measured when it
+     loads (where the head starts, how wide it is) and scaled so every
+     head lands the same size in the same place. The seat only says which
+     clip, which side of frame and how tight; the deck can nudge one
+     fighter on top of that, live.
+
+     A CUT IS ONE EVENT. The photo and the clip are both made ready
+     BEFORE anything on screen changes, then swapped together under a
+     short flash. The name never sits over the wrong face, and never
+     over an empty frame while a 1.6MB photo comes down the wire.
+
+     A missing clip falls back to a lit room rather than black. A scene
+     that renders black looks identical to a scene that crashed.
      ============================================================= -->
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Barlow+Condensed:wght@500;700;900&family=Barlow:wght@500;600&display=swap');
@@ -30,56 +41,66 @@
 
   /* ── the plate ────────────────────────────────────────────────────
      Everything lives inside one element so the whole scene can be cut
-     in and out as a unit. Hidden by default is WRONG here: this is a
-     scene, and an OBS scene that renders nothing when you cut to it is
-     indistinguishable from a dead browser source. It comes up live. */
-  #cam{position:fixed;inset:0;opacity:0;transform:scale(1.03);
-    transition:opacity .6s cubic-bezier(.16,1,.3,1), transform .6s cubic-bezier(.16,1,.3,1);}
-  #cam.on{opacity:1;transform:none;}
+     in and out as a unit. It comes up live: an OBS scene that renders
+     nothing when you cut to it is indistinguishable from a dead source. */
+  #cam{position:fixed;inset:0;opacity:0;overflow:hidden;background:#05000d;
+    transition:opacity .5s cubic-bezier(.16,1,.3,1);}
+  #cam.on{opacity:1;}
 
-  /* the clip, and the floor under it */
-  #bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
-    background:#05000d;}
-  /* The fallback. Not a placeholder card that says "no video" — that is a
-     graphic nobody wants on air. A dark room with one seat lit from above,
-     which is what the clip is a photograph of. */
+  /* ── the room: the clip, out of focus, with a slow push ───────────
+     The blur is what sells the scale (see the note at the top), and it
+     also hides the join when a three-second clip loops. The push never
+     stops, because a locked-off frame with a still cut-out in it is a
+     photograph, and this is meant to be a camera. */
+  #room{position:absolute;inset:-4%;transform-origin:50% 46%;
+    animation:push 16s ease-in-out infinite alternate;}
+  @keyframes push{from{transform:scale(1.10);}to{transform:scale(1.19) translateX(-.8%);}}
+  #room video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+    opacity:0;transition:opacity .55s linear;
+    filter:blur(5px) brightness(1.08) saturate(1.02);}
+  #room video.up{opacity:1;}
+  /* The fallback. Not a card that says "no video" — a dark room lit from
+     above, which is what the clip is a picture of. */
   #floor{position:absolute;inset:0;background:
     radial-gradient(ellipse 46% 34% at 50% 74%, rgba(155,48,255,.16), transparent 70%),
     radial-gradient(ellipse 26% 52% at 50% 20%, rgba(204,102,255,.13), transparent 72%),
     linear-gradient(180deg,#0a0118 0%,#12042a 42%,#07000f 100%);}
-  #floor.hide{display:none;}
 
   /* ── the fighter ──────────────────────────────────────────────────
-     Composited into the clip, not pasted over it: a contact shadow
-     under the feet and a light wrap on the edge, so the cut-out sits in
-     the room instead of floating in front of it. */
-  #who{position:absolute;left:50%;bottom:0;transform-origin:50% 100%;
-    display:flex;align-items:flex-end;justify-content:center;
-    filter:drop-shadow(0 22px 40px rgba(0,0,0,.72));}
-  #who img{display:block;max-height:none;height:auto;
-    /* the wrap: a faint rim in the room's own violet, so the cut-out's
-       hard edge is not the brightest line in the frame */
-    filter:drop-shadow(0 0 22px rgba(155,48,255,.35)) contrast(1.03) saturate(1.04);}
-  #who.flip img{transform:scaleX(-1);}
-  /* the contact shadow — an ellipse on the floor, under the cut-out */
-  #shade{position:absolute;left:50%;bottom:0;transform:translate(-50%,42%);
-    width:52%;height:70px;border-radius:50%;
-    background:radial-gradient(ellipse at center,rgba(0,0,0,.62),transparent 70%);}
-  /* Nothing to composite is a legitimate state — 2 of 343 fighters have a
-     photo. The bug still names them and the clip still plays. */
+     Sized and placed by frame() from the measured photo. Graded DOWN to
+     the room: the renders are lit for a white studio and the clips are a
+     night arena, and the brightest thing in a frame is where the eye
+     goes to find the seam. No coloured glow — a halo is a cut-out line. */
+  #who{position:absolute;left:0;top:0;width:0;height:0;
+    animation:breathe 5.2s ease-in-out infinite;}
+  @keyframes breathe{0%,100%{transform:translateY(0) rotate(-.15deg);}
+                     50%{transform:translateY(-5px) rotate(.2deg);}}
+  #who img{position:absolute;display:block;max-width:none;
+    filter:brightness(.93) saturate(.9) contrast(1.04)
+           drop-shadow(0 0 26px rgba(0,0,0,.5));}
+  /* Nothing to composite is a legitimate state — most of the roster has
+     no photo. The bug still names them and the room still plays. */
   #who.empty{display:none;}
 
   /* ── grade + CRT, the same treatment every other scene wears ────── */
   #grade{position:absolute;inset:0;pointer-events:none;
-    background:linear-gradient(180deg,rgba(4,0,12,.42) 0%,transparent 26%,transparent 52%,rgba(4,0,12,.72) 100%);}
+    background:linear-gradient(180deg,rgba(4,0,12,.22) 0%,transparent 22%,transparent 56%,rgba(4,0,12,.66) 100%),
+               linear-gradient(90deg,rgba(60,10,110,.16),transparent 40%,transparent 70%,rgba(60,10,110,.10));}
   #vig{position:absolute;inset:0;pointer-events:none;
-    background:radial-gradient(ellipse at center,transparent 54%,rgba(0,0,0,.66) 100%);}
+    background:radial-gradient(ellipse at center,transparent 58%,rgba(0,0,0,.42) 100%);}
   #crt{position:absolute;inset:0;pointer-events:none;
-    background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1px,transparent 1px 3px);}
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.10) 0 1px,transparent 1px 3px);}
+
+  /* ── the cut ──────────────────────────────────────────────────────
+     Six frames of light over the swap. It is there to HIDE the swap, so
+     it peaks exactly when the photo and the clip change underneath. */
+  #flash{position:absolute;inset:0;pointer-events:none;opacity:0;
+    background:radial-gradient(ellipse at 55% 45%,rgba(235,215,255,.95),rgba(155,48,255,.75) 60%,rgba(40,0,80,.9));}
+  #flash.go{animation:flash .42s ease-out;}
+  @keyframes flash{0%{opacity:0;}26%{opacity:1;}100%{opacity:0;}}
 
   /* ── the LIVE tally, top-right ────────────────────────────────────
-     What tells you this is a cutaway and not a still. Slow pulse, not a
-     blink: a fast blink reads as an error light. */
+     Slow pulse, not a blink: a fast blink reads as an error light. */
   #tally{position:absolute;top:54px;right:60px;display:flex;align-items:center;gap:12px;
     padding:10px 20px 10px 16px;background:rgba(8,0,18,.78);
     border:1px solid rgba(155,48,255,.34);border-radius:6px;
@@ -96,45 +117,42 @@
     transform:translateX(-125%);opacity:0;
     background:linear-gradient(135deg,rgba(20,4,38,.96),rgba(6,0,14,.97));
     box-shadow:0 22px 55px rgba(0,0,0,.62),0 0 0 1px rgba(155,48,255,.2);}
-  #bug.in{animation:bin .6s cubic-bezier(.16,1,.3,1) .35s forwards;}
+  #bug.in{animation:bin .5s cubic-bezier(.16,1,.3,1) .12s forwards;}
   @keyframes bin{to{transform:translateX(0);opacity:1;}}
-  /* The bug's three lines land in reading order once the plate has slid in,
-     rather than arriving pre-written. The eyebrow is a label so it goes first
-     and gets out of the way; the name is the graphic. */
-  #cam.on #eyebrow{animation:lineup .38s cubic-bezier(.16,1,.3,1) .70s backwards;}
-  #cam.on #name   {animation:lineup .42s cubic-bezier(.16,1,.3,1) .82s backwards;}
-  #cam.on #sub    {animation:lineup .38s cubic-bezier(.16,1,.3,1) .98s backwards;}
+  #bug.in #eyebrow{animation:lineup .34s cubic-bezier(.16,1,.3,1) .36s backwards;}
+  #bug.in #name   {animation:lineup .38s cubic-bezier(.16,1,.3,1) .46s backwards;}
+  #bug.in #sub    {animation:lineup .34s cubic-bezier(.16,1,.3,1) .58s backwards;}
   @keyframes lineup{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
-  /* the cut-out settles rather than snapping — it is meant to be IN the room */
-  #cam.on #who{animation:settle .9s cubic-bezier(.16,1,.3,1) backwards;}
-  @keyframes settle{from{opacity:0;transform:translateX(-50%) scale(1.04);}
-                      to{opacity:1;}}
-  /* the tally light fades up last, because it is the thing that says LIVE and
-     a live light that is already on when the scene cuts in says nothing */
-  #cam.on #tally{animation:lineup .4s ease .55s backwards;}
   #bug .accent{width:14px;flex:0 0 14px;background:var(--pur);box-shadow:0 0 26px var(--pur);}
   #bug .bd{padding:17px 42px 19px 26px;min-width:0;}
   #eyebrow{font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.24em;
-    color:var(--hi);text-shadow:0 0 13px rgba(204,102,255,.6);margin-bottom:11px;}
+    color:var(--hi);text-shadow:0 0 13px rgba(204,102,255,.6);margin-bottom:11px;white-space:nowrap;}
   #name{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:78px;
     line-height:.9;text-transform:uppercase;letter-spacing:.006em;
     text-shadow:0 0 34px rgba(155,48,255,.6);white-space:nowrap;}
-  #sub{font:600 25px 'Barlow',sans-serif;color:var(--dim);margin-top:10px;letter-spacing:.04em;}
+  #sub{font:600 25px 'Barlow',sans-serif;color:var(--dim);margin-top:10px;letter-spacing:.04em;white-space:nowrap;}
   #sub b{color:var(--gold);font-weight:600;}
   #sub.gone{display:none;}
+
+  /* ?mon=1 — the deck's monitor. Same scene, nothing extra to hide; the
+     class is here so the deck can tell its preview from the air copy. */
 </style>
 </head>
 <body>
 
 <div id="cam">
-  <div id="floor"></div>
-  <video id="bg" autoplay muted loop playsinline></video>
+  <div id="room">
+    <div id="floor"></div>
+    <video id="bgA" muted playsinline preload="auto"></video>
+    <video id="bgB" muted playsinline preload="auto"></video>
+  </div>
 
-  <div id="who"><div id="shade"></div><img id="portrait" alt=""></div>
+  <div id="who" class="empty"></div>
 
   <div id="grade"></div>
   <div id="vig"></div>
   <div id="crt"></div>
+  <div id="flash"></div>
 
   <div id="tally"><span class="dot"></span><span id="tallyText">FAN CAM</span></div>
 
@@ -157,93 +175,168 @@ const $ = id => document.getElementById(id)
 const Q = new URLSearchParams(location.search)
 const has = v => v !== null && v !== undefined && String(v).trim() !== ''
 const norm = s => String(s ?? '').trim().toLowerCase()
+const num = (v, d) => (v === null || v === undefined || v === '' || isNaN(+v)) ? d : +v
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v))
+const wait = ms => new Promise(r => setTimeout(r, ms))
 
 // ============================================================
-// THE KNOBS. All live in the URL, none baked in — see the note at the
-// top of the file. Defaults put the cut-out centred and standing on the
-// bottom edge, which is right for a clip shot square on.
+// THE KNOBS. A seat sets the first five; the deck can nudge one
+// fighter on top with the last three.
 //
-//   ?clip=loop.webm   which file in assets/fancam/ to play
-//   ?x=52             horizontal centre of the cut-out, % of frame
-//   ?y=0              how far off the bottom edge it stands, px
-//   ?scale=1.0        1.0 = the cut-out is 88% of frame height
-//   ?flip=1           mirror it, for a clip lit from the other side
+//   ?clip=seat-1.mp4  which file in assets/fancam/ to play
+//   ?x=60             horizontal centre of the fighter, % of frame
+//   ?y=0              lift, px (positive = higher in frame)
+//   ?scale=1.0        1.0 = the head is 270px wide
+//   ?flip=1           mirror the fighter
+//   ?dx= ?dy= ?ds=    one fighter's nudge: % , px , multiplier
 //   ?fighter=slug     who to look up (slug or display name)
 //   ?eyebrow= ?sub=   override the two text lines
 // ============================================================
 const KN = {
   clip : Q.get('clip') || null,
-  x    : Number(Q.get('x')) || 52,
-  y    : Number(Q.get('y')) || 0,
-  scale: Number(Q.get('scale')) || 1,
+  x    : num(Q.get('x'), 60),
+  y    : num(Q.get('y'), 0),
+  scale: num(Q.get('scale'), 1),
   flip : Q.get('flip') === '1',
+  dx   : num(Q.get('dx'), 0), dy: num(Q.get('dy'), 0), ds: num(Q.get('ds'), 1),
 }
-function place(){
-  const who = $('who')
-  who.style.left = KN.x + '%'
-  who.style.bottom = KN.y + 'px'
-  who.style.transform = `translateX(-50%) scale(${KN.scale})`
-  who.classList.toggle('flip', KN.flip)
-  $('portrait').style.height = Math.round(1080 * 0.88) + 'px'
-}
-place()
+const HEAD_W = 270      // px — every head lands this wide at scale 1
+const HEAD_TOP = 128    // px — and starts this far down the frame
 
-// ── the clip ────────────────────────────────────────────────────────
-// webm first, mp4 second, gradient third. Each step down is silent and
-// automatic: an operator who has not shot the clip yet should get a
-// usable scene, not a broken one.
-const vid = $('bg')
-// SEATS FIRST, THEN THE OLD SINGLE-CLIP NAMES.
-// This defaulted to loop.webm / loop.mp4 and nothing else — but the clips that
-// actually shipped are seat-1.mp4, seat-2.mp4, seat-3.mp4, listed in
-// seats.json. So a source added to OBS and left alone found no clip, fell back
-// to the empty floor, and showed the name bug over nothing. It looked like a
-// broken scene and was really a scene waiting for a filename that was never
-// going to exist.
-//
-// seats.json is fetched at load and its FIRST entry becomes the default, with
-// that seat's framing — so the scene looks right the moment it is added,
-// before anybody touches the deck. The deck still overrides both.
-let SEATS = []
-function playClip(name){
-  const fromSeats = SEATS.length ? [SEATS[0].clip] : []
-  const tries = name ? [name] : [...fromSeats, 'loop.webm', 'loop.mp4']
-  let i = 0
-  const next = () => {
-    if(i >= tries.length){
-      // nothing played — leave the lit-seat floor showing and say so once
-      vid.style.display = 'none'; $('floor').classList.remove('hide')
-      console.warn('[fancam] no clip in assets/fancam/ — using the fallback floor')
-      return
+// ── measuring a photo ───────────────────────────────────────────────
+// The cut-outs all come off the photo desk at 1400x2160, but how much of
+// that the person fills is the pose's business: a head down and hooded, a
+// guard up beside the jaw. Read the alpha once, small, and find the head —
+// the first place the silhouette is widest before it narrows to a neck.
+// A reading outside what a head can be is thrown away for the average, so a
+// raised glove makes a fighter slightly big rather than absurdly small.
+const HEAD_FRAC = .293
+function measure(img){
+  const out = { top:.04, head:HEAD_FRAC }
+  try{
+    const w = 140, h = Math.round(w * img.naturalHeight / img.naturalWidth)
+    const c = document.createElement('canvas'); c.width = w; c.height = h
+    const g = c.getContext('2d', { willReadFrequently:true }); g.drawImage(img, 0, 0, w, h)
+    const a = g.getImageData(0, 0, w, h).data
+    const row = y => { let n = 0; for(let x = 0; x < w; x++) if(a[(y*w + x)*4 + 3] > 40) n++; return n }
+    let top = -1; for(let y = 0; y < h; y++) if(row(y) > 2){ top = y; break }
+    if(top < 0) return out
+    out.top = top / h
+    let mx = 0, at = 0
+    for(let y = top; y < top + h * .42 && y < h; y++){
+      const n = row(y)
+      if(n > mx){ mx = n; at = y }
+      else if(mx && n < mx * .8 && y - at > 2){ const f = mx / w
+        if(f > .22 && f < .37) out.head = f
+        break }
     }
-    vid.src = 'assets/fancam/' + tries[i++]
-    vid.load()
-  }
-  vid.onerror = next
-  vid.onloadeddata = () => { $('floor').classList.add('hide'); vid.style.display = '' }
-  next()
+  }catch(e){ /* a tainted canvas is not worth a missing fighter */ }
+  return out
 }
-// Load the seat list, then start the clip. A failed or missing seats.json is
-// not an error — it just means the old single-clip behaviour, which is what
-// this file did before seats existed.
-fetch('assets/fancam/seats.json', { cache:'no-store' })
-  .then(r => r.ok ? r.json() : [])
-  .then(list => {
-    SEATS = Array.isArray(list) ? list : []
-    // adopt the first seat's framing too, unless the URL already set it —
-    // the position of the chair is a property of the clip, so a default clip
-    // with someone else's x/y would sit the fighter beside the chair
-    if(SEATS.length && !KN.clip){
-      const s0 = SEATS[0]
-      if(Q.get('x') == null && s0.x != null) KN.x = +s0.x
-      if(Q.get('y') == null && s0.y != null) KN.y = +s0.y
-      if(Q.get('scale') == null && s0.scale != null) KN.scale = +s0.scale
-      if(Q.get('flip') == null && s0.flip != null) KN.flip = !!s0.flip
-      place()
-    }
+
+// ── the photo cache ─────────────────────────────────────────────────
+// The promise is kept, not the result, so two asks for one photo share one
+// download. The deck sends tonight's queue ahead (prep) and every photo is
+// here and measured before its fan is ever cut to.
+const PHOTOS = new Map()
+function photo(url){
+  if(!url) return Promise.resolve(null)
+  if(PHOTOS.has(url)) return PHOTOS.get(url)
+  const p = new Promise(res => {
+    const im = new Image(); im.crossOrigin = 'anonymous'; im.alt = ''
+    im.onload = () => res({ img:im, m:measure(im) })
+    im.onerror = () => { PHOTOS.delete(url); res(null) }
+    im.src = url
   })
-  .catch(() => {})
-  .finally(() => playClip(KN.clip))
+  PHOTOS.set(url, p)
+  return p
+}
+
+let CUR = null      // { img, m } on screen now
+function frame(){
+  if(!CUR) return
+  const { img, m } = CUR
+  const s = clamp(HEAD_W * KN.scale * KN.ds / (m.head * img.naturalWidth), .35, 1.6)
+  let w = img.naturalWidth * s, h = img.naturalHeight * s
+  let top = HEAD_TOP - KN.y - KN.dy - m.top * h
+  // never show the bottom edge of the photo — a waist that ends in mid-air
+  if(top + h < 1090) top = 1090 - h
+  img.style.width = w + 'px'; img.style.height = h + 'px'
+  img.style.left = (1920 * (KN.x + KN.dx) / 100 - w / 2) + 'px'
+  img.style.top = top + 'px'
+  img.style.transform = KN.flip ? 'scaleX(-1)' : 'none'
+}
+
+// ── the clips ───────────────────────────────────────────────────────
+// Every seat's clip is pulled down once at load and held as a blob, so
+// changing seats mid-show is a swap in memory and not a request. Two video
+// elements take turns: the next pass starts under the last half-second of
+// this one and fades up over it, so a three-second loop has no jump in it.
+let SEATS = []
+const BLOBS = new Map()
+function blob(name){
+  if(BLOBS.has(name)) return BLOBS.get(name)
+  const p = fetch('assets/fancam/' + name).then(r => { if(!r.ok) throw 0; return r.blob() })
+    .then(b => URL.createObjectURL(b))
+    .catch(() => { BLOBS.delete(name); return null })
+  BLOBS.set(name, p)
+  return p
+}
+const V = [$('bgA'), $('bgB')]
+let live = 0, clipNow = null, clipGen = 0
+async function setClip(name){
+  const tries = name ? [name] : [...(SEATS[0] ? [SEATS[0].clip] : []), 'loop.webm', 'loop.mp4']
+  const mine = ++clipGen
+  for(const t of tries){
+    if(t === clipNow) return true
+    const src = await blob(t)
+    if(mine !== clipGen) return false
+    if(!src) continue
+    const ok = await new Promise(res => {
+      const v = V[1 - live]
+      const done = r => { v.oncanplay = v.onerror = null; res(r) }
+      v.oncanplay = () => done(true); v.onerror = () => done(false)
+      v.src = src; v.load()
+      setTimeout(() => done(v.readyState >= 2), 1500)
+    })
+    if(mine !== clipGen) return false
+    if(!ok) continue
+    V[1 - live].dataset.clip = t
+    clipNow = t
+    return true
+  }
+  if(!clipNow) console.warn('[fancam] no clip in assets/fancam/ — using the fallback room')
+  return false
+}
+// called at the moment of the cut: the readied element becomes the live one.
+// The element that just went dark is then given the same clip, so the loop
+// has a partner to hand over to — never before, or the shot still on air
+// would go blank a beat ahead of its own cut.
+function rollClip(){
+  const nx = V[1 - live], old = V[live]
+  if(!nx.src || nx.dataset.clip !== clipNow || old.dataset.clip === clipNow) return
+  try{ nx.currentTime = 0 }catch(e){}
+  nx.play().catch(() => {})
+  nx.classList.add('up'); old.classList.remove('up')
+  live = 1 - live
+  setTimeout(() => { if(old === V[live] || nx.dataset.clip !== clipNow) return
+    old.pause(); old.src = nx.src; old.dataset.clip = nx.dataset.clip; old.load() }, 700)
+}
+// the loop: hand over to the other element before this one runs out
+;(function tick(){
+  const v = V[live], o = V[1 - live]
+  if(v.duration && !v.paused && v.duration - v.currentTime < .6 &&
+     o.dataset.clip === v.dataset.clip && o.paused && o.readyState >= 2){
+    try{ o.currentTime = 0 }catch(e){}
+    o.play().catch(() => {})
+    o.classList.add('up'); v.classList.remove('up')
+    setTimeout(() => { if(v !== V[live]) v.pause() }, 650)
+    live = 1 - live
+  }
+  // a clip with no partner ready yet still has to loop
+  else if(v.ended) v.play().catch(() => {})
+  requestAnimationFrame(tick)
+})()
 
 // ── who is in the chair ─────────────────────────────────────────────
 const DIVISION = { heavyweight:'HEAVYWEIGHT', light_heavyweight:'LIGHT HEAVYWEIGHT',
@@ -253,9 +346,9 @@ const DIVISION = { heavyweight:'HEAVYWEIGHT', light_heavyweight:'LIGHT HEAVYWEIG
 const division = v => DIVISION[norm(v).replace(/\s+/g,'_')] || String(v ?? '').toUpperCase()
 
 // ONE lookup for the whole night, and the PROMISE is cached rather than the
-// result -- two switches in quick succession must share one fetch instead of
-// racing two reads of the same 467-row table. Re-read only if it failed, so a
-// blip at load does not leave the scene unable to name anybody all night.
+// result -- two switches in quick succession must share one fetch. Re-read
+// only if it failed, so a blip at load does not leave the scene unable to
+// name anybody all night.
 let _cardsP = null
 function cards(){
   if(_cardsP) return _cardsP
@@ -265,48 +358,63 @@ function cards(){
     .then(({ data, error }) => {
       // supabase-js resolves {data:null, error} instead of throwing, so a
       // failed lookup must be told apart from a fighter who is not there.
-      // Conflating them would put a blank plate on air and log nothing.
       if(error || !data){ console.warn('[fancam] lookup failed —', error); _cardsP = null; return [] }
       return data
     })
   return _cardsP
 }
+const find = (data, who) => data.find(c => norm(c.slug) === norm(who)) ||
+                            data.find(c => norm(c.display_name) === norm(who)) || null
 
-let gen = 0, curWho = null
+// the name shrinks to fit the bug rather than being cut by it
+function fitName(){
+  const el = $('name'); let px = 78
+  el.style.fontSize = px + 'px'
+  while(el.scrollWidth > 1000 && px > 40){ px -= 3; el.style.fontSize = px + 'px' }
+}
+
+let gen = 0, holdT = null, firstUp = true
 async function show(who, over){
   over = over || {}
   const mine = ++gen
+  clearTimeout(holdT)
+
+  // 1. everything is made READY first, with the old shot still on air
   let f = null
-
-  // THE FACE COMES DOWN FIRST. The lookup and the photo both take time, and
-  // for that whole stretch the PREVIOUS fighter was still composited in the
-  // chair -- first under his own name, then under the new man's. A cutaway
-  // that names one fighter over another's face is worse than one that names
-  // him over an empty chair, which is a state this scene already has.
-  //
-  // Only on a genuine change: the deck re-fires the same fighter to update
-  // the tally, and blinking the face for that would be a flicker with no
-  // information in it.
-  const changed = norm(who) !== norm(curWho)
-  if(changed) $('who').classList.add('empty')
-  curWho = who
-
-  if(has(who)){
-    const data = await cards()
-    f = data.find(c => norm(c.slug) === norm(who)) ||
-        data.find(c => norm(c.display_name) === norm(who)) || null
-    if(!f) console.warn('[fancam] no fighter matched', who)
-  }
+  if(has(who)){ f = find(await cards(), who); if(!f) console.warn('[fancam] no fighter matched', who) }
   if(mine !== gen) return
+  const url = over.photo || (f && f.profile_photo_url) || null
+  // A photo that will not arrive must not hold the cut: the director pressed
+  // the button now. Past the wait the cut goes without a face, and the face
+  // lands when it lands.
+  const [ph] = await Promise.all([
+    Promise.race([photo(url), wait(2600).then(() => undefined)]),
+    Promise.race([setClip(over.clip || KN.clip), wait(1800)]),
+  ])
+  if(mine !== gen) return
+
+  // 2. the cut. On air already = under a flash; coming up from nothing = a fade.
+  const onAir = $('cam').classList.contains('on') && !firstUp
+  if(onAir){
+    const fl = $('flash'); fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go')
+    await wait(105)
+    if(mine !== gen) return
+  }
+  firstUp = false
+
+  rollClip()
+  const holder = $('who')
+  const put = p => { CUR = p; holder.replaceChildren(p.img); frame(); holder.classList.remove('empty') }
+  if(ph) put(ph)
+  else { CUR = null; holder.classList.add('empty'); holder.replaceChildren()
+    if(ph === undefined && url) photo(url).then(p => { if(p && mine === gen) put(p) }) }
 
   const name = over.name || (f && f.display_name) || (has(who) ? String(who) : 'FAN CAM')
   $('name').textContent = String(name).toUpperCase()
-
   $('eyebrow').textContent = String(over.eyebrow || Q.get('eyebrow') || 'IN THE BUILDING').toUpperCase()
 
-  // The sub line writes itself from whatever the fighter actually has.
-  // Every part is optional and an absent part is DROPPED, not dashed —
-  // the studio's rule everywhere: a thin profile makes a shorter line,
+  // The sub line writes itself from whatever the fighter actually has. An
+  // absent part is DROPPED, not dashed: a thin profile makes a shorter line,
   // never a line with holes in it.
   let sub = over.sub || Q.get('sub') || ''
   if(!sub && f){
@@ -319,48 +427,68 @@ async function show(who, over){
     if(has(f.team)) bits.push(String(f.team).toUpperCase())
     sub = bits.join('  ·  ')
   }
-  $('sub').innerHTML = sub
+  if(over.sub || Q.get('sub')) $('sub').textContent = sub; else $('sub').innerHTML = sub
   $('sub').classList.toggle('gone', !sub)
-
-  // the cut-out
-  const img = $('portrait'), holder = $('who')
-  const url = over.photo || (f && f.profile_photo_url) || null
-  if(url){
-    // Decoded off-screen first, THEN handed to the visible element. Assigning
-    // straight to the live <img> leaves the old face painted until the new one
-    // arrives over the wire -- the browser does not clear a decoded image just
-    // because src changed. By the time src is set here the bytes are already
-    // in cache, so the swap is one frame and there is no empty gap either.
-    const pre = new Image()
-    pre.onload  = () => { if(mine !== gen) return
-      img.src = url; holder.classList.remove('empty') }
-    pre.onerror = () => { if(mine === gen) holder.classList.add('empty') }
-    pre.src = url
-  } else holder.classList.add('empty')
 
   $('cam').classList.add('on')
   $('bug').classList.remove('in'); void $('bug').offsetWidth; $('bug').classList.add('in')
+  fitName()
+
+  // hold: a cutaway that takes itself down. The clock is HERE, not on the
+  // deck, so a deck tab that was closed or put to sleep cannot strand a fan
+  // on air.
+  const hold = num(over.hold, 0)
+  if(hold > 0) holdT = setTimeout(() => { if(mine === gen) $('cam').classList.remove('on') }, hold * 1000)
 }
 
-// Up on load, so cutting to the scene in OBS shows something. ?fighter=
-// names who; without it the clip plays under a plain FAN CAM bug, which
-// is a real state — the cutaway before anyone is identified.
-show(Q.get('fighter'), {})
-
-// ── the wire ────────────────────────────────────────────────────────
-sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, ({ payload: c }) => {
-  if(!c || c.type !== 'fancam') return
-  const d = c.d || {}
-  if(c.on === false){ $('cam').classList.remove('on'); return }
-  // A clip can be swapped from the deck without reloading the source —
-  // the seat is in a different place in every clip, so the knobs travel
-  // with it rather than being re-typed into the URL mid-show.
-  if(has(d.clip)) playClip(d.clip)
+function seatKnobs(d){
   if(d.x != null) KN.x = +d.x
   if(d.y != null) KN.y = +d.y
   if(d.scale != null) KN.scale = +d.scale
   if(d.flip != null) KN.flip = !!d.flip
-  place()
+  KN.dx = num(d.dx, 0); KN.dy = num(d.dy, 0); KN.ds = num(d.ds, 1)
+}
+
+// Load the seat list, warm every clip, then come up. A missing seats.json is
+// not an error — it means the old single-clip behaviour.
+fetch('assets/fancam/seats.json', { cache:'no-store' })
+  .then(r => r.ok ? r.json() : [])
+  .then(list => {
+    SEATS = Array.isArray(list) ? list : []
+    SEATS.forEach(s => s && s.clip && blob(s.clip))
+    // adopt the first seat's framing too, unless the URL already set it
+    if(SEATS.length && !KN.clip){
+      const s0 = SEATS[0]
+      if(Q.get('x') == null && s0.x != null) KN.x = +s0.x
+      if(Q.get('y') == null && s0.y != null) KN.y = +s0.y
+      if(Q.get('scale') == null && s0.scale != null) KN.scale = +s0.scale
+      if(Q.get('flip') == null && s0.flip != null) KN.flip = !!s0.flip
+    }
+  })
+  .catch(() => {})
+  // Up on load, so cutting to the scene in OBS shows something. Without
+  // ?fighter= the room plays under a plain FAN CAM bug — the cutaway before
+  // anyone is identified.
+  .finally(() => show(Q.get('fighter'), {}))
+
+// ── the wire ────────────────────────────────────────────────────────
+//   {type:'fancam', on:false}                    take it down
+//   {type:'fancam', on:true, d:{fighter,…}}      cut to a fan (seat + nudge + hold ride along)
+//   {type:'fancam', adjust:true, d:{dx,dy,ds}}   move the fan who is up, no re-cut
+//   {type:'fancam', prep:[slug,…]}               fetch these photos now, show nothing
+sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, ({ payload: c }) => {
+  if(!c || c.type !== 'fancam') return
+  const d = c.d || {}
+  if(Array.isArray(c.prep)){
+    cards().then(data => c.prep.forEach(w => { const f = find(data, w); if(f) photo(f.profile_photo_url) }))
+    return
+  }
+  if(c.adjust){
+    KN.dx = num(d.dx, KN.dx); KN.dy = num(d.dy, KN.dy); KN.ds = num(d.ds, KN.ds)
+    frame(); return
+  }
+  if(c.on === false){ gen++; clearTimeout(holdT); $('cam').classList.remove('on'); return }
+  seatKnobs(d)
   if(has(d.tally)) $('tallyText').textContent = String(d.tally).toUpperCase()
   show(d.fighter || d.slug || d.name, d)
 }).subscribe()

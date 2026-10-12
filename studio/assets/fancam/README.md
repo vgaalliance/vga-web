@@ -9,17 +9,18 @@ renders black-and-broken while you are still shooting the clip.
 - Any other clip in this folder is reachable as `?clip=<filename>`, so you can
   hold several and pick one per fighter from the URL.
 
-The fighter portrait is composited ON TOP of the clip by `fan-cam.html`. Its
-position is dialled in from the URL (`?x=`, `?y=`, `?scale=`, `?flip=1`)
-rather than baked into the file, because where the seat sits in frame is a
-property of the clip, not of the graphic.
+The fighter is composited ON TOP of the clip by `fan-cam.html`, close to the
+lens with the clip out of focus behind. Every photo is measured when it loads
+and scaled so each head lands the same size (`scale` 1.0 = a head 270px wide),
+so a seat only says which clip, which side of frame (`x`, % of width), how
+tight (`scale`), a lift in px (`y`) and `flip`.
 
 ## seats.json — the rotation
 
 `seats.json` is the list of seats the deck cycles through, one entry per clip:
 
 ```json
-{ "clip": "seat-1.mp4", "x": 52, "y": 0, "scale": 1.00, "flip": false }
+{ "clip": "seat-1.mp4", "x": 61, "y": 0, "scale": 1.00, "flip": false }
 ```
 
 The deck reads it, and each fan in the queue is given the next seat in turn —
