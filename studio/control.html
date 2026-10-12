@@ -1931,6 +1931,26 @@ window.csVerdict=(i,side,verdict)=>{
 }
 window.csHide=()=>{ CSN.on=null; send({type:'contender', on:false}); csDraw() }
 
+/* DEMO — control.html#csdemo loads a made-up CCS card into the deck so the
+   Contender final block can be seen and pressed with no contender night on
+   record. Nothing is read from or written to the database. It exists because
+   a throwaway night in the real database is not a safe test: the bot's clocks
+   act on any scheduled event. The buttons still SEND, so this is also how the
+   verdict screen is rehearsed. */
+window.csDemo=()=>{
+  setEv('gfl')
+  UBA.id='csdemo'; UBA.name='CCS DEMO'; UBA.date=null; UBA.armed=null
+  UBA.bouts=[['Fighter A','Fighter B','a'],['Fighter C','Fighter D','b'],['Fighter E','Fighter F',null]]
+    .map(([a,b,w],i)=>({ bout_number:i+1, seg:'main_card', a, b, wc:'Demo', title:null, method:null, winner:w }))
+  CSN.brand='CCS'; CSN.number='DEMO'; CSN.on=null
+  try{ CSN.v=JSON.parse(sessionStorage.getItem(csKey())||'{}')||{} }catch(e){ CSN.v={} }
+  document.getElementById('ubaCardWrap').style.display='block'
+  document.getElementById('csSec').style.display=''
+  ubaDraw()
+  deckLog('CONTENDER DEMO — a made-up card, nothing from the database')
+}
+if(location.hash==='#csdemo') window.addEventListener('load',()=>setTimeout(csDemo,400))
+
 window.ubaLoadCard=async(ev)=>{
   const { data } = await sb.from('event_matches')
     .select('bout_number,card_segment,weight_class,is_title_fight,title_name,status,method,fighter_a_name,fighter_b_name,winner_corner')
