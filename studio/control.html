@@ -1950,6 +1950,9 @@ window.csDemo=()=>{
   deckLog('CONTENDER DEMO — a made-up card, nothing from the database')
 }
 if(location.hash==='#csdemo') window.addEventListener('load',()=>setTimeout(csDemo,400))
+// Typing #csdemo onto a deck that is already open changes the hash without
+// reloading the page, so the load listener above never runs for it.
+window.addEventListener('hashchange',()=>{ if(location.hash==='#csdemo') csDemo() })
 
 window.ubaLoadCard=async(ev)=>{
   const { data } = await sb.from('event_matches')
