@@ -91,6 +91,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 #contract.off .st{opacity:1;transform:none} #contract.off .nmw .big{transform:none} #contract.off #cband{transform:none}
 #contract.off #cword .big,#contract.off #cword .chev,#contract.off #csigned{opacity:1;animation:none}
 #contract.off.no #cword .chev,#contract.off.no #csigned{opacity:0}
+#contract.off #csigned{transform:rotate(-4deg)} #contract.off #cdim{opacity:1}
 #contract .nmw{overflow:hidden;display:flex;padding-top:8px}
 #contract .nmw .big{font-size:230px;transform:translateY(108%)}
 #contract.on .nmw .big{transform:none;transition:transform .7s var(--in) .5s}
@@ -104,24 +105,67 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 #cword{flex:1;display:flex;align-items:center;gap:34px;min-width:0}
 #cword .big{font-size:176px;opacity:0}
 #cword .chev{font-size:158px;opacity:0}
-/* the wait before the word: a thin line that draws itself across the band */
-#cline{position:absolute;left:420px;right:110px;top:50%;height:3px;background:var(--ice);transform:scaleX(0);transform-origin:left center}
-#contract.on #cline{transform:scaleX(1);transition:transform 1.5s linear 1.3s}
-#contract.said #cline{opacity:0;transition:opacity .15s ease}
-/* CONTRACT lands: the word drops in hard, the chevrons close on it, one flash */
-#contract.said.yes #cword .big{opacity:1;animation:land .42s var(--in) 1}
-#contract.said.yes #cword .chev{opacity:1;animation:closeL .5s var(--in) 1}
-#contract.said.yes #cword .chev.r{animation:closeR .5s var(--in) 1}
-#contract.said.yes #cflash{animation:flash .5s ease-out 1}
-#contract.said.yes #csigned{opacity:1;transform:none;transition:opacity .4s ease .5s, transform .5s var(--in) .5s}
-/* NO CONTRACT does not land. It is simply there: quieter is the respectful version. */
-#contract.said.no #cword .big{font-size:150px;opacity:1;color:transparent;-webkit-text-stroke:4px rgba(255,255,255,.62);transition:opacity .7s ease}
+/* the fighter, standing on the page to the right of their name */
+#cPhoto{position:absolute;right:70px;bottom:300px;height:740px;max-width:820px;object-fit:contain;object-position:right bottom;opacity:0;transform:translateX(70px);display:none}
+#contract.on #cPhoto{opacity:1;transform:none;transition:opacity .5s ease .55s, transform .8s var(--in) .55s, filter .5s ease}
+#contract.off #cPhoto{opacity:1;transform:none}
+/* a cut-out stands on the slate; a photo that still has its backdrop is
+   shown edge to edge, where a rectangle reads as a picture and not a mistake */
+#sPhoto{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom}
+#sPhotoBox.full #sPhoto{object-fit:cover;object-position:center 18%}
+#cband > *{position:relative;z-index:1}
+
+/* THE WAIT. A line draws across the band, the label blinks, and the page
+   leans in: the edges close while the room holds its breath. */
+#cline{position:absolute !important;left:420px;right:110px;top:50%;height:3px;background:var(--ice);transform:scaleX(0);transform-origin:left center}
+#contract.on #cline{transform:scaleX(1);transition:transform 1.9s cubic-bezier(.5,0,.9,.6) 1.3s}
+#contract.said #cline{opacity:0;transition:opacity .1s ease}
+#contract.on:not(.said) #cDec{animation:blink .5s steps(2,end) 1.3s infinite}
+@keyframes blink{50%{opacity:.25}}
+#cdim{position:absolute;inset:0 0 300px 0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 40% 45%,rgba(6,14,20,0) 30%,rgba(6,14,20,.5) 100%)}
+#contract.on #cdim{opacity:1;transition:opacity 1.9s ease 1.3s}
+
+/* CONTRACT. The whole frame takes the hit: a white flash, the page jolts,
+   Ice floods the band and streaks tear across the slate, the word slams in
+   from three times its size and the chevrons close on it. */
+#contract.said.yes{animation:jolt .5s cubic-bezier(.3,.7,.3,1) 1}
+#contract.said.yes #cdim{opacity:0;transition:opacity .2s ease}
+#contract.said.yes #cflash{animation:flash .7s ease-out 1}
+#contract.said.yes #cstreak{animation:streak .75s cubic-bezier(.2,.7,.2,1) 1}
+#contract.said.yes #cband::before{content:'';position:absolute;inset:0;background:var(--ice);transform-origin:left center;animation:flood .95s var(--in) 1 both}
+#contract.said.yes #cword .big{opacity:1;animation:slam .5s cubic-bezier(.2,1.4,.3,1) 1}
+#contract.said.yes #cword .chev{opacity:1;animation:closeL .55s var(--in) .08s 1 both}
+#contract.said.yes #cword .chev.r{animation:closeR .55s var(--in) .08s 1 both}
+#contract.said.yes #cPhoto{animation:punch .6s var(--in) 1}
+#contract.said.yes #csigned{opacity:1;animation:stamp .45s cubic-bezier(.2,1.5,.3,1) .75s 1 both}
+#contract.said.yes .nmw .rule{animation:rulehit .9s ease-out 1}
+
+/* NO CONTRACT. The same weight, the other way: the lights go down. The page
+   drops, the slate and the fighter fall into shadow, the band goes black and
+   the two words come down heavy and stay. No flash, nothing that celebrates. */
+#contract.said.no{animation:thud .55s cubic-bezier(.3,.7,.3,1) 1}
+#contract.said.no #cdim{opacity:1;background:rgba(6,14,20,.62);transition:background .5s ease}
+#contract.said.no #cPhoto{filter:grayscale(1) brightness(.55)}
+#contract.said.no #cband{border-top-color:#5c6c78;transition:border-color .4s ease}
+#contract.said.no #cband::before{content:'';position:absolute;inset:0;background:#04090d;opacity:.72;animation:fadein .5s ease 1 both}
+#contract.said.no #cword .big{font-size:160px;opacity:1;color:#E6EDF2;animation:drop .6s cubic-bezier(.3,1.2,.4,1) 1}
 #cflash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
-#csigned{opacity:0;transform:translateX(30px);flex:none}
-@keyframes land{0%{transform:scale(1.28);opacity:0}100%{transform:scale(1);opacity:1}}
-@keyframes closeL{0%{transform:translateX(-220px);opacity:0}100%{transform:none;opacity:1}}
-@keyframes closeR{0%{transform:translateX(220px) scaleX(-1);opacity:0}100%{transform:scaleX(-1);opacity:1}}
-@keyframes flash{0%{opacity:.75}100%{opacity:0}}
+#cstreak{position:absolute;inset:0 0 300px 0;pointer-events:none;opacity:0;
+  background:repeating-linear-gradient(112deg,transparent 0 46px,rgba(79,195,240,.85) 46px 50px,transparent 50px 170px)}
+#csigned{opacity:0;flex:none}
+@keyframes jolt{0%{transform:scale(1.035)}18%{transform:translate(-9px,5px) scale(1.02)}36%{transform:translate(8px,-4px)}54%{transform:translate(-5px,3px)}72%{transform:translate(3px,-2px)}100%{transform:none}}
+@keyframes thud{0%{transform:translateY(-10px)}30%{transform:translateY(18px)}60%{transform:translateY(-4px)}100%{transform:none}}
+@keyframes flash{0%{opacity:.95}100%{opacity:0}}
+@keyframes streak{0%{opacity:0;transform:translateX(-45%)}25%{opacity:1}100%{opacity:0;transform:translateX(45%)}}
+@keyframes flood{0%{transform:scaleX(0);opacity:1}40%{transform:scaleX(1);opacity:1}100%{transform:scaleX(1);opacity:0}}
+@keyframes slam{0%{transform:scale(3);opacity:0}55%{transform:scale(.96);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes drop{0%{transform:translateY(-120px) scale(1.5);opacity:0}60%{transform:translateY(6px) scale(1);opacity:1}100%{transform:none;opacity:1}}
+@keyframes closeL{0%{transform:translateX(-420px);opacity:0}100%{transform:none;opacity:1}}
+@keyframes closeR{0%{transform:translateX(420px) scaleX(-1);opacity:0}100%{transform:scaleX(-1);opacity:1}}
+@keyframes punch{0%{transform:scale(1.09)}100%{transform:none}}
+@keyframes stamp{0%{transform:scale(2.2) rotate(-12deg);opacity:0}100%{transform:scale(1) rotate(-4deg);opacity:1}}
+@keyframes rulehit{0%{background:#fff;box-shadow:0 0 0 14px rgba(79,195,240,.5)}100%{background:var(--ice);box-shadow:none}}
+@keyframes fadein{0%{opacity:0}100%{opacity:.72}}
 
 /* ── 4 · THE BOARD ─────────────────────────────────────────────────────── */
 #board{clip-path:inset(0 100% 0 0)}
@@ -144,6 +188,9 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 
 <div class="screen" id="split">
   <div class="frame ink"></div>
+  <!-- the fighter's window carries their photo when they have one (most
+       fighters are not on camera); with no photo it stays a hole, like the host's -->
+  <div class="abs paper" id="sPhotoBox" style="left:984px;top:128px;width:880px;height:520px;overflow:hidden;display:none"><img id="sPhoto" alt=""></div>
   <i class="win" style="left:56px"></i><i class="win" style="left:984px"></i>
   <span class="mark top" style="left:56px;top:44px">UBA</span>
   <span class="pill i abs top" id="sPill" style="left:50%;top:46px;margin-left:-190px">CONTENDER SERIES</span>
@@ -158,18 +205,21 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 <div class="screen paper" id="contract">
   <div class="arc" style="left:-500px;top:120px;width:1500px;height:1500px;border-color:rgba(23,135,189,.28)"></div>
   <span class="mark" style="left:110px;top:56px">UBA</span>
-  <span class="lab abs st s1" id="cSeries" style="right:110px;top:66px;opacity:.6"></span>
+  <span class="lab abs st s1" id="cSeries" style="left:222px;top:66px;opacity:.6"></span>
   <div class="abs" style="left:110px;top:170px">
-    <div class="lab st s1" style="margin-bottom:16px"><span style="opacity:.6">A UBA CONTRACT IS OFFERED TO</span></div>
+    <div class="lab st s1" style="margin-bottom:16px"><span id="cLead" style="opacity:.6">THE DECISION ON</span></div>
     <div class="nmw"><span class="rule"></span><span class="big" id="cName"></span></div>
     <div class="stats st s4" id="cStats"></div>
   </div>
+  <img id="cPhoto" alt="">
+  <i id="cdim"></i>
   <div class="ink" id="cband">
-    <span class="lab dec" id="cDec">THE OWNER'S<br>DECISION</span>
+    <span class="lab dec" id="cDec">THE<br>VERDICT</span>
     <i id="cline"></i>
     <div id="cword"><span class="chev"></span><span class="big" id="cW"></span><span class="chev r"></span></div>
     <span class="pill w" id="csigned">SIGNED TO THE UBA</span>
   </div>
+  <i id="cstreak"></i>
   <i id="cflash"></i>
 </div>
 
@@ -187,7 +237,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   const OWNER = { MCS:'MAKI', CCS:'CASTLE', HPCS:'1HP' }
   // How long each beat of the reveal holds. The wait is the point of it: the
   // line draws for a second and a half before a word is said.
-  const T = { build:1300, wait:1500, holdYes:4600, holdNo:3800, out:520 }
+  const T = { build:1300, wait:1900, holdYes:5200, holdNo:4600, out:520 }
   const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
     'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
 
@@ -213,7 +263,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     if(recCache[name] !== undefined) return recCache[name]
     try{
       const { data, error } = await sb.from('fighter_cards')
-        .select('display_name,wins:headline_wins,losses:headline_losses,draws:headline_draws,ko:headline_ko_wins')
+        .select('display_name,wins:headline_wins,losses:headline_losses,draws:headline_draws,ko:headline_ko_wins,photo:profile_photo_url')
         .ilike('display_name', name).limit(2)
       recCache[name] = (!error && data && data.length === 1) ? data[0] : null
     }catch{ recCache[name] = null }
@@ -226,6 +276,40 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     const r = await record(d.name)
     if(cur !== d) return             // another fighter was shown while this was loading
     box.innerHTML = (r ? cell(r.wins ?? 0, 'WINS') + cell(r.losses ?? 0, 'LOSSES') + cell(r.draws ?? 0, 'DRAWS') : '') + tonight
+  }
+
+  // The fighter's photo, on the contract page and in their window on the split.
+  // Most fighters have none: the page then simply has no figure on it, and the
+  // window stays a hole. ?cams=1 keeps the window a hole always, for a night
+  // when the fighter IS on camera.
+  const CAMS = new URLSearchParams(location.search).get('cams') === '1'
+  async function photo(d){
+    const r = await record(d.name)
+    if(cur !== d) return
+    const url = r && r.photo ? r.photo : null
+    ;[['cPhoto', $('cPhoto')], ['sPhoto', $('sPhotoBox')]].forEach(([id, box]) => {
+      const img = $(id)
+      const showIt = !!url && !(id === 'sPhoto' && CAMS)
+      box.style.display = showIt ? 'block' : 'none'
+      if(showIt && img.getAttribute('src') !== url){ img.crossOrigin = 'anonymous'; img.src = url }
+    })
+    // A photo with its backdrop still on it is not a cut-out. One corner pixel
+    // says which: transparent = a figure to stand on the page; solid = a
+    // picture, which fills its window on the split and is left OFF the
+    // contract page, where a black rectangle on white is worse than no figure.
+    const cut = await new Promise(res => {
+      if(!url) return res(true)
+      const im = new Image(); im.crossOrigin = 'anonymous'; im.src = url
+      const test = () => { try{ const cv = document.createElement('canvas'); cv.width = cv.height = 4
+          const x = cv.getContext('2d'); x.drawImage(im, 0, 0, 4, 4, 0, 0, 4, 4); res(x.getImageData(0, 0, 1, 1).data[3] < 32) }catch{ res(true) } }
+      if(im.complete && im.naturalWidth) test(); else { im.addEventListener('load', test, { once:true }); im.addEventListener('error', () => res(true), { once:true }) }
+    })
+    if(cur !== d) return
+    $('sPhotoBox').classList.toggle('full', !cut)
+    if(!cut) $('cPhoto').style.display = 'none'
+    const onPage = !!url && cut
+    // the name gives up the right half of the page to the figure
+    fit($('cName'), onPage ? 1080 : 1680, 230, 90)
   }
 
   function banner(v){
@@ -249,7 +333,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   function showSplit(d){
     seq++; cur = d
     off($('contract')); off($('board'))
-    fillSplit(d); banner(d.verdict)
+    fillSplit(d); banner(d.verdict); photo(d)
     $('split').classList.add('on')
   }
 
@@ -265,11 +349,18 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     $('cName').textContent = d.name || ''
     fit($('cName'), 1680, 230, 90)
     $('cW').textContent = yes ? 'CONTRACT' : 'NO CONTRACT'
-    stats(d)
+    // Nothing on the page says which way it went until the word does: the
+    // first draft opened on "a UBA contract is offered to", which is the answer.
+    $('cLead').textContent = 'THE DECISION ON'
+    $('cDec').innerHTML = (OWNER[d.brand] ? esc(OWNER[d.brand]) + "'S" : 'THE') + '<br>VERDICT'
+    stats(d); photo(d)
     const c = $('contract')
     c.classList.remove('off','said','yes','no'); void c.offsetWidth
     c.classList.add('on')
-    later(T.build + T.wait, () => c.classList.add('said', yes ? 'yes' : 'no'))
+    later(T.build + T.wait, () => {
+      c.classList.add('said', yes ? 'yes' : 'no')
+      if(yes) $('cLead').textContent = 'A UBA CONTRACT IS OFFERED TO'
+    })
     later(T.build + T.wait + (yes ? T.holdYes : T.holdNo), () => {
       banner(d.verdict)              // changed while the page still covers it
       off(c)
