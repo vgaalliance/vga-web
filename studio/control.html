@@ -752,14 +752,24 @@
     <h4>VERDICTS — Contender Series <span id="csTitle" style="color:var(--gdim);font-size:15px"></span></h4>
     <div id="csNone" style="color:var(--gdim);font-size:17px">NOT A CONTENDER SERIES NIGHT — load an MCS / CCS / HPCS card in the Card Runner above and its fighters appear here.</div>
     <div id="csSec" style="display:none">
-      <h5>Step by step: ① SPLIT · ② PAGE (holds while you talk) · ③ CONTRACT / NO CONTRACT (lands and stays) · ① SPLIT again (banner updated) · then the BOARD</h5>
-      <div style="color:var(--gdim);font-size:16px;margin-bottom:6px">or one press: CONTRACT / NO CONTRACT straight from the split plays the page and comes back by itself · nothing to reset — the next fighter's button replaces whoever is up</div>
+      <!-- Two jobs, kept apart on purpose (Castle, 2026-10-12): DECIDING is off
+           air and can be done for the whole card ahead of time; RUNNING THE
+           SCREEN is one row of buttons for whoever is picked. In one row each,
+           a verdict button was also a screen button, and it was not clear
+           which press went to air. -->
+      <h5>① DECIDE — off air. Nothing here shows on stream. <span id="csCount" style="color:var(--gdim)"></span></h5>
+      <div style="color:var(--gdim);font-size:16px;margin-bottom:6px">tap a NAME to pick who you are on · tap a verdict to set it (tap again to clear)</div>
       <div id="csRows"></div>
-      <div class="row" style="margin-top:8px">
-        <button onclick="csBoard()">▦ Show the board</button>
-        <button class="hide" onclick="csHide()">Hide verdict screen</button>
-        <span style="color:var(--gdim);font-size:16px">the saved record: admin panel → Results → Contender Series</span>
+      <h5 style="margin-top:14px">② ON AIR — <span id="csNow">pick a fighter above</span></h5>
+      <div class="row" style="margin-bottom:6px">
+        <button id="csbSplit" onclick="csShow()">① Split</button>
+        <button id="csbPage" onclick="csPage()">② Page</button>
+        <button id="csbReveal" onclick="csReveal()">③ Reveal</button>
+        <button id="csbBoard" onclick="csBoard()">▦ Board</button>
+        <button class="hide" onclick="csHide()">Hide</button>
       </div>
+      <div style="color:var(--gdim);font-size:16px">Split = host + fighter · Page = the contract page, held while you talk · Reveal = the verdict you set, landing · a verdict only reaches the banner and the board once it is revealed</div>
+      <div style="color:var(--gdim);font-size:16px;margin-top:4px">the saved record: admin panel → Results → Contender Series</div>
     </div>
   </div></div>
 
@@ -2070,17 +2080,26 @@ window.ubaReload=async()=>{
 }
 
 /* ── CONTENDER SERIES ─────────────────────────────────────────────────────
-   Is the loaded card a contender night, and which fighter got what. The ticks
-   live in sessionStorage keyed by the event, so a deck refresh at the end of a
-   show does not forget who was already given a contract. */
-const CSN={ brand:null, number:null, v:{}, on:null }
+   Is the loaded card a contender night, and the state of its verdicts:
+     v    what was DECIDED for each fighter (off air)
+     rev  which of those have been REVEALED on air
+     sel  who the on-air buttons act on
+     scr  what is on screen now: split / page / board
+     air  WHO is on screen now, which is not always who is picked
+   v and rev live in sessionStorage keyed by the event, so a deck refresh at the
+   end of a show forgets nothing. */
+const CSN={ brand:null, number:null, v:{}, rev:{}, sel:null, scr:null, air:null }
 const csKey=()=>'vga-cs-'+UBA.id
-const csSave=()=>{ try{ sessionStorage.setItem(csKey(), JSON.stringify(CSN.v)) }catch(e){} }
+const csSave=()=>{ try{ sessionStorage.setItem(csKey(), JSON.stringify({ v:CSN.v, rev:CSN.rev })) }catch(e){} }
+const csLoad=()=>{ CSN.v={}; CSN.rev={}
+  try{ const o=JSON.parse(sessionStorage.getItem(csKey())||'{}')||{}
+    // the first build stored the verdicts bare, with no "revealed" beside them
+    if(o.v){ CSN.v=o.v||{}; CSN.rev=o.rev||{} } else CSN.v=o }catch(e){} }
 const csGate=on=>{ document.getElementById('csSec').style.display = on ? '' : 'none'
   document.getElementById('csNone').style.display = on ? 'none' : ''
   if(!on) document.getElementById('csTitle').textContent='' }
 async function csCheck(ev){
-  CSN.brand=null; CSN.number=null; CSN.v={}; CSN.on=null
+  CSN.brand=null; CSN.number=null; CSN.v={}; CSN.rev={}; CSN.sel=null; CSN.scr=null; CSN.air=null
   // A failed read hides the section and SAYS so: a contender night whose
   // verdict buttons silently never appear is found at the worst moment.
   const { data, error } = await sb.from('contender_nights_public')
@@ -2088,7 +2107,7 @@ async function csCheck(ev){
   if(error){ csGate(false); deckLog('could not check Contender Series for '+ev.name+' — '+error.message); return }
   if(!data){ csGate(false); return }
   CSN.brand=data.brand; CSN.number=data.number
-  try{ CSN.v=JSON.parse(sessionStorage.getItem(csKey())||'{}')||{} }catch(e){ CSN.v={} }
+  csLoad()
   csGate(true)
   csDraw()
   csPrep()
@@ -2096,28 +2115,45 @@ async function csCheck(ev){
 // One fighter = bout number + corner. Names can repeat and carry quotes, so
 // they never go into an onclick.
 const csId=(b,side)=>b.bout_number+':'+side
+const csFind=id=>{ if(!id) return null
+  const [n,side]=id.split(':'); const b=UBA.bouts.find(x=>String(x.bout_number)===n)
+  return b ? { b, side, name: side==='a'?b.a:b.b } : null }
+const csWord=v=>v==='contract'?'CONTRACT':v==='no_contract'?'NO CONTRACT':''
+
 function csDraw(){
   const box=document.getElementById('csRows'); if(!box) return
   document.getElementById('csTitle').textContent = CSN.brand ? '· '+CSN.brand+' '+CSN.number : ''
   if(!UBA.bouts.length){ box.textContent='NO BOUTS BOOKED'; return }
-  let html=''
+  let html='', total=0, decided=0
   UBA.bouts.forEach((b,i)=>{
     html+=`<p class="lbl" style="margin:10px 0 4px">// ${b.bout_number===1?'MAIN':'BOUT '+b.bout_number} //</p>`
     ;['a','b'].forEach(side=>{
-      const id=csId(b,side), v=CSN.v[id], name=side==='a'?b.a:b.b
-      const won=b.winner===side
-      // The name, its two verdicts, and SHOW held at the right edge so it never
-      // moves as the labels change.
+      const id=csId(b,side), v=CSN.v[id], name=side==='a'?b.a:b.b, on=CSN.sel===id
+      total++; if(v) decided++
       html+=`<div class="row" style="margin-bottom:6px;align-items:center;flex-wrap:nowrap;gap:8px">
-        <span style="flex:1;min-width:0;font-size:19px${CSN.on===id?';color:var(--g)':''}">${name}${won?' <span class="bdone">✔ won</span>':''}</span>
-        <button style="padding:4px 10px;white-space:nowrap" class="${v==='contract'?'active':''}" onclick="csVerdict(${i},'${side}','contract')">Contract</button>
-        <button style="padding:4px 10px;white-space:nowrap" class="${v==='no_contract'?'active':''}" onclick="csVerdict(${i},'${side}','no_contract')">No contract</button>
-        <button style="padding:4px 10px;white-space:nowrap;margin-left:18px" class="${CSN.on===id&&CSN.scr==='split'?'active':''}" onclick="csShow(${i},'${side}')">① Split</button>
-        <button style="padding:4px 10px;white-space:nowrap" class="${CSN.on===id&&CSN.scr==='page'?'active':''}" onclick="csPage(${i},'${side}')">② Page</button>
+        <span class="mnchip${on?' picked':''}" style="flex:1;min-width:0;text-align:left" onclick="csPick(${i},'${side}')">${on?'▶ ':''}${name}${b.winner===side?' ✔':''}</span>
+        <span style="width:92px;font-size:15px;color:${CSN.rev[id]?'var(--g)':'var(--gdim)'}">${CSN.rev[id]?'revealed':v?'not shown':''}</span>
+        <button style="padding:4px 10px;white-space:nowrap" class="${v==='contract'?'active':''}" onclick="csSet(${i},'${side}','contract')">Contract</button>
+        <button style="padding:4px 10px;white-space:nowrap" class="${v==='no_contract'?'active':''}" onclick="csSet(${i},'${side}','no_contract')">No contract</button>
       </div>`
     })
   })
   box.innerHTML=html
+  document.getElementById('csCount').textContent=`${decided} of ${total} decided`
+  // the on-air row: who it acts on, and what Reveal would say
+  const f=csFind(CSN.sel), v=f?CSN.v[CSN.sel]:null, rev=f&&CSN.rev[CSN.sel]
+  // Picked and on screen are two things: you pick the next fighter while the
+  // last one is still up. The line says both, and a screen button is only lit
+  // when it is the PICKED fighter that is on that screen.
+  const up=csFind(CSN.air)
+  document.getElementById('csNow').textContent = (f
+    ? 'PICKED: '+f.name+(v ? ' · '+csWord(v)+(rev?' (revealed)':' (not shown yet)') : ' · no verdict set')
+    : 'pick a fighter above')
+    + (CSN.scr==='board' ? '  ·  ON SCREEN: the board' : up ? '  ·  ON SCREEN: '+up.name+' ('+CSN.scr+')' : '  ·  ON SCREEN: nothing')
+  const lit=(id,on)=>document.getElementById(id).classList.toggle('active',!!on)
+  const mine=f&&CSN.air===CSN.sel
+  lit('csbSplit', mine&&CSN.scr==='split'); lit('csbPage', mine&&CSN.scr==='page'); lit('csbBoard', CSN.scr==='board')
+  document.getElementById('csbReveal').textContent = v ? '③ Reveal: '+csWord(v) : '③ Reveal'
 }
 const csPayload=(b,side,verdict)=>({ brand:CSN.brand, number:CSN.number, event:UBA.name,
   name: side==='a'?b.a:b.b, opponent: side==='a'?b.b:b.a,
@@ -2125,47 +2161,60 @@ const csPayload=(b,side,verdict)=>({ brand:CSN.brand, number:CSN.number, event:U
   // how they won, when the card knows it: the contract page prints "KO" under TONIGHT
   method: b.winner===side && b.method ? String(b.method).toUpperCase().replace('DECISION','DEC') : null,
   verdict: verdict||null })
-/* SHOW = this fighter is on the verdict screen, undecided (or with the verdict
-   already given, so re-showing somebody does not replay them as undecided). */
-window.csShow=(i,side)=>{
-  const b=UBA.bouts[i]; if(!b) return
-  CSN.on=csId(b,side); CSN.scr='split'
-  send({type:'contender', action:'show', d:csPayload(b,side,CSN.v[CSN.on])})
-  csDraw()
-}
-/* PAGE = the contract page for this fighter, brought up and HELD. No verdict
-   on it and no timer: it waits for a verdict button, and then for Split. */
-window.csPage=(i,side)=>{
-  const b=UBA.bouts[i]; if(!b) return
-  CSN.on=csId(b,side); CSN.scr='page'
-  send({type:'contender', action:'page', d:csPayload(b,side,null)})
-  csDraw()
-}
-/* The verdict. Pressing the lit one again takes it back and puts the fighter
-   up undecided — the way out of a mis-press, on air and on the deck. */
-window.csVerdict=(i,side,verdict)=>{
+// What the screen is ALLOWED to know: a verdict that has been set but not
+// revealed is still a secret, so it goes out as none.
+const csShown=id=>CSN.rev[id] ? CSN.v[id] : null
+
+/* ① DECIDE — off air. Sets or clears a verdict and sends nothing. Changing a
+   verdict that was already revealed un-reveals it: the banner and the board
+   must not go on showing an answer that is no longer the answer. */
+window.csSet=(i,side,verdict)=>{
   const b=UBA.bouts[i]; if(!b) return
   const id=csId(b,side)
-  if(CSN.v[id]===verdict){ delete CSN.v[id]; csSave(); csShow(i,side); return }
-  // Which button stays lit follows the screen: a verdict pressed from the
-  // split returns to the split by itself, one landed on a held page stays there
-  // until Split is pressed.
-  const held = CSN.on===id && CSN.scr==='page'
-  CSN.v[id]=verdict; CSN.on=id; CSN.scr = held ? 'page' : 'split'; csSave()
-  send({type:'contender', action:'verdict', d:csPayload(b,side,verdict)})
+  if(CSN.v[id]===verdict) delete CSN.v[id]; else CSN.v[id]=verdict
+  if(CSN.rev[id]){ delete CSN.rev[id]; deckLog((side==='a'?b.a:b.b)+' — verdict changed after it was revealed. Press Reveal again to show the new one') }
+  csSave(); csDraw()
+}
+/* Pick who the on-air row acts on. Sends nothing: the screen changes when a
+   screen button is pressed, never when a name is tapped. */
+window.csPick=(i,side)=>{
+  const b=UBA.bouts[i]; if(!b) return
+  CSN.sel=csId(b,side); csDraw()
+}
+const csNeed=()=>{ const f=csFind(CSN.sel); if(!f) deckLog('pick a fighter first — tap a name in the list'); return f }
+
+/* ② ON AIR — each acts on the picked fighter. */
+window.csShow=()=>{
+  const f=csNeed(); if(!f) return
+  CSN.scr='split'; CSN.air=CSN.sel
+  send({type:'contender', action:'show', d:csPayload(f.b,f.side,csShown(CSN.sel))})
   csDraw()
 }
-window.csHide=()=>{ CSN.on=null; CSN.scr=null; send({type:'contender', on:false}); csDraw() }
-/* Every name on the card, sent the moment the card is loaded. The verdict
-   screen fetches each record and photo then, hours before they are needed, so
-   SHOW at the end of the night has nothing left to wait for. Shows nothing. */
-function csPrep(){
-  const names=[]; UBA.bouts.forEach(b=>{ names.push(b.a, b.b) })
-  if(names.length) send({type:'contender', action:'prep', d:{ names }})
+window.csPage=()=>{
+  const f=csNeed(); if(!f) return
+  CSN.scr='page'; CSN.air=CSN.sel
+  send({type:'contender', action:'page', d:csPayload(f.b,f.side,null)})
+  csDraw()
 }
-/* THE BOARD — everyone on the night with the verdicts given so far. For the
-   break between fighters and for the end of the night. The fighter last shown
-   sits on the white row. */
+/* REVEAL lands the verdict that was set. From the split it plays the contract
+   page and comes back by itself; on a held page it lands there and stays until
+   Split is pressed. With no verdict set it does nothing and says why. */
+window.csReveal=()=>{
+  const f=csNeed(); if(!f) return
+  const v=CSN.v[CSN.sel]
+  if(!v){ deckLog('no verdict set for '+f.name+' — tap Contract or No contract beside the name first'); return }
+  CSN.rev[CSN.sel]=true; csSave()
+  // on a page that is held FOR THIS FIGHTER it lands there; otherwise the
+  // screen plays the whole reveal and ends on the split
+  if(!(CSN.scr==='page' && CSN.air===CSN.sel)) CSN.scr='split'
+  CSN.air=CSN.sel
+  send({type:'contender', action:'verdict', d:csPayload(f.b,f.side,v)})
+  csDraw()
+}
+window.csHide=()=>{ CSN.scr=null; CSN.air=null; send({type:'contender', on:false}); csDraw() }
+/* THE BOARD — everyone on the night, with only the verdicts that have been
+   REVEALED. For the break between fighters and for the end of the night. The
+   picked fighter sits on the white row. */
 window.csBoard=()=>{
   if(!UBA.bouts.length){ deckLog('no card loaded — nothing to put on the board'); return }
   const rows=[]
@@ -2173,16 +2222,23 @@ window.csBoard=()=>{
     const id=csId(b,side)
     rows.push({ name: side==='a'?b.a:b.b,
       res: [b.wc, b.winner ? (b.winner===side?'WON':'LOST') : ''].filter(Boolean).join(' · '),
-      verdict: CSN.v[id]||null, cur: CSN.on===id })
+      verdict: csShown(id), cur: CSN.sel===id })
   }))
   send({type:'contender', action:'board', d:{ brand:CSN.brand, number:CSN.number, rows }})
-  CSN.scr='board'; csDraw()      // nobody's Split or Page is lit while the board is up
+  CSN.scr='board'; CSN.air=null; csDraw()
+}
+/* Every name on the card, sent the moment the card is loaded. The verdict
+   screen fetches each record and photo then, hours before they are needed, so
+   the first screen of the night has nothing left to wait for. Shows nothing. */
+function csPrep(){
+  const names=[]; UBA.bouts.forEach(b=>{ names.push(b.a, b.b) })
+  if(names.length) send({type:'contender', action:'prep', d:{ names }})
 }
 
 /* DEMO — control.html#csdemo loads a made-up CCS card into the deck so the
-   Contender final block can be seen and pressed with no contender night on
-   record. Nothing is read from or written to the database. It exists because
-   a throwaway night in the real database is not a safe test: the bot's clocks
+   Verdicts stage can be seen and pressed with no contender night on record.
+   Nothing is read from or written to the database. It exists because a
+   throwaway night in the real database is not a safe test: the bot's clocks
    act on any scheduled event. The buttons still SEND, so this is also how the
    verdict screen is rehearsed. */
 window.csDemo=()=>{
@@ -2190,8 +2246,8 @@ window.csDemo=()=>{
   UBA.id='csdemo'; UBA.name='CCS DEMO'; UBA.date=null; UBA.armed=null
   UBA.bouts=[['Fighter A','Fighter B',null],['Fighter C','Fighter D',null],['Fighter E','Fighter F',null]]
     .map(([a,b,w],i)=>({ bout_number:i+1, seg:'main_card', a, b, wc:'Demo', title:null, method:null, winner:w }))
-  CSN.brand='CCS'; CSN.number='DEMO'; CSN.on=null
-  try{ CSN.v=JSON.parse(sessionStorage.getItem(csKey())||'{}')||{} }catch(e){ CSN.v={} }
+  CSN.brand='CCS'; CSN.number='DEMO'; CSN.sel=null; CSN.scr=null; CSN.air=null
+  csLoad()
   document.getElementById('ubaCardWrap').style.display='block'
   csGate(true)
   csPrep()

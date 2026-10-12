@@ -399,6 +399,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   }
   // Bring the split up. Already up = nothing to do, so the entrance never
   // replays between fighters. On its way out = cancel the exit and start clean.
+  let heldFor = null                // whose contract page is being held
   let opened = false                // has tonight's long entrance played yet
   function splitOn(){
     const sp = $('split')
@@ -443,7 +444,9 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     // THE PAGE IS ALREADY UP AND HELD (the operator pressed Page and has been
     // talking): land the word on it now, and stay. Split takes it away when
     // they are ready. Pressing the other verdict lands again.
-    if(c.classList.contains('on') && c.classList.contains('hold')){
+    // ...but only when it is THIS fighter's page that is held. A verdict for
+    // somebody else must never land on the page with another name on it.
+    if(c.classList.contains('on') && c.classList.contains('hold') && heldFor === d.name){
       $('cW').textContent = yes ? 'CONTRACT' : 'NO CONTRACT'
       c.classList.remove('said','yes','no'); void c.offsetWidth
       $('cLead').textContent = yes ? 'A UBA CONTRACT IS OFFERED TO' : 'THE DECISION ON'
@@ -475,6 +478,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     const c = $('contract')
     c.classList.remove('off','said','yes','no'); void c.offsetWidth
     c.classList.add('on','hold')
+    heldFor = d.name
   }
 
   // 4 · THE BOARD
