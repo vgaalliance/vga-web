@@ -2158,8 +2158,6 @@ function csDraw(){
 const csPayload=(b,side,verdict)=>({ brand:CSN.brand, number:CSN.number, event:UBA.name,
   name: side==='a'?b.a:b.b, opponent: side==='a'?b.b:b.a,
   bout:b.bout_number, wc:b.wc, won: b.winner ? b.winner===side : null,
-  // how they won, when the card knows it: the contract page prints "KO" under TONIGHT
-  method: b.winner===side && b.method ? String(b.method).toUpperCase().replace('DECISION','DEC') : null,
   verdict: verdict||null })
 // What the screen is ALLOWED to know: a verdict that has been set but not
 // revealed is still a secret, so it goes out as none.

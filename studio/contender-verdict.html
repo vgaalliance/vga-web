@@ -303,8 +303,9 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     while(px > min && el.scrollWidth > max){ px -= 2; el.style.fontSize = px + 'px' }
   }
   const series = d => (d.brand ? d.brand + (d.number != null ? ' ' + d.number : '') : '')
-  const resultLine = d => [d.wc, d.won === true ? ('WON' + (d.method ? ' BY ' + d.method : '')) : d.won === false ? 'LOST' : '']
-    .filter(Boolean).join(' · ')
+  // Division, and won or lost when the deck has it scored. Never HOW: the
+  // method is entered after the show.
+  const resultLine = d => [d.wc, d.won === true ? 'WON' : d.won === false ? 'LOST' : ''].filter(Boolean).join(' · ')
 
   // The record, read here rather than sent by the deck: the deck knows a name,
   // the database knows what they have done. A failed read draws no numbers --
@@ -353,10 +354,13 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   async function stats(d){
     const box = $('cStats'); box.innerHTML = ''
     const cell = (v, l, acc) => `<div class="${acc ? 'acc' : ''}">${esc(v)}<small>${l}</small></div>`
-    const tonight = d.won === true ? cell(d.method || 'WIN', 'TONIGHT', true) : d.won === false ? cell('LOSS', 'TONIGHT', true) : ''
+    // The record only. A "TONIGHT: KO" cell stood beside it at first, but how
+    // a fight ended is entered in the admin panel AFTER the show: on the night
+    // this screen cannot know it, and a guess beside a real record is worse
+    // than nothing.
     const r = await record(d.name)
     if(cur !== d) return             // another fighter was shown while this was loading
-    box.innerHTML = (r ? cell(r.wins ?? 0, 'WINS') + cell(r.losses ?? 0, 'LOSSES') + cell(r.draws ?? 0, 'DRAWS') : '') + tonight
+    box.innerHTML = r ? cell(r.wins ?? 0, 'WINS') + cell(r.losses ?? 0, 'LOSSES') + cell(r.draws ?? 0, 'DRAWS') : ''
   }
 
   // The fighter's photo, on the contract page and in their window on the split.
