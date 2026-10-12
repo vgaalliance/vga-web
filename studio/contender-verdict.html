@@ -158,6 +158,10 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 #cline{position:absolute !important;left:420px;right:110px;top:50%;height:3px;background:var(--ice);transform:scaleX(0);transform-origin:left center}
 #contract.on #cline{transform:scaleX(1);transition:transform 1.9s cubic-bezier(.5,0,.9,.6) 1.3s}
 #contract.said #cline{opacity:0;transition:opacity .1s ease}
+/* HELD. The operator brought the page up and is talking: nothing counts down.
+   The line breathes instead of drawing to an end, for as long as it takes. */
+#contract.on.hold:not(.said) #cline{transition:none;transform:scaleX(1);animation:breathe 2.6s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scaleX(.18);opacity:.5}50%{transform:scaleX(1);opacity:1}}
 #contract.on:not(.said) #cDec{animation:blink .5s steps(2,end) 1.3s infinite}
 @keyframes blink{50%{opacity:.25}}
 #cdim{position:absolute;inset:0 0 300px 0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 40% 45%,rgba(6,14,20,0) 30%,rgba(6,14,20,.5) 100%)}
@@ -403,7 +407,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     sp.classList.add('on'); opened = true
   }
   const off = (el) => { if(!el.classList.contains('on')) return
-    el.classList.remove('on'); el.classList.add('off'); setTimeout(() => el.classList.remove('off','said','yes','no'), T.out + 60) }
+    el.classList.remove('on'); el.classList.add('off'); setTimeout(() => el.classList.remove('off','said','yes','no','hold'), T.out + 60) }
 
   // 1 · SPLIT
   function showSplit(d){
@@ -414,7 +418,20 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     splitOn()
   }
 
-  // 2 → 3 · THE CONTRACT, then back to the split by itself
+  // what the contract page says before any verdict is on it
+  function fillPage(d){
+    $('cSeries').textContent = (series(d) ? series(d) + ' · ' : '') + (OWNER[d.brand] ? OWNER[d.brand] + "'S CONTENDER SERIES" : 'CONTENDER SERIES')
+    $('cName').textContent = d.name || ''
+    fit($('cName'), 1680, 230, 90)
+    // Nothing on the page says which way it went until the word does: the
+    // first draft opened on "a UBA contract is offered to", which is the answer.
+    $('cLead').textContent = 'THE DECISION ON'
+    $('cDec').innerHTML = (OWNER[d.brand] ? esc(OWNER[d.brand]) + "'S" : 'THE') + '<br>VERDICT'
+    stats(d); photo(d)
+  }
+
+  // 2 → 3 · THE CONTRACT, then back to the split by itself (one press from
+  // the split), or the word landing on a page that is already held (by hand)
   function reveal(d){
     seq++; cur = d
     const yes = d.verdict === 'contract'
@@ -422,17 +439,21 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     // The split is filled in underneath first, still saying THE VERDICT: the
     // banner only changes once the contract page has had its say.
     fillSplit(d); banner(null); splitOn()
-    $('cSeries').textContent = (series(d) ? series(d) + ' · ' : '') + (OWNER[d.brand] ? OWNER[d.brand] + "'S CONTENDER SERIES" : 'CONTENDER SERIES')
-    $('cName').textContent = d.name || ''
-    fit($('cName'), 1680, 230, 90)
-    $('cW').textContent = yes ? 'CONTRACT' : 'NO CONTRACT'
-    // Nothing on the page says which way it went until the word does: the
-    // first draft opened on "a UBA contract is offered to", which is the answer.
-    $('cLead').textContent = 'THE DECISION ON'
-    $('cDec').innerHTML = (OWNER[d.brand] ? esc(OWNER[d.brand]) + "'S" : 'THE') + '<br>VERDICT'
-    stats(d); photo(d)
     const c = $('contract')
-    c.classList.remove('off','said','yes','no'); void c.offsetWidth
+    // THE PAGE IS ALREADY UP AND HELD (the operator pressed Page and has been
+    // talking): land the word on it now, and stay. Split takes it away when
+    // they are ready. Pressing the other verdict lands again.
+    if(c.classList.contains('on') && c.classList.contains('hold')){
+      $('cW').textContent = yes ? 'CONTRACT' : 'NO CONTRACT'
+      c.classList.remove('said','yes','no'); void c.offsetWidth
+      $('cLead').textContent = yes ? 'A UBA CONTRACT IS OFFERED TO' : 'THE DECISION ON'
+      c.classList.add('said', yes ? 'yes' : 'no')
+      banner(d.verdict)              // under the page, ready for the way back
+      return
+    }
+    fillPage(d)
+    $('cW').textContent = yes ? 'CONTRACT' : 'NO CONTRACT'
+    c.classList.remove('off','said','yes','no','hold'); void c.offsetWidth
     c.classList.add('on')
     later(T.build + T.wait, () => {
       c.classList.add('said', yes ? 'yes' : 'no')
@@ -442,6 +463,18 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
       banner(d.verdict)              // changed while the page still covers it
       off(c)
     })
+  }
+
+  // 2, BY HAND · the contract page brought up and HELD. No verdict on it and
+  // no timer: it waits for Contract / No contract, and then for Split.
+  function page(d){
+    seq++; cur = d
+    off($('board'))
+    fillSplit(d); banner(null); splitOn()        // underneath, for the way back
+    fillPage(d)
+    const c = $('contract')
+    c.classList.remove('off','said','yes','no'); void c.offsetWidth
+    c.classList.add('on','hold')
   }
 
   // 4 · THE BOARD
@@ -481,6 +514,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     const d = c.d || {}
     if(c.action === 'prep'){ prep(d.names); return }      // loads, shows nothing
     if(c.action === 'show')    return showSplit(d)
+    if(c.action === 'page')    return page(d)
     if(c.action === 'verdict') return reveal(d)
     if(c.action === 'board')   return showBoard(d)
   }

@@ -752,7 +752,8 @@
     <h4>VERDICTS — Contender Series <span id="csTitle" style="color:var(--gdim);font-size:15px"></span></h4>
     <div id="csNone" style="color:var(--gdim);font-size:17px">NOT A CONTENDER SERIES NIGHT — load an MCS / CCS / HPCS card in the Card Runner above and its fighters appear here.</div>
     <div id="csSec" style="display:none">
-      <h5>One fighter at a time — SHOW brings up the split (host + fighter) · CONTRACT / NO CONTRACT plays the contract page, then returns to the split by itself</h5>
+      <h5>Step by step: ① SPLIT · ② PAGE (holds while you talk) · ③ CONTRACT / NO CONTRACT (lands and stays) · ① SPLIT again (banner updated) · then the BOARD</h5>
+      <div style="color:var(--gdim);font-size:16px;margin-bottom:6px">or one press: CONTRACT / NO CONTRACT straight from the split plays the page and comes back by itself · nothing to reset — the next fighter's button replaces whoever is up</div>
       <div id="csRows"></div>
       <div class="row" style="margin-top:8px">
         <button onclick="csBoard()">▦ Show the board</button>
@@ -2074,7 +2075,8 @@ function csDraw(){
         <span style="flex:1;min-width:0;font-size:19px${CSN.on===id?';color:var(--g)':''}">${name}${won?' <span class="bdone">✔ won</span>':''}</span>
         <button style="padding:4px 10px;white-space:nowrap" class="${v==='contract'?'active':''}" onclick="csVerdict(${i},'${side}','contract')">Contract</button>
         <button style="padding:4px 10px;white-space:nowrap" class="${v==='no_contract'?'active':''}" onclick="csVerdict(${i},'${side}','no_contract')">No contract</button>
-        <button style="padding:4px 10px;white-space:nowrap;margin-left:18px" class="${CSN.on===id?'active':''}" onclick="csShow(${i},'${side}')">▶ Show</button>
+        <button style="padding:4px 10px;white-space:nowrap;margin-left:18px" class="${CSN.on===id&&CSN.scr==='split'?'active':''}" onclick="csShow(${i},'${side}')">① Split</button>
+        <button style="padding:4px 10px;white-space:nowrap" class="${CSN.on===id&&CSN.scr==='page'?'active':''}" onclick="csPage(${i},'${side}')">② Page</button>
       </div>`
     })
   })
@@ -2090,8 +2092,16 @@ const csPayload=(b,side,verdict)=>({ brand:CSN.brand, number:CSN.number, event:U
    already given, so re-showing somebody does not replay them as undecided). */
 window.csShow=(i,side)=>{
   const b=UBA.bouts[i]; if(!b) return
-  CSN.on=csId(b,side)
+  CSN.on=csId(b,side); CSN.scr='split'
   send({type:'contender', action:'show', d:csPayload(b,side,CSN.v[CSN.on])})
+  csDraw()
+}
+/* PAGE = the contract page for this fighter, brought up and HELD. No verdict
+   on it and no timer: it waits for a verdict button, and then for Split. */
+window.csPage=(i,side)=>{
+  const b=UBA.bouts[i]; if(!b) return
+  CSN.on=csId(b,side); CSN.scr='page'
+  send({type:'contender', action:'page', d:csPayload(b,side,null)})
   csDraw()
 }
 /* The verdict. Pressing the lit one again takes it back and puts the fighter
@@ -2100,11 +2110,15 @@ window.csVerdict=(i,side,verdict)=>{
   const b=UBA.bouts[i]; if(!b) return
   const id=csId(b,side)
   if(CSN.v[id]===verdict){ delete CSN.v[id]; csSave(); csShow(i,side); return }
-  CSN.v[id]=verdict; CSN.on=id; csSave()
+  // Which button stays lit follows the screen: a verdict pressed from the
+  // split returns to the split by itself, one landed on a held page stays there
+  // until Split is pressed.
+  const held = CSN.on===id && CSN.scr==='page'
+  CSN.v[id]=verdict; CSN.on=id; CSN.scr = held ? 'page' : 'split'; csSave()
   send({type:'contender', action:'verdict', d:csPayload(b,side,verdict)})
   csDraw()
 }
-window.csHide=()=>{ CSN.on=null; send({type:'contender', on:false}); csDraw() }
+window.csHide=()=>{ CSN.on=null; CSN.scr=null; send({type:'contender', on:false}); csDraw() }
 /* Every name on the card, sent the moment the card is loaded. The verdict
    screen fetches each record and photo then, hours before they are needed, so
    SHOW at the end of the night has nothing left to wait for. Shows nothing. */
@@ -2125,6 +2139,7 @@ window.csBoard=()=>{
       verdict: CSN.v[id]||null, cur: CSN.on===id })
   }))
   send({type:'contender', action:'board', d:{ brand:CSN.brand, number:CSN.number, rows }})
+  CSN.scr='board'; csDraw()      // nobody's Split or Page is lit while the board is up
 }
 
 /* DEMO — control.html#csdemo loads a made-up CCS card into the deck so the
