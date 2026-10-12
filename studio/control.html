@@ -700,6 +700,27 @@
     <div class="row" id="fcresults" style="margin-top:10px"></div>
   </div></div>
 
+  <!-- ⑥ VERDICTS — Contender Series, the end of the night. A stage like the
+       other five, in GFL mode only. It fills when the loaded card is a
+       contender night (contender_nights_public says so, not the name); on any
+       other card it says why it is empty. Deck state only, never writes the DB
+       — same rule as the card runner: the saved record is entered in the admin
+       panel (Results → Contender Series). Verdicts are per FIGHTER, not per
+       bout: a loser can be offered a contract and a winner can miss. -->
+  <div class="panel" data-panel="verdicts"><div class="sec">
+    <h4>VERDICTS — Contender Series <span id="csTitle" style="color:var(--gdim);font-size:15px"></span></h4>
+    <div id="csNone" style="color:var(--gdim);font-size:17px">NOT A CONTENDER SERIES NIGHT — load an MCS / CCS / HPCS card in the Card Runner above and its fighters appear here.</div>
+    <div id="csSec" style="display:none">
+      <h5>One fighter at a time — SHOW puts them up · CONTRACT / NO CONTRACT plays the verdict</h5>
+      <div id="csRows"></div>
+      <div class="row" style="margin-top:8px">
+        <button class="hide" onclick="csHide()">Hide verdict screen</button>
+        <span style="color:var(--gdim);font-size:16px">the saved record: admin panel → Results → Contender Series</span>
+      </div>
+      <div style="color:#ffb020;font-size:16px;margin-top:6px">⚠ THE VERDICT SCREEN IS NOT BUILT YET — these buttons send, nothing draws on air</div>
+    </div>
+  </div></div>
+
   <div id="log"></div>
 
 <!-- The sponsor list, shared with the tape and the countdown. Loaded before
@@ -1752,7 +1773,9 @@ window.loadStandings=async()=>{
 const STAGES={
   ubae:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ BATTLEROOM'],['match','④ MATCH'],['fancam','⑤ FAN CAM']],
   uba:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ TALE OF TAPE'],['match','④ MATCH'],['fancam','⑤ FAN CAM']],
-  gfl:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ TALE OF TAPE'],['match','④ MATCH'],['fancam','⑤ FAN CAM']]
+  // ⑥ is GFL only: a Contender Series night (MCS / CCS / HPCS) is a GFL card,
+  // and its verdicts are the last thing that happens on it.
+  gfl:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ TALE OF TAPE'],['match','④ MATCH'],['fancam','⑤ FAN CAM'],['verdicts','⑥ VERDICTS']]
 }
 let EV='ubae', STG='countdown'
 // SOLO = one card, bout by bout: UBA and GFL. TEAM = UBAe. Everything on this
@@ -1867,18 +1890,20 @@ window.ubaReload=async()=>{
 const CSN={ brand:null, number:null, v:{}, on:null }
 const csKey=()=>'vga-cs-'+UBA.id
 const csSave=()=>{ try{ sessionStorage.setItem(csKey(), JSON.stringify(CSN.v)) }catch(e){} }
+const csGate=on=>{ document.getElementById('csSec').style.display = on ? '' : 'none'
+  document.getElementById('csNone').style.display = on ? 'none' : ''
+  if(!on) document.getElementById('csTitle').textContent='' }
 async function csCheck(ev){
   CSN.brand=null; CSN.number=null; CSN.v={}; CSN.on=null
-  const sec=document.getElementById('csSec')
   // A failed read hides the section and SAYS so: a contender night whose
   // verdict buttons silently never appear is found at the worst moment.
   const { data, error } = await sb.from('contender_nights_public')
     .select('brand,number').eq('event_id',ev.id).maybeSingle()
-  if(error){ sec.style.display='none'; deckLog('could not check Contender Series for '+ev.name+' — '+error.message); return }
-  if(!data){ sec.style.display='none'; return }
+  if(error){ csGate(false); deckLog('could not check Contender Series for '+ev.name+' — '+error.message); return }
+  if(!data){ csGate(false); return }
   CSN.brand=data.brand; CSN.number=data.number
   try{ CSN.v=JSON.parse(sessionStorage.getItem(csKey())||'{}')||{} }catch(e){ CSN.v={} }
-  sec.style.display=''
+  csGate(true)
   csDraw()
 }
 // One fighter = bout number + corner. Names can repeat and carry quotes, so
@@ -1886,7 +1911,7 @@ async function csCheck(ev){
 const csId=(b,side)=>b.bout_number+':'+side
 function csDraw(){
   const box=document.getElementById('csRows'); if(!box) return
-  document.getElementById('csTitle').textContent = CSN.brand ? CSN.brand+' '+CSN.number : ''
+  document.getElementById('csTitle').textContent = CSN.brand ? '· '+CSN.brand+' '+CSN.number : ''
   if(!UBA.bouts.length){ box.textContent='NO BOUTS BOOKED'; return }
   let html=''
   UBA.bouts.forEach((b,i)=>{
@@ -1894,15 +1919,13 @@ function csDraw(){
     ;['a','b'].forEach(side=>{
       const id=csId(b,side), v=CSN.v[id], name=side==='a'?b.a:b.b
       const won=b.winner===side
-      // Two lines, because the rail is 452px: the name, then its three buttons
-      // with SHOW held at the right edge so it never moves as labels change.
-      html+=`<div style="margin-bottom:8px">
-        <div style="font-size:19px${CSN.on===id?';color:var(--g)':''}">${name}${won?' <span class="bdone">✔ won</span>':''}</div>
-        <div class="row" style="align-items:center;flex-wrap:nowrap;gap:6px;margin-top:3px">
-          <button style="padding:3px 6px;white-space:nowrap;font-size:16px" class="${v==='contract'?'active':''}" onclick="csVerdict(${i},'${side}','contract')">Contract</button>
-          <button style="padding:3px 6px;white-space:nowrap;font-size:16px" class="${v==='no_contract'?'active':''}" onclick="csVerdict(${i},'${side}','no_contract')">No contract</button>
-          <button style="padding:3px 6px;white-space:nowrap;font-size:16px;margin-left:auto" class="${CSN.on===id?'active':''}" onclick="csShow(${i},'${side}')">▶ Show</button>
-        </div>
+      // The name, its two verdicts, and SHOW held at the right edge so it never
+      // moves as the labels change.
+      html+=`<div class="row" style="margin-bottom:6px;align-items:center;flex-wrap:nowrap;gap:8px">
+        <span style="flex:1;min-width:0;font-size:19px${CSN.on===id?';color:var(--g)':''}">${name}${won?' <span class="bdone">✔ won</span>':''}</span>
+        <button style="padding:4px 10px;white-space:nowrap" class="${v==='contract'?'active':''}" onclick="csVerdict(${i},'${side}','contract')">Contract</button>
+        <button style="padding:4px 10px;white-space:nowrap" class="${v==='no_contract'?'active':''}" onclick="csVerdict(${i},'${side}','no_contract')">No contract</button>
+        <button style="padding:4px 10px;white-space:nowrap;margin-left:18px" class="${CSN.on===id?'active':''}" onclick="csShow(${i},'${side}')">▶ Show</button>
       </div>`
     })
   })
@@ -1945,7 +1968,8 @@ window.csDemo=()=>{
   CSN.brand='CCS'; CSN.number='DEMO'; CSN.on=null
   try{ CSN.v=JSON.parse(sessionStorage.getItem(csKey())||'{}')||{} }catch(e){ CSN.v={} }
   document.getElementById('ubaCardWrap').style.display='block'
-  document.getElementById('csSec').style.display=''
+  csGate(true)
+  STG='verdicts'; drawRail()
   ubaDraw()
   deckLog('CONTENDER DEMO — a made-up card, nothing from the database')
 }
@@ -2275,24 +2299,6 @@ loadBetFeed()
       <div class="rbody" id="slotCard"></div></div>
     <div class="rblock" id="rbCorner"><h6>Corners <em id="rbCornerTag">trunks</em></h6>
       <div class="rbody" id="slotCorner"></div></div>
-    <!-- CONTENDER SERIES — the end of the night, in the rail with the card it
-         reads from. Only appears when the loaded card is a contender night
-         (contender_nights_public says so, not the name). Deck state only, never
-         writes the DB — same rule as the card runner: the saved record is
-         entered in the admin panel (Results → Contender Series). Verdicts are
-         per FIGHTER, not per bout: a loser can be offered a contract and a
-         winner can miss. Its display is csCheck()'s alone; refresh() above does
-         not know this block. -->
-    <div class="rblock" id="csSec" style="display:none"><h6>Contender final <em id="csTitle"></em></h6>
-      <div class="rbody">
-        <div style="color:var(--gdim);font-size:15px;margin-bottom:4px">SHOW puts a fighter up · CONTRACT / NO CONTRACT plays the verdict</div>
-        <div id="csRows"></div>
-        <div class="row" style="margin-top:8px">
-          <button class="hide" onclick="csHide()">Hide verdict screen</button>
-        </div>
-        <div style="color:var(--gdim);font-size:15px;margin-top:6px">the saved record: admin panel → Results → Contender Series</div>
-        <div style="color:#ffb020;font-size:15px;margin-top:6px">⚠ THE VERDICT SCREEN IS NOT BUILT YET — these buttons send, nothing draws on air</div>
-      </div></div>
   </aside>
 </body>
 </html>
