@@ -1108,7 +1108,9 @@ const SPLIT_NAME = 'Summer Split'
 
 // Countdown left badge = the league the toggled event belongs to, read off the
 // event's own name so GFL/AMA cards brand themselves without a deck edit.
-const leagueOf = name => /^GFL/i.test(name||'') ? 'GFL' : /^AMA/i.test(name||'') ? 'AMA' : 'UBA'
+// A Contender Series night (MCS / CCS / HPCS) is a GFL event with an owner's
+// name on it, so it dresses as GFL. Without this it fell through to UBA.
+const leagueOf = name => /^(GFL|MCS|CCS|HPCS)\b/i.test(name||'') ? 'GFL' : /^AMA/i.test(name||'') ? 'AMA' : 'UBA'
 
 // The badge every solo graphic wears. The card's NAME decides it when a card is
 // loaded -- the operator can promote a GFL card during a UBA night and it should
@@ -1858,6 +1860,77 @@ window.ubaReload=async()=>{
   log(`↻ card reloaded — ${UBA.bouts.length} bouts${d?` (${d>0?'+':''}${d})`:' (no change)'}${armedNo&&i<0?' · armed bout is gone':''}`)
 }
 
+/* ── CONTENDER SERIES ─────────────────────────────────────────────────────
+   Is the loaded card a contender night, and which fighter got what. The ticks
+   live in sessionStorage keyed by the event, so a deck refresh at the end of a
+   show does not forget who was already given a contract. */
+const CSN={ brand:null, number:null, v:{}, on:null }
+const csKey=()=>'vga-cs-'+UBA.id
+const csSave=()=>{ try{ sessionStorage.setItem(csKey(), JSON.stringify(CSN.v)) }catch(e){} }
+async function csCheck(ev){
+  CSN.brand=null; CSN.number=null; CSN.v={}; CSN.on=null
+  const sec=document.getElementById('csSec')
+  // A failed read hides the section and SAYS so: a contender night whose
+  // verdict buttons silently never appear is found at the worst moment.
+  const { data, error } = await sb.from('contender_nights_public')
+    .select('brand,number').eq('event_id',ev.id).maybeSingle()
+  if(error){ sec.style.display='none'; deckLog('could not check Contender Series for '+ev.name+' — '+error.message); return }
+  if(!data){ sec.style.display='none'; return }
+  CSN.brand=data.brand; CSN.number=data.number
+  try{ CSN.v=JSON.parse(sessionStorage.getItem(csKey())||'{}')||{} }catch(e){ CSN.v={} }
+  sec.style.display=''
+  csDraw()
+}
+// One fighter = bout number + corner. Names can repeat and carry quotes, so
+// they never go into an onclick.
+const csId=(b,side)=>b.bout_number+':'+side
+function csDraw(){
+  const box=document.getElementById('csRows'); if(!box) return
+  document.getElementById('csTitle').textContent = CSN.brand ? CSN.brand+' '+CSN.number : ''
+  if(!UBA.bouts.length){ box.textContent='NO BOUTS BOOKED'; return }
+  let html=''
+  UBA.bouts.forEach((b,i)=>{
+    html+=`<p class="lbl" style="margin:10px 0 4px">// ${b.bout_number===1?'MAIN':'BOUT '+b.bout_number} //</p>`
+    ;['a','b'].forEach(side=>{
+      const id=csId(b,side), v=CSN.v[id], name=side==='a'?b.a:b.b
+      const won=b.winner===side
+      // Two lines, because the rail is 452px: the name, then its three buttons
+      // with SHOW held at the right edge so it never moves as labels change.
+      html+=`<div style="margin-bottom:8px">
+        <div style="font-size:19px${CSN.on===id?';color:var(--g)':''}">${name}${won?' <span class="bdone">✔ won</span>':''}</div>
+        <div class="row" style="align-items:center;flex-wrap:nowrap;gap:6px;margin-top:3px">
+          <button style="padding:3px 6px;white-space:nowrap;font-size:16px" class="${v==='contract'?'active':''}" onclick="csVerdict(${i},'${side}','contract')">Contract</button>
+          <button style="padding:3px 6px;white-space:nowrap;font-size:16px" class="${v==='no_contract'?'active':''}" onclick="csVerdict(${i},'${side}','no_contract')">No contract</button>
+          <button style="padding:3px 6px;white-space:nowrap;font-size:16px;margin-left:auto" class="${CSN.on===id?'active':''}" onclick="csShow(${i},'${side}')">▶ Show</button>
+        </div>
+      </div>`
+    })
+  })
+  box.innerHTML=html
+}
+const csPayload=(b,side,verdict)=>({ brand:CSN.brand, number:CSN.number, event:UBA.name,
+  name: side==='a'?b.a:b.b, opponent: side==='a'?b.b:b.a,
+  bout:b.bout_number, wc:b.wc, won: b.winner ? b.winner===side : null, verdict: verdict||null })
+/* SHOW = this fighter is on the verdict screen, undecided (or with the verdict
+   already given, so re-showing somebody does not replay them as undecided). */
+window.csShow=(i,side)=>{
+  const b=UBA.bouts[i]; if(!b) return
+  CSN.on=csId(b,side)
+  send({type:'contender', action:'show', d:csPayload(b,side,CSN.v[CSN.on])})
+  csDraw()
+}
+/* The verdict. Pressing the lit one again takes it back and puts the fighter
+   up undecided — the way out of a mis-press, on air and on the deck. */
+window.csVerdict=(i,side,verdict)=>{
+  const b=UBA.bouts[i]; if(!b) return
+  const id=csId(b,side)
+  if(CSN.v[id]===verdict){ delete CSN.v[id]; csSave(); csShow(i,side); return }
+  CSN.v[id]=verdict; CSN.on=id; csSave()
+  send({type:'contender', action:'verdict', d:csPayload(b,side,verdict)})
+  csDraw()
+}
+window.csHide=()=>{ CSN.on=null; send({type:'contender', on:false}); csDraw() }
+
 window.ubaLoadCard=async(ev)=>{
   const { data } = await sb.from('event_matches')
     .select('bout_number,card_segment,weight_class,is_title_fight,title_name,status,method,fighter_a_name,fighter_b_name,winner_corner')
@@ -1875,6 +1948,7 @@ window.ubaLoadCard=async(ev)=>{
           : /^(b|fighter_b)$/i.test(r.winner_corner||'')?'b':null }))
   document.getElementById('ubaCardWrap').style.display=UBA.bouts.length?'block':'none'
   ubaDraw()
+  await csCheck(ev)   // a contender night grows its verdict section
   mnCountdown()   // picking the event is when the main event becomes known
 }
 
@@ -1902,6 +1976,7 @@ function ubaDraw(){
   })
   box.innerHTML=html
   if(window.voCoverage) voCoverage()
+  if(CSN.brand) csDraw()   // a win scored above shows on the verdict rows too
 }
 
 /* ARM = this bout is next on screen: names the fight clock, pre-fills the
@@ -2177,6 +2252,24 @@ loadBetFeed()
       <div class="rbody" id="slotCard"></div></div>
     <div class="rblock" id="rbCorner"><h6>Corners <em id="rbCornerTag">trunks</em></h6>
       <div class="rbody" id="slotCorner"></div></div>
+    <!-- CONTENDER SERIES — the end of the night, in the rail with the card it
+         reads from. Only appears when the loaded card is a contender night
+         (contender_nights_public says so, not the name). Deck state only, never
+         writes the DB — same rule as the card runner: the saved record is
+         entered in the admin panel (Results → Contender Series). Verdicts are
+         per FIGHTER, not per bout: a loser can be offered a contract and a
+         winner can miss. Its display is csCheck()'s alone; refresh() above does
+         not know this block. -->
+    <div class="rblock" id="csSec" style="display:none"><h6>Contender final <em id="csTitle"></em></h6>
+      <div class="rbody">
+        <div style="color:var(--gdim);font-size:15px;margin-bottom:4px">SHOW puts a fighter up · CONTRACT / NO CONTRACT plays the verdict</div>
+        <div id="csRows"></div>
+        <div class="row" style="margin-top:8px">
+          <button class="hide" onclick="csHide()">Hide verdict screen</button>
+        </div>
+        <div style="color:var(--gdim);font-size:15px;margin-top:6px">the saved record: admin panel → Results → Contender Series</div>
+        <div style="color:#ffb020;font-size:15px;margin-top:6px">⚠ THE VERDICT SCREEN IS NOT BUILT YET — these buttons send, nothing draws on air</div>
+      </div></div>
   </aside>
 </body>
 </html>
