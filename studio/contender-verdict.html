@@ -25,7 +25,9 @@
      boxed mark, tiny tracked labels. Nothing here writes anything: a verdict
      is saved in the admin panel (Results → Contender Series).
 
-     Check it without a deck: contender-verdict.html?demo -->
+     Check it without a deck: contender-verdict.html?demo
+     With real names, so the record fills in:  ?demo=Sephtis,Xirved
+     (the first gets the contract, the second does not; nothing is saved) -->
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -317,16 +319,20 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 
   if(new URLSearchParams(location.search).has('demo')){
     document.body.style.background = '#5d6975'
-    const f = { brand:'CCS', number:1, name:'Fighter A', opponent:'Fighter B', bout:1, wc:'Heavyweight', won:true, method:'KO' }
-    const rows = v => [['Fighter C','Lightweight · won','contract'],['Fighter D','Lightweight · lost','no_contract'],['Fighter A','Heavyweight · won KO',v,1],
-      ['Fighter B','Heavyweight · lost',null],['Fighter E','Welterweight · won',null],['Fighter F','Welterweight · lost',null]]
+    // Made-up names by default. Real ones only when somebody types them into
+    // the URL: a public page must not carry a real fighter's invented verdict.
+    const [nA, nB] = (new URLSearchParams(location.search).get('demo') || '').split(',').map(x => x.trim()).filter(Boolean)
+    const A = nA || 'Fighter A', B = nB || 'Fighter B'
+    const f = { brand:'CCS', number:1, name:A, opponent:B, bout:1, wc:'Heavyweight', won:true, method:'KO' }
+    const rows = v => [['Fighter C','Lightweight · won','contract'],['Fighter D','Lightweight · lost','no_contract'],[A,'Heavyweight · won KO',v,1],
+      [B,'Heavyweight · lost',null],['Fighter E','Welterweight · won',null],['Fighter F','Welterweight · lost',null]]
       .map(([name,res,verdict,cur]) => ({ name, res, verdict, cur:!!cur }))
     const go = (ms, c) => setTimeout(() => handle({ type:'contender', ...c }), ms)
     go(500,   { action:'show', d:{ ...f, verdict:null } })
     go(4000,  { action:'verdict', d:{ ...f, verdict:'contract' } })
     go(15500, { action:'board', d:{ brand:'CCS', number:1, rows:rows('contract') } })
-    go(21500, { action:'show', d:{ ...f, name:'Fighter B', won:false, method:null, verdict:null } })
-    go(24500, { action:'verdict', d:{ ...f, name:'Fighter B', won:false, method:null, verdict:'no_contract' } })
+    go(21500, { action:'show', d:{ ...f, name:B, won:false, method:null, verdict:null } })
+    go(24500, { action:'verdict', d:{ ...f, name:B, won:false, method:null, verdict:'no_contract' } })
     return
   }
   sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, ({ payload:c }) => handle(c)).subscribe()
