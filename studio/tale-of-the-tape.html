@@ -683,8 +683,12 @@ function photosSettled() {
 // after an OBS source reload must put the tape straight back, not replay eight
 // seconds of intro over a graphic that was already on air.
 async function showTape(opts) {
-  await photosSettled();
+  // The intro does NOT wait for the photos: it has seven seconds of opening
+  // before a fighter is on screen, and it takes the photos itself the moment
+  // they land. Waiting here capped at 1.5s, which a cold 1.7MB cut-out misses,
+  // and the intro then ran its whole length on two silhouettes.
   if (opts && opts.intro && window.__playIntro) { window.__playIntro(playTape); return; }
+  await photosSettled();
   if (window.__cancelIntro) window.__cancelIntro();
   playTape();
 }
@@ -2174,6 +2178,23 @@ editOverlay.addEventListener('click', (e) => {
   // Read off the tape, never from a payload of its own: whatever the tape is
   // about to show is what the intro announces, including a matchup typed into
   // the edit panel that no deck ever sent.
+  // The same picture the tape has painted, silhouette included. The glint
+  // takes it as a MASK, so the light lands on the fighter and nowhere else.
+  // Its own function because it runs twice: when the intro starts, and again
+  // when the photos finish loading -- on a first press they are still on
+  // their way, and what the tape is showing at that instant is a silhouette.
+  function pics(){
+    root.querySelectorAll('[data-pic]').forEach(p => {
+      const box = document.getElementById('imgBox'+p.dataset.pic);
+      const bg = box ? box.style.backgroundImage : '';
+      const sil = !bg || bg.indexOf('avatar-blank') !== -1;
+      p.style.backgroundImage = bg;
+      p.classList.toggle('sil', sil); p.classList.toggle('iv-sil', sil);
+      const g = p.querySelector('.iv-glint');
+      if(g){ g.style.webkitMaskImage = bg; g.style.maskImage = bg; }
+    });
+  }
+
   function fill(){
     const side = S => {
       const flagOn = (document.getElementById('flagRow'+S)||{style:{}}).style.display !== 'none';
@@ -2218,17 +2239,7 @@ editOverlay.addEventListener('click', (e) => {
         c.append(b, l); box.append(c);
       });
     });
-    // The same picture the tape has painted, silhouette included. The glint
-    // takes it as a MASK, so the light lands on the fighter and nowhere else.
-    root.querySelectorAll('[data-pic]').forEach(p => {
-      const box = document.getElementById('imgBox'+p.dataset.pic);
-      const bg = box ? box.style.backgroundImage : '';
-      const sil = !bg || bg.indexOf('avatar-blank') !== -1;
-      p.style.backgroundImage = bg;
-      p.classList.toggle('sil', sil); p.classList.toggle('iv-sil', sil);
-      const g = p.querySelector('.iv-glint');
-      if(g){ g.style.webkitMaskImage = bg; g.style.maskImage = bg; }
-    });
+    pics();
     // Names are whatever length a fighter chose. Shrink to the room, measured
     // with a Range for the reason fitBoutTitle gives.
     root.querySelectorAll('[data-max]').forEach(el => {
@@ -2593,6 +2604,7 @@ editOverlay.addEventListener('click', (e) => {
     frame();
   }
 
+  let runId = 0;
   function reset(){
     openStop();
     timers.forEach(clearTimeout); timers.length = 0;
@@ -2610,6 +2622,7 @@ editOverlay.addEventListener('click', (e) => {
     reset();
     root.style.display = 'block';
     fill();
+    const run = ++runId; try { _photosReady.then(() => { if(run === runId && root.style.display !== 'none') pics() }) } catch {}
     const hasGeo = !!(geoA && geoB), icon = hasGeo ? (txt('tapeMark') || 'VGA') : null;
     mode = icon ? 'open' : 'none'; T = times(mode);
     void root.offsetWidth;
