@@ -5103,19 +5103,31 @@ var APP_BUILD = 'uba-v245';   // keep equal to CACHE_VERSION in sw.js
   /* ON ITS OWN, every so often: the same light crosses the title left to
      right in about a second and a half, roughly every twenty seconds, only
      while Home is showing and nobody is touching the title. */
-  var autoAt = Date.now() + 6000;
+  var autoAt = Date.now() + 6000, sweeping = false;
+  /* THE HELLO (Castle, 2026-10-12): when the app opens the light runs the
+     title three times, fast, there and back and there again -- so people see
+     the title is alive and put a finger on it. Then it is the slow pass
+     below, as before. `left` is how many fast passes are still owed. */
+  var hello = matchMedia('(prefers-reduced-motion:reduce)').matches ? 0 : 3;
   function autoSweep(){
-    if(down || currentTab !== 'home' || document.hidden){ autoAt = Date.now() + 4000; return; }
-    var t0 = performance.now(), dur = 1500;
+    if(sweeping) return;
+    if(down || currentTab !== 'home' || document.hidden){ autoAt = Date.now() + (hello ? 400 : 4000); return; }
+    var fast = hello > 0, back = fast && hello === 2;
+    var t0 = performance.now(), dur = fast ? 420 : 1500; sweeping = true;
     (function tick(){
-      if(down) return;
+      if(down){ sweeping = false; hello = 0; return; }
       var f = Math.min(1, (performance.now() - t0) / dur), e = f < .5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2;
+      if(back) e = 1 - e;
       grad.setAttribute('cx', 40 + 313 * e); grad.setAttribute('cy', 190 - 150 * Math.sin(Math.PI * (.15 + .7 * e)));   /* along the arc the letters sit on */
       fx.classList.add('on');
-      if(f < 1) requestAnimationFrame(tick); else { fx.classList.remove('on'); autoAt = Date.now() + 18000 + Math.random() * 6000; }
+      if(f < 1){ requestAnimationFrame(tick); return; }
+      sweeping = false;
+      if(fast && --hello > 0){ autoSweep(); return; }   /* the next pass starts where this one ended, light still on */
+      fx.classList.remove('on'); autoAt = Date.now() + 18000 + Math.random() * 6000;
     })();
   }
-  setInterval(function(){ if(Date.now() >= autoAt) autoSweep(); }, 500);
+  if(hello) autoAt = Date.now() + 1200;
+  setInterval(function(){ if(Date.now() >= autoAt) autoSweep(); }, hello ? 200 : 500);
 })();
 var worldPts = [], worldArcs = [], worldStarted = false, worldLitSlugs = '', worldSwapped = [], worldFace = null, worldFaced = false;   // the last pair lit on the board; reset when the board repaints
 
