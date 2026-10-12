@@ -21,6 +21,11 @@
      cards for a contender night the same way (data-series there). If this
      box ever grows taller, raise that lift.
 
+     Inside overlay.html this page is a FRAME, not a source (?embed=1): it
+     takes its commands from the overlay and does not join the channel itself.
+     That is how a Contender night needs nothing added to OBS. Opened on its
+     own URL it still works as a source, for a scene without the overlay.
+
      Check it without a deck: contender-fight-clock.html?demo -->
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
 <style>
@@ -261,6 +266,11 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     return   // a demo never joins the live channel
   }
 
+  // Riding inside overlay.html: the overlay passes the commands in.
+  if(new URLSearchParams(location.search).has('embed')){
+    addEventListener('message', e => { if(e.data && e.data.vgaCmd) handle(e.data.vgaCmd) })
+    return
+  }
   const _sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
     'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
   _sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, ({ payload:c }) => handle(c)).subscribe()

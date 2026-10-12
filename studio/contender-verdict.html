@@ -25,6 +25,11 @@
      boxed mark, tiny tracked labels. Nothing here writes anything: a verdict
      is saved in the admin panel (Results → Contender Series).
 
+     Inside overlay.html this page is a FRAME, not a source (?embed=1): it
+     takes its commands from the overlay and does not join the channel itself.
+     That is how a Contender night needs nothing added to OBS. Opened on its
+     own URL it still works as a source, for a scene without the overlay.
+
      Check it without a deck: contender-verdict.html?demo
      With real names, so the record fills in:  ?demo=Sephtis,Xirved
      (the first gets the contract, the second does not; nothing is saved) -->
@@ -424,6 +429,11 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     go(15500, { action:'board', d:{ brand:'CCS', number:1, rows:rows('contract') } })
     go(21500, { action:'show', d:{ ...f, name:B, won:false, method:null, verdict:null } })
     go(24500, { action:'verdict', d:{ ...f, name:B, won:false, method:null, verdict:'no_contract' } })
+    return
+  }
+  // Riding inside overlay.html: the overlay passes the commands in.
+  if(new URLSearchParams(location.search).has('embed')){
+    addEventListener('message', e => { if(e.data && e.data.vgaCmd) handle(e.data.vgaCmd) })
     return
   }
   sb.channel('vga-overlay').on('broadcast', { event:'cmd' }, ({ payload:c }) => handle(c)).subscribe()

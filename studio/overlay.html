@@ -1077,7 +1077,50 @@ function ctaCmd(c){
   if(hold) ctaTimer = setTimeout(()=>box.classList.remove('show'), hold)
 }
 
+// ── CONTENDER SERIES RIDES IN THIS SOURCE ────────────────────────────────
+// The series has two graphics of its own, a fight clock and the verdict
+// screen. They are separate files (contender-fight-clock.html,
+// contender-verdict.html) but NOT separate OBS sources: this overlay is
+// already in the scenes, so it carries them, each in a see-through frame, and
+// hands them every command they care about. Nothing is added to OBS for a
+// Contender Series night.
+// A frame is only made the first time it is needed, so on every other night
+// this is two ifs and nothing else. The frames take their commands from here
+// (postMessage), never from the channel: one listener, so nothing is handled
+// twice and nothing is missed while a frame is still loading.
+const CSF = {}
+function csFrame(key, file, z){
+  if(CSF[key]) return CSF[key]
+  const f = document.createElement('iframe')
+  f.src = file + '?embed=1'
+  f.setAttribute('scrolling', 'no')
+  f.style.cssText = 'position:fixed;left:0;top:0;width:1920px;height:1080px;border:0;background:transparent;pointer-events:none;z-index:' + z
+  const o = CSF[key] = { f, ready:false, q:[] }
+  f.addEventListener('load', () => { o.ready = true; o.q.splice(0).forEach(m => f.contentWindow.postMessage(m, '*')) })
+  document.body.appendChild(f)
+  return o
+}
+function csPass(key, file, z, c){
+  const o = csFrame(key, file, z), m = { vgaCmd:c }
+  if(o.ready) o.f.contentWindow.postMessage(m, '*'); else o.q.push(m)
+}
+function contenderRide(c){
+  // the verdict screen: over everything
+  if(c.type === 'contender') csPass('verdict', 'contender-verdict.html', 9000, c)
+  // the clock: under this overlay's own cards, which lift to clear it. Once it
+  // exists it hears EVERYTHING, because a command with no series is how it
+  // learns the card changed and it should leave.
+  if(c.series || CSF.clock) csPass('clock', 'contender-fight-clock.html', 1, c)
+}
+// Back from an OBS refresh mid-fight: the clock remembers its own state, so if
+// it was up within the last six hours, give it its frame back straight away.
+try{
+  const old = JSON.parse(localStorage.getItem('vga-cs-clock') || 'null')
+  if(old && old.on && Date.now() - old.at < 6 * 3600e3) csFrame('clock', 'contender-fight-clock.html', 1)
+}catch{}
+
 function handle(c){
+  contenderRide(c)
   // Which show is running decides where the lower-left widgets sit. The UBA
   // fight clock is CENTRED at the bottom, so that corner is free; the UBAe one
   // is pinned bottom-left and the dossier, flash and odds land on top of it.
