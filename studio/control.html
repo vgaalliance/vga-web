@@ -762,13 +762,13 @@
       <div id="csRows"></div>
       <h5 style="margin-top:14px">② ON AIR — <span id="csNow">pick a fighter above</span></h5>
       <div class="row" style="margin-bottom:6px">
-        <button id="csbSplit" onclick="csShow()">① Split</button>
-        <button id="csbPage" onclick="csPage()">② Page</button>
-        <button id="csbReveal" onclick="csReveal()">③ Reveal</button>
-        <button id="csbBoard" onclick="csBoard()">▦ Board</button>
-        <button class="hide" onclick="csHide()">Hide</button>
+        <button id="csbSplit" onclick="csShow()">① Split screen</button>
+        <button id="csbPage" onclick="csPage()">② Contract screen</button>
+        <button id="csbReveal" onclick="csReveal()">③ Reveal verdict</button>
+        <button id="csbBoard" onclick="csBoard()">▦ Verdict board</button>
+        <button class="hide" onclick="csHide()">Hide all</button>
       </div>
-      <div style="color:var(--gdim);font-size:16px">Split = host + fighter · Page = the contract page, held while you talk · Reveal = the verdict you set, landing · a verdict only reaches the banner and the board once it is revealed</div>
+      <div style="color:var(--gdim);font-size:16px">Split screen = host + fighter, banner says THE VERDICT · Contract screen = the fighter's contract, held while you talk, no answer on it · Reveal verdict = the one you set lands · Verdict board = the whole night · nothing you set is shown until you reveal it</div>
       <div style="color:var(--gdim);font-size:16px;margin-top:4px">the saved record: admin panel → Results → Contender Series</div>
     </div>
   </div></div>
@@ -2149,11 +2149,11 @@ function csDraw(){
   document.getElementById('csNow').textContent = (f
     ? 'PICKED: '+f.name+(v ? ' · '+csWord(v)+(rev?' (revealed)':' (not shown yet)') : ' · no verdict set')
     : 'pick a fighter above')
-    + (CSN.scr==='board' ? '  ·  ON SCREEN: the board' : up ? '  ·  ON SCREEN: '+up.name+' ('+CSN.scr+')' : '  ·  ON SCREEN: nothing')
+    + (CSN.scr==='board' ? '  ·  ON SCREEN: the verdict board' : up ? '  ·  ON SCREEN: '+up.name+' ('+(CSN.scr==='page'?'contract screen':'split screen')+')' : '  ·  ON SCREEN: nothing')
   const lit=(id,on)=>document.getElementById(id).classList.toggle('active',!!on)
   const mine=f&&CSN.air===CSN.sel
   lit('csbSplit', mine&&CSN.scr==='split'); lit('csbPage', mine&&CSN.scr==='page'); lit('csbBoard', CSN.scr==='board')
-  document.getElementById('csbReveal').textContent = v ? '③ Reveal: '+csWord(v) : '③ Reveal'
+  document.getElementById('csbReveal').textContent = v ? '③ Reveal verdict: '+csWord(v) : '③ Reveal verdict'
 }
 const csPayload=(b,side,verdict)=>({ brand:CSN.brand, number:CSN.number, event:UBA.name,
   name: side==='a'?b.a:b.b, opponent: side==='a'?b.b:b.a,
