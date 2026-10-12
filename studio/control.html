@@ -2053,6 +2053,7 @@ async function csCheck(ev){
   try{ CSN.v=JSON.parse(sessionStorage.getItem(csKey())||'{}')||{} }catch(e){ CSN.v={} }
   csGate(true)
   csDraw()
+  csPrep()
 }
 // One fighter = bout number + corner. Names can repeat and carry quotes, so
 // they never go into an onclick.
@@ -2104,6 +2105,13 @@ window.csVerdict=(i,side,verdict)=>{
   csDraw()
 }
 window.csHide=()=>{ CSN.on=null; send({type:'contender', on:false}); csDraw() }
+/* Every name on the card, sent the moment the card is loaded. The verdict
+   screen fetches each record and photo then, hours before they are needed, so
+   SHOW at the end of the night has nothing left to wait for. Shows nothing. */
+function csPrep(){
+  const names=[]; UBA.bouts.forEach(b=>{ names.push(b.a, b.b) })
+  if(names.length) send({type:'contender', action:'prep', d:{ names }})
+}
 /* THE BOARD — everyone on the night with the verdicts given so far. For the
    break between fighters and for the end of the night. The fighter last shown
    sits on the white row. */
@@ -2134,6 +2142,7 @@ window.csDemo=()=>{
   try{ CSN.v=JSON.parse(sessionStorage.getItem(csKey())||'{}')||{} }catch(e){ CSN.v={} }
   document.getElementById('ubaCardWrap').style.display='block'
   csGate(true)
+  csPrep()
   STG='verdicts'; drawRail()
   ubaDraw()
   deckLog('CONTENDER DEMO — a made-up card, nothing from the database. Its buttons SEND for real: not during a live show')

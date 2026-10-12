@@ -60,18 +60,50 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 .screen{position:absolute;inset:0;visibility:hidden}
 
 /* ── 1 · SPLIT ─────────────────────────────────────────────────────────── */
-#split{opacity:0;transition:opacity .28s ease, visibility 0s linear .28s}
-#split.on{visibility:visible;opacity:1;transition:opacity .36s ease}
+/* THE ENTRANCE. One sheet of ink is wiped across the screen from the left with
+   the windows still shut; the series' name holds on it for a beat; then the
+   windows open (each a pair of shutters parting), the top furniture drops in
+   and the banner rises. Leaving is one wipe off to the right. It plays when
+   the split comes up from nothing, not when the next fighter replaces the
+   last one on a split that is already there. */
+#split{clip-path:inset(0 100% 0 0)}
+#split.on{visibility:visible;clip-path:inset(0 0 0 0);transition:clip-path .6s var(--in)}
+#split.off{visibility:visible;clip-path:inset(0 0 0 100%);transition:clip-path .48s cubic-bezier(.6,0,.8,.2)}
 /* the frame is one sheet of ink with two windows cut out of it */
 #split .frame{position:absolute;inset:0;clip-path:path(evenodd,'M0 0H1920V1080H0Z M56 128H936V648H56Z M984 128H1864V648H984Z')}
-#split .win{position:absolute;top:128px;width:880px;height:520px;outline:3px solid rgba(143,219,250,.6);outline-offset:-1px}
-#split .top{opacity:0;transform:translateY(-18px);transition:opacity .2s ease, transform .2s ease}
-#split.on .top{opacity:1;transform:none;transition:opacity .4s ease .18s, transform .5s var(--in) .18s}
-#split .tagc{opacity:0;transition:opacity .2s ease}
-#split.on .tagc{opacity:1;transition:opacity .4s ease .4s}
+#split .win{position:absolute;top:128px;width:880px;height:520px;outline:3px solid rgba(143,219,250,.6);outline-offset:-1px;opacity:0}
+#split.on .win{opacity:1;transition:opacity .3s ease 1.5s} #split.off .win{opacity:1}
+/* the shutters: the SAME ink as the sheet, pinned to the screen so its lines
+   run straight through a shut window and it reads as one unbroken sheet. They
+   open by being clipped away, not scaled: a transform would unpin the ink. */
+#split .sh{position:absolute;width:880px;height:261px;background-attachment:fixed;clip-path:inset(0 0 0 0)}
+#split .sh.t{top:128px} #split .sh.b{top:388px}
+#split.on .sh{transition:clip-path .75s var(--in) 1.5s}
+#split.on .sh.two{transition-delay:1.64s}
+#split.on .sh.t,#split.off .sh.t{clip-path:inset(0 0 100% 0)}
+#split.on .sh.b,#split.off .sh.b{clip-path:inset(100% 0 0 0)}
+#sLock{position:absolute;left:0;right:0;top:300px;text-align:center;opacity:0;pointer-events:none}
+#sLock .big{font-size:150px}
+#split.on #sLock{animation:lockup 1.35s ease .3s 1 both}
+@keyframes lockup{0%{opacity:0;transform:translateY(14px)}22%{opacity:1;transform:none}78%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-10px)}}
+/* ...and the SHORT version, for every fighter after the first: the same wipe
+   and the windows opening straight away, no title beat. The long entrance is
+   an opening, and an opening happens once a night. */
+#split.on.quick{transition:clip-path .45s var(--in)}
+#split.on.quick #sLock{animation:none}
+#split.on.quick .sh{transition-delay:.2s} #split.on.quick .sh.two{transition-delay:.28s}
+#split.on.quick .win{transition-delay:.2s}
+#split.on.quick .top{transition-delay:.25s} #split.on.quick .tagc{transition-delay:.6s}
+#split.on.quick #banner{transition-delay:.3s}
+#split .top{opacity:0;transform:translateY(-18px)}
+#split.on .top{opacity:1;transform:none;transition:opacity .4s ease 1.6s, transform .5s var(--in) 1.6s}
+#split.off .top{opacity:1;transform:none}
+#split .tagc{opacity:0}
+#split.on .tagc{opacity:1;transition:opacity .4s ease 2.15s} #split.off .tagc{opacity:1}
 #banner{position:absolute;left:0;right:0;bottom:0;height:372px;border-top:4px solid var(--ice);display:flex;align-items:center;padding:0 90px;gap:60px;
-  background:rgba(10,28,41,.62);transform:translateY(100%);transition:transform .32s cubic-bezier(.6,0,.8,.2), background .01s linear .32s}
-#split.on #banner{transform:none;transition:transform .56s var(--in) .1s}
+  background:rgba(10,28,41,.62);transform:translateY(100%)}
+#split.on #banner{transform:none;transition:transform .62s var(--in) 1.72s}
+#split.off #banner{transform:none}
 #banner.yes{background:linear-gradient(180deg,#FBFDFE 0%,#E3EBF0 100%);color:var(--navy)}
 #banner .who{flex:none;max-width:1000px}
 #banner .res{opacity:.65;margin-bottom:10px}
@@ -197,6 +229,9 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   <!-- the fighter's window carries their photo when they have one (most
        fighters are not on camera); with no photo it stays a hole, like the host's -->
   <div class="abs paper" id="sPhotoBox" style="left:984px;top:128px;width:880px;height:520px;overflow:hidden;display:none"><img id="sPhoto" alt=""></div>
+  <i class="sh t ink" style="left:56px"></i><i class="sh b ink" style="left:56px"></i>
+  <i class="sh t two ink" style="left:984px"></i><i class="sh b two ink" style="left:984px"></i>
+  <div id="sLock"><div class="lab" id="sLockSub" style="color:var(--ice2);margin-bottom:10px"></div><div class="big">THE VERDICTS</div></div>
   <i class="win" style="left:56px"></i><i class="win" style="left:984px"></i>
   <span class="mark top" style="left:56px;top:44px">UBA</span>
   <span class="pill i abs top" id="sPill" style="left:50%;top:46px;margin-left:-190px">CONTENDER SERIES</span>
@@ -264,16 +299,46 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   // The record, read here rather than sent by the deck: the deck knows a name,
   // the database knows what they have done. A failed read draws no numbers --
   // never 0-0-0, which would be a claim about somebody's career.
-  const recCache = {}
-  async function record(name){
-    if(recCache[name] !== undefined) return recCache[name]
+  const COLS = 'display_name,wins:headline_wins,losses:headline_losses,draws:headline_draws,ko:headline_ko_wins,photo:profile_photo_url'
+  const REC = new Map()             // name, lower case → their row, or null when there is none (or two)
+  const CUT = new Map()             // photo url → true when it is a cut-out (its corner is transparent)
+  const key = n => String(n || '').trim().toLowerCase()
+  // One corner pixel tells a cut-out from a photo that still has its backdrop.
+  function warm(url){
+    if(!url || CUT.has(url)) return
+    CUT.set(url, new Promise(res => {
+      const im = new Image(); im.crossOrigin = 'anonymous'
+      im.onload = () => { try{ const cv = document.createElement('canvas'); cv.width = cv.height = 4
+        const x = cv.getContext('2d'); x.drawImage(im, 0, 0, 4, 4, 0, 0, 4, 4); res(x.getImageData(0, 0, 1, 1).data[3] < 32) }catch{ res(true) } }
+      im.onerror = () => res(true)
+      im.src = url
+    }))
+  }
+  // THE WHOLE CARD, AHEAD OF TIME. The deck sends every name when a contender
+  // card is loaded, so by the end of the night each record is in hand and each
+  // photo is in the cache: Show puts a fighter up with nothing left to fetch.
+  // Without this the first Show of every fighter waited on two round trips,
+  // and the photo arrived a beat after the window had already opened.
+  async function prep(names){
+    const need = [...new Set((names || []).filter(Boolean))].filter(n => !REC.has(key(n)))
+    if(!need.length) return
     try{
-      const { data, error } = await sb.from('fighter_cards')
-        .select('display_name,wins:headline_wins,losses:headline_losses,draws:headline_draws,ko:headline_ko_wins,photo:profile_photo_url')
-        .ilike('display_name', name).limit(2)
-      recCache[name] = (!error && data && data.length === 1) ? data[0] : null
-    }catch{ recCache[name] = null }
-    return recCache[name]
+      const { data, error } = await sb.from('fighter_cards').select(COLS).in('display_name', need)
+      if(error) return
+      const seen = {}
+      for(const r of data || []){ const k = key(r.display_name); seen[k] = (seen[k] || 0) + 1; REC.set(k, seen[k] === 1 ? r : null) }
+      for(const r of data || []) warm(r.photo)
+    }catch{}
+  }
+  async function record(name){
+    const k = key(name)
+    if(REC.has(k)) return REC.get(k)
+    try{
+      const { data, error } = await sb.from('fighter_cards').select(COLS).ilike('display_name', name).limit(2)
+      REC.set(k, (!error && data && data.length === 1) ? data[0] : null)
+    }catch{ REC.set(k, null) }
+    const r = REC.get(k); if(r) warm(r.photo)
+    return r
   }
   async function stats(d){
     const box = $('cStats'); box.innerHTML = ''
@@ -303,13 +368,8 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     // says which: transparent = a figure to stand on the page; solid = a
     // picture, which fills its window on the split and is left OFF the
     // contract page, where a black rectangle on white is worse than no figure.
-    const cut = await new Promise(res => {
-      if(!url) return res(true)
-      const im = new Image(); im.crossOrigin = 'anonymous'; im.src = url
-      const test = () => { try{ const cv = document.createElement('canvas'); cv.width = cv.height = 4
-          const x = cv.getContext('2d'); x.drawImage(im, 0, 0, 4, 4, 0, 0, 4, 4); res(x.getImageData(0, 0, 1, 1).data[3] < 32) }catch{ res(true) } }
-      if(im.complete && im.naturalWidth) test(); else { im.addEventListener('load', test, { once:true }); im.addEventListener('error', () => res(true), { once:true }) }
-    })
+    if(url) warm(url)
+    const cut = url ? await CUT.get(url) : true
     if(cur !== d) return
     $('sPhotoBox').classList.toggle('full', !cut)
     if(!cut) $('cPhoto').style.display = 'none'
@@ -326,11 +386,21 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   function fillSplit(d){
     $('sPill').textContent = (series(d) ? series(d) + ' · ' : '') + 'CONTENDER SERIES'
     $('sPill').style.marginLeft = (-$('sPill').offsetWidth / 2) + 'px'
+    $('sLockSub').textContent = (series(d) ? series(d) + ' · ' : '') + (OWNER[d.brand] ? OWNER[d.brand] + "'S CONTENDER SERIES" : 'CONTENDER SERIES')
     $('sHost').textContent = OWNER[d.brand] || 'HOST'
     $('sFighter').textContent = d.name || 'FIGHTER'
     $('sRes').textContent = resultLine(d)
     $('sName').textContent = d.name || ''
     fit($('sName'), 900, 132, 60)
+  }
+  // Bring the split up. Already up = nothing to do, so the entrance never
+  // replays between fighters. On its way out = cancel the exit and start clean.
+  let opened = false                // has tonight's long entrance played yet
+  function splitOn(){
+    const sp = $('split')
+    if(sp.classList.contains('on')) return
+    sp.classList.remove('off'); sp.classList.toggle('quick', opened); void sp.offsetWidth
+    sp.classList.add('on'); opened = true
   }
   const off = (el) => { if(!el.classList.contains('on')) return
     el.classList.remove('on'); el.classList.add('off'); setTimeout(() => el.classList.remove('off','said','yes','no'), T.out + 60) }
@@ -338,9 +408,10 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   // 1 · SPLIT
   function showSplit(d){
     seq++; cur = d
+    prep([d.name, d.opponent])
     off($('contract')); off($('board'))
     fillSplit(d); banner(d.verdict); photo(d)
-    $('split').classList.add('on')
+    splitOn()
   }
 
   // 2 → 3 · THE CONTRACT, then back to the split by itself
@@ -350,7 +421,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     off($('board'))
     // The split is filled in underneath first, still saying THE VERDICT: the
     // banner only changes once the contract page has had its say.
-    fillSplit(d); banner(null); $('split').classList.add('on')
+    fillSplit(d); banner(null); splitOn()
     $('cSeries').textContent = (series(d) ? series(d) + ' · ' : '') + (OWNER[d.brand] ? OWNER[d.brand] + "'S CONTENDER SERIES" : 'CONTENDER SERIES')
     $('cName').textContent = d.name || ''
     fit($('cName'), 1680, 230, 90)
@@ -376,10 +447,10 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   // 4 · THE BOARD
   function showBoard(d){
     seq++
-    off($('contract'))
-    $('split').classList.remove('on')
+    off($('contract')); off($('split'))
     $('bSeries').textContent = (series(d) ? series(d) + ' · ' : '') + 'CONTENDER SERIES'
     const rows = d.rows || [], box = $('brows')
+    prep(rows.map(r => r.name))
     // One column to eight fighters, two beyond: a full card is twenty names.
     const cols = rows.length > 8 ? 2 : 1, per = Math.ceil(rows.length / cols)
     const h = Math.max(46, Math.min(112, Math.floor(680 / Math.max(1, per))))
@@ -400,14 +471,15 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   }
 
   function hideAll(){
-    seq++; cur = null
-    $('split').classList.remove('on'); off($('contract')); off($('board'))
+    seq++; cur = null; opened = false   // Hide ends the segment: the next Show opens it again
+    off($('split')); off($('contract')); off($('board'))
   }
 
   function handle(c){
     if(!c || c.type !== 'contender') return
     if(c.on === false){ hideAll(); return }
     const d = c.d || {}
+    if(c.action === 'prep'){ prep(d.names); return }      // loads, shows nothing
     if(c.action === 'show')    return showSplit(d)
     if(c.action === 'verdict') return reveal(d)
     if(c.action === 'board')   return showBoard(d)
@@ -425,11 +497,17 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
       [B,'Heavyweight · lost',null],['Fighter E','Welterweight · won',null],['Fighter F','Welterweight · lost',null]]
       .map(([name,res,verdict,cur]) => ({ name, res, verdict, cur:!!cur }))
     const go = (ms, c) => setTimeout(() => handle({ type:'contender', ...c }), ms)
+    // The demo loads its fighters first, the way a real night does when the
+    // card is loaded on the deck: a photo arriving a beat after its window
+    // has opened is not what the room will see.
+    prep([A, B]).then(() => Promise.all([...CUT.values()])).then(run, run)
+    function run(){
     go(500,   { action:'show', d:{ ...f, verdict:null } })
     go(4000,  { action:'verdict', d:{ ...f, verdict:'contract' } })
     go(15500, { action:'board', d:{ brand:'CCS', number:1, rows:rows('contract') } })
     go(21500, { action:'show', d:{ ...f, name:B, won:false, method:null, verdict:null } })
     go(24500, { action:'verdict', d:{ ...f, name:B, won:false, method:null, verdict:'no_contract' } })
+    }
     return
   }
   // Riding inside overlay.html: the overlay passes the commands in.

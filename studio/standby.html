@@ -2519,7 +2519,11 @@ sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
   // this screen was showing comes down first: a rankings table must not be
   // what shows through the host's window.
   if(c.type==='contender'){
-    if(c.on!==false) show('off')
+    // Only a SCREEN takes the board down. 'prep' arrives when the card is
+    // loaded, hours earlier: it builds the frame and loads every record and
+    // photo behind whatever this screen is showing.
+    if(['show','verdict','board'].includes(c.action)) show('off')
+    if(!window._csVerdict && c.on===false) return     // hiding a screen that was never made
     if(!window._csVerdict){
       const f=document.createElement('iframe')
       f.src='contender-verdict.html?embed=1'; f.setAttribute('scrolling','no')

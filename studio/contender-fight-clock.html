@@ -199,7 +199,12 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     if(!c || !c.type) return
     // The verdict screen fills the frame at the end of the night, and its
     // banner sits where this box does. Leave when it arrives.
-    if(c.type === 'contender'){ if(c.on !== false && S.on){ show(false); save() } return }
+    if(c.type === 'contender'){
+      // ...but only for a screen. 'prep' loads data and shows nothing, and the
+      // deck sends it on every card (re)load, including one in mid-fight.
+      if(['show','verdict','board'].includes(c.action) && S.on){ show(false); save() }
+      return
+    }
     // THE GATE. Only a contender card drives this box. A command that names a
     // league but carries no series means the deck has a different card loaded:
     // leave, so the solo clock is never sharing the screen with this one.
