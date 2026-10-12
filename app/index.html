@@ -10432,15 +10432,18 @@ function renderBetLevel(upcoming){
      right now. Then what is still open and still moveable. */
   html += stripsHTML(locked, false) + stripsHTML(open, true);
 
-  if(evIds.length){
-    html += '<div class="lab"><b>Place your bets</b><i></i><s>'
-      + evIds.length + (evIds.length === 1 ? ' card' : ' cards') + '</s></div>';
-  } else if(!upcoming.length){
+  /* The card in the block above is not listed a second time under it. */
+  var listIds = evIds.filter(function(id){ return id !== heroEv; });
+
+  if(listIds.length){
+    html += '<div class="lab"><b>'+(heroEv ? 'Also open' : 'Place your bets')+'</b><i></i><s>'
+      + listIds.length + (listIds.length === 1 ? ' card' : ' cards') + '</s></div>';
+  } else if(!evIds.length && !upcoming.length){
     html += '<div class="empty"><b>Nothing is scheduled.</b><br>'
       + 'Pools open the moment a card is published.</div>';
   }
 
-  evIds.forEach(function(id){
+  listIds.forEach(function(id){
     var ps = poolsFor(id);
     var pool = ps.reduce(function(n,p){ return n + Number(p.pool||0); }, 0);
     var bets = ps.reduce(function(n,p){ return n + Number(p.bets||0); }, 0);
@@ -10512,11 +10515,12 @@ function nextHTML(evIds, upcoming){
   var first = evIds.length ? poolsFor(evIds[0]) : null;
   if(first && first.length){
     var pot = first.reduce(function(n,p){ return n + Number(p.pool||0); }, 0);
+    var nb = first.reduce(function(n,p){ return n + Number(p.bets||0); }, 0);
     return { eventId: evIds[0], html: '<div class="bhero still" data-bevent="'+esc(evIds[0])+'">'
       + '<div class="lin"><span>Open now</span></div>'
       + '<div class="nx">'+esc(first[0].event_name || 'Next card')+'</div>'
       + '<div class="lin two"><span>'+first.length+(first.length===1?' market':' markets')
-      + ' \u00b7 '+pot.toLocaleString()+' VC in the pools</span></div>'
+      + ' \u00b7 '+pot.toLocaleString()+' VC in the pools \u00b7 '+nb+(nb===1?' bet':' bets')+'</span></div>'
       + '<span class="chev">&rsaquo;</span></div>' };
   }
   var nx = (upcoming || [])[0];
