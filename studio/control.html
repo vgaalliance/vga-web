@@ -752,13 +752,13 @@
     <h4>VERDICTS — Contender Series <span id="csTitle" style="color:var(--gdim);font-size:15px"></span></h4>
     <div id="csNone" style="color:var(--gdim);font-size:17px">NOT A CONTENDER SERIES NIGHT — load an MCS / CCS / HPCS card in the Card Runner above and its fighters appear here.</div>
     <div id="csSec" style="display:none">
-      <h5>One fighter at a time — SHOW puts them up · CONTRACT / NO CONTRACT plays the verdict</h5>
+      <h5>One fighter at a time — SHOW brings up the split (host + fighter) · CONTRACT / NO CONTRACT plays the contract page, then returns to the split by itself</h5>
       <div id="csRows"></div>
       <div class="row" style="margin-top:8px">
+        <button onclick="csBoard()">▦ Show the board</button>
         <button class="hide" onclick="csHide()">Hide verdict screen</button>
         <span style="color:var(--gdim);font-size:16px">the saved record: admin panel → Results → Contender Series</span>
       </div>
-      <div style="color:#ffb020;font-size:16px;margin-top:6px">⚠ THE VERDICT SCREEN IS NOT BUILT YET — these buttons send, nothing draws on air</div>
     </div>
   </div></div>
 
@@ -2081,7 +2081,10 @@ function csDraw(){
 }
 const csPayload=(b,side,verdict)=>({ brand:CSN.brand, number:CSN.number, event:UBA.name,
   name: side==='a'?b.a:b.b, opponent: side==='a'?b.b:b.a,
-  bout:b.bout_number, wc:b.wc, won: b.winner ? b.winner===side : null, verdict: verdict||null })
+  bout:b.bout_number, wc:b.wc, won: b.winner ? b.winner===side : null,
+  // how they won, when the card knows it: the contract page prints "KO" under TONIGHT
+  method: b.winner===side && b.method ? String(b.method).toUpperCase().replace('DECISION','DEC') : null,
+  verdict: verdict||null })
 /* SHOW = this fighter is on the verdict screen, undecided (or with the verdict
    already given, so re-showing somebody does not replay them as undecided). */
 window.csShow=(i,side)=>{
@@ -2101,6 +2104,20 @@ window.csVerdict=(i,side,verdict)=>{
   csDraw()
 }
 window.csHide=()=>{ CSN.on=null; send({type:'contender', on:false}); csDraw() }
+/* THE BOARD — everyone on the night with the verdicts given so far. For the
+   break between fighters and for the end of the night. The fighter last shown
+   sits on the white row. */
+window.csBoard=()=>{
+  if(!UBA.bouts.length){ deckLog('no card loaded — nothing to put on the board'); return }
+  const rows=[]
+  UBA.bouts.forEach(b=>['a','b'].forEach(side=>{
+    const id=csId(b,side)
+    rows.push({ name: side==='a'?b.a:b.b,
+      res: [b.wc, b.winner ? (b.winner===side?'WON':'LOST') : ''].filter(Boolean).join(' · '),
+      verdict: CSN.v[id]||null, cur: CSN.on===id })
+  }))
+  send({type:'contender', action:'board', d:{ brand:CSN.brand, number:CSN.number, rows }})
+}
 
 /* DEMO — control.html#csdemo loads a made-up CCS card into the deck so the
    Contender final block can be seen and pressed with no contender night on
