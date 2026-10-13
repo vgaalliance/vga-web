@@ -809,6 +809,11 @@ window.send=cmd=>{ if(cmd && cmd.league==null) cmd.league = EV
   // over the box. try/catch because CSN is declared further down this file and
   // a send during load would otherwise meet it before it exists.
   try{ if(cmd && CSN.brand && cmd.series==null){ cmd.series = CSN.brand; cmd.seriesNo = CSN.number } }catch(e){}
+  // A standby board put up by this deck (the fight card, a win scored in the
+  // runner, any view) takes the screen back from the verdict screen: standby
+  // hides it. The Verdicts stage has to know, or its button stays lit over a
+  // screen that is no longer there.
+  try{ if(cmd && cmd.type==='standby' && cmd.on!==false && CSN.scr){ CSN.scr=null; CSN.air=null; clearTimeout(CSN.landT); CSN.landing=null; csDraw() } }catch(e){}
   const l=document.getElementById('log'); const d=document.createElement('div')
   const label=`${cmd.type}${cmd.on===false?' HIDE':''}`
   d.textContent=`TX ${label}…`; l.prepend(d)
@@ -2083,6 +2088,7 @@ window.loadUbaEvents=async()=>{
 window.ubaReload=async()=>{
   const log=m=>{ const l=document.getElementById('log'); const d=document.createElement('div'); d.textContent=m; l.prepend(d) }
   if(!UBA.id){ log('⚠ pick an event above first — nothing to reload'); return }
+  if(UBA.id==='csdemo'){ log('⚠ the contender demo is a made-up card — there is nothing in the database to reload'); return }
   const keep={}
   UBA.bouts.forEach(b=>{ if(b.winner) keep[b.bout_number]={winner:b.winner,method:b.method} })
   // armed is an INDEX, and indices shift when a bout disappears — carry the
@@ -2108,7 +2114,7 @@ window.ubaReload=async()=>{
      air  WHO is on screen now, which is not always who is picked
    v and rev live in sessionStorage keyed by the event, so a deck refresh at the
    end of a show forgets nothing. */
-const CSN={ brand:null, number:null, v:{}, rev:{}, sel:null, scr:null, air:null }
+const CSN={ brand:null, number:null, v:{}, rev:{}, sel:null, scr:null, air:null, eventId:null, landing:null, landT:null }
 const csKey=()=>'vga-cs-'+UBA.id
 const csSave=()=>{ try{ sessionStorage.setItem(csKey(), JSON.stringify({ v:CSN.v, rev:CSN.rev })) }catch(e){} }
 const csLoad=()=>{ CSN.v={}; CSN.rev={}
@@ -2119,15 +2125,28 @@ const csGate=on=>{ document.getElementById('csSec').style.display = on ? '' : 'n
   document.getElementById('csNone').style.display = on ? 'none' : ''
   if(!on) document.getElementById('csTitle').textContent='' }
 async function csCheck(ev){
-  CSN.brand=null; CSN.number=null; CSN.v={}; CSN.rev={}; CSN.sel=null; CSN.scr=null; CSN.air=null
+  // RELOADING THE SAME CARD (↻ Reload card, mid-show) changes nothing until the
+  // answer is back. It used to clear the series first: every command sent
+  // during the read went out unstamped, which told the series' clock to leave
+  // and the solo clock to return, and the deck forgot what was on screen.
+  const same = CSN.eventId === ev.id && !!CSN.brand
+  if(!same){ CSN.brand=null; CSN.number=null; CSN.v={}; CSN.rev={}; CSN.sel=null; CSN.scr=null; CSN.air=null }
+  CSN.eventId = ev.id
   // A failed read hides the section and SAYS so: a contender night whose
   // verdict buttons silently never appear is found at the worst moment.
   const { data, error } = await sb.from('contender_nights_public')
     .select('brand,number').eq('event_id',ev.id).maybeSingle()
-  if(error){ csGate(false); deckLog('could not check Contender Series for '+ev.name+' — '+error.message); return }
-  if(!data){ csGate(false); return }
+  if(error){
+    deckLog('could not check Contender Series for '+ev.name+' — '+error.message+(same?' · keeping it as it was':''))
+    if(!same) csGate(false)
+    return
+  }
+  if(!data){ CSN.brand=null; CSN.number=null; CSN.sel=null; CSN.scr=null; CSN.air=null; csGate(false); return }
   CSN.brand=data.brand; CSN.number=data.number
-  csLoad()
+  if(!same) csLoad()
+  // somebody picked or on screen may have left the card in the reload
+  if(CSN.sel && !csFind(CSN.sel)) CSN.sel=null
+  if(CSN.air && !csFind(CSN.air)){ CSN.air=null; if(CSN.scr!=='board') CSN.scr=null }
   csGate(true)
   csDraw()
   csPrep()
@@ -2159,7 +2178,7 @@ function csDraw(){
       total++; if(v) decided++
       html+=`<div class="row" style="margin-bottom:6px;align-items:center;flex-wrap:nowrap;gap:8px">
         <span class="mnchip${on?' picked':''}" style="flex:1;min-width:0;text-align:left" onclick="csPick(${i},'${side}')">${on?'▶ ':''}${csEsc(name)}${b.winner===side?' ✔':''}</span>
-        <span style="width:92px;font-size:15px;color:${CSN.rev[id]?'var(--g)':'var(--gdim)'}">${CSN.rev[id]?'revealed':v?'not shown':''}</span>
+        <span style="width:92px;font-size:15px;color:${CSN.rev[id]?'var(--g)':'var(--gdim)'}">${CSN.rev[id]?'revealed':CSN.landing===id?'revealing…':v?'not shown':''}</span>
         <button style="padding:4px 10px;white-space:nowrap" class="${v==='contract'?'active':''}" onclick="csSet(${i},'${side}','contract')">Contract</button>
         <button style="padding:4px 10px;white-space:nowrap" class="${v==='no_contract'?'active':''}" onclick="csSet(${i},'${side}','no_contract')">No contract</button>
       </div>`
@@ -2174,9 +2193,9 @@ function csDraw(){
   // when it is the PICKED fighter that is on that screen.
   const up=csFind(CSN.air)
   document.getElementById('csNow').textContent = (f
-    ? 'PICKED: '+f.name+(v ? ' · '+csWord(v)+(rev?' (revealed)':' (not shown yet)') : ' · no verdict set')
+    ? 'PICKED: '+f.name+(v ? ' · '+csWord(v)+(rev?' (revealed)':CSN.landing===CSN.sel?' (revealing…)':' (not shown yet)') : ' · no verdict set')
     : 'pick a fighter above')
-    + (CSN.scr==='board' ? '  ·  ON SCREEN: the verdict board' : up ? '  ·  ON SCREEN: '+up.name+' ('+(CSN.scr==='page'?'contract screen, verdict revealed':'split screen')+')' : '  ·  ON SCREEN: nothing')
+    + (CSN.scr==='board' ? '  ·  ON SCREEN: the verdict board' : up ? '  ·  ON SCREEN: '+up.name+' ('+(CSN.scr==='page'?'contract screen':'split screen')+')' : '  ·  ON SCREEN: nothing')
   const lit=(id,on)=>document.getElementById(id).classList.toggle('active',!!on)
   const mine=f&&CSN.air===CSN.sel
   lit('csbSplit', mine&&CSN.scr==='split'); lit('csbReveal', mine&&CSN.scr==='page'); lit('csbBoard', CSN.scr==='board')
@@ -2228,12 +2247,26 @@ window.csReveal=()=>{
   const f=csNeed(); if(!f) return
   const v=CSN.v[CSN.sel]
   if(!v){ deckLog('no verdict set for '+f.name+' — tap Contract or No contract beside the name first, then the contract screen can reveal it'); return }
-  CSN.rev[CSN.sel]=true; csSave()
-  CSN.scr='page'; CSN.air=CSN.sel      // a reveal always ends on the contract screen
+  const id=CSN.sel
+  CSN.scr='page'; CSN.air=id      // a reveal always ends on the contract screen
   send({type:'contender', action:'verdict', d:csPayload(f.b,f.side,v)})
+  // REVEALED MEANS LANDED. The word reaches the screen about 3.2s after the
+  // press; marked at the press, a reveal cut short by Split, Board or Hide
+  // left the deck believing in a result nobody saw, and the banner and the
+  // board then showed it. It is marked only if the contract screen for this
+  // fighter is still up when the word has had time to land, and with the
+  // same verdict. Erring late is safe: the worst case is pressing it again.
+  clearTimeout(CSN.landT)
+  if(CSN.rev[id]) { delete CSN.rev[id]; csSave() }
+  CSN.landing=id
+  CSN.landT=setTimeout(()=>{
+    CSN.landing=null
+    if(CSN.air===id && CSN.scr==='page' && CSN.v[id]===v){ CSN.rev[id]=true; csSave() }
+    csDraw()
+  }, 3600)
   csDraw()
 }
-window.csHide=()=>{ CSN.scr=null; CSN.air=null; send({type:'contender', on:false}); csDraw() }
+window.csHide=()=>{ CSN.scr=null; CSN.air=null; clearTimeout(CSN.landT); CSN.landing=null; send({type:'contender', on:false}); csDraw() }
 /* THE BOARD — everyone on the night, with only the verdicts that have been
    REVEALED. For the break between fighters and for the end of the night. The
    picked fighter sits on the white row. */
@@ -2268,7 +2301,7 @@ window.csDemo=()=>{
   UBA.id='csdemo'; UBA.name='CCS DEMO'; UBA.date=null; UBA.armed=null
   UBA.bouts=[['Fighter A','Fighter B',null],['Fighter C','Fighter D',null],['Fighter E','Fighter F',null]]
     .map(([a,b,w],i)=>({ bout_number:i+1, seg:'main_card', a, b, wc:'Demo', title:null, method:null, winner:w }))
-  CSN.brand='CCS'; CSN.number='DEMO'; CSN.sel=null; CSN.scr=null; CSN.air=null
+  CSN.brand='CCS'; CSN.number='DEMO'; CSN.sel=null; CSN.scr=null; CSN.air=null; CSN.eventId='csdemo'
   csLoad()
   document.getElementById('ubaCardWrap').style.display='block'
   csGate(true)

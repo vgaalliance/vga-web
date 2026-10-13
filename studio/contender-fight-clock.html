@@ -227,6 +227,8 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
       if(d.colorR) S.colR = d.colorR
       // A new bout starts at round 1 with no clock running. Five boxes only
       // when the deck says it is a five-rounder.
+      // the last bout's odds chip does not ride over the new names
+      clearTimeout(oddsT); document.querySelectorAll('.row').forEach(row => row.classList.remove('showodds'))
       S.rounds = /5\s*ROUNDS/i.test(d.sub || '') ? 5 : 3
       S.round = 1; S.end = null
       paint(was)
@@ -256,7 +258,12 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   // Back from an OBS refresh: same bout, same round, same second.
   try{
     const old = JSON.parse(localStorage.getItem(KEY) || 'null')
-    if(old && Date.now() - old.at < 6 * 3600e3){ Object.assign(S, old); paint(false); if(S.on) requestAnimationFrame(() => show(true)) }
+    if(old && Date.now() - old.at < 6 * 3600e3){
+      Object.assign(S, old)
+      // a round that ended while the page was away is over: an idle clock, not 0:00 flashing
+      if(S.end != null && S.end <= Date.now()) S.end = null
+      paint(false); if(S.on) requestAnimationFrame(() => show(true))
+    }
     else { track() }
   }catch{ track() }
 

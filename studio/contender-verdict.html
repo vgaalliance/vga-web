@@ -101,6 +101,10 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 #split.on.quick .win{transition-delay:.2s}
 #split.on.quick .top{transition-delay:.25s} #split.on.quick .tagc{transition-delay:.6s}
 #split.on.quick #banner{transition-delay:.3s}
+/* the next fighter on a split that is already up: the name, the photo and
+   their label dip out, are replaced, and come back. Not a hard cut. */
+#split .who,#sPhotoBox,#sFighter,#banner .word{transition:opacity .16s ease}
+#split.swap .who,#split.swap #sPhotoBox,#split.swap #sFighter,#split.swap #banner .word{opacity:0}
 #split .top{opacity:0;transform:translateY(-18px)}
 #split.on .top{opacity:1;transform:none;transition:opacity .4s ease 1.6s, transform .5s var(--in) 1.6s}
 #split.off .top{opacity:1;transform:none}
@@ -133,9 +137,12 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 /* leaving: the page is wiped off WHOLE. Without this its contents drop back to
    their hidden start the instant .on goes, and an empty slate slides away. */
 #contract.off .st{opacity:1;transform:none} #contract.off .nmw .big{transform:none} #contract.off #cband{transform:none}
-#contract.off #cword .big,#contract.off #cword .chev,#contract.off #csigned{opacity:1;animation:none}
-#contract.off.no #cword .chev,#contract.off.no #csigned{opacity:0}
-#contract.off #csigned{transform:rotate(-4deg)} #contract.off #cdim{opacity:1}
+/* NOT the word. A page that leaves before the word has landed must leave
+   without it: the word is already in the markup from the press, and a rule
+   here that showed it on the way out put the secret on air for half a second
+   whenever a reveal was cut short (audit F118). A word that HAS landed stays
+   by itself, because its own rules hang on .said, not on .on. */
+#contract.off #cdim{opacity:1}
 #contract .nmw{overflow:hidden;display:flex;padding-top:8px}
 #contract .nmw .big{font-size:230px;transform:translateY(108%)}
 #contract.on .nmw .big{transform:none;transition:transform .7s var(--in) .5s}
@@ -368,7 +375,13 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   // window stays a hole. ?cams=1 keeps the window a hole always, for a night
   // when the fighter IS on camera.
   const CAMS = new URLSearchParams(location.search).get('cams') === '1'
+  const noPhoto = () => { $('cPhoto').style.display = 'none'; $('sPhotoBox').style.display = 'none' }
+  $('cPhoto').addEventListener('error', () => { $('cPhoto').style.display = 'none' })
+  $('sPhoto').addEventListener('error', () => { $('sPhotoBox').style.display = 'none' })
   async function photo(d){
+    // Not in hand yet (no prep reached this page, or it was reloaded since):
+    // the windows go empty for the round trip rather than keep the last face.
+    if(!REC.has(key(d.name))) noPhoto()
     const r = await record(d.name)
     if(cur !== d) return
     const url = r && r.photo ? r.photo : null
@@ -409,22 +422,37 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
   }
   // Bring the split up. Already up = nothing to do, so the entrance never
   // replays between fighters. On its way out = cancel the exit and start clean.
-  let heldFor = null                // whose contract page is being held
+  let heldFor = null                // whose contract page is up
+  let said = null                   // the verdict that has LANDED on it, if any
+  let pending = null                // the verdict on its way, between the press and the landing
   let opened = false                // has tonight's long entrance played yet
-  function splitOn(){
+  // `under` = brought up beneath a page that already covers the screen: the
+  // short entrance, and it does not count as tonight's opening.
+  function splitOn(under){
     const sp = $('split')
     if(sp.classList.contains('on')) return
-    sp.classList.remove('off'); sp.classList.toggle('quick', opened); void sp.offsetWidth
-    sp.classList.add('on'); opened = true
+    sp.classList.remove('off'); sp.classList.toggle('quick', opened || !!under); void sp.offsetWidth
+    sp.classList.add('on'); if(!under) opened = true
   }
   const off = (el) => { if(!el.classList.contains('on')) return
+    if(el.id === 'contract'){ said = null; pending = null }
     el.classList.remove('on'); el.classList.add('off'); setTimeout(() => el.classList.remove('off','said','yes','no','hold'), T.out + 60) }
 
   // 1 · SPLIT
   function showSplit(d){
+    const sp = $('split')
+    // The next fighter while the split is still up and in view: dip, swap, return.
+    const swap = sp.classList.contains('on') && !$('contract').classList.contains('on')
+      && !$('board').classList.contains('on') && cur && cur.name !== d.name
     seq++; cur = d
     prep([d.name, d.opponent])
     off($('contract')); off($('board'))
+    if(swap){
+      sp.classList.add('swap')
+      later(180, () => { fillSplit(d); banner(d.verdict); photo(d); sp.classList.remove('swap') })
+      return
+    }
+    sp.classList.remove('swap')
     fillSplit(d); banner(d.verdict); photo(d)
     splitOn()
   }
@@ -443,36 +471,56 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 
   // 3 · REVEAL: the verdict lands on the contract screen, and stays there
   function reveal(d){
-    seq++; cur = d
+    const c = $('contract'), sp = $('split')
     const yes = d.verdict === 'contract'
-    off($('board'))
-    // The split is filled in underneath first, still saying THE VERDICT: the
-    // banner only changes once the contract page has had its say.
-    fillSplit(d); banner(null); splitOn()
-    const c = $('contract')
-    // THE PAGE IS ALREADY UP AND HELD (the operator pressed Page and has been
-    // talking): land the word on it now, and stay. Split takes it away when
-    // they are ready. Pressing the other verdict lands again.
-    // ...but only when it is THIS fighter's page that is held. A verdict for
-    // somebody else must never land on the page with another name on it.
-    if(c.classList.contains('on') && c.classList.contains('hold') && heldFor === d.name){
+    const up = c.classList.contains('on'), mine = up && heldFor === d.name
+    // THE SAME PRESS AGAIN is nothing. While the page is still building, a
+    // second press used to restart the wait with the line already drawn: dead
+    // air. After the word has landed, it replayed the whole slam. A press only
+    // means something when it changes the answer.
+    if(mine && said === d.verdict) return                       // already landed, same answer
+    if(mine && !c.classList.contains('said') && pending === d.verdict) return   // still on its way
+    seq++; cur = d
+    off($('board')); sp.classList.remove('swap')
+    // THIS FIGHTER'S PAGE IS UP AND ITS WORD HAS LANDED: the other verdict
+    // lands in its place, there and then. Only ever on their own page.
+    if(mine && c.classList.contains('hold')){
       $('cW').textContent = yes ? 'CONTRACT' : 'NO CONTRACT'
       c.classList.remove('said','yes','no'); void c.offsetWidth
       $('cLead').textContent = yes ? 'A UBA CONTRACT IS OFFERED TO' : 'THE DECISION ON'
-      c.classList.add('said', yes ? 'yes' : 'no')
-      banner(d.verdict)              // under the page, ready for the way back
+      c.classList.add('said', yes ? 'yes' : 'no'); said = d.verdict; pending = null
+      fillSplit(d); banner(d.verdict)          // under the page, ready for the way back
       return
     }
-    // Pressed from anywhere else: the contract screen comes up for this
-    // fighter, the line draws its wait, and the word lands. It then STAYS, the
-    // same as every other screen here: one rule, nothing leaves by itself.
+    // SOMEBODY ELSE'S PAGE IS UP: it is wiped off first and this one comes in
+    // after it. Swapping the name on a page that is already there was a hard
+    // cut with the last fighter's line still drawn across it.
+    if(up && !mine){
+      off(c); said = null; pending = d.verdict; heldFor = d.name
+      later(T.out + 90, () => begin(d, yes))
+      return
+    }
+    begin(d, yes)
+  }
+  // The contract screen comes up for this fighter, the line draws its wait,
+  // and the word lands. It then STAYS, the same as every other screen here.
+  function begin(d, yes){
+    const c = $('contract'), sp = $('split')
+    said = null; pending = d.verdict; heldFor = d.name
+    // The split underneath, for the way back, still saying THE VERDICT. If it
+    // is not up yet it comes up only once the page covers the screen, quietly:
+    // tonight's long entrance is not spent where nobody can see it, and no
+    // sliver of it leads the page's edge across.
+    fillSplit(d); banner(null)
+    if(!sp.classList.contains('on')) later(720, () => splitOn(true))
     fillPage(d)
     $('cW').textContent = yes ? 'CONTRACT' : 'NO CONTRACT'
     c.classList.remove('off','said','yes','no','hold'); void c.offsetWidth
-    c.classList.add('on'); heldFor = d.name
+    c.classList.add('on')
     later(T.build + T.wait, () => {
-      c.classList.add('said', yes ? 'yes' : 'no', 'hold')   // held from here: the other verdict would land again
+      c.classList.add('said', yes ? 'yes' : 'no', 'hold')   // held from here: the other verdict would land in its place
       if(yes) $('cLead').textContent = 'A UBA CONTRACT IS OFFERED TO'
+      said = d.verdict; pending = null
       banner(d.verdict)              // under the page, ready for the way back
     })
   }
@@ -487,7 +535,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     const c = $('contract')
     c.classList.remove('off','said','yes','no'); void c.offsetWidth
     c.classList.add('on','hold')
-    heldFor = d.name
+    heldFor = d.name; said = null; pending = null
   }
 
   // 4 · THE BOARD
@@ -516,14 +564,18 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     const b = $('board'); b.classList.remove('off'); void b.offsetWidth; b.classList.add('on')
   }
 
-  function hideAll(){
-    seq++; cur = null; opened = false   // Hide ends the segment: the next Show opens it again
+  // `soft` = a standby board took the screen back (sent by standby.html, not
+  // by the operator's Hide): the segment has not ended, so the long entrance
+  // is not owed again when the split returns.
+  function hideAll(soft){
+    seq++; cur = null; said = null; pending = null; heldFor = null
+    if(!soft) opened = false           // Hide ends the segment: the next Split opens it again
     off($('split')); off($('contract')); off($('board'))
   }
 
   function handle(c){
     if(!c || c.type !== 'contender') return
-    if(c.on === false){ hideAll(); return }
+    if(c.on === false){ hideAll(!!c.soft); return }
     const d = c.d || {}
     if(c.action === 'prep'){ prep(d.names); return }      // loads, shows nothing
     if(c.action === 'show')    return showSplit(d)

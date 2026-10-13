@@ -2538,7 +2538,7 @@ sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
   }
   // ...and any board put up afterwards takes the screen back from it.
   if(c.type==='standby' && c.on!==false && window._csVerdict && window._csVerdict.ready)
-    window._csVerdict.f.contentWindow.postMessage({ vgaCmd:{ type:'contender', on:false } },'*')
+    window._csVerdict.f.contentWindow.postMessage({ vgaCmd:{ type:'contender', on:false, soft:true } },'*')
   if(c.type==='loadbar'){
     if(c.show===false){ barShow(false); return }
     if(c.show===true && !c.d){ barShow(true); return }
