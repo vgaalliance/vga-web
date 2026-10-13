@@ -98,6 +98,11 @@
   .panel{display:none;} .panel.on{display:block;}
   body.mode-team .only-uba{display:none !important;}
   body.mode-solo .only-ubae{display:none !important;}
+  /* UBAe is PARKED (UBAE_PARKED in the script): its event button and its
+     standby screens are hidden, never deleted. Everything behind them still
+     works, so un-parking is one word. */
+  body.ubae-parked #evRow button[data-ev="ubae"],
+  body.ubae-parked button.lg-ubae{display:none !important;}
   /* ── FAN CAM: the roster wall and tonight's order ── */
   .fcgrid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(300px,1fr);gap:22px;align-items:start;}
   @media(max-width:1000px){.fcgrid{grid-template-columns:minmax(0,1fr);}}
@@ -1979,6 +1984,11 @@ const STAGES={
   gfl:[['countdown','① COUNTDOWN'],['loading','② LOADING'],['room','③ TALE OF TAPE'],['match','④ MATCH'],['fancam','⑤ FAN CAM'],['verdicts','⑥ VERDICTS']]
 }
 let EV='ubae', STG='countdown'
+// No UBAe season is running, so the deck opens on UBA and the UBAe door is
+// shut: its event button and its standby screens are hidden (see the
+// .ubae-parked rule). Park, never delete -- set this to false and the team
+// league is back exactly as it was.
+const UBAE_PARKED = true
 // SOLO = one card, bout by bout: UBA and GFL. TEAM = UBAe. Everything on this
 // deck that used to ask "is this UBA?" is really asking "is this a solo card?",
 // and answering it here instead of at seven call sites is what stops a fourth
@@ -2513,6 +2523,8 @@ mnLoad()
 loadCardEvents()
 loadOdds()
 loadBetFeed()
+// Parked: open on UBA. Called here, after everything setEv() touches exists.
+if(UBAE_PARKED){ document.body.classList.add('ubae-parked'); setEv('uba') }
 
 // Relocate the live tracking surfaces into the rail rather than duplicating
 // them. Same nodes, same ids, same handlers -- everything that already draws
