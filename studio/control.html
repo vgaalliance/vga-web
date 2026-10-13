@@ -2122,12 +2122,17 @@ async function csCheck(ev){
   csDraw()
   csPrep()
 }
-// One fighter = bout number + corner. Names can repeat and carry quotes, so
-// they never go into an onclick.
-const csId=(b,side)=>b.bout_number+':'+side
+// One fighter = their NAME, never their place on the card. A verdict was first
+// keyed by bout number + corner, and a card is reloaded mid-night when a bout
+// is pulled or swapped: the numbers shift, and a contract set for one fighter
+// would have been sitting on whoever took that slot. A name follows the
+// person. (An onclick still carries the row's index, not the name: names can
+// hold quotes.) An unfilled corner, TBA, has no verdict to give.
+const csId=(b,side)=>{ const n=String((side==='a'?b.a:b.b)||'').trim(); return n && n!=='TBA' ? 'n:'+n.toLowerCase() : null }
 const csFind=id=>{ if(!id) return null
-  const [n,side]=id.split(':'); const b=UBA.bouts.find(x=>String(x.bout_number)===n)
-  return b ? { b, side, name: side==='a'?b.a:b.b } : null }
+  for(const b of UBA.bouts) for(const side of ['a','b']) if(csId(b,side)===id) return { b, side, name: side==='a'?b.a:b.b }
+  return null }
+const csEsc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))
 const csWord=v=>v==='contract'?'CONTRACT':v==='no_contract'?'NO CONTRACT':''
 
 function csDraw(){
@@ -2138,10 +2143,12 @@ function csDraw(){
   UBA.bouts.forEach((b,i)=>{
     html+=`<p class="lbl" style="margin:10px 0 4px">// ${b.bout_number===1?'MAIN':'BOUT '+b.bout_number} //</p>`
     ;['a','b'].forEach(side=>{
-      const id=csId(b,side), v=CSN.v[id], name=side==='a'?b.a:b.b, on=CSN.sel===id
+      const id=csId(b,side), name=side==='a'?b.a:b.b
+      if(!id){ html+=`<div class="row" style="margin-bottom:6px;color:var(--gdim);font-size:17px">${csEsc(name)} — no fighter in this corner yet</div>`; return }
+      const v=CSN.v[id], on=CSN.sel===id
       total++; if(v) decided++
       html+=`<div class="row" style="margin-bottom:6px;align-items:center;flex-wrap:nowrap;gap:8px">
-        <span class="mnchip${on?' picked':''}" style="flex:1;min-width:0;text-align:left" onclick="csPick(${i},'${side}')">${on?'▶ ':''}${name}${b.winner===side?' ✔':''}</span>
+        <span class="mnchip${on?' picked':''}" style="flex:1;min-width:0;text-align:left" onclick="csPick(${i},'${side}')">${on?'▶ ':''}${csEsc(name)}${b.winner===side?' ✔':''}</span>
         <span style="width:92px;font-size:15px;color:${CSN.rev[id]?'var(--g)':'var(--gdim)'}">${CSN.rev[id]?'revealed':v?'not shown':''}</span>
         <button style="padding:4px 10px;white-space:nowrap" class="${v==='contract'?'active':''}" onclick="csSet(${i},'${side}','contract')">Contract</button>
         <button style="padding:4px 10px;white-space:nowrap" class="${v==='no_contract'?'active':''}" onclick="csSet(${i},'${side}','no_contract')">No contract</button>
@@ -2179,7 +2186,7 @@ const csShown=id=>CSN.rev[id] ? CSN.v[id] : null
    must not go on showing an answer that is no longer the answer. */
 window.csSet=(i,side,verdict)=>{
   const b=UBA.bouts[i]; if(!b) return
-  const id=csId(b,side)
+  const id=csId(b,side); if(!id) return
   if(CSN.v[id]===verdict) delete CSN.v[id]; else CSN.v[id]=verdict
   if(CSN.rev[id]){ delete CSN.rev[id]; deckLog((side==='a'?b.a:b.b)+' — verdict changed after it was revealed. Press Reveal again to show the new one') }
   csSave(); csDraw()
@@ -2188,7 +2195,8 @@ window.csSet=(i,side,verdict)=>{
    screen button is pressed, never when a name is tapped. */
 window.csPick=(i,side)=>{
   const b=UBA.bouts[i]; if(!b) return
-  CSN.sel=csId(b,side); csDraw()
+  const id=csId(b,side); if(!id) return
+  CSN.sel=id; csDraw()
 }
 const csNeed=()=>{ const f=csFind(CSN.sel); if(!f) deckLog('pick a fighter first — tap a name in the list'); return f }
 
@@ -2223,7 +2231,7 @@ window.csBoard=()=>{
   if(!UBA.bouts.length){ deckLog('no card loaded — nothing to put on the board'); return }
   const rows=[]
   UBA.bouts.forEach(b=>['a','b'].forEach(side=>{
-    const id=csId(b,side)
+    const id=csId(b,side); if(!id) return
     rows.push({ name: side==='a'?b.a:b.b,
       res: [b.wc, b.winner ? (b.winner===side?'WON':'LOST') : ''].filter(Boolean).join(' · '),
       verdict: csShown(id), cur: CSN.sel===id })
@@ -2235,7 +2243,7 @@ window.csBoard=()=>{
    screen fetches each record and photo then, hours before they are needed, so
    the first screen of the night has nothing left to wait for. Shows nothing. */
 function csPrep(){
-  const names=[]; UBA.bouts.forEach(b=>{ names.push(b.a, b.b) })
+  const names=[]; UBA.bouts.forEach(b=>['a','b'].forEach(side=>{ if(csId(b,side)) names.push(side==='a'?b.a:b.b) }))
   if(names.length) send({type:'contender', action:'prep', d:{ names }})
 }
 
