@@ -1050,7 +1050,12 @@ function railSynthCol(hue, sat, light, alpha) {
 
 let RAIL_T = 0;                 // one clock, shared by every rail surface
 const RAIL_DRAWS = [];          // every registered draw, called once per frame
-function railFrame(){ RAIL_T += 1; for (const d of RAIL_DRAWS) d(); requestAnimationFrame(railFrame) }
+// While the matchup intro covers the frame, nothing these loops draw can be
+// seen, and every frame they draw is taken from the intro on a machine that is
+// also running the game and the encoder. They stand still and pick up exactly
+// where they stopped: every one of them counts frames, none reads a clock.
+const introCovers = () => !!(window.__introCovers && window.__introCovers());
+function railFrame(){ if (!introCovers()) { RAIL_T += 1; for (const d of RAIL_DRAWS) d(); } requestAnimationFrame(railFrame) }
 let railLoopStarted = false;
 
 function setupRailCanvas(canvasId, scanDelay) {
@@ -1240,7 +1245,7 @@ function startPanelBloom(){
     }
     if(a > 0.005) df(f.xf*W, f.yf*H, f.r, f.hue, a, f.ph)
   }
-  function frame(){ T++; boost *= 0.978; cx.clearRect(0,0,W,H); flowers.forEach(tick); requestAnimationFrame(frame) }
+  function frame(){ if(introCovers()){ requestAnimationFrame(frame); return } T++; boost *= 0.978; cx.clearRect(0,0,W,H); flowers.forEach(tick); requestAnimationFrame(frame) }
   resize(); fill(); frame()
   // The panel grows and shrinks with collapsed rows, so the field tracks it --
   // otherwise the blooms sit in corners the card no longer has.
@@ -1389,6 +1394,7 @@ function petalShape(cx, cy, ang, ew, eh) {
 }
 
 function frame() {
+  if (introCovers()) { requestAnimationFrame(frame); return; }
   T++;
   driveBloom();
   // Spin speed rides the bloom: the mark turns faster while it is open, which
@@ -2152,7 +2158,18 @@ editOverlay.addEventListener('click', (e) => {
   const root = document.getElementById('intro'), cam = document.getElementById('introCam');
   if(!root || !cam) return;
   const timers = [];
-  const at = (ms, fn) => timers.push(setTimeout(fn, ms));
+  // THE WARM-UP. The first time a graphics card is asked for an effect -- a
+  // blur, a glow, a mask, a blend -- it has to build it, and the frame waits.
+  // On a quiet machine that is 40ms nobody sees. Beside a game and an encoder
+  // it measured 0.3 to 1.6 SECONDS, once per effect, each one landing on a
+  // scene change: the intro froze at every cut the first time it played.
+  // So the intro plays itself once when the page loads: the real scenes, the
+  // real code, four times as fast, silent, and at an opacity that rounds to
+  // nothing on screen. Everything it needs is built before anyone presses Show.
+  // `speed` divides every timer and multiplies every animation while it runs.
+  const WARM_X = 4, WARM_OPACITY = '.002';
+  let warm = false, speed = 1, warmRaf = 0;
+  const at = (ms, fn) => timers.push(setTimeout(fn, ms / speed));
   const blank = v => { const t = String(v ?? '').trim(); return t==='' || t==='—' || t==='-' || t==='TBA' };
   const txt = id => { const e = document.getElementById(id); return e ? e.textContent.trim() : '' };
   let z = 1;
@@ -2630,22 +2647,33 @@ editOverlay.addEventListener('click', (e) => {
     z = 1;
     cam.style.transform = 'none';
   }
-  function cancel(){ reset(); soundOff(); root.style.display = 'none' }
+  function warmOff(){ warm = false; speed = 1; if(warmRaf) cancelAnimationFrame(warmRaf); warmRaf = 0; root.style.opacity = '' }
+  function cancel(){ reset(); warmOff(); soundOff(); root.style.display = 'none' }
+  // Asked of the inline style, never of 'none': before the first play it is
+  // EMPTY (the stylesheet hides it), and reading empty as "on" froze the
+  // tape's loops from page load and stopped the warm-up ever starting.
+  const playing = () => root.style.display === 'block';
+  // the frame is covered from the first frame of a real play until the doors start to part
+  window.__introCovers = () => playing() && !warm && !cam.classList.contains('push');
 
   // then() is playTape. It is called part-way through the push, so the tape
   // builds behind the lock-up while the camera is still going through it and
   // the frame is never empty in between.
   let lastThen = null;
-  function play(then){
-    lastThen = then;
-    reset();
+  function play(then, warming){
+    reset(); warmOff();
+    if(warming){ warm = true; speed = WARM_X; root.style.opacity = WARM_OPACITY; then = null }
+    else lastThen = then;
     root.style.display = 'block';
     fill();
+    // nobody is loaded yet when the page warms up: the opening still needs two places to fly to
+    if(warm && !(geoA && geoB)){ geoA = [56, -106]; geoB = [-25, 134] }
+    if(warm){ const fast = () => { if(!warm) return; root.getAnimations({ subtree:true }).forEach(a => { if(a.playbackRate !== WARM_X) a.playbackRate = WARM_X }); warmRaf = requestAnimationFrame(fast) }; fast() }
     const run = ++runId; try { _photosReady.then(() => { if(run === runId && root.style.display !== 'none') pics() }) } catch {}
     const hasGeo = !!(geoA && geoB), icon = hasGeo ? (txt('tapeMark') || 'VGA') : null;
     mode = icon ? 'open' : 'none'; T = times(mode);
     void root.offsetWidth;
-    soundOn();
+    if(!warm) soundOn();
     if(mode === 'open'){ scene('ivOpen'); openRun(icon) }
     else scene('ivSting');
     at(T.a,     () => scene('ivA'));
@@ -2662,6 +2690,9 @@ editOverlay.addEventListener('click', (e) => {
       cam.style.transform = ''; cam.classList.add('push');
       const lock = document.getElementById('ivLock'); if(lock) lock.classList.add('push');
       at(TAPE_AT, () => { if(then) then() });
+      if(warm){   // the other opening too: a fighter with no country on file gets the mark alone
+        at(PUSH_MS + 80, () => { reset(); scene('ivSting'); at(1800, () => { reset(); warmOff(); root.style.display = 'none' }) });
+        return }
       at(PUSH_MS + 80, () => { reset(); root.style.display = 'none' });   // not cancel(): the last hit is still ringing
     });
   }
@@ -2688,9 +2719,14 @@ editOverlay.addEventListener('click', (e) => {
   window.__cancelIntro = cancel;
   // A matchup loaded mid-intro: the names on screen would no longer be the
   // names the tape is about to show. Start again from the top on the new one.
-  window.__introReload = () => { if(root.style.display !== 'none' && lastThen) play(lastThen) };
+  window.__introReload = () => { if(root.style.display !== 'none' && lastThen && !warm) play(lastThen) };
+  // Once, a few seconds after load: past the tape's own entrance if a refresh
+  // has just put one back on air, and never over an intro already playing.
+  window.__introWarm = () => { if(!playing()) play(null, true) };
+  const warmWhenReady = () => Promise.resolve(document.fonts && document.fonts.ready).catch(() => {}).then(() => setTimeout(window.__introWarm, 5000));
+  if(document.readyState === 'complete') warmWhenReady(); else window.addEventListener('load', warmWhenReady);
   // One beat held still, for checking a layout: __introScene('ivLock').
-  window.__introScene = id => { reset(); root.style.display = 'block'; fill(); scene(id) };
+  window.__introScene = id => { reset(); warmOff(); root.style.display = 'block'; fill(); scene(id) };
   // The score and its length, so a preview can render the same sound offline.
   window.__introScore = score; window.__introLength = times('open').push + PUSH_MS;
 })();
