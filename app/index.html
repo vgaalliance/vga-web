@@ -10577,7 +10577,7 @@ function livePays(pool, bet){
 
    The ticket belongs to the card it was built on: opening another card starts
    a fresh one. Picks are kept as {match_id: 'a'|'b'}. */
-var tk = { event: null, mode: 'single', picks: {}, amt: 500, open: false };
+var tk = { event: null, mode: 'single', picks: {}, amt: 500, typed: '', open: false, busy: false };
 var pkRules = null, betBalance = null;
 var PK_LAYERS = '<i class="pklq"></i><i class="pklq b"></i><i class="pksx"></i><i class="pksx b"></i>';
 try { var _m = localStorage.getItem('uba-bet-mode'); if(_m === 'pick' || _m === 'single') tk.mode = _m; } catch(e) {}
@@ -10606,6 +10606,7 @@ function renderBetEvent(eventId){
 function pkDraw(){
   var el = document.getElementById('bet-list');
   if(!el || !tk.event) return;
+  var hadFocus = document.activeElement && document.activeElement.id === 'pk-amt';
   /* Bout 1 is the main event: bout_number is card order read top down. */
   var ps = poolsFor(tk.event).slice().sort(function(a, b){ return (a.bout_number || 99) - (b.bout_number || 99); });
   if(!pkRules && tk.mode === 'pick') tk.mode = 'single';
@@ -10677,7 +10678,10 @@ function pkDraw(){
     + '<button type="button" data-pkmode="single" aria-pressed="' + single + '">Single bets</button>'
     + (pkRules ? '<button type="button" data-pkmode="pick" aria-pressed="' + !single + '">Pick\'em</button>' : '')
     + '</div>';
-  var canGo = !me || ok;
+  /* While a bet is on its way the ticket is frozen: a redraw mid-flight used to
+     hand back a live Place button, and a second press placed a second entry. */
+  var canGo = (!me || ok) && !tk.busy;
+  if(tk.busy) btn = 'Placing…';
 
   el.innerHTML = '<div class="pkwrap' + (tk.open ? ' pkon' : '') + '">'
     + '<button class="betback" data-bback>&lsaquo; All cards</button>'
@@ -10700,7 +10704,7 @@ function pkDraw(){
       + '<div class="pkcut"></div>'
       + '<div class="pklbl">' + (single ? 'On each bet' : 'Your entry' + (pkMaxAmt() ? ' · up to ' + pkN(pkMaxAmt()) : '')) + '</div>'
       + '<div class="pkamt">' + chips.map(function(a){ return '<button type="button" data-pkamt="' + a + '"' + (a === amt ? ' class="sel"' : '') + '>' + pkN(a) + '</button>'; }).join('')
-      + '<input type="number" inputmode="numeric" min="1" step="1" placeholder="Other" aria-label="Other amount in VC" id="pk-amt"></div>'
+      + '<input type="number" inputmode="numeric" min="1" step="1" placeholder="Other" aria-label="Other amount in VC" id="pk-amt" value="' + esc(tk.typed) + '"></div>'
       + '<div class="pkfoot"><span><i>You pay</i><b>' + (c || !single ? pkN(total) : '—') + '</b></span>'
       + '<span><i>' + (single ? 'If they all win, about' : (ok ? 'All ' + c + ' win' : 'Pays')) + '</i><b>' + (ok ? pkN(pays) : '—') + '</b></span>'
       + (!single && ok ? '<span class="pkstamp">' + m + '×</span>' : '<span></span>') + '</div>'
@@ -10710,28 +10714,48 @@ function pkDraw(){
     + '</div></div></div>';
   var bk = el.querySelector('[data-bback]');
   if(bk) bk.onclick = function(){ loadBetting(); };
+  /* THE TYPED AMOUNT. It redraws on every keystroke and puts the cursor back,
+     and never on blur: redrawing on 'change' replaced the Place button between
+     the press and the release of the tap that blurred the box, so the tap that
+     was meant to place the bet did nothing. */
   var inp = el.querySelector('#pk-amt');
-  if(inp) inp.addEventListener('change', function(){
-    var v = Math.floor(Number(inp.value || 0));
-    if(!(v > 0)) return;
-    if(tk.mode === 'pick' && pkMaxAmt() && v > pkMaxAmt()){ toast('The most one entry can be is ' + pkN(pkMaxAmt()) + ' VC.', true); v = pkMaxAmt(); }
-    tk.amt = v; pkDraw();
-  });
+  if(inp){
+    if(hadFocus){ inp.focus(); try { inp.setSelectionRange(inp.value.length, inp.value.length); } catch(e) {} }
+    inp.addEventListener('input', function(){
+      var v = Math.floor(Number(inp.value || 0));
+      tk.typed = inp.value;
+      if(!(v > 0)) return;
+      if(tk.mode === 'pick' && pkMaxAmt() && v > pkMaxAmt()){
+        toast('The most one entry can be is ' + pkN(pkMaxAmt()) + ' VC.', true);
+        v = pkMaxAmt(); tk.typed = String(v);
+      }
+      tk.amt = v; pkDraw();
+    });
+  }
 }
 
 async function pkPlace(btn){
   if(!me){ signIn(); return; }
+  if(tk.busy) return;
   var ps = poolsFor(tk.event);
   var picks = ps.filter(function(p){ return tk.picks[p.match_id]; });
   if(!picks.length) return;
   var back = tk.event;
+  tk.busy = true;
   busy(btn, true, 'Placing…');
+  try { await pkSend(btn, picks); } finally { tk.busy = false; }
+  await loadBetting();
+  if(back) renderBetEvent(back);
+  loadMe();
+}
+
+async function pkSend(btn, picks){
   if(tk.mode === 'pick'){
     var r = await rpc('app_place_pickem', { p_event_id: tk.event, p_amount: tk.amt,
       p_picks: picks.map(function(p){ return { match_id: p.match_id, side: tk.picks[p.match_id] }; }) });
     if(!r.ok){ busy(btn, false); toast(r.message || 'Could not place that.', true); return; }
     toast('Entry placed. Balance ' + pkN(r.new_balance) + ' VC');
-    tk.picks = {}; tk.open = false;
+    tk.picks = {}; tk.open = false; tk.typed = '';
   } else {
     /* One bet per pick, one after another. A refusal stops the run, and the
        picks already placed come off the ticket, so a second tap never places
@@ -10746,15 +10770,13 @@ async function pkPlace(btn){
     if(err && !placed){ busy(btn, false); toast(err, true); return; }
     toast(err ? placed + ' of ' + picks.length + ' placed. ' + err
               : (placed === 1 ? 'Bet placed.' : placed + ' bets placed.') + ' Balance ' + pkN(last) + ' VC', !!err);
-    if(!err) tk.open = false;
+    if(!err){ tk.open = false; tk.typed = ''; }
   }
-  await loadBetting();
-  if(back) renderBetEvent(back);
-  loadMe();
 }
 
 document.addEventListener('click', function(e){
   if(!e.target.closest || !e.target.closest('.pkwrap')) return;
+  if(tk.busy) return;
   var b;
   if((b = e.target.closest('[data-pkp]'))){
     var id = b.getAttribute('data-pkp'), s = b.getAttribute('data-pks');
@@ -10771,7 +10793,7 @@ document.addEventListener('click', function(e){
     tk.mode = b.getAttribute('data-pkmode');
     try { localStorage.setItem('uba-bet-mode', tk.mode); } catch(err) {}
     if(tk.mode === 'pick'){
-      if(pkMaxAmt() && tk.amt > pkMaxAmt()) tk.amt = pkMaxAmt();
+      if(pkMaxAmt() && tk.amt > pkMaxAmt()){ tk.amt = pkMaxAmt(); if(tk.typed) tk.typed = String(tk.amt); }
       var keys = Object.keys(tk.picks);
       if(keys.length > pkMaxPicks()){ keys.slice(pkMaxPicks()).forEach(function(k){ delete tk.picks[k]; });
         toast('Pick\'em takes up to ' + pkMaxPicks() + ' picks, so the rest came off.', true); }
@@ -10779,7 +10801,7 @@ document.addEventListener('click', function(e){
     pkDraw(); return;
   }
   if((b = e.target.closest('[data-pkrm]'))){ delete tk.picks[b.getAttribute('data-pkrm')]; pkDraw(); return; }
-  if((b = e.target.closest('[data-pkamt]'))){ tk.amt = Number(b.getAttribute('data-pkamt')); pkDraw(); return; }
+  if((b = e.target.closest('[data-pkamt]'))){ tk.amt = Number(b.getAttribute('data-pkamt')); tk.typed = ''; pkDraw(); return; }
   if(e.target.closest('[data-pkopen]')){ tk.open = true; pkDraw(); return; }
   if(e.target.closest('[data-pkclose]')){ tk.open = false; pkDraw(); return; }
   if((b = e.target.closest('[data-pkgo]')) && !b.disabled){ pkPlace(b); return; }
@@ -10836,6 +10858,17 @@ async function renderMyBets(){
         }).join('');
   }
 
+  /* The headline counts the picks still live: a cancelled fight drops out, so
+     an open entry of 3 with one called off pays as 2 and says so. A settled
+     entry keeps the multiplier it was paid at. */
+  function pkHead(e){
+    var live = e.live_picks != null ? Number(e.live_picks) : Number(e.picks || 0);
+    var dropped = Number(e.picks || 0) - live;
+    var mult = e.entry_status === 'placed' && e.pays_if_all_win != null && Number(e.amount) > 0
+      ? Math.round(Number(e.pays_if_all_win) / Number(e.amount)) : Number(e.multiplier || 0);
+    return live + ' picks \u00b7 ' + mult + '\u00d7' + (dropped > 0 ? ' \u00b7 ' + dropped + ' called off' : '');
+  }
+
   /* Pick'em entries (D53): one row per entry, its picks underneath, each pick
      coloured by how it went. An open entry shows what it pays if every pick
      wins; the multiplier is the one stored on the entry, so it is exact. */
@@ -10851,14 +10884,13 @@ async function renderMyBets(){
           var under = st === 'won' ? 'from ' + amt.toLocaleString()
             : st === 'lost' ? 'lost'
             : st === 'void' ? 'returned'
-            : 'pays ' + Math.floor(amt * Number(e.multiplier || 0)).toLocaleString();
+            : 'pays ' + Number(e.pays_if_all_win != null ? e.pays_if_all_win : Math.floor(amt * Number(e.multiplier || 0))).toLocaleString();
           var legs = (e.legs || []).map(function(l){
             var c = l.status === 'won' ? 'w' : l.status === 'lost' ? 'l' : l.status === 'void' ? 'v' : '';
             return '<span class="' + c + '">' + esc(l.pick_name || '?') + '</span>';
           }).join(' \u00b7 ');
           return '<div class="mbet mpk' + cls + '"><span class="st2"></span>'
-            + '<div style="flex:1;min-width:0"><div class="t">' + Number(e.picks || 0) + ' picks \u00b7 '
-            + Number(e.multiplier || 0) + '\u00d7</div>'
+            + '<div style="flex:1;min-width:0"><div class="t">' + pkHead(e) + '</div>'
             + '<div class="s">' + esc(e.event_name) + ' \u00b7 ' + esc(dstr(e.placed_at)) + '</div>'
             + '<div class="legs">' + legs + '</div></div>'
             + '<div class="amt"><b>' + right + '</b><s>' + under + '</s></div></div>';
