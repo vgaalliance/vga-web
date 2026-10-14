@@ -1409,6 +1409,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pkh .rc{display:block;font-family:'Space Mono',monospace;font-size:8px;color:rgba(255,255,255,.78);margin-top:3px;white-space:nowrap}
 .pkh .rc b{color:#6EE7B7;font-weight:700}
+.pkh .rc b.up{color:#6EE7B7} .pkh .rc b.dn{color:#FFB4AB}
 .pkh .n.long{font-size:15px}
 .pkh .n.xlong{font-size:13px;letter-spacing:.01em}
 .pkh.on{box-shadow:inset 0 0 0 2.5px #fff}
@@ -5074,7 +5075,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v248';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v249';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -10583,7 +10584,28 @@ var PK_LAYERS = '<i class="pklq"></i><i class="pklq b"></i><i class="pksx"></i><
 try { var _m = localStorage.getItem('uba-bet-mode'); if(_m === 'pick' || _m === 'single') tk.mode = _m; } catch(e) {}
 
 function pkN(x){ return Math.round(Number(x || 0)).toLocaleString('en-US'); }
-function pkMult(n){ return pkRules && pkRules.multipliers ? Number(pkRules.multipliers[String(n)] || 0) : 0; }
+/* PICK'EM IS PRICED PER PICK (D53, revised 2026-10-14). A flat 3×/5×/10×/20×
+   is right only for coin flips, and here the money favourite wins 70% of the
+   time, so a favourites-only entry paid back up to 3.4× what it cost. Each pick
+   is now worth 1 / its chance, the chance read from its fight's pot with a
+   cushion so a thin pot sits near 50/50; an entry pays (1 − cut) × the prices
+   multiplied, between the rules' floor and ceiling. The SAME sum runs in
+   pickem_price() / pickem_entry_mult(), which lock each pick's price when the
+   entry is placed; the app sends the multiplier it showed and the server
+   refuses if the pots have moved since. */
+function pkPrice(p, side){
+  var C = pkRules ? Number(pkRules.cushion || 0) : 0;
+  var a = Number(p.total_a || 0), b = Number(p.total_b || 0);
+  var mine = (side === 'a' ? a : b) + C;
+  return mine > 0 ? Math.round((a + b + 2 * C) / mine * 100) / 100 : 0;
+}
+function pkEntryMult(prices){
+  if(!pkRules || prices.length < 2) return 0;
+  var prod = prices.reduce(function(x, y){ return x * y; }, 1);
+  var m = Math.round((1 - Number(pkRules.house_cut || 0)) * prod * 100) / 100;
+  return Math.min(Number(pkRules.max_multiplier || 20), Math.max(Number(pkRules.min_multiplier || 1), m));
+}
+function pkX(m){ return (Math.round(m * 100) / 100).toFixed(2) + '×'; }
 function pkMaxPicks(){ return pkRules ? Number(pkRules.max_picks || 5) : 5; }
 function pkMaxAmt(){ return pkRules ? Number(pkRules.max_amount || 0) : 0; }
 /* What a single bet pays at the pot as it stands, your own stake included —
@@ -10614,12 +10636,15 @@ function pkDraw(){
   ps.forEach(function(p){ if(p.market_status !== 'open') delete tk.picks[p.match_id]; });
   var single = tk.mode === 'single';
   var ids = ps.filter(function(p){ return tk.picks[p.match_id]; });
-  var c = ids.length, m = pkMult(c);
+  var c = ids.length;
+  var prices = ids.map(function(p){ return pkPrice(p, tk.picks[p.match_id]); });
+  var m = pkEntryMult(prices);
   var ok = single ? c >= 1 : (c >= 2 && m > 0);
+  tk.shown = m;
   var amt = tk.amt;
   var ests = ids.map(function(p){ return pkEst(p, tk.picks[p.match_id], amt); });
   var total = single ? amt * c : amt;
-  var pays = single ? ests.reduce(function(x, y){ return x + y; }, 0) : Math.floor(amt * m);
+  var pays = single ? ests.reduce(function(x, y){ return x + y; }, 0) : Math.floor(amt * m + 1e-9);
 
   function mineOn(p, name){
     return (myBets || []).filter(function(x){ return x.match_id === p.match_id && x.state !== 'settled' && x.pick_name === name; })
@@ -10627,16 +10652,24 @@ function pkDraw(){
   }
   var rows = ps.map(function(p, i){
     var lock = p.market_status !== 'open', pk = tk.picks[p.match_id];
-    var tag = i === 0 ? 'Main event' : i === 1 ? 'Co-main' : 'Bout ' + (p.bout_number || i + 1);
+    /* by BOUT NUMBER, never by position: a list position moves once a fight's
+       betting closes and it drops off the list, and the label moved with it */
+    var bn = Number(p.bout_number || 0), isMain = bn === 1;
+    var tag = isMain ? 'Main event' : bn === 2 ? 'Co-main' : 'Bout ' + (bn || '?');
     function half(side){
       var nm = side === 'a' ? p.side_a : p.side_b, ph = side === 'a' ? p.photo_a : p.photo_b;
       var w = side === 'a' ? p.wins_a : p.wins_b, l = side === 'a' ? p.losses_a : p.losses_b;
       var tot = Number(p.pool || 0), sd = Number(side === 'a' ? p.total_a : p.total_b);
       var bits = [];
       if(w !== null && w !== undefined) bits.push(Number(w || 0) + '–' + Number(l || 0));
-      if(single && !lock) bits.push(sd > 0 ? (tot / sd).toFixed(2) + '×' : 'no bets');
+      var shown = null;
+      if(!lock){
+        if(single){ shown = sd > 0 ? tot / sd : null; bits.push(shown ? shown.toFixed(2) + '×' : 'no bets'); }
+        else { shown = pkPrice(p, side); bits.push('pick ' + pkX(shown)); }
+      }
+      var mv = shown ? pkMove(p.match_id + side + (single ? 's' : 'p'), shown) : '';
       var mine = mineOn(p, nm);
-      var rc = esc(bits.join(' · ')) + (mine ? ' · <b>yours ' + pkN(mine) + '</b>' : '');
+      var rc = esc(bits.join(' · ')) + mv + (mine ? ' · <b>yours ' + pkN(mine) + '</b>' : '');
       var ini = String(nm || '?').replace(/[^A-Za-z0-9 ]/g, '').split(' ').filter(Boolean).slice(0, 2).map(function(x){ return x[0]; }).join('').toUpperCase() || '?';
       var face = ph ? '<span class="ph2"><img src="' + esc(ph) + '" alt="" loading="lazy" decoding="async"></span>'
                     : '<span class="ph2 no">' + esc(ini) + '</span>';
@@ -10648,7 +10681,7 @@ function pkDraw(){
         + (side === 'b' ? txt + face : face + txt) + '</button>';
     }
     return '<div class="pkfight' + (lock ? ' lock' : '') + '">' + half('a') + half('b')
-      + '<span class="tg' + (i === 0 ? ' main' : '') + '">' + (lock ? 'Started' : esc(tag)) + '</span></div>';
+      + '<span class="tg' + (isMain ? ' main' : '') + '">' + (lock ? 'Started' : esc(tag)) + '</span></div>';
   }).join('');
 
   var l1, l2;
@@ -10656,20 +10689,20 @@ function pkDraw(){
     l1 = c ? c + (c === 1 ? ' bet · ' : ' bets · ') + pkN(total) + ' VC' : 'Your slip';
     l2 = c ? 'pays about ' + pkN(pays) + ' if they win' : 'Tap who wins';
   } else {
-    l1 = c ? c + (c === 1 ? ' pick' : ' picks') + (ok ? ' · ' + m + '×' : '') : 'Your Pick\'em';
+    l1 = c ? c + (c === 1 ? ' pick' : ' picks') + (ok ? ' · ' + pkX(m) : '') : 'Your Pick\'em';
     l2 = ok ? pkN(amt) + ' pays ' + pkN(pays) : (c === 1 ? 'Pick 1 more to play' : 'Tap who wins');
   }
   var lines = ids.map(function(p, k){
     var side = tk.picks[p.match_id], nm = side === 'a' ? p.side_a : p.side_b;
-    var right = !single ? '<i>Bout ' + esc(p.bout_number || '') + '</i>'
+    var right = !single ? '<i class="py">' + pkX(prices[k]) + '</i>'
       : (ests[k] > amt ? '<i class="py">pays about ' + pkN(ests[k]) + '</i>' : '<i>money back so far</i>');
     return '<div class="pkln"><span>' + (k + 1) + '</span><b>' + esc(nm) + '</b>' + right
       + '<button type="button" class="pkx" data-pkrm="' + esc(p.match_id) + '" aria-label="Remove ' + esc(nm) + '">✕</button></div>';
   }).join('') || '<div class="pkempty">Nothing yet. Tap a fighter behind this ticket.</div>';
-  var nxt = pkMult(c + 1), more;
+  var more;
   if(single) more = 'Each bet stands alone · the price moves until the bell';
   else if(!ok) more = 'Pick at least 2 fights · all must win';
-  else more = nxt ? 'One more pick makes it ' + nxt + '× · ' + pkN(amt * nxt) : 'Most picks an entry can have';
+  else more = 'Underdogs pay more · your price locks when you enter · closes at the start';
   var chips = single ? [500, 1000, 5000, 10000] : [100, 500, 1000, pkMaxAmt() || 5000];
   var btn = !me ? 'Sign in to bet'
     : single ? 'Place ' + (c > 1 ? c + ' bets · ' : 'bet · ') + pkN(total) + ' VC'
@@ -10687,7 +10720,7 @@ function pkDraw(){
     + '<button class="betback" data-bback>&lsaquo; All cards</button>'
     + '<div class="lab"><b>' + esc(ps[0].event_name) + '</b><i></i><s>' + ps.length + (ps.length === 1 ? ' fight' : ' fights') + '</s></div>'
     + '<p class="pkrule">' + (single ? '<b>Tap who wins.</b> Each bet is on its own, paid from that fight\'s pot.'
-                                    : '<b>Tap who wins.</b> Pick 2 to ' + pkMaxPicks() + ' fights. All must win.') + '</p>'
+                                    : '<b>Tap who wins.</b> Pick 2 to ' + pkMaxPicks() + ' fights. All must win. Underdogs pay more.') + '</p>'
     + '<div class="pklist">' + rows + '</div><div class="pkgap"></div>'
     + '<div class="pkdock">' + modes + '<div class="pkbar">'
       + '<button type="button" class="pkopen pkfx" data-pkopen aria-expanded="false">' + PK_LAYERS
@@ -10707,7 +10740,7 @@ function pkDraw(){
       + '<input type="number" inputmode="numeric" min="1" step="1" placeholder="Other" aria-label="Other amount in VC" id="pk-amt" value="' + esc(tk.typed) + '"></div>'
       + '<div class="pkfoot"><span><i>You pay</i><b>' + (c || !single ? pkN(total) : '—') + '</b></span>'
       + '<span><i>' + (single ? 'If they all win, about' : (ok ? 'All ' + c + ' win' : 'Pays')) + '</i><b>' + (ok ? pkN(pays) : '—') + '</b></span>'
-      + (!single && ok ? '<span class="pkstamp">' + m + '×</span>' : '<span></span>') + '</div>'
+      + (!single && ok ? '<span class="pkstamp">' + pkX(m) + '</span>' : '<span></span>') + '</div>'
       + '<div class="pkmore">' + esc(more) + '</div>'
       + '<button type="button" class="pkplace" data-pkgo' + (canGo ? '' : ' disabled') + '>' + esc(btn) + '</button>'
       + (betBalance != null ? '<div class="pkbal">You have ' + pkN(betBalance) + ' VC</div>' : '')
@@ -10734,6 +10767,33 @@ function pkDraw(){
   }
 }
 
+/* PRICES MOVE, SO THE SCREEN DOES. Every 15 seconds while a card is open and
+   showing, its pools are read again and the screen redrawn with your picks
+   kept. A number that moved since the last look carries ▲ or ▼ until the next
+   one. Nothing is read while the tab is hidden, another tab is open, or a bet
+   is on its way. */
+var pkLast = {}, pkMoves = {};
+function pkMove(key, v){
+  var r = Math.round(v * 100) / 100, was = pkLast[key];
+  if(was != null && r !== was) pkMoves[key] = r > was ? 'up' : 'dn';
+  pkLast[key] = r;
+  var d = pkMoves[key];
+  return d ? ' <b class="' + d + '">' + (d === 'up' ? '▲' : '▼') + '</b>' : '';
+}
+async function pkTick(){
+  if(currentTab !== 'betting' || !tk.event || tk.busy || document.hidden) return;
+  var el = document.getElementById('bet-list');
+  if(!el || !el.querySelector('.pkwrap')) return;
+  var ev = tk.event;
+  var rows = await q("bet_pools_public?select=*&event_id=eq." + encodeURIComponent(ev));
+  if(!rows || tk.event !== ev || tk.busy) return;
+  pkMoves = {};
+  betPools = (betPools || []).filter(function(p){ return p.event_id !== ev; }).concat(rows);
+  if(!rows.length){ loadBetting(); return; }
+  pkDraw();
+}
+setInterval(pkTick, 15000);
+
 async function pkPlace(btn){
   if(!me){ signIn(); return; }
   if(tk.busy) return;
@@ -10751,10 +10811,10 @@ async function pkPlace(btn){
 
 async function pkSend(btn, picks){
   if(tk.mode === 'pick'){
-    var r = await rpc('app_place_pickem', { p_event_id: tk.event, p_amount: tk.amt,
+    var r = await rpc('app_place_pickem', { p_event_id: tk.event, p_amount: tk.amt, p_expected: tk.shown || null,
       p_picks: picks.map(function(p){ return { match_id: p.match_id, side: tk.picks[p.match_id] }; }) });
     if(!r.ok){ busy(btn, false); toast(r.message || 'Could not place that.', true); return; }
-    toast('Entry placed. Balance ' + pkN(r.new_balance) + ' VC');
+    toast('Entry placed at ' + pkX(Number(r.multiplier || tk.shown || 0)) + '. Balance ' + pkN(r.new_balance) + ' VC');
     tk.picks = {}; tk.open = false; tk.typed = '';
   } else {
     /* One bet per pick, one after another. A refusal stops the run, and the
