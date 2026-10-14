@@ -161,7 +161,6 @@ a{color:inherit;text-decoration:none}
 .chips span:active, .betback:active, .chipb:active{transform:scale(.93);filter:brightness(1.28)}
 /* The price cell IS the pick control, so it presses like one. It is not an
    `.act`, so the shared button rule above does not reach it. */
-.tape .pays .pick:active{filter:brightness(1.3)}
 /* .bhero runs the riding/pays-out tint on a keyframe animation, and an
    animation beats a plain declaration. filter is a separate property, so it
    still lands. */
@@ -1377,169 +1376,160 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#C3A6FF;background:none;
   border:1px solid rgba(167,139,250,.35);border-radius:20px;padding:7px 13px;cursor:pointer}
 
-/* level two — one bout's board, drawn as a TALE OF THE TAPE.
-   It used to be two list rows: name, a 64px stub bar, a number. Three things
-   changed and each is load-bearing.
+/* level two — one card's fights, and ONE ticket for both ways to bet
+   (2026-10-14, economy plan D53).
 
-   1. ONE SHARED SPLIT BAR. A pari-mutuel market is a ratio between two
-      corners, and two separate bars is the one shape that cannot show a
-      ratio — you had to read both percentages and subtract. One bar, cut
-      where the money is, says 63/37 without a digit being read.
-   2. THE PRICE IS THE BUTTON. The pays-now figure and the pick control were
-      two different objects an inch apart, so you read a number and then
-      pressed something else. They are the same cell now. Still two taps to
-      spend: pressing a corner opens the stake row, it does not place.
-   3. THE NAMES GET THE ROOM. 17px condensed to 25px Bebas. This is the
-      betting page of a fighting app and the fighters were the smallest type
-      on it. */
-.tape{margin:0 16px 10px;border-radius:14px;overflow:hidden;
-  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12)}
-.tape.mine{border-color:rgba(110,231,183,.4)}
-.tape .th{display:flex;align-items:center;gap:6px;padding:7px 12px;background:rgba(0,0,0,.25);
-  font-family:'Space Mono',monospace;font-size:6.5px;font-weight:700;letter-spacing:.15em;
-  text-transform:uppercase;color:#8B83AC}
-.tape .th s{margin-left:auto;text-decoration:none;color:#B9B2D6;white-space:nowrap}
-.tape .cor{display:flex;padding:12px 12px 0;gap:10px}
-.tape .cor > div{flex:1;min-width:0}
-.tape .cor .rt{text-align:right}
-/* Names ellipsize rather than wrap. A wrapped name changes the card's height
-   on one side only, and the two corners stop lining up — which is the whole
-   reason this reads as a head-to-head. */
-.tape .nm{font-family:'Bebas Neue',sans-serif;font-size:25px;line-height:.94;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-/* The name of the fighter YOUR money is on catches a slow sheen. It is the
-   quietest possible "this one is yours" — the mint border and the foot line
-   already say it in words, and with every bout on a card backed those two
-   stop reading as marks at all (they become the wallpaper). A name that
-   moves survives that, because motion on one name out of eight is still one
-   name out of eight.
+   1. A FIGHT IS ONE BAR, red corner left, blue corner right, split straight
+      down the middle. You tap a half. The face, the name and the record are
+      the whole bar; the pot and the price live on the ticket, where you spend.
+   2. ONE BAR AT THE BOTTOM, TWO JOBS. Its left side opens the ticket, its
+      right side places the bet, so a quick bet never needs the ticket at all.
+      Its two tabs choose the way to bet: Single bets (each fight on its own,
+      paid from that fight's pot) or Pick'em (2 to 5 fights, all must win, a
+      flat multiple from the house).
+   3. THE TICKET COVERS, IT DOES NOT PUSH. It slides up over the fights, which
+      dim behind it and keep their size.
+   The glass on the bar is the only thing that moves, and only by transform and
+   opacity: the colour is plain gradients (no blur filter) and a dark veil sits
+   between it and the words. It stops under reduced motion. */
+.pklist{display:grid;gap:9px;margin:0 16px}
+.pkfight{position:relative;display:grid;grid-template-columns:1fr 1fr;border-radius:13px;overflow:hidden;
+  background:linear-gradient(90deg,#B3323F 0,#7C2030 49.6%,#120D2E 49.6%,#120D2E 50.4%,#23408F 50.4%,#2F5BD0 100%)}
+.pkfight.lock{filter:grayscale(.85);opacity:.55}
+.pkh{appearance:none;-webkit-appearance:none;border:0;background:none;color:#fff;font:inherit;cursor:pointer;
+  display:grid;grid-template-columns:46px minmax(0,1fr);gap:9px;align-items:center;
+  min-height:60px;padding:6px 10px 6px 6px;text-align:left;-webkit-tap-highlight-color:transparent}
+.pkh.r{grid-template-columns:minmax(0,1fr) 46px;text-align:right;padding:6px 6px 6px 10px}
+.pkh:disabled{cursor:default}
+.pkh:focus-visible{outline:2px solid #fff;outline-offset:-3px}
+.pkh .ph2{display:block;position:relative;width:46px;height:48px;border-radius:9px;overflow:hidden;background:rgba(0,0,0,.25)}
+.pkh .ph2 img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 8%}
+.pkh .ph2.no{display:grid;place-items:center;font-family:'Bebas Neue',sans-serif;font-size:17px;color:rgba(255,255,255,.45)}
+.pkh .n{display:block;font-family:'Bebas Neue',sans-serif;font-size:18px;line-height:1;letter-spacing:.03em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pkh .rc{display:block;font-family:'Space Mono',monospace;font-size:8px;color:rgba(255,255,255,.78);margin-top:3px;white-space:nowrap}
+.pkh .rc b{color:#6EE7B7;font-weight:700}
+.pkh .n.long{font-size:15px}
+.pkh .n.xlong{font-size:13px;letter-spacing:.01em}
+.pkh.on{box-shadow:inset 0 0 0 2.5px #fff}
+.pkh.on .n::after{content:' \2713'}
+.pkh.off{filter:grayscale(1);opacity:.42}
+.pkfight .tg{position:absolute;left:50%;top:0;transform:translateX(-50%);font-family:'Space Mono',monospace;font-size:7px;
+  font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:#120D2E;border:1px solid rgba(255,255,255,.45);
+  border-top:0;border-radius:0 0 8px 8px;padding:2px 7px 3px;white-space:nowrap;color:#E9E4FA;pointer-events:none}
+.pkfight .tg.main{color:#F5C842;border-color:#F5C842}
+.pkrule{margin:0 16px 10px;font-size:12px;line-height:1.4;color:#C9C2E6}
+.pkrule b{color:#F3EFFC}
+.pkgap{height:150px}
 
-   The gradient is 280% wide and the highlight sits off the text for most of
-   the cycle, so it sweeps once every ~6s rather than glittering. */
-/* THE BAND HAS TO BE A DIFFERENT COLOUR FROM THE TEXT, which the first
-   version got wrong: it swept #FFFFFF through #EDEAF6 ink, a difference of
-   about two percent, so it animated perfectly and was invisible. The travelling
-   colour is the app's mint now — the colour that already means "yours"
-   everywhere else — and it is wide enough to read at 25px. */
-.tape .nm.backed{
-  background:linear-gradient(102deg,#EDEAF6 0%,#EDEAF6 26%,#FFFFFF 38%,#6EE7B7 50%,
-    #FFFFFF 62%,#EDEAF6 74%,#EDEAF6 100%);
-  /* 200%, not 280%: the gradient is sized against the ELEMENT, so on a short
-     name like "chino" a very wide gradient shows one flat slice and the band
-     never really arrives. */
-  background-size:200% 100%;background-position:0 0;
-  -webkit-background-clip:text;background-clip:text;
-  animation:nmsheen 4.5s ease-in-out infinite}
-/* Painting the text transparent is what reveals the gradient — and it is what
-   makes the name INVISIBLE anywhere background-clip:text is not supported.
-   It only ever applies where the clip does, so the fallback is the plain name
-   in its ordinary colour rather than a blank corner. */
-@supports ((-webkit-background-clip:text) or (background-clip:text)){
-  .tape .nm.backed{-webkit-text-fill-color:transparent;color:transparent}
-}
-/* Rests at 0 0, which shows the flat stretch of the gradient — so when the
-   app's global reduced-motion rule kills the animation the name is simply
-   its normal colour, not frozen mid-sheen. */
-@keyframes nmsheen{0%,6%{background-position:0 0}
-  56%,100%{background-position:100% 0}}
-.tape .rec{font-family:'Space Mono',monospace;font-size:7px;color:#7E7699;margin-top:4px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tape .split{display:flex;height:9px;margin:11px 12px 0;border-radius:5px;overflow:hidden;
-  background:rgba(0,0,0,.4)}
-.tape .split i{display:block;height:100%}
-.tape .split .sa{background:linear-gradient(90deg,#E8362B,#FF7A63)}
-.tape .split .sb{background:linear-gradient(90deg,#7C5CE0,#A78BFA)}
-.tape .pct{display:flex;justify-content:space-between;margin:5px 12px 0;
-  font-family:'Space Mono',monospace;font-size:6.5px;letter-spacing:.1em;color:#7E7699}
-.tape .split.none{background:rgba(255,255,255,.06)}
-.tape .pays{display:flex;margin:9px 0 0;border-top:1px solid rgba(255,255,255,.07)}
-.tape .pays .pick{flex:1;min-width:0;padding:11px 8px;text-align:left}
-.tape .pays .pick + .pick{border-left:1px solid rgba(255,255,255,.07);text-align:right}
-/* A BUTTON HAS TO LOOK LIKE ONE. The fill and the underline are the whole
-   difference between a price you read and a price you press. */
-.tape .pays button.pick{appearance:none;-webkit-appearance:none;border:0;width:100%;
-  color:inherit;font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;
-  background:rgba(167,139,250,.10);box-shadow:inset 0 -2px 0 rgba(167,139,250,.55)}
-.tape .pays button.pick:active{background:rgba(167,139,250,.22)}
-.tape .pays button.pick.yours{background:rgba(110,231,183,.10);
-  box-shadow:inset 0 -2px 0 rgba(110,231,183,.6)}
-.tape .pays .pick .v{display:block;font-family:'Space Mono',monospace;font-size:6.5px;
-  font-weight:700;letter-spacing:.17em;text-transform:uppercase;color:#C3A6FF;margin-bottom:5px}
-.tape .pays .pick.yours .v{color:#6EE7B7}
-/* Nobody has bet yet, so there is no figure to set in tabular numerals. */
-.tape .pays .pick.fresh b{font-size:12.5px;letter-spacing:.02em;color:#C8C2E0}
-/* A PRICE IS NOT A SIDE. Both prices used to be mint, which made mint mean
-   two things at once on the same card — "this is a price" and "this is yours"
-   — and the second meaning is the one that has to survive a card where every
-   bout is backed. Prices are ink; mint is reserved for the corner your money
-   is actually on, so there is exactly one mint number per bout you have bet. */
-.tape .pays b{display:block;font-family:'Space Mono',monospace;font-size:17px;font-weight:700;
-  color:#EDEAF6;line-height:1;font-variant-numeric:tabular-nums}
-.tape .pays .pick.yours b{color:#6EE7B7}
-.tape .pays .pick.yours s{color:#8FD9BE}
-.tape .pays s{display:block;text-decoration:none;font-family:'Space Mono',monospace;font-size:6px;
-  letter-spacing:.13em;text-transform:uppercase;color:#5F5880;margin-top:5px}
-.tape .pays .pick.on{background:linear-gradient(180deg,rgba(167,139,250,.22),transparent)}
-.tape .pays .pick.on b,.tape .pays .pick.on s{color:#C3A6FF}
-.tape .stakeline{padding:7px 12px 8px;border-top:1px solid rgba(110,231,183,.22);
-  background:rgba(110,231,183,.07);display:flex;align-items:center;gap:9px;
-  font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.1em;
-  text-transform:uppercase;color:#8FD9BE}
-.tape .stakeline b{color:#6EE7B7;font-size:10px}
-.tape .stakeline s{margin-left:auto;text-decoration:none;color:#6EE7B7;font-size:10px}
-/* Beats the bare `.stake` rule further down on specificity, so the drawer
-   sits flush inside the card rather than carrying that rule's top margin. */
-.tape .stake{margin-top:0;padding:10px 12px 12px;border-top:1px solid rgba(167,139,250,.3);
-  background:rgba(167,139,250,.09)}
-/* Signed out, the prices still show — they just stop being buttons. */
-.tape .picks.off{margin-top:0;padding:9px 12px 11px;border-top:1px solid rgba(255,255,255,.07)}
+/* the dock: the two tabs, then the one bar. Sits clear of the raised You disc. */
+.pkdock{position:fixed;left:12px;right:12px;z-index:21;
+  bottom:calc(54px + 16px + env(safe-area-inset-bottom,0px) - var(--barpush, 0px))}
+.pkmodes{display:flex;gap:4px;padding-left:10px}
+.pkmodes button{appearance:none;font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;padding:6px 11px 5px;border-radius:9px 9px 0 0;border:1px solid rgba(255,255,255,.22);
+  border-bottom:0;background:#2A2166;color:#BDB4E2;cursor:pointer}
+.pkmodes button[aria-pressed="true"]{background:#150E3C;color:#fff;border-color:rgba(255,255,255,.4)}
+.pkbar{display:grid;grid-template-columns:minmax(0,1fr) auto;border-radius:14px;overflow:hidden;
+  background:#150E3C;border:1px solid rgba(255,255,255,.34);box-shadow:0 -8px 24px rgba(10,6,34,.55)}
+.pkopen{appearance:none;border:0;background:none;color:#fff;font:inherit;cursor:pointer;text-align:left;
+  display:grid;grid-template-columns:auto minmax(0,1fr);gap:9px;align-items:center;padding:9px 8px 9px 11px}
+.pkopen .cv{width:26px;height:26px;border-radius:50%;border:1.5px solid rgba(255,255,255,.85);display:grid;place-items:center;font-size:11px}
+.pkopen .l1{display:block;font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:.03em;line-height:1;
+  text-shadow:0 1px 6px rgba(10,6,34,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pkopen .l2{display:block;font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:#E4DCFF;margin-top:2px;text-shadow:0 1px 4px rgba(10,6,34,.8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pkgo{appearance:none;border:0;border-left:1px solid rgba(255,255,255,.34);background:#F5C842;color:#2A1F00;cursor:pointer;
+  font-family:'Space Mono',monospace;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:0 14px;min-width:104px}
+.pkgo:disabled{background:#3A3168;color:#A79FCB;cursor:default}
 
-/* THE RUNNING TOTAL, docked above the nav on a card you have money on.
-   Ten markets is a lot of scrolling and the only place your total lived was a
-   screen back on level one.
+/* the sheet */
+.pkscrim{position:fixed;inset:0;z-index:22;background:rgba(10,6,34,.62);border:0;padding:0;width:100%;
+  opacity:0;pointer-events:none;transition:opacity .22s}
+.pksheet{position:fixed;left:10px;right:10px;z-index:23;transform:translateY(130%);transition:transform .26s cubic-bezier(.2,.8,.2,1);
+  bottom:calc(54px + 24px + env(safe-area-inset-bottom,0px) - var(--barpush, 0px));max-height:calc(100vh - 160px);overflow-y:auto}
+.pkon .pkscrim{opacity:1;pointer-events:auto}
+.pkon .pksheet{transform:none}
+.pkon .pkdock{visibility:hidden}
+@media (prefers-reduced-motion:reduce){ .pksheet,.pkscrim{transition:none} }
+.pktk{position:relative;isolation:isolate;overflow:hidden;background:#170F42;color:#F3EFFC;border:1px solid rgba(196,182,246,.5);
+  border-radius:16px;padding:0 0 12px;display:grid;gap:7px;box-shadow:0 -10px 30px rgba(10,6,34,.6)}
+.pktk > *{margin-inline:14px}
+.pktk > .pkband{margin:0;padding:6px 14px 8px;border-bottom:1px solid rgba(255,255,255,.28)}
+.pktk > .pkstars{margin:0}
+.pkgrab{appearance:none;border:0;background:none;display:grid;justify-items:center;gap:5px;padding:4px 0 2px;width:100%;
+  color:#E4DCFF;font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
+.pkgrab::before{content:'';width:38px;height:4px;border-radius:99px;background:rgba(255,255,255,.7)}
+.pkband .pkmodes{padding:0;justify-content:center;margin:2px 0 8px}
+.pkband .pkmodes button{border-radius:999px;border:1px solid rgba(255,255,255,.4);background:rgba(14,9,44,.45);color:#E4DCFF;padding:6px 13px}
+.pkband .pkmodes button[aria-pressed="true"]{background:#fff;color:#1A1236;border-color:#fff}
+.pkhd{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:#fff;text-shadow:0 1px 4px rgba(10,6,34,.8)}
+.pkln{display:grid;grid-template-columns:14px minmax(0,1fr) auto auto;gap:7px;align-items:center}
+.pkln > span{font-family:'Space Mono',monospace;font-size:9px;color:#B9B0DE}
+.pkln b{font-family:'Bebas Neue',sans-serif;font-size:18px;font-weight:400;letter-spacing:.03em;line-height:1.05;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pkln i{font-style:normal;font-family:'Space Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:#B9B0DE;white-space:nowrap}
+.pkln i.py{color:#6EE7B7}
+.pkx{appearance:none;border:1.5px solid rgba(196,182,246,.6);background:none;border-radius:50%;width:22px;height:22px;
+  font-size:10px;line-height:1;color:#D9D0FF;display:grid;place-items:center;padding:0;cursor:pointer}
+.pkempty{font-size:13px;color:#B9B0DE;text-align:center;padding:8px 0}
+.pkcut{border-top:1.5px dashed rgba(196,182,246,.5);margin:4px 0 2px;position:relative}
+.pkcut::before,.pkcut::after{content:'';position:absolute;top:-8px;width:14px;height:14px;border-radius:50%;background:#0E0930}
+.pkcut::before{left:-7px}
+.pkcut::after{right:-7px}
+.pklbl{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#B9B0DE}
+.pkamt{display:flex;gap:6px}
+.pkamt button{flex:1;appearance:none;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;padding:8px 0;border-radius:8px;
+  border:1px solid rgba(196,182,246,.6);background:none;color:#E6DEFF;cursor:pointer}
+.pkamt button.sel{background:#B9A2FF;color:#1A1236;border-color:#B9A2FF}
+.pkamt input{flex:1.3;min-width:0;font-family:'Space Mono',monospace;font-size:11px;padding:7px 8px;border-radius:8px;
+  border:1px solid rgba(196,182,246,.6);background:rgba(14,9,44,.5);color:#fff}
+.pkfoot{display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:end}
+.pkfoot i{display:block;font-style:normal;font-family:'Space Mono',monospace;font-size:7.5px;text-transform:uppercase;letter-spacing:.12em;color:#B9B0DE}
+.pkfoot b{font-family:'Bebas Neue',sans-serif;font-size:24px;font-weight:400;line-height:1;color:#fff}
+.pkfoot span:nth-child(2) b{color:#6EE7B7}
+.pkstamp{font-family:'Bebas Neue',sans-serif;font-size:24px;color:#F5C842;border:2.5px solid #F5C842;border-radius:8px;padding:0 8px;transform:rotate(-8deg);line-height:1.25}
+.pkmore{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6EE7B7;text-align:center}
+.pkplace{appearance:none;border:0;border-radius:11px;background:#F5C842;color:#2A1F00;font-family:'Space Mono',monospace;font-size:11px;
+  font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:13px 10px;cursor:pointer}
+.pkplace:disabled{background:#3A3168;color:#A79FCB;cursor:default}
+.pkbal{font-size:11px;color:#C9C2E6;text-align:center}
 
-   COUNT FIRST, MONEY SECOND. That ordering is not taste — it is the one thing
-   PrizePicks, DraftKings and FanDuel all agree on: the slip leads with how
-   many, and the figure supports it.
+/* the glass: dark ground, liquid colour under a veil, stars drifting left to right */
+.pkfx{position:relative;overflow:hidden;isolation:isolate;background:#150E3C}
+.pkfx::before{content:'';position:absolute;inset:0;z-index:-2;background:linear-gradient(180deg,rgba(14,9,44,.30),rgba(14,9,44,.58))}
+.pklq{position:absolute;inset:-90% -35%;z-index:-3;pointer-events:none;opacity:var(--liq,.55);will-change:transform;
+  background:radial-gradient(38% 46% at 22% 30%,rgba(123,97,255,.95),transparent 70%),
+    radial-gradient(34% 40% at 74% 26%,rgba(64,201,255,.78),transparent 70%),
+    radial-gradient(40% 44% at 62% 78%,rgba(255,110,199,.72),transparent 70%),
+    radial-gradient(30% 36% at 20% 80%,rgba(245,196,81,.5),transparent 70%);
+  animation:pklq 18s ease-in-out infinite alternate}
+.pklq.b{animation-duration:27s;animation-direction:alternate-reverse;opacity:calc(var(--liq,.55)*.7);transform-origin:38% 62%}
+@keyframes pklq{0%{transform:translate3d(-8%,-4%,0) rotate(0deg) scale(1)}
+  50%{transform:translate3d(6%,5%,0) rotate(18deg) scale(1.12)}100%{transform:translate3d(-3%,8%,0) rotate(-14deg) scale(1.04)}}
+.pksx{position:absolute;top:0;bottom:0;left:0;width:200%;z-index:-1;pointer-events:none;will-change:transform,opacity;
+  background-size:50% 100%;background-repeat:repeat-x;
+  animation:pkflow var(--flow,14s) linear infinite,pktw 3.8s ease-in-out infinite alternate;
+  background-image:radial-gradient(1.4px 1.4px at 7% 28%,#fff,transparent 70%),radial-gradient(1px 1px at 19% 72%,#fff,transparent 70%),
+    radial-gradient(1.8px 1.8px at 33% 18%,#EDE6FF,transparent 70%),radial-gradient(1px 1px at 46% 62%,#fff,transparent 70%),
+    radial-gradient(1.3px 1.3px at 58% 30%,#CFF4FF,transparent 70%),radial-gradient(1px 1px at 69% 80%,#fff,transparent 70%),
+    radial-gradient(1.6px 1.6px at 81% 22%,#fff,transparent 70%),radial-gradient(1px 1px at 93% 58%,#FFE9F6,transparent 70%)}
+.pksx.b{animation-duration:calc(var(--flow,14s)*1.9),5.4s;animation-delay:0s,-2.1s;
+  background-image:radial-gradient(1px 1px at 12% 52%,#fff,transparent 70%),radial-gradient(1.2px 1.2px at 26% 40%,#fff,transparent 70%),
+    radial-gradient(1px 1px at 40% 84%,#EDE6FF,transparent 70%),radial-gradient(1.1px 1.1px at 53% 12%,#fff,transparent 70%),
+    radial-gradient(1px 1px at 64% 54%,#fff,transparent 70%),radial-gradient(1.2px 1.2px at 76% 44%,#CFF4FF,transparent 70%),
+    radial-gradient(1px 1px at 88% 86%,#fff,transparent 70%),radial-gradient(1px 1px at 97% 16%,#fff,transparent 70%)}
+@keyframes pkflow{from{transform:translate3d(-50%,0,0)}to{transform:translate3d(0,0,0)}}
+@keyframes pktw{0%{opacity:calc(var(--star,.85)*.35)}100%{opacity:var(--star,.85)}}
+@media (prefers-reduced-motion:reduce){ .pklq,.pksx{animation:none} }
+.pkopen.pkfx{--liq:.55;--star:.85}
+.pkband.pkfx{--liq:.33;--star:.6;--flow:24s}
+.pktk > .pkstars{--star:.27;--flow:40s}
 
-   It is NOT a bet slip, and that is the reason it carries no button. Every
-   bar those apps ship is a PENDING slip — selections not yet submitted — so
-   it ends in an action. Ours reports money already staked and unrecallable,
-   and a bar that looks like a slip but cannot be submitted or cleared is a
-   worse lie than no bar.
-
-   It also does not carry the back control, though the mockup did: the slab
-   only exists when you have bets on the card, and a way out that appears only
-   once you have spent money is not a way out. Back stays at the top. */
-.betslab{position:fixed;left:0;right:0;z-index:19;
-  /* Docked to the nav's top edge: the bar's buttons are 54px and it pads
-     itself by the safe-area inset, so that sum IS its height. --barpush is
-     the bar's own seating offset; matching it keeps the two locked together
-     if the bar is ever pushed. */
-  bottom:calc(54px + env(safe-area-inset-bottom,0px) - var(--barpush, 0px));
-  display:flex;align-items:center;gap:12px;padding:11px 16px;
-  background:rgba(14,10,28,.97);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
-  border-top:1px solid rgba(110,231,183,.3)}
-/* Capped short of centre. The You button is a raised disc that overhangs the
-   nav upward into this bar, and it sits above it — a long event name allowed
-   to run to the middle would slide underneath it and be unreadable. */
-.betslab .cnt{display:flex;align-items:baseline;gap:6px;min-width:0;max-width:calc(50% - 32px)}
-.betslab .cnt b{font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1;color:#6EE7B7;
-  flex-shrink:0}
-/* A long event name ellipsizes rather than shoving the money off the edge —
-   the figure on the right is the half you cannot afford to lose. */
-.betslab .cnt s{text-decoration:none;font-family:'Space Mono',monospace;font-size:7px;
-  letter-spacing:.14em;text-transform:uppercase;color:#8FD9BE;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.betslab .mny{margin-left:auto;text-align:right;white-space:nowrap;flex-shrink:0}
-.betslab .mny b{display:block;font-family:'Space Mono',monospace;font-size:13px;font-weight:700;
-  color:#6EE7B7;line-height:1;font-variant-numeric:tabular-nums}
-.betslab .mny b u{text-decoration:none;color:#F5C842}
-.betslab .mny s{display:block;text-decoration:none;font-family:'Space Mono',monospace;font-size:6px;
-  letter-spacing:.13em;text-transform:uppercase;color:#5F5880;margin-top:4px}
-/* The slab is fixed, so it does not push the list. This does — without it the
-   last bout on the card sits underneath it and cannot be read or bet on. */
-.slabgap{height:56px}
+/* My bets: a Pick'em entry is one row with its picks under it */
+.mpk .legs{font-family:'Space Mono',monospace;font-size:7.5px;color:#8B83AC;margin-top:4px;line-height:1.5}
+.mpk .legs .w{color:#6EE7B7} .mpk .legs .l{color:#FF8A80;text-decoration:line-through} .mpk .legs .v{color:#6E6688}
 
 /* the sheet */
 .summ{display:flex;gap:8px;margin:16px 16px 4px}
@@ -5084,7 +5074,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v247';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v248';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -8263,60 +8253,6 @@ document.addEventListener('click', async function(e){
 
   if((b = e.target.closest('[data-signin]'))){ signIn(); return; }
 
-  /* Picking a corner does NOT place anything — it opens the stake row. Two
-     taps to spend VC is deliberate; one tap is how a scroll becomes a bet. */
-  if((b = e.target.closest('[data-bet]'))){
-    var mid = b.getAttribute('data-bet'), side = b.getAttribute('data-side');
-    var box = document.getElementById('stake-' + mid);
-    if(!box) return;
-    var same = box.getAttribute('data-side') === side && !box.hidden;
-    box.parentNode.querySelectorAll('.pick').forEach(function(x){ x.classList.remove('on'); });
-    if(same){ box.hidden = true; box.removeAttribute('data-side'); return; }
-    b.classList.add('on');
-    box.setAttribute('data-side', side);
-    box.hidden = false;
-    box.innerHTML = '<div class="chipsr">'
-      + [100,500,1000,5000].map(function(v){
-          return '<button class="chipb" data-stake="'+v+'">'+v.toLocaleString()+'</button>'; }).join('')
-      + '</div>'
-      + '<div class="stakerow">'
-      + '<input class="amt" type="number" inputmode="numeric" min="1" step="1" placeholder="VC" '
-      + 'aria-label="Amount in VC">'
-      /* The label comes from data-name, not textContent: the pick control is
-         the price cell now, so its text is "2.71×Pays now". */
-      + '<button class="act place" data-place="'+esc(mid)+'">On '
-      + esc(b.getAttribute('data-name') || 'this side') + '</button>'
-      + '</div>';
-    return;
-  }
-
-  if((b = e.target.closest('[data-stake]'))){
-    var inp = b.closest('.stake').querySelector('.amt');
-    if(inp) inp.value = b.getAttribute('data-stake');
-    return;
-  }
-
-  if((b = e.target.closest('[data-place]'))){
-    var box2 = b.closest('.stake');
-    var amt = Math.floor(Number(box2.querySelector('.amt').value || 0));
-    if(!(amt > 0)){ toast('Enter an amount first.', true); return; }
-    busy(b, true, 'Placing…');
-    var r4 = await rpc('app_place_bet',
-      { p_match_id: b.getAttribute('data-place'), p_side: box2.getAttribute('data-side'), p_amount: amt });
-    /* NOT re-enabled here on success. The amount is still in the box while
-       loadBetting() runs four reads, and a second tap in that gap is a second
-       real bet — the server allows several on one fight, so it is not refused. */
-    if(!r4.ok) busy(b, false);
-    toast(r4.ok ? 'Bet placed. Balance ' + Number(r4.new_balance||0).toLocaleString() + ' VC' : r4.message, !r4.ok);
-    if(r4.ok){
-      var back = betEvent;
-      await loadBetting();
-      if(back) renderBetEvent(back);
-      loadMe();
-      if(b.isConnected) busy(b, false);   /* the reload failed and nothing replaced it */
-    }
-    return;
-  }
 });
 
 /* THE CAREER NUMBERS. Rank, record and the form bar are public — they come
@@ -10407,7 +10343,8 @@ async function loadBetting(){
     q("bet_pools_public?select=*"),
     me ? qMe("my_bets?select=*&order=placed_at.desc") : Promise.resolve([]),
     me ? qMe("my_profile?select=vc_balance&limit=1") : Promise.resolve([]),
-    q("events_public?select=id,name,event_date,status&order=event_date.asc&limit=30")
+    q("events_public?select=id,name,event_date,status&order=event_date.asc&limit=30"),
+    pkRules ? Promise.resolve([pkRules]) : q("pickem_rules_public?select=*")
   ]);
   if(!el.isConnected) return;
   if(!got[0]){
@@ -10416,9 +10353,12 @@ async function loadBetting(){
   }
   betPools = got[0];
   myBets   = got[1] || [];
+  /* No rules, no Pick'em tab: the ticket falls back to single bets rather
+     than offering a game whose multipliers it cannot state. */
+  if(got[4] && got[4][0]) pkRules = got[4][0];
+  betBalance = got[2] && got[2].length ? Number(got[2][0].vc_balance || 0) : null;
   var chip = document.getElementById('bet-vc');
-  if(chip && got[2] && got[2].length)
-    chip.textContent = Number(got[2][0].vc_balance||0).toLocaleString() + ' VC';
+  if(chip && betBalance != null) chip.textContent = betBalance.toLocaleString() + ' VC';
 
   /* An event with no pool yet is still worth listing — "opens when the card is
      published" is a better empty state than "no market is open", because there
@@ -10627,150 +10567,223 @@ function livePays(pool, bet){
   return side > 0 ? tot / side : 1;
 }
 
-/* ── level two: one card's markets ── */
+/* ── level two: one card's fights, and the ticket (economy plan D53) ──
+   Two ways to bet from one screen. SINGLE BETS are the pools as they always
+   were: each pick is its own app_place_bet, paid from that fight's pot, so its
+   payout is an estimate until the bell. PICK'EM is one app_place_pickem: 2 to
+   5 fights on this card, every one must win, paid at a flat multiple from the
+   house. The rules (multipliers, the most an entry can be, entries per show)
+   are read from pickem_rules_public, never typed here.
+
+   The ticket belongs to the card it was built on: opening another card starts
+   a fresh one. Picks are kept as {match_id: 'a'|'b'}. */
+var tk = { event: null, mode: 'single', picks: {}, amt: 500, open: false };
+var pkRules = null, betBalance = null;
+var PK_LAYERS = '<i class="pklq"></i><i class="pklq b"></i><i class="pksx"></i><i class="pksx b"></i>';
+try { var _m = localStorage.getItem('uba-bet-mode'); if(_m === 'pick' || _m === 'single') tk.mode = _m; } catch(e) {}
+
+function pkN(x){ return Math.round(Number(x || 0)).toLocaleString('en-US'); }
+function pkMult(n){ return pkRules && pkRules.multipliers ? Number(pkRules.multipliers[String(n)] || 0) : 0; }
+function pkMaxPicks(){ return pkRules ? Number(pkRules.max_picks || 5) : 5; }
+function pkMaxAmt(){ return pkRules ? Number(pkRules.max_amount || 0) : 0; }
+/* What a single bet pays at the pot as it stands, your own stake included —
+   the same sum settle_match_bets makes at the bell. */
+function pkEst(p, side, amt){
+  var a = Number(p.total_a || 0), b = Number(p.total_b || 0);
+  var mine = (side === 'a' ? a : b) + amt;
+  return mine > 0 ? Math.floor(amt * (a + b + amt) / mine) : amt;
+}
+
 function renderBetEvent(eventId){
   var el = document.getElementById('bet-list');
   if(!el) return;
   betEvent = eventId;
-  var ps = poolsFor(eventId).sort(function(a,b){
-    return (b.bout_number||0) - (a.bout_number||0); });
-  if(!ps.length){ renderBetLevel([]); return; }
+  if(tk.event !== eventId){ tk.event = eventId; tk.picks = {}; tk.open = false; }
+  if(!poolsFor(eventId).length){ renderBetLevel([]); return; }
+  pkDraw();
+}
 
-  el.innerHTML = '<button class="betback" data-bback>&lsaquo; All cards</button>'
-    + '<div class="lab"><b>'+esc(ps[0].event_name)+'</b><i></i><s>'
-    + ps.length+(ps.length===1?' market':' markets')+'</s></div>'
-    + ps.map(function(r, i){ return boardHTML(r, i); }).join('')
-    + '<div class="foot">Your stake shows on the side you backed &middot; prices move until the bell</div>'
-    + betSlabHTML(eventId, ps[0].event_name);
+function pkDraw(){
+  var el = document.getElementById('bet-list');
+  if(!el || !tk.event) return;
+  /* Bout 1 is the main event: bout_number is card order read top down. */
+  var ps = poolsFor(tk.event).slice().sort(function(a, b){ return (a.bout_number || 99) - (b.bout_number || 99); });
+  if(!pkRules && tk.mode === 'pick') tk.mode = 'single';
+  /* a pick on a fight that has since started cannot be placed: drop it */
+  ps.forEach(function(p){ if(p.market_status !== 'open') delete tk.picks[p.match_id]; });
+  var single = tk.mode === 'single';
+  var ids = ps.filter(function(p){ return tk.picks[p.match_id]; });
+  var c = ids.length, m = pkMult(c);
+  var ok = single ? c >= 1 : (c >= 2 && m > 0);
+  var amt = tk.amt;
+  var ests = ids.map(function(p){ return pkEst(p, tk.picks[p.match_id], amt); });
+  var total = single ? amt * c : amt;
+  var pays = single ? ests.reduce(function(x, y){ return x + y; }, 0) : Math.floor(amt * m);
+
+  function mineOn(p, name){
+    return (myBets || []).filter(function(x){ return x.match_id === p.match_id && x.state !== 'settled' && x.pick_name === name; })
+      .reduce(function(n, x){ return n + Number(x.amount || 0); }, 0);
+  }
+  var rows = ps.map(function(p, i){
+    var lock = p.market_status !== 'open', pk = tk.picks[p.match_id];
+    var tag = i === 0 ? 'Main event' : i === 1 ? 'Co-main' : 'Bout ' + (p.bout_number || i + 1);
+    function half(side){
+      var nm = side === 'a' ? p.side_a : p.side_b, ph = side === 'a' ? p.photo_a : p.photo_b;
+      var w = side === 'a' ? p.wins_a : p.wins_b, l = side === 'a' ? p.losses_a : p.losses_b;
+      var tot = Number(p.pool || 0), sd = Number(side === 'a' ? p.total_a : p.total_b);
+      var bits = [];
+      if(w !== null && w !== undefined) bits.push(Number(w || 0) + '–' + Number(l || 0));
+      if(single && !lock) bits.push(sd > 0 ? (tot / sd).toFixed(2) + '×' : 'no bets');
+      var mine = mineOn(p, nm);
+      var rc = esc(bits.join(' · ')) + (mine ? ' · <b>yours ' + pkN(mine) + '</b>' : '');
+      var ini = String(nm || '?').replace(/[^A-Za-z0-9 ]/g, '').split(' ').filter(Boolean).slice(0, 2).map(function(x){ return x[0]; }).join('').toUpperCase() || '?';
+      var face = ph ? '<span class="ph2"><img src="' + esc(ph) + '" alt="" loading="lazy" decoding="async"></span>'
+                    : '<span class="ph2 no">' + esc(ini) + '</span>';
+      var ln = String(nm || '').length, sz = ln > 15 ? ' xlong' : ln > 11 ? ' long' : '';
+      var txt = '<span style="min-width:0"><span class="n' + sz + '">' + esc(nm || '—') + '</span><span class="rc">' + rc + '</span></span>';
+      var cls = 'pkh' + (side === 'b' ? ' r' : '') + (pk ? (pk === side ? ' on' : ' off') : '');
+      return '<button type="button" class="' + cls + '" data-pkp="' + esc(p.match_id) + '" data-pks="' + side + '"'
+        + (lock ? ' disabled' : '') + ' aria-pressed="' + (pk === side) + '">'
+        + (side === 'b' ? txt + face : face + txt) + '</button>';
+    }
+    return '<div class="pkfight' + (lock ? ' lock' : '') + '">' + half('a') + half('b')
+      + '<span class="tg' + (i === 0 ? ' main' : '') + '">' + (lock ? 'Started' : esc(tag)) + '</span></div>';
+  }).join('');
+
+  var l1, l2;
+  if(single){
+    l1 = c ? c + (c === 1 ? ' bet · ' : ' bets · ') + pkN(total) + ' VC' : 'Your slip';
+    l2 = c ? 'pays about ' + pkN(pays) + ' if they win' : 'Tap who wins';
+  } else {
+    l1 = c ? c + (c === 1 ? ' pick' : ' picks') + (ok ? ' · ' + m + '×' : '') : 'Your Pick\'em';
+    l2 = ok ? pkN(amt) + ' pays ' + pkN(pays) : (c === 1 ? 'Pick 1 more to play' : 'Tap who wins');
+  }
+  var lines = ids.map(function(p, k){
+    var side = tk.picks[p.match_id], nm = side === 'a' ? p.side_a : p.side_b;
+    var right = !single ? '<i>Bout ' + esc(p.bout_number || '') + '</i>'
+      : (ests[k] > amt ? '<i class="py">pays about ' + pkN(ests[k]) + '</i>' : '<i>money back so far</i>');
+    return '<div class="pkln"><span>' + (k + 1) + '</span><b>' + esc(nm) + '</b>' + right
+      + '<button type="button" class="pkx" data-pkrm="' + esc(p.match_id) + '" aria-label="Remove ' + esc(nm) + '">✕</button></div>';
+  }).join('') || '<div class="pkempty">Nothing yet. Tap a fighter behind this ticket.</div>';
+  var nxt = pkMult(c + 1), more;
+  if(single) more = 'Each bet stands alone · the price moves until the bell';
+  else if(!ok) more = 'Pick at least 2 fights · all must win';
+  else more = nxt ? 'One more pick makes it ' + nxt + '× · ' + pkN(amt * nxt) : 'Most picks an entry can have';
+  var chips = single ? [500, 1000, 5000, 10000] : [100, 500, 1000, pkMaxAmt() || 5000];
+  var btn = !me ? 'Sign in to bet'
+    : single ? 'Place ' + (c > 1 ? c + ' bets · ' : 'bet · ') + pkN(total) + ' VC'
+    : 'Place entry · ' + pkN(amt) + ' VC';
+  var modes = '<div class="pkmodes" role="group" aria-label="How to bet">'
+    + '<button type="button" data-pkmode="single" aria-pressed="' + single + '">Single bets</button>'
+    + (pkRules ? '<button type="button" data-pkmode="pick" aria-pressed="' + !single + '">Pick\'em</button>' : '')
+    + '</div>';
+  var canGo = !me || ok;
+
+  el.innerHTML = '<div class="pkwrap' + (tk.open ? ' pkon' : '') + '">'
+    + '<button class="betback" data-bback>&lsaquo; All cards</button>'
+    + '<div class="lab"><b>' + esc(ps[0].event_name) + '</b><i></i><s>' + ps.length + (ps.length === 1 ? ' fight' : ' fights') + '</s></div>'
+    + '<p class="pkrule">' + (single ? '<b>Tap who wins.</b> Each bet is on its own, paid from that fight\'s pot.'
+                                    : '<b>Tap who wins.</b> Pick 2 to ' + pkMaxPicks() + ' fights. All must win.') + '</p>'
+    + '<div class="pklist">' + rows + '</div><div class="pkgap"></div>'
+    + '<div class="pkdock">' + modes + '<div class="pkbar">'
+      + '<button type="button" class="pkopen pkfx" data-pkopen aria-expanded="false">' + PK_LAYERS
+      + '<span class="cv">▲</span><span style="min-width:0"><span class="l1">' + esc(l1) + '</span><span class="l2">' + esc(l2) + '</span></span></button>'
+      + '<button type="button" class="pkgo" data-pkgo' + (canGo ? '' : ' disabled') + '>' + (!me ? 'Sign in' : single ? 'Place' : 'Place entry') + '</button>'
+    + '</div></div>'
+    + '<button type="button" class="pkscrim" data-pkclose aria-label="Close the ticket"></button>'
+    + '<div class="pksheet" role="dialog" aria-label="Your ticket"><div class="pktk">'
+      + '<i class="pksx pkstars"></i>'
+      + '<div class="pkband pkfx">' + PK_LAYERS + '<button type="button" class="pkgrab" data-pkclose>Tap to close</button>' + modes
+      + '<div class="pkhd"><span>' + esc(ps[0].event_name) + ' · ' + (single ? 'Single bets' : 'Pick\'em') + '</span><span>'
+      + c + (single ? (c === 1 ? ' bet' : ' bets') : (c === 1 ? ' pick' : ' picks')) + '</span></div></div>'
+      + lines
+      + '<div class="pkcut"></div>'
+      + '<div class="pklbl">' + (single ? 'On each bet' : 'Your entry' + (pkMaxAmt() ? ' · up to ' + pkN(pkMaxAmt()) : '')) + '</div>'
+      + '<div class="pkamt">' + chips.map(function(a){ return '<button type="button" data-pkamt="' + a + '"' + (a === amt ? ' class="sel"' : '') + '>' + pkN(a) + '</button>'; }).join('')
+      + '<input type="number" inputmode="numeric" min="1" step="1" placeholder="Other" aria-label="Other amount in VC" id="pk-amt"></div>'
+      + '<div class="pkfoot"><span><i>You pay</i><b>' + (c || !single ? pkN(total) : '—') + '</b></span>'
+      + '<span><i>' + (single ? 'If they all win, about' : (ok ? 'All ' + c + ' win' : 'Pays')) + '</i><b>' + (ok ? pkN(pays) : '—') + '</b></span>'
+      + (!single && ok ? '<span class="pkstamp">' + m + '×</span>' : '<span></span>') + '</div>'
+      + '<div class="pkmore">' + esc(more) + '</div>'
+      + '<button type="button" class="pkplace" data-pkgo' + (canGo ? '' : ' disabled') + '>' + esc(btn) + '</button>'
+      + (betBalance != null ? '<div class="pkbal">You have ' + pkN(betBalance) + ' VC</div>' : '')
+    + '</div></div></div>';
   var bk = el.querySelector('[data-bback]');
   if(bk) bk.onclick = function(){ loadBetting(); };
+  var inp = el.querySelector('#pk-amt');
+  if(inp) inp.addEventListener('change', function(){
+    var v = Math.floor(Number(inp.value || 0));
+    if(!(v > 0)) return;
+    if(tk.mode === 'pick' && pkMaxAmt() && v > pkMaxAmt()){ toast('The most one entry can be is ' + pkN(pkMaxAmt()) + ' VC.', true); v = pkMaxAmt(); }
+    tk.amt = v; pkDraw();
+  });
 }
 
-/* The docked total. Returns nothing at all when there is no money on this
-   card — an empty bar reporting zero would take 56px off the board to say
-   the one thing the board already says by having no mint on it.
-   It lives inside #bet-list rather than beside it, so going back to level one
-   removes it with the same innerHTML that redraws the list.
-
-   NAMED betSlabHTML, not slabHTML: the binder already has a slabHTML for the
-   graded card slab, it is declared further down this file, and a second
-   function declaration with the same name silently wins. The first version of
-   this shipped as slabHTML, rendered a CARD SLAB into the betting board's
-   footer, and threw nothing at all — the bar simply never appeared. */
-function betSlabHTML(eventId, eventName){
-  if(!me) return '';
-  var mine = (myBets || []).filter(function(b){
-    return b.event_id === eventId && b.state !== 'settled'; });
-  if(!mine.length) return '';
-  var stake = mine.reduce(function(n, b){ return n + Number(b.amount||0); }, 0);
-  /* Same split as the strips on level one: an OPEN bet is worth what the pool
-     pays right now, a LOCKED one is worth the price it locked at. Showing a
-     live price for a locked bet would be showing a number that can no longer
-     move as though it still could. */
-  var ret = mine.reduce(function(n, b){
-    var p = (betPools || []).filter(function(x){ return x.match_id === b.match_id; })[0];
-    var mult = b.state === 'open' ? livePays(p, b) : Number(b.odds || 1);
-    return n + Math.round(Number(b.amount||0) * mult);
-  }, 0);
-  return '<div class="slabgap"></div>'
-    + '<div class="betslab">'
-    + '<span class="cnt"><b>'+mine.length+'</b><s>'
-      + (mine.length === 1 ? 'bet on ' : 'bets on ') + esc(eventName || 'this card')+'</s></span>'
-    + '<span class="mny"><b>'+stake.toLocaleString()+' &rarr; <u>'+ret.toLocaleString()+'</u></b>'
-      + '<s>staked &rarr; pays now</s></span></div>';
+async function pkPlace(btn){
+  if(!me){ signIn(); return; }
+  var ps = poolsFor(tk.event);
+  var picks = ps.filter(function(p){ return tk.picks[p.match_id]; });
+  if(!picks.length) return;
+  var back = tk.event;
+  busy(btn, true, 'Placing…');
+  if(tk.mode === 'pick'){
+    var r = await rpc('app_place_pickem', { p_event_id: tk.event, p_amount: tk.amt,
+      p_picks: picks.map(function(p){ return { match_id: p.match_id, side: tk.picks[p.match_id] }; }) });
+    if(!r.ok){ busy(btn, false); toast(r.message || 'Could not place that.', true); return; }
+    toast('Entry placed. Balance ' + pkN(r.new_balance) + ' VC');
+    tk.picks = {}; tk.open = false;
+  } else {
+    /* One bet per pick, one after another. A refusal stops the run, and the
+       picks already placed come off the ticket, so a second tap never places
+       them twice. */
+    var placed = 0, last = null, err = null;
+    for(var i = 0; i < picks.length; i++){
+      var p = picks[i];
+      var r2 = await rpc('app_place_bet', { p_match_id: p.match_id, p_side: tk.picks[p.match_id], p_amount: tk.amt });
+      if(!r2.ok){ err = r2.message || 'Could not place that.'; break; }
+      placed++; last = r2.new_balance; delete tk.picks[p.match_id];
+    }
+    if(err && !placed){ busy(btn, false); toast(err, true); return; }
+    toast(err ? placed + ' of ' + picks.length + ' placed. ' + err
+              : (placed === 1 ? 'Bet placed.' : placed + ' bets placed.') + ' Balance ' + pkN(last) + ' VC', !!err);
+    if(!err) tk.open = false;
+  }
+  await loadBetting();
+  if(back) renderBetEvent(back);
+  loadMe();
 }
 
-/* `billing` is the bout's position in the sorted card, not a stored field \u2014
-   index 0 is the main event because renderBetEvent sorts by bout number
-   descending. Deriving it beats reading `card_segment`, which only says
-   main_card / prelim / undercard and so cannot name the top of the bill. */
-function boardHTML(r, billing){
-  var a = Number(r.total_a||0), b = Number(r.total_b||0), tot = a + b;
-  var pa = tot ? Math.round(a/tot*100) : 50, pb = 100 - pa;
-  var pays = function(x){ return x > 0 ? (tot/x).toFixed(2) + '\u00d7' : '\u2014'; };
-  var mine = (myBets || []).filter(function(x){
-    return x.match_id === r.match_id && x.state !== 'settled'; });
-  var staked = function(name){
-    return mine.filter(function(x){ return x.pick_name === name; })
-      .reduce(function(n,x){ return n + Number(x.amount||0); }, 0); };
-  var onA = staked(r.side_a), onB = staked(r.side_b);
-
-  /* The header line, most specific part first. Every piece is optional
-     because a catch-weight bout has no division worth naming and a card can
-     be published before the billing is settled. */
-  var head = ['Bout ' + (r.bout_number || '\u2014')];
-  if(billing === 0)      head.push('Main event');
-  else if(billing === 1) head.push('Co-main');
-  if(r.is_title_fight)   head.push('Title');
-  var div = wc(r.weight_class);
-  if(div && r.weight_class !== 'catch_weight') head.push(div);
-
-  /* 19 of 467 fighters have no fighter_cards row, so a record can be missing
-     entirely \u2014 and 0-0 is a real record, not a missing one. Each piece is
-     tested on its own rather than the line being all-or-nothing. */
-  function rec(w, l, rank, champ){
-    var bits = [];
-    if(w !== null && w !== undefined) bits.push(Number(w||0) + '\u2013' + Number(l||0));
-    if(champ)     bits.push('CHAMP');
-    else if(rank) bits.push('#' + rank);
-    return bits.join(' \u00b7 ');
+document.addEventListener('click', function(e){
+  if(!e.target.closest || !e.target.closest('.pkwrap')) return;
+  var b;
+  if((b = e.target.closest('[data-pkp]'))){
+    var id = b.getAttribute('data-pkp'), s = b.getAttribute('data-pks');
+    if(tk.picks[id] === s) delete tk.picks[id];
+    else {
+      if(!tk.picks[id] && tk.mode === 'pick' && Object.keys(tk.picks).length >= pkMaxPicks()){
+        toast('An entry can have at most ' + pkMaxPicks() + ' picks.', true); return;
+      }
+      tk.picks[id] = s;
+    }
+    pkDraw(); return;
   }
-  var recA = rec(r.wins_a, r.losses_a, r.rank_a, r.champ_a);
-  var recB = rec(r.wins_b, r.losses_b, r.rank_b, r.champ_b);
-
-  /* The price cell and the pick control are one object. `data-name` carries
-     the label the stake row's button needs \u2014 reading it off textContent would
-     pick up the price and the caption too.
-
-     THE VERB IS THE POINT. This rendered as a bare figure with a PAYS NOW
-     caption, which is the shape of a readout, so a ten-bout page said nothing
-     anywhere about being able to press it. `Back` rides above the price, and
-     the button carries a fill and an underline so the eye reads a control.
-
-     A market nobody has bet on has no price to show \u2014 pays() returns an
-     em dash for both sides, and two dashes over a flat 50/50 bar is what a
-     half-loaded page looks like. It says `Be first` instead, which is true
-     and is also the thing we want somebody to do. */
-  function cell(side, name, total, amt){
-    var cls = 'pick' + (amt ? ' yours' : '') + (tot ? '' : ' fresh');
-    var inner = tot
-      ? '<b>'+pays(total)+'</b><s>'+(amt ? 'Yours \u00b7 pays now' : 'Pays now')+'</s>'
-      : '<b>Be first</b><s>no bets yet</s>';
-    if(!me) return '<span class="'+cls+'">'+inner+'</span>';
-    return '<button class="'+cls+'" data-bet="'+esc(r.match_id)+'" data-side="'+side+'" '
-      + 'data-name="'+esc(name || side.toUpperCase())+'">'
-      + '<span class="v">Back</span>' + inner + '</button>';
+  if((b = e.target.closest('[data-pkmode]'))){
+    tk.mode = b.getAttribute('data-pkmode');
+    try { localStorage.setItem('uba-bet-mode', tk.mode); } catch(err) {}
+    if(tk.mode === 'pick'){
+      if(pkMaxAmt() && tk.amt > pkMaxAmt()) tk.amt = pkMaxAmt();
+      var keys = Object.keys(tk.picks);
+      if(keys.length > pkMaxPicks()){ keys.slice(pkMaxPicks()).forEach(function(k){ delete tk.picks[k]; });
+        toast('Pick\'em takes up to ' + pkMaxPicks() + ' picks, so the rest came off.', true); }
+    }
+    pkDraw(); return;
   }
-  function stakeline(amt, name, total){
-    if(!amt) return '';
-    return '<div class="stakeline">you have <b>'+amt.toLocaleString()+'</b> on '
-      + esc(name || 'this side')
-      + '<s>&rarr; '+Math.round(amt * (total > 0 ? tot/total : 1)).toLocaleString()+'</s></div>';
-  }
-
-  return '<div class="tape'+(mine.length ? ' mine' : '')+'">'
-    + '<div class="th"><span>'+esc(head.join(' \u00b7 '))+'</span>'
-    + '<s>'+Number(r.pool||0).toLocaleString()+' VC \u00b7 '+Number(r.bets||0)
-      + (Number(r.bets||0) === 1 ? ' bet' : ' bets')+'</s></div>'
-    /* `backed` puts the sheen on the name your money is on — see .tape .nm.backed */
-    + '<div class="cor">'
-      + '<div><div class="nm'+(onA ? ' backed' : '')+'">'+esc(r.side_a || 'A')+'</div>'
-      + (recA ? '<div class="rec">'+esc(recA)+'</div>' : '') + '</div>'
-      + '<div class="rt"><div class="nm'+(onB ? ' backed' : '')+'">'+esc(r.side_b || 'B')+'</div>'
-      + (recB ? '<div class="rec">'+esc(recB)+'</div>' : '') + '</div></div>'
-    /* An empty pool is ONE empty track, never a 50/50 split: a bar cut down
-       the middle is a claim about where the money is, and there is no money. */
-    + (tot ? '<div class="split"><i class="sa" style="width:'+pa+'%"></i>'
-               + '<i class="sb" style="width:'+pb+'%"></i></div>'
-           + '<div class="pct"><span>'+pa+'% \u00b7 '+a.toLocaleString()+'</span>'
-               + '<span>'+b.toLocaleString()+' \u00b7 '+pb+'%</span></div>'
-           : '<div class="split none"></div>')
-    + '<div class="pays">'+cell('a', r.side_a, a, onA)+cell('b', r.side_b, b, onB)+'</div>'
-    + (me ? '<div class="stake" id="stake-'+esc(r.match_id)+'" hidden></div>'
-          : '<div class="picks off">Sign in on the You tab to bet</div>')
-    + stakeline(onA, r.side_a, a) + stakeline(onB, r.side_b, b)
-    + '</div>';
-}
+  if((b = e.target.closest('[data-pkrm]'))){ delete tk.picks[b.getAttribute('data-pkrm')]; pkDraw(); return; }
+  if((b = e.target.closest('[data-pkamt]'))){ tk.amt = Number(b.getAttribute('data-pkamt')); pkDraw(); return; }
+  if(e.target.closest('[data-pkopen]')){ tk.open = true; pkDraw(); return; }
+  if(e.target.closest('[data-pkclose]')){ tk.open = false; pkDraw(); return; }
+  if((b = e.target.closest('[data-pkgo]')) && !b.disabled){ pkPlace(b); return; }
+});
 
 /* ── the My bets sheet ── */
 async function renderMyBets(){
@@ -10779,11 +10792,15 @@ async function renderMyBets(){
     + '<div class="kick">Every bet you have made</div><h3>My bets</h3></div>'
     + '<div id="mbl"><div class="skel"></div><div class="skel" style="width:60%"></div></div>';
   var el = document.getElementById('mbl');
-  var rows = await qMe("my_bets?select=*&order=placed_at.desc&limit=200");
+  var both = await Promise.all([
+    qMe("my_bets?select=*&order=placed_at.desc&limit=200"),
+    qMe("my_pickem?select=*&order=placed_at.desc&limit=100")
+  ]);
+  var rows = both[0], pkRows = both[1] || [];
   if(!el.isConnected) return;
   if(!rows){ retryHandlers['mbl'] = renderMyBets;
     el.innerHTML = failHTML("Couldn't load your bets.", 'mbl'); return; }
-  if(!rows.length){
+  if(!rows.length && !pkRows.length){
     el.innerHTML = '<div class="empty"><b>You have not bet yet.</b><br>'
       + 'Pools open when a card is published and lock at the first bell.</div>';
     return;
@@ -10819,6 +10836,35 @@ async function renderMyBets(){
         }).join('');
   }
 
+  /* Pick'em entries (D53): one row per entry, its picks underneath, each pick
+     coloured by how it went. An open entry shows what it pays if every pick
+     wins; the multiplier is the one stored on the entry, so it is exact. */
+  function pickemGroup(list){
+    if(!list.length) return '';
+    return '<div class="lab"><b>Pick\'em</b><i></i><s>' + list.length + (list.length === 1 ? ' entry' : ' entries') + '</s></div>'
+      + list.map(function(e){
+          var st = e.entry_status, amt = Number(e.amount || 0);
+          var cls = st === 'won' ? ' won' : st === 'lost' ? ' lost' : e.state === 'locked' ? ' lock' : '';
+          var right = st === 'won' ? '+' + Number(e.payout_amount || 0).toLocaleString()
+            : st === 'lost' ? '\u2212' + amt.toLocaleString()
+            : amt.toLocaleString();
+          var under = st === 'won' ? 'from ' + amt.toLocaleString()
+            : st === 'lost' ? 'lost'
+            : st === 'void' ? 'returned'
+            : 'pays ' + Math.floor(amt * Number(e.multiplier || 0)).toLocaleString();
+          var legs = (e.legs || []).map(function(l){
+            var c = l.status === 'won' ? 'w' : l.status === 'lost' ? 'l' : l.status === 'void' ? 'v' : '';
+            return '<span class="' + c + '">' + esc(l.pick_name || '?') + '</span>';
+          }).join(' \u00b7 ');
+          return '<div class="mbet mpk' + cls + '"><span class="st2"></span>'
+            + '<div style="flex:1;min-width:0"><div class="t">' + Number(e.picks || 0) + ' picks \u00b7 '
+            + Number(e.multiplier || 0) + '\u00d7</div>'
+            + '<div class="s">' + esc(e.event_name) + ' \u00b7 ' + esc(dstr(e.placed_at)) + '</div>'
+            + '<div class="legs">' + legs + '</div></div>'
+            + '<div class="amt"><b>' + right + '</b><s>' + under + '</s></div></div>';
+        }).join('');
+  }
+
   /* the SAME numbers the Betting tab shows — one function, one denominator */
   var rec = betRecord(rows);
   el.innerHTML = '<div class="summ">'
@@ -10827,6 +10873,7 @@ async function renderMyBets(){
         + (rec.hit == null ? '\u2014' : rec.hit + '%') + '</b><s>hit rate</s></div>'
       + '<div><b class="'+(rec.net >= 0 ? 'g' : 'r')+'">'+(rec.net >= 0 ? '+' : '')
         + rec.net.toLocaleString()+'</b><s>net VC</s></div></div>'
+    + pickemGroup(pkRows)
     + group('Open', rows.filter(function(b){ return b.state === 'open'; }))
     + group('Locked', rows.filter(function(b){ return b.state === 'locked'; }), 'settling at the bell')
     + group('Settled', done.slice(0, 40), done.length + ' resolved')
