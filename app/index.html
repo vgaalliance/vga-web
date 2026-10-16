@@ -3093,9 +3093,9 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .train{display:flex;flex-direction:column;align-items:center;gap:16px;padding:8px 18px 40px}
 .train .guest{font-size:13.5px;color:#DAD5EC;background:rgba(255,255,255,.06);border-radius:10px;padding:10px 14px;text-align:center;line-height:1.5}
 .train .guest .signin{display:inline-block;margin:0 2px;padding:4px 10px;font-size:12px}
-.train .stam{position:relative;width:100%;max-width:320px;height:22px;border-radius:11px;background:rgba(255,255,255,.08);overflow:hidden}
+.train .stam{position:relative;width:100%;height:12px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;transition:box-shadow .5s}
+.train .stam.flash{box-shadow:0 0 0 2px rgba(110,231,183,.9),0 0 16px rgba(110,231,183,.7)}
 .train .stam i{position:absolute;inset:0;width:0;background:linear-gradient(90deg,#7C5CFF,#C084FC);transition:width .3s ease}
-.train .stam b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;font-weight:700}
 .train .stage{position:relative;display:flex;align-items:flex-end;justify-content:center;gap:0;width:100%;max-width:320px;height:232px;
   border-radius:16px;background:radial-gradient(ellipse at 50% 100%,rgba(124,92,255,.18),transparent 70%);
   user-select:none;-webkit-user-select:none;touch-action:manipulation;cursor:pointer}
@@ -3110,9 +3110,6 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 @keyframes bagHit{0%{transform:rotate(0)}22%{transform:rotate(-9deg)}60%{transform:rotate(4deg)}85%{transform:rotate(-1.5deg)}100%{transform:rotate(0)}}
 @keyframes bagMiss{0%{transform:rotate(0)}40%{transform:rotate(-1.5deg)}100%{transform:rotate(0)}}
 @keyframes impact{0%{r:0;opacity:.9}100%{r:22;opacity:0}}
-.train .count{display:flex;flex-direction:column;align-items:center;line-height:1}
-.train .count b{font-family:'Bebas Neue',sans-serif;font-size:40px}
-.train .count s{text-decoration:none;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:#9A90BE;margin-top:2px}
 /* NOT `.fx` -- that class is the trading card's foil shine, a bare `.fx` at
    opacity:0 until `.lit`, and the card code sweeps every `.fx` on the page.
    The trainer's float layer inherited that zero and painted every damage
@@ -3153,8 +3150,6 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 @keyframes stageGold{0%{box-shadow:0 0 0 0 rgba(245,200,66,0)}15%{box-shadow:inset 0 0 60px 10px rgba(245,200,66,.45)}100%{box-shadow:inset 0 0 0 0 rgba(245,200,66,0)}}
 .train .stage.levelup .boxer{animation:boxerPop .6s cubic-bezier(.2,1.4,.4,1)}
 @keyframes boxerPop{0%{transform:scale(1)}40%{transform:scale(1.14) translateY(-6px)}100%{transform:scale(1)}}
-/* sound toggle, tucked in the stage corner */
-.train .snd{position:absolute;right:8px;top:8px;z-index:4;width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.08);color:#EDEAF6;font-size:15px;cursor:pointer}
 .train .vaulthead{width:100%;max-width:320px;font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:#C084FC;margin:4px 0 -4px}
 .train .witems.vaulted .wit{background:rgba(192,132,252,.07);border-color:rgba(192,132,252,.22)}
 .train .asnew{width:100%;max-width:320px;margin-top:4px;padding:9px 12px;border-radius:10px;cursor:pointer;
@@ -3162,40 +3157,98 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase}
 .train .asnew.on{border-style:solid;border-color:#C084FC;color:#C084FC;background:rgba(192,132,252,.1)}
 @media (prefers-reduced-motion:reduce){.train .bagsvg.hit,.train .bagsvg.miss,.train .tfl,.train .tfl b,.train .tfl s,.train .stage.shake,.train .stage.levelup,.train .stage.levelup .boxer{animation:none}}
-.train .stats{display:flex;gap:8px;width:100%;max-width:320px}
-.train .stats div{flex:1;text-align:center;background:rgba(255,255,255,.07);border-radius:10px;padding:10px 4px}
-.train .stats b{display:block;font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1}
-.train .stats b em{font-style:normal;font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.1em;color:#F5C842;margin-left:3px;vertical-align:2px}
-.train .stats s{display:block;text-decoration:none;font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;color:#9A90BE;margin-top:4px}
+/* ── TRAIN, the redraw (2026-10-16) ─────────────────────────────────────
+   One compact header row, a labelled bar with a rotating caption, the bag
+   with its score in the corner, then the gym as a darker zone of slim rows.
+   Gold is only ever a button that spends VC; collecting is green. */
+.trhead{display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 6px}
+.sheet .trhead .back{position:static;flex:none}
+.trplate{position:relative;display:flex;align-items:center;gap:7px;padding:5px 12px 4px;border-radius:7px;
+  background:linear-gradient(180deg,#B8283F,#7A1426);box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 3px 10px rgba(0,0,0,.45)}
+.trplate::after{content:'';position:absolute;inset:3px;border:1px dashed rgba(255,233,240,.45);border-radius:5px;pointer-events:none}
+.trplate b{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.12em;line-height:1;color:#FFF3F5}
+.trplate i{font-style:normal;font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.16em;color:#FFD3DC}
+.trwal{margin-left:auto;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:#F5C842;
+  border:1px solid rgba(245,200,66,.3);border-radius:20px;padding:5px 11px;transition:transform .2s,box-shadow .2s}
+.trwal.bump{transform:scale(1.12);box-shadow:0 0 14px rgba(245,200,66,.55)}
+.train .stamwrap{position:relative;width:100%;max-width:320px;padding-bottom:34px;margin-bottom:-22px}
+.train .sttop{display:flex;align-items:baseline;gap:10px;margin-bottom:6px}
+.train .sttop > span{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;white-space:nowrap}
+.train .rot{position:relative;height:14px;overflow:hidden;flex:1;min-width:0}
+.train .rot span{position:absolute;left:0;top:0;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.16em;
+  text-transform:uppercase;color:#DAD5EC;white-space:nowrap;transform:translateY(100%);opacity:0;
+  transition:transform .45s cubic-bezier(.2,.8,.3,1),opacity .45s}
+.train .rot span.on{transform:translateY(0);opacity:1}
+.train .rot span.out{transform:translateY(-100%);opacity:0}
+.train .rot span em{font-style:normal;color:#F5C842}
+/* collect: a short, thick tab under the bar's right end */
+.train .ctab{position:absolute;right:0;top:calc(100% - 34px);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;width:68px;height:32px;border-radius:0 0 9px 9px;cursor:pointer;
+  background:linear-gradient(180deg,#7BEFC2,#37B98C);color:#06281D;box-shadow:0 4px 10px rgba(0,0,0,.35);
+  font-family:'Space Mono',monospace;font-weight:700;line-height:1;transform-origin:50% 0;
+  transition:transform .38s cubic-bezier(.5,0,.75,0),opacity .38s}
+.train .ctab b{font-size:11px}
+.train .ctab span{font-size:7.5px;letter-spacing:.16em}
+.train .ctab.gone{transform:translateY(-24px) scaleY(.2);opacity:0;pointer-events:none}
+.train .cfloat{position:absolute;right:18px;top:14px;z-index:3;font-family:'Barlow',sans-serif;font-weight:900;font-size:20px;color:#DDF7EC;
+  -webkit-text-stroke:1px #0b3d2a;text-shadow:0 0 8px rgba(110,231,183,.9);pointer-events:none;animation:trCup 1.1s ease-out forwards}
+@keyframes trCup{0%{transform:translateY(0) scale(.8);opacity:0}15%{opacity:1;transform:translateY(-8px) scale(1)}100%{transform:translateY(-72px) scale(.7);opacity:0}}
+/* the score in the stage's corner, from the first punch on */
+.train .cscore{position:absolute;right:10px;top:8px;z-index:4;text-align:right;pointer-events:none;opacity:0;transform:translateY(-4px);transition:opacity .35s,transform .35s}
+.train .cscore.on{opacity:1;transform:none}
+.train .cscore b{display:block;font-family:'Bebas Neue',sans-serif;font-size:40px;line-height:.85;font-variant-numeric:tabular-nums}
+.train .cscore b em{font-style:normal;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:#F5C842;margin-left:3px;vertical-align:6px}
+.train .cscore s{display:block;text-decoration:none;font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#B0A4D8}
+.train .cscore span{display:block;font-family:'Space Mono',monospace;font-size:9px;color:#8B83AC;margin-top:2px;letter-spacing:.06em}
+/* the prompt is ON the bag, where the thumb goes, until the first punch */
+.train .tapring{position:absolute;z-index:3;left:calc(50% - 55px);top:118px;width:56px;height:56px;margin:-28px;border-radius:50%;
+  border:2px solid rgba(233,216,255,.8);animation:trPulse 1.6s ease-out infinite;pointer-events:none;transition:opacity .3s}
+.train .tapring::after{content:'TAP';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.16em;color:#fff;text-shadow:0 1px 4px #000}
+.train .tapring.off{opacity:0;animation:none}
+@keyframes trPulse{0%{transform:scale(.7);opacity:1}100%{transform:scale(1.25);opacity:.15}}
 .train .hint{font-size:13.5px;color:#9A90BE;text-align:center}
-.train .idle{width:100%;max-width:320px;padding:11px 14px;border-radius:12px;cursor:pointer;text-align:center;
-  background:rgba(245,200,66,.12);border:1px solid rgba(245,200,66,.42);color:#F5C842;
-  font-family:'Barlow',sans-serif;font-weight:600;font-size:13.5px}
-.train .idle b{color:#fff;font-weight:700}
-.train .tocards{width:100%;max-width:320px;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 14px;border-radius:12px;
+/* the gym: a darker zone the full width of the sheet */
+.train .trzone{align-self:stretch;margin:0 -18px;padding:14px 18px 16px;background:#120E26;
+  border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:9px}
+.train .trzone.wz{border-top:0;padding-top:4px;margin-top:-16px}
+.train .trzone .zh{display:flex;align-items:baseline;justify-content:space-between}
+.train .trzone .zh b{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.06em;line-height:1}
+.train .trzone .zh s{text-decoration:none;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:#F5C842}
+.train .trzone.wz .zh s{color:#B0A4D8}
+.train .chipcap,.train .zcap{font-size:12.5px;color:#C7BEE4}
+.train .tray{border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);overflow:hidden}
+.train .ur{display:flex;align-items:center;gap:10px;padding:9px 10px}
+.train .ur + .ur{border-top:1px solid rgba(255,255,255,.07)}
+.train .ur .ic{width:34px;height:34px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;
+  background:var(--tc);box-shadow:inset 0 -3px 0 rgba(0,0,0,.25)}
+.train .ur .ic svg{width:18px;height:18px}
+.train .ur .t{flex:1;min-width:0}
+.train .ur .n{display:flex;align-items:center;gap:7px}
+.train .ur .n b{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15.5px;line-height:1}
+.train .pips{display:flex;gap:2px}
+.train .pips i{width:7px;height:4px;border-radius:1px;background:rgba(255,255,255,.14)}
+.train .pips i.on{background:var(--tc)}
+.train .ur .e{font-size:12.5px;color:#C7BEE4;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.train .ur .e b{color:#fff;font-weight:600}
+.train .ur .bb{margin-top:3px;font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6EE7B7;white-space:nowrap}
+.train .usechip{margin-top:5px;padding:3px 8px;border-radius:6px;border:1px solid rgba(195,166,255,.45);color:#C3A6FF;
+  font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.08em;cursor:pointer}
+.train .pb{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:76px;padding:5px 8px;
+  border-radius:9px;line-height:1.1;border:0;cursor:pointer;font:inherit}
+.train .pb .g{font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700}
+.train .pb .c{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;margin-top:2px}
+.train .pb.spend{background:linear-gradient(90deg,#F5C842,#D6A81F);color:#2A1F00}
+.train .pb.spend .g{color:#5A4300}
+.train .pb.off{background:rgba(255,255,255,.07);color:#8B83AC;cursor:default}
+.train .pb[data-signin]{cursor:pointer}
+@media (prefers-reduced-motion:reduce){.train .rot span,.train .ctab{transition:none}.train .tapring,.train .cfloat{animation:none}}
+.train .tocards{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:9px 14px;border-radius:10px;
   background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:#EDEAF6;font-family:'Barlow',sans-serif;font-weight:600;font-size:14px;cursor:pointer}
 .train .tocards span{color:#9A90BE;font-size:18px;line-height:1}
 .train .lab{width:100%;max-width:320px;margin:8px 0 0}
 .train .lab .bal{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.08em;color:#F5C842}
-.train .tracks{display:flex;gap:8px;width:100%;max-width:320px}
-.train .trk{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 4px;border-radius:12px;
-  background:rgba(255,255,255,.07);border:1px solid transparent;cursor:pointer;text-align:center;user-select:none;-webkit-user-select:none}
-.train .trk.on{border-color:#C084FC;background:rgba(192,132,252,.12)}
-.train .trk:focus-visible{outline:2px solid #C084FC;outline-offset:2px}
-.train .trk .nm{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;letter-spacing:.03em}
-.train .trk .lv{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.14em;color:#C084FC}
-.train .trk .now{font-size:11px;color:#9A90BE}
-.train .trk .pr{margin-top:4px;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.06em;color:#9A90BE;background:rgba(255,255,255,.07);border-radius:999px;padding:3px 8px}
-.train .trk.can .pr{color:#14102A;background:#F5C842}
 .train .lab s{margin-left:auto}
-.train .upmenu{width:100%;max-width:320px;background:rgba(255,255,255,.06);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
-.train .upmenu .row{display:flex;justify-content:space-between;font-size:14px}
-.train .upmenu .row span{color:#9A90BE}
-.train .upmenu .buy{margin-top:4px;padding:11px;border:0;border-radius:10px;background:#C084FC;color:#14102A;font-weight:700;font-size:14px;cursor:pointer}
-.train .upmenu .buy:disabled{background:rgba(255,255,255,.12);color:#9A90BE;cursor:default}
-.train .upmenu .buy.chip{background:#F5C842;color:#14102A}
-.train .chips{width:100%;font-size:13px;color:#F5C842;background:rgba(245,200,66,.1);border:1px solid rgba(245,200,66,.3);border-radius:10px;padding:8px 12px;text-align:center;margin-bottom:8px}
-.train .upmenu .mx{font-size:13.5px;color:#9A90BE;text-align:center}
 .train .wr{width:100%;max-width:320px;display:flex;flex-direction:column;gap:10px}
 .train .wtabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
 .train .wtabs::-webkit-scrollbar{display:none}
@@ -9730,8 +9783,11 @@ var _trainCleanup = null;
 async function renderTrain(){
   if(_trainCleanup){ _trainCleanup(); _trainCleanup = null; }
   var body = document.getElementById('sheet-body');
-  body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'
-    + '<div class="kick">Training</div><h3>Train</h3></div>'
+  /* One compact row: back, the room's name on a plate cut from the bag's own
+     leather, and the wallet the upgrades below spend from. */
+  body.innerHTML = '<div class="trhead">' + backButton()
+    + '<div class="trplate"><i>VGA</i><b>TRAIN</b></div>'
+    + '<div class="trwal" id="tr-wal" hidden></div></div>'
     + '<div class="train" id="train"><div class="skel"></div><div class="skel" style="width:60%"></div></div>';
   var el = document.getElementById('train');
   var guest = !session;
@@ -9767,31 +9823,40 @@ async function renderTrain(){
   }
   lookahead();
 
+  /* THE SCREEN, top to bottom: the bar, the bag, then the gym (upgrades and
+     wardrobe) in its own darker zone. Nothing on the stage is text until you
+     punch -- the prompt is a ring on the bag, and the score arrives in the
+     corner with the first punch, the way a game shows a score. */
   el.innerHTML =
       (guest ? '<div class="guest">As a guest your punches pay nothing. '
              + '<button class="signin" data-signin>Sign in</button> to earn VC.</div>' : '')
-    + '<div class="stam"><i id="stam-fill"></i><b id="stam-txt"></b></div>'
-    + '<button class="idle" id="tr-idle" type="button" hidden></button>'
+    + '<div class="stamwrap" id="stamwrap">'
+    +   '<div class="sttop"><div class="rot" id="tr-rot" aria-hidden="true"></div><span id="stam-txt"></span></div>'
+    +   '<div class="stam"><i id="stam-fill"></i></div>'
+    +   '<button class="ctab" id="tr-idle" type="button" hidden></button>'
+    + '</div>'
     + '<div class="stage" id="bag" role="button" aria-label="Punch the bag" tabindex="0">'
     +   heavyBagSVG()
     +   '<div class="boxer" id="boxer"></div>'
-    +   '<div class="tfx" id="tr-fx" aria-live="polite"></div>'
-    +   '<button class="snd" id="tr-snd" type="button" aria-label="Sound"></button>'
+    +   '<div class="cscore" id="tr-score" aria-live="polite"></div>'
+    +   '<div class="tapring" id="tr-ring"></div>'
+    +   '<div class="tfx" id="tr-fx"></div>'
     + '</div>'
-    + '<div class="count"><b id="bag-cnt">0</b><s>punches</s></div>'
-    + '<div class="stats" id="tr-stats"></div>'
-    + '<div class="hint" id="tr-hint"></div>'
-    + '<button class="tocards" data-train-cards>\uD83C\uDCCF Your cards <span>\u203A</span></button>'
-    + '<div class="lab"><b>Upgrades</b><i></i><s>tap a box \u00b7 costs VC</s></div>'
-    + '<div class="tracks" id="tracks"></div>'
-    + '<div class="upmenu" id="upmenu" hidden></div>'
-    + (guest ? '' : '<div class="lab"><b>Wardrobe</b><i></i><s>worn on your fighter</s></div>'
-              + '<div class="wr" id="wr"><div class="skel"></div></div>');
-  var bag = document.getElementById('bag'), cnt = document.getElementById('bag-cnt'),
+    + '<div class="hint" id="tr-hint" hidden></div>'
+    + '<div class="trzone">'
+    +   '<div class="zh"><b>Upgrades</b><s id="tr-zbal"></s></div>'
+    +   '<div class="chipcap" id="tr-chips" hidden></div>'
+    +   '<div class="tray" id="tracks"></div>'
+    +   '<div class="zcap">Every upgrade adds to every bar, for good.</div>'
+    +   '<button class="tocards" data-train-cards>\uD83C\uDCCF Packs you win land in Your cards <span>\u203A</span></button>'
+    + '</div>'
+    + (guest ? '' : '<div class="trzone wz"><div class="zh"><b>Wardrobe</b><s>worn on your fighter</s></div>'
+              + '<div class="wr" id="wr"><div class="skel"></div></div></div>');
+  var bag = document.getElementById('bag'),
       fx = document.getElementById('tr-fx'),
       fill = document.getElementById('stam-fill'), stTxt = document.getElementById('stam-txt'),
       hint = document.getElementById('tr-hint');
-  var thrown = 0;
+  var thrown = 0, landed = 0, lastPunch = 0;
   /* The sparring partner works while the app is shut, into a bank that fills
      for six hours and then STOPS -- so a week away is worth one bank, and the
      reason to open the app is to empty it. Flat rate on purpose: it is +56% to
@@ -9799,27 +9864,35 @@ async function renderTrain(){
      lifting the ceiling. */
   var idle = guest ? 0 : Number(st.idle || 0);
   var idleEl = document.getElementById('tr-idle');
+  /* A short tab under the bar's right end, there only when something is
+     banked. It is green, not gold: it gives you VC, it never spends any. */
   function drawIdle(){
     idleEl.hidden = guest || idle <= 0;
-    if(!idleEl.hidden) idleEl.innerHTML = '\uD83E\uDD4A Your sparring partner banked <b>'
-      + idle.toLocaleString() + ' VC</b> \u2014 collect';
+    idleEl.classList.remove('gone');
+    if(!idleEl.hidden){
+      idleEl.innerHTML = '<b>' + idle.toLocaleString() + ' VC</b><span>COLLECT</span>';
+      idleEl.setAttribute('aria-label', 'Collect ' + idle.toLocaleString() + ' VC from your sparring partner');
+    }
   }
   /* Three numbers a player actually asks for: what this sitting made, what the
      gym has made them ever, and what is in the wallet to spend on the boxes
      below. Land % and VC-a-hit live on the track boxes, where buying changes
      them. */
   var lifetime0 = guest ? 0 : Number(st.vc_earned_total || 0);
+  /* The session score lives in the stage's corner and only once you have
+     thrown a punch: a big 0 on arrival said nothing. Lifetime rides in the
+     stamina label's rotation; the wallet is the header chip. */
+  var scoreEl = document.getElementById('tr-score'), ringEl = document.getElementById('tr-ring'),
+      walEl = document.getElementById('tr-wal'), zbal = document.getElementById('tr-zbal');
   function drawStats(){
-    var tile = function(val, label){
-      var dash = val === null;
-      if(!dash) val = Math.round(val);
-      return '<div><b>' + (dash ? '\u2014' : val.toLocaleString())
-        + (dash ? '' : '<em>VC</em>') + '</b><s>' + label + '</s></div>';
-    };
-    document.getElementById('tr-stats').innerHTML =
-        tile(earned, 'this session')
-      + tile(guest ? null : lifetime0 + earned, 'lifetime')
-      + tile(balance, 'wallet');
+    scoreEl.classList.toggle('on', thrown > 0);
+    ringEl.classList.toggle('off', thrown > 0);
+    scoreEl.innerHTML = '<b>' + Math.round(earned).toLocaleString() + '<em>VC</em></b>'
+      + '<s>' + (guest ? 'as a guest' : 'this session') + '</s>'
+      + '<span>' + landed + ' of ' + thrown + ' landed</span>';
+    walEl.hidden = guest;
+    if(!guest){ walEl.textContent = Math.round(balance).toLocaleString() + ' VC';
+                zbal.textContent = Math.round(balance).toLocaleString() + ' VC'; }
   }
   var boxer = null;
   loadAvatarBundle().then(function(ok){
@@ -9833,14 +9906,36 @@ async function renderTrain(){
     var secs = Math.ceil((1 - nextFrac()) * PUNCH_MS / 1000);
     stTxt.textContent = sN + ' / ' + bar + (full ? '' : '  \u00b7  +1 in ' + secs + 's');
     bag.classList.toggle('spent', sN <= 0);
+    hint.hidden = sN > 0;
     if(sN <= 0) hint.textContent = 'Out of stamina. It refills ' + rules.regen_per_hour + ' an hour whether you are here or not.';
-    else if(hint.textContent.indexOf('Out of stamina') === 0 || !hint.textContent) hint.textContent = 'Tap the bag.';
   }
   paint();
-  /* Coming back to a full bar should feel like something happened while you
-     were away, not like it was always full. */
-  if(!guest && idx > 0 && stamina() >= bar) hint.textContent = 'Bar\u2019s full \u2014 it refilled while you were away. Tap the bag.';
   var tick = setInterval(function(){ if(!el.isConnected){ clearInterval(tick); return; } paint(); }, 1000);
+
+  /* THE LABEL ROTATES: three true things about one bar -- what it is, what a
+     full one pays at your levels, how fast it refills -- plus what the gym
+     has paid you ever. One at a time, sliding up. It holds still while you
+     punch: moving words beside the thumb pull the eye off the bag. */
+  var rotEl = document.getElementById('tr-rot'), rotK = 0;
+  function perBar(){ return bar * acc / 100 * vcHit; }
+  function drawRot(){
+    var items = ['Stamina',
+      'Full bar \u2248 <em>' + Math.round(perBar()).toLocaleString() + ' VC</em>',
+      'Refills ' + rules.regen_per_hour + ' an hour'];
+    if(!guest) items.push('Earned here \u00b7 <em>' + Math.round(lifetime0 + earned).toLocaleString() + ' VC</em>');
+    rotEl.innerHTML = items.map(function(h, i){
+      return '<span class="' + (i === rotK % items.length ? 'on' : '') + '">' + h + '</span>'; }).join('');
+  }
+  drawRot();
+  var rotT = setInterval(function(){
+    if(!el.isConnected){ clearInterval(rotT); return; }
+    if(Date.now() - lastPunch < 2500) return;
+    var spans = rotEl.querySelectorAll('span'); if(!spans.length) return;
+    var cur = spans[rotK % spans.length]; rotK++; var nx = spans[rotK % spans.length];
+    cur.classList.remove('on'); cur.classList.add('out');
+    nx.classList.remove('out'); void nx.offsetWidth; nx.classList.add('on');
+    setTimeout(function(){ cur.classList.remove('out'); }, 500);
+  }, 3200);
 
   /* Upgrades. Tap a box, a menu opens under it: what this level does, what
      the next one does, the price. Every number is the server's (train_rules),
@@ -9855,40 +9950,65 @@ async function renderTrain(){
     { key:'accuracy',     name:'Accuracy',     unit:function(v){ return v + '% land'; } },
     { key:'conditioning', name:'Conditioning', unit:function(v){ return v + ' punch bar'; } }
   ];
-  var open = null;
-  function tracksHTML(){
-    return TRACKS.map(function(t){
-      var l = lv[t.key], max = rules[t.key].length, maxed = l >= max;
-      var price = maxed ? null : rules.prices[l - 1], can = !maxed && balance !== null && balance >= price;
-      return '<div class="trk' + (open === t.key ? ' on' : '') + (can ? ' can' : '') + '" data-track="' + t.key + '" role="button" tabindex="0">'
-        + '<span class="nm">' + t.name + '</span>'
-        + '<span class="lv">' + (maxed ? 'MAX' : 'LVL ' + l) + '</span>'
-        + '<span class="now">' + t.unit(rules[t.key][l - 1]) + '</span>'
-        + '<span class="pr">' + (maxed ? 'maxed' : price.toLocaleString() + ' VC') + '</span></div>';
-    }).join('');
+  /* THE TRAY. One row per track, the way idle games stack upgrades: an icon
+     in the track's colour, six pips for the level, one line of now -> next,
+     and a button carrying both what it adds to a full bar and what it costs.
+     "Adds to a bar" is maths on the server's own rules (bar x land% x VC a
+     hit, before and after), so it can never quote a rate the claim does not
+     pay. The cheapest VC per added VC-a-bar is marked Best buy. The button is
+     gold only when the wallet covers it -- it is the one gate a player meets
+     before SQL refuses them, so it must not light up for a buy that fails. */
+  var TRACK_ICON = {
+    power: '<svg viewBox="0 0 24 24" fill="#1A1033"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>',
+    accuracy: '<svg viewBox="0 0 24 24" fill="none" stroke="#06281D" stroke-width="2.4"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.2" fill="#06281D"/></svg>',
+    conditioning: '<svg viewBox="0 0 24 24" fill="#2A0A14"><path d="M12 21s-7.5-4.6-9.3-9.2C1.4 8.4 3.6 5 7 5c2 0 3.3 1.1 5 3 1.7-1.9 3-3 5-3 3.4 0 5.6 3.4 4.3 6.8C19.5 16.4 12 21 12 21z"/></svg>'
+  };
+  var TRACK_COLOUR = { power:'#F5C842', accuracy:'#6EE7B7', conditioning:'#F19C96' };
+  function gainOf(key){
+    var l = lv[key];
+    if(l >= rules[key].length) return null;
+    var a = acc, p = vcHit, b = bar;
+    if(key === 'power') p = rules.power[l];
+    if(key === 'accuracy') a = rules.accuracy[l];
+    if(key === 'conditioning') b = rules.conditioning[l];
+    return { add: b * a / 100 * p - perBar(), price: rules.prices[l - 1] };
   }
-  function menuHTML(t){
-    var l = lv[t.key], max = rules[t.key].length;
-    if(l >= max) return '<div class="mx">' + t.name + ' is maxed.</div>';
-    var price = rules.prices[l - 1], can = balance !== null && balance >= price;
-    return '<div class="row"><span>Now</span><b>' + t.unit(rules[t.key][l - 1]) + '</b></div>'
-      + '<div class="row"><span>Next</span><b>' + t.unit(rules[t.key][l]) + '</b></div>'
-      + '<button class="buy" data-upg="' + t.key + '"' + (can ? '' : ' disabled') + '>'
-      + (guest ? 'Sign in to upgrade' : can ? 'Buy \u2014 ' + price.toLocaleString() + ' VC'
-                : 'Need ' + price.toLocaleString() + ' VC') + '</button>'
-      /* The chip button says what it skips: a chip is worth 100 VC on a
-         level-1 track and 18,000 on a level-5 one, and the number lets the
-         player work that out rather than the screen nagging them. */
-      + (chips > 0 ? '<button class="buy chip" data-chip="' + t.key + '">Apply chip \u2014 skips '
-                     + price.toLocaleString() + ' VC</button>' : '');
+  function bestKey(){
+    var best = null, ratio = Infinity;
+    TRACKS.forEach(function(t){ var g = gainOf(t.key);
+      if(g && g.add > 0 && g.price / g.add < ratio){ ratio = g.price / g.add; best = t.key; } });
+    return best;
   }
-  var tracksEl = document.getElementById('tracks'), menu = document.getElementById('upmenu');
+  function trayRow(t, best){
+    var l = lv[t.key], max = rules[t.key].length, g = gainOf(t.key);
+    var pips = ''; for(var i = 1; i <= max; i++) pips += '<i' + (i <= l ? ' class="on"' : '') + '></i>';
+    var now = rules[t.key][l - 1];
+    var line = g ? t.unit(now).replace(/ .*/, '') + ' \u2192 <b>' + t.unit(rules[t.key][l]) + '</b>'
+                 : '<b>' + t.unit(now) + '</b> \u00b7 maxed';
+    var can = g && balance !== null && balance >= g.price;
+    var btn = !g ? '<span class="pb off"><span class="c">MAX</span></span>'
+      : guest ? '<button class="pb off" data-signin><span class="g">+' + Math.round(g.add).toLocaleString() + ' a bar</span><span class="c">Sign in</span></button>'
+      : '<button class="pb ' + (can ? 'spend' : 'off') + '" data-upg="' + t.key + '"' + (can ? '' : ' disabled') + '>'
+        + '<span class="g">+' + Math.round(g.add).toLocaleString() + ' a bar</span>'
+        + '<span class="c">' + g.price.toLocaleString() + ' VC</span></button>';
+    /* A chip is a level you pulled rather than bought; it says what it skips. */
+    var chip = g && chips > 0 && !guest
+      ? '<button class="usechip" data-chip="' + t.key + '">Use chip \u00b7 skips ' + g.price.toLocaleString() + '</button>' : '';
+    return '<div class="ur" style="--tc:' + TRACK_COLOUR[t.key] + '">'
+      + '<span class="ic">' + TRACK_ICON[t.key] + '</span>'
+      + '<div class="t"><div class="n"><b>' + t.name + '</b><span class="pips">' + pips + '</span></div>'
+      + '<div class="e">' + line + '</div>'
+      + (best === t.key ? '<div class="bb">Best buy</div>' : '') + chip + '</div>'
+      + btn + '</div>';
+  }
+  var tracksEl = document.getElementById('tracks'), chipsEl = document.getElementById('tr-chips');
   function drawTracks(){
-    tracksEl.innerHTML = (chips > 0
-      ? '<div class="chips">\uD83E\uDE99 ' + chips + (chips === 1 ? ' Training Chip' : ' Training Chips')
-        + ' \u2014 tap a track to apply one</div>' : '') + tracksHTML();
-    var t = TRACKS.filter(function(x){ return x.key === open; })[0];
-    menu.hidden = !t; if(t) menu.innerHTML = menuHTML(t);
+    chipsEl.hidden = !(chips > 0);
+    if(chips > 0) chipsEl.textContent = '\uD83E\uDE99 ' + chips + (chips === 1 ? ' Training Chip' : ' Training Chips')
+      + ' \u2014 use one on any track below.';
+    var best = guest ? null : bestKey();
+    tracksEl.innerHTML = TRACKS.map(function(t){ return trayRow(t, best); }).join('');
+    drawRot();
   }
   drawTracks(); drawStats(); drawIdle();
 
@@ -9971,14 +10091,24 @@ async function renderTrain(){
       if(!el.isConnected) return;
       busy(idleEl, false);
       if(!ir || !ir.ok){ toast(ir && ir.message ? ir.message : 'Could not collect.', true); idle = 0; drawIdle(); return; }
-      idle = 0; balance = Number(ir.balance); earned += Number(ir.collected);
-      float('+' + Number(ir.collected), 'pack'); sfx('pack');
-      toast('Collected ' + Number(ir.collected).toLocaleString() + ' VC from your sparring partner.');
-      drawIdle(); drawStats(); drawTracks(); if(wardrobe){ wardrobe.balance = balance; drawWardrobe(); }
+      /* The tab slides up into the bar, the bar flashes, and the amount rises
+         to the wallet, which bumps as it lands: the money visibly goes where
+         it is going. */
+      var got = Number(ir.collected);
+      idle = 0; balance = Number(ir.balance);
+      sfx('pack');
+      idleEl.classList.add('gone');
+      var sw = document.getElementById('stamwrap'), sb = sw.querySelector('.stam');
+      setTimeout(function(){
+        sb.classList.add('flash');
+        var cf = document.createElement('span'); cf.className = 'cfloat'; cf.textContent = '+' + got.toLocaleString();
+        sw.appendChild(cf);
+        setTimeout(function(){ walEl.classList.add('bump'); drawStats(); }, 700);
+        setTimeout(function(){ walEl.classList.remove('bump'); sb.classList.remove('flash'); cf.remove(); drawIdle(); }, 1100);
+      }, 300);
+      drawTracks(); if(wardrobe){ wardrobe.balance = balance; drawWardrobe(); }
       return;
     }
-    var box = e.target.closest('[data-track]');
-    if(box){ var k = box.getAttribute('data-track'); open = open === k ? null : k; drawTracks(); return; }
     var ws = e.target.closest('[data-wslot]');
     if(ws){ wrSlot = ws.getAttribute('data-wslot'); drawWardrobe(); return; }
     if(e.target.closest('[data-asnew]')){
@@ -10135,25 +10265,21 @@ async function renderTrain(){
   }
   function punch(){
     if(stamina() <= 0){ paint(); return; }
-    idx++; spent++; thrown++; cnt.textContent = thrown;
+    idx++; spent++; thrown++; lastPunch = Date.now();
     var hit = rolls[idx];
+    if(hit) landed++;
     var bs = bag.querySelector('.bagsvg');
     bs.classList.remove('hit','miss'); void bs.offsetWidth; bs.classList.add(hit ? 'hit' : 'miss');
     if(boxer) boxer.punch(!!hit);
-    if(hit){ if(!guest){ earned += vcHit; drawStats(); } float('+' + (Math.round(vcHit * 10) / 10), 'hit'); impact(); sfx('hit'); }
+    if(hit){ if(!guest) earned += vcHit; float('+' + (Math.round(vcHit * 10) / 10), 'hit'); impact(); sfx('hit'); }
     else { float('whiff', 'whiff'); sfx('whiff'); }
+    drawStats();
     delete rolls[idx]; lookahead(); paint();
     if(guest) return;
     pending++;
     if(pending >= TRAIN_BATCH) flush();
     else { clearTimeout(flushT); flushT = setTimeout(flush, TRAIN_FLUSH_MS); }
   }
-  var sndBtn = document.getElementById('tr-snd'); paintSnd(sndBtn);
-  sndBtn.addEventListener('pointerdown', function(e){ e.stopPropagation(); });
-  sndBtn.addEventListener('click', function(e){
-    e.stopPropagation(); _sndOn = !_sndOn; try{ localStorage.setItem('uba.train.sound', _sndOn ? '1' : '0'); }catch(x){}
-    paintSnd(sndBtn); if(_sndOn){ sndCtx(); sfx('hit'); }
-  });
   bag.addEventListener('pointerdown', function(e){ e.preventDefault(); punch(); });
   bag.addEventListener('keydown', function(e){ if(e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); punch(); } });
   /* Leaving mid-batch flushes it. A batch the browser kills in flight is at
@@ -10164,15 +10290,18 @@ async function renderTrain(){
   _trainCleanup = function(){
     if(pending) flush();
     document.removeEventListener('visibilitychange', onHide); window.removeEventListener('pagehide', onHide);
-    clearInterval(tick);
+    clearInterval(tick); clearInterval(rotT);
     if(boxer){ try{ boxer.unmount(); }catch(e){} boxer = null; }
   };
 }
 /* ── SOUND ── three synthesised cues, no files to load: a thud, a whiff, a
-   chime. Off by default until the player turns it on (iOS will not play
-   anything before a tap anyway), remembered in localStorage. */
-var _ac = null, _sndOn = false;
-try{ _sndOn = localStorage.getItem('uba.train.sound') === '1'; }catch(e){}
+   chime. ON, with no button of its own: the phone's silent switch and volume
+   buttons already do that job (Castle's call, 2026-10-16). The session is
+   marked 'ambient' where the browser supports it, so a phone on silent stays
+   silent -- the one thing the old button guaranteed. iOS plays nothing before
+   a tap anyway, and the first punch is a tap. */
+var _ac = null, _sndOn = true;
+try{ if(navigator.audioSession) navigator.audioSession.type = 'ambient'; }catch(e){}
 function sndCtx(){
   if(!_ac){ try{ _ac = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ return null; } }
   if(_ac.state === 'suspended') _ac.resume();
@@ -10201,7 +10330,6 @@ function noise(ac, secs){
   for(var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   var src = ac.createBufferSource(); src.buffer = b; return src;
 }
-function paintSnd(btn){ btn.textContent = _sndOn ? '\uD83D\uDD0A' : '\uD83D\uDD07'; btn.setAttribute('aria-label', _sndOn ? 'Sound on' : 'Sound off'); }
 
 /* The heavy bag. Drawn here rather than shipped as an image so it takes the
    app's palette and animates from CSS: a landed punch swings it on its chain,
