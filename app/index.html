@@ -1033,106 +1033,139 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   .mp-photo,.mp-world,.mp-bodies>div,.mp-sw .gl,.mp-sw .me,.mp-sw small{transition:none}
   .mp-sw .me .bob{animation:none}
 }
-.crd{margin:4px 14px 0;border-radius:16px;position:relative;overflow:hidden;
-  background:linear-gradient(155deg,#4C3F8A 0%,#2A2150 46%,#171130 100%);
-  border:1px solid rgba(245,200,66,.38)}
-.crd:before{content:'';position:absolute;inset:0;pointer-events:none;
-  background:repeating-linear-gradient(115deg,transparent 0 22px,rgba(255,255,255,.03) 22px 24px)}
-.crd .glow{position:absolute;right:-46px;top:-46px;width:190px;height:190px;border-radius:50%;
-  background:radial-gradient(circle,rgba(245,200,66,.3),transparent 68%)}
-.crd .cin{position:relative;padding:15px}
-/* CENTRED, not top-aligned. The rank column is a 60px numeral and everything
-   beside it -- the name, the portrait -- is half that, so flex-start pinned
-   them to the top and left a void along the bottom edge of the pill under the
-   name and the face. Centring spends that space instead of leaving it. */
-.crd .crt{display:flex;align-items:center;gap:13px}
-.crd .rnk{text-align:center;flex-shrink:0;min-width:52px}
-.crd .rnk .h{font-family:'Space Mono',monospace;font-size:6.5px;letter-spacing:.2em;color:#C0A85E}
-.crd .rnk .num{font-family:'Bebas Neue',sans-serif;font-size:60px;line-height:.8;color:#F5C842;
-  text-shadow:0 0 24px rgba(245,200,66,.4)}
-.crd .rnk .of{font-family:'Space Mono',monospace;font-size:6.5px;letter-spacing:.14em;
-  color:#C0A85E;margin-top:4px}
-/* An unranked fighter still has a record, so the column changes what it shows
-   rather than going blank — a blank slot reads as a bug. */
-.crd .rnk.unranked .num{font-size:34px;line-height:1.4}
-.crd .rnk.fan .ava{width:52px;height:52px;border-radius:50%;overflow:hidden;margin-top:6px;
-  background:linear-gradient(150deg,#7B6AA8,#3A2E63)}
-.crd .rnk.fan .ava img{width:100%;height:100%;object-fit:cover;display:block}
-/* THE PORTRAIT, on the right, AS A CUT-OUT -- no circle. These are full
-   figures on transparent backgrounds, the same renders the home fan and the
-   fighter cards use, so cropping one to a 62px disc threw away the whole
-   picture to show a head. It stands on the pill's bottom edge instead and is
-   clipped by the pill itself (.crd is overflow:hidden), so it reads as the
-   fighter standing in the card rather than a passport photo pasted on it.
-
-   The silhouette fallback keeps its disc, because a lone icon floating with
-   no frame reads as a missing image rather than a placeholder -- and 356 of
-   448 fighters have no photo, so the fallback is the common case. */
-/* The bleed is DOWNWARD only. A negative top margin pushed this box above the
-   pill, and `contain` then fitted the figure into a box whose top was outside
-   the card -- so the head was cut even though nothing was asking it to be. */
-.crd .pfp{width:86px;flex-shrink:0;align-self:stretch;position:relative;
-  margin:0 -8px -15px 0;min-height:96px}
-.crd .pfp img{position:absolute;right:0;bottom:0;width:100%;height:100%;
-  object-fit:contain;object-position:bottom center;display:block;
-  filter:drop-shadow(0 6px 14px rgba(6,4,20,.6))}
-.crd .pfp.none{width:62px;height:62px;align-self:center;min-height:0;
-  margin:0;border-radius:50%;overflow:hidden;
-  background:linear-gradient(150deg,#7B6AA8,#3A2E63);
-  border:2px solid rgba(245,200,66,.45)}
-.crd .pfp svg{position:absolute;left:50%;top:52%;width:30px;height:30px;
-  margin:-15px 0 0 -15px;stroke:rgba(233,226,255,.55);fill:none;stroke-width:1.7;
-  stroke-linecap:round;stroke-linejoin:round}
-.crd .pfp img + svg{display:none}
-.crd.tap{cursor:pointer}
-.crd .who{flex:1;min-width:0}
-.crd .nm4{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:30px;
-  text-transform:uppercase;letter-spacing:.02em;line-height:.98;
-  overflow-wrap:anywhere}
-.crd .sub4{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.12em;
-  text-transform:uppercase;color:#B7AEDC;margin-top:6px}
-.crd .chips{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
-.crd .chip{font-family:'Space Mono',monospace;font-size:6.5px;font-weight:700;letter-spacing:.13em;
-  text-transform:uppercase;border-radius:20px;padding:4px 8px;color:#2A1F00;
-  background:linear-gradient(90deg,#F5C842,#D6A81F)}
-.crd .chip.p{background:none;color:#C3A6FF;border:1px solid rgba(167,139,250,.5)}
-.crd .chip.g{background:none;color:#6EE7B7;border:1px solid rgba(110,231,183,.45)}
-.crd .fbar{display:flex;gap:3px;margin-top:12px}
-.crd .fbar i{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.14)}
-.crd .fbar i.w{background:#6EE7B7}
-.crd .fbar i.l{background:#F19C96}
-.crd .fbar i.d{background:#8B83AC}
-.crd .fbl{display:flex;justify-content:space-between;margin-top:6px;
-  font-family:'Space Mono',monospace;font-size:6.5px;letter-spacing:.12em;
-  text-transform:uppercase;color:#B7AEDC}
-
-/* THE TWIN STRIPS — dark glass with one lit edge, and the count as the red
-   dot everybody's phone already trained them to look for. 44px, because the
-   first version was 104px tall to say two words. */
-.twin{display:flex;gap:8px;margin:0 14px}
-.twin .tw{flex:1;min-width:0;border-radius:11px;overflow:hidden;position:relative;
-  background:rgba(12,8,25,.8);border:1px solid rgba(255,255,255,.1);cursor:pointer}
-.twin .tw:before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;z-index:3}
-.twin .tw.g:before{background:#F5C842;box-shadow:0 0 16px 2px rgba(245,200,66,.7)}
-.twin .tw.p:before{background:#A78BFA;box-shadow:0 0 16px 2px rgba(167,139,250,.65)}
-/* Nothing waiting: same strip, same place, lit edge dimmed and no red count.
-   It reads as a door that happens to be quiet, not as an error. */
-.twin .tw.quiet{opacity:.62}
-.twin .tw.quiet:before{box-shadow:none;opacity:.5}
-.twin .core{display:flex;align-items:center;gap:10px;padding:10px 12px 10px 13px}
-.twin .tic{width:28px;height:28px;border-radius:8px;flex-shrink:0;display:flex;
-  align-items:center;justify-content:center;font-size:14px;position:relative}
-.twin .tw.g .tic{background:rgba(245,200,66,.18)}
-.twin .tw.p .tic{background:rgba(167,139,250,.18)}
-.twin .tic .dot{position:absolute;right:-5px;top:-5px;min-width:16px;height:16px;border-radius:8px;
-  background:#E8362B;color:#fff;font-family:'Space Mono',monospace;font-size:8px;font-weight:700;
-  display:flex;align-items:center;justify-content:center;padding:0 4px;
-  box-shadow:0 0 0 2.5px rgba(12,8,25,.98)}
-.twin .bd{min-width:0}
-.twin .t{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;
-  text-transform:uppercase;letter-spacing:.04em;line-height:1}
-.twin .s{font-family:'Space Mono',monospace;font-size:6.5px;color:#8B83AC;margin-top:4px;
+/* ── MY CAREER (redesign 2026-10-16) ───────────────────────────────────
+   Three objects carry a frame and nothing else does: the card, the banner
+   hanging off it, and the money ticket. Personal bests and the rooms are a
+   plain grid. Nothing on this screen is set under 10px. */
+.ycard{position:relative;margin:30px 14px 0;padding:16px 14px 0;border-radius:16px 16px 0 0;
+  background:linear-gradient(180deg,#4A33A8 0%,#2E2178 40%,#16112E 85%,#0B0A12 100%);
+  border:1px solid rgba(185,162,255,.26);border-bottom:0}
+.ycard.tap{cursor:pointer}
+.yclip{position:absolute;inset:0;border-radius:16px 16px 0 0;overflow:hidden;pointer-events:none}
+.yghost{position:absolute;left:6px;top:-8px;font-family:'Bebas Neue',sans-serif;font-size:200px;line-height:.8;
+  color:#fff;opacity:.09;letter-spacing:-.01em;user-select:none}
+.yghost.rec{font-size:150px;top:2px}
+.ycrow{position:relative;display:flex;align-items:center;gap:12px}
+.ycwho{flex:1;min-width:0}
+.ycband{display:inline-block;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.18em;
+  text-transform:uppercase;color:#170F38;background:#F5C842;border-radius:3px;padding:2px 7px}
+.ycband.fan{background:#A78BFA}
+.ycname{font-family:'Bebas Neue',sans-serif;font-size:40px;line-height:.92;margin-top:6px;color:#fff;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ycname.fan{font-family:'Barlow',sans-serif;font-weight:700;font-size:22px;line-height:1.1;letter-spacing:0}
+.ycsub{font-size:13px;color:#D6CCF4;margin-top:2px}
+/* the ring, and the cut-out rising out of it */
+.ybo{position:relative;flex-shrink:0;width:96px;height:96px}
+.ybdisc{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(255,255,255,.3);
+  background:radial-gradient(80% 80% at 50% 100%,rgba(185,162,255,.6),transparent 75%),#1A1240;box-shadow:0 0 28px rgba(185,162,255,.45)}
+.ybin{position:absolute;inset:0;border-radius:50%;overflow:hidden;display:grid;place-items:center}
+.ybin img,.ybtop img{position:absolute;left:50%;bottom:0;transform:translateX(-50%);height:134px;width:auto;max-width:none}
+.ybtop{position:absolute;left:-30px;right:-30px;bottom:50%;height:140px;overflow:hidden;pointer-events:none}
+.ybtop img{bottom:-48px}
+.ybin.ybflat img{left:0;transform:none;width:100%;height:100%;object-fit:cover;object-position:50% 15%}
+.ybini{font-family:'Bebas Neue',sans-serif;font-size:34px;color:#C9C1E6}
+.ycstats{position:relative;display:grid;grid-template-columns:repeat(3,1fr);margin:12px -14px 0}
+.ycstats div{padding:7px 14px 4px;min-width:0}
+.ycstats small{display:block;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#A79DCB}
+.ycstats b{display:block;font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1;font-weight:400;margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ycstats b i{font-style:normal;font-size:14px;color:#9C93BC}
+.ycstats b.word{font-size:17px;padding-top:4px}
+.ycstats .up{color:#6EE7B7}.ycstats .dn{color:#F19C96}
+.ycticks{position:relative;display:flex;align-items:center;gap:8px;margin:0 -14px;padding:8px 14px 10px;min-height:6px}
+.yctk{display:flex;gap:3px;flex:1}
+.yctk i{flex:1;height:6px;border-radius:2px;background:#8B83AC}
+.yctk i.w{background:#6EE7B7}.yctk i.l{background:#F19C96}
+.ycticks span{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#A79DCB;white-space:nowrap}
+
+/* THE BANNER. One height for every state; black with a glass edge, and the
+   state carried by the small top line and the right-hand button. */
+.yban{position:relative;overflow:hidden;isolation:isolate;display:flex;align-items:center;gap:11px;height:76px;
+  margin:0 14px;padding:0 12px;background:#0B0A12;border:1px solid rgba(255,255,255,.12);border-top:0;
+  border-radius:0 0 14px 14px;box-shadow:0 8px 22px rgba(0,0,0,.45);cursor:pointer}
+.yban::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:inset 0 -1px 0 rgba(185,162,255,.16),inset 1px 0 0 rgba(255,255,255,.05),inset -1px 0 0 rgba(255,255,255,.05)}
+.yban.quiet:not([data-event]):not([data-hub]){cursor:default}
+.ybcv{position:absolute;left:0;top:0;z-index:-1;pointer-events:none}
+.ybc{position:relative;width:46px;height:46px;flex-shrink:0;border-radius:50%;overflow:hidden;display:grid;place-items:center;
+  background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.55)}
+.ybc img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 12%;z-index:1}
+.ybc i{font-style:normal;font-family:'Bebas Neue',sans-serif;font-size:20px;color:#C9C1E6}
+.ybc.ico{background:rgba(185,162,255,.1);border-color:rgba(185,162,255,.55)}
+.ybc svg,.ywtabs svg,.yrooms svg{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.ybc svg{width:22px;height:22px;stroke:#E4DCFF;stroke-width:1.8}
+.ybt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.ybt small{display:flex;align-items:center;gap:5px;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;color:#9C96B5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ybt b{font-family:'Bebas Neue',sans-serif;font-size:21px;font-weight:400;letter-spacing:.03em;line-height:1;color:#fff;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 6px rgba(10,6,34,.7)}
+.ybt em{font-style:normal;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+  color:#E4DCFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.yban.live .ybt small{color:#FF8A95}.yban.fight .ybt small{color:#CDBEFF}
+.yban.ask .ybt small{color:#F19C96}.yban.deal .ybt small,.yban.fan .ybt small{color:#B9A2FF}
+.ybr{flex-shrink:0;display:flex;align-items:center;gap:5px}
+.ybgo{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  padding:9px 12px;border-radius:9px;background:#B9A2FF;color:#1A1236}
+.ybgo.ask{background:#F19C96;color:#2E0F0C}
+.ybgo.live{background:#FF5D6C;color:#2A0509}
+.ybwhen{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:#fff;text-align:right;max-width:72px;line-height:1.25}
+.ybchev{color:#6E6688;font-size:20px}
+.ybmore{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;min-width:24px;height:22px;border-radius:11px;
+  display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.14);color:#fff}
+.yblive{width:6px;height:6px;border-radius:50%;background:#FF5D6C;box-shadow:0 0 0 3px rgba(255,93,108,.25);animation:ybpulse 1.4s ease-in-out infinite}
+@keyframes ybpulse{50%{box-shadow:0 0 0 6px rgba(255,93,108,0)}}
+@media (prefers-reduced-motion:reduce){.yblive{animation:none}}
+
+/* YOUR MONEY: one ticket, the balance in white so it never outshines your
+   name, and the three doors along its foot. */
+.ywal{margin:16px 14px 0;border-radius:14px;overflow:hidden;
+  background:linear-gradient(160deg,rgba(245,200,66,.12),rgba(245,200,66,.03) 45%,rgba(185,162,255,.05)),#17122E;
+  border:1px solid rgba(245,200,66,.32)}
+.ywtop{display:flex;align-items:center;gap:10px;padding:11px 13px 10px;cursor:pointer}
+.ywgr{flex:1;min-width:0}
+.ywk{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#C0A85E}
+.ywv{font-family:'Bebas Neue',sans-serif;font-size:32px;line-height:1;color:#F4F1FF;margin-top:2px;font-variant-numeric:tabular-nums}
+.ywv em{font-style:normal;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.12em;margin-left:5px;color:#A79DCB}
+.ywio{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;margin-top:4px;color:#9C93BC;font-variant-numeric:tabular-nums}
+.ywio .up{color:#6EE7B7}.ywio .dn{color:#F19C96}
+.ywgo{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:#E9DCA8;border:1px solid rgba(245,200,66,.4);border-radius:8px;padding:7px 9px;white-space:nowrap}
+.ywtabs{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid rgba(245,200,66,.2);background:rgba(10,8,22,.35)}
+.ywtabs span{display:flex;align-items:center;justify-content:center;gap:6px;height:42px;font-size:13px;font-weight:600;color:#E9DCA8;cursor:pointer}
+.ywtabs span+span{border-left:1px solid rgba(245,200,66,.14)}
+.ywtabs svg{width:15px;height:15px;stroke:#E9DCA8;stroke-width:1.9}
+.ywtabs i{font-style:normal;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;min-width:20px;height:18px;padding:0 5px;
+  border-radius:9px;background:rgba(245,200,66,.18);color:#F5D978;display:inline-flex;align-items:center;justify-content:center}
+
+/* PERSONAL BESTS: a plain grid with hairlines, never boxes */
+.ypb{display:grid;grid-template-columns:1fr 1fr;margin:0 14px;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08)}
+.ypb>div{display:flex;align-items:center;gap:9px;padding:11px 8px;min-width:0;cursor:pointer}
+.ypb>div:nth-child(2n){border-left:1px solid rgba(255,255,255,.08)}
+.ypb>div:nth-child(n+3){border-top:1px solid rgba(255,255,255,.08)}
+.ypb>div:last-child:nth-child(odd){grid-column:span 2}
+.ypgr{min-width:0}
+.ypgr small{display:block;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#C0A85E}
+.ypgr b{display:block;font-size:14.5px;font-weight:700;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ypgr b.up{color:#6EE7B7}
+.ypgr em{display:block;font-style:normal;font-size:11.5px;color:#9C93BC;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ypth{width:34px;height:46px;flex-shrink:0;border-radius:6px;overflow:hidden;border:2px solid var(--c);
+  background:linear-gradient(160deg,color-mix(in srgb,var(--c) 30%,#1A1533),#120E26)}
+.ypth{position:relative;display:grid;place-items:center}
+.ypth i{font-style:normal;font-family:'Bebas Neue',sans-serif;font-size:17px;color:var(--c);opacity:.8}
+.ypth img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+.ypring{width:40px;height:40px;flex-shrink:0;border-radius:50%;display:grid;place-items:center;
+  background:conic-gradient(#4FB8F0 calc(var(--p)*1%),rgba(255,255,255,.1) 0)}
+.ypring span{width:30px;height:30px;border-radius:50%;background:#1A1533;display:grid;place-items:center;
+  font-family:'Space Mono',monospace;font-size:10px;font-weight:700}
+
+/* THE ROOMS: icons and their names, nothing more */
+.yrooms{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;margin:0 14px}
+.yrooms>div{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 0;cursor:pointer;
+  font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#C9C1E6}
+.yrooms svg{width:24px;height:24px;stroke:#D9D0F5;stroke-width:1.8}
+.yrooms i{position:absolute;top:2px;left:calc(50% + 6px);font-style:normal;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;
+  min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#A78BFA;color:#170F38;display:inline-flex;align-items:center;justify-content:center}
+.ycard:active,.yban:active,.ywtop:active,.ywtabs span:active,.ypb>div:active,.yrooms>div:active{filter:brightness(1.15)}
 
 /* ── THE SIGNATURE BAND ────────────────────────────────────────────────
    Gold, because it is the same gold as the ink on the card. Conditional, and
@@ -1170,7 +1203,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .band .b{flex:1;text-align:center;padding:9px 6px;border-radius:8px;border:0;cursor:pointer;
   font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.12em;
   text-transform:uppercase}
-.band .b.y{background:#E8C351;color:#231A05}
+.band .b.y{background:rgba(110,231,183,.12);color:#6EE7B7;border:1px solid rgba(110,231,183,.5)}
 .band .b.n{background:rgba(255,255,255,.09);color:#B7AEDC;border:1px solid rgba(255,255,255,.16)}
 .band .b[disabled]{opacity:.5}
 /* ── SIGNING OFF ──────────────────────────────────────────────────────
@@ -7821,13 +7854,20 @@ async function loadMe(){
     qMe("my_offers?select=*&order=event_date.asc"),
     qMe("my_contract?select=*"),
     qMe("my_game?select=*&limit=1"),
-    qMe("my_cards?select=qty"),
+    qMe("my_cards?select=card_id,name,rarity,photo_url,qty,best_grade,lowest_print"),
     q("bet_pools_public?select=match_id"),
     q("shop_public?select=id"),
     q("market_public?select=listing_id"),
     qMe("my_listings?select=listing_id"),
     qMe("my_signature_requests?select=*&order=created_at.asc"),
-    q("spar_lobbies_public?select=card_id")
+    q("spar_lobbies_public?select=card_id"),
+    /* Four more for the redesign (2026-10-16), each unpacked on its own like
+       the rest: what came in and went out lately, the bet record, how many
+       cards exist at all, and the next show for somebody who isn't booked. */
+    qMe("my_vc_history?select=amount&limit=50"),
+    qMe("my_bets?select=bet_status,amount,payout_amount"),
+    q("cards_public?select=card_id"),
+    q("events_public?select=id,name,event_date,status&status=eq.scheduled&order=event_date.asc&limit=1")
   ]);
   if(!el.isConnected) return;
   var rows = got[0];
@@ -7835,16 +7875,12 @@ async function loadMe(){
   myContract = (got[2] || []).filter(function(c){ return c.status === 'active'; })[0] || null;
   var offered = (got[2] || []).filter(function(c){ return c.status === 'offered'; })[0] || null;
   myGame     = (got[3] || [])[0] || null;
-  var cardQty = (got[4] || []).reduce(function(a, r){ return a + Number(r.qty || 0); }, 0);
+  var cards   = got[4] || [];
   var pools   = (got[5] || []).length;
   var shopN   = (got[6] || []).length;
   var marketN = (got[7] || []).length;
   var myListN = (got[8] || []).length;
-  /* Unpacked on its own like every other read here: a dead signature inbox
-     must not cost somebody their record. */
   window.__sigReqs = got[9] || [];
-  /* How many lobbies are open, for the Sparring row's right-hand number. Its
-     own read like every other: an empty board must never blank a record. */
   window.__sparOpen = (got[10] || []).length;
 
   if(!rows){
@@ -7858,135 +7894,326 @@ async function loadMe(){
     return;
   }
   var p = rows[0];
+  var bal = Number(p.vc_balance || 0);
   var szn = document.getElementById('me-szn');
-  if(szn) szn.textContent = Number(p.vc_balance || 0).toLocaleString() + ' VC';
+  if(szn) szn.textContent = bal.toLocaleString() + ' VC';
 
-  /* THE CAREER BLOCK. A fan has no fighter, so the same block carries a
-     different left-hand column rather than an empty ring where a rank goes. */
-  /* Tapping it opens the public fighter page -- the one everyone else sees,
-     and the only place the poster and the world live (2026-09-15). Fighters
-     only: a fan has no public page, and a tappable thing that does nothing is
-     worse than one that never invited the tap. */
-  var html = '<div class="crd' + (p.fighter_slug ? ' tap" data-slug="' + esc(p.fighter_slug) + '"' : '"')
-    + '><span class="glow"></span><div class="cin"><div class="crt">';
-  if(p.fighter_slug){
-    html += '<div class="rnk" id="me-rank"><div class="h">RANKED</div>'
-      + '<div class="num">&mdash;</div><div class="of">&nbsp;</div></div>';
-  } else {
-    html += '<div class="rnk fan"><div class="h">MEMBER</div>'
-      + '<div class="ava">' + (window.__meAvatar
-          ? '<img src="'+esc(window.__meAvatar)+'" alt="">' : '') + '</div></div>';
-  }
-  /* Their own photo if the league has one, their Discord picture if they are a
-     fan, a silhouette otherwise. */
-  var face = p.photo_thumb_url || p.photo_url
-    || (!p.fighter_slug ? window.__meAvatar : '') || '';
-  var pfp = '<div class="pfp' + (face ? '' : ' none') + '">'
-    + (face ? '<img src="'+esc(face)+'" alt="" onerror="this.parentNode.className=\'pfp none\'">' : '')
-    + '<svg><use href="#i-user"/></svg></div>';
+  var flow = { inn: 0, out: 0, n: 0 };
+  (got[11] || []).forEach(function(t){ var a = Number(t.amount || 0); flow.n++; if(a >= 0) flow.inn += a; else flow.out += a; });
+  var bets = { w: 0, l: 0, best: 0 };
+  (got[12] || []).forEach(function(b){
+    if(b.bet_status === 'won'){ bets.w++; bets.best = Math.max(bets.best, Number(b.payout_amount || 0) - Number(b.amount || 0)); }
+    else if(b.bet_status === 'lost') bets.l++;
+  });
+  var allCards = (got[13] || []).length;
+  var nextEv = (got[14] || [])[0] || null;
 
-  html += '<div class="who"><div class="nm4">'
-    + esc(p.fighter_name || p.display_name || window.__meName || 'Signed in') + '</div>'
-    + '<div class="sub4" id="me-sub4">'
-    + esc(p.fighter_slug ? wc(p.weight_class) : 'Fan account')
-    + '</div><div class="chips" id="me-chips"></div></div>'
-    + pfp + '</div>'
-    + '<div id="me-form"></div></div></div>';
+  var ctx = { p: p, offered: offered, cards: cards, bets: bets, allCards: allCards, nextEv: nextEv,
+    fighter: !!p.fighter_slug };
+  window.__yc = ctx;
 
-  /* THE TWO STRIPS ARE PERMANENT. They were conditional at first — the idea
-     being that a panel saying "you're all caught up" is furniture. That was
-     wrong for this screen: the top of My Career has to be the SAME SHAPE every
-     time you open it, or you cannot learn where anything is. A card that moves
-     depending on your week is a card you re-read every week.
-
-     What changes is the state, not the presence: a red count when something
-     needs an answer, a muted strip when it does not. */
-  var pending = myOffers.length, hasOffer = !!offered;
-  html += '<div class="lab"><b>'
-    + (pending || hasOffer ? 'Needs you now' : 'Your fights and deal')
-    + '</b><i></i></div><div class="twin">';
-
-  var evs = myOffers.map(function(o){ return o.event_name; })
-    .filter(function(v,i,a){ return a.indexOf(v) === i; }).slice(0, 2).join(' \u00b7 ');
-  html += '<div class="tw g' + (pending ? '' : ' quiet') + '" data-hub="offers"><div class="core">'
-    + '<span class="tic">\u270D\uFE0F' + (pending ? '<b class="dot">' + pending + '</b>' : '') + '</span>'
-    + '<div class="bd"><div class="t">' + (pending === 1 ? 'Offer' : 'Offers') + '</div>'
-    + '<div class="s">' + (pending ? esc(evs) : 'Nothing waiting') + '</div></div></div></div>';
-
-  html += '<div class="tw p' + (hasOffer ? '' : ' quiet') + '" data-hub="contract"><div class="core">'
-    + '<span class="tic">\uD83D\uDCDC' + (hasOffer ? '<b class="dot">1</b>' : '') + '</span>'
-    + '<div class="bd"><div class="t">Contract</div><div class="s">'
-    + (hasOffer ? esc(String(offered.tier || 'New terms')) + ' offered'
-       : myContract ? esc(String(myContract.tier || 'Signed')) + ' \u00b7 active'
-       : 'None on file')
-    + '</div></div></div></div></div>';
-
-  /* ── SOMEBODY WANTS YOUR AUTOGRAPH ──────────────────────────────────
-     CONDITIONAL, unlike the two strips above, and that is a deliberate
-     exception rather than an oversight. Those two are permanent because
-     everybody has a contract and everybody gets offers, so a fixed shape is
-     what makes them learnable. Almost nobody has a signature queue — only 51
-     fighters are on a card at all — and a strip reading "nobody wants your
-     autograph" every time you open the app is worse than no strip.
-
-     ANSWERED IN PLACE, not behind a door. The whole interaction is Accept or
-     Pass, so a row that opens a list to reach two buttons is a corridor. The
-     thing that decides whether this feature works is a fighter bothering, and
-     what makes them bother is seeing the money without tapping anything.
-
-     The headline names WHO and WHICH CARD. "Somebody wants a signature" is
-     not a question anybody can answer. No possessive on the asker — guessing
-     a pronoun off a username puts a wrong guess about a real person on a
-     screen somebody else reads. */
-  html += signBandHTML();
-
-  /* THE ROOMS. Each carries its live number, so the list is a dashboard. */
-  /* Offers and Contract are NOT repeated here — they are the two strips above,
-     always present, so a row for each would be the same door twice. */
-  html += '<div class="lab"><b>Everything else</b><i></i></div>'
-    + mrow('\uD83C\uDCCF','cards','Your cards',
-        cardQty ? cardQty + ' owned' : 'Nothing yet',
-        cardQty ? String(cardQty) : '0', '', true)
-    + mrow('\uD83D\uDED2','shop','Shop',
-        shopN + (shopN === 1 ? ' item' : ' items') + ' for sale',
-        Number(p.vc_balance||0).toLocaleString(), 'g')
-    /* THE MARKET IS ITS OWN ROOM, not a section of the Shop. The Shop sells
-       sealed product at a fixed price the league sets; the Market is other
-       players' cards at prices they set. Same wallet, opposite direction --
-       one mints supply, the other only moves it. Putting them behind one door
-       would make "sold out" and "nobody is selling" read as the same fact. */
-    + mrow('\uD83C\uDFF7\uFE0F','market','Market',
-        marketN ? marketN + (marketN === 1 ? ' card for sale' : ' cards for sale')
-                : 'Nobody is selling yet',
-        marketN ? String(marketN) : '\u2014', marketN ? 'g' : '')
-    + mrow('\uD83D\uDCE6','shelf','My shelf',
-        myListN ? myListN + (myListN === 1 ? ' card listed' : ' cards listed')
-                : 'Sell a spare',
-        myListN ? String(myListN) : '\u2014', myListN ? 'q' : '')
-    + mrow('\uD83C\uDFB2','betting','Betting',
-        pools ? pools + (pools === 1 ? ' pool open' : ' pools open') : 'No market open',
-        pools ? String(pools) : '\u2014', '', true)
-    + mrow('\uD83D\uDCB0','wallet','Wallet','Purses, bonuses, every move',
-        Number(p.vc_balance||0).toLocaleString() + ' VC', 'q')
-    + mrow('\uD83E\uDD4A','train','Training','Tap the bag, earn VC',
-        myGame && Number(myGame.vc_earned_total) > 0
-          ? Number(myGame.vc_earned_total).toLocaleString() + ' VC' : 'NEW', 'q')
-    /* THE CREATOR KIT LIVES HERE, not under News. It started there because the
-       league's media is there, but News is something you READ and this is
-       something you DO -- making things for the league is a room of yours, the
-       same way training and your cards are. The number is how many fighters
-       have a photo you can take, and it is blank until the kit has been opened
-       once rather than costing every visit to this tab a 557-row read. */
-    + '<div id="me-staff"></div>'
-    + mrow('\uD83E\uDD4B','spar','Sparring','Open a lobby, or join one',
-        (window.__sparOpen ? window.__sparOpen + ' open' : 'Board'), (window.__sparOpen ? 'go' : ''))
-    + mrow('\uD83C\uDFAC','kit','Creator kit','Cut-outs, logos and clips \u2014 free to use',
-        kitFighters ? String(kitFighters.filter(function(f){ return f.cutout_url; }).length) : '', '');
-
-  html += '<div id="me-media"></div>';
+  /* THE ORDER IS THE DESIGN: who you are, what's next, your money, your
+     best moments, then the doors. Designed with Castle 2026-10-16 (the You
+     tab pages: round 13 "Badge", then the fix pass). */
+  var html = ycCardHTML(ctx)
+    + '<div id="yc-ban">' + ybanHTML(ybanState(ctx)) + '</div>'
+    + signBandHTML()
+    + ywalletHTML(bal, flow, shopN, marketN, myListN)
+    + ypbHTML(ctx)
+    + '<div class="lab"><b>Rooms</b><i></i></div>'
+    + '<div class="yrooms" id="yrooms">' + yroomsHTML(pools, false, 0) + '</div>'
+    + '<div id="me-media"></div>';
   el.innerHTML = html;
-  if(typeof stfYouRow === 'function') stfYouRow();
+  ybanStars();
+  yStaffRoom(pools);
   if(p.fighter_slug) loadCareer(p.fighter_slug);
+}
+
+/* ── THE CARD ─────────────────────────────────────────────────────────
+   One card for everybody. A fighter gets the ghost rank, a cut-out that
+   rises out of its ring, three stats and their last fights; a fan gets the
+   same card with their Discord picture and what a fan has, cards and bets.
+   loadCareer() fills the fighter's numbers in after a second read. */
+var RAR = ['common','uncommon','rare','mystic','legendary','prismatic'];
+function ycCardHTML(c){
+  var p = c.p;
+  var face = p.photo_thumb_url || p.photo_url || (!c.fighter ? window.__meAvatar : '') || '';
+  var name = p.fighter_name || p.display_name || window.__meName || 'Signed in';
+  var stats;
+  if(c.fighter){
+    stats = '<div><small>Record</small><b id="yc-rec">&mdash;</b></div>'
+      + '<div><small>Rank</small><b id="yc-rank">&mdash;</b></div>'
+      + '<div><small>Last fight</small><b id="yc-last">&mdash;</b></div>';
+  } else {
+    var qty = c.cards.reduce(function(a, r){ return a + Number(r.qty || 0); }, 0);
+    stats = '<div><small>Cards</small><b>' + qty.toLocaleString() + '</b></div>'
+      + '<div><small>Different</small><b>' + c.cards.length + (c.allCards ? '<i>/' + c.allCards + '</i>' : '') + '</b></div>'
+      + '<div><small>Bets</small><b>' + c.bets.w + '-' + c.bets.l + '</b></div>';
+  }
+  return '<div class="ycard' + (c.fighter ? ' tap" data-slug="' + esc(p.fighter_slug) + '"' : '"') + '>'
+    + '<div class="yclip"><div class="yghost" id="yc-ghost"></div></div>'
+    + '<div class="ycrow"><div class="ycwho">'
+    + '<span class="ycband' + (c.fighter ? '' : ' fan') + '">' + (c.fighter ? 'Fighter' : 'Member') + '</span>'
+    + '<div class="ycname' + (c.fighter ? '' : ' fan') + '">' + esc(name) + '</div>'
+    + '<div class="ycsub" id="yc-sub">' + esc(c.fighter ? wc(p.weight_class) : 'Fan') + '</div></div>'
+    + '<div class="ybo" id="yc-face">' + ycFace(face, name, false) + '</div></div>'
+    + '<div class="ycstats">' + stats + '</div>'
+    + '<div class="ycticks" id="yc-ticks"></div></div>';
+}
+/* A cut-out rises out of the ring: the same picture twice, the lower half
+   clipped to the circle and the upper half free above its middle. Only a
+   real cut-out (transparent background) can do that — a square photo would
+   rise as a rectangle — so anything else stays inside a plain circle. */
+function ycFace(url, name, cut){
+  var disc = '<div class="ybdisc"></div>';
+  if(!url) return disc + '<div class="ybin"><span class="ybini">' + esc(initials(name)) + '</span></div>';
+  var im = '<img src="' + esc(url) + '" alt="" onerror="this.remove()">';
+  if(!cut) return disc + '<div class="ybin ybflat">' + im + '</div>';
+  return disc + '<div class="ybin">' + im + '</div><div class="ybtop">' + im + '</div>';
+}
+
+/* ── THE BANNER ───────────────────────────────────────────────────────
+   One size for every state, three slots: a circle (a face when a fight is
+   involved, an icon otherwise), three lines of text, and one thing on the
+   right. When several things are true the most urgent wins and the rest
+   become "+1". The order is the rule: live, fight day, an offer to answer,
+   a contract to answer, booked, tentative, signed, nothing. */
+var YB_ICON = {
+  glove: '<path d="M7.4 10.2V8a3.6 3.6 0 0 1 3.6-3.6h3.2A4.9 4.9 0 0 1 19.1 9.3v3.5a4.6 4.6 0 0 1-4.6 4.6h-4.4a3.9 3.9 0 0 1-3.9-3.9v-1.2"/><path d="M7.4 10.2H6.6a1.8 1.8 0 0 0 0 3.6h.6"/><path d="M10.9 10.6h4.4"/><path d="M9.6 17.4v2.4h6.6v-2.4"/>',
+  cal: '<rect x="3.6" y="5.2" width="16.8" height="15" rx="2.4"/><path d="M3.6 9.9h16.8M8.2 3.4v3.4M15.8 3.4v3.4"/><rect x="13.6" y="13.2" width="3.4" height="3.4" rx=".7"/>',
+  live: '<circle cx="12" cy="12" r="2.1"/><path d="M8.3 8.3a5.3 5.3 0 0 0 0 7.4M15.7 8.3a5.3 5.3 0 0 1 0 7.4M5.4 5.4a9.3 9.3 0 0 0 0 13.2M18.6 5.4a9.3 9.3 0 0 1 0 13.2"/>',
+  deal: '<rect x="5" y="3.4" width="14" height="17.2" rx="2.2"/><path d="M8.4 7.8h7.2M8.4 11h7.2"/><path d="M8.2 16.4c1.1-1.7 1.9-1.7 2.5 0s1.4 1.7 2.5 0 1.6-1.1 2.6 0"/>',
+  bag: '<path d="M5.2 8.4h13.6l-1 11a1.6 1.6 0 0 1-1.6 1.4H7.8a1.6 1.6 0 0 1-1.6-1.4z"/><path d="M8.8 10.6V7.4a3.2 3.2 0 0 1 6.4 0v3.2"/>',
+  tag: '<path d="M3.8 12.4V5.2a1.4 1.4 0 0 1 1.4-1.4h7.2l7.8 7.8a1.4 1.4 0 0 1 0 2l-5.2 5.2a1.4 1.4 0 0 1-2 0z"/><circle cx="8.4" cy="8.4" r="1.3"/>',
+  box: '<path d="M3.8 8 12 4l8.2 4v8.4L12 20.4l-8.2-4z"/><path d="M3.8 8 12 12l8.2-4M12 12v8.4"/>',
+  clip: '<rect x="5" y="4.6" width="14" height="16" rx="2"/><path d="M9 4.6V3.4h6v1.2M8.6 10h6.8M8.6 13.4h6.8M8.6 16.8h4"/>',
+  coin: '<circle cx="12" cy="12" r="8.6"/><path d="M12 7.2v9.6M9.4 9.5h3.9a1.9 1.9 0 0 1 0 3.8h-2.8a1.9 1.9 0 0 0 0 3.8H14"/>',
+  clap: '<rect x="3.6" y="9" width="16.8" height="11" rx="1.8"/><path d="m3.6 9 15.6-4.2.6 2.4L4.2 11.4M8.2 7.8l2 2.6M13 6.5l2 2.6"/>',
+  pads: '<circle cx="8.4" cy="12" r="4.6"/><circle cx="15.6" cy="12" r="4.6"/>'
+};
+function yIcon(k){ return '<svg viewBox="0 0 24 24" aria-hidden="true">' + (YB_ICON[k] || '') + '</svg>'; }
+
+/* Eastern time, always: the league runs on it. */
+function ybWhen(iso){
+  if(!iso) return '';
+  return new Date(iso).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' }) + ' ET';
+}
+function ybDay(iso){ return new Date(iso).toLocaleDateString('en-CA', { timeZone: 'America/New_York' }); }
+function ybDaysAway(iso){
+  var a = new Date(ybDay(new Date().toISOString()) + 'T12:00:00'), b = new Date(ybDay(iso) + 'T12:00:00');
+  return Math.round((b - a) / 86400000);
+}
+function ybSlot(o){
+  if(Number(o.bout_number) === 1) return 'Main event';
+  return o.card_segment === 'prelims' ? 'Prelims' : o.card_segment === 'undercard' ? 'Undercard' : 'Main card';
+}
+function ybanState(c){
+  var pend = (myOffers || []).filter(function(o){ return o.status === 'pending'; });
+  var tent = (myOffers || []).filter(function(o){ return o.status === 'tentative'; });
+  var live = liveNow && liveNow.video_id && liveNow.match_kind !== 'rerun' ? liveNow : null;
+  var b = myBout;
+  var on = [];
+  if(c.fighter){
+    if(b && live && live.event_id && live.event_id === b.event_id)
+      on.push({ cls: 'live', face: b.opponent_photo, init: b.opponent_name, k: 'Live · ' + b.event_name, t: 'You vs ' + (b.opponent_name || 'TBA'),
+        d: ybSlot(b) + ' · you\'re on now', go: 'Watch', goCls: 'live', attr: 'data-event="' + esc(b.event_id) + '"' });
+    if(b && ybDaysAway(b.event_date) === 0)
+      on.push({ cls: 'fight', face: b.opponent_photo, init: b.opponent_name, k: 'Tonight · ' + b.event_name, t: 'vs ' + (b.opponent_name || 'TBA'),
+        d: ybSlot(b), when: ybWhen(b.event_date).replace(/^\w+ /, ''), attr: 'data-event="' + esc(b.event_id) + '"' });
+    if(pend.length)
+      on.push({ cls: 'ask', init: pend[0].opponent_name, k: 'Fight offer · answer needed', t: pend[0].event_name + ' vs ' + (pend[0].opponent_name || 'TBA'),
+        d: ybSlot(pend[0]) + ' · ' + dstr(pend[0].event_date, { weekday: 'short' }), go: 'Answer', goCls: 'ask', attr: 'data-hub="offers"', n: pend.length });
+    if(c.offered)
+      on.push({ cls: 'deal', icon: 'deal', k: 'Contract offer · ' + String(c.offered.tier || 'new terms'),
+        t: c.offered.guaranteed_fights ? c.offered.guaranteed_fights + ' guaranteed fights' : 'New terms',
+        d: c.offered.show_vc != null ? Number(c.offered.show_vc).toLocaleString() + ' VC a show · +' + Number(c.offered.win_vc || 0).toLocaleString() + ' a win' : 'Open it to see the terms',
+        go: 'Review', attr: 'data-hub="contract"' });
+    if(b && ybDaysAway(b.event_date) > 0){
+      var dd = ybDaysAway(b.event_date);
+      on.push({ cls: 'fight', face: b.opponent_photo, init: b.opponent_name, k: 'Booked · ' + b.event_name, t: 'vs ' + (b.opponent_name || 'TBA'),
+        d: ybSlot(b) + ' · ' + ybWhen(b.event_date), when: dd === 1 ? 'Tomorrow' : 'in ' + dd + ' days', attr: 'data-event="' + esc(b.event_id) + '"' });
+    }
+    if(tent.length)
+      on.push({ cls: 'ask soft', init: tent[0].opponent_name, k: 'Tentative · ' + tent[0].event_name, t: 'vs ' + (tent[0].opponent_name || 'TBA'),
+        d: 'Matchmakers are waiting on a yes', go: 'Confirm', goCls: 'ask', attr: 'data-hub="offers"' });
+    if(!on.length && myContract)
+      on.push({ cls: 'quiet', icon: 'deal', k: 'Signed · ' + String(myContract.tier || 'contract'), t: 'Not booked yet',
+        d: myContract.guaranteed_fights ? Number(myContract.fights_used || 0) + ' of ' + myContract.guaranteed_fights + ' guaranteed fights used' : 'Fight offers show up here',
+        chev: true, attr: 'data-hub="contract"' });
+    if(!on.length)
+      on.push({ cls: 'quiet', icon: 'glove', k: 'Next fight', t: 'Not booked', d: 'Offers and contracts land here' });
+  } else {
+    if(live)
+      on.push({ cls: 'live', icon: 'live', k: 'Live now', t: live.event_name || live.title || 'VGA', d: 'On the VGA channel', go: 'Watch', goCls: 'live',
+        attr: live.event_id ? 'data-event="' + esc(live.event_id) + '"' : 'data-goto="home"' });
+    else if(c.nextEv)
+      on.push({ cls: 'quiet fan', icon: 'cal', k: 'Next fight night', t: c.nextEv.name, d: ybWhen(c.nextEv.event_date),
+        when: ybDaysAway(c.nextEv.event_date) <= 0 ? 'Tonight' : ybDaysAway(c.nextEv.event_date) === 1 ? 'Tomorrow' : 'in ' + ybDaysAway(c.nextEv.event_date) + ' days',
+        attr: 'data-event="' + esc(c.nextEv.id) + '"' });
+    else
+      on.push({ cls: 'quiet', icon: 'cal', k: 'Next fight night', t: 'Not announced yet', d: 'It shows here the day the card goes up' });
+  }
+  var s = on[0];
+  s.more = on.length - 1 + (s.n > 1 ? s.n - 1 : 0);
+  return s;
+}
+function ybanHTML(s){
+  var circ = s.icon ? '<span class="ybc ico">' + yIcon(s.icon) + '</span>'
+    : '<span class="ybc">' + (s.face ? '<img src="' + esc(s.face) + '" alt="" onerror="this.remove()">' : '')
+      + '<i>' + esc(initials(s.init || '?')) + '</i></span>';
+  var right = (s.go ? '<span class="ybgo' + (s.goCls ? ' ' + s.goCls : '') + '">' + esc(s.go) + '</span>' : '')
+    + (s.when ? '<span class="ybwhen">' + esc(s.when) + '</span>' : '')
+    + (s.chev ? '<span class="ybchev">&rsaquo;</span>' : '')
+    + (s.more > 0 ? '<span class="ybmore">+' + s.more + '</span>' : '');
+  return '<div class="yban ' + s.cls + '"' + (s.attr ? ' ' + s.attr : '') + '>' + circ
+    + '<div class="ybt"><small>' + (s.cls === 'live' ? '<i class="yblive"></i>' : '') + esc(s.k) + '</small>'
+    + '<b>' + esc(s.t) + '</b><em>' + esc(s.d) + '</em></div>'
+    + '<span class="ybr">' + right + '</span></div>';
+}
+
+/* THE STARS ON THE BANNER'S EDGE. Its own copy, not Betting's: that bar is
+   another screen's code, and sharing one would let a change there break this.
+   Stars ride a thin band inside the rounded edge (never the top, which meets
+   the card) and flow round it like liquid; each is drawn red-ahead,
+   blue-behind so it splits like light through glass. They only MOVE when the
+   banner has something to say — a quiet "Not booked" holds one still frame,
+   and so does everybody with reduced motion. One loop, stopped as soon as the
+   banner leaves the page or the app is hidden. */
+var YBS = { n: .6, flow: .38, ab: .5, pool: .45, slosh: .35, speed: 13, band: 7, al: .6 };
+var ybRun = null;
+function ybanStars(){
+  if(ybRun){ ybRun.stop = true; ybRun = null; }
+  var el = document.querySelector('#yc-ban .yban');
+  if(!el) return;
+  var c = document.createElement('canvas'); c.className = 'ybcv'; c.setAttribute('aria-hidden', 'true');
+  el.insertBefore(c, el.firstChild);
+  var still = el.classList.contains('quiet');
+  try { if(matchMedia('(prefers-reduced-motion: reduce)').matches) still = true; } catch(e) {}
+  var w = el.clientWidth, h = el.clientHeight;
+  if(!w || !h) return;
+  var dpr = Math.min(2, window.devicePixelRatio || 1), ctx = c.getContext('2d');
+  c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); c.style.width = w + 'px'; c.style.height = h + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  var r = Math.min(13, h / 2), sw = w - 2 * r, sh = h - 2 * r, qa = Math.PI * r / 2, P = 2 * sw + 2 * sh + 4 * qa, TAU = Math.PI * 2;
+  function at(s){
+    s = ((s % P) + P) % P; var a;
+    if(s < sw) return [r + s, 0, 0, -1]; s -= sw;
+    if(s < qa){ a = -Math.PI / 2 + s / r; return [w - r + Math.cos(a) * r, r + Math.sin(a) * r, Math.cos(a), Math.sin(a)]; } s -= qa;
+    if(s < sh) return [w, r + s, 1, 0]; s -= sh;
+    if(s < qa){ a = s / r; return [w - r + Math.cos(a) * r, h - r + Math.sin(a) * r, Math.cos(a), Math.sin(a)]; } s -= qa;
+    if(s < sw) return [w - r - s, h, 0, 1]; s -= sw;
+    if(s < qa){ a = Math.PI / 2 + s / r; return [r + Math.cos(a) * r, h - r + Math.sin(a) * r, Math.cos(a), Math.sin(a)]; } s -= qa;
+    if(s < sh) return [0, h - r - s, -1, 0]; s -= sh;
+    a = Math.PI + s / r; return [r + Math.cos(a) * r, r + Math.sin(a) * r, Math.cos(a), Math.sin(a)];
+  }
+  var parts = [], n = Math.round(P / 3.1 * YBS.n), seed = Math.random() * 10;
+  for(var i = 0; i < n; i++){
+    var big = Math.random() < .11;
+    parts.push({ s: Math.random() * P, d: Math.pow(Math.random(), 1.7), r: big ? 1.05 + Math.random() * .85 : .32 + Math.random() * .5,
+      k: .7 + Math.random() * .6, ph: Math.random() * TAU, tw: .8 + Math.random() * 2.2, big: big });
+  }
+  function draw(t, dt){
+    ctx.clearRect(0, 0, w, h);
+    ctx.globalCompositeOperation = 'lighter';
+    var th = YBS.slosh * .55 * Math.sin(t * .42 + seed), gx = Math.sin(th), gy = Math.cos(th);
+    for(var i = 0; i < parts.length; i++){
+      var p = parts[i], u = p.s / P;
+      var sp = YBS.speed * p.k * (1 + YBS.flow * Math.sin(TAU * 2 * u - t * .9 + seed));
+      if(dt) p.s = (p.s + sp * dt) % P;
+      var q = at(p.s), nx = q[2], ny = q[3];
+      var top = Math.min(1, Math.max(0, (ny + .55) / .55));
+      if(!top) continue;
+      var down = Math.max(0, nx * gx + ny * gy);
+      var thick = ((1 - YBS.pool * .55) + YBS.pool * 1.35 * down) * (1 + YBS.flow * .35 * Math.sin(TAU * 3 * u - t * 1.6 + seed));
+      var depth = 1.6 + p.d * YBS.band * thick, x = q[0] - nx * depth, y = q[1] - ny * depth, tx = -ny, ty = nx;
+      var a = top * YBS.al * Math.max(0, (1 - p.d * .55) * (.55 + .45 * Math.sin(t * p.tw + p.ph)) * (p.big ? 1 : .8) * (.55 + .45 * (.4 + .6 * down)));
+      var off = YBS.ab * (.35 + sp / 38) * (p.big ? 1.3 : 1);
+      if(p.big){ ctx.fillStyle = 'rgba(185,162,255,' + (a * .16).toFixed(3) + ')'; ctx.beginPath(); ctx.arc(x, y, p.r * 3.2, 0, TAU); ctx.fill(); }
+      ctx.fillStyle = 'rgba(255,70,90,' + a.toFixed(3) + ')';  ctx.beginPath(); ctx.arc(x + tx * off, y + ty * off, p.r, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(90,255,140,' + a.toFixed(3) + ')'; ctx.beginPath(); ctx.arc(x, y, p.r, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(80,130,255,' + a.toFixed(3) + ')'; ctx.beginPath(); ctx.arc(x - tx * off, y - ty * off, p.r, 0, TAU); ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  draw(0, 0);
+  if(still) return;
+  var run = ybRun = { stop: false }, last = 0;
+  (function frame(now){
+    if(run.stop || !el.isConnected) return;
+    if(!document.hidden){ var dt = last ? Math.min(.05, (now - last) / 1000) : 0; draw(now / 1000, dt); }
+    last = document.hidden ? 0 : now;
+    requestAnimationFrame(frame);
+  })(performance.now());
+}
+
+/* ── YOUR MONEY ── one ticket: the balance, what came and went, and the
+   three doors along its foot. A count only shows when it isn't zero. */
+function ywalletHTML(bal, flow, shopN, marketN, myListN){
+  function tab(kind, icon, label, n){
+    return '<span data-hub="' + kind + '">' + yIcon(icon) + label + (n ? '<i>' + n + '</i>' : '') + '</span>';
+  }
+  return '<div class="ywal"><div class="ywtop" data-hub="wallet"><div class="ywgr">'
+    + '<div class="ywk">Balance</div><div class="ywv">' + bal.toLocaleString() + '<em>VC</em></div>'
+    + (flow.n ? '<div class="ywio"><span class="up">+' + flow.inn.toLocaleString() + ' in</span> · <span class="dn">'
+      + flow.out.toLocaleString().replace('-', '−') + ' out</span></div>' : '')
+    + '</div><span class="ywgo">Wallet &rsaquo;</span></div>'
+    + '<div class="ywtabs">' + tab('shop', 'bag', 'Shop', shopN) + tab('market', 'tag', 'Market', marketN) + tab('shelf', 'box', 'Shelf', myListN) + '</div></div>';
+}
+
+/* ── PERSONAL BESTS ── the Duolingo shelf: each a thing that happened once
+   and is worth being proud of. Each fact appears once on the screen, so the
+   streak lives on the card's ticks and never here. A tile with nothing in
+   it is left out rather than shown at zero. */
+function ypbHTML(c){
+  var tiles = [];
+  function rk(r){ return RAR.indexOf(r && r.rarity); }
+  var pull = c.cards.slice().sort(function(a, b){
+    return rk(b) - rk(a) || Number(b.best_grade || 0) - Number(a.best_grade || 0) || Number(a.lowest_print || 1e9) - Number(b.lowest_print || 1e9);
+  })[0];
+  function thumb(r){
+    return '<span class="ypth r-' + esc(r.rarity || 'common') + '"><i>' + esc(initials(r.name)) + '</i>'
+      + (r.photo_url ? '<img src="' + esc(r.photo_url) + '" alt="" loading="lazy" onerror="this.remove()">' : '') + '</span>';
+  }
+  function cap(s){ s = String(s || ''); return s.charAt(0).toUpperCase() + s.slice(1); }
+  if(pull) tiles.push('<div data-goto="cards">' + thumb(pull) + '<div class="ypgr"><small>Best pull</small><b>' + esc(pull.name) + '</b><em>'
+    + esc(cap(pull.rarity)) + (pull.best_grade != null ? ' · PSA ' + pull.best_grade : '') + '</em></div></div>');
+  var grade = c.cards.filter(function(r){ return r.best_grade != null && r !== pull; }).sort(function(a, b){
+    return Number(b.best_grade) - Number(a.best_grade) || rk(b) - rk(a);
+  })[0];
+  if(grade) tiles.push('<div data-goto="cards">' + thumb(grade) + '<div class="ypgr"><small>Best grade</small><b>PSA ' + grade.best_grade + '</b><em>'
+    + esc(grade.name) + '</em></div></div>');
+  if(c.bets.best > 0) tiles.push('<div data-hub="mybets"><div class="ypgr"><small>Biggest bet win</small><b class="up">+' + c.bets.best.toLocaleString()
+    + '</b><em>' + c.bets.w + ' won · ' + c.bets.l + ' lost</em></div></div>');
+  if(c.cards.length && c.allCards){
+    var pct = Math.min(100, Math.round(c.cards.length / c.allCards * 100));
+    tiles.push('<div data-goto="cards"><span class="ypring" style="--p:' + pct + '"><span>' + pct + '%</span></span><div class="ypgr"><small>Collection</small><b>'
+      + c.cards.length + ' of ' + c.allCards + '</b><em>' + c.cards.reduce(function(a, r){ return a + Number(r.qty || 0); }, 0).toLocaleString() + ' cards</em></div></div>');
+  }
+  if(!tiles.length) return '';
+  return '<div class="lab"><b>Personal bests</b><i></i></div><div class="ypb">' + tiles.join('') + '</div>';
+}
+
+/* ── THE ROOMS ── just icons and names. Staff appears only for staff, and
+   its count comes from the staff room's own read (staff-room.js). */
+function yroomsHTML(pools, staff, waiting){
+  function room(icon, label, attr, n){
+    return '<div ' + attr + '>' + yIcon(icon) + '<span>' + label + '</span>' + (n ? '<i>' + n + '</i>' : '') + '</div>';
+  }
+  return room('glove', 'Train', 'data-hub="train"')
+    + (staff ? room('clip', 'Staff', 'data-hub="staff"', waiting) : '')
+    + room('pads', 'Spar', 'data-hub="spar"', window.__sparOpen || 0)
+    + room('coin', 'Bets', 'data-goto="betting"', pools)
+    + room('clap', 'Kit', 'data-hub="kit"');
+}
+async function yStaffRoom(pools){
+  if(typeof stfHome !== 'function' || typeof stfJobDone !== 'function' || !me) return;
+  var h = await stfHome();
+  var el = document.getElementById('yrooms');
+  if(!el || !el.isConnected || !h || !h.me) return;
+  var waiting = (h.my_jobs || []).filter(function(j){ return !stfJobDone(j) && !(j.review && j.review.status === 'submitted'); }).length
+    + ((h.pay && h.pay.pending) || []).length
+    + (h.my_shows || []).filter(function(s){ return s.status === 'invited'; }).length;
+  el.innerHTML = yroomsHTML(pools, true, waiting);
 }
 
 
@@ -8302,43 +8529,45 @@ document.addEventListener('click', async function(e){
 
 });
 
-/* THE CAREER NUMBERS. Rank, record and the form bar are public — they come
+/* THE CAREER NUMBERS. Rank, record and the last fights are public — they come
    from fighter_cards and fighter_matches, not from a my_* view — so this is
-   the same data anybody could read about you, arranged for you. */
+   the same data anybody could read about you, arranged for you. The cut-out
+   comes from the creator kit's list, because only a real cut-out can rise
+   out of the ring. */
 async function loadCareer(slug){
-  var card = await q("fighter_cards?select=id,wins,losses,draws,ko_wins,weight_class,rank,scope,"
-    + "contract_tier,is_champion&slug=eq." + encodeURIComponent(slug) + "&limit=1");
+  var got = await Promise.all([
+    q("fighter_cards?select=id,wins,losses,draws,ko_wins,weight_class,rank,scope,"
+      + "contract_tier,is_champion&slug=eq." + encodeURIComponent(slug) + "&limit=1"),
+    q("kit_fighters_public?select=cutout_url&slug=eq." + encodeURIComponent(slug) + "&limit=1")
+  ]);
+  var card = got[0];
   if(!card || !card.length) return;
   var f = card[0];
-
-  var sub4 = document.getElementById('me-sub4');
-  if(sub4) sub4.textContent = wc(f.weight_class) + (f.is_champion ? ' \u00b7 CHAMPION' : '');
-
-  var chips = document.getElementById('me-chips');
-  if(chips){
-    chips.innerHTML =
-      (f.contract_tier ? '<span class="chip">'+esc(String(f.contract_tier))+'</span>' : '')
-      + '<span class="chip p">' + Number(f.wins||0) + '-' + Number(f.losses||0)
-        + '-' + Number(f.draws||0) + '</span>'
-      + (f.ko_wins ? '<span class="chip g">' + f.ko_wins + ' KO</span>' : '');
+  var cut = got[1] && got[1][0] && got[1][0].cutout_url;
+  if(cut){
+    var face = document.getElementById('yc-face');
+    if(face){ face.classList.add('cut'); face.innerHTML = ycFace(cut, '', true); }
   }
 
+  var sub = document.getElementById('yc-sub');
+  if(sub) sub.textContent = wc(f.weight_class) + (f.is_champion ? ' · Champion' : '');
+  var rec = Number(f.wins||0) + '-' + Number(f.losses||0) + (f.draws ? '-' + f.draws : '');
+  var recEl = document.getElementById('yc-rec');
+  if(recEl) recEl.textContent = rec;
+
   /* The rank needs a denominator or it means nothing — #12 of 41 is a
-     position, #12 on its own is a number. */
-  var rk = document.getElementById('me-rank');
-  if(rk){
-    if(f.rank){
-      rk.querySelector('.num').textContent = f.rank;
-      var peers = await q("rankings_public?select=rank&level=eq.pro&scope=eq.weight_class"
-        + "&weight_class=eq." + encodeURIComponent(f.weight_class));
-      var of = rk.querySelector('.of');
-      if(of) of.textContent = peers && peers.length ? 'OF ' + peers.length : '\u00a0';
-    } else {
-      rk.classList.add('unranked');
-      rk.querySelector('.h').textContent = 'RECORD';
-      rk.querySelector('.num').textContent = Number(f.wins||0) + '-' + Number(f.losses||0);
-      rk.querySelector('.of').textContent = 'UNRANKED';
-    }
+     position, #12 on its own is a number. The ghost behind the name is the
+     rank, or the record when there is none. */
+  var ghost = document.getElementById('yc-ghost');
+  var rk = document.getElementById('yc-rank');
+  if(f.rank){
+    if(ghost) ghost.textContent = f.rank;
+    var peers = await q("rankings_public?select=rank&level=eq.pro&scope=eq.weight_class"
+      + "&weight_class=eq." + encodeURIComponent(f.weight_class));
+    if(rk) rk.innerHTML = '#' + f.rank + (peers && peers.length ? '<i>/' + peers.length + '</i>' : '');
+  } else {
+    if(ghost){ ghost.textContent = rec; ghost.classList.add('rec'); }
+    if(rk){ rk.textContent = 'Unranked'; rk.classList.add('word'); }
   }
 
   var hist = await q("fighter_matches?select=won,method,event_name,event_date,vod_link,status"
@@ -8346,17 +8575,22 @@ async function loadCareer(slug){
   if(!hist) return;
   var done = hist.filter(function(m){ return m.status === 'completed'; });
 
-  /* The form bar reads left-to-right in time order, which is the opposite of
-     the query, so it is reversed once here rather than sorted twice. */
-  var form = document.getElementById('me-form');
-  if(form && done.length){
-    var last = done.slice(0, 9).reverse();
-    form.innerHTML = '<div class="fbar">' + last.map(function(m){
+  var last = document.getElementById('yc-last');
+  if(last){
+    if(done.length){
+      var m0 = done[0], res = m0.won === true ? 'W' : m0.won === false ? 'L' : 'D';
+      last.innerHTML = '<span class="' + (res === 'W' ? 'up' : res === 'L' ? 'dn' : '') + '">' + res + '</span> <i>' + esc(m0.event_name || '') + '</i>';
+    } else last.textContent = 'Debut next';
+  }
+  /* The ticks read left to right in time order, the opposite of the query.
+     They say how many fights they are and nothing else: the streak is a
+     story the ticks already tell. */
+  var ticks = document.getElementById('yc-ticks');
+  if(ticks && done.length){
+    var lastN = done.slice(0, 9).reverse();
+    ticks.innerHTML = '<div class="yctk">' + lastN.map(function(m){
         return '<i class="' + (m.won === true ? 'w' : m.won === false ? 'l' : 'd') + '"></i>';
-      }).join('') + '</div>'
-      + '<div class="fbl"><span>Last ' + last.length
-        + (last.length === 1 ? ' fight' : ' fights') + '</span>'
-      + '<span>' + done.length + ' career</span></div>';
+      }).join('') + '</div><span>Last ' + lastN.length + (lastN.length === 1 ? ' fight' : ' fights') + '</span>';
   }
   loadMyMedia(done);
 }
