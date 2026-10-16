@@ -823,6 +823,30 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
 @media (prefers-reduced-motion:reduce){ .fx-stars i{animation:none} .fx-ban .fx-n i{transition:none} }
 /* ── THE FIGHTER PAGE BODY (2026-10-16): the roster's banners and rows ── */
 .mp-line em{font-style:normal;color:#E8C351}
+/* the arena behind the photo: a black room, a violet haze, the stand's lit
+   curve across the width, and its flashes (see FX_ARENA) */
+.fx-arena{position:absolute;inset:0;overflow:hidden;pointer-events:none;transition:opacity .5s;
+  background:radial-gradient(55% 45% at 62% 36%,rgba(80,62,160,.38),transparent 70%),
+             radial-gradient(90% 40% at 50% 100%,rgba(90,70,160,.22),transparent 70%),#07060E}
+.mepro.on-world .fx-arena{opacity:0}
+.fx-ar{position:absolute;left:50%;top:0;width:390px;height:400px;margin-left:-195px}
+.fx-tiers{position:absolute;inset:0;background:
+  radial-gradient(circle at -45px 448px,transparent 0 364px,rgba(240,235,255,.85) 364px 365.4px,transparent 365.4px),
+  radial-gradient(circle at -45px 448px,transparent 0 365.8px,rgba(225,215,255,.25) 365.8px 370px,transparent 370px),
+  radial-gradient(circle at -45px 448px,transparent 0 344px,rgba(4,3,12,.55) 361px,transparent 364px),
+  radial-gradient(circle at -45px 448px,transparent 0 405px,rgba(225,215,255,.3) 405px 406.2px,transparent 406.2px),
+  radial-gradient(circle at -45px 448px,transparent 0 437px,rgba(225,215,255,.16) 437px 438px,transparent 438px),
+  radial-gradient(circle at -45px 448px,rgba(70,58,130,.5) 0 365px,rgba(40,30,80,.35) 458px,transparent 535px);
+  -webkit-mask:linear-gradient(90deg,#000 0%,#000 62%,transparent 98%),linear-gradient(180deg,#000 0%,#000 66%,transparent 90%);
+  -webkit-mask-composite:source-in;mask:linear-gradient(90deg,#000 0%,#000 62%,transparent 98%),linear-gradient(180deg,#000 0%,#000 66%,transparent 90%);mask-composite:intersect}
+.fx-fl{position:absolute;inset:0;-webkit-mask-image:linear-gradient(180deg,#000 0%,#000 52%,transparent 66%);mask-image:linear-gradient(180deg,#000 0%,#000 52%,transparent 66%)}
+.fx-fl i{position:absolute;border-radius:50%;background:#fff;opacity:0;box-shadow:0 0 5px 1.5px rgba(255,245,230,.6);animation:fx-flash ease-out infinite}
+@keyframes fx-flash{0%,88%{opacity:0;transform:scale(.6)}90%{opacity:1;transform:scale(1.3)}94%{opacity:.35}100%{opacity:0;transform:scale(.8)}}
+.fx-base{opacity:.6}
+.fx-surge{animation:fx-surge 60s ease-in-out infinite;animation-delay:-14s}
+@keyframes fx-surge{0%{opacity:0}30%{opacity:1}40%{opacity:1}72%{opacity:.12}100%{opacity:0}}
+.mepro.on-world .fx-fl i,.mepro.on-world .fx-surge{animation-play-state:paused}
+@media (prefers-reduced-motion:reduce){ .fx-fl i,.fx-surge{animation:none} .fx-fl i{opacity:.35} }
 .mp-bodies .fx-wrap{margin:14px 12px 0}
 .fx-tags{display:flex;flex-wrap:wrap;gap:6px;margin:2px 16px 0}
 .fx-tag{font-size:12.5px;font-weight:600;color:#E4DCFF;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
@@ -8680,10 +8704,37 @@ async function loadCareer(slug){
    bouts on file, so the World side counts places and titles, never fights. */
 var MP = null;   /* the live page: { root, f, home, globe, mini } */
 
+/* THE ARENA BEHIND THE PHOTO (2026-10-16): Home's Next Card stand, scaled
+   for a tall frame. Home's card is 258px tall and the hero is 400, so the
+   stand is scaled by height (x1.55): its lit curve starts high in the top-left
+   corner and sweeps down behind the shoulders to the lower right, the rows
+   rise behind it, and the camera flashes fill the top-left — a quiet base and
+   a surge that comes and goes, exactly as on Home. Drawn in a fixed 390x400
+   box centred in the hero, so the circle in the CSS and the seats here are
+   measured in the same pixels at any phone width. Built once. */
+var FX_ARENA = (function(){
+  var cx = -45, cy = 448, rows = [[376, 4], [392, 3], [408, 3], [424, 3], [440, 2], [456, 2], [472, 2]];
+  var seed = 7; function rnd(){ seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+  var all = [];
+  rows.forEach(function(row, ri){
+    for(var d = 18; d <= 90; d += 6){ for(var k = 0; k < row[1]; k++){
+      var a = (d + (rnd() * 8 - 4)) * Math.PI / 180;
+      var x = cx + row[0] * Math.cos(a), y = cy - row[0] * Math.sin(a);
+      if(x < 6 || x > 300 || y < 8 || y > 250) continue;
+      var z = ri === 0 ? [2, 2, 3][Math.floor(rnd() * 3)] : 2;
+      all.push('<i style="left:' + x.toFixed(0) + 'px;top:' + y.toFixed(0) + 'px;width:' + z + 'px;height:' + z + 'px;animation-duration:'
+        + (4 + rnd() * 10).toFixed(1) + 's;animation-delay:-' + (rnd() * 14).toFixed(1) + 's"></i>');
+    } }
+  });
+  var base = all.filter(function(_, i){ return i % 4 === 0; }), surge = all.filter(function(_, i){ return i % 4 !== 0; });
+  return '<div class="fx-arena" aria-hidden="true"><div class="fx-ar"><div class="fx-tiers"></div>'
+    + '<div class="fx-fl fx-base">' + base.join('') + '</div><div class="fx-fl fx-surge">' + surge.join('') + '</div></div></div>';
+})();
+
 function fighterPageHTML(p){
   var face = p.photo_url || p.profile_photo_url || '';
   return '<div class="mepro" id="me-pro">'
-    + '<div class="mp-hero">' + backButton() + '<div class="mp-photo">'
+    + '<div class="mp-hero">' + FX_ARENA + backButton() + '<div class="mp-photo">'
     + (face ? '<img src="' + esc(face) + '" alt="" onerror="this.remove()">'
             : '<span class="init">' + esc(initials(p.fighter_name || p.display_name || '')) + '</span>')
     + '</div><div class="mp-world"></div><div class="mp-fade"></div></div>'
