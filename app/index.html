@@ -2061,6 +2061,23 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .pv .tba{position:absolute;left:0;right:0;top:56%;z-index:8;text-align:center;
   font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.13em;
   text-transform:uppercase;color:#8A81A8}
+/* THE BANNER: Home's next card while it has no bout booked (nxBannerHTML).
+   Same art as the poster, one strip tall; the ticker keeps its place at the
+   foot, so the content stops 15px short of it. */
+.pv.bn{height:auto;padding-bottom:15px}
+.pv.bn .bnin{position:relative;z-index:8;display:flex;align-items:center;gap:14px;padding:14px 16px}
+.pv.bn .bndt{flex-shrink:0;min-width:38px;padding-right:14px;text-align:center;border-right:1px solid rgba(255,255,255,.14)}
+.pv.bn .bndt s{display:block;text-decoration:none;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.16em;color:#C3A6FF}
+.pv.bn .bndt b{display:block;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:30px;line-height:.9;color:#fff}
+.pv.bn .bnw{flex:1;min-width:0}
+.pv.bn .bnw b{display:block;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:34px;line-height:.9;letter-spacing:.02em;
+  color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv.bn .bnw.long b{font-size:24px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}   /* "UBA NOCHE - FIGHT NIGHT 31" wraps, never cut */
+.pv.bn .bnw s{display:block;text-decoration:none;font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:#ADA4D6;margin-top:5px}
+.pv.bn .bnt{flex-shrink:0;text-align:right;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.06em;
+  color:#EDEAF6;white-space:nowrap}
+.pv.bn .bnt em{display:block;font-style:normal;font-weight:400;font-size:8.5px;color:#C3A6FF;margin-top:3px}
 .pvdots{display:flex;gap:5px;justify-content:center;padding:9px 0 10px}
 .pvdots s{position:relative;width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.20);cursor:pointer}
 /* a 5px dot was the only way off a live card: each one now takes a thumb */
@@ -5860,6 +5877,7 @@ function posterHTML(e, past, i, n, home){
         return '<s class="' + (k === i ? 'on' : '') + '" data-nxi="' + k + '"></s>'; }).join('')
       + '</div>'
     : '';
+  if(home && !f) return nxBannerHTML(e, past) + dots;
 
   return '<div class="pv' + (home ? ' home' : '') + '" data-event="' + esc(e.id) + '">'
     + '<div class="bg"></div><div class="grain"></div>' + (home ? PV_STAND : PV_FLOWERS)
@@ -5871,6 +5889,34 @@ function posterHTML(e, past, i, n, home){
     + foot
     + '<div class="tick"><span>' + esc(ticker.toUpperCase()) + '</span></div>'
     + '</div>' + dots;
+}
+
+/* NO CARD YET, NO POSTER (Castle, 2026-10-16). An event with no main event
+   booked was a 258px poster that said "GFL 19 / Card not announced yet" — the
+   biggest block on Home, saying nothing. Home draws it as a one-strip banner in
+   the same art instead: the date, the name, the time and how far off it is.
+   It is still a `.pv` with `data-event`, so the dots, the swipe and the tap
+   through to the event all work unchanged, and the moment bout 1 exists the
+   full poster comes back on its own. */
+function etYmd(d){ return new Date(d).toLocaleDateString('en-CA', { timeZone: 'America/New_York' }); }
+function nxBannerHTML(e, past){
+  var d = new Date(e.event_date), tz = 'America/New_York';
+  var wd = d.toLocaleDateString('en-US', { timeZone: tz, weekday: 'short' }).toUpperCase();
+  var dd = d.toLocaleDateString('en-US', { timeZone: tz, day: 'numeric' });
+  var mo = d.toLocaleDateString('en-US', { timeZone: tz, month: 'short' }).toUpperCase();
+  var tm = d.toLocaleTimeString('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit' }) + ' ET';
+  /* whole ET calendar days, so 11pm tonight is "tonight" and not "tomorrow" */
+  var days = Math.round((Date.parse(etYmd(d)) - Date.parse(etYmd(Date.now()))) / 864e5);
+  var rel = days === 0 ? (past ? 'today' : 'tonight') : days === 1 ? 'tomorrow' : days > 1 ? 'in ' + days + ' days'
+          : days === -1 ? 'yesterday' : (-days) + ' days ago';
+  var tick = (e.name + ' · ' + mo + ' ' + dd + ', ' + tm + ' · ').toUpperCase();
+  return '<div class="pv home bn" data-event="' + esc(e.id) + '">'
+    + '<div class="bg"></div>' + PV_STAND + '<div class="fx"></div>'
+    + '<div class="bnin"><span class="bndt"><s>' + wd + '</s><b>' + dd + '</b><s>' + mo + '</s></span>'
+    + '<span class="bnw' + (e.name.length > 12 ? ' long' : '') + '"><b>' + esc(e.name) + '</b>'
+    + '<s>' + (past ? 'Tap for the results' : 'Card not announced yet') + '</s></span>'
+    + '<span class="bnt">' + esc(tm) + '<em>' + rel + '</em></span></div>'
+    + '<div class="tick"><span>' + esc(tick + tick) + '</span></div></div>';
 }
 
 /* A missing cut-out is the NORM, not a failure — see the CSS note. */
