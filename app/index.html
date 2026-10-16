@@ -633,7 +633,8 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .wrow.art{display:flex;gap:11px;align-items:flex-start}
 .wrow.art .wth{width:104px;height:59px;border-radius:8px;overflow:hidden;flex-shrink:0;
   background:linear-gradient(150deg,#3E2F6B,#1B1533)}
-.wrow.art .wth img{width:100%;height:100%;object-fit:cover;display:block}
+.wrow.art .wth img{width:100%;height:100%;object-fit:cover;display:block;
+  object-position:50% 12%}   /* the photo is square with the head near the top; a centred crop into this wide box took the face off at the brow */
 .wrow.art .wb{flex:1;min-width:0}
 /* The placeholder row. Same box as a real .nw, so the page is already the
    right height before the news arrives and nothing under it moves. */
@@ -6045,6 +6046,12 @@ var hSwipe = false;
   el.addEventListener('touchcancel', done, { passive: true });
 });
 
+/* bold / italic / underline markers out, the words kept: "| ** FIGHTER
+   INTERVIEW ** GUTS" reads "| FIGHTER INTERVIEW GUTS" */
+function unMd(s){
+  return String(s || '').replace(/\*\*|__|~~/g, '').replace(/\s{2,}/g, ' ').trim();
+}
+
 var VIDEOS_PATH = 'videos_public?select=video_id,title,thumb_url,published_at,seen_at,event_name&limit=8';
 var newsVideos = null;
 
@@ -6095,33 +6102,19 @@ function paintNews(rows){
     }
   }
 
-  /* THE NEXT CARD TAKES THE SECOND SLOT, not the newest story.
-     The lead treatment was the wire's own first row printed again at a larger
-     size, three inches above itself, and the wire below already carries every
-     story in date order. What this tab had nowhere for is the thing every
-     sports app puts second: the card that has not happened yet. */
-  html += '<div class="lab"><b id="nx-lab">Next card</b><i></i>'
-        + '<a data-goto="events">All events</a></div>'
-        + '<div id="news-next"><div class="pv pvgh"></div></div>';
+  /* NO NEXT CARD HERE (Castle, 2026-10-16). It was Home's poster printed a
+     second time, at the same size, one tab away from the original — so the
+     first two screens of News were a video and a poster you had just seen.
+     Home owns the next card; News goes straight from the videos to the stories. */
+  html += '<div class="lab"><b>Stories</b><i></i></div>';
 
-  html += '<div class="lab"><b>The wire</b><i></i>'
-    + (vids.length ? '<s>newest first</s>' : '') + '</div>';
-
-  /* THE MIX, AND ITS CAP. Sorted purely by date the wire becomes mostly video:
-     the channel uploads weekly and the last article was 2026-08-22, so on the
-     numbers alone the writing would be buried under podcasts. NEVER MORE THAN
-     ONE VIDEO BETWEEN ARTICLES -- videos already own the deck above, so the
-     wire does not owe them the space. Any videos left over are simply not
-     shown here; they are one swipe away. */
-  /* From the FIRST story, not the second: nothing is printed above the wire
-     any more, so slicing one off silently dropped the newest post. */
-  var arts = rows.slice(), vq = vids.slice(), feed = [], v;
-  while(arts.length){
-    feed.push({ kind: 'a', it: arts.shift() });
-    if(vq.length){ v = vq.shift(); feed.push({ kind: 'v', it: v }); }
-  }
+  /* STORIES ONLY. Videos used to be interleaved here one per article, which
+     printed every one of them twice (the deck above already holds them all)
+     and gave the list two row shapes that fought. The deck owns video; this
+     list is writing, every row the same shape. */
+  var feed = rows.map(function(a){ return { kind: 'a', it: a }; });
   /* Nothing written yet? Then the wire is the videos rather than empty. */
-  if(!rows.length) feed = vq.map(function(x){ return { kind: 'v', it: x }; });
+  if(!rows.length) feed = vids.map(function(x){ return { kind: 'v', it: x }; });
 
   html += feed.map(function(f){
     if(f.kind === 'v'){
@@ -6136,13 +6129,17 @@ function paintNews(rows){
         + '<span class="h">' + esc(n.title) + '</span></span></a>';
     }
     var a = f.it;
-    var first = (a.body || '').split('\n').filter(Boolean)[0] || '';
+    /* Discord-written posts carry markdown (**VGA Reporter:**), and the list
+       is plain text, so the asterisks printed as asterisks. */
+    var first = unMd((a.body || '').split('\n').filter(Boolean)[0] || '');
     if(first.length > 130) first = first.slice(0, 130).replace(/\s+\S*$/, '') + '\u2026';
+    /* an interview typed in Discord has no kicker; say what it is */
+    var kick = a.kicker || (/interview/i.test(a.headline || '') ? 'Interview' : '');
     return '<div class="wrow art" data-news="' + esc(a.id) + '">'
       + newsThumb(a, 'wth')
       + '<div class="wb">'
-      + (a.kicker ? '<div class="k">' + esc(a.kicker) + '</div>' : '')
-      + '<div class="h">' + esc(a.headline) + '</div>'
+      + (kick ? '<div class="k">' + esc(kick) + '</div>' : '')
+      + '<div class="h">' + esc(unMd(a.headline)) + '</div>'
       + (first ? '<div class="b">' + esc(first) + '</div>' : '')
       + '<div class="d">' + esc(a.reporter || 'UBA') + ' \u00b7 ' + esc(dstr(a.posted_at))
       + '</div></div></div>';
