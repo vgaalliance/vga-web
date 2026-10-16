@@ -788,10 +788,10 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
 .fx-r.fx-z{background:rgba(255,255,255,.045)}
 .fx-r:active{background:rgba(167,139,250,.16)}
 .fx-r .fx-k{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:16px;color:#9A93C2;text-align:center;font-variant-numeric:tabular-nums}
-.fx-r .fx-f{position:relative;width:38px;height:38px;border-radius:50%;overflow:hidden;background:#2E2660}
+.fx-f{position:relative;display:block;flex:none;width:38px;height:38px;border-radius:50%;overflow:hidden;background:#2E2660}
 /* a cut-out is a whole body; fxHead() moves it so the circle holds the head */
-.fx-r .fx-f img{position:absolute;max-width:none;height:auto;width:227%;left:-63%;top:0;opacity:0}
-.fx-r .fx-f img.fx-on{opacity:1}
+.fx-f img{position:absolute;max-width:none;height:auto;width:227%;left:-63%;top:0;opacity:0}
+.fx-f img.fx-on{opacity:1}
 .fx-cut img{opacity:0}
 .fx-cut img.fx-on{opacity:1}
 .fx-f img.fx-on ~ .sil,.fx-cut img.fx-on ~ .sil{display:none}
@@ -821,6 +821,56 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
 .fx-tabs button:focus-visible{outline:2px solid #F5C842;outline-offset:2px}
 .fx-note{margin:14px 16px 0;font-size:12.5px;color:#8B83AC}
 @media (prefers-reduced-motion:reduce){ .fx-stars i{animation:none} .fx-ban .fx-n i{transition:none} }
+/* ── THE FIGHTER PAGE BODY (2026-10-16): the roster's banners and rows ── */
+.mp-line em{font-style:normal;color:#E8C351}
+.mp-bodies .fx-wrap{margin:14px 12px 0}
+.fx-tags{display:flex;flex-wrap:wrap;gap:6px;margin:2px 16px 0}
+.fx-tag{font-size:12.5px;font-weight:600;color:#E4DCFF;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+  border-radius:7px;padding:4px 9px}
+.fx-tag.fx-gold{background:rgba(245,200,66,.14);border-color:rgba(245,200,66,.5);color:#F5C842}
+.fx-ban .fx-n.fx-wide{min-width:84px}
+.fx-ban .fx-n.fx-wide b{font-size:28px}
+.fx-kv{display:flex;justify-content:space-between;align-items:center;min-height:44px;padding:0 14px;gap:12px}
+.fx-kv span{font-size:13px;color:#8B83AC}
+.fx-kv b{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:18px;color:#ECE8FA;text-align:right}
+.fx-kv b em,.fx-tt b em{font-style:normal;color:#8B83AC;font-size:.7em;margin-left:1px}
+.fx-z{background:rgba(255,255,255,.045)}
+/* the face-off: the winner is the only bold name */
+.fx-fo{display:grid;grid-template-columns:minmax(0,1fr) 28px minmax(0,1fr);align-items:center;gap:6px;padding:12px 14px}
+.fx-side{display:flex;align-items:center;gap:9px;min-width:0}
+.fx-side.fx-b{flex-direction:row-reverse;text-align:right}
+.fx-side .fx-f{width:48px;height:48px}
+.fx-side span{min-width:0}
+.fx-side b{display:block;font-weight:700;font-size:15.5px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx-side b.fx-dim{font-weight:500;color:#A39CC4}
+.fx-side b.fx-pre{font-weight:600}
+.fx-side s{display:block;text-decoration:none;font-size:12px;color:#8B83AC}
+.fx-vs{text-align:center;font-family:'Bebas Neue',sans-serif;font-size:16px;color:#8F86BC}
+.fx-tt{display:grid;grid-template-columns:1fr 76px 1fr;align-items:center;min-height:40px;padding:0 14px}
+.fx-tt b{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:21px;color:#ECE8FA;letter-spacing:.02em}
+.fx-tt b.fx-rt{text-align:right}
+.fx-tt s{text-decoration:none;text-align:center;font-size:12px;color:#8B83AC}
+.fx-na{font-family:'Barlow',sans-serif;font-size:12px;color:#6F6893;letter-spacing:0}
+.fx-vod{display:inline-block;margin:10px 14px 12px;font-size:12.5px;font-weight:700;color:#1A1236;background:#B9A2FF;
+  border-radius:8px;padding:6px 11px;text-decoration:none}
+.fx-vod:focus-visible{outline:2px solid #F5C842;outline-offset:2px}
+/* a fight row: result, face, event and date, method */
+.fx-r.fx-fr{grid-template-columns:28px 38px minmax(0,1fr) auto;height:56px}
+.fx-wl{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font-family:'Bebas Neue',sans-serif;font-size:16px;
+  background:rgba(95,211,154,.16);color:#6EE7B7}
+.fx-wl.fx-lo{background:rgba(232,54,43,.16);color:#F19C96}
+.fx-wl.fx-nx{background:rgba(245,200,66,.16);color:#F5C842;font-size:11px;width:auto;padding:0 4px}
+.fx-m{text-align:right;font-size:12.5px;color:#D9D3F5;white-space:nowrap}
+.fx-belt{display:inline-block;width:16px;height:8px;border-radius:2px;margin-left:6px;vertical-align:2px;
+  background:linear-gradient(90deg,#C8961C,#FFE9A8,#C8961C)}
+/* which fight the globe has lit, under the back button */
+.fx-gcap{position:absolute;left:14px;top:58px;max-width:min(78%,300px);z-index:3;pointer-events:none;
+  background:rgba(10,8,26,.74);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.12);border-left:3px solid #C8B9FF;border-radius:10px;padding:7px 11px}
+.fx-gcap.fx-up{border-left-color:#F5C842}
+.fx-gcap b{display:block;font-size:13.5px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx-gcap span{display:block;font-size:12px;color:#C9C2E6;margin-top:1px}
+
 .more{margin:18px 17px 0;display:block;width:calc(100% - 34px);text-align:center;
   font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
   color:#C3A6FF;border:1px solid rgba(167,139,250,.35);border-radius:12px;padding:13px 0}
@@ -1084,22 +1134,6 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
 .mepro.on-world .mp-p{transform:translateX(-110%);opacity:0;pointer-events:none}
 .mepro.on-world .mp-w{transform:none;opacity:1;pointer-events:auto}
 .mp-bodies>.gone{display:none}
-.mp-big{display:flex;margin:0 18px;border-top:1px solid rgba(237,234,246,.12);border-bottom:1px solid rgba(237,234,246,.12)}
-.mp-big div{flex:1;padding:11px 0 9px;min-width:0}
-.mp-big div+div{border-left:1px solid rgba(237,234,246,.12);padding-left:14px}
-.mp-big s{display:block;text-decoration:none;font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#9C95B8}
-.mp-big b{display:block;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:34px;line-height:1}
-.mp-big .gd{color:#E8C351}.mp-big .w{color:#5FD98A}.mp-big .l{color:#F19C96}
-.mp-rows .bout,.mp-map .bout{display:flex;align-items:center;gap:12px;margin:0 18px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07)}
-.mp-rows .wl,.mp-map .wl{width:26px;height:26px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
-.mp-rows .wl.w,.mp-map .wl.w{background:rgba(74,222,128,.16);color:#6EE7B7}
-.mp-rows .wl.l,.mp-map .wl.l{background:rgba(232,54,43,.16);color:#F19C96}
-.mp-map .wl.n{background:rgba(245,200,66,.16);color:#F5C842;font-size:9px}
-.mp-rows .mid,.mp-map .mid{flex:1;min-width:0}
-.mp-rows .op,.mp-map .op{font-size:15.5px;font-weight:600}
-.mp-rows .ev,.mp-map .ev{font-size:12.5px;color:#9C94BE}
-.mp-rows .via{font-size:11px;color:#9C94BE;font-weight:600}
-.mp-map .where{font-size:12.5px;color:#9C94BE;text-align:right;max-width:40%}
 @media (prefers-reduced-motion:reduce){
   .mp-photo,.mp-world,.mp-bodies>div,.mp-sw .gl,.mp-sw .me,.mp-sw small{transition:none}
   .mp-sw .me .bob{animation:none}
@@ -3023,20 +3057,6 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
   text-transform:uppercase;color:#8F86AF;padding-top:3px}
 .sheet .meta dd{font-weight:600}
 /* the tail of a fighter's page: tape, next, the media rail, and his world */
-.ftape{display:grid;grid-template-columns:1fr 1fr;margin:0;padding:0 18px 4px}
-.ftape div{padding:9px 0;border-bottom:1px solid rgba(255,255,255,.07)}
-.ftape div:nth-child(odd){padding-right:14px}.ftape div:nth-child(even){padding-left:14px}
-.ftape dt{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:11px;
-  letter-spacing:.1em;text-transform:uppercase;color:#8E86B0;margin-bottom:3px}
-.ftape dd{margin:0;font-family:'Anton',sans-serif;font-size:19px;line-height:1;
-  font-variant-numeric:tabular-nums}
-.ftape dd em{font-style:normal;font-family:'Barlow Condensed',sans-serif;font-weight:600;
-  font-size:11px;color:#8E86B0;margin-left:.5px;margin-right:2px}
-.fnext{display:flex;align-items:center;gap:13px;min-height:60px;margin:0 18px;padding:10px 14px;
-  background:#1B1740;border:1px solid rgba(245,200,66,.28);border-radius:12px}
-.fnext .bar{width:5px;align-self:stretch;border-radius:3px;background:#F5C842;flex:none}
-.fnext div{flex:1;min-width:0}.fnext b{display:block;font-weight:600;font-size:17px}
-.fnext span{font-size:13px;color:#9C94BE}.fnext em{font-style:normal;font-size:12px;color:#9C94BE}
 .frail{display:flex;gap:10px;overflow-x:auto;padding:2px 18px 6px;scroll-snap-type:x mandatory}
 .frail::-webkit-scrollbar{display:none}
 .fmedia{flex:none;scroll-snap-align:start;width:206px;height:118px;border-radius:12px;position:relative;
@@ -7232,41 +7252,6 @@ async function renderFighter(slug){
   loadFighterPage(f.slug);
 }
 
-/* THE TALE OF THE TAPE. Every row is a column the database already held and
-   the page never showed. A missing measurement prints nothing rather than a
-   dash: half the roster has no height on file and four dashes reads as broken.
-   Height is stored in inches. */
-/* THE TAPE — not "tale of the tape", which is a comparison between two
-   fighters and promises a face-off this section cannot deliver. The real one
-   lives under a bout on the event page (tapeRows). This is a spec sheet for
-   one person and is now named like one.
-   The value sits UNDER its own label, not beside it: the pairs used to read
-   `Height  5'10"  Reach  70"` across the row, so the big number was nearer the
-   label it did not belong to and the eye had to back up on every pair.
-   Gym is gone — free text on 159 of 660 — and KO rate and debut take its
-   place, both derived from what the page has already loaded. */
-function tapeHTML(f, done){
-  var rows = [];
-  if(f.height) rows.push(['Height', Math.floor(f.height / 12) + '<em>\u2032</em>'
-                                  + (f.height % 12) + '<em>\u2033</em>']);
-  if(f.reach)  rows.push(['Reach', Math.round(f.reach) + '<em>\u2033</em>']);
-  if(f.stance) rows.push(['Stance', esc(f.stance.charAt(0).toUpperCase() + f.stance.slice(1))]);
-  var W = Number(f.headline_wins || 0), KO = Number(f.headline_ko_wins || 0);
-  if(W) rows.push(['KO rate', Math.round(KO / W * 100) + '<em>%</em>']);
-  var first = (done && done.length) ? done[done.length - 1] : null;
-  if(first && first.event_date){
-    var d = new Date(first.event_date);
-    if(isFinite(d)) rows.push(['Debut', d.toLocaleDateString('en-US',
-      { month: 'short', year: 'numeric' })]);
-  }
-  if(!rows.length) return '';
-  return '<div class="lab"><b>The Tape</b><i></i></div><dl class="ftape">'
-    + rows.map(function(r){
-        return '<div><dt>' + esc(r[0]) + '</dt><dd>' + r[1] + '</dd></div>'; }).join('')
-    + '</dl>';
-}
-
-
 function isUpcomingBout(b){
   if(!b || b.status === 'completed' || !b.event_date) return false;
   return new Date(b.event_date).getTime() > Date.now() - 12 * 3600 * 1000;
@@ -7275,17 +7260,46 @@ function isUpcomingBout(b){
 
 
 
+/* THE WORLD GLOBE on a fighter's page (2026-10-16). Every connection is drawn
+   as a faint wisp, and only the selected one is lit and named — the old globe
+   lit and labelled every opponent at once and read as noise. It turns by
+   itself, slowly, until the selected fight (the newest, or the next bout) faces
+   you, then holds still. Drag it any way you like: sideways spins it, and once
+   a drag has started sideways, up and down tilts it. A drag that STARTS up or
+   down is left to the page, so the page still scrolls. Let go and, a few
+   seconds later, it eases back to the selected fight. Tap a dot to select it. */
 function mountFighterGlobe(stage, home, arcs, name, selEl, opts){
   opts = opts || {};
   var rad = Math.PI / 180;   /* the home globe's own `rad` is scoped inside startWorld() */
   var cv = stage.querySelector('canvas'), cx = cv.getContext('2d');
   var W = stage.clientWidth || 393, H = opts.height || 340, R = W * 0.865, CY = H - 60 + 0.3376 * R, CX = W / 2;
-  var lam = 66 * rad, tilt = -33 * rad, vel = 0, drag = null, axis = null, sel = 0, t0 = performance.now();
+  var TILT0 = -33 * rad, TMIN = -75 * rad, TMAX = 30 * rad;
+  var lam = 66 * rad, tilt = TILT0, vel = 0, drag = null, axis = null, sel = 0, t0 = performance.now();
+  var holdTill = 0;   /* after a drag, wait before turning back */
+  var reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
   /* my page opens facing the fighter rather than the league's usual view */
   if(opts.center) lam = -home[1] * rad;
   var DPR = Math.min(devicePixelRatio || 1, 1.5), raf = 0, drawn = false;
   cv.width = W * DPR; cv.height = H * DPR; cv.style.width = W + 'px'; cv.style.height = H + 'px';
   cx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  function wrapA(a){ while(a > Math.PI) a -= 2 * Math.PI; while(a < -Math.PI) a += 2 * Math.PI; return a; }
+  /* what faces you: the middle of the lit arc — or, for an arc too long for
+     the visible cap (over 90° of longitude), the opponent's end of it, so you
+     see where the fight was rather than an empty stretch of ocean */
+  function focus(){
+    var a = arcs[sel]; if(!a) return home;
+    var d = a.at[1] - home[1]; if(d > 180) d -= 360; if(d < -180) d += 360;
+    if(Math.abs(d) > 90) return a.at;
+    return [(home[0] + a.at[0]) / 2, home[1] + d / 2];
+  }
+  function aim(){ return -focus()[1] * rad; }
+  /* and the tilt that puts it in the open middle of the globe rather than on
+     its rim: a point at latitude φ facing you sits R·sin(φ − tilt) above the
+     centre, and ~52° clears the name block over the bottom of the globe */
+  function aimTilt(){
+    return Math.max(TMIN, Math.min(TMAX, (focus()[0] - 52) * rad));
+  }
+  if(reduce){ lam = aim(); tilt = aimTilt(); }
   function proj(la, lo, lift){ la *= rad; lo = lo * rad + lam; lift = lift || 1;
     var cl = Math.cos(la), sl = Math.sin(la), cp = Math.cos(tilt), sp = Math.sin(tilt);
     var z = sp * sl + cp * cl * Math.cos(lo);
@@ -7299,37 +7313,39 @@ function mountFighterGlobe(stage, home, arcs, name, selEl, opts){
       if(p.z > -0.02){ st ? cx.lineTo(p.x, p.y) : cx.moveTo(p.x, p.y); st = true; } else st = false; }
     cx.strokeStyle = col; cx.lineWidth = w; if(glow){ cx.shadowBlur = glow; cx.shadowColor = col; }
     cx.stroke(); cx.shadowBlur = 0; }
-  /* Labels never sit on each other. Two fighters from the same country land a
-     few pixels apart, and their names printed over one another read as one
-     smudge, so a label that would collide with one already placed this frame
-     steps up a line and hangs off a short leader to its own dot. */
+  /* Labels never sit on each other: one that would collide steps up a line
+     and hangs off a short leader to its own dot. */
   var placed = [];
   function tag(p, txt, col, alpha, bold){ if(p.y < 22) return;
-    cx.font = (bold ? 'bold ' : '') + '11px Barlow, system-ui, sans-serif';
-    var w = cx.measureText(txt).width + 8, y = p.y - 11, lift = 0;
+    cx.font = (bold ? 'bold 12px' : '11px') + ' Barlow, system-ui, sans-serif';
+    var w = cx.measureText(txt).width + 8, y = p.y - 12, lift = 0;
     function hits(yy){ return placed.some(function(r){
-      return Math.abs(r.x - p.x) < (r.w + w) / 2 && Math.abs(r.y - yy) < 13; }); }
-    while(hits(y) && lift < 5){ y -= 14; lift++; }
+      return Math.abs(r.x - p.x) < (r.w + w) / 2 && Math.abs(r.y - yy) < 14; }); }
+    while(hits(y) && lift < 5){ y -= 15; lift++; }
     if(y < 14) return;
     placed.push({ x: p.x, y: y, w: w });
     cx.globalAlpha = alpha;
     if(lift){ cx.beginPath(); cx.moveTo(p.x, p.y - 5); cx.lineTo(p.x, y + 1);
       cx.strokeStyle = 'rgba(237,234,246,.35)'; cx.lineWidth = 1; cx.stroke(); }
     cx.textAlign = 'center'; cx.textBaseline = 'bottom';
-    cx.lineWidth = 3.5; cx.lineJoin = 'round'; cx.strokeStyle = 'rgba(4,3,12,.92)';
+    cx.lineWidth = 4; cx.lineJoin = 'round'; cx.strokeStyle = 'rgba(4,3,12,.92)';
     cx.strokeText(txt, p.x, y); cx.fillStyle = col; cx.fillText(txt, p.x, y); cx.globalAlpha = 1; }
   function frame(){
     if(!stage.isConnected){ raf = 0; return; }
-    /* My page keeps this globe behind the photo: nothing is drawn while it is
-       out of sight, and resume() starts it again. */
     if(drawn && opts.paused && opts.paused()){ raf = 0; return; }
-    drawn = true;   /* the first frame always paints, so it is never blank when it shows */
-    var el2 = (performance.now() - t0) / 1000;
-    /* rotated while the profile was open: follow the column instead of staying
-       at the landscape width, cropped and off-centre */
+    drawn = true;
+    var now = performance.now(), el2 = (now - t0) / 1000;
     if(stage.clientWidth && stage.clientWidth !== W){ W = stage.clientWidth; R = W * 0.865; CY = H - 60 + 0.3376 * R; CX = W / 2;
       cv.width = W * DPR; cv.height = H * DPR; cv.style.width = W + 'px'; cx.setTransform(DPR, 0, 0, DPR, 0, 0); }
-    if(!drag){ lam += 0.0006 + vel; vel *= 0.94; }
+    if(!drag){
+      if(vel){ lam += vel; vel *= 0.94; if(Math.abs(vel) < 1e-4) vel = 0; }
+      if(now > holdTill && !vel){
+        /* turn toward the selected fight, never faster than a slow walk */
+        var d = wrapA(aim() - lam);
+        lam += reduce ? d : Math.max(-0.006, Math.min(0.006, d * 0.035));
+        tilt += (aimTilt() - tilt) * (reduce ? 1 : 0.035);
+      }
+    }
     cx.clearRect(0, 0, W, H); placed = [];
     var sky = cx.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#02010A'); sky.addColorStop(1, '#0B0824');
     cx.fillStyle = sky; cx.fillRect(0, 0, W, H);
@@ -7357,12 +7373,17 @@ function mountFighterGlobe(stage, home, arcs, name, selEl, opts){
     for(var la2 = -60; la2 <= 60; la2 += 15){ cx.beginPath(); var o2 = false;
       for(var lo3 = -180; lo3 <= 180; lo3 += 4){ var qq = proj(la2, lo3); if(qq.v){ o2 ? cx.lineTo(qq.x, qq.y) : cx.moveTo(qq.x, qq.y); o2 = true; } else o2 = false; } cx.stroke(); }
     cx.restore();
+    /* every connection a faint wisp; the selected one drawn last and lit */
     arcs.forEach(function(a, i){
-      var pts = arcPts(home, a.at), on = (i === sel);
-      var col = a.up ? '255,214,120' : '200,185,255', al = on ? 1 : (a.up ? .9 : .5);
-      line(pts, 'rgba(' + col + ',' + (al * .14) + ')', on ? 9 : 6);
-      line(pts, 'rgba(' + col + ',' + al + ')', on ? 2.4 : (a.up ? 1.8 : 1.2), on ? 10 : (a.up ? 7 : 0));
+      if(i === sel) return;
+      line(arcPts(home, a.at), a.up ? 'rgba(255,214,120,.4)' : 'rgba(200,185,255,.32)', 1.2);
     });
+    var A = arcs[sel];
+    if(A){
+      var pts = arcPts(home, A.at), col = A.up ? '255,214,120' : '200,185,255';
+      line(pts, 'rgba(' + col + ',.16)', 9);
+      line(pts, 'rgba(' + col + ',1)', 2.4, 10);
+    }
     var hp = proj(home[0], home[1]);
     if(hp.v){ var pl = 5 + Math.sin(el2 * 2.4) * 2.6;
       cx.beginPath(); cx.arc(hp.x, hp.y, pl + 9, 0, 7); cx.fillStyle = 'rgba(95,211,154,.13)'; cx.fill();
@@ -7371,15 +7392,18 @@ function mountFighterGlobe(stage, home, arcs, name, selEl, opts){
       tag(hp, String(name || '').toUpperCase(), '#5FD39A', 1, true); }
     arcs.forEach(function(a, i){
       var p = proj(a.at[0], a.at[1]); if(!p.v){ a._p = null; return; } a._p = p;
-      var fade = Math.max(0, Math.min(1, (p.z - 0.004) / 0.12)); if(i === sel) fade = 1; if(fade <= 0) return;
-      var on = (i === sel), col = a.up ? '#F5C842' : '#EAFFF6';
-      cx.globalAlpha = fade; cx.beginPath(); cx.arc(p.x, p.y, on ? 6 : 4, 0, 7); cx.fillStyle = col;
-      cx.shadowBlur = on ? 16 : 8; cx.shadowColor = a.up ? '#F5C842' : '#CDBEFF'; cx.fill(); cx.shadowBlur = 0;
-      tag(p, a.n.toUpperCase() + (a.res ? '  \u00b7  ' + a.res : ''), col, fade, on); cx.globalAlpha = 1; });
+      var fade = Math.max(0, Math.min(1, (p.z - 0.004) / 0.12)), on = (i === sel);
+      if(on) fade = 1; if(fade <= 0) return;
+      var col = a.up ? '#F5C842' : '#EAFFF6';
+      cx.globalAlpha = on ? 1 : fade * .55; cx.beginPath(); cx.arc(p.x, p.y, on ? 6 : 3, 0, 7); cx.fillStyle = col;
+      cx.shadowBlur = on ? 16 : 0; cx.shadowColor = a.up ? '#F5C842' : '#CDBEFF'; cx.fill(); cx.shadowBlur = 0; cx.globalAlpha = 1;
+      /* the caption already names the lit fight; the globe labels it only when there is no caption */
+      if(on && !selEl) tag(p, a.n.toUpperCase() + (a.res ? '  ·  ' + a.res : ''), col, 1, true);
+    });
     raf = requestAnimationFrame(frame);
   }
   stage.addEventListener('pointerdown', function(e){
-    drag = { x: e.clientX, y: e.clientY, l: lam, moved: false }; axis = null; vel = 0;
+    drag = { x: e.clientX, y: e.clientY, l: lam, t: tilt, moved: false, lx: e.clientX }; axis = null; vel = 0;
     var hh = stage.querySelector('.hint'); if(hh) hh.style.opacity = 0; });
   stage.addEventListener('pointermove', function(e){
     if(!drag) return;
@@ -7389,22 +7413,29 @@ function mountFighterGlobe(stage, home, arcs, name, selEl, opts){
       if(axis === 'h' && stage.setPointerCapture) stage.setPointerCapture(e.pointerId); }
     if(axis !== 'h') return;
     drag.moved = true; e.preventDefault();
-    var next = drag.l + dx / R * 1.9; vel = (next - lam) * .55; lam = next; });
+    var next = drag.l + dx / R * 1.9;
+    vel = (next - lam) * .55; lam = next;
+    tilt = Math.max(TMIN, Math.min(TMAX, drag.t - dy / R * 1.6));
+  });
   function up(e){
     if(drag && !drag.moved && axis !== 'v'){
       var r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top, best = -1, bd = 44;
       arcs.forEach(function(a, i){ if(!a._p) return; var d = Math.hypot(a._p.x - mx, a._p.y - my); if(d < bd){ bd = d; best = i; } });
-      if(best >= 0) select(best);
+      if(best >= 0){ select(best); holdTill = 0; }
     }
+    if(drag && drag.moved) holdTill = performance.now() + 3500;
     drag = null; axis = null; }
   stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
   stage.addEventListener('touchmove', function(e){ if(axis === 'h') e.preventDefault(); }, { passive: false });
+  /* the caption under the back button says which fight is lit */
   function select(i){
     sel = i; var a = arcs[i]; if(!selEl || !a) return;
-    selEl.querySelector('.bar').className = 'bar' + (a.up ? ' up' : '');
+    selEl.hidden = false;
+    selEl.classList.toggle('fx-up', !!a.up);
     selEl.querySelector('b').textContent = (a.up ? 'Next: ' : '') + name + ' v ' + a.n;
-    selEl.querySelector('span:not(.bar)').textContent =
-      [a.ev, a.when, a.up ? '' : (a.res + (a.how ? ' \u00b7 ' + a.how : ''))].filter(Boolean).join(' \u00b7 ');
+    selEl.querySelector('span').textContent =
+      [a.ev, a.when, a.up ? '' : (a.res === 'W' ? 'Won' : a.res === 'L' ? 'Lost' : a.res) + (a.how ? ' · ' + a.how : '')]
+        .filter(Boolean).join(' · ');
   }
   select(0); frame();
   return { resume: function(){ if(!raf) frame(); } };
@@ -8689,14 +8720,26 @@ function mpFitName(){
   while(nm.scrollWidth > nm.clientWidth + 1 && size > 28){ size -= 2; nm.style.fontSize = size + 'px'; }
 }
 
+/* THE FIGHTER PAGE BODY (2026-10-16): the Fighters list's language carried
+   onto the page. Each section opens with the same dark banner — the record
+   with the tape under it, the last (or next) fight as a face-off with its
+   tape, every fight on file — and the World side groups the fights by where
+   each opponent is from.
+   Three things it will not say, because they were false on most pages:
+   a KO rate (659 of 686 fighters have no KOs on file, so it read 0%), a
+   "debut" (most records were carried in from before the fights on file —
+   Boady is 14-14 with six on file), and "finishes" (no method is on file for
+   most older fights). It says how many fights are on file instead. */
 async function loadFighterPage(slug){
   var root = document.getElementById('me-pro'); if(!root) return;
   mpFitName();
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(mpFitName);
   var got = await Promise.all([
-    q("fighter_cards?select=id,display_name,slug,weight_class,headline_wins,headline_losses,headline_draws,"
-      + "rank,is_champion,nickname,country,region,gym,height,reach,stance,headline_ko_wins,profile_photo_url"
+    q("fighter_cards?select=id,display_name,slug,weight_class,level,headline_wins,headline_losses,headline_draws,"
+      + "rank,is_champion,nickname,country,region,team,height,reach,stance,profile_photo_url,profile_photo_thumb_url"
       + "&slug=eq." + encodeURIComponent(slug) + "&limit=1"),
+    q("rankings_public?select=level,scope,weight_class,rank&fighter_slug=eq." + encodeURIComponent(slug)),
+    q("titles_public?select=level,kind,name,weight_class&holder_slug=eq." + encodeURIComponent(slug))
   ]);
   if(!root.isConnected) return;
   var f = got[0] && got[0][0];
@@ -8710,6 +8753,16 @@ async function loadFighterPage(slug){
     + "&order=event_date.desc.nullslast&limit=40");
   if(!root.isConnected) return;
   all = all || [];
+  /* every opponent once: their face for the rows, their tape for the
+     face-off, where they are from for the World side */
+  var slugs = [], seen = {}, opp = {};
+  all.forEach(function(b){ if(b.opponent_slug && !seen[b.opponent_slug]){ seen[b.opponent_slug] = 1; slugs.push(b.opponent_slug); } });
+  if(slugs.length){
+    var os = await q("fighter_cards?select=slug,display_name,country,region,headline_wins,headline_losses,headline_draws,"
+      + "height,reach,stance,profile_photo_url,profile_photo_thumb_url&slug=in.(" + slugs.join(',') + ")");
+    if(!root.isConnected) return;
+    (os || []).forEach(function(o){ opp[o.slug] = o; });
+  }
 
   /* The roster photo if the profile row had none. */
   var photo = root.querySelector('.mp-photo');
@@ -8721,110 +8774,214 @@ async function loadFighterPage(slug){
   var nick = document.getElementById('mp-nick');
   if(f.nickname){ nick.textContent = '"' + String(f.nickname).replace(/^["“”']+|["“”']+$/g, '') + '"'; }
   else nick.remove();
-  var where = [f.country, f.region].filter(Boolean).join(', ');
-  document.getElementById('mp-line').textContent =
-    wc(f.weight_class) + (f.is_champion ? ' Champion' : '') + (where ? ' · ' + where : '');
+
+  var ctx = fpContext(f, got[1], got[2], opp);
+  /* one line: the division (as a champion, when they are one), then the
+     flag and the country — never the region code beside it */
+  var where = f.country ? fWhere(f) : esc(f.region || '');
+  document.getElementById('mp-line').innerHTML =
+    (ctx.belt ? '<em>' + esc(ctx.belt) + '</em>' : esc(F_NAME[ctx.div] || wc(f.weight_class)))
+    + (where ? ' · ' + where : '');
 
   var done = all.filter(function(b){ return b.status === 'completed'; });
   var soon = all.filter(isUpcomingBout)
     .sort(function(a, b){ return new Date(a.event_date) - new Date(b.event_date); })[0];
 
-  pEl.innerHTML = mpProfileHTML(f, done, soon);
+  pEl.innerHTML = fpProfileHTML(f, done, soon, ctx);
   loadKitRail(f.slug, 'fp-kit');
   loadMyMedia(done, 'fp-media');
 
   var home = placeFighter(f.country, f.region, f.slug);
-  MP = { root: root, f: f, home: home, all: all, globe: null, mini: null, arcs: null };
+  MP = { root: root, f: f, home: home, all: all, opp: opp, ctx: ctx, globe: null, mini: null, arcs: null };
   var sw = document.getElementById('mp-sw');
   if(!home){ sw.remove(); return; }       /* nowhere to stand: no World side at all */
   sw.setAttribute('aria-label', 'Show ' + (mpMine(f) ? 'your' : 'their') + ' world');
   sw.hidden = false;
   MP.mini = mountMiniGlobe(sw.querySelector('canvas'), home, root);
   sw.addEventListener('click', mpToggle);
-  await mpBuildWorld();
+  mpBuildWorld();
   /* No photo: the globe always has something to show, so open on it. */
   if(!root.querySelector('.mp-photo img') && MP.arcs && MP.arcs.length) mpToggle();
 }
 
-function mpProfileHTML(f, done, soon){
+/* Rank, belt and division, from the same views as the roster. A failed read
+   leaves them out rather than saying "unranked". */
+function fpContext(f, ranks, belts, opp){
+  var lv = f.level || 'pro', div = null, divRank = null, p4p = null, belt = null, beltWc = null, extra = [];
+  (belts || []).forEach(function(t){
+    if(t.level && t.level !== lv) return;
+    if(t.weight_class && F_NAME[t.weight_class]){ if(!beltWc){ beltWc = t.weight_class; belt = F_NAME[t.weight_class] + ' champion'; } }
+    else extra.push(String(t.name || 'Title').replace(/\s*title$/i, '') + ' champion');
+  });
+  (ranks || []).forEach(function(r){
+    if(r.level && r.level !== lv) return;
+    if(r.scope === 'weight_class'){ divRank = r.rank; div = r.weight_class; }
+    else if(r.scope === 'overall') p4p = r.rank;
+  });
+  div = beltWc || div || f.weight_class;
+  if(!belt && extra.length) belt = extra.shift();
+  return { div: div, divRank: beltWc ? null : divRank, p4p: p4p, belt: belt, extra: extra, opp: opp || {} };
+}
+
+/* A fight stored as midnight UTC is a calendar date, not an instant: shown in
+   Eastern time it read a day early (Boady's Feb 14 fight said Feb 13). */
+function fpDay(iso, opts){
+  if(!iso) return '';
+  var m = /^(\d{4}-\d{2}-\d{2})T00:00:00(?:\.0+)?(?:\+00:00|Z)$/.exec(String(iso));
+  return dstr(m ? m[1] : iso, opts);
+}
+function fpFace(o){
+  var src = o && (o.profile_photo_thumb_url || o.profile_photo_url);
+  return '<span class="fx-f">' + (src ? '<img src="' + esc(src) + '" alt="" crossorigin="anonymous" loading="lazy" decoding="async"'
+    + ' onload="fxHead(this)" onerror="fxSil(this)">' : '') + SILHOUETTE + '</span>';
+}
+function fpBanner(title, sub, big, small){
+  return '<div class="fx-ban">' + fStars() + '<span class="fx-t"><b>' + esc(title) + '</b>' + (sub ? '<span>' + sub + '</span>' : '') + '</span>'
+    + '<span class="fx-n fx-wide"><b>' + big + '</b><span>' + esc(small) + '</span></span></div>';
+}
+function fpCard(banner, body){ return '<div class="fx-wrap"><div class="fx-card">' + banner + body + '</div></div>'; }
+function fpRecOf(o){ return o && o.headline_wins != null ? (o.headline_wins || 0) + '-' + (o.headline_losses || 0) + (o.headline_draws ? '-' + o.headline_draws : '') : null; }
+function fpKV(rows){
+  return rows.filter(function(r){ return r[1]; }).map(function(r, i){
+    return '<div class="fx-kv' + (i % 2 ? ' fx-z' : '') + '"><span>' + esc(r[0]) + '</span><b>' + r[1] + '</b></div>'; }).join('');
+}
+/* One fight row: the result, the opponent's face, the event and the date,
+   and the method when one is on file. A row whose opponent has a page opens it. */
+function fpFightRow(b, i, right){
+  var o = b.opponent_slug ? MPOPP(b.opponent_slug) : null;
+  var next = isUpcomingBout(b), fin = b.status === 'completed';
+  var chip = next ? '<span class="fx-wl fx-nx">NEXT</span>'
+    : '<span class="fx-wl' + (b.won ? '' : ' fx-lo') + '">' + (b.won ? 'W' : 'L') + '</span>';
+  var tag = o ? 'a' : 'div';
+  return '<' + tag + ' class="fx-r fx-fr' + (i % 2 ? ' fx-z' : '') + '"'
+    + (o ? ' data-slug="' + esc(o.slug) + '" href="./f/' + encodeURIComponent(o.slug) + '.html"' : '') + '>'
+    + chip + fpFace(o)
+    + '<span class="fx-x"><b>' + esc(b.opponent_name || 'Unknown') + (b.is_title_fight ? '<i class="fx-belt" title="Title fight"></i>' : '') + '</b>'
+    + '<s>' + esc(b.event_name || '') + (b.event_date ? ' · ' + fpDay(b.event_date) : '') + '</s></span>'
+    + '<span class="fx-m">' + (right != null ? right : (fin && b.method ? esc(fpCap(b.method)) : '')) + '</span></' + tag + '>';
+}
+var MPOPP = function(s){ return (MP && MP.opp && MP.opp[s]) || (FP_OPP && FP_OPP[s]) || null; };
+var FP_OPP = null;
+function fpCap(s){ s = String(s || ''); return s.length < 5 ? s.toUpperCase() : s.charAt(0).toUpperCase() + s.slice(1); }
+
+function fpProfileHTML(f, done, soon, ctx){
+  FP_OPP = ctx.opp;
+  var html = '';
+  var tags = [];
+  if(ctx.belt) tags.push('<span class="fx-tag fx-gold">Champion</span>');
+  ctx.extra.forEach(function(x){ tags.push('<span class="fx-tag fx-gold">' + esc(x) + '</span>'); });
+  if(ctx.divRank) tags.push('<span class="fx-tag">#' + ctx.divRank + ' ' + esc(F_NAME[ctx.div] || '') + '</span>');
+  if(ctx.p4p) tags.push('<span class="fx-tag">#' + ctx.p4p + ' pound for pound</span>');
+  if(tags.length) html += '<div class="fx-tags">' + tags.join('') + '</div>';
+
+  /* the record, with the tape under it */
   var W = Number(f.headline_wins || 0), L = Number(f.headline_losses || 0), D = Number(f.headline_draws || 0);
-  var last = done.slice(0, 3);
-  var mid = f.is_champion ? '<div><s>Title</s><b class="gd">CHAMP</b></div>'
-    : '<div><s>Rank</s><b>' + (f.rank ? '#' + f.rank : '—') + '</b></div>';
-  var third = last.length
-    ? '<div><s>Last ' + last.length + '</s><b>' + last.map(function(b){
-        return '<span class="' + (b.won ? 'w' : 'l') + '">' + (b.won ? 'W' : 'L') + '</span>'; }).join('') + '</b></div>'
-    : '<div><s>Fights</s><b>0</b></div>';
-  var html = '<div class="mp-big"><div><s>Record</s><b>' + W + '-' + L + (D ? '-' + D : '') + '</b></div>'
-    + mid + third + '</div>'
-    + tapeHTML(f, done);
-  if(soon){
-    html += '<div class="lab"><b>Next</b><i></i></div>'
-      + '<div class="fnext"' + (soon.opponent_slug ? ' data-slug="' + esc(soon.opponent_slug) + '"' : '') + '>'
-      + '<span class="bar"></span><div><b>' + esc(soon.opponent_name || 'Opponent TBA') + '</b>'
-      + '<span>' + esc(soon.event_name || '') + (soon.event_date ? ' · ' + esc(dstr(soon.event_date)) : '')
-      + (soon.is_title_fight ? ' · title' : '') + '</span></div>'
-      + '<em>' + esc(wc(soon.weight_class) || '') + '</em></div>';
+  var won = done.filter(function(b){ return b.won; }).length;
+  var sub = !done.length ? 'No fights on file yet'
+    : done.length + (done.length === 1 ? ' fight' : ' fights') + ' on file · '
+      + (won === done.length ? (done.length === 1 ? 'won it' : 'all ' + won + ' won') : won + ' won, ' + (done.length - won) + ' lost');
+  html += fpCard(fpBanner('Record', esc(sub), W + '-' + L + (D ? '-' + D : ''), D ? 'W-L-D' : 'W-L'),
+    fpKV([['Height', inches(f.height)], ['Reach', f.reach ? Math.round(f.reach) + '<em>″</em>' : null],
+          ['Stance', f.stance ? esc(fpCap(f.stance)) : null]]));
+
+  /* the next bout, or the last one: a face-off with its tape */
+  var b = soon || done[0];
+  if(b){
+    var o = b.opponent_slug ? ctx.opp[b.opponent_slug] : null, last = !soon;
+    var bsub = esc(b.event_name || '') + (b.event_date ? ' · ' + fpDay(b.event_date) : '') + (b.is_title_fight ? ' · title fight' : '');
+    var big = last ? (b.won ? 'W' : 'L') : 'VS';
+    var small = last ? (b.method ? fpCap(b.method) : (b.won ? 'Won' : 'Lost')) : 'next';
+    var meWon = last && b.won, themWon = last && !b.won;
+    var fo = '<div class="fx-fo">'
+      + '<div class="fx-side">' + fpFace(f) + '<span><b class="' + (themWon ? 'fx-dim' : meWon ? '' : 'fx-pre') + '">' + esc(f.display_name) + '</b>'
+      + (last ? '<s>' + (b.won ? 'Won' : 'Lost') + '</s>' : '') + '</span></div>'
+      + '<div class="fx-vs">' + (last ? '' : 'VS') + '</div>'
+      + '<div class="fx-side fx-b">' + fpFace(o) + '<span><b class="' + (meWon ? 'fx-dim' : themWon ? '' : 'fx-pre') + '">' + esc(b.opponent_name || 'TBA') + '</b>'
+      + (last ? '<s>' + (b.won ? 'Lost' : 'Won') + '</s>' : '') + '</span></div></div>';
+    var tale = '';
+    if(o){
+      var rows = [['Record', fpRecOf(f), fpRecOf(o)], ['Height', inches(f.height), inches(o.height)],
+                  ['Reach', f.reach ? Math.round(f.reach) + '<em>″</em>' : null, o.reach ? Math.round(o.reach) + '<em>″</em>' : null],
+                  ['Stance', f.stance ? esc(fpCap(f.stance)) : null, o.stance ? esc(fpCap(o.stance)) : null]]
+        .filter(function(r){ return r[1] || r[2]; });
+      tale = rows.map(function(r, i){
+        function c(v, cls){ return '<b class="' + cls + '">' + (v || '<span class="fx-na">Not on file</span>') + '</b>'; }
+        return '<div class="fx-tt' + (i % 2 ? ' fx-z' : '') + '">' + c(r[1], '') + '<s>' + r[0] + '</s>' + c(r[2], 'fx-rt') + '</div>';
+      }).join('');
+    }
+    var vod = b.vod_link && /^https?:\/\//.test(b.vod_link)
+      ? '<a class="fx-vod" href="' + esc(b.vod_link) + '" target="_blank" rel="noopener">▶ Watch the fight</a>' : '';
+    html += fpCard(fpBanner(last ? 'Last fight' : 'Next fight', bsub, big, small), fo + tale + vod);
   }
+
+  /* every fight on file, newest first */
   if(done.length){
-    html += '<div class="lab"><b>Last fights</b><i></i></div><div class="mp-rows">'
-      + done.slice(0, 5).map(function(b){
-          return '<div class="bout"' + (b.opponent_slug ? ' data-slug="' + esc(b.opponent_slug) + '"' : '') + '>'
-            + '<span class="wl ' + (b.won ? 'w' : 'l') + '">' + (b.won ? 'W' : 'L') + '</span>'
-            + '<div class="mid"><div class="op">' + esc(b.opponent_name || 'Unknown') + '</div>'
-            + '<div class="ev">' + esc(b.event_name || '') + (b.event_date ? ' · ' + esc(dstr(b.event_date)) : '')
-            + (b.is_title_fight ? ' · title' : '') + '</div></div>'
-            + '<span class="via">' + esc(String(b.method || '').toUpperCase()) + '</span></div>';
-        }).join('') + '</div>';
+    var first = done[done.length - 1];
+    var since = first.event_date ? ' · on file since ' + fpDay(first.event_date, { day: undefined, year: 'numeric' }) : '';
+    var shown = done.slice(0, 10);
+    html += '<div class="fx-wrap' + (done.length > 10 ? ' fx-tab' : '') + '" id="fp-fights"><div class="fx-card">'
+      + fpBanner('Fights', 'Newest first' + esc(since), String(done.length), 'on file')
+      + shown.map(function(x, i){ return fpFightRow(x, i); }).join('') + '</div>'
+      + (done.length > 10 ? '<div class="fx-tabs"><button type="button" data-fpall>Show all <b>' + done.length + '</b> <i>▾</i></button></div>' : '')
+      + '</div>';
   }
   return html;
 }
+/* Show all: the rest of the fights, in place */
+document.addEventListener('click', function(e){
+  var b = e.target.closest('[data-fpall]'); if(!b || !MP) return;
+  var wrap = document.getElementById('fp-fights'); if(!wrap) return;
+  var done = MP.all.filter(function(x){ return x.status === 'completed'; });
+  var card = wrap.querySelector('.fx-card');
+  card.querySelectorAll('.fx-fr').forEach(function(r){ r.remove(); });
+  card.insertAdjacentHTML('beforeend', done.map(function(x, i){ return fpFightRow(x, i); }).join(''));
+  wrap.classList.remove('fx-tab'); b.parentNode.remove();
+});
 
-/* The World side's info, and the lines the globe will draw. Opponents are
-   placed by the same rule as everywhere else; one with no country or region
-   is listed as unknown and never guessed onto the map. */
-async function mpBuildWorld(){
-  var m = MP, all = m.all, slugs = [], seen = {};
-  all.forEach(function(b){ if(b.opponent_slug && !seen[b.opponent_slug]){ seen[b.opponent_slug] = 1; slugs.push(b.opponent_slug); } });
-  var ops = slugs.length ? await q("fighter_cards?select=slug,country,region&slug=in.(" + slugs.join(',') + ")") : [];
-  if(!m.root.isConnected) return;
-  var info = {}; (ops || []).forEach(function(o){ info[o.slug] = o; });
-  var arcs = [], rows = [], countries = {};
+/* The World side: the globe's lines, and the fights grouped by where each
+   opponent is from. An opponent with no country or region is never guessed
+   onto the map; they sit together at the end under "No location on file". */
+function mpBuildWorld(){
+  var m = MP, all = m.all, info = m.opp || {};
+  var arcs = [], groups = {}, order = [], none = [];
   all.forEach(function(b){
     var next = isUpcomingBout(b), fin = b.status === 'completed';
     if(!fin && !next) return;
-    var o = info[b.opponent_slug], at = o ? placeFighter(o.country, o.region, o.slug) : null;
-    if(o && o.country && fin) countries[o.country] = 1;
-    rows.push({ b: b, next: next, where: o ? [o.country, o.region].filter(Boolean).join(', ') : '' });
+    var o = info[b.opponent_slug];
+    var key = o ? (o.country || o.region || '') : '';
+    if(key){ if(!groups[key]){ groups[key] = { o: o, rows: [] }; order.push(key); } groups[key].rows.push(b); }
+    else none.push(b);
+    var at = o ? placeFighter(o.country, o.region, o.slug) : null;
     if(!at || (at[0] === m.home[0] && at[1] === m.home[1])) return;
     if(arcs.some(function(a){ return a.slug === b.opponent_slug; })) return;
     arcs.push({ slug: b.opponent_slug, at: at, n: b.opponent_name || b.opponent_slug,
-      ev: b.event_name || '', when: b.event_date ? dstr(b.event_date) : '',
-      up: next, res: fin ? (b.won ? 'W' : 'L') : 'NEXT', how: fin ? String(b.method || '').toUpperCase() : '' });
+      ev: b.event_name || '', when: b.event_date ? fpDay(b.event_date) : '',
+      up: next, res: fin ? (b.won ? 'W' : 'L') : 'NEXT', how: fin && b.method ? fpCap(b.method) : '' });
   });
+  /* the next bout first, then newest — the first arc is the one that is lit */
   arcs.sort(function(a, b){ return (b.up ? 1 : 0) - (a.up ? 1 : 0); });
   m.arcs = arcs;
+  order.sort(function(a, b){ return groups[b].rows.length - groups[a].rows.length; });
   var done = all.filter(function(b){ return b.status === 'completed'; });
   var titles = done.filter(function(b){ return b.is_title_fight; }).length;
-  var fins = done.filter(function(b){ return b.won && /KO|TKO|SUB/i.test(String(b.method || '')); }).length;
-  var html = '<div class="mp-big"><div><s>Countries</s><b>' + Object.keys(countries).length + '</b></div>'
-    + '<div><s>Title fights</s><b class="gd">' + titles + '</b></div>'
-    + '<div><s>Finishes</s><b>' + fins + '</b></div></div>';
-  if(rows.length){
-    html += '<div class="lab"><b>' + (mpMine(m.f) ? 'Where you\'ve fought' : 'Where they have fought')
-      + '</b><i></i></div><div class="mp-map">'
-      + rows.slice(0, 12).map(function(r){
-          var b = r.b, cls = r.next ? 'n' : (b.won ? 'w' : 'l'), tagx = r.next ? 'NEXT' : (b.won ? 'W' : 'L');
-          return '<div class="bout"' + (b.opponent_slug ? ' data-slug="' + esc(b.opponent_slug) + '"' : '') + '>'
-            + '<span class="wl ' + cls + '">' + tagx + '</span>'
-            + '<div class="mid"><div class="op">' + esc(b.opponent_name || 'Unknown') + '</div>'
-            + '<div class="ev">' + esc(b.event_name || '') + (b.event_date ? ' · ' + esc(dstr(b.event_date)) : '')
-            + (b.is_title_fight ? ' · title' : '') + '</div></div>'
-            + '<span class="where">' + esc(r.where || 'location unknown') + '</span></div>';
-        }).join('') + '</div>';
-  } else {
-    html += '<div class="empty">No fights on the map yet.</div>';
+  var places = order.filter(function(k){ return groups[k].o.country; }).length;
+  var tags = (titles ? '<span class="fx-tag fx-gold">' + titles + (titles === 1 ? ' title fight' : ' title fights') + '</span>' : '')
+    + '<span class="fx-tag">' + done.length + (done.length === 1 ? ' fight' : ' fights') + ' on file</span>';
+  var html = '<div class="fx-tags">' + tags + '</div>';
+  var body = '', i = 0;
+  order.forEach(function(k){
+    var g = groups[k], fl = g.o.country ? flagOf(g.o.country) : '';
+    body += '<div class="fx-gap">' + (fl ? fl + ' ' : '') + esc(k) + ' · ' + g.rows.length + (g.rows.length === 1 ? ' fight' : ' fights') + '</div>';
+    g.rows.forEach(function(b){ body += fpFightRow(b, i++, fl); });
+  });
+  if(none.length){
+    body += '<div class="fx-gap">No location on file · ' + none.length + (none.length === 1 ? ' fight' : ' fights') + '</div>';
+    none.forEach(function(b){ body += fpFightRow(b, i++, ''); });
   }
+  if(body){
+    html += fpCard(fpBanner('Where ' + (mpMine(m.f) ? 'you’ve' : 'they’ve') + ' fought',
+      'Opponents grouped by where they’re from', String(places), places === 1 ? 'country' : 'countries'), body);
+  } else html += '<div class="empty">No fights on the map yet.</div>';
   document.getElementById('mp-w').innerHTML = html;
 }
 
@@ -8843,8 +9000,8 @@ function mpToggle(){
   if(on){
     if(!m.globe){
       var stage = m.root.querySelector('.mp-world');
-      stage.innerHTML = '<canvas></canvas>';
-      m.globe = mountFighterGlobe(stage, m.home, m.arcs || [], m.f.display_name, null, {
+      stage.innerHTML = '<canvas></canvas><div class="fx-gcap" hidden><b></b><span></span></div>';
+      m.globe = mountFighterGlobe(stage, m.home, m.arcs || [], m.f.display_name, stage.querySelector('.fx-gcap'), {
         height: 400, center: true,
         paused: function(){ return !m.root.classList.contains('on-world') || !mpVisible(m.root); }
       });
