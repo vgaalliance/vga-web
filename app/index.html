@@ -2409,11 +2409,35 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .shelf{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 44px),transparent);
   mask-image:linear-gradient(90deg,#000 calc(100% - 44px),transparent)}
 .shelf.end{-webkit-mask-image:none;mask-image:none}
-/* See all: the same set as a two-up grid, in place. */
-#binder .bgrid{padding:8px 0 4px}
 #binder .lab s{font-size:10px;letter-spacing:.06em;color:#B0A4D8}
 #binder .seeall{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.06em;
   color:#C3A6FF;white-space:nowrap;padding:4px 0 4px 2px}
+/* ── ONE SET, every card ── what "See all" opens. Three across so a set of
+   62 is a page, not a trek; at that width the slab's set line goes (the page
+   heading already says it) and the label keeps the name and the grade. */
+.setseg{display:flex;margin:4px 16px 10px;border:1px solid rgba(255,255,255,.14);border-radius:10px;overflow:hidden}
+.setseg button{flex:1;padding:8px 0;font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:#B0A4D8}
+.setseg button.on{background:rgba(167,139,250,.22);color:#fff}
+.setgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 9px;margin:6px 14px 0}
+.setgrid .slab{padding:5px 5px 7px}
+.setgrid .slab .plate{margin-bottom:5px}
+.setgrid .slab .plate .l1,.setgrid .slab .plate .l3{display:none}
+.setgrid .slab .plate .l2{font-size:11px;margin-top:0}
+.setgrid .slab .plate .side{width:22px}
+.setgrid .slab .plate .side b{font-size:14px}
+.setgrid .slab .cfoot .n{font-size:11px}
+.setgrid .slabw .qty{font-size:8px;height:18px;top:-7px;right:-4px}
+/* A card you are missing is a dashed outline where it will go, rather than
+   a dimmed copy of itself — on a checklist the gap IS the information. */
+.setgrid .slabw.unowned{opacity:1;filter:none}
+.setgrid .slabw.unowned .slab{background:none;border:1.5px dashed rgba(255,255,255,.24);box-shadow:none}
+.setgrid .slabw.unowned .slab:before{display:none}
+.setgrid .slabw.unowned .plate{opacity:.55}
+.setgrid .slabw.unowned .inner{background:repeating-linear-gradient(135deg,rgba(255,255,255,.035) 0 6px,transparent 6px 12px);
+  box-shadow:none;opacity:.7}
+.setpg .none{margin:18px 16px;text-align:center;font-size:14px;color:#8F86AF}
+
 /* The one rule of the room, said once, at the top, at a size people read. */
 .brule{margin:12px 18px 0;font-size:13px;line-height:1.4;color:#B0A4D8}
 .shelf::-webkit-scrollbar{display:none}
@@ -6822,6 +6846,7 @@ function hashFor(entry){
        : entry.kind === 'offers'   ? '#offers'
        : entry.kind === 'shop'     ? '#shop'
        : entry.kind === 'card'     ? '#c/' + entry.id
+       : entry.kind === 'set'      ? '#set/' + entry.id
        : entry.kind === 'mybets'   ? '#mybets'
        : entry.kind === 'train'    ? '#train'
        : entry.kind === 'spar'     ? '#spar'
@@ -6902,6 +6927,7 @@ function renderSheet(entry){
   if(entry.kind === 'market')   return renderMarket();
   if(entry.kind === 'shelf')    return renderShelf();
   if(entry.kind === 'card')     return renderCard(entry.id);
+  if(entry.kind === 'set')      return renderSetPage(entry.id);
   if(entry.kind === 'mybets')   return renderMyBets();
   if(entry.kind === 'train')    return renderTrain();
   if(entry.kind === 'spar')      return renderSpar();
@@ -11161,8 +11187,8 @@ async function renderMyBets(){
       every card; a hundred of them is a warm phone for no reason. An observer
       turns the foil on as a card scrolls in and off as it leaves. */
 var binderCards = null, binderAll = null, binderSet = 'all', binderPacks = null, binderShop = null;
-/* Sets opened with "See all": a set code here draws as a grid, not a shelf. */
-var binderOpen = {};
+/* The set page's filter: 'all', 'owned' or 'missing'. */
+var setFilter = 'all';
 var foilWatcher = null;
 
 function renderCards(){
@@ -11239,18 +11265,24 @@ async function loadBinder(){
     retryHandlers['binder'] = loadBinder;
     el.innerHTML = failHTML("Couldn't open your binder.", 'binder'); return;
   }
-  binderCards = got[0];
-  binderAll   = got[1];
-  binderPacks = (got[2] || []).filter(function(i){
-    return i.effect_kind === 'pack' || i.effect_kind === 'crate'; });
-  binderShop = (got[4] || []).filter(function(i){
-    return i.effect_kind === 'pack' || i.effect_kind === 'crate'; });
+  takeBinder(got);
 
   var chip = document.getElementById('cards-vc');
   if(chip && got[3] && got[3].length)
     chip.textContent = Number(got[3][0].vc_balance||0).toLocaleString() + ' VC';
 
   renderBinder();
+}
+
+/* The binder's five reads, kept. Shared with the set page, which can be
+   opened from a link before the binder ever has been. */
+function takeBinder(got){
+  binderCards = got[0];
+  binderAll   = got[1];
+  binderPacks = (got[2] || []).filter(function(i){
+    return i.effect_kind === 'pack' || i.effect_kind === 'crate'; });
+  binderShop = (got[4] || []).filter(function(i){
+    return i.effect_kind === 'pack' || i.effect_kind === 'crate'; });
 }
 
 var RAR = ['common','uncommon','rare','mystic','legendary','prismatic'];
@@ -11315,18 +11347,15 @@ function renderBinder(){
   if(binderPacks && binderPacks.length) html += packsHTML();
 
   /* One shelf per set: the cards, then the pack that fills them. */
-  /* "See all" opens the set as a grid in place, and the same button folds it
-     back into a shelf. A shelf of 62 shows three cards; without the count in
-     the heading it reads as a set of three. */
+  /* "See all" opens the whole set on its own page. A shelf of 62 shows three
+     cards; without the count in the heading it reads as a set of three. */
   html += sets.map(function(x){
     var missing = x.cards.length - x.have;
-    var open = !!binderOpen[x.code];
     var see = x.cards.length > 2
-      ? '<button class="seeall" data-binder-see="'+esc(x.code)+'">'
-        + (open ? 'Show as a row' : 'See all '+x.cards.length+' \u203a') + '</button>'
+      ? '<button class="seeall" data-binder-see="'+esc(x.code)+'">See all '+x.cards.length+' \u203a</button>'
       : '';
     return '<div class="lab"><b>'+esc(x.name)+'</b><i></i><s>'+x.have+' / '+x.cards.length+'</s>'+see+'</div>'
-      + '<div class="'+(open ? 'bgrid' : 'shelf')+'">' + x.cards.map(function(c){
+      + '<div class="shelf">' + x.cards.map(function(c){
           return slabHTML(c, mine[c.card_id]); }).join('') + '</div>'
       + shelfBuy(x, missing);
   }).join('');
@@ -11344,6 +11373,63 @@ function renderBinder(){
       clearTimeout(t); t = setTimeout(watchFoil, 90);
     }, { passive: true });
   });
+  watchFoil();
+
+  /* A pack opened or bought from the set page reloads the binder; the set
+     page on top has to follow, or it keeps saying "1 still to find". */
+  var topSheet = sheetStack[sheetStack.length - 1];
+  if(topSheet && topSheet.kind === 'set') renderSetPage(topSheet.id);
+}
+
+/* ONE SET, every card in it, three across. The binder's rows are shared, so
+   this draws from what the binder already loaded; a set link opened cold
+   (a refresh on #set/…) fetches the same reads first. */
+async function renderSetPage(code){
+  var body = document.getElementById('sheet-body');
+  if(!binderAll){
+    body.innerHTML = '<div class="evhead">' + backButton() + '</div><div class="skel" style="height:120px;margin:60px 16px 0"></div>';
+    var got = await (binderInFlight || binderReads());
+    binderInFlight = null;
+    if(!got[0] || !got[1]){
+      retryHandlers['set'] = function(){ renderSetPage(code); };
+      body.innerHTML = '<div class="evhead">' + backButton() + '</div>' + failHTML("Couldn't open this set.", 'set'); return; }
+    takeBinder(got);
+  }
+  var mine = {};
+  (binderCards || []).forEach(function(c){ mine[c.card_id] = c; });
+  var cards = binderAll.filter(function(c){ return (c.set_code || 'OTHER') === code; });
+  if(!cards.length){
+    body.innerHTML = '<div class="evhead">' + backButton() + '</div>' + '<div class="empty" style="margin-top:60px">That set is not in the binder.</div>'; return; }
+  var set = { code: code, name: cards[0].set_name || code, cards: cards,
+              have: cards.filter(function(c){ return mine[c.card_id]; }).length };
+  var missing = cards.length - set.have;
+
+  /* Rarest first, so the page opens on the cards that matter; inside a tier,
+     yours first, then by name. A missing card stays in its slot. */
+  cards = cards.slice().sort(function(a,b){
+    var r = RAR.indexOf(b.rarity) - RAR.indexOf(a.rarity);
+    if(r) return r;
+    var oa = mine[a.card_id] ? 0 : 1, ob = mine[b.card_id] ? 0 : 1;
+    if(oa !== ob) return oa - ob;
+    return String(a.name||'').localeCompare(String(b.name||''));
+  });
+  var shown = cards.filter(function(c){
+    return setFilter === 'owned' ? !!mine[c.card_id] : setFilter === 'missing' ? !mine[c.card_id] : true; });
+  var seg = function(k, label, n){
+    return '<button class="'+(setFilter === k ? 'on' : '')+'" data-set-filter="'+k+'">'+label+' '+n+'</button>'; };
+
+  body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'
+      + '<div class="kick">Your binder \u00b7 ' + set.have + ' / ' + cards.length + '</div>'
+      + '<h3>' + esc(set.name) + '</h3></div>'
+    + '<div class="setpg" data-set-page="'+esc(code)+'">'
+      + '<div class="setseg">' + seg('all','All',cards.length) + seg('owned','Owned',set.have) + seg('missing','Missing',missing) + '</div>'
+      + shelfBuy(set, missing)
+      + '<p class="brule">Tap a card to open it. Every print is graded 1 to 10.</p>'
+      + (shown.length
+          ? '<div class="setgrid">' + shown.map(function(c){ return slabHTML(c, mine[c.card_id]); }).join('') + '</div>'
+          : '<div class="none">' + (setFilter === 'missing' ? 'Nothing missing. You have every card in this set.' : 'None of this set yet.') + '</div>')
+      + '<div style="height:28px"></div>'
+    + '</div>';
   watchFoil();
 }
 
@@ -11455,7 +11541,8 @@ function slabHTML(card, have, big){
         + '<div class="cfoot"><div class="n">'+esc(card.name || 'Card')+'</div>'
         + '<div class="p">' + (have && have.passed ? 'Not minted' : have
             ? (print != null ? '#'+print+(total ? ' / '+total : '') : 'Owned')
-            : (total ? total + ' in circulation' : 'Unreleased')) + '</div></div>'
+            : (Number(card.prints_made || 0) > 0 ? card.prints_made + ' in circulation'
+              : card.max_prints ? 'Not pulled yet' : 'Unreleased')) + '</div></div>'
       + '</div></div>'
     + '</div>'
     /* SPARES, not copies: you keep one, so 36 copies is 35 you could trade
@@ -11534,10 +11621,13 @@ function wrapperHTML(item, count){
 
 document.addEventListener('click', function(e){
   var b = e.target.closest('[data-binder-see]');
-  if(!b) return;
-  var code = b.getAttribute('data-binder-see');
-  binderOpen[code] = !binderOpen[code];
-  renderBinder();
+  if(b){ setFilter = 'all'; openSheet({ kind: 'set', id: b.getAttribute('data-binder-see') }); return; }
+  var f = e.target.closest('[data-set-filter]');
+  if(f){
+    setFilter = f.getAttribute('data-set-filter');
+    var pg = f.closest('[data-set-page]');
+    if(pg) renderSetPage(pg.getAttribute('data-set-page'));
+  }
 });
 
 /* Foil costs nothing when it is not on screen. */
