@@ -1428,21 +1428,78 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   bottom:calc(54px + 16px + env(safe-area-inset-bottom,0px) - var(--barpush, 0px))}
 .pkmodes{display:flex;gap:4px;padding-left:10px}
 .pkmodes button{appearance:none;font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.1em;
-  text-transform:uppercase;padding:6px 11px 5px;border-radius:9px 9px 0 0;border:1px solid rgba(255,255,255,.22);
-  border-bottom:0;background:#2A2166;color:#BDB4E2;cursor:pointer}
-.pkmodes button[aria-pressed="true"]{background:#150E3C;color:#fff;border-color:rgba(255,255,255,.4)}
+  text-transform:uppercase;padding:6px 11px 5px;border-radius:9px 9px 0 0;border:1px solid rgba(255,255,255,.12);
+  border-bottom:0;background:#17151F;color:#9C96B5;cursor:pointer}
+.pkmodes button[aria-pressed="true"]{background:#0B0A12;color:#fff;border-color:rgba(255,255,255,.22)}
+/* DUST: a near-black bar with a lilac hairline on top */
 .pkbar{display:grid;grid-template-columns:minmax(0,1fr) auto;border-radius:14px;overflow:hidden;
-  background:#150E3C;border:1px solid rgba(255,255,255,.34);box-shadow:0 -8px 24px rgba(10,6,34,.55)}
-.pkopen{appearance:none;border:0;background:none;color:#fff;font:inherit;cursor:pointer;text-align:left;
+  background:#0B0A12;border:1px solid rgba(255,255,255,.12);box-shadow:0 -8px 24px rgba(0,0,0,.55),inset 0 1px 0 rgba(185,162,255,.7)}
+.pkopen{appearance:none;border:0;background:#0B0A12;color:#fff;font:inherit;cursor:pointer;text-align:left;position:relative;overflow:hidden;isolation:isolate;
   display:grid;grid-template-columns:auto minmax(0,1fr);gap:9px;align-items:center;padding:9px 8px 9px 11px}
-.pkopen .cv{width:26px;height:26px;border-radius:50%;border:1.5px solid rgba(255,255,255,.85);display:grid;place-items:center;font-size:11px}
+.pkopen .cv{width:26px;height:26px;border-radius:50%;border:1.5px solid rgba(255,255,255,.55);display:grid;place-items:center;font-size:11px}
 .pkopen .l1{display:block;font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:.03em;line-height:1;
   text-shadow:0 1px 6px rgba(10,6,34,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pkopen .l2{display:block;font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.08em;
   text-transform:uppercase;color:#E4DCFF;margin-top:2px;text-shadow:0 1px 4px rgba(10,6,34,.8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pkgo{appearance:none;border:0;border-left:1px solid rgba(255,255,255,.34);background:#F5C842;color:#2A1F00;cursor:pointer;
+.pkgo{appearance:none;border:0;border-left:1px solid rgba(255,255,255,.12);background:#B9A2FF;color:#1A1236;cursor:pointer;
   font-family:'Space Mono',monospace;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:0 14px;min-width:104px}
-.pkgo:disabled{background:#3A3168;color:#A79FCB;cursor:default}
+.pkgo:disabled{background:#1E1C2A;color:#6E6888;cursor:default}
+/* THE STARS IN THE BAR (Dust). Stars only in a band along the top and bottom
+   edge, so the words in the middle stay clear; a magnified copy of them in a
+   thin band on each rim, so a star bends as it crosses; and one extra layer of
+   stars per pick, so the bar fills as the slip does. pkDust() moves them. */
+.dzL{position:absolute;inset:0;pointer-events:none}
+.dzS{position:absolute;top:0;bottom:0;left:-100%;width:300%;background-repeat:repeat-x;will-change:transform}
+.dzF,.dzM,.dzN{-webkit-mask-image:linear-gradient(#000 0,#000 18%,transparent 36%,transparent 64%,#000 82%,#000 100%);
+                       mask-image:linear-gradient(#000 0,#000 18%,transparent 36%,transparent 64%,#000 82%,#000 100%)}
+.dzF{z-index:-5} .dzM{z-index:-3} .dzN{z-index:-2}
+.dzF .dzS{background-size:16.6667% 100%;opacity:.8;
+  background-image:radial-gradient(.8px .8px at 10% 30%,#fff,transparent 70%),radial-gradient(.7px .7px at 35% 75%,#fff,transparent 70%),radial-gradient(.9px .9px at 62% 20%,#fff,transparent 70%),radial-gradient(.7px .7px at 86% 60%,#fff,transparent 70%)}
+.dzM .dzS{background-size:33.3333% 100%}
+.dzM .dzS.base{opacity:.85;background-image:radial-gradient(1.2px 1.2px at 8% 26%,#fff,transparent 70%),radial-gradient(1px 1px at 24% 70%,#fff,transparent 70%),radial-gradient(1.3px 1.3px at 44% 40%,#fff,transparent 70%),radial-gradient(1px 1px at 63% 82%,#fff,transparent 70%),radial-gradient(1.2px 1.2px at 79% 18%,#fff,transparent 70%),radial-gradient(1px 1px at 95% 56%,#fff,transparent 70%)}
+.dzN .dzS{background-size:33.3333% 100%}
+.dzN .dzS.base{background-image:radial-gradient(2.4px 2.4px at 14% 64%,#fff,rgba(255,255,255,.25) 45%,transparent 75%),radial-gradient(2px 2px at 52% 24%,#fff,rgba(255,255,255,.2) 45%,transparent 75%),radial-gradient(2.6px 2.6px at 83% 72%,#fff,rgba(255,255,255,.25) 45%,transparent 75%)}
+.dzS.dzT{opacity:0}
+.dzM .dzT{background-image:radial-gradient(10px 1px at 8% 26%,rgba(255,255,255,.85),transparent 70%),radial-gradient(8px 1px at 24% 70%,#fff,transparent 70%),radial-gradient(12px 1.2px at 44% 40%,#fff,transparent 70%),radial-gradient(8px 1px at 63% 82%,#fff,transparent 70%),radial-gradient(10px 1px at 79% 18%,#fff,transparent 70%),radial-gradient(8px 1px at 95% 56%,#fff,transparent 70%)}
+.dzN .dzT{background-image:radial-gradient(34px 2px at 14% 64%,rgba(205,190,255,.95),transparent 72%),radial-gradient(28px 1.8px at 52% 24%,rgba(205,190,255,.9),transparent 72%),radial-gradient(36px 2.2px at 83% 72%,rgba(205,190,255,.95),transparent 72%)}
+.dzS.dzD{opacity:0;transition:opacity 1.1s cubic-bezier(.33,0,.15,1)}
+.dzS.dzD.on{opacity:1}
+/* the rim: a magnified copy of the stars in a thin band on each edge, so a star bends as it crosses */
+.dzRf{position:absolute;overflow:hidden;z-index:-1;pointer-events:none}
+.dzRf.t{left:0;right:0;top:0;height:16px;-webkit-mask-image:linear-gradient(#000 55%,transparent);mask-image:linear-gradient(#000 55%,transparent)}
+.dzRf.b{left:0;right:0;bottom:0;height:16px;-webkit-mask-image:linear-gradient(transparent,#000 45%);mask-image:linear-gradient(transparent,#000 45%)}
+.dzRf.l{top:0;bottom:0;left:0;width:22px;-webkit-mask-image:linear-gradient(90deg,#000 55%,transparent);mask-image:linear-gradient(90deg,#000 55%,transparent)}
+.dzRf.r{top:0;bottom:0;right:0;width:22px;-webkit-mask-image:linear-gradient(270deg,#000 55%,transparent);mask-image:linear-gradient(270deg,#000 55%,transparent)}
+.dzRw{position:absolute;width:var(--dzw,260px);height:var(--dzh,60px);will-change:transform}
+.dzRf.t .dzRw{left:0;top:0;transform-origin:50% 100%;transform:scale(1.12,2.6)}
+.dzRf.b .dzRw{left:0;bottom:0;transform-origin:50% 0;transform:scale(1.12,2.6)}
+.dzRf.l .dzRw{left:0;top:0;transform-origin:100% 50%;transform:scale(2.4,1.12)}
+.dzRf.r .dzRw{right:0;top:0;transform-origin:0 50%;transform:scale(2.4,1.12)}
+.dzRw .dzS{background-size:33.3333% 100%}
+.dzRw .ms{background-image:radial-gradient(1.9px 1.9px at 45% 55%,#fff,transparent 75%),radial-gradient(1.7px 1.7px at 19% 51%,#fff,transparent 75%),radial-gradient(1.4px 1.4px at 78% 13%,#fff,transparent 75%),radial-gradient(1.8px 1.8px at 10% 78%,#fff,transparent 75%),radial-gradient(2px 2px at 5% 94%,#fff,transparent 75%),radial-gradient(1.3px 1.3px at 65% 61%,#fff,transparent 75%),radial-gradient(1.2px 1.2px at 20% 26%,#fff,transparent 75%),radial-gradient(1.6px 1.6px at 52% 63%,#fff,transparent 75%),radial-gradient(1.9px 1.9px at 99% 96%,#fff,transparent 75%),radial-gradient(1.4px 1.4px at 70% 33%,#fff,transparent 75%),radial-gradient(1.8px 1.8px at 29% 10%,#fff,transparent 75%),radial-gradient(1.5px 1.5px at 40% 82%,#fff,transparent 75%),radial-gradient(1.3px 1.3px at 97% 41%,#fff,transparent 75%),radial-gradient(2px 2px at 9.5% 35%,#fff,transparent 75%)}
+.dzRw .ns{background-image:radial-gradient(3.5px 3.5px at 92% 91%,#fff,transparent 75%),radial-gradient(2.9px 2.9px at 9% 58%,#fff,transparent 75%),radial-gradient(2.6px 2.6px at 53% 16%,#fff,transparent 75%),radial-gradient(3.3px 3.3px at 3% 12%,#fff,transparent 75%),radial-gradient(3.3px 3.3px at 42% 51%,#fff,transparent 75%),radial-gradient(3.1px 3.1px at 59% 64%,#fff,transparent 75%),radial-gradient(3.3px 3.3px at 96% 37%,#fff,transparent 75%),radial-gradient(2.9px 2.9px at 71% 58%,#fff,transparent 75%)}
+.dzRf::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:.6}
+.dzRf.t::after{background:linear-gradient(rgba(255,255,255,.22),transparent 70%)}
+.dzRf.b::after{background:linear-gradient(transparent 30%,rgba(255,255,255,.14))}
+.dzRf.l::after{background:linear-gradient(90deg,rgba(255,255,255,.16),transparent 70%)}
+.dzRf.r::after{background:linear-gradient(270deg,rgba(255,255,255,.16),transparent 70%)}
+.dzFr{position:absolute;left:8px;right:8px;height:4px;pointer-events:none;z-index:0;border-radius:4px}
+.dzFr.t{top:1px;background:linear-gradient(rgba(255,255,255,.7),rgba(196,170,255,.55) 55%,transparent)}
+.dzFr.b{bottom:1px;background:linear-gradient(transparent,rgba(196,170,255,.5) 45%,rgba(255,255,255,.6))}
+/* how full the slip is, under the words */
+.dzMeter{display:flex;gap:3px;margin-top:4px}
+.dzMeter i{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.12);transition:background .6s}
+.dzMeter i.on{background:#B9A2FF}
+@media (prefers-reduced-motion:reduce){ .dzS.dzD,.dzMeter i{transition:none} }
+
+/* a single bet's own amount */
+.pkln.one{grid-template-columns:14px minmax(0,1fr) 84px auto}
+.pkln.one .pke{grid-column:2 / -1;margin-top:-4px;font-style:normal;font-family:'Space Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:#B9B0DE}
+.pkln.one .pke.py{color:#6EE7B7} .pkln.one .pke.no{color:#FFB4AB}
+.pkea{width:100%;min-width:0;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;text-align:right;padding:6px 8px;border-radius:8px;
+  border:1px solid rgba(196,182,246,.45);background:rgba(14,9,44,.5);color:#fff}
+.pkea.own{border-color:#B9A2FF}
+
 
 /* the sheet */
 .pkscrim{position:fixed;inset:0;z-index:22;background:rgba(10,6,34,.62);border:0;padding:0;width:100%;
@@ -1453,10 +1510,10 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .pkon .pksheet{transform:none}
 .pkon .pkdock{visibility:hidden}
 @media (prefers-reduced-motion:reduce){ .pksheet,.pkscrim{transition:none} }
-.pktk{position:relative;isolation:isolate;overflow:hidden;background:#170F42;color:#F3EFFC;border:1px solid rgba(196,182,246,.5);
+.pktk{position:relative;isolation:isolate;overflow:hidden;background:#0E0D16;color:#F3EFFC;border:1px solid rgba(255,255,255,.14);
   border-radius:16px;padding:0 0 12px;display:grid;gap:7px;box-shadow:0 -10px 30px rgba(10,6,34,.6)}
 .pktk > *{margin-inline:14px}
-.pktk > .pkband{margin:0;padding:6px 14px 8px;border-bottom:1px solid rgba(255,255,255,.28)}
+.pktk > .pkband{margin:0;padding:6px 14px 8px;border-bottom:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(185,162,255,.7)}
 .pktk > .pkstars{margin:0}
 .pkgrab{appearance:none;border:0;background:none;display:grid;justify-items:center;gap:5px;padding:4px 0 2px;width:100%;
   color:#E4DCFF;font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
@@ -1476,7 +1533,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   font-size:10px;line-height:1;color:#D9D0FF;display:grid;place-items:center;padding:0;cursor:pointer}
 .pkempty{font-size:13px;color:#B9B0DE;text-align:center;padding:8px 0}
 .pkcut{border-top:1.5px dashed rgba(196,182,246,.5);margin:4px 0 2px;position:relative}
-.pkcut::before,.pkcut::after{content:'';position:absolute;top:-8px;width:14px;height:14px;border-radius:50%;background:#0E0930}
+.pkcut::before,.pkcut::after{content:'';position:absolute;top:-8px;width:14px;height:14px;border-radius:50%;background:#07060C}
 .pkcut::before{left:-7px}
 .pkcut::after{right:-7px}
 .pklbl{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#B9B0DE}
@@ -1492,23 +1549,13 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .pkfoot span:nth-child(2) b{color:#6EE7B7}
 .pkstamp{font-family:'Bebas Neue',sans-serif;font-size:24px;color:#F5C842;border:2.5px solid #F5C842;border-radius:8px;padding:0 8px;transform:rotate(-8deg);line-height:1.25}
 .pkmore{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6EE7B7;text-align:center}
-.pkplace{appearance:none;border:0;border-radius:11px;background:#F5C842;color:#2A1F00;font-family:'Space Mono',monospace;font-size:11px;
+.pkplace{appearance:none;border:0;border-radius:11px;background:#B9A2FF;color:#1A1236;font-family:'Space Mono',monospace;font-size:11px;
   font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:13px 10px;cursor:pointer}
-.pkplace:disabled{background:#3A3168;color:#A79FCB;cursor:default}
+.pkplace:disabled{background:#1E1C2A;color:#6E6888;cursor:default}
 .pkbal{font-size:11px;color:#C9C2E6;text-align:center}
 
-/* the glass: dark ground, liquid colour under a veil, stars drifting left to right */
-.pkfx{position:relative;overflow:hidden;isolation:isolate;background:#150E3C}
-.pkfx::before{content:'';position:absolute;inset:0;z-index:-2;background:linear-gradient(180deg,rgba(14,9,44,.30),rgba(14,9,44,.58))}
-.pklq{position:absolute;inset:-90% -35%;z-index:-3;pointer-events:none;opacity:var(--liq,.55);will-change:transform;
-  background:radial-gradient(38% 46% at 22% 30%,rgba(123,97,255,.95),transparent 70%),
-    radial-gradient(34% 40% at 74% 26%,rgba(64,201,255,.78),transparent 70%),
-    radial-gradient(40% 44% at 62% 78%,rgba(255,110,199,.72),transparent 70%),
-    radial-gradient(30% 36% at 20% 80%,rgba(245,196,81,.5),transparent 70%);
-  animation:pklq 18s ease-in-out infinite alternate}
-.pklq.b{animation-duration:27s;animation-direction:alternate-reverse;opacity:calc(var(--liq,.55)*.7);transform-origin:38% 62%}
-@keyframes pklq{0%{transform:translate3d(-8%,-4%,0) rotate(0deg) scale(1)}
-  50%{transform:translate3d(6%,5%,0) rotate(18deg) scale(1.12)}100%{transform:translate3d(-3%,8%,0) rotate(-14deg) scale(1.04)}}
+/* the ticket's top band: a dark ground and stars drifting left to right */
+.pkfx{position:relative;overflow:hidden;isolation:isolate;background:#0B0A12}
 .pksx{position:absolute;top:0;bottom:0;left:0;width:200%;z-index:-1;pointer-events:none;will-change:transform,opacity;
   background-size:50% 100%;background-repeat:repeat-x;
   animation:pkflow var(--flow,14s) linear infinite,pktw 3.8s ease-in-out infinite alternate;
@@ -1523,9 +1570,8 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
     radial-gradient(1px 1px at 88% 86%,#fff,transparent 70%),radial-gradient(1px 1px at 97% 16%,#fff,transparent 70%)}
 @keyframes pkflow{from{transform:translate3d(-50%,0,0)}to{transform:translate3d(0,0,0)}}
 @keyframes pktw{0%{opacity:calc(var(--star,.85)*.35)}100%{opacity:var(--star,.85)}}
-@media (prefers-reduced-motion:reduce){ .pklq,.pksx{animation:none} }
-.pkopen.pkfx{--liq:.55;--star:.85}
-.pkband.pkfx{--liq:.33;--star:.6;--flow:24s}
+@media (prefers-reduced-motion:reduce){ .pksx{animation:none} }
+.pkband.pkfx{--star:.6;--flow:24s}
 .pktk > .pkstars{--star:.27;--flow:40s}
 
 /* My bets: a Pick'em entry is one row with its picks under it */
@@ -5075,7 +5121,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v249';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v250';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -10578,9 +10624,86 @@ function livePays(pool, bet){
 
    The ticket belongs to the card it was built on: opening another card starts
    a fresh one. Picks are kept as {match_id: 'a'|'b'}. */
-var tk = { event: null, mode: 'single', picks: {}, amt: 500, typed: '', open: false, busy: false };
+var tk = { event: null, mode: 'single', picks: {}, amt: 500, typed: '', own: {}, open: false, busy: false };
 var pkRules = null, betBalance = null;
-var PK_LAYERS = '<i class="pklq"></i><i class="pklq b"></i><i class="pksx"></i><i class="pksx b"></i>';
+var PK_LAYERS = '<i class="pksx"></i><i class="pksx b"></i>';
+/* THE STARS IN THE BAR. pkDraw rebuilds the bar on every pick and every price
+   refresh, so the motion lives here, outside it: position, speed and push
+   survive a redraw and the new bar picks up where the old one was. A pick
+   pushes the stars right, an unpick left; a push builds, then bleeds away, so
+   fast taps add up instead of restarting. Only transforms and opacity change. */
+var PKD = { tau: 1.2, rho: .2, kick: 1.3, cap: 3, depth: [.2, .55, 1.2], trail: 1, base: .055 };
+var pkDS = { target: 0, v: 0, pos: 0, last: 0, raf: 0, prev: null, mode: null, ev: null, els: null };
+function pkDustLayers(full){
+  var seed = 7, mid = '', near = '';
+  function r(){ seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+  for(var i = 0; i < full; i++){
+    var g = [];
+    for(var k = 0; k < 4; k++){
+      var big = (i % 2) ? 2 + r() * .9 : 1.1 + r() * .6, x = (r() * 100).toFixed(1), y = (8 + r() * 84).toFixed(1);
+      g.push('radial-gradient(' + big.toFixed(1) + 'px ' + big.toFixed(1) + 'px at ' + x + '% ' + y + '%,#fff,rgba(255,255,255,.2) 45%,transparent 75%)');
+    }
+    var el = '<i class="dzS dzD" data-n="' + (i + 1) + '" style="background-image:' + g.join(',') + '"></i>';
+    if(i % 2) near += el; else mid += el;
+  }
+  var rim = '<i class="dzRw"><i class="dzS ms"></i><i class="dzS ns"></i></i>';
+  return '<i class="dzL dzF"><i class="dzS"></i></i>'
+    + '<i class="dzL dzM"><i class="dzS base"></i><i class="dzS dzT"></i>' + mid + '</i>'
+    + '<i class="dzL dzN"><i class="dzS base"></i><i class="dzS dzT"></i>' + near + '</i>'
+    + '<i class="dzFr t"></i><i class="dzFr b"></i>'
+    + ['t', 'b', 'l', 'r'].map(function(e){ return '<i class="dzRf ' + e + '">' + rim + '</i>'; }).join('');
+}
+function pkDustFrame(t){
+  var S = pkDS, E = S.els, d = PKD.depth;
+  S.raf = 0;
+  if(!E || !E.bar.isConnected || document.hidden) return;
+  var dt = S.last ? Math.min(.05, (t - S.last) / 1000) : .016; S.last = t;
+  var W = E.bar.clientWidth || 300;
+  S.target *= Math.exp(-dt / PKD.tau);                  // the push bleeds away
+  S.v += (S.target - S.v) * (1 - Math.exp(-dt / PKD.rho));  // the speed eases toward it
+  S.pos += (PKD.base + S.v) * W * dt;
+  function wrap(x, p){ return ((x % p) + p) % p; }        // each layer on its own tile, so it never jumps
+  var tm = 'translate3d(' + wrap(S.pos * d[1], W) + 'px,0,0)', tn = 'translate3d(' + wrap(S.pos * d[2], W) + 'px,0,0)';
+  E.far.style.transform = 'translate3d(' + wrap(S.pos * d[0], W / 2) + 'px,0,0)';
+  for(var i = 0; i < E.mid.length; i++) E.mid[i].style.transform = tm;
+  for(var j = 0; j < E.near.length; j++) E.near[j].style.transform = tn;
+  if(E.bar.__w !== W){ E.bar.__w = W; E.bar.style.setProperty('--dzw', W + 'px'); E.bar.style.setProperty('--dzh', E.bar.clientHeight + 'px'); }
+  var sp = Math.min(1, Math.abs(S.v) / (PKD.kick * 1.4));
+  E.midT.style.opacity = (sp * PKD.trail * .7).toFixed(3);
+  E.nearT.style.opacity = (sp * PKD.trail).toFixed(3);
+  S.raf = requestAnimationFrame(pkDustFrame);
+}
+function pkDustRun(){
+  var still = false;
+  try { still = matchMedia('(prefers-reduced-motion:reduce)').matches; } catch(e) {}
+  if(still){ pkDS.last = 0; pkDustFrame(performance.now()); if(pkDS.raf){ cancelAnimationFrame(pkDS.raf); pkDS.raf = 0; } return; }
+  if(!pkDS.raf && pkDS.els && !document.hidden){ pkDS.last = 0; pkDS.raf = requestAnimationFrame(pkDustFrame); }
+}
+document.addEventListener('visibilitychange', pkDustRun);
+function pkDust(bar, c, full){
+  var S = pkDS;
+  if(!bar){ S.els = null; return; }
+  var fresh = S.mode !== tk.mode || S.ev !== tk.event;
+  var was = (fresh || S.prev == null) ? c : Math.min(S.prev, full);
+  /* the stars you already had are there at once; only the change fades */
+  [].forEach.call(bar.querySelectorAll('.dzD, .dzMeter i'), function(e){ if(+e.getAttribute('data-n') <= was) e.classList.add('on'); });
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){
+    [].forEach.call(bar.querySelectorAll('.dzD, .dzMeter i'), function(e){ e.classList.toggle('on', +e.getAttribute('data-n') <= c); });
+  }); });
+  S.els = { bar: bar, far: bar.querySelector('.dzF .dzS'),
+    mid: [].slice.call(bar.querySelectorAll('.dzM .dzS, .dzRw .ms')), near: [].slice.call(bar.querySelectorAll('.dzN .dzS, .dzRw .ns')),
+    midT: bar.querySelector('.dzM .dzT'), nearT: bar.querySelector('.dzN .dzT') };
+  if(!fresh && S.prev != null && c !== S.prev){
+    S.target += (c > S.prev ? 1 : -1) * PKD.kick;
+    var cap = PKD.kick * PKD.cap; S.target = Math.max(-cap, Math.min(cap, S.target));
+  }
+  S.prev = c; S.mode = tk.mode; S.ev = tk.event;
+  if(S.raf){ cancelAnimationFrame(S.raf); S.raf = 0; }
+  pkDustRun();
+}
+/* A single bet's amount: what was typed on its own line, else the shared one. */
+var pkRefocus = false;
+function pkAmtFor(id){ var t = tk.own[id]; return t != null ? Math.floor(Number(t || 0)) : tk.amt; }
 try { var _m = localStorage.getItem('uba-bet-mode'); if(_m === 'pick' || _m === 'single') tk.mode = _m; } catch(e) {}
 
 function pkN(x){ return Math.round(Number(x || 0)).toLocaleString('en-US'); }
@@ -10628,7 +10751,11 @@ function renderBetEvent(eventId){
 function pkDraw(){
   var el = document.getElementById('bet-list');
   if(!el || !tk.event) return;
-  var hadFocus = document.activeElement && document.activeElement.id === 'pk-amt';
+  /* every amount box redraws as you type, so the one you were in gets its cursor
+     back. They are TEXT boxes with the number keypad: a number box refuses
+     setSelectionRange, so after a redraw the cursor sat at the front and each
+     new digit landed there (typing 1200 into 500 read 0021500). */
+  var focusId = document.activeElement && /^pk-/.test(document.activeElement.id || '') ? document.activeElement.id : null;
   /* Bout 1 is the main event: bout_number is card order read top down. */
   var ps = poolsFor(tk.event).slice().sort(function(a, b){ return (a.bout_number || 99) - (b.bout_number || 99); });
   if(!pkRules && tk.mode === 'pick') tk.mode = 'single';
@@ -10639,11 +10766,13 @@ function pkDraw(){
   var c = ids.length;
   var prices = ids.map(function(p){ return pkPrice(p, tk.picks[p.match_id]); });
   var m = pkEntryMult(prices);
-  var ok = single ? c >= 1 : (c >= 2 && m > 0);
-  tk.shown = m;
   var amt = tk.amt;
-  var ests = ids.map(function(p){ return pkEst(p, tk.picks[p.match_id], amt); });
-  var total = single ? amt * c : amt;
+  var amts = ids.map(function(p){ return single ? pkAmtFor(p.match_id) : amt; });
+  var blank = single && amts.some(function(a){ return !(a >= 1); });
+  var ok = single ? (c >= 1 && !blank) : (c >= 2 && m > 0);
+  tk.shown = m;
+  var ests = ids.map(function(p, k){ return pkEst(p, tk.picks[p.match_id], amts[k]); });
+  var total = single ? amts.reduce(function(x, y){ return x + (y > 0 ? y : 0); }, 0) : amt;
   var pays = single ? ests.reduce(function(x, y){ return x + y; }, 0) : Math.floor(amt * m + 1e-9);
 
   function mineOn(p, name){
@@ -10687,20 +10816,27 @@ function pkDraw(){
   var l1, l2;
   if(single){
     l1 = c ? c + (c === 1 ? ' bet · ' : ' bets · ') + pkN(total) + ' VC' : 'Your slip';
-    l2 = c ? 'pays about ' + pkN(pays) + ' if they win' : 'Tap who wins';
+    l2 = !c ? 'Tap who wins' : blank ? 'Add an amount to every bet' : 'pays about ' + pkN(pays) + ' if they win';
   } else {
     l1 = c ? c + (c === 1 ? ' pick' : ' picks') + (ok ? ' · ' + pkX(m) : '') : 'Your Pick\'em';
     l2 = ok ? pkN(amt) + ' pays ' + pkN(pays) : (c === 1 ? 'Pick 1 more to play' : 'Tap who wins');
   }
   var lines = ids.map(function(p, k){
     var side = tk.picks[p.match_id], nm = side === 'a' ? p.side_a : p.side_b;
-    var right = !single ? '<i class="py">' + pkX(prices[k]) + '</i>'
-      : (ests[k] > amt ? '<i class="py">pays about ' + pkN(ests[k]) + '</i>' : '<i>money back so far</i>');
-    return '<div class="pkln"><span>' + (k + 1) + '</span><b>' + esc(nm) + '</b>' + right
-      + '<button type="button" class="pkx" data-pkrm="' + esc(p.match_id) + '" aria-label="Remove ' + esc(nm) + '">✕</button></div>';
+    var x = '<button type="button" class="pkx" data-pkrm="' + esc(p.match_id) + '" aria-label="Remove ' + esc(nm) + '">✕</button>';
+    if(!single) return '<div class="pkln"><span>' + (k + 1) + '</span><b>' + esc(nm) + '</b><i class="py">' + pkX(prices[k]) + '</i>' + x + '</div>';
+    /* SINGLE BETS: each one has its own amount box. The chips set every box at
+       once; a box you typed in keeps your number until you press a chip. */
+    var own = tk.own[p.match_id] != null, a = amts[k];
+    var note = !(a >= 1) ? '<i class="pke no">enter an amount</i>'
+      : ests[k] > a ? '<i class="pke py">pays about ' + pkN(ests[k]) + '</i>' : '<i class="pke">money back so far</i>';
+    return '<div class="pkln one"><span>' + (k + 1) + '</span><b>' + esc(nm) + '</b>'
+      + '<input class="pkea' + (own ? ' own' : '') + '" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" id="pk-own-' + esc(p.match_id) + '"'
+      + ' data-pkown="' + esc(p.match_id) + '" value="' + esc(own ? tk.own[p.match_id] : String(amt)) + '" aria-label="VC on ' + esc(nm) + '">'
+      + x + note + '</div>';
   }).join('') || '<div class="pkempty">Nothing yet. Tap a fighter behind this ticket.</div>';
   var more;
-  if(single) more = 'Each bet stands alone · the price moves until the bell';
+  if(single) more = blank ? 'Every bet needs an amount' : 'Each bet stands alone · the price moves until the bell';
   else if(!ok) more = 'Pick at least 2 fights · all must win';
   else more = 'Underdogs pay more · your price locks when you enter · closes at the start';
   var chips = single ? [500, 1000, 5000, 10000] : [100, 500, 1000, pkMaxAmt() || 5000];
@@ -10714,6 +10850,8 @@ function pkDraw(){
   /* While a bet is on its way the ticket is frozen: a redraw mid-flight used to
      hand back a live Place button, and a second press placed a second entry. */
   var canGo = (!me || ok) && !tk.busy;
+  /* how many picks fill the bar: every fight still open on Single bets, the most an entry holds on Pick'em */
+  var full = Math.max(1, single ? ps.filter(function(p){ return p.market_status === 'open'; }).length : pkMaxPicks());
   if(tk.busy) btn = 'Placing…';
 
   el.innerHTML = '<div class="pkwrap' + (tk.open ? ' pkon' : '') + '">'
@@ -10723,8 +10861,9 @@ function pkDraw(){
                                     : '<b>Tap who wins.</b> Pick 2 to ' + pkMaxPicks() + ' fights. All must win. Underdogs pay more.') + '</p>'
     + '<div class="pklist">' + rows + '</div><div class="pkgap"></div>'
     + '<div class="pkdock">' + modes + '<div class="pkbar">'
-      + '<button type="button" class="pkopen pkfx" data-pkopen aria-expanded="false">' + PK_LAYERS
-      + '<span class="cv">▲</span><span style="min-width:0"><span class="l1">' + esc(l1) + '</span><span class="l2">' + esc(l2) + '</span></span></button>'
+      + '<button type="button" class="pkopen" data-pkopen aria-expanded="false">' + pkDustLayers(full)
+      + '<span class="cv">▲</span><span style="min-width:0"><span class="l1">' + esc(l1) + '</span><span class="l2">' + esc(l2) + '</span>'
+      + '<span class="dzMeter">' + Array.apply(null, Array(full)).map(function(_, k){ return '<i data-n="' + (k + 1) + '"></i>'; }).join('') + '</span></span></button>'
       + '<button type="button" class="pkgo" data-pkgo' + (canGo ? '' : ' disabled') + '>' + (!me ? 'Sign in' : single ? 'Place' : 'Place entry') + '</button>'
     + '</div></div>'
     + '<button type="button" class="pkscrim" data-pkclose aria-label="Close the ticket"></button>'
@@ -10735,9 +10874,9 @@ function pkDraw(){
       + c + (single ? (c === 1 ? ' bet' : ' bets') : (c === 1 ? ' pick' : ' picks')) + '</span></div></div>'
       + lines
       + '<div class="pkcut"></div>'
-      + '<div class="pklbl">' + (single ? 'On each bet' : 'Your entry' + (pkMaxAmt() ? ' · up to ' + pkN(pkMaxAmt()) : '')) + '</div>'
+      + '<div class="pklbl">' + (single ? 'Same on each bet' : 'Your entry' + (pkMaxAmt() ? ' · up to ' + pkN(pkMaxAmt()) : '')) + '</div>'
       + '<div class="pkamt">' + chips.map(function(a){ return '<button type="button" data-pkamt="' + a + '"' + (a === amt ? ' class="sel"' : '') + '>' + pkN(a) + '</button>'; }).join('')
-      + '<input type="number" inputmode="numeric" min="1" step="1" placeholder="Other" aria-label="Other amount in VC" id="pk-amt" value="' + esc(tk.typed) + '"></div>'
+      + '<input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Other" aria-label="Other amount in VC" id="pk-amt" value="' + esc(tk.typed) + '"></div>'
       + '<div class="pkfoot"><span><i>You pay</i><b>' + (c || !single ? pkN(total) : '—') + '</b></span>'
       + '<span><i>' + (single ? 'If they all win, about' : (ok ? 'All ' + c + ' win' : 'Pays')) + '</i><b>' + (ok ? pkN(pays) : '—') + '</b></span>'
       + (!single && ok ? '<span class="pkstamp">' + pkX(m) + '</span>' : '<span></span>') + '</div>'
@@ -10751,13 +10890,27 @@ function pkDraw(){
      and never on blur: redrawing on 'change' replaced the Place button between
      the press and the release of the tap that blurred the box, so the tap that
      was meant to place the bet did nothing. */
+  pkDust(el.querySelector('.pkopen'), c, full);
+  [].forEach.call(el.querySelectorAll('[data-pkown]'), function(box){
+    box.addEventListener('input', function(){ tk.own[box.getAttribute('data-pkown')] = box.value.replace(/[^0-9]/g, '').slice(0, 9); pkDraw(); });
+    /* a tap selects the number, so typing replaces 500 rather than adding to it;
+       never on the refocus after a redraw, or every keystroke would wipe the box */
+    box.addEventListener('focus', function(){
+      var fresh = !pkRefocus;
+      setTimeout(function(){ if(fresh && document.activeElement === box) box.select(); }, 0);
+    });
+  });
+  if(focusId){
+    var back = document.getElementById(focusId);
+    if(back){ pkRefocus = true; back.focus(); pkRefocus = false; try { back.setSelectionRange(back.value.length, back.value.length); } catch(e) {} }
+  }
   var inp = el.querySelector('#pk-amt');
   if(inp){
-    if(hadFocus){ inp.focus(); try { inp.setSelectionRange(inp.value.length, inp.value.length); } catch(e) {} }
     inp.addEventListener('input', function(){
-      var v = Math.floor(Number(inp.value || 0));
-      tk.typed = inp.value;
+      tk.typed = inp.value.replace(/[^0-9]/g, '').slice(0, 9);
+      var v = Math.floor(Number(tk.typed || 0));
       if(!(v > 0)) return;
+      if(tk.mode === 'single') tk.own = {};
       if(tk.mode === 'pick' && pkMaxAmt() && v > pkMaxAmt()){
         toast('The most one entry can be is ' + pkN(pkMaxAmt()) + ' VC.', true);
         v = pkMaxAmt(); tk.typed = String(v);
@@ -10823,14 +10976,14 @@ async function pkSend(btn, picks){
     var placed = 0, last = null, err = null;
     for(var i = 0; i < picks.length; i++){
       var p = picks[i];
-      var r2 = await rpc('app_place_bet', { p_match_id: p.match_id, p_side: tk.picks[p.match_id], p_amount: tk.amt });
+      var r2 = await rpc('app_place_bet', { p_match_id: p.match_id, p_side: tk.picks[p.match_id], p_amount: pkAmtFor(p.match_id) });
       if(!r2.ok){ err = r2.message || 'Could not place that.'; break; }
-      placed++; last = r2.new_balance; delete tk.picks[p.match_id];
+      placed++; last = r2.new_balance; delete tk.picks[p.match_id]; delete tk.own[p.match_id];
     }
     if(err && !placed){ busy(btn, false); toast(err, true); return; }
     toast(err ? placed + ' of ' + picks.length + ' placed. ' + err
               : (placed === 1 ? 'Bet placed.' : placed + ' bets placed.') + ' Balance ' + pkN(last) + ' VC', !!err);
-    if(!err){ tk.open = false; tk.typed = ''; }
+    if(!err){ tk.open = false; tk.typed = ''; tk.own = {}; }
   }
 }
 
@@ -10840,7 +10993,7 @@ document.addEventListener('click', function(e){
   var b;
   if((b = e.target.closest('[data-pkp]'))){
     var id = b.getAttribute('data-pkp'), s = b.getAttribute('data-pks');
-    if(tk.picks[id] === s) delete tk.picks[id];
+    if(tk.picks[id] === s){ delete tk.picks[id]; delete tk.own[id]; }
     else {
       if(!tk.picks[id] && tk.mode === 'pick' && Object.keys(tk.picks).length >= pkMaxPicks()){
         toast('An entry can have at most ' + pkMaxPicks() + ' picks.', true); return;
@@ -10860,8 +11013,8 @@ document.addEventListener('click', function(e){
     }
     pkDraw(); return;
   }
-  if((b = e.target.closest('[data-pkrm]'))){ delete tk.picks[b.getAttribute('data-pkrm')]; pkDraw(); return; }
-  if((b = e.target.closest('[data-pkamt]'))){ tk.amt = Number(b.getAttribute('data-pkamt')); tk.typed = ''; pkDraw(); return; }
+  if((b = e.target.closest('[data-pkrm]'))){ delete tk.picks[b.getAttribute('data-pkrm')]; delete tk.own[b.getAttribute('data-pkrm')]; pkDraw(); return; }
+  if((b = e.target.closest('[data-pkamt]'))){ tk.amt = Number(b.getAttribute('data-pkamt')); tk.typed = ''; tk.own = {}; pkDraw(); return; }
   if(e.target.closest('[data-pkopen]')){ tk.open = true; pkDraw(); return; }
   if(e.target.closest('[data-pkclose]')){ tk.open = false; pkDraw(); return; }
   if((b = e.target.closest('[data-pkgo]')) && !b.disabled){ pkPlace(b); return; }
