@@ -729,27 +729,98 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   border:1px solid rgba(255,255,255,.2)}
 .fleague button{border:0;border-radius:0;padding:6px 11px}
 .fleague button.on{background:#F5C842;color:#2A1F00;border-color:#F5C842}
-.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 17px}
-.fcard{border-radius:13px;overflow:hidden;background:linear-gradient(168deg,#F8F6FC,#E5E0F2);
-  color:#16131F;box-shadow:0 6px 18px rgba(6,4,20,.5);display:block}
-.fcard .foil{height:5px;background:linear-gradient(90deg,#F5C842,#EC4899,#7B2FFF,#22D3EE,#F5C842)}
-.fcard.champ .foil{background:linear-gradient(90deg,#F5C842,#FFE9A8,#E0A81E,#FFE9A8,#F5C842)}
-.fcard .art{height:98px;position:relative;overflow:hidden;background:
-  radial-gradient(90% 120% at 26% 10%,rgba(123,47,255,.5),transparent 62%),linear-gradient(160deg,#2A1650,#120E22)}
-.fcard .art::after{content:'';position:absolute;inset:0;z-index:2;
-  background:repeating-linear-gradient(0deg,transparent 0 2px,rgba(0,0,0,.16) 2px 4px)}
-.fcard .art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;z-index:1}
-.fcard .init{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:.06em;color:rgba(200,185,240,.34);z-index:1}
-.fcard .bt{position:absolute;right:8px;top:8px;z-index:3;font-family:'Space Mono',monospace;font-size:7px;
-  font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#3A2A00;
-  background:linear-gradient(90deg,#F5C842,#DDA91C);padding:3px 7px;border-radius:3px}
-.fcard .in{padding:10px 11px 11px}
-.fcard .n{font-family:'Bebas Neue',sans-serif;font-size:21px;letter-spacing:.02em;line-height:1;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fcard .w{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.1em;text-transform:uppercase;color:#6B6580;margin-top:5px}
-.fcard .r{font-family:'Space Mono',monospace;font-size:10.5px;font-weight:700;color:#4C1D95;margin-top:4px;font-variant-numeric:tabular-nums}
-.fcard .r em{font-style:normal;color:#8A7FA8;font-weight:400}
+/* ── THE ROSTER (2026-10-16) ─────────────────────────────────────────────
+   One list, grouped by division the way the rankings are: a banner, the
+   champion as a tall row with the full cut-out, then the ranked fifteen, then
+   everybody else. Every class here starts `fx-` -- this screen was broken once
+   already by another screen's leftover `.fcard` (see the note at the sheets). */
+#f-chips{flex-direction:column;align-items:stretch;gap:8px;overflow:visible}
+#f-chips .fx-row{display:flex;align-items:center;gap:6px;overflow-x:auto;scrollbar-width:none}
+#f-chips .fx-row::-webkit-scrollbar{display:none}
+#f-chips .fx-sep{width:1px;height:18px;background:rgba(255,255,255,.16);flex-shrink:0;margin:0 2px}
+#f-grid{padding-bottom:6px}
+#f-chips.fx-q button[data-f]{opacity:.45}
+.fx-wrap{margin:14px 12px 0}
+.fx-wrap.fx-shut{margin-top:8px}
+.fx-card{border-radius:14px;background:#211B45;overflow:hidden}
+.fx-wrap.fx-tab .fx-card{border-bottom-right-radius:0}
+/* the banner: the betting slip bar's look -- dark, a lilac hairline on top,
+   stars drifting along the top and bottom edges, the count in a lavender block */
+.fx-ban{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;background:#15112C;
+  border-radius:14px 14px 0 0;box-shadow:inset 0 1px 0 rgba(185,162,255,.7);overflow:hidden;isolation:isolate;
+  width:100%;border:0;padding:0;color:inherit;font:inherit;text-align:left}
+button.fx-ban{cursor:pointer}
+button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
+.fx-shut .fx-ban,.fx-shut .fx-card{border-radius:14px}
+.fx-stars{position:absolute;inset:0;z-index:-1;pointer-events:none;
+  -webkit-mask-image:linear-gradient(#000 0,#000 22%,transparent 40%,transparent 62%,#000 80%);
+          mask-image:linear-gradient(#000 0,#000 22%,transparent 40%,transparent 62%,#000 80%)}
+/* each layer is two tiles wide and moves one tile, so the loop has no seam;
+   slower than the betting bar on purpose */
+.fx-stars i{position:absolute;top:0;bottom:0;left:0;width:200%;background-size:50% 100%;background-repeat:repeat-x;will-change:transform}
+.fx-stars .s1{opacity:.7;animation:fx-drift 140s linear infinite;
+  background-image:radial-gradient(.8px .8px at 6% 14%,#fff,transparent 70%),radial-gradient(.9px .9px at 19% 84%,#fff,transparent 70%),
+   radial-gradient(.7px .7px at 31% 10%,#fff,transparent 70%),radial-gradient(.8px .8px at 44% 88%,#fff,transparent 70%),
+   radial-gradient(.7px .7px at 66% 80%,#fff,transparent 70%),radial-gradient(.8px .8px at 78% 12%,#fff,transparent 70%),
+   radial-gradient(.7px .7px at 90% 90%,#fff,transparent 70%),radial-gradient(.8px .8px at 12% 92%,#fff,transparent 70%)}
+.fx-stars .s2{opacity:.95;animation:fx-drift 70s linear infinite;
+  background-image:radial-gradient(1.4px 1.4px at 9% 20%,#E4DCFF,transparent 70%),radial-gradient(1.2px 1.2px at 27% 86%,#fff,transparent 70%),
+   radial-gradient(1.5px 1.5px at 52% 12%,#fff,transparent 70%),radial-gradient(1.2px 1.2px at 71% 84%,#E4DCFF,transparent 70%),
+   radial-gradient(1.3px 1.3px at 88% 18%,#fff,transparent 70%)}
+@keyframes fx-drift{to{transform:translateX(-50%)}}
+.fx-ban .fx-t{padding:11px 12px 10px 14px;min-width:0}
+.fx-ban .fx-t b{display:block;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:24px;letter-spacing:.04em;line-height:1;
+  color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx-ban .fx-t span{display:block;font-size:12.5px;color:#C9C2E6;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx-ban .fx-t em{font-style:normal;color:#F5C842;font-weight:600}
+.fx-ban .fx-n{background:#B9A2FF;color:#1A1236;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:0 14px;min-width:70px;border-left:1px solid rgba(255,255,255,.12)}
+.fx-ban .fx-n b{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:26px;line-height:.9}
+.fx-ban .fx-n span{font-size:11px;font-weight:600}
+.fx-ban .fx-n i{font-style:normal;font-size:10px;line-height:1;margin-top:2px;transition:transform .2s}
+.fx-shut .fx-ban .fx-n i{transform:rotate(-90deg)}
+.fx-shut .fx-card > :not(.fx-ban),.fx-shut .fx-tabs{display:none}
+.fx-cols,.fx-r{display:grid;grid-template-columns:22px 38px minmax(0,1fr) auto;gap:0 11px;align-items:center;padding:0 14px}
+.fx-cols{padding-top:6px;padding-bottom:6px;font-size:11.5px;color:#7D76A3;border-bottom:1px solid rgba(255,255,255,.07)}
+.fx-cols span:nth-child(2){grid-column:2 / 4}
+.fx-cols span:last-child{text-align:right}
+.fx-r{height:54px;color:inherit;text-decoration:none}
+.fx-r.fx-z{background:rgba(255,255,255,.045)}
+.fx-r:active{background:rgba(167,139,250,.16)}
+.fx-r .fx-k{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:16px;color:#9A93C2;text-align:center;font-variant-numeric:tabular-nums}
+.fx-r .fx-f{position:relative;width:38px;height:38px;border-radius:50%;overflow:hidden;background:#2E2660}
+/* a cut-out is a whole body; fxHead() moves it so the circle holds the head */
+.fx-r .fx-f img{position:absolute;max-width:none;height:auto;width:227%;left:-63%;top:0;opacity:0}
+.fx-r .fx-f img.fx-on{opacity:1}
+.fx-cut img{opacity:0}
+.fx-cut img.fx-on{opacity:1}
+.fx-f img.fx-on ~ .sil,.fx-cut img.fx-on ~ .sil{display:none}
+.fx-f .sil,.fx-cut .sil{position:absolute;left:50%;bottom:0;transform:translateX(-50%);height:84%;width:auto;fill:#4D4294}
+.fx-r .fx-x{min-width:0}
+.fx-r .fx-x b{display:block;font-weight:600;font-size:15.5px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
+.fx-r .fx-x s{display:block;text-decoration:none;font-size:12.5px;color:#8B83AC;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.fx-r .fx-x s em{font-style:normal;color:#F5C842;font-weight:600}
+.fx-r .fx-w{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:17px;color:#ECE8FA;font-variant-numeric:tabular-nums;text-align:right}
+/* the champion: a tall row with the full cut-out standing on its floor */
+.fx-r.fx-ch{height:96px;grid-template-columns:86px minmax(0,1fr) auto;padding-left:4px;
+  background:linear-gradient(90deg,rgba(245,200,66,.16),rgba(245,200,66,.03) 70%)}
+/* head to waist, standing on the row's floor: a whole body at this height is a figurine */
+.fx-cut{position:relative;align-self:end;height:92px;overflow:hidden}
+.fx-cut img{position:absolute;left:50%;top:2px;transform:translateX(-50%);height:165%;width:auto;max-width:none}
+.fx-ch .fx-x b{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:27px;letter-spacing:.02em;line-height:1}
+.fx-ch .fx-x s{margin-top:3px}
+.fx-ch .fx-w{font-size:19px}
+.fx-gap{padding:8px 14px 6px;font-size:11.5px;color:#7D76A3;background:rgba(0,0,0,.12);border-top:1px solid rgba(255,255,255,.07)}
+.fx-vac{height:44px;display:flex;align-items:center;padding:0 14px;font-size:13px;color:#8B83AC;border-bottom:1px solid rgba(255,255,255,.06)}
+/* "See all" / "Show more": a tab hanging off the card's bottom-right corner */
+.fx-tabs{display:flex;justify-content:flex-end}
+.fx-tabs button{display:inline-flex;align-items:center;gap:6px;background:#15112C;color:#E4DCFF;border:0;cursor:pointer;
+  border-radius:0 0 11px 11px;padding:7px 12px 8px 14px;font:600 12.5px 'Barlow',sans-serif;box-shadow:inset 0 -1px 0 rgba(185,162,255,.55)}
+.fx-tabs button b{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:17px;line-height:1;color:#fff;letter-spacing:.02em}
+.fx-tabs button i{font-style:normal;color:#B9A2FF;font-size:14px}
+.fx-tabs button:focus-visible{outline:2px solid #F5C842;outline-offset:2px}
+.fx-note{margin:14px 16px 0;font-size:12.5px;color:#8B83AC}
+@media (prefers-reduced-motion:reduce){ .fx-stars i{animation:none} .fx-ban .fx-n i{transition:none} }
 .more{margin:18px 17px 0;display:block;width:calc(100% - 34px);text-align:center;
   font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
   color:#C3A6FF;border:1px solid rgba(167,139,250,.35);border-radius:12px;padding:13px 0}
@@ -3579,20 +3650,21 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
     <input id="f-search" type="search" placeholder="Name, nickname or team" autocomplete="off" aria-label="Search fighters">
   </div>
   <div class="stick" id="f-chips">
-    <span class="fleague" id="f-league">
+    <div class="fx-row"><span class="fleague" id="f-league">
       <button data-l="pro" class="on">UBA</button><button data-l="amateur">GFL</button>
-    </span>
-    <button data-f="all" class="on">All</button>
-    <button data-f="p4p">P4P</button>
-    <button data-f="champ">Champions</button>
-    <button data-f="lightweight">LW</button>
-    <button data-f="middleweight">MW</button>
-    <button data-f="light_heavyweight">LHW</button>
-    <button data-f="heavyweight">HW</button>
+    </span></div>
+    <div class="fx-row">
+      <button data-f="all" class="on">All</button>
+      <button data-f="p4p">P4P</button>
+      <button data-f="champ">Champs</button>
+      <span class="fx-sep"></span>
+      <button data-f="lightweight">LW</button>
+      <button data-f="middleweight">MW</button>
+      <button data-f="light_heavyweight">LHW</button>
+      <button data-f="heavyweight">HW</button>
+    </div>
   </div>
-  <div class="lab"><b id="f-lab">All fighters</b><i></i><s id="f-sub">Ranked first</s></div>
-  <div class="fgrid" id="f-grid"></div>
-  <button class="more" id="f-more">Load 40 more</button>
+  <div id="f-grid"></div>
   <div class="foot" id="f-foot">&nbsp;</div>
 </div></section>
 
@@ -6649,141 +6721,343 @@ async function renderKitSection(section){
 
 /* ═══ FIGHTERS ═══════════════════════════════════════════════════════ */
 /* UBA and GFL are the same table: every fighter row is league 'UBA', and what
-   separates the two leagues is `level` — pro is UBA, amateur is GFL. 87 active
-   pros against 360 amateurs, which is why an unfiltered list read as mostly
-   strangers to anybody who follows the pro league. */
-var allFighters = null, fFilter = 'all', fQuery = '', fShown = 40, fLevel = 'pro';
+   separates the two leagues is `level` — pro is UBA, amateur is GFL.
+
+   ONE LIST, GROUPED BY DIVISION (2026-10-16). A banner per division, the
+   champion as a tall row with the full cut-out, the ranked fifteen in order,
+   then everybody else. Under All each division shows its champion and top
+   five, and a tap on a banner folds it away so the four fit on a screen.
+   The two-up card grid is gone: the list says rank, record and division at a
+   glance, and 80% of GFL has no photo, which made the grid mostly silhouettes.
+
+   THE RANK AND THE BELT COME FROM THE SAME VIEWS AS THE HOME BOARD
+   (rankings_public, titles_public) — never fighters.rank, which is the P4P
+   number, and never is_champion, a yes/no that cannot say which belt and
+   missed Killer Kam's and Adonnis's. A fighter sits in the division they are
+   RANKED in, else the one their belt is in, else their weight class.
+
+   THE ROSTER IS READ IN FULL. It was `limit=600` against 686 active fighters,
+   so 86 — seven of them ranked pros — were missing from the tab and from its
+   search, and the header said "77 UBA" over a league of 94. */
+var allFighters = null, fRanks = null, fBelts = null;
+var fFilter = 'all', fQuery = '', fLevel = 'pro';
+var fFold = {};    /* a division folded away under All, by level:division */
+var fMore = {};    /* how many unranked rows a division view shows */
+var F_DIVS = ['lightweight','middleweight','light_heavyweight','heavyweight'];
+var F_AB = { lightweight:'LW', middleweight:'MW', light_heavyweight:'LHW', heavyweight:'HW' };
+var F_NAME = { lightweight:'Lightweight', middleweight:'Middleweight',
+               light_heavyweight:'Light heavyweight', heavyweight:'Heavyweight' };
 
 async function loadFighters(){
   if(allFighters) return;
   var path = "fighter_cards?select=id,display_name,slug,weight_class,headline_wins,headline_losses,"
     + "headline_draws,rank,is_champion,profile_photo_url,profile_photo_thumb_url,"
-    + "team,nickname,status,level"
-    + "&status=eq.active&order=rank.asc.nullslast&limit=600";
-  /* Paint yesterday's roster before asking for today's. 445 tiles is the
-     longest wait in the app and the list barely moves week to week. */
+    + "team,nickname,status,level,country"
+    + "&status=eq.active&order=rank.asc.nullslast&limit=5000";
+  var rpath = "rankings_public?select=level,scope,weight_class,rank,fighter_slug&order=rank.asc&limit=2000";
+  var tpath = "titles_public?select=level,weight_class,kind,name,holder_slug,is_interim&kind=neq.team";
+  /* Paint yesterday's roster before asking for today's. */
   var seed = cached(path);
-  if(seed && seed.length){ allFighters = seed; fLabel(); renderFighters(); }
-  var rows = await q(path);
-  if(!rows && allFighters) return;   /* offline, and the cached grid is up */
-  if(!rows){
+  if(seed && seed.length){
+    allFighters = seed; fRanks = cached(rpath); fBelts = cached(tpath);
+    fLabel(); renderFighters();
+  }
+  var got = await Promise.all([q(path), q(rpath), q(tpath)]);
+  if(!got[0] && allFighters) return;   /* offline, and the cached list is up */
+  if(!got[0]){
     retryHandlers['fighters'] = function(){ allFighters = null; loadFighters(); };
-    document.getElementById('f-grid').innerHTML =
-      '<div style="grid-column:span 2">' + failHTML("Couldn't reach the league database.", 'fighters') + '</div>';
+    document.getElementById('f-grid').innerHTML = failHTML("Couldn't reach the league database.", 'fighters');
     return;
   }
-  allFighters = rows;
+  /* A FAILED RANKINGS OR BELTS READ IS NOT "NOBODY IS RANKED". null keeps the
+     list honest — no rank numbers, no "Not ranked yet", no vacant belt —
+     where [] would tell the whole league it had been unranked. */
+  allFighters = got[0]; fRanks = got[1] || fRanks; fBelts = got[2] || fBelts;
   fLabel();
   renderFighters();
 }
-function filteredFighters(){
-  var list = (allFighters || []).filter(function(f){ return f.level === fLevel; });
-  if(fFilter === 'p4p')        list = list.filter(function(f){ return f.rank != null; });
-  else if(fFilter === 'champ') list = list.filter(function(f){ return f.is_champion; });
-  else if(fFilter !== 'all')   list = list.filter(function(f){ return f.weight_class === fFilter; });
-  if(fQuery){
-    var s = fQuery.toLowerCase();
-    list = list.filter(function(f){
-      return (f.display_name||'').toLowerCase().indexOf(s) > -1
-          || (f.nickname||'').toLowerCase().indexOf(s) > -1
-          || (f.team||'').toLowerCase().indexOf(s) > -1;
-    });
-  }
-  return list.slice().sort(function(a,b){
-    if(a.rank != null && b.rank != null) return a.rank - b.rank;
-    if(a.rank != null) return -1;
-    if(b.rank != null) return 1;
-    return (b.headline_wins||0) - (a.headline_wins||0);
+
+function fMatches(f){
+  if(!fQuery) return true;
+  var s = fQuery.toLowerCase();
+  return (f.display_name||'').toLowerCase().indexOf(s) > -1
+      || (f.nickname||'').toLowerCase().indexOf(s) > -1
+      || (f.team||'').toLowerCase().indexOf(s) > -1;
+}
+
+/* Who is where, for the league on screen. */
+function fBoard(){
+  var lv = fLevel, rankOf = {}, divOf = {}, p4p = [], belt = {}, vacant = {}, extra = [];
+  (fRanks || []).forEach(function(r){
+    if(r.level !== lv) return;
+    if(r.scope === 'weight_class'){ rankOf[r.fighter_slug] = r.rank; divOf[r.fighter_slug] = r.weight_class; }
+    else if(r.scope === 'overall') p4p.push(r);
   });
+  (fBelts || []).forEach(function(t){
+    if(t.level !== lv) return;
+    if(t.weight_class && F_NAME[t.weight_class]){
+      if(t.holder_slug) belt[t.weight_class] = t.holder_slug; else vacant[t.weight_class] = true;
+    } else if(t.holder_slug) extra.push(t);   /* a belt with no division: BMF */
+  });
+  var bySlug = {}, champs = {}, div = {};
+  F_DIVS.forEach(function(d){ div[d] = { champ: null, ranked: [], rest: [], total: 0 }; });
+  F_DIVS.forEach(function(d){ if(belt[d]) champs[belt[d]] = (champs[belt[d]] || []).concat(d); });
+  (allFighters || []).forEach(function(f){
+    if(f.level !== lv) return;
+    bySlug[f.slug] = f;
+    var held = champs[f.slug];
+    if(held){ held.forEach(function(d){ div[d].champ = f; div[d].total++; }); return; }
+    var d = divOf[f.slug] || f.weight_class;
+    if(!div[d]) return;
+    div[d].total++;
+    if(rankOf[f.slug] != null) div[d].ranked.push(f); else div[d].rest.push(f);
+  });
+  F_DIVS.forEach(function(d){
+    div[d].ranked.sort(function(a, b){ return rankOf[a.slug] - rankOf[b.slug]; });
+    div[d].rest.sort(function(a, b){
+      return (b.headline_wins||0) - (a.headline_wins||0) || String(a.display_name).localeCompare(b.display_name); });
+  });
+  return { div: div, rankOf: rankOf, divOf: divOf, p4p: p4p, belt: belt, vacant: vacant,
+           extra: extra, champs: champs, bySlug: bySlug, known: !!(fRanks && fBelts) };
 }
-function renderFighters(){
-  var list = filteredFighters();
-  var grid = document.getElementById('f-grid');
-  if(!list.length){
-    grid.innerHTML = '<div class="empty" style="grid-column:span 2">No fighters match that.</div>';
-    document.getElementById('f-more').style.display = 'none';
-    document.getElementById('f-foot').textContent = '';
-    return;
+
+/* the division a fighter is shown in: their belt's, else the one they are ranked in, else their weight class */
+function fDivOf(B, f){ return (B.champs[f.slug] && B.champs[f.slug][0]) || B.divOf[f.slug] || f.weight_class; }
+function fRec(f){ return (f.headline_wins||0) + '-' + (f.headline_losses||0) + '-' + (f.headline_draws||0); }
+/* a missing flag prints nothing, never a placeholder */
+function fWhere(f){ return f.country ? (flagOf(f.country) ? flagOf(f.country) + ' ' : '') + esc(f.country) : ''; }
+
+/* One row. `k` is the number in the left column; `sub` is already HTML. */
+function fRowHTML(f, k, sub, z){
+  var src = f.profile_photo_thumb_url || f.profile_photo_url;
+  /* the silhouette sits in the slot until the photo is placed, so a slow
+     photo is never an empty circle */
+  var face = (src ? '<img src="' + esc(src) + '" alt="" crossorigin="anonymous" loading="lazy" decoding="async"'
+                  + ' onload="fxHead(this)" onerror="fxSil(this)">' : '') + SILHOUETTE;
+  return '<a class="fx-r' + (z ? ' fx-z' : '') + '" data-slug="' + esc(f.slug || '') + '"'
+    + ' href="./f/' + encodeURIComponent(f.slug || '') + '.html">'
+    + '<span class="fx-k">' + (k == null ? '' : k) + '</span><span class="fx-f">' + face + '</span>'
+    + '<span class="fx-x"><b>' + esc(f.display_name) + '</b>' + (sub ? '<s>' + sub + '</s>' : '') + '</span>'
+    + '<span class="fx-w">' + fRec(f) + '</span></a>';
+}
+/* The champion: the full cut-out, standing, in a tall row. */
+function fChampHTML(f, label, bare){
+  var src = f.profile_photo_thumb_url || f.profile_photo_url;
+  var where = bare ? '' : fWhere(f);
+  return '<a class="fx-r fx-ch" data-slug="' + esc(f.slug || '') + '"'
+    + ' href="./f/' + encodeURIComponent(f.slug || '') + '.html">'
+    + '<span class="fx-cut">' + (src ? '<img src="' + esc(src) + '" alt="" loading="lazy" decoding="async"'
+      + ' onload="this.classList.add(\'fx-on\')" onerror="fxSil(this)">' : '') + SILHOUETTE + '</span>'
+    + '<span class="fx-x"><b>' + esc(f.display_name) + '</b><s><em>' + esc(label || 'Champion') + '</em>'
+    + (where ? ' · ' + where : '') + '</s></span>'
+    + '<span class="fx-w">' + fRec(f) + '</span></a>';
+}
+function fStars(){ return '<span class="fx-stars"><i class="s1"></i><i class="s2"></i></span>'; }
+/* The banner. A button only where it folds (All); elsewhere a plain heading. */
+function fBannerHTML(title, sub, count, foldKey){
+  var inner = fStars() + '<span class="fx-t"><b>' + esc(title) + '</b>' + (sub ? '<span>' + sub + '</span>' : '') + '</span>'
+    + '<span class="fx-n"><b>' + count + '</b><span>' + (count === 1 ? 'fighter' : 'fighters') + '</span>'
+    + (foldKey ? '<i aria-hidden="true">▾</i>' : '') + '</span>';
+  return foldKey
+    ? '<button type="button" class="fx-ban" data-ffold="' + esc(foldKey) + '" aria-expanded="'
+      + (fFold[foldKey] ? 'false' : 'true') + '">' + inner + '</button>'
+    : '<div class="fx-ban">' + inner + '</div>';
+}
+function fCols(){ return '<div class="fx-cols"><span>#</span><span>Fighter</span><span>W-L-D</span></div>'; }
+function fSection(banner, body, tab, foldKey){
+  var shut = foldKey && fFold[foldKey];
+  return '<div class="fx-wrap' + (tab ? ' fx-tab' : '') + (shut ? ' fx-shut' : '') + '">'
+    + '<div class="fx-card">' + banner + body + '</div>'
+    + (tab ? '<div class="fx-tabs">' + tab + '</div>' : '') + '</div>';
+}
+
+/* A division: under All its top five and a See all tab; on its own, all of it. */
+function fDivHTML(B, d, full){
+  var D = B.div[d], key = fLevel + ':' + d;
+  var sub = !B.known ? '' : (D.champ ? '<em>Champion</em> ' + esc(D.champ.display_name)
+                                     : (B.vacant[d] ? 'Belt vacant' : 'No belt yet'))
+          + ' · ' + D.ranked.length + ' ranked';
+  var body = fCols(), z = 0;
+  if(D.champ) body += fChampHTML(D.champ, B.champs[D.champ.slug].length > 1 ? 'Double champion' : 'Champion');
+  else if(B.known && B.vacant[d]) body += '<div class="fx-vac">Champion: vacant</div>';
+  var ranked = full ? D.ranked : D.ranked.slice(0, 5);
+  ranked.forEach(function(f){ body += fRowHTML(f, B.rankOf[f.slug], fWhere(f), z++ % 2); });
+  var tab = '';
+  if(full){
+    var n = fMore[key] || 30;
+    if(D.rest.length){
+      body += (B.known && D.ranked.length ? '<div class="fx-gap">Not ranked yet</div>' : '');
+      D.rest.slice(0, n).forEach(function(f){ body += fRowHTML(f, null, fWhere(f), z++ % 2); });
+    }
+    var left = D.rest.length - n;
+    if(left > 0) tab = '<button type="button" data-fmore="' + esc(key) + '">Show <b>' + Math.min(left, 40) + '</b> more <i>▾</i></button>';
+  } else {
+    if(!D.ranked.length) D.rest.slice(0, 5).forEach(function(f){ body += fRowHTML(f, null, fWhere(f), z++ % 2); });
+    tab = '<button type="button" data-fall="' + esc(d) + '">See all <b>' + D.total + '</b> <i>›</i></button>';
   }
-  grid.innerHTML = list.slice(0, fShown).map(function(f){
-    // The initials sit underneath the photo rather than instead of it, so a
-    // photo that 404s falls back to something instead of a blank card.
-    var ini = '<span class="init">'+esc(initials(f.display_name))+'</span>';
-    /* THE THUMBNAIL, not the photo. These tiles are 98px tall and the full
-       images are ~2MB each against ~176KB for the thumb -- 11x. Ninety-two of
-       them is roughly 190MB of photographs to fill one screen of 98px boxes,
-       which is why the grid crawled. The thumbs have existed the whole time
-       and `fighter_cards` simply did not select the column.
-       `decoding="async"` keeps a big decode off the main thread, and the
-       explicit width/height means the browser reserves the box before the
-       bytes arrive rather than after. */
-    var src = f.profile_photo_thumb_url || f.profile_photo_url;
-    var art = src
-      ? ini + '<img src="'+esc(src)+'" alt="" loading="lazy" decoding="async" '
-            + 'width="180" height="98" onerror="this.remove()">'
-      : ini;
-    var belt = f.is_champion ? '<span class="bt">Champ</span>' : '';
-    var rk = f.rank != null ? '<em>&middot; P4P '+f.rank+'</em>' : '<em>&middot; Unranked</em>';
-    return '<a class="fcard'+(f.is_champion?' champ':'')+'" data-slug="'+esc(f.slug||'')+'"'
-      + ' href="./f/'+encodeURIComponent(f.slug||'')+'.html">'
-      + '<div class="foil"></div><div class="art">'+belt+art+'</div>'
-      + '<div class="in"><div class="n">'+esc(f.display_name)+'</div>'
-      + '<div class="w">'+esc(wc(f.weight_class))+'</div>'
-      + '<div class="r">'+esc(recordOf(f))+' '+rk+'</div></div></a>';
-  }).join('');
-  var more = document.getElementById('f-more');
-  more.style.display = list.length > fShown ? 'block' : 'none';
-  document.getElementById('f-foot').textContent = 'Showing ' + Math.min(fShown, list.length) + ' of ' + list.length;
+  return fSection(fBannerHTML(F_NAME[d], sub, D.total, full ? null : key), body, tab, full ? null : key);
 }
-/* Two groups of buttons live in the same sticky row, so the handler has to
-   clear only the group that was clicked. Clearing every button in the bar —
-   which is what the single-group version did — would drop the league toggle's
-   own highlight the moment somebody picked a weight class, and the bar would
-   stop saying which league you are looking at. */
+
+function renderFighters(){
+  var grid = document.getElementById('f-grid');
+  if(!allFighters) return;
+  /* search covers the whole league, so the pills step back while it is on */
+  document.getElementById('f-chips').classList.toggle('fx-q', !!fQuery);
+  var B = fBoard(), html = '', foot = '';
+  var lg = fLevel === 'amateur' ? 'GFL' : 'UBA';
+
+  if(fQuery){
+    /* Search is one flat list: nobody opens divisions to find a name. */
+    var hits = Object.keys(B.bySlug).map(function(s){ return B.bySlug[s]; }).filter(fMatches)
+      .sort(function(a, b){ return String(a.display_name).localeCompare(b.display_name); });
+    if(!hits.length){
+      grid.innerHTML = '<div class="empty">No ' + lg + ' fighter matches “' + esc(fQuery) + '”.</div>';
+      document.getElementById('f-foot').textContent = ''; return;
+    }
+    var body = fCols();
+    hits.slice(0, 80).forEach(function(f, i){
+      var d = fDivOf(B, f), rk = B.rankOf[f.slug];
+      var sub = (B.champs[f.slug] ? '<em>Champion</em> · ' : rk ? '#' + rk + ' ' : '')
+              + esc(F_NAME[d] || '') + (f.country ? ' · ' + fWhere(f) : '');
+      body += fRowHTML(f, null, sub, i % 2);
+    });
+    html = fSection(fBannerHTML('Search', esc(lg) + ' · “' + esc(fQuery) + '”', hits.length, null), body, '', null);
+    if(hits.length > 80) foot = 'Showing 80 of ' + hits.length + ' · type more of the name';
+  } else if(fFilter === 'p4p'){
+    var rows = B.p4p.map(function(r){ return { r: r, f: B.bySlug[r.fighter_slug] }; }).filter(function(x){ return x.f; });
+    var pb = fCols();
+    rows.forEach(function(x, i){
+      var d = fDivOf(B, x.f);
+      pb += fRowHTML(x.f, x.r.rank, esc(F_NAME[d] || '') + (x.f.country ? ' · ' + fWhere(x.f) : ''), i % 2);
+    });
+    html = fSection(fBannerHTML('Pound for pound', 'The best in UBA, any weight', rows.length, null), pb, '', null);
+    if(!rows.length) html = '<div class="empty">The pound-for-pound list isn’t out yet.</div>';
+  } else if(fFilter === 'champ'){
+    var cb = '', held = 0;
+    F_DIVS.forEach(function(d){
+      var f = B.div[d].champ;
+      if(f){ cb += fChampHTML(f, F_NAME[d] + ' champion', true); held++; }
+      else if(B.known && B.vacant[d]) cb += '<div class="fx-vac">' + esc(F_NAME[d]) + ': vacant</div>';
+    });
+    B.extra.forEach(function(t){
+      var f = B.bySlug[t.holder_slug]; if(!f) return;
+      cb += fChampHTML(f, String(t.name || 'Title').replace(/\s*title$/i, '') + ' champion', true); held++;
+    });
+    html = cb ? fSection(fBannerHTML('Champions', lg + ' belt holders', held, null), cb, '', null)
+              : '<div class="empty">No ' + lg + ' belts have been won yet.</div>';
+  } else if(F_NAME[fFilter]){
+    html = fDivHTML(B, fFilter, true);
+  } else {
+    F_DIVS.forEach(function(d){ html += fDivHTML(B, d, false); });
+    var all = Object.keys(B.bySlug).length;
+    foot = all + ' fighters in 4 divisions';
+  }
+  grid.innerHTML = html;
+  document.getElementById('f-foot').textContent = foot;
+}
+
+/* THE HEAD IN THE CIRCLE. Every photo is a whole-body cut-out on a
+   transparent ground, and a 38px circle needs the head. Read the alpha at
+   60x93: the crown is the first opaque row; the head's centre is the run in
+   the top band nearest the body's own centre, so a glove held beside the head
+   is not taken for it. The crop is a square 44% of the photo's height (head
+   and shoulders), written as percentages so one answer fits any size. Right
+   on 54 of 56 photos when it was drawn up; the misses hold a glove ABOVE the
+   head. Answers are kept per photo, so each is read once per phone. */
+var FX_HC = null, FX_CV = null;
+function fxHeadStore(){ if(!FX_HC){ try{ FX_HC = JSON.parse(localStorage.getItem('uba_fx_head') || '{}'); }catch(e){ FX_HC = {}; } } return FX_HC; }
+function fxPlace(img, c){
+  if(c){ img.style.width = c[0] + '%'; img.style.left = c[1] + '%'; img.style.top = c[2] + '%'; }
+  img.classList.add('fx-on');
+}
+function fxHead(img){
+  var key = img.getAttribute('src'), store = fxHeadStore();
+  if(store[key]) return fxPlace(img, store[key]);
+  try{
+    var W = 60, H = 93;
+    if(!FX_CV){ FX_CV = document.createElement('canvas'); FX_CV.width = W; FX_CV.height = H; }
+    var cx = FX_CV.getContext('2d', { willReadFrequently: true });
+    cx.clearRect(0, 0, W, H); cx.drawImage(img, 0, 0, W, H);
+    var d = cx.getImageData(0, 0, W, H).data;
+    var op = function(x, y){ return d[(y * W + x) * 4 + 3] > 64; };
+    var x, y, sx = 0, n = 0, y0 = -1;
+    for(y = 0; y < H; y++) for(x = 0; x < W; x++) if(op(x, y)){ sx += x; n++; }
+    if(!n) return fxPlace(img, null);
+    var body = sx / n;
+    for(y = 0; y < H && y0 < 0; y++){ var c = 0; for(x = 0; x < W; x++) if(op(x, y)) c++; if(c >= 2) y0 = y; }
+    var cs = [];
+    for(y = y0; y < Math.min(H, y0 + 9); y++){
+      var best = null, s = -1;
+      for(x = 0; x <= W; x++){
+        var o = x < W && op(x, y);
+        if(o && s < 0) s = x;
+        if(!o && s >= 0){ var m = (s + x - 1) / 2; if(best == null || Math.abs(m - body) < Math.abs(best - body)) best = m; s = -1; }
+      }
+      if(best != null) cs.push(best);
+    }
+    cs.sort(function(a, b){ return a - b; });
+    var hx = cs[cs.length >> 1], yh = y0;
+    for(y = 0; y < H; y++){
+      var hit = false;
+      for(x = Math.max(0, Math.floor(hx) - 2); x < Math.min(W, Math.floor(hx) + 3); x++) if(op(x, y)) hit = true;
+      if(hit){ yh = y; break; }
+    }
+    var wp = (img.naturalWidth / img.naturalHeight) / 0.44 * 100;
+    var ans = [+wp.toFixed(1), +(50 - ((hx + .5) / W) * wp).toFixed(1), +(-((yh / H) - 0.05) / 0.44 * 100).toFixed(1)];
+    store[key] = ans;
+    try{ localStorage.setItem('uba_fx_head', JSON.stringify(store)); }catch(e){}
+    fxPlace(img, ans);
+  }catch(e){ fxPlace(img, null); }   /* a photo the canvas may not read keeps the default crop */
+}
+/* A photo that will not load leaves the silhouette already under it. */
+function fxSil(img){ img.remove(); }
+
 function fLabel(){
-  document.getElementById('f-lab').textContent =
-    (fLevel === 'amateur' ? 'GFL · ' : '')
-    + (fFilter === 'p4p' ? 'Pound for pound' : fFilter === 'champ' ? 'Champions'
-       : fFilter === 'all' ? 'All fighters' : wc(fFilter));
-  document.getElementById('f-sub').textContent = fFilter === 'all' ? 'Ranked first' : '';
   var n = (allFighters || []).filter(function(f){ return f.level === fLevel; }).length;
-  document.getElementById('f-count').textContent =
-    n + ' ' + (fLevel === 'amateur' ? 'GFL' : 'UBA');
+  document.getElementById('f-count').textContent = n + ' ' + (fLevel === 'amateur' ? 'GFL' : 'UBA');
+}
+function fSetFilter(f){
+  fFilter = f;
+  document.querySelectorAll('#f-chips button[data-f]').forEach(function(x){
+    x.classList.toggle('on', x.getAttribute('data-f') === f); });
 }
 document.getElementById('f-chips').addEventListener('click', function(e){
   var b = e.target.closest('button'); if(!b) return;
-
   if(b.hasAttribute('data-l')){
     if(fLevel === b.getAttribute('data-l')) return;
     fLevel = b.getAttribute('data-l');
     document.getElementById('f-league').querySelectorAll('button')
       .forEach(function(x){ x.classList.toggle('on', x === b); });
-    /* GFL is ranked by division and has no pound-for-pound list, so the chip
-       is hidden there rather than offered and empty — and a filter that just
-       became impossible falls back to All rather than showing nothing. */
+    /* GFL has no pound-for-pound list, so the chip is hidden there rather than
+       offered and empty, and a filter that just became impossible falls back to All. */
     var p4p = this.querySelector('button[data-f="p4p"]');
     var gfl = fLevel === 'amateur';
     if(p4p) p4p.hidden = gfl;
-    if(gfl && fFilter === 'p4p'){
-      fFilter = 'all';
-      this.querySelectorAll('button[data-f]').forEach(function(x){
-        x.classList.toggle('on', x.getAttribute('data-f') === 'all'); });
-    }
-  } else {
-    this.querySelectorAll('button[data-f]').forEach(function(x){ x.classList.remove('on'); });
-    b.classList.add('on');
-    fFilter = b.getAttribute('data-f');
-  }
-
-  fShown = 40;
+    if(gfl && fFilter === 'p4p') fSetFilter('all');
+  } else if(b.hasAttribute('data-f')){
+    fSetFilter(b.getAttribute('data-f'));
+  } else return;
   fLabel();
   renderFighters();
   panels.fighters.scrollTop = 0;
 });
-document.getElementById('f-search').addEventListener('input', function(){
-  fQuery = this.value.trim(); fShown = 40; renderFighters();
+document.getElementById('f-grid').addEventListener('click', function(e){
+  var fold = e.target.closest('[data-ffold]');
+  if(fold){
+    var k = fold.getAttribute('data-ffold');
+    fFold[k] = !fFold[k];
+    fold.closest('.fx-wrap').classList.toggle('fx-shut', fFold[k]);
+    fold.setAttribute('aria-expanded', fFold[k] ? 'false' : 'true');
+    return;
+  }
+  var all = e.target.closest('[data-fall]');
+  if(all){ fSetFilter(all.getAttribute('data-fall')); renderFighters(); panels.fighters.scrollTop = 0; return; }
+  var more = e.target.closest('[data-fmore]');
+  if(more){ var mk = more.getAttribute('data-fmore'); fMore[mk] = (fMore[mk] || 30) + 40; renderFighters(); }
 });
-document.getElementById('f-more').addEventListener('click', function(){ fShown += 40; renderFighters(); });
+document.getElementById('f-search').addEventListener('input', function(){
+  fQuery = this.value.trim(); renderFighters();
+});
 
 /* ═══ SHEETS ═════════════════════════════════════════════════════════
    One element, a stack of entries. A fighter can be opened from inside an
