@@ -160,6 +160,10 @@
     background:transparent;color:var(--g);border:2px solid var(--gdim);border-radius:2px;}
   .mnchip::before,.mnchip::after{content:none;}
   .mnchip:hover{border-color:var(--g);}
+  /* how it ended: its own line under a scored bout, so the names keep their width */
+  .mths{flex-basis:100%;display:flex;gap:6px;justify-content:flex-end;margin-top:4px;}
+  .mnchip.mth{font-size:15px;padding:2px 8px;opacity:.75;}
+  .mnchip.mth.picked{opacity:1;}
   .mnchip.picked{background:var(--g);color:var(--bg);text-shadow:none;border-color:var(--g);
     box-shadow:0 0 14px rgba(58,255,110,.5);}
   .mnchip.used{color:var(--gdark);border-color:var(--gdark);text-decoration:line-through;cursor:default;}
@@ -463,6 +467,8 @@
       <button class="lg-ubae" onclick="standby('vsrosters')">Rosters VS</button>
       <button class="lg-uba"  onclick="standby('ubarank')">UBA rankings</button>
       <button class="lg-uba"  onclick="standby('gflrank')">GFL rankings</button>
+      <!-- only on a contender night (csGate shows it): the series, the card a page at a time, Up Next following ARM -->
+      <button id="csHomeBtn" style="display:none" onclick="csHome()">🧊 Contender home</button>
       <button class="lg-ubae" onclick="standby('schedule')">UBAe schedule + playoffs</button>
       <button class="lg-uba" onclick="standby('next3')">UBA schedule · next 3</button>
       <button class="lg-ubae" onclick="standby('teamvs')">Team vs team</button>
@@ -792,7 +798,11 @@ const channel = sb.channel('vga-overlay')
 // auto-hide, an OBS refresh, or another deck driving it. The button follows
 // that, so it can never be out of step with what is on air.
 channel.on('broadcast',{event:'cmd'},({payload:p})=>{
-  if(!p || p.type!=='tape-state') return
+  if(!p) return
+  // A standby screen that just loaded asks what has been scored, and another deck
+  // scoring a fight tells this one. Both live with the card code (WINS below).
+  if(p.type==='cardhello' || p.type==='cardwin'){ if(window.winsHeard) window.winsHeard(p); return }
+  if(p.type!=='tape-state') return
   if(window.setTapeBtn) window.setTapeBtn(p.on)
 })
 channel.subscribe(s=>{ const el=document.getElementById('status')
@@ -2089,15 +2099,14 @@ window.ubaReload=async()=>{
   const log=m=>{ const l=document.getElementById('log'); const d=document.createElement('div'); d.textContent=m; l.prepend(d) }
   if(!UBA.id){ log('⚠ pick an event above first — nothing to reload'); return }
   if(UBA.id==='csdemo'){ log('⚠ the contender demo is a made-up card — there is nothing in the database to reload'); return }
-  const keep={}
-  UBA.bouts.forEach(b=>{ if(b.winner) keep[b.bout_number]={winner:b.winner,method:b.method} })
-  // armed is an INDEX, and indices shift when a bout disappears — carry the
-  // bout NUMBER across and look it up again on the other side.
-  const armedNo = UBA.armed!=null ? (UBA.bouts[UBA.armed]||{}).bout_number : null
-  const before  = UBA.bouts.length
+  // Wins need no carrying any more: ubaLoadCard puts the deck's own taps back on
+  // every load (WINS below). armed is an INDEX, and indices shift when a bout
+  // disappears -- carry the MATCH across and look it up again on the other side.
+  const armedRow = UBA.armed!=null ? (UBA.bouts[UBA.armed]||null) : null
+  const armedNo  = armedRow ? armedRow.bout_number : null
+  const before   = UBA.bouts.length
   await ubaLoadCard({ id:UBA.id, name:UBA.name, event_date:UBA.date })
-  UBA.bouts.forEach(b=>{ const k=keep[b.bout_number]; if(k && !b.winner){ b.winner=k.winner; b.method=b.method||k.method } })
-  const i = UBA.bouts.findIndex(b=>b.bout_number===armedNo)
+  const i = armedRow ? UBA.bouts.findIndex(b=>winKey(b)===winKey(armedRow)) : -1
   UBA.armed = i>=0 ? i : null
   ubaDraw()
   await loadUbaEvents()   // an event renamed/unpublished since load shows up here
@@ -2121,7 +2130,15 @@ const csLoad=()=>{ CSN.v={}; CSN.rev={}
   try{ const o=JSON.parse(sessionStorage.getItem(csKey())||'{}')||{}
     // the first build stored the verdicts bare, with no "revealed" beside them
     if(o.v){ CSN.v=o.v||{}; CSN.rev=o.rev||{} } else CSN.v=o }catch(e){} }
+// Contender home on the standby screen. It reads the card itself; this tells it
+// which card, whose series, and what is armed. ARM and results keep it current.
+window.csHome=()=>{
+  if(!UBA.id || UBA.id==='csdemo'){ deckLog('⚠ load a contender card above first'); return }
+  const armed=UBA.armed!=null ? ((UBA.bouts[UBA.armed]||{}).id||null) : null
+  send({ type:'standby', view:'cshome', on:true, event:UBA.name, eventId:UBA.id, armed })
+}
 const csGate=on=>{ document.getElementById('csSec').style.display = on ? '' : 'none'
+  const hb=document.getElementById('csHomeBtn'); if(hb) hb.style.display = on ? '' : 'none'
   document.getElementById('csNone').style.display = on ? 'none' : ''
   if(!on) document.getElementById('csTitle').textContent='' }
 async function csCheck(ev){
@@ -2317,19 +2334,20 @@ window.addEventListener('hashchange',()=>{ if(location.hash==='#csdemo') csDemo(
 
 window.ubaLoadCard=async(ev)=>{
   const { data } = await sb.from('event_matches')
-    .select('bout_number,card_segment,weight_class,is_title_fight,title_name,status,method,fighter_a_name,fighter_b_name,winner_corner')
+    .select('match_id,bout_number,card_segment,weight_class,is_title_fight,title_name,status,method,fighter_a_name,fighter_b_name,winner_corner')
     .eq('event_id',ev.id).order('bout_number')
   UBA.id=ev.id; UBA.name=ev.name; UBA.date=ev.event_date||null; UBA.armed=null
   // Results already in the DB pre-mark themselves — a mid-show deck reload
   // comes back knowing which bouts are done instead of starting blank.
   UBA.bouts=(data||[]).map(r=>({
-    bout_number:r.bout_number, seg:r.card_segment||'main_card',
+    id:r.match_id, bout_number:r.bout_number, seg:r.card_segment||'main_card',
     a:r.fighter_a_name||'TBA', b:r.fighter_b_name||'TBA',
     wc:cap(r.weight_class||''),
     title:r.is_title_fight?(r.title_name||'TITLE FIGHT'):null,
     method:r.method||null,
     winner: /^(a|fighter_a)$/i.test(r.winner_corner||'')?'a'
           : /^(b|fighter_b)$/i.test(r.winner_corner||'')?'b':null }))
+  winsApply()   // the taps outrank the database: it only learns the results at the close
   document.getElementById('ubaCardWrap').style.display=UBA.bouts.length?'block':'none'
   ubaDraw()
   if(STG==='fancam' && window.fcOpen) fcOpen()   // the fan list belongs to the card
@@ -2351,11 +2369,12 @@ function ubaDraw(){
         const st=b.winner===side?' picked':(b.winner?' used':'')
         return `<span class="mnchip${st}" onclick="ubaWin(${i},'${side}')">${name}</span>`
       }
-      html+=`<div class="row" style="margin-bottom:6px;align-items:center">
+      html+=`<div class="row" style="margin-bottom:6px;align-items:center;flex-wrap:wrap">
         <button style="min-width:104px;padding:4px 10px${UBA.armed===i?';':''}" class="${UBA.armed===i?'active':''}"
           onclick="ubaArm(${i})">${b.bout_number===1?'★ MAIN':'BOUT '+b.bout_number}</button>
         ${chip('a',b.a)}<span style="color:var(--gdim)">vs</span>${chip('b',b.b)}
         <span class="bmeta">${b.wc}${b.title?' · 👑 '+b.title:''}</span>${b.winner?'<span class="bdone">✔</span>':''}
+        ${b.winner?`<div class="mths">${WIN_METHODS.map(([v,l])=>`<span class="mnchip mth${methodIs(b.method,v)?' picked':''}" onclick="ubaMethod(${i},'${v}')">${l}</span>`).join('')}</div>`:''}
       </div>`
     })
   })
@@ -2375,7 +2394,7 @@ window.ubaArm=i=>{
   // edited, not two names typed from scratch under the lights.
   ;[['clkNameL',b.a],['clkNameR',b.b]].forEach(([id,v])=>{
     const el=document.getElementById(id); if(el) el.value=v })
-  send({type:'bout', d:{ a:b.a, b:b.b,
+  send({type:'bout', eventId:UBA.id, match_id:b.id||null, d:{ a:b.a, b:b.b,
     label: b.bout_number===1?'MAIN EVENT':'BOUT '+b.bout_number,
     sub: b.title? '5 ROUNDS · TITLE' : b.wc,
     colorL:document.getElementById('ubaColorL').value,
@@ -2396,12 +2415,62 @@ window.ubaArm=i=>{
     vh.innerHTML = (f ? 'ready — ' : 'ready, <b style="color:#ff6b6b">NO VO</b> — ') + b.a+' vs '+b.b }
 }
 
-/* tap a name = that side won. Tap again to undo. Pushes the rundown live so
-   the on-screen card greys the bout out the moment it's scored. */
+/* ── WINS: what the deck has scored tonight ──────────────────────────────
+   The database learns the results once, at the close. Until then a tap lived
+   only in this page's memory, and every tap re-sent the WHOLE card from it --
+   so anything that emptied the memory (the event button pressed again for the
+   odds, the tablet dropping the tab, a second deck) wiped every earlier result
+   off the screen on the next tap. Three rules now:
+     1. a tap is saved, keyed by event + MATCH (never by row or bout number,
+        which shift and repeat), and laid back over the card on every load;
+     2. a tap sends only its own bout (cardwin), so a deck that knows less can
+        never erase what another one scored;
+     3. a tap never changes what the standby screen is showing. Putting the
+        card up is the push button's job. */
+const WIN_METHODS=[['KO','KO'],['TKO','TKO'],['decision','DEC'],['DQ','DQ']]
+const methodIs=(m,v)=> String(m||'').toLowerCase()===v.toLowerCase()
+const winKey=b=> b.id || ('n'+b.bout_number)
+const winsKey=()=>'vga-wins-'+UBA.id
+const winsRead=()=>{ try{ return JSON.parse(localStorage.getItem(winsKey())||'{}')||{} }catch(e){ return {} } }
+const winsWrite=w=>{ try{ localStorage.setItem(winsKey(), JSON.stringify(w)) }catch(e){} }
+// winner null is kept on purpose: an un-tap must beat a winner the database
+// already holds, or the result comes back on the next load
+window.winsApply=()=>{ const w=winsRead()
+  UBA.bouts.forEach(b=>{ const t=w[winKey(b)]; if(t){ b.winner=t.w; b.method=t.w?t.m:null } }) }
+const winSave=b=>{ const w=winsRead(); w[winKey(b)]={ w:b.winner, m:b.method||null }; winsWrite(w) }
+const winSend=b=>send({ type:'cardwin', eventId:UBA.id, event:UBA.name,
+  match_id:b.id||null, bout_number:b.bout_number, winner_corner:b.winner, method:b.winner?(b.method||null):null })
+
+/* tap a name = that side won. Tap again to undo. */
 window.ubaWin=(i,side)=>{
   const b=UBA.bouts[i]; if(!b) return
   b.winner = (b.winner===side)? null : side
-  ubaDraw(); ubaPush()
+  if(!b.winner) b.method=null
+  winSave(b); ubaDraw(); winSend(b)
+}
+/* how it ended. Tap again to clear it. */
+window.ubaMethod=(i,m)=>{
+  const b=UBA.bouts[i]; if(!b || !b.winner) return
+  b.method = methodIs(b.method,m) ? null : m
+  winSave(b); ubaDraw(); winSend(b)
+}
+// a standby screen that just loaded asks; another deck that scored tells us
+window.winsHeard=p=>{
+  if(!UBA.id) return
+  if(p.type==='cardhello'){
+    // only what this deck actually KNOWS: a tap (an un-tap included) or a result.
+    // A deck opened fresh on another device knows nothing, and answering with
+    // every bout's null would erase what the screen already holds.
+    const w=winsRead()
+    const wins=UBA.bouts.filter(b=>b.id && (w[winKey(b)] || b.winner)).map(b=>({ match_id:b.id, winner_corner:b.winner, method:b.method||null }))
+    const armed=UBA.armed!=null ? ((UBA.bouts[UBA.armed]||{}).id||null) : null
+    if(wins.length || armed) send({ type:'cardwins', eventId:UBA.id, event:UBA.name, wins, armed })
+    return
+  }
+  if(p.eventId!==UBA.id) return
+  const b=UBA.bouts.find(x=> p.match_id ? x.id===p.match_id : x.bout_number===p.bout_number); if(!b) return
+  b.winner=p.winner_corner||null; b.method=b.winner?(p.method||null):null
+  winSave(b); ubaDraw()
 }
 
 window.ubaFilter=f=>{
@@ -2423,9 +2492,9 @@ window.ubaPush=()=>{
   // shape the card already speaks; the runner's local wins ride along so a win
   // clicked here shows before it's committed to the database.
   send({type:'standby', view:'card', on:true, event:UBA.name, d:{
-    event:UBA.name, date:UBA.date||null, filter:UBA.filter,
+    event:UBA.name, eventId:UBA.id, date:UBA.date||null, filter:UBA.filter,
     bouts:UBA.bouts.map(b=>({
-      bout_number:b.bout_number, card_segment:b.seg,
+      match_id:b.id||null, bout_number:b.bout_number, card_segment:b.seg,
       fighter_a_name:b.a, fighter_b_name:b.b,
       weight_class:b.wc, is_title_fight:!!b.title, title_name:b.title,
       method:b.method, winner_corner:b.winner }))

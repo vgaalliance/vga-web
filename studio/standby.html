@@ -652,6 +652,24 @@
   .cseg::after{content:'';flex:1;height:2px;background:linear-gradient(90deg,var(--pur),transparent);}
   .cseg:first-child{margin-top:0;}
   .cbout.done{opacity:.62;}
+  /* A result arriving from the deck re-draws the card IN PLACE: the card is not
+     dealt again (that replayed on every tap), only the bout that was scored moves.
+     Gold light sweeps the row, the winner punches up, the loser's line is drawn
+     in, the centre flips to how it ended, then the row settles to done. */
+  .cbouts.still > *{animation:none!important;}
+  .cbouts.still > .cbout.scored{position:relative;overflow:hidden;animation:cwSettle .8s ease 1.4s backwards!important;}
+  @keyframes cwSettle{from{opacity:1;box-shadow:0 0 0 2px rgba(255,206,0,.7),0 0 40px rgba(255,206,0,.35);}}
+  .cbout.scored::before{content:'';position:absolute;top:0;bottom:0;left:-40%;width:40%;pointer-events:none;
+    background:linear-gradient(100deg,transparent,rgba(255,206,0,.28) 45%,rgba(255,240,190,.45) 55%,transparent);
+    animation:cwSweep .8s cubic-bezier(.4,0,.2,1) forwards;}
+  @keyframes cwSweep{to{left:110%;}}
+  .cbout.scored .win{animation:cwPunch .7s cubic-bezier(.2,1.6,.4,1) .15s backwards;}
+  @keyframes cwPunch{0%{transform:scale(1);color:#fff;text-shadow:none;}
+    35%{transform:scale(1.2);text-shadow:0 0 40px rgba(255,206,0,1);}100%{transform:scale(1);}}
+  .cbout.scored .lose{animation:cwStrike .5s ease .45s backwards;}
+  @keyframes cwStrike{from{color:#fff;text-decoration-color:transparent;}}
+  .cbout.scored .vs.fin{animation:cwFlip .5s cubic-bezier(.2,1.4,.4,1) .3s backwards;}
+  @keyframes cwFlip{from{transform:rotateX(90deg);opacity:0;}}
   .cbout .fa.win,.cbout .fb.win{color:#ffce00;text-shadow:0 0 18px rgba(255,206,0,.55);}
   .cbout .fa.lose,.cbout .fb.lose{color:var(--dim);text-decoration:line-through;
     text-decoration-thickness:3px;}
@@ -775,6 +793,121 @@
   /* stage gets out of the bar's way while it's up */
   #stage{transition:padding-bottom .55s cubic-bezier(.16,1,.3,1);}
   body.bar-on #stage{padding-bottom:340px;}
+  /* ── CONTENDER HOME (docs/ama-plan.md §11 C15) ─────────────────────────────
+     A contender night's home screen: what the series is, the card, the next
+     fight with both fighters' cut-outs, and a doorway to the end-of-night
+     verdicts. Laid out on the 1740-wide stage, not the 1640 every other view
+     is capped at. Every class is csh-, so nothing here can reach another view. */
+  #v-cshome{max-width:none;height:940px;position:relative;}
+  .csh-head{position:absolute;left:0;right:0;top:-8px;display:flex;align-items:flex-end;justify-content:space-between;}
+  .csh-title{font-weight:900;font-size:100px;line-height:.9;text-transform:uppercase;margin-top:8px;
+    text-shadow:0 0 34px rgba(var(--pur-rgb),.7);}
+  .csh-when{font-family:'Press Start 2P',monospace;font-size:13px;letter-spacing:.2em;color:var(--dim);text-align:right;line-height:2.1;}
+  .csh-rules{position:absolute;left:0;top:166px;width:620px;display:flex;flex-direction:column;gap:20px;}
+  .csh-rule{padding:22px 28px;background:var(--panel);border-left:4px solid var(--pink);}
+  .csh-rule .n{font-family:'Press Start 2P',monospace;font-size:11px;letter-spacing:.24em;color:var(--hi);}
+  .csh-rule h3{font-weight:900;font-size:48px;text-transform:uppercase;line-height:.95;margin-top:10px;}
+  .csh-rule p{font-family:'Barlow',sans-serif;font-weight:500;font-size:23px;color:var(--dim);margin-top:8px;line-height:1.3;}
+  .csh-right{position:absolute;left:690px;right:0;top:166px;display:flex;flex-direction:column;gap:16px;}
+  .csh-card{display:flex;flex-direction:column;gap:8px;}
+  .csh-chead{display:flex;align-items:center;gap:14px;font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.2em;color:var(--hi);}
+  .csh-chead .ln{flex:1;height:2px;background:linear-gradient(90deg,var(--pur),transparent);}
+  .csh-chead .cnt{color:var(--dim);font-size:11px;}
+  .csh-chead .cnt b{color:#ffce00;font-weight:400;}
+  .csh-dots{display:flex;gap:6px;}
+  .csh-dots i{width:9px;height:9px;background:rgba(var(--hi-rgb),.25);display:block;}
+  .csh-dots i.on{background:var(--hi);box-shadow:0 0 8px rgba(var(--hi-rgb),.8);}
+  .csh-b{position:relative;overflow:hidden;display:grid;grid-template-columns:1fr 92px 1fr;align-items:center;padding:8px 22px;height:52px;
+    background:var(--panel);border-left:4px solid var(--pur);box-shadow:0 0 18px rgba(var(--deep-rgb),.4);}
+  .csh-b .a,.csh-b .b{position:relative;z-index:1;font-weight:700;font-size:32px;text-transform:uppercase;white-space:nowrap;
+    max-width:100%;overflow:hidden;text-overflow:ellipsis;}
+  .csh-b .a{text-align:right;justify-self:end;}.csh-b .b{text-align:left;justify-self:start;}
+  .csh-b .vs{position:relative;z-index:1;font-family:'Press Start 2P',monospace;font-size:15px;color:var(--pink);text-align:center;
+    text-shadow:0 0 10px rgba(var(--pink-rgb),.5);}
+  .csh-b .vs.fin{font-size:12px;letter-spacing:.12em;color:#ffce00;text-shadow:none;}
+  .csh-b .no{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-family:'Press Start 2P',monospace;font-size:13px;
+    color:var(--hi);opacity:.7;z-index:1;}
+  .csh-b.main{height:auto;padding-top:6px;border-left-color:#ffce00;box-shadow:0 0 26px rgba(255,206,0,.22);}
+  .csh-b.main .vs{color:#ffce00;}
+  .csh-b .mtag{grid-column:1/-1;text-align:center;font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.2em;color:#ffce00;margin-bottom:3px;}
+  .csh-b.done{opacity:.6;}
+  .csh-b.next{border-left-color:var(--hi);background:rgba(var(--deep2-rgb),.9);
+    box-shadow:0 0 0 2px rgba(var(--hi-rgb),.6),0 0 30px rgba(var(--pur-rgb),.45);}
+  .csh-b.next .vs{color:var(--hi);font-size:12px;letter-spacing:.1em;}
+  .csh-b .win{color:#ffce00;text-shadow:0 0 18px rgba(255,206,0,.5);}
+  .csh-b .lose{color:var(--dim);}
+  .csh-b .lose::after{content:'';position:absolute;left:-4px;right:-4px;top:52%;height:3px;background:var(--dim);transform-origin:left;}
+  /* a result: the same beats as the card (gold sweep, the winner punches up, the line drawn through the loser, VS flips) */
+  .csh-b.scoring{animation:cwSettle .8s ease 1.4s backwards;}
+  .csh-b.scoring::before{content:'';position:absolute;top:0;bottom:0;left:-40%;width:40%;pointer-events:none;
+    background:linear-gradient(100deg,transparent,rgba(255,206,0,.28) 45%,rgba(255,240,190,.45) 55%,transparent);
+    animation:cwSweep .8s cubic-bezier(.4,0,.2,1) forwards;}
+  .csh-b.scoring .win{animation:cwPunch .7s cubic-bezier(.2,1.6,.4,1) .15s backwards;}
+  .csh-b.scoring .lose::after{animation:cshStrike .45s cubic-bezier(.6,0,.3,1) .45s backwards;}
+  @keyframes cshStrike{from{transform:scaleX(0);}}
+  .csh-b.scoring .lose{animation:cshFadeL .5s ease .45s backwards;}
+  @keyframes cshFadeL{from{color:#fff;}}
+  .csh-b.scoring .vs.fin{animation:cwFlip .5s cubic-bezier(.2,1.4,.4,1) .3s backwards;}
+  /* the page turn: the finished four lift away top first, the next four are dealt in from below */
+  .csh-slots{display:flex;flex-direction:column;gap:8px;}
+  .csh-slots.out > *{animation:cshPgOut .38s cubic-bezier(.6,0,.9,.4) forwards;}
+  .csh-slots.out > *:nth-child(2){animation-delay:.06s;}.csh-slots.out > *:nth-child(3){animation-delay:.12s;}.csh-slots.out > *:nth-child(4){animation-delay:.18s;}
+  @keyframes cshPgOut{to{transform:translateY(-26px);opacity:0;}}
+  .csh-slots.in > *{animation:cshPgIn .55s cubic-bezier(.16,1,.3,1) backwards;}
+  .csh-slots.in > *:nth-child(2){animation-delay:.08s;}.csh-slots.in > *:nth-child(3){animation-delay:.16s;}.csh-slots.in > *:nth-child(4){animation-delay:.24s;}
+  @keyframes cshPgIn{from{transform:translateY(30px);opacity:0;}}
+  /* UP NEXT: no box, the cut-outs stand on the board and fade out at the waist */
+  .csh-up{position:relative;height:300px;}
+  .csh-up::before{content:'';position:absolute;left:-40px;right:-40px;bottom:-10px;height:200px;pointer-events:none;
+    background:radial-gradient(ellipse 22% 80% at 23% 100%,rgba(var(--pink-rgb),.28),transparent 70%),
+               radial-gradient(ellipse 22% 80% at 77% 100%,rgba(var(--pink-rgb),.28),transparent 70%);}
+  .csh-up .lab{position:absolute;left:0;right:0;top:0;text-align:center;z-index:3;}
+  .csh-up .lab .meta{font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.22em;color:var(--dim);margin-top:10px;}
+  .csh-up .fig{position:absolute;bottom:0;width:420px;height:270px;z-index:2;}
+  .csh-up .fig.l{left:20px;}.csh-up .fig.r{right:20px;}
+  .csh-up .av,.csh-up .sil{position:absolute;bottom:0;left:80px;width:260px;height:260px;object-fit:contain;
+    filter:drop-shadow(0 0 22px rgba(var(--pur-rgb),.55));
+    -webkit-mask-image:linear-gradient(180deg,#000 62%,transparent 96%);mask-image:linear-gradient(180deg,#000 62%,transparent 96%);}
+  .csh-up .fig.r img.av{transform:scaleX(-1);}   /* both face the middle */
+  .csh-up .sil{color:rgba(var(--hi-rgb),.2);filter:none;}
+  .csh-up .nm{position:absolute;left:50%;transform:translateX(-50%);width:max-content;bottom:8px;text-align:center;font-weight:900;
+    font-size:62px;line-height:.9;text-transform:uppercase;white-space:nowrap;
+    text-shadow:0 0 24px rgba(var(--pur-rgb),.9),0 0 6px rgba(0,0,0,.9),0 3px 0 rgba(0,0,0,.5);}
+  .csh-up .x{position:absolute;left:50%;bottom:110px;transform:translateX(-50%);z-index:3;
+    font-family:'Press Start 2P',monospace;font-size:34px;color:var(--pink);text-shadow:0 0 22px rgba(var(--pink-rgb),.8);}
+  .csh-up .done{position:absolute;inset:50px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;}
+  .csh-up .done b{font-weight:900;font-size:84px;text-transform:uppercase;line-height:.9;text-shadow:0 0 30px rgba(var(--pur-rgb),.8);}
+  .csh-up .done span{font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.22em;color:var(--hi);}
+  /* a new fight: the last pair out to the sides, the new pair in, names wipe on, VS punches in last */
+  .csh-up.leaving .fig.l{animation:cshOutL .42s cubic-bezier(.6,0,.9,.4) forwards;}
+  .csh-up.leaving .fig.r{animation:cshOutR .42s cubic-bezier(.6,0,.9,.4) forwards;}
+  .csh-up.leaving .x,.csh-up.leaving .lab .meta,.csh-up.leaving .done{animation:cshFade .3s forwards;}
+  @keyframes cshOutL{to{transform:translateX(-120px);opacity:0;}}
+  @keyframes cshOutR{to{transform:translateX(120px);opacity:0;}}
+  @keyframes cshFade{to{opacity:0;}}
+  .csh-up.arriving .fig.l{animation:cshInL .7s cubic-bezier(.16,1,.3,1) backwards;}
+  .csh-up.arriving .fig.r{animation:cshInR .7s cubic-bezier(.16,1,.3,1) .08s backwards;}
+  @keyframes cshInL{from{transform:translateX(-160px);opacity:0;}}
+  @keyframes cshInR{from{transform:translateX(160px);opacity:0;}}
+  .csh-up.arriving .nm{animation:cshWipe .55s cubic-bezier(.6,0,.2,1) .35s backwards;}
+  @keyframes cshWipe{from{clip-path:inset(0 100% 0 0);}to{clip-path:inset(0 0 0 0);}}
+  .csh-up.arriving .x{animation:cshVs .5s cubic-bezier(.2,1.6,.4,1) .55s backwards;}
+  @keyframes cshVs{from{transform:translateX(-50%) scale(2.2);opacity:0;}}
+  .csh-up.arriving .lab .eyebrow{animation:cshFlick .25s steps(2) 0s 4;}
+  @keyframes cshFlick{50%{opacity:.2;}}
+  .csh-up.arriving .done{animation:cshUp .7s cubic-bezier(.16,1,.3,1) backwards;}
+  @keyframes cshUp{from{transform:translateY(20px);opacity:0;}}
+  /* the doorway to the verdicts, never the verdicts themselves (they are secret until the reveal) */
+  .csh-vlink{position:absolute;right:0;bottom:0;display:flex;align-items:center;gap:18px;padding:14px 22px 14px 26px;
+    background:linear-gradient(90deg,var(--panel),rgba(var(--deep2-rgb),.95));border:2px solid rgba(var(--hi-rgb),.55);
+    box-shadow:0 0 30px rgba(var(--pur-rgb),.35);transition:border-color .5s,box-shadow .5s;}
+  .csh-vlink .l1{font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.24em;color:var(--hi);}
+  .csh-vlink .l2{font-weight:900;font-size:38px;text-transform:uppercase;line-height:.95;margin-top:6px;}
+  .csh-vlink .arw{font-family:'Press Start 2P',monospace;font-size:28px;color:var(--pink);text-shadow:0 0 14px rgba(var(--pink-rgb),.8);
+    animation:cshNudge 1.6s ease-in-out infinite;}
+  @keyframes cshNudge{0%,100%{transform:translateX(0);}50%{transform:translateX(6px);}}
+  .csh-vlink.hot{border-color:#ffce00;box-shadow:0 0 40px rgba(255,206,0,.4);}
+  .csh-vlink.hot .l1{color:#ffce00;}
 </style>
 </head>
 <body>
@@ -957,6 +1090,27 @@
       <div class="title" id="cardTitle">The Card</div>
       <div class="cdate" id="cardDate"></div>
       <div class="cbouts" id="cardContent"></div>
+    </div>
+
+    <!-- CONTENDER HOME: drawn by cshDraw() from the card, the deck's ARM and its results -->
+    <div class="view" id="v-cshome">
+      <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+        <symbol id="cshSil" viewBox="0 0 100 100"><path fill="currentColor" d="M50 14c9 0 16 8 16 18s-7 19-16 19-16-9-16-19 7-18 16-18zM14 100c0-21 15-38 36-38s36 17 36 38z"/></symbol>
+      </defs></svg>
+      <div class="csh-head">
+        <div><div class="eyebrow">VGA · CONTENDER SERIES</div><div class="csh-title" id="cshTitle"></div></div>
+        <div class="csh-when" id="cshWhen"></div>
+      </div>
+      <div class="csh-rules">
+        <div class="csh-rule"><div class="n">THE NIGHT</div><h3>One owner. One card.</h3><p id="cshOwnerLine"></p></div>
+        <div class="csh-rule"><div class="n">THE FIGHTERS</div><h3>GFL's amateurs</h3><p>It counts on their amateur record.</p></div>
+        <div class="csh-rule"><div class="n">THE PRIZE</div><h3>A UBA contract</h3><p>Every fighter gets a verdict at the end of the night. Win or lose, the performance decides.</p></div>
+      </div>
+      <div class="csh-right">
+        <div class="csh-up" id="cshUp"></div>
+        <div class="csh-card" id="cshCard"></div>
+      </div>
+      <div class="csh-vlink" id="cshVlink"><div><div class="l1">END OF THE NIGHT</div><div class="l2">The Verdicts</div></div><div class="arw">▶</div></div>
     </div>
 
     <div class="view" id="v-cta">
@@ -1787,7 +1941,7 @@ async function showCard(eventName, pushed){
   // wins are clicks that haven't reached the database yet — re-fetching here
   // would quietly undo them on screen.
   if(pushed && pushed.bouts && pushed.bouts.length){
-    renderCard({name:pushed.event||eventName||'THE CARD', event_date:pushed.date||null},
+    renderCard({id:pushed.eventId||null, name:pushed.event||eventName||'THE CARD', event_date:pushed.date||null},
                pushed.bouts, pushed.filter)
     return
   }
@@ -1828,7 +1982,41 @@ let segTimer=null
 const winOf=b=> /^(a|fighter_a)$/i.test(b.winner_corner||b.winner||'') ? 'a'
               : /^(b|fighter_b)$/i.test(b.winner_corner||b.winner||'') ? 'b' : null
 
-function renderCard(ev, bouts, filter){
+/* ── WINS: the deck's results, kept HERE too ──────────────────────────────
+   The database only learns tonight's results at the close, so a card drawn from
+   it (a 🃏 button, this page reloading, OBS refreshing the source) used to come
+   up blank and stay blank until the next tap. The deck now sends each result on
+   its own (cardwin) and this screen keeps them, keyed by event + match and saved
+   in localStorage, and lays them over every card it draws. A screen that loads
+   mid-show also asks the deck (cardhello) for everything scored so far. */
+const WINS_KEY='vga-card-wins'
+let WINS={}
+try{ WINS=JSON.parse(localStorage.getItem(WINS_KEY)||'{}')||{} }catch(e){ WINS={} }
+const winsSave=()=>{ try{
+  const ids=Object.keys(WINS); if(ids.length>6) ids.slice(0,ids.length-6).forEach(k=>delete WINS[k])   // the last few nights is plenty
+  localStorage.setItem(WINS_KEY, JSON.stringify(WINS)) }catch(e){} }
+const winsFor=id=> WINS[id] || (WINS[id]={})
+let CUR=null   // the card on screen: { ev, bouts, filter }
+function winTaken(c){
+  if(!c.eventId) return false
+  const w=winsFor(c.eventId)
+  if(c.type==='cardwins') (c.wins||[]).forEach(x=>{ if(x.match_id) w[x.match_id]={ w:x.winner_corner||null, m:x.method||null } })
+  else if(c.match_id) w[c.match_id]={ w:c.winner_corner||null, m:c.method||null }
+  else return false
+  winsSave()
+  // only the card already on screen is touched; nothing here changes the view
+  if(CUR && CUR.ev.id===c.eventId) renderCard(CUR.ev, CUR.bouts, CUR.filter, c.type==='cardwin' ? c.match_id : '')
+  if(c.type==='cardwins' && c.armed!==undefined) CSH_ARMED[c.eventId]=c.armed   // kept for a card still loading
+  if(c.eventId===CSH.eventId){ if(c.type==='cardwins' && c.armed!==undefined) CSH.armed=c.armed
+    cshUpdate(c.type==='cardwin' ? c.match_id : null) }
+  return true
+}
+
+function renderCard(ev, bouts, filter, scored){
+  CUR={ ev, bouts, filter }
+  const w=(ev.id && WINS[ev.id]) || {}
+  bouts=bouts.map(b=>{ const t=b.match_id && w[b.match_id]
+    return t ? { ...b, winner_corner:t.w, method:t.w ? t.m : null } : b })
   document.getElementById('cardTitle').textContent=ev.name
   // no date -> blank, not "WED DEC 31". The runner pushes rows without one and
   // fdate(null) happily formats the epoch.
@@ -1850,7 +2038,8 @@ function renderCard(ev, bouts, filter){
     // rendered straight through the fighter names on either side of it.
     const m=(w && b.method) ? METHOD(b.method) : ''
     const ko=/^(KO|TKO|SUB)/.test(m)
-    return `<div class="cbout${b.is_title_fight?' title':''}${w?' done':''}${ko?' ko':''}">
+    const hit = scored && b.match_id===scored && w
+    return `<div class="cbout${b.is_title_fight?' title':''}${w?' done':''}${ko?' ko':''}${hit?' scored':''}">
       ${b.is_title_fight?`<div class="cbadge">★ ${b.title_name||'Title Fight'} ★</div>`:''}
       <span class="fa${cls('a')}">${b.fighter_a_name}</span>
       <span class="vs${m?' fin':''}${ko?' ko':''}">${m||'VS'}</span>
@@ -1873,6 +2062,8 @@ function renderCard(ev, bouts, filter){
   const done=open.filter(winOf).length
   if(done) html+=`<div class="cprog"><span>DISCORD.GG/UBA</span><span><b>${done}</b> / ${open.length} COMPLETE</span></div>`
   box.classList.toggle('tight', open.length>8)
+  // scored === undefined: a fresh card, dealt in. Anything else: a result came in.
+  box.classList.toggle('still', scored!==undefined)
   box.innerHTML=html
 }
 
@@ -2420,7 +2611,8 @@ function show(view, league){
   hideAll()
   if(view==='off'||!view) return
   if(view==='auto'){
-    const list = league==='gfl' ? VIEWS_GFL : league==='uba' ? VIEWS_UBA : VIEWS
+    let list = league==='gfl' ? VIEWS_GFL : league==='uba' ? VIEWS_UBA : VIEWS
+    if(document.documentElement.dataset.series==='cs' && CSH.eventId) list=['cshome', ...list.filter(v=>v!=='card')]
     let i=0; const step=()=>{ hideAll(); showView($('v-'+list[i%list.length])); i++ }
     step(); cycle=setInterval(step,15000); return }
   showView($('v-'+view))
@@ -2501,13 +2693,141 @@ function fillBar(d){
       </div></div>`).join('')
 }
 
-sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
+/* ── CONTENDER HOME (docs/ama-plan.md §11 C15) ────────────────────────────
+   One screen for a contender night: what the series is, the card, the next
+   fight with both fighters, and a doorway to the verdicts. It is fed by three
+   things the deck already sends: the card (read here by event id), ARM (a
+   'bout' command now carries its match), and the results (cardwin, kept in
+   WINS above). It never writes anything.
+   THE CARD IS PAGED so it works for any number of fights. The main event is
+   pinned; the others, in running order (the highest bout number is fought
+   first), are cut into pages of four, and the page shown is the one holding
+   the next fight. So the page follows the fight, never a count: a bout swapped
+   or run out of order still brings up the right page. */
+const CS_OWNER={ MCS:'Maki', CCS:'Castle', HPCS:'1hp' }   // whose night each brand is (ama-plan §11). A new brand: add it here too
+const CSH_PAGE=4
+const CSH_ARMED={}   // what the deck said is armed, by event, in case it answers before the card is read
+const CSH={ eventId:null, name:'', brand:null, bouts:[], pics:{}, armed:null, shownNext:undefined, shownPage:undefined }
+const cshEsc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))
+
+async function cshLoad(eventId, name, brand){
+  const { data, error } = await sb.from('event_matches')
+    .select('match_id,bout_number,weight_class,status,method,fighter_a_name,fighter_b_name,fighter_a_slug,fighter_b_slug,winner_corner')
+    .eq('event_id', eventId).order('bout_number')
+  if(error || !data) return false   // a failed read is never drawn as an empty card
+  const bouts=data.filter(b=>b.fighter_a_name && b.fighter_b_name
+    && b.status!=='cancelled' && String(b.method||'').toLowerCase()!=='cancelled')
+  const slugs=[...new Set(bouts.flatMap(b=>[b.fighter_a_slug,b.fighter_b_slug]).filter(Boolean))]
+  const pics={}
+  if(slugs.length){
+    const { data:fc } = await sb.from('fighter_cards').select('slug,profile_photo_url').in('slug', slugs)
+    ;(fc||[]).forEach(f=>{ if(f.profile_photo_url) pics[f.slug]=f.profile_photo_url })
+  }
+  Object.assign(CSH,{ eventId, name:name||'', brand:brand||CSH.brand, bouts, pics, armed:CSH_ARMED[eventId]??null, shownNext:undefined, shownPage:undefined })
+  try{ localStorage.setItem('vga-cshome', JSON.stringify({ eventId, name:CSH.name, brand:CSH.brand, at:Date.now() })) }catch(e){}
+  return true
+}
+// An OBS refresh mid-show forgets which card the home screen was on. It comes
+// back to it (within 12 hours) and draws it, without putting it on air; the
+// deck's answer to cardhello then brings back what is armed.
+;(()=>{ try{ const o=JSON.parse(localStorage.getItem('vga-cshome')||'null')
+  if(o && o.eventId && Date.now()-o.at < 12*3600e3) cshLoad(o.eventId, o.name, o.brand).then(ok=>{ if(ok) cshUpdate() })
+}catch(e){} })()
+// the main event is bout 1 (card-format.js's rule); the rest run from the bottom of the card up
+const cshMain=()=> CSH.bouts.reduce((m,b)=> !m || b.bout_number<m.bout_number ? b : m, null)
+const cshOthers=()=>{ const m=cshMain(); return CSH.bouts.filter(b=>b!==m).sort((x,y)=>y.bout_number-x.bout_number) }
+const cshRun=()=>{ const m=cshMain(); return m ? [...cshOthers(), m] : [] }
+const cshNo=b=> cshRun().indexOf(b)+1
+const cshRes=b=>{ const t=(WINS[CSH.eventId]||{})[b.match_id]
+  const w = t ? t.w : winOf(b); return w ? { w, m: t ? t.m : b.method } : null }
+// the next fight: what the deck ARMED, unless it is already scored; then the first unfinished one
+function cshNext(){
+  const armed=CSH.bouts.find(b=>b.match_id===CSH.armed)
+  if(armed && !cshRes(armed)) return armed
+  return cshRun().find(b=>!cshRes(b)) || null
+}
+function cshPages(){ const o=cshOthers(), out=[]; for(let i=0;i<o.length;i+=CSH_PAGE) out.push(o.slice(i,i+CSH_PAGE)); return out }
+function cshPageOf(nx){ const ps=cshPages(); const i=nx ? ps.findIndex(p=>p.includes(nx)) : -1; return i>=0 ? i : ps.length-1 }
+
+function cshRow(b, nx, scoredId, isMain){
+  const r=cshRes(b), isNext=b===nx
+  const cls=['csh-b', isMain&&'main', r&&'done', isNext&&'next', r&&b.match_id===scoredId&&'scoring'].filter(Boolean).join(' ')
+  const ca=r?(r.w==='a'?'win':'lose'):'', cb=r?(r.w==='b'?'win':'lose'):''
+  const mid = r ? `<div class="vs fin">${r.m?METHOD(r.m):'WIN'}</div>` : `<div class="vs">${isNext?'NEXT':'VS'}</div>`
+  return `<div class="${cls}">${isMain?'<div class="mtag">MAIN EVENT</div>':`<span class="no">${cshNo(b)}</span>`}
+    <div class="a ${ca}">${cshEsc(b.fighter_a_name)}</div>${mid}<div class="b ${cb}">${cshEsc(b.fighter_b_name)}</div></div>`
+}
+function cshCardDraw(scoredId, slotCls){
+  const nx=cshNext(), pg=cshPageOf(nx), ps=cshPages(), p=(ps[pg]||[]).slice().sort((x,y)=>x.bout_number-y.bout_number), m=cshMain()
+  const nums=p.map(cshNo), lo=Math.min(...nums), hi=Math.max(...nums)
+  const range=!p.length ? '' : lo===hi ? ` · FIGHT ${lo}` : ` · FIGHTS ${lo}–${hi}`
+  const done=CSH.bouts.filter(cshRes).length
+  const dots=ps.length>1 ? `<span class="csh-dots">${ps.map((_,i)=>`<i class="${i===pg?'on':''}"></i>`).join('')}</span>` : ''
+  $('cshCard').innerHTML=`<div class="csh-chead"><span>THE CARD${range}</span><span class="ln"></span>${dots}<span class="cnt"><b>${done}</b> / ${CSH.bouts.length} DONE</span></div>`
+    + (m ? cshRow(m, nx, scoredId, true) : '')
+    + `<div class="csh-slots ${slotCls||''}" id="cshSlots">${p.map(b=>cshRow(b, nx, scoredId, false)).join('')}</div>`
+}
+// a photo that will not load falls back to the full picture, then to the silhouette: never a broken image on air
+window.cshPicFail=img=>{ const full=img.dataset.full
+  if(full && img.src!==full){ img.src=full; return }
+  img.outerHTML='<svg class="sil"><use href="#cshSil"/></svg>' }
+function cshFig(side, name, slug){
+  const full=CSH.pics[slug], sq=full && full.replace('/fighter-photos/','/fighter-photos/square/')
+  const art = full ? `<img class="av" src="${cshEsc(sq)}" data-full="${cshEsc(full)}" onerror="cshPicFail(this)" alt="">`
+                   : '<svg class="sil"><use href="#cshSil"/></svg>'
+  return `<div class="fig ${side}">${art}<div class="nm">${cshEsc(name)}</div></div>`
+}
+function cshUpDraw(cls){
+  const nx=cshNext(), up=$('cshUp')
+  up.className='csh-up '+(cls||'')
+  up.innerHTML = nx
+    ? `<div class="lab"><div class="eyebrow">${nx===cshMain()?'MAIN EVENT · UP NEXT':'UP NEXT'}</div>
+         <div class="meta">${cshEsc(String(nx.weight_class||'').replace(/_/g,' ').toUpperCase())}${nx.weight_class?' · ':''}FIGHT ${cshNo(nx)} OF ${CSH.bouts.length}</div></div>
+       ${cshFig('l', nx.fighter_a_name, nx.fighter_a_slug)}<div class="x">VS</div>${cshFig('r', nx.fighter_b_name, nx.fighter_b_slug)}`
+    : `<div class="lab"><div class="eyebrow">THAT'S THE CARD</div></div>
+       <div class="done"><b>The verdicts are next</b><span>CONTRACT OR NO CONTRACT · EVERY FIGHTER</span></div>`
+  $('cshVlink').classList.toggle('hot', !nx)
+  // a long name shrinks until it fits its side; it is never cut off
+  up.querySelectorAll('.nm').forEach(n=>{ let px=62; n.style.fontSize=px+'px'
+    while(n.scrollWidth>400 && px>34) n.style.fontSize=(--px)+'px' })
+}
+function cshFrame(){
+  $('cshTitle').textContent=CSH.name
+  const owner=CS_OWNER[CSH.brand]
+  $('cshWhen').innerHTML = (owner ? `${cshEsc(owner.toUpperCase())}'S NIGHT<br>` : '') + 'GFL FIGHTERS · CONTRACTS ON THE LINE'
+  $('cshOwnerLine').textContent = owner ? `${owner} picked every fight on it.` : 'The owner picked every fight on it.'
+}
+// Redraw after anything changed. On screen, a new next fight slides the pair
+// out and the new one in, and a new page lifts the old four away and deals the
+// next four in. Off screen it just draws, so it is right when it is shown.
+// The delayed draws read the state when they fire, so two quick presses end on
+// the second one, never stuck half-way out.
+function cshUpdate(scoredId){
+  if(!CSH.eventId) return
+  const nx=cshNext(), pg=cshPageOf(nx)
+  const live=$('v-cshome').classList.contains('on') && CSH.shownNext!==undefined
+  const upChanged=nx!==CSH.shownNext, pgChanged=pg!==CSH.shownPage
+  CSH.shownNext=nx; CSH.shownPage=pg
+  if(!live){ cshFrame(); cshUpDraw(''); cshCardDraw(null, ''); return }
+  if(upChanged){ $('cshUp').classList.add('leaving')
+    setTimeout(()=>cshUpDraw('arriving'), 430) }
+  if(pgChanged){ const sl=$('cshSlots'); if(sl) sl.classList.add('out')
+    setTimeout(()=>cshCardDraw(scoredId, 'in'), 520) }
+  else cshCardDraw(scoredId, '')
+}
+
+const LINK=sb.channel('vga-overlay')
+LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
   // A kiosk is somebody else's laptop, not a source in the rig — the deck must
   // not be able to change what they are looking at. See KIOSK MODE below.
   if(document.body.classList.contains('kiosk')) return
   // A Contender Series card on the deck dresses this screen in Ice; any other
   // card puts it back. Read off the league stamp every command carries.
   if(c.league) document.documentElement.dataset.series = c.series ? 'cs' : ''
+  // A scored fight. Never a reason to change what this screen shows.
+  if(c.type==='cardwin' || c.type==='cardwins'){ winTaken(c); return }
+  // ARM on the deck: Up Next follows it. Also never a reason to change the view.
+  if(c.type==='bout' && c.eventId && c.eventId===CSH.eventId){ CSH.armed=c.match_id||null; cshUpdate() }
   // THE CONTENDER SERIES VERDICT SCREEN RIDES IN THIS SOURCE. The verdicts are
   // given at the end of the night, on the Waiting scene, and this is the source
   // that scene has -- so nothing is added to OBS for them. The screen is its
@@ -2555,6 +2875,12 @@ sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
     if(c.on===false){ show('off'); return }
     if(c.view==='card'){ await showCard(c.event, c.d); show('card'); return }   // c.event picks FN29/FN30/… · c.d = live rows from the runner
     if(c.view==='nextev'){ await showNextEv(c.exclude); show('nextev'); return }  // c.exclude = the event you're running tonight
+    if(c.view==='cshome'){
+      if(!c.eventId) return
+      if(c.eventId!==CSH.eventId && !(await cshLoad(c.eventId, c.event, c.series))) return   // no card read = stay on what is up
+      if(c.series) CSH.brand=c.series
+      if(c.armed!==undefined) CSH.armed=c.armed
+      CSH.shownNext=undefined; cshUpdate(); show('cshome'); return }
     show(c.view, c.league); return   // league only matters to 'auto' — it picks the rotation
   }
   // when the deck loads a match in the tracker, mirror it on the team-vs-team
@@ -2585,7 +2911,11 @@ sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
     setTimeout(()=>{ box.classList.remove('on') }, 6800)                                     // transition out
     setTimeout(()=>{ coin.classList.remove('flip') }, 7400)
   }
-}).subscribe(s=>{ $('status').textContent='standby: '+(s==='SUBSCRIBED'?'● live':s.toLowerCase()) })
+}).subscribe(s=>{ $('status').textContent='standby: '+(s==='SUBSCRIBED'?'● live':s.toLowerCase())
+  // just joined (a reload, OBS refreshing the source): ask the deck what has been scored
+  if(s==='SUBSCRIBED' && !document.body.classList.contains('kiosk'))
+    LINK.send({ type:'broadcast', event:'cmd', payload:{ type:'cardhello' } })
+})
 
 // ── KIOSK MODE ───────────────────────────────────────────────────────────
 // A link that can be handed to anybody for a pre-show chat: it drives itself,
