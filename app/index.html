@@ -1488,22 +1488,22 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
 .bk-tk{display:grid;grid-template-columns:minmax(0,1fr) 92px;margin:0 16px 10px;border-radius:16px;overflow:hidden;cursor:pointer;
   border:1px solid rgba(185,162,255,.45);background:rgba(16,12,38,.88);-webkit-tap-highlight-color:transparent}
 .bk-main{padding:11px 12px 10px;display:grid;gap:3px;min-width:0}
-.bk-hd{display:flex;align-items:baseline;gap:8px;min-width:0}
-.bk-hd b{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:24px;line-height:1;letter-spacing:.02em;white-space:nowrap}
-.bk-hd span{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.06em;text-transform:uppercase;color:#9C96B5;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bk-ev{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:24px;line-height:1;letter-spacing:.02em}
 .bk-clock{font-family:'Bebas Neue',sans-serif;font-size:34px;line-height:.9;letter-spacing:.02em;font-variant-numeric:tabular-nums}
 .bk-clock span span{color:#6E6888}
+.bk-when{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.06em;text-transform:uppercase;color:#9C96B5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bk-live{display:inline-block;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
   color:#fff;background:#E8362B;border-radius:6px;padding:5px 8px;margin:4px 0 2px}
 .bk-live.o{background:#2E2860;color:#C9BCF2}
-.bk-me{display:flex;align-items:center;gap:3px;min-width:0;margin-top:5px;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.01em;line-height:1}
-.bk-me .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bk-me i{font-style:normal;color:#6E6888;font-size:11px;padding:0 1px}
-.bk-px{appearance:none;flex:0 0 auto;border:0;border-radius:5px;padding:4px 4px;color:#fff;cursor:pointer;
-  font-family:'Space Mono',monospace;font-size:9px;font-weight:700;line-height:1}
-.bk-px.r{background:#B3323F} .bk-px.b{background:#2F5BD0}
-.bk-px:focus-visible{outline:2px solid #fff;outline-offset:1px}
+/* the main event: a thin red / blue edge across the whole foot of the ticket */
+.bk-hl{grid-column:1 / -1;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:6px;padding:4px 10px 5px;
+  background:linear-gradient(90deg,rgba(179,50,63,.55),rgba(124,32,48,.35) 49.6%,rgba(35,64,143,.35) 50.4%,rgba(47,91,208,.55));
+  border-top:1px solid rgba(255,255,255,.12)}
+.bk-hl span{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.03em;line-height:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bk-hl span.b{text-align:right}
+.bk-hl em{font-style:normal;font-family:'Space Mono',monospace;font-size:7px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#F5C842}
+.bk-px{appearance:none;background:none;border:0;color:#fff;font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;padding:2px 1px;cursor:pointer;opacity:.95}
+.bk-px:focus-visible{outline:1px solid #fff;outline-offset:1px}
 .bk-stub{position:relative;border-left:2px dashed rgba(185,162,255,.45);padding:10px;display:grid;align-content:center;gap:2px;
   background:rgba(185,162,255,.08)}
 .bk-stub::before,.bk-stub::after{content:'';position:absolute;left:-9px;width:16px;height:16px;border-radius:50%;background:#110D28}
@@ -5272,7 +5272,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v253';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v254';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -11020,7 +11020,7 @@ async function loadBetting(){
     me ? qMe("my_profile?select=vc_balance&limit=1") : Promise.resolve([]),
     q("events_public?select=id,name,event_date,status&order=event_date.asc&limit=30"),
     pkRules ? Promise.resolve([pkRules]) : q("pickem_rules_public?select=*"),
-    me ? qMe("my_pickem?select=event_id,amount,state,pays_if_all_win&state=neq.settled") : Promise.resolve([])
+    me ? qMe("my_pickem?select=event_id,amount,state,pays_if_all_win,entry_status,payout_amount&order=placed_at.desc&limit=200") : Promise.resolve([])
   ]);
   if(!el.isConnected) return;
   if(!got[0]){
@@ -11134,20 +11134,23 @@ function bkTicketHTML(t){
   var stub = money.riding
     ? '<span class="k">Riding</span><span class="v">' + pkN(money.riding) + '</span><span class="k">Pays about</span><span class="v g">' + pkN(money.pays) + '</span>'
     : '<span class="k">Pots</span><span class="v">' + pkN(pot) + '</span><span class="k">' + (t.open ? 'No bets yet' : 'Betting closed') + '</span>';
-  /* the main event's line: both names, each price a chip you can press while
-     its fight is open; a side nobody has backed yet has no price to show */
+  /* the main event along the foot: both names on a thin red / blue edge, each
+     price pressable while its fight is open; a side nobody has backed yet
+     says "new" rather than inventing a price */
   function chip(side){
     var tot = Number(main.pool || 0), sd = Number(side === 'a' ? main.total_a : main.total_b);
     var label = sd > 0 ? pkX(tot / sd) : 'new';
     if(main.market_status !== 'open') return '';
-    return '<button type="button" class="bk-px ' + (side === 'a' ? 'r' : 'b') + '" data-bpick="' + esc(t.id + '|' + main.match_id + '|' + side) + '"'
+    return '<button type="button" class="bk-px" data-bpick="' + esc(t.id + '|' + main.match_id + '|' + side) + '"'
       + ' aria-label="Back ' + esc(side === 'a' ? main.side_a : main.side_b) + ' at ' + label + '">' + label + '</button>';
   }
   return '<div class="bk-tk" data-bevent="' + esc(t.id) + '"><div class="bk-main">'
-    + '<div class="bk-hd"><b>' + esc(t.name) + '</b><span>' + esc(when) + '</span></div>'
+    + '<b class="bk-ev">' + esc(t.name) + '</b>'
     + '<div class="bk-clock">' + clock + '</div>'
-    + '<div class="bk-me"><span class="nm">' + esc(main.side_a || '—') + '</span>' + chip('a') + '<i>vs</i>' + chip('b') + '<span class="nm">' + esc(main.side_b || '—') + '</span></div>'
-    + '</div><div class="bk-stub">' + stub + '</div></div>';
+    + '<span class="bk-when">' + esc(when) + '</span>'
+    + '</div><div class="bk-stub">' + stub + '</div>'
+    + '<div class="bk-hl"><span class="a">' + esc(main.side_a || '—') + ' ' + chip('a') + '</span><em>Main</em>'
+    + '<span class="b">' + chip('b') + ' ' + esc(main.side_b || '—') + '</span></div></div>';
 }
 /* one clock for every ticket, ticking only while the Betting tab is showing */
 setInterval(function(){
@@ -11160,10 +11163,15 @@ setInterval(function(){
    open, so a REFUND counted as a miss, while My bets divided by wins+losses —
    and the same 13 bets read 23% in one place and 43% in the other. A refund is
    a bet that never ran: it is not a miss, and it is not a win. */
+/* A Pick'em entry counts in the record as one bet: won, lost, or a refund that
+   is neither. Without this, somebody who only plays Pick'em read 0 settled. */
+function pkAsBets(list){
+  return (list || []).map(function(x){ return { bet_status: x.entry_status, amount: x.amount, payout_amount: x.payout_amount }; });
+}
 function betRecord(list){
   /* takes the rows it is given — My bets fetches its own, the Betting tab holds
      them in myBets — so the two screens can never count different lists */
-  var all = list || myBets || [];
+  var all = list || (myBets || []).concat(pkAsBets(myPickem));
   var won = all.filter(function(b){ return b.bet_status === 'won'; }).length;
   var lost = all.filter(function(b){ return b.bet_status === 'lost'; }).length;
   var settled = won + lost;
@@ -11679,7 +11687,7 @@ async function renderMyBets(){
   }
 
   /* the SAME numbers the Betting tab shows — one function, one denominator */
-  var rec = betRecord(rows);
+  var rec = betRecord(rows.concat(pkAsBets(pkRows)));
   el.innerHTML = '<div class="summ">'
       + '<div><b>'+rec.settled+'</b><s>settled</s></div>'
       + '<div><b class="'+(rec.hit != null && rec.hit >= 50 ? 'g' : '')+'">'
