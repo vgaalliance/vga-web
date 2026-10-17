@@ -768,6 +768,17 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
    radial-gradient(1.5px 1.5px at 52% 12%,#fff,transparent 70%),radial-gradient(1.2px 1.2px at 71% 84%,#E4DCFF,transparent 70%),
    radial-gradient(1.3px 1.3px at 88% 18%,#fff,transparent 70%)}
 @keyframes fx-drift{to{transform:translateX(-50%)}}
+/* the glass rim on every starry banner: faint on purpose */
+.fx-rim{position:absolute;left:0;right:0;height:18px;overflow:hidden;z-index:-1;pointer-events:none}
+.fx-rim.fx-rt{top:0;-webkit-mask-image:linear-gradient(#000 40%,transparent);mask-image:linear-gradient(#000 40%,transparent)}
+.fx-rim.fx-rb{bottom:0;-webkit-mask-image:linear-gradient(transparent,#000 60%);mask-image:linear-gradient(transparent,#000 60%)}
+.fx-rw{position:absolute;left:0;right:0;height:76px;opacity:1}
+.fx-rt .fx-rw{top:0;transform:scale(1.16,3);transform-origin:50% 0}
+.fx-rb .fx-rw{bottom:0;transform:scale(1.16,3);transform-origin:50% 100%}
+.fx-rw .fx-stars{-webkit-mask-image:none;mask-image:none;z-index:0}
+.fx-ban::after{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(180deg,rgba(255,255,255,.14) 0,rgba(255,255,255,.035) 32%,rgba(255,255,255,0) 52%),
+             linear-gradient(0deg,rgba(185,162,255,.3) 0,rgba(185,162,255,0) 2.5px)}
 .fx-ban .fx-t{padding:11px 12px 10px 14px;min-width:0}
 .fx-ban .fx-t b{display:block;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:24px;letter-spacing:.04em;line-height:1;
   color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -6951,7 +6962,16 @@ function fChampHTML(f, label, bare){
     + (where ? ' · ' + where : '') + '</s></span>'
     + '<span class="fx-w">' + fRec(f) + '</span></a>';
 }
-function fStars(){ return '<span class="fx-stars"><i class="s1"></i><i class="s2"></i></span>'; }
+/* The stars, plus the glass rim: a thin band on the top and bottom edge
+   holding a slightly magnified copy of the same drifting stars, so a star
+   swells and bends a touch as it crosses the edge (the betting bar's glass,
+   done in CSS and kept faint). The copies run the same clocks as the stars,
+   so they stay in step. */
+function fStars(){
+  var st = '<span class="fx-stars"><i class="s1"></i><i class="s2"></i></span>';
+  return st + '<span class="fx-rim fx-rt"><span class="fx-rw">' + st + '</span></span>'
+    + '<span class="fx-rim fx-rb"><span class="fx-rw">' + st + '</span></span>';
+}
 /* The banner. A button only where it folds (All); elsewhere a plain heading. */
 function fBannerHTML(title, sub, count, foldKey){
   var inner = fStars() + '<span class="fx-t"><b>' + esc(title) + '</b>' + (sub ? '<span>' + sub + '</span>' : '') + '</span>'
