@@ -163,6 +163,11 @@
   /* how it ended: its own line under a scored bout, so the names keep their width */
   .mths{flex-basis:100%;display:flex;gap:6px;justify-content:flex-end;margin-top:4px;}
   .mnchip.mth{font-size:15px;padding:2px 8px;opacity:.75;}
+  /* the host avatar's mic level: a bar, with the line where the mouth opens */
+  .csmeter{position:relative;display:inline-block;width:160px;height:14px;border:1px solid var(--gdim);vertical-align:middle;}
+  .csmeter i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--g);}
+  .csmeter b{position:absolute;top:-3px;bottom:-3px;width:2px;background:#ffce00;}
+  .csmeter.open i{background:#ffce00;}
   .mnchip.mth.picked{opacity:1;}
   .mnchip.picked{background:var(--g);color:var(--bg);text-shadow:none;border-color:var(--g);
     box-shadow:0 0 14px rgba(58,255,110,.5);}
@@ -780,6 +785,23 @@
       </div>
       <div style="color:var(--gdim);font-size:16px">Every button puts up ONE screen and it stays until you press another · Split screen = host + fighter, banner says THE VERDICT · Contract screen = the reveal: the fighter's contract comes up and the verdict you set lands on it · back to Split screen = the result is on the banner · Verdict board = the whole night</div>
       <div style="color:var(--gdim);font-size:16px;margin-top:4px">the saved record: admin panel → Results → Contender Series</div>
+      <!-- Only for a brand whose owner has an avatar (HOST_AVATARS below). -->
+      <div id="csHostSec" style="display:none">
+        <h5 style="margin-top:14px">③ HOST AVATAR — in the host's window on the split</h5>
+        <div class="row" style="margin-bottom:6px">
+          <button id="csHostTgl" onclick="csHostToggle()">Avatar: ON</button>
+          <button class="cshp" data-p="1" onclick="csHostPose(1)">1 · Head scratch</button>
+          <button class="cshp" data-p="2" onclick="csHostPose(2)">2 · Thumbs up</button>
+          <button class="cshp" data-p="3" onclick="csHostPose(3)">3 · Thinking</button>
+          <button class="cshp" data-p="4" onclick="csHostPose(4)">4 · Point down</button>
+        </div>
+        <div class="row" style="margin-bottom:6px;align-items:center">
+          <button id="csMicBtn" onclick="csMic()">🎤 Mic: OFF</button>
+          <span class="csmeter" id="csMeter"><i id="csMicLvl"></i><b id="csMicMark"></b></span>
+          <label style="color:var(--gdim);font-size:16px">open the mouth at <input type="range" id="csMicAt" min="2" max="60" value="12" style="width:140px;vertical-align:middle" oninput="csMicMark()"></label>
+        </div>
+        <div style="color:var(--gdim);font-size:16px">The mouth moves with the mic on THIS page, so the host opens it on their own computer and turns the mic on (keys 1–4 change the pose while it is open). Drag the yellow line up until room noise stays under it. The pose and on/off ride with every Split screen press, so a reloaded screen comes back the same.</div>
+      </div>
     </div>
   </div></div>
 
@@ -2144,7 +2166,68 @@ window.csHome=()=>{
   const armed=UBA.armed!=null ? ((UBA.bouts[UBA.armed]||{}).id||null) : null
   send({ type:'standby', view:'cshome', on:true, event:UBA.name, eventId:UBA.id, armed })
 }
+/* ── THE HOST AVATAR (a PNGtuber for the owner) ─────────────────────────────
+   Four poses, mouth shut / open, drawn in the host's window on the split. The
+   same brand list lives in contender-verdict.html (HOSTS): a brand missing
+   there draws nothing even if these buttons send. */
+const HOST_AVATARS = ['HPCS']
+const CSHOST = { on: true, pose: 1 }
+const csHostUI = () => {
+  const has = !!CSN.brand && HOST_AVATARS.includes(CSN.brand)
+  const sec = document.getElementById('csHostSec'); if(sec) sec.style.display = has ? '' : 'none'
+  const t = document.getElementById('csHostTgl'); if(t){ t.textContent = 'Avatar: ' + (CSHOST.on ? 'ON' : 'OFF'); t.classList.toggle('active', CSHOST.on) }
+  document.querySelectorAll('.cshp').forEach(b => b.classList.toggle('active', +b.dataset.p === CSHOST.pose))
+}
+const csHostSend = d => send({ type:'contender', action:'host', d:{ brand:CSN.brand, ...d } })
+window.csHostToggle = () => { CSHOST.on = !CSHOST.on; csHostUI(); csHostSend({ on:CSHOST.on, pose:CSHOST.pose }) }
+window.csHostPose = p => { CSHOST.pose = p; csHostUI(); csHostSend({ on:CSHOST.on, pose:p }) }
+window.addEventListener('keydown', e => {
+  if(!/^[1-4]$/.test(e.key) || e.metaKey || e.ctrlKey || e.altKey) return
+  if(/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '')) return
+  if(document.getElementById('csHostSec')?.style.display === 'none') return
+  csHostPose(+e.key)
+})
+// The mouth. Measured on an AUDIO callback, not a timer or animation frame: a
+// browser freezes those in a background tab, and the host will be looking at
+// Discord, not at this page. Only a CHANGE is sent (straight on the channel,
+// not through send(), which would fill the log at five lines a second), never
+// faster than one every 140ms, and the current state again every 1.5s so a
+// message lost on the way can never leave the mouth stuck open.
+let MIC = null
+const csMicMark = () => { const v = +document.getElementById('csMicAt').value
+  document.getElementById('csMicMark').style.left = Math.min(158, v / 60 * 160) + 'px' }
+window.csMicMark = csMicMark
+csMicMark()
+const csMouth = open => channel.send({ type:'broadcast', event:'cmd', payload:{ type:'contender', action:'host', d:{ brand:CSN.brand, mouth:open } } })
+window.csMic = async () => {
+  const btn = document.getElementById('csMicBtn')
+  if(MIC){ MIC.stop(); MIC = null; btn.textContent = '🎤 Mic: OFF'; btn.classList.remove('active'); csMouth(false); return }
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:false, noiseSuppression:true, autoGainControl:false } })
+    const ac = new AudioContext(), src = ac.createMediaStreamSource(stream)
+    const proc = ac.createScriptProcessor(1024, 1, 1)
+    let loudAt = 0, sentAt = 0, state = false
+    const lvl = document.getElementById('csMicLvl'), meter = document.getElementById('csMeter'), at = document.getElementById('csMicAt')
+    proc.onaudioprocess = ev => {
+      const x = ev.inputBuffer.getChannelData(0); let sum = 0
+      for(let i = 0; i < x.length; i++) sum += x[i] * x[i]
+      const level = Math.min(60, Math.sqrt(sum / x.length) * 300)   // 0..60, the slider's scale
+      const now = performance.now()
+      if(level >= +at.value) loudAt = now
+      const open = now - loudAt < 160                                  // hold open between syllables
+      if(open !== state && now - sentAt >= 140){ state = open; sentAt = now; csMouth(open) }
+      else if(now - sentAt >= 1500){ sentAt = now; csMouth(state) }
+      lvl.style.width = (level / 60 * 160) + 'px'; meter.classList.toggle('open', state)
+    }
+    src.connect(proc); proc.connect(ac.destination)   // a processor only runs while connected; it outputs silence
+    MIC = { stop(){ proc.disconnect(); src.disconnect(); stream.getTracks().forEach(t => t.stop()); ac.close() } }
+    btn.textContent = '🎤 Mic: ON'; btn.classList.add('active')
+    deckLog('🎤 mic on: the avatar\'s mouth follows this computer\'s mic')
+  }catch(e){ deckLog('⚠ mic: ' + (e && e.message || e) + ' — allow the microphone for this page and press again') }
+}
+
 const csGate=on=>{ document.getElementById('csSec').style.display = on ? '' : 'none'
+  csHostUI()
   const hb=document.getElementById('csHomeBtn'); if(hb) hb.style.display = on ? '' : 'none'
   document.getElementById('csNone').style.display = on ? 'none' : ''
   if(!on) document.getElementById('csTitle').textContent='' }
@@ -2227,6 +2310,7 @@ function csDraw(){
   document.getElementById('csbReveal').textContent = v ? '② Contract screen · reveals '+csWord(v) : '② Contract screen'
 }
 const csPayload=(b,side,verdict)=>({ brand:CSN.brand, number:CSN.number, event:UBA.name,
+  host: { on: CSHOST.on, pose: CSHOST.pose },
   name: side==='a'?b.a:b.b, opponent: side==='a'?b.b:b.a,
   bout:b.bout_number, wc:b.wc, won: b.winner ? b.winner===side : null,
   verdict: verdict||null })
