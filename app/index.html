@@ -3423,106 +3423,166 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 @media (max-width:359px){.sa-socials em{letter-spacing:0;font-size:7.5px}}   /* INSTAGRAM on a 320px phone */
 /* ═══ end SMALL ADDS ═══ */
 
-/* ═══ SPARRING (2026-09-20) ═══════════════════════════════════════════
-   The open-lobby model, designed with Castle: going on the board IS opening a
-   room, so the code is typed once up front and ACCEPTING is what hands it over.
-   Discord's flow is untouched — a card with no room_code behaves as it always
-   has, and both boards are the same rows.
+/* ═══ SPARRING (redrawn 2026-10-17) ══════════════════════════════════
+   The open-lobby model is unchanged: going on the board IS opening a room, the
+   code is typed once up front, and ACCEPTING is what hands it over.
 
-   The shapes carry one rule: anything you PRESS leans, anything you READ stands
-   straight. A plate is one leaning slab cut into pieces (the action, then an
-   end-cap for the smaller choice beside it); the words inside are un-skewed so
-   nothing is typeset on a slant. SPAR on a fighter's row is deliberately the
-   one square button on the screen — it lives in a list, not in a plate. */
-/* A skewed box is visually WIDER than its box: 52px of height at 20deg throws
-   ~19px past each edge, which ran the plates off the side of the sheet. The
-   margin pays for the lean and #spb clips whatever is left. */
-#spb{overflow-x:hidden;padding-bottom:18px;animation:spIn .18s ease both}
+   The look, settled with Castle over five rounds:
+   · No slanted plates. Rounded buttons like every other room.
+   · One STAR BANNER at the top says where you stand. It is the betting slip's
+     Dust bar (drifting stars, a lens on each edge that bends them), copied
+     here so this room owns its copy, minus the slip's bottom glint, which on
+     a tall banner read as a thick white bar. Calm states get the one-row
+     banner; it grows only when something needs you (being asked, the code).
+   · The list is glass rows over a faint starfield, and each lobby's time left
+     is a ring around the fighter's face.
+   · A face sits in a window of the same sky. The photos are see-through
+     cut-outs, so what is behind them is a choice; white was not it. */
+.spx{position:relative;min-height:100dvh;padding-bottom:28px;background:
+  radial-gradient(1px 1px at 12% 22%,rgba(255,255,255,.55),transparent 70%),radial-gradient(1.4px 1.4px at 78% 14%,rgba(255,255,255,.6),transparent 70%),
+  radial-gradient(1px 1px at 34% 48%,rgba(255,255,255,.45),transparent 70%),radial-gradient(1.6px 1.6px at 88% 52%,rgba(255,255,255,.55),transparent 70%),
+  radial-gradient(1px 1px at 22% 74%,rgba(255,255,255,.5),transparent 70%),radial-gradient(1.2px 1.2px at 62% 66%,rgba(255,255,255,.5),transparent 70%),
+  radial-gradient(1px 1px at 50% 88%,rgba(255,255,255,.4),transparent 70%),radial-gradient(1.3px 1.3px at 8% 92%,rgba(255,255,255,.5),transparent 70%),
+  radial-gradient(1px 1px at 70% 34%,rgba(255,255,255,.45),transparent 70%),radial-gradient(1.5px 1.5px at 44% 8%,rgba(255,255,255,.5),transparent 70%),
+  radial-gradient(70% 40% at 20% 30%,rgba(120,80,200,.18),transparent 70%),radial-gradient(60% 40% at 85% 75%,rgba(60,120,220,.13),transparent 70%),
+  #0E0B1E}
+.sphead{display:flex;align-items:center;gap:12px;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 8px}
+.sheet .sphead .back{position:static;flex:none}
+.sphead .t{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:.06em;line-height:1}
+.splive{margin-left:auto;display:flex;align-items:center;gap:6px;white-space:nowrap;
+  font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.06em;color:#5FD98A}
+.splive:empty{display:none}
+.splive::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}
+.splive.ask{color:#B9A2FF}
+#spb{overflow-x:hidden;animation:spIn .18s ease both}
 @keyframes spIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.sp-plate{display:flex;transform:skewX(-20deg);background:#5FD98A;margin:0 24px;min-height:52px;
-  transition:filter .12s ease,transform .12s ease}
-.sp-plate:active{filter:brightness(1.1);transform:skewX(-20deg) scale(.985)}
-.sp-plate.v{background:#A78BFA}
-.sp-plate.o{background:none;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.22)}
-.sp-plate.sm{min-height:44px}
-.sp-plate .go{flex:1;display:flex;align-items:center;justify-content:center;transform:skewX(20deg);
-  font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.07em;color:#082416;white-space:nowrap}
-.sp-plate.v .go{color:#190F33}
-.sp-plate.o .go{color:#EDEAF6;font-size:18px}
-.sp-plate.sm .go{font-size:19px}
-.sp-plate .cap{width:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
-  background:rgba(0,0,0,.22)}
-.sp-plate .cap > *{transform:skewX(20deg)}
-.sp-plate .cap b{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11.5px;letter-spacing:.07em;
-  text-transform:uppercase;color:#DFFFE9}
-.sp-plate.v .cap b{color:#E6DCFF}
-.sp-plate .cap s{text-decoration:none;font-size:10px;line-height:1;color:rgba(255,255,255,.6)}
-.sp-hint{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.05em;color:#6F6790;text-align:center;margin:8px 24px 0;line-height:1.5}
-.sp-hint u{text-decoration:none;color:#ADA4D6}
-.sp-stack{display:flex;flex-direction:column;gap:7px;margin-top:14px}
-.sp-count{display:flex;align-items:center;gap:12px;padding:6px 18px 0}
-.sp-count b{font-family:'Bebas Neue',sans-serif;font-size:58px;line-height:.85;color:#5FD98A}
-.sp-count span{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.07em;
-  text-transform:uppercase;color:#ADA4D6}
-.sp-room{display:flex;align-items:center;gap:10px;margin:12px 24px 0;padding:8px 12px;
-  background:#13281D;border:1px solid rgba(95,217,138,.35)}
-.sp-room .k{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.16em;color:#4E7F62}
-.sp-room .c{font-family:'Space Mono',monospace;font-weight:700;font-size:17px;color:#EDEAF6;margin-top:2px}
-.sp-field{margin:12px 24px 0;background:rgba(255,255,255,.05);border:1px dashed rgba(255,255,255,.28);padding:0}
-.sp-field input{width:100%;box-sizing:border-box;background:none;border:0;outline:none;padding:15px 12px;text-align:center;
-  font-family:'Space Mono',monospace;font-weight:700;font-size:22px;letter-spacing:.06em;color:#EDEAF6}
-.sp-field input::placeholder{color:#4F4870}
-.sp-code{margin:12px 24px 0;background:#101A16;border:1px solid rgba(95,217,138,.45);padding:14px 0;text-align:center}
-.sp-code .c{font-family:'Space Mono',monospace;font-weight:700;font-size:30px;letter-spacing:.05em;color:#5FD98A}
-.sp-row{display:flex;align-items:center;gap:9px;padding:7px 18px;transition:background .12s ease;border-bottom:1px solid rgba(255,255,255,.1);min-height:46px}
-.sp-row .fg{flex:1;min-width:0}
-.sp-row .n{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sp-row .l{font-family:'Space Mono',monospace;font-size:8.3px;color:#ADA4D6;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sp-row.off{opacity:.4}
-.sp-row:active{background:rgba(255,255,255,.05)}
-.sp-spar:active{filter:brightness(1.12)}
-.sp-av{width:32px;height:32px;flex:0 0 auto;overflow:hidden;background:linear-gradient(160deg,#2A1650,#120E22);
-  display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:rgba(214,200,255,.8)}
-.sp-av img{width:100%;height:100%;object-fit:cover;object-position:top center}
-.sp-spar{background:#A78BFA;color:#1A0F38;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.08em;
-  line-height:1;padding:8px 15px;border:0;transition:filter .12s ease}
-.sp-spar.gold{background:#F5C842;color:#2A1F00}
-.sp-spar.dead{background:rgba(255,255,255,.1);color:#8B82AE}
-.sp-clock{font-family:'Space Mono',monospace;font-weight:700;font-size:16px;color:#C3A6FF;font-variant-numeric:tabular-nums}
-/* THE FACEOFF — only on Find a spar, where the app picked for you and you have
-   to judge somebody you did not choose. Tapping SPAR on a name is a decision
-   you already made, so that path still asks straight away.
-   Art in three tiers, best first: cut-out, square photo over the silhouette,
-   silhouette with initials. Every fighter has a picture either way. */
-.sp-fo{display:flex;align-items:flex-end;justify-content:space-between;gap:6px;padding:12px 14px 0;position:relative}
-.sp-fo::before{content:'';position:absolute;left:0;right:0;top:0;bottom:24px;
-  background:radial-gradient(50% 60% at 24% 78%,rgba(123,47,255,.4),transparent 70%),
-             radial-gradient(50% 60% at 76% 78%,rgba(245,200,66,.18),transparent 70%)}
-.sp-fig{position:relative;width:44%;height:132px;display:flex;align-items:flex-end;justify-content:center;background:none;border:0}
-.sp-fig img{max-height:132px;max-width:100%;object-fit:contain;filter:drop-shadow(0 8px 16px rgba(0,0,0,.55))}
-.sp-fig img.sq{width:62px;height:62px;object-fit:cover;object-position:top center;position:absolute;top:2px;
-  border:2px solid rgba(255,255,255,.18)}
-.sp-fig svg{width:88px;height:132px;fill:#332A5E;stroke:none}
-.sp-fig.them svg{fill:#4E3D14}
-.sp-fig .ini{position:absolute;bottom:18px;font-family:'Bebas Neue',sans-serif;font-size:22px;color:rgba(255,255,255,.5)}
-.sp-vs{align-self:center;font-family:'Bebas Neue',sans-serif;font-size:22px;color:rgba(255,255,255,.3);padding-bottom:40px}
-.sp-names{display:flex;justify-content:space-between;padding:2px 18px 0;font-family:'Bebas Neue',sans-serif;
-  font-size:21px;line-height:1;letter-spacing:.03em}
-.sp-names span:last-child{text-align:right;color:#F5C842}
-.sp-names small{display:block;font-family:'Space Mono',monospace;font-size:8.5px;color:#ADA4D6;letter-spacing:.02em;margin-top:2px}
-.sp-tape{margin:10px 18px 0}
-.sp-tp{display:grid;grid-template-columns:1fr 78px 1fr;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.1)}
-.sp-tp:last-child{border-bottom:0}
-.sp-tp b{font-family:'Space Mono',monospace;font-size:11px;font-variant-numeric:tabular-nums}
-.sp-tp b:last-child{text-align:right}
-.sp-tp b.sp-up{color:#5FD98A;font-weight:700}
-.sp-tp s{text-decoration:none;text-align:center;font-family:'Space Mono',monospace;font-size:7px;letter-spacing:.13em;
-  text-transform:uppercase;color:#585174}
 
-.sp-who{display:flex;align-items:center;gap:10px;margin:12px 24px 0;padding:9px 12px;background:#221B42;
-  border-left:3px solid #A78BFA}
-.sp-who .t{font-weight:700;font-size:13px}
-.sp-who .s{font-family:'Space Mono',monospace;font-size:8.5px;color:#8B82AE;margin-top:2px}
+/* the banner */
+.spdust{position:relative;overflow:hidden;isolation:isolate;margin:2px 12px 0;padding:14px 13px 19px;border-radius:14px;
+  background:#0B0A12;border:1px solid rgba(255,255,255,.12);color:#fff;
+  box-shadow:0 8px 24px rgba(0,0,0,.45),inset 0 1px 0 rgba(185,162,255,.7)}
+.spdust .dzD{opacity:1}
+.spdust .dzFr.b,.spdust .dzRf.b::after{display:none}
+.spdust .in{position:relative;z-index:1}
+.spdust.one{padding:12px 12px 16px}
+.spdust.one .in{display:flex;align-items:center;gap:10px}
+.spdust .sptx{flex:1;min-width:0}
+.spdust .k{font-family:'Bebas Neue',sans-serif;font-size:30px;line-height:.92;letter-spacing:.03em;overflow-wrap:anywhere}
+.spdust.one .k{font-size:26px}
+.spdust .k.sm{font-size:22px}
+.spdust .k em{font-style:normal;color:#5FD98A}
+.spdust .k .of{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;color:#B0A4D8;margin-left:4px}
+.spdust .s{font-size:12.5px;color:#D9D0FF;margin-top:3px;line-height:1.35}
+.spdust .mono{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;letter-spacing:.04em;color:#5FD98A;margin-top:3px}
+.spdust .col{display:flex;flex-direction:column;gap:6px;flex:none}
+.spdust .acts{display:flex;gap:8px;margin-top:11px}
+.spdust .one1{margin-top:11px}
+.spdust .code{margin-top:10px;padding:9px 0;border-radius:10px;text-align:center;font-family:'Space Mono',monospace;font-weight:700;
+  font-size:26px;letter-spacing:.06em;color:#5FD98A;border:1px solid rgba(95,217,138,.45);background:rgba(95,217,138,.07);overflow-wrap:anywhere}
+.spdust .who{display:flex;align-items:center;gap:11px}
+.spdust .who .spav{width:46px;height:46px;border-radius:12px}
+.spdust .who .n{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.03em;line-height:1;overflow-wrap:anywhere}
+.spdust .who .q{font-size:12px;color:#D9D0FF;margin-top:2px}
+.spdust .clk{text-align:right;flex:none}
+.spdust .clk b{display:block;font-family:'Space Mono',monospace;font-size:18px;font-weight:700;color:#B9A2FF;font-variant-numeric:tabular-nums}
+.spdust .clk s{text-decoration:none;font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.1em;color:#B0A4D8;text-transform:uppercase}
+.spdust .tbar{height:3px;border-radius:2px;background:rgba(255,255,255,.12);margin-top:11px;overflow:hidden}
+.spdust .tbar i{display:block;height:100%;background:#B9A2FF;transition:width 1s linear}
+.spdust .inp input{width:100%;box-sizing:border-box;margin-top:10px;padding:12px;border-radius:10px;border:1px dashed rgba(255,255,255,.4);
+  background:rgba(255,255,255,.06);outline:none;text-align:center;font-family:'Space Mono',monospace;font-weight:700;font-size:18px;
+  letter-spacing:.06em;color:#fff}
+.spdust .inp input:focus{border-style:solid;border-color:rgba(95,217,138,.7)}
+.spdust .inp input::placeholder{color:#6E6690}
+.spdust .typeseg{display:flex;gap:6px;margin-top:9px}
+.spdust .typeseg button{flex:1;padding:6px 0;border-radius:8px;border:1px solid rgba(255,255,255,.2);cursor:pointer;
+  font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:.1em;color:#C7BEE4}
+.spdust .typeseg button.on{background:#fff;color:#1A1236;border-color:#fff}
+.spdust .spav{border:2px solid #B9A2FF}
+.spq2{display:block;margin:9px auto 0;padding:2px 6px;cursor:pointer;font-size:12.5px;color:#C7BEE4;
+  text-decoration:underline;text-decoration-color:rgba(199,190,228,.4);text-underline-offset:3px}
+.spq2.inl{display:inline;margin:0;padding:0}
+
+/* buttons: straight, and gold never appears here (nothing in this room spends VC) */
+.spbt{display:inline-flex;align-items:center;justify-content:center;border-radius:10px;padding:11px 14px;cursor:pointer;flex:none;
+  font-family:'Space Mono',monospace;font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;
+  border:1px solid transparent}
+.spbt.go{background:#5FD98A;color:#082416}
+.spbt.no{background:none;border-color:rgba(255,255,255,.3);color:#EDEAF6}
+.spbt.lav{background:#B9A2FF;color:#1A1236}
+.spbt.sm{padding:7px 11px;font-size:9.5px}
+.spbt.full{flex:1}
+.spbt.wide{width:100%;padding:12px}
+.spbt:disabled{opacity:.45;cursor:default}
+.spbt:active{transform:translateY(1px) scale(.97);filter:brightness(1.1)}
+
+/* filters */
+.spchips{display:flex;gap:6px;padding:12px 12px 6px;overflow-x:auto;scrollbar-width:none}
+.spchips::-webkit-scrollbar{display:none}
+.spchip{flex:none;border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:5px 11px;cursor:pointer;
+  font-family:'Barlow',sans-serif;font-size:12.5px;font-weight:600;color:#C7BEE4;background:rgba(255,255,255,.04)}
+.spchip.on{background:#fff;color:#1A1236;border-color:#fff}
+.spchip em{font-style:normal;font-family:'Space Mono',monospace;font-size:10px;margin-left:5px;opacity:.7}
+
+/* a lobby: a glass row, the time left as a ring around the face */
+.sprow{display:flex;align-items:center;gap:12px;margin:0 12px 8px;padding:10px 12px;border-radius:14px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.sprow.off{opacity:.42}
+.sprow.asked{border-color:rgba(185,162,255,.6);background:rgba(185,162,255,.1)}
+.sprow .fg{flex:1;min-width:0}
+.sprow .fg[data-slug]{cursor:pointer}
+.sprow .n{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sprow .n i{font-style:normal;font-family:'Space Mono',monospace;font-size:8.5px;color:#F5C842;margin-left:5px;vertical-align:1px}
+.sprow .l{font-family:'Space Mono',monospace;font-size:9.5px;color:#ADA4D6;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sprow .l b{color:#5FD98A}
+.sprow .l b.low{color:#F19C96}
+.sprow .tag{flex:none;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.1em;color:#B9A2FF}
+.spring{position:relative;width:48px;height:48px;flex:none}
+.spring svg{position:absolute;inset:0;width:48px;height:48px;transform:rotate(-90deg)}
+.spring .spav{position:absolute;inset:4px;width:auto;height:auto;border-radius:50%}
+/* the face, in a window of the same sky */
+.spav{position:relative;width:40px;height:40px;flex:none;overflow:hidden;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(.9px .9px at 22% 30%,#fff,transparent 70%),radial-gradient(1.2px 1.2px at 74% 22%,#fff,transparent 70%),
+  radial-gradient(.8px .8px at 40% 70%,rgba(255,255,255,.8),transparent 70%),radial-gradient(1px 1px at 82% 64%,#fff,transparent 70%),
+  radial-gradient(.8px .8px at 14% 82%,rgba(255,255,255,.7),transparent 70%),radial-gradient(1px 1px at 58% 12%,rgba(255,255,255,.8),transparent 70%),
+  radial-gradient(80% 60% at 30% 25%,rgba(120,80,200,.45),transparent 70%),#08061A;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.16)}
+.spav i{font-style:normal;font-family:'Bebas Neue',sans-serif;font-size:16px;color:rgba(230,220,255,.85)}
+.spav img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center}
+.sprule{margin:8px 16px 0;font-size:12.5px;line-height:1.4;color:#B0A4D8}
+.sprule b{color:#fff;font-weight:600}
+.spempty{margin:8px 12px 0;padding:18px 16px;border-radius:14px;border:1px dashed rgba(255,255,255,.18);text-align:center;
+  font-size:13.5px;line-height:1.45;color:#C7BEE4}
+.spempty b{display:block;color:#fff;font-size:15px;margin-bottom:2px}
+#spb .lab{margin:14px 16px 8px}
+
+/* the faceoff: the app picked, so it shows its work */
+.spvs{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
+.spvs .side{flex:1;min-width:0;text-align:center}
+.spvs .side .spav{width:58px;height:58px;border-radius:14px;margin:0 auto}
+.spvs .side b{display:block;font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:.03em;line-height:1;margin-top:6px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spvs .side small{display:block;font-family:'Space Mono',monospace;font-size:9px;color:#C7BEE4;margin-top:2px}
+.spvs .side[data-slug]{cursor:pointer}
+.spvs .x{font-family:'Bebas Neue',sans-serif;font-size:20px;color:rgba(255,255,255,.4)}
+.sptape{margin:10px 16px 0}
+.sptp{display:grid;grid-template-columns:1fr 72px 1fr;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.1)}
+.sptp:last-child{border-bottom:0}
+.sptp b{font-family:'Space Mono',monospace;font-size:11.5px;font-variant-numeric:tabular-nums}
+.sptp b:last-child{text-align:right}
+.sptp b.up{color:#5FD98A;font-weight:700}
+.sptp s{text-decoration:none;text-align:center;font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:#8B83AC}
+.spnav{display:flex;gap:8px;margin:12px 12px 0}
+.spupn{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 12px}
+.spupn.fresh{animation:spIn .35s ease both}
+.spupn .u{min-width:0;padding:9px 6px 8px;border-radius:12px;text-align:center;cursor:pointer;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}
+.spupn .u .spring{display:block;margin:0 auto}
+.spupn .u b{display:block;font-size:12.5px;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spupn .u small{display:block;font-family:'Space Mono',monospace;font-size:9px;color:#ADA4D6;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spback{display:block;margin:14px auto 0;padding:4px 8px;cursor:pointer;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:#B0A4D8}
+@media (prefers-reduced-motion:reduce){#spb,.spupn.fresh{animation:none}.spdust .tbar i{transition:none}}
 
 </style>
 <!-- ═══ FIRST OPEN · the splash, the loader and the welcome (boot.js) ═══
@@ -12345,17 +12405,64 @@ function sparTypeLabel(v){
   for(var i=0;i<SPAR_TYPES.length;i++) if(SPAR_TYPES[i][0] === v) return SPAR_TYPES[i][1];
   return 'OPEN';
 }
-/* A plate: the action, and optionally the smaller choice cut into its end. */
-function spPlate(label, act, opts){
-  opts = opts || {};
-  return '<div class="sp-plate ' + (opts.cls || '') + '"' + (act ? ' data-sp="' + act + '"' : '')
-    + (opts.id ? ' data-id="' + esc(opts.id) + '"' : '') + '>'
-    + '<span class="go">' + esc(label) + '</span>'
-    + (opts.cap ? '<span class="cap" data-sp="' + esc(opts.capAct || 'type') + '"'
-        + (opts.id ? ' data-id="' + esc(opts.id) + '"' : '') + '><b>' + esc(opts.cap) + '</b>'
-        + (opts.capSub ? '<s>' + opts.capSub + '</s>' : '') + '</span>' : '')
-    + '</div>';
+/* THE BANNER. The betting slip's Dust bar, copied so this room owns its copy:
+   three star layers in bands along the top and bottom edge (the words stay
+   clear in the middle) and a magnified copy of them on each rim, so a star
+   bends as it crosses. The classes are the slip's (.dzL / .dzRf …); what this
+   room adds is in .spdust, including hiding the bottom glint. */
+function spDust(){
+  var seed = 7, mid = '', near = '';
+  function r(){ seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+  for(var i = 0; i < 4; i++){
+    var g = [];
+    for(var k = 0; k < 4; k++){
+      var big = (i % 2) ? 2 + r() * .9 : 1.1 + r() * .6, x = (r() * 100).toFixed(1), y = (8 + r() * 84).toFixed(1);
+      g.push('radial-gradient(' + big.toFixed(1) + 'px ' + big.toFixed(1) + 'px at ' + x + '% ' + y + '%,#fff,rgba(255,255,255,.2) 45%,transparent 75%)');
+    }
+    var el = '<i class="dzS dzD" style="background-image:' + g.join(',') + '"></i>';
+    if(i % 2) near += el; else mid += el;
+  }
+  var rim = '<i class="dzRw"><i class="dzS ms"></i><i class="dzS ns"></i></i>';
+  return '<i class="dzL dzF"><i class="dzS"></i></i>'
+    + '<i class="dzL dzM"><i class="dzS base"></i>' + mid + '</i>'
+    + '<i class="dzL dzN"><i class="dzS base"></i>' + near + '</i>'
+    + '<i class="dzFr t"></i>'
+    + ['t', 'b', 'l', 'r'].map(function(e){ return '<i class="dzRf ' + e + '">' + rim + '</i>'; }).join('');
 }
+/* one = the one-row banner for calm states; without it, the full banner */
+function spBan(inner, one){
+  return '<div class="spdust' + (one ? ' one' : '') + '">' + spDust() + '<div class="in">' + inner + '</div></div>';
+}
+/* The stars drift. One loop for whatever banners are on screen, each layer on
+   its own tile so it never jumps; it stops when the sheet closes, the tab
+   hides, or the phone asks for less motion (one still frame then). */
+var spDustRaf = 0, spDustPos = 0, spDustLast = 0;
+function spDustFrame(t){
+  spDustRaf = 0;
+  var bars = document.querySelectorAll('#spb .spdust');
+  if(!bars.length || document.hidden) return;
+  var dt = spDustLast ? Math.min(.05, (t - spDustLast) / 1000) : .016; spDustLast = t;
+  spDustPos += .055 * dt;
+  var d = [.2, .55, 1.2];
+  function wrap(x, p){ return ((x % p) + p) % p; }
+  [].forEach.call(bars, function(b){
+    var W = b.clientWidth || 300;
+    if(b.__w !== W){ b.__w = W; b.style.setProperty('--dzw', W + 'px'); b.style.setProperty('--dzh', b.clientHeight + 'px'); }
+    var far = b.querySelector('.dzF .dzS');
+    if(far) far.style.transform = 'translate3d(' + wrap(spDustPos * W * d[0], W / 2) + 'px,0,0)';
+    var tm = 'translate3d(' + wrap(spDustPos * W * d[1], W) + 'px,0,0)', tn = 'translate3d(' + wrap(spDustPos * W * d[2], W) + 'px,0,0)';
+    [].forEach.call(b.querySelectorAll('.dzM .dzS, .dzRw .ms'), function(e){ e.style.transform = tm; });
+    [].forEach.call(b.querySelectorAll('.dzN .dzS, .dzRw .ns'), function(e){ e.style.transform = tn; });
+  });
+  var still = false;
+  try{ still = matchMedia('(prefers-reduced-motion:reduce)').matches; }catch(e){}
+  if(!still) spDustRaf = requestAnimationFrame(spDustFrame);
+}
+function spDustRun(){
+  if(spDustRaf) cancelAnimationFrame(spDustRaf);
+  spDustLast = 0; spDustRaf = requestAnimationFrame(spDustFrame);
+}
+document.addEventListener('visibilitychange', function(){ if(!document.hidden && document.getElementById('spb')) spDustRun(); });
 /* "#4 MW · 8-6 · NA" — the same line the Discord card prints, from the same
    numbers (spar-core.js cardLine). A rank only shows with its division, a
    record only when there is one. */
@@ -12378,21 +12485,69 @@ function sparClock(iso){
   var s = Math.max(0, Math.round((new Date(iso).getTime() - Date.now()) / 1000));
   return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2);
 }
+/* The face, in a window of the same sky. The initials sit underneath, so a
+   fighter with no photo (most of them) still has a face, and a photo that
+   fails to load falls back to it rather than a broken box. */
 function sparAv(r){
   var src = r.photo_square_url || r.photo_thumb_url;
-  return '<span class="sp-av">' + (src ? '<img src="' + esc(src) + '" alt="">'
-    : esc((r.name || '?').slice(0, 2).toUpperCase())) + '</span>';
+  return '<span class="spav"><i>' + esc(String(r.name || '?').slice(0, 2).toUpperCase()) + '</i>'
+    + (src ? '<img src="' + esc(src) + '" alt="" loading="lazy" onerror="this.remove()">' : '') + '</span>';
+}
+function sparLeft(iso){ return Math.round((new Date(iso).getTime() - Date.now()) / 60000); }
+/* The lobby's time left, as a ring around the face: full at 30 minutes, red
+   in the last five. A lobby given 30 more simply reads full. */
+function sparRing(r){
+  var m = sparLeft(r.ends_at), c = 2 * Math.PI * 21, f = Math.max(.04, Math.min(1, m / 30));
+  return '<span class="spring"><svg viewBox="0 0 48 48" aria-hidden="true">'
+    + '<circle cx="24" cy="24" r="21" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="3"/>'
+    + '<circle cx="24" cy="24" r="21" fill="none" stroke="' + (m <= 5 ? '#F19C96' : '#5FD98A') + '" stroke-width="3"'
+    + ' stroke-linecap="round" stroke-dasharray="' + (c * f).toFixed(1) + ' ' + c.toFixed(1) + '"/></svg>' + sparAv(r) + '</span>';
 }
 /* A lobby in the list. The NAME opens that fighter's page — the tale of the
-   tape already lives there, so this screen never grows a second copy of it. */
-function sparLobbyRow(r, blocked){
-  return '<div class="sp-row' + (blocked ? ' off' : '') + '">' + sparAv(r)
+   tape already lives there, so this screen never grows a second copy of it.
+   The minutes come FIRST on the line, so a long region never cuts them off. */
+function sparLobbyRow(r, blocked, tag){
+  var m = sparLeft(r.ends_at);
+  return '<div class="sprow' + (tag ? ' asked' : blocked ? ' off' : '') + '">' + sparRing(r)
     + '<div class="fg"' + (r.slug ? ' data-slug="' + esc(r.slug) + '"' : '') + '>'
-    + '<div class="n">' + esc(r.name || 'A fighter')
-    + (r.champion ? ' <span style="color:#F5C842;font-family:\'Space Mono\',monospace;font-size:8px">CHAMP</span>' : '')
-    + '</div><div class="l">' + esc(sparLine(r)) + ' · ' + esc(sparMins(r.ends_at)) + '</div></div>'
-    + '<button class="sp-spar' + (blocked ? ' dead' : '') + '" data-sp="ask" data-id="' + esc(r.card_id) + '">SPAR</button></div>';
+    + '<div class="n">' + esc(r.name || 'A fighter') + (r.champion ? '<i>CHAMP</i>' : '') + '</div>'
+    + '<div class="l"><b' + (m <= 5 ? ' class="low"' : '') + '>' + (m <= 0 ? 'now' : m + 'm') + '</b> \u00b7 '
+    + esc(sparLine(r)) + '</div></div>'
+    + (tag ? '<span class="tag">' + esc(tag) + '</span>'
+           : '<button class="spbt lav sm" data-sp="ask" data-id="' + esc(r.card_id) + '"' + (blocked ? ' disabled' : '') + '>Spar</button>')
+    + '</div>';
 }
+/* Filters: everyone, your division, your region. A region is compared on its
+   first part, so NA-W and NA are both North America. Shown only once we know
+   your division — a fan with no fighter row just gets the list. */
+var sparFilter = 'all';
+function sparRegion(x){ return String(x || '').split('-')[0].toUpperCase(); }
+function sparMatch(r, f){
+  var m = sparMine || {};
+  if(f === 'div') return !!m.weight_class && r.weight_class === m.weight_class;
+  if(f === 'region') return !!m.region && sparRegion(r.region) === sparRegion(m.region);
+  return true;
+}
+function sparList(lobbies, blocked, askedName){
+  var m = sparMine;
+  var chips = (m && m.weight_class) ? '<div class="spchips">' + [['all','All'], ['div','My division'], ['region','My region']].map(function(c){
+      var n = lobbies.filter(function(r){ return sparMatch(r, c[0]); }).length;
+      return '<button class="spchip' + (sparFilter === c[0] ? ' on' : '') + '" data-spf="' + c[0] + '">' + c[1] + '<em>' + n + '</em></button>';
+    }).join('') + '</div>' : '';
+  var shown = lobbies.filter(function(r){ return sparMatch(r, sparFilter); });
+  return chips + (shown.length
+    ? shown.map(function(r){
+        var tag = askedName && r.name === askedName ? 'ASKED' : '';
+        return sparLobbyRow(r, blocked, tag); }).join('')
+    : '<div class="spempty"><b>Nobody here right now.</b>Try All to see everyone on the board.</div>');
+}
+/* A face for someone the state only names (who is asking, who you just
+   fought): their lobby row's photo when they are on the board, else initials. */
+function sparFace(lobbies, name){
+  return (lobbies || []).filter(function(r){ return r.name === name; })[0] || { name: name };
+}
+function sparRule(html){ return '<p class="sprule">' + html + '</p>'; }
+function sparTypeWord(v){ return v === 'rounds_3' ? '3 rounds' : v === 'rounds_5' ? '5 rounds' : 'Open'; }
 
 /* The clock on a request is real — 5 minutes, decided in SQL — so the screen
    re-reads itself while it is open. HOW OFTEN depends on whether anything can
@@ -12455,143 +12610,200 @@ function sparTickOn(){
 
 async function renderSpar(){
   var body = document.getElementById('sheet-body');
-  body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'
-    + '<div class="kick">Find someone to spar</div><h3>Sparring</h3></div>'
-    + '<div id="spb"><div class="skel" style="height:90px"></div><div class="skel" style="width:60%"></div></div>';
+  sparFacing = false; sparHostForm = false; sparCodeDraft = '';
+  /* One header row: back, the room's name, and a live dot that says where you
+     stand — green while the board is open, lilac when somebody is asking you. */
+  body.innerHTML = '<div class="spx"><div class="sphead">' + backButton()
+    + '<div class="t">SPARRING</div><div class="splive" id="sp-live"></div></div>'
+    + '<div id="spb"><div class="skel" style="height:90px;margin:0 12px"></div><div class="skel" style="width:60%;margin:10px 12px"></div></div></div>';
   sparSeen = '';
   sparPaint();
   sparRate = 20000;
   sparTickOn();
   sparRealtime();
+  sparClocks();
+  /* your division and region (for the filters) and the Find a spar picks */
+  if(session) sparPrefetch().then(function(){ sparSeen = ''; sparPaint(true); });
+}
+/* A request's clock counts down every second on screen, between reads. */
+var sparClockT = null;
+function sparClocks(){
+  clearInterval(sparClockT);
+  sparClockT = setInterval(function(){
+    var el = document.getElementById('spb');
+    if(!el){ clearInterval(sparClockT); sparClockT = null; return; }
+    [].forEach.call(el.querySelectorAll('[data-until]'), function(c){
+      var iso = c.getAttribute('data-until');
+      c.textContent = sparClock(iso);
+      var ban = c.closest('.spdust'), bar = ban && ban.querySelector('.tbar i');
+      if(bar) bar.style.width = Math.max(0, Math.min(100, (new Date(iso).getTime() - Date.now()) / 3000)) + '%';
+    });
+  }, 1000);
+}
+function sparSetLive(txt, ask){
+  var l = document.getElementById('sp-live');
+  if(!l) return;
+  l.textContent = txt; l.classList.toggle('ask', !!ask);
 }
 
+var sparFacing = false, sparHostForm = false, sparCodeDraft = '';
 async function sparPaint(quiet){
   var el = document.getElementById('spb');
   if(!el) return;
-  if(!me){ el.innerHTML = '<div class="empty">Sign in to spar. The board is the same one the bot posts in the server.</div>'; return; }
+  if(!me){ sparSetLive(''); el.innerHTML = '<div class="spempty">Sign in to spar. The board is the same one the bot posts in the server.</div>'; return; }
   /* ONE round trip. The board used to be a second read; app_spar_state()
      carries it now (2.7ms for both), so a poll costs one call, not two. */
   var st = await rpc('app_spar_state');
   if(!el.isConnected) return;
   var lobbies = (st && st.lobbies) || [];
   if(!st || st.ok === false){
-    if(st && st.reason === 'not_signed_in'){ el.innerHTML = '<div class="empty">Sign in to spar.</div>'; return; }
+    if(st && st.reason === 'not_signed_in'){ el.innerHTML = '<div class="spempty">Sign in to spar.</div>'; return; }
     retryHandlers['spar'] = sparPaint;
     el.innerHTML = failHTML("Couldn't load the spar board.", 'spar'); return;
   }
-  if(!lobbies) lobbies = [];
   window.__sparState = st;
+
+  /* THE FACEOFF STAYS UP. Before, any change on the board repainted it away
+     mid-look. Now a change only refreshes its Up next row — unless something
+     needs you (a spar on, or somebody asking), which always wins. */
+  if(sparFacing){
+    if(st.spar || st.incoming) sparFacing = false;
+    else { sparRefreshPicks(); return; }
+  }
+
   /* A tick that found the same world leaves the screen alone — re-rendering
      identical HTML is what made the list flash and the scroll jump. */
-  var seen = JSON.stringify([st.lobby, st.asked, st.incoming, st.spar,
-    lobbies.map(function(r){ return [r.card_id, r.ends_at]; })]);
+  var seen = JSON.stringify([st.lobby, st.asked, st.incoming, st.spar, st.last,
+    lobbies.map(function(r){ return [r.card_id, r.ends_at]; }), sparFilter, sparHostForm, sparType, !!sparMine]);
   if(quiet && seen === sparSeen) return;
   /* Somebody typing their room code is mid-sentence: a background tick that
      repaints the field throws the code away. Wait for the next one. */
   var typing = document.activeElement;
   if(quiet && typing && typing.id === 'sp-code') return;
+  var draft = document.getElementById('sp-code');
+  if(draft) sparCodeDraft = draft.value;
   sparSeen = seen;
+  var codeField = '<div class="inp"><input id="sp-code" placeholder="your room code" maxlength="24" autocomplete="off" value="'
+    + esc(sparCodeDraft) + '"></div>';
+  var html;
 
-  /* IN A SPAR — the code, and the two ways out. */
+  /* IN A SPAR — the code, and the ways out. */
   if(st.spar){
-    el.innerHTML = '<div class="lab"><b>Spar on · ' + esc(st.spar.partner) + '</b><i></i></div>'
-      + (st.spar.code
-          ? '<div class="sp-code"><div class="c">' + esc(st.spar.code) + '</div></div>'
-            + '<div class="sp-hint">' + (st.spar.code_by_me ? 'your room' : esc(st.spar.partner) + '’s room')
-            + ' · <u>put it into the game</u></div>'
-          : '<div class="sp-field"><input id="sp-code" placeholder="441-72-208" maxlength="24" autocomplete="off"></div>'
-            + '<div class="sp-hint">no code yet · <u>make the room and send it</u></div>')
-      + '<div class="sp-stack">'
-      + (st.spar.code
-          ? spPlate('Copy code', 'copy', { cls:'v', cap:'New', capSub:'code', capAct:'newcode', id:st.spar.id })
-          : spPlate('Send code', 'sendcode', { id:st.spar.id }))
-      + spPlate('Call it off', 'calloff', { cls:'o sm', id:st.spar.id })
-      + '</div>';
-    return;
+    var who = st.spar.partner || 'them';
+    sparSetLive('SPAR ON');
+    html = st.spar.code
+      ? spBan('<div class="k">SPAR ON \u00b7 <em>' + esc(who) + '</em></div>'
+          + '<div class="s">' + (st.spar.code_by_me ? 'Your room.' : esc(who) + '\u2019s room.') + ' Put the code into the game.</div>'
+          + '<div class="code">' + esc(st.spar.code) + '</div>'
+          + '<div class="acts"><button class="spbt go full" data-sp="copy">Copy code</button>'
+          + '<button class="spbt no full" data-sp="calloff" data-id="' + esc(st.spar.id) + '">Call it off</button></div>'
+          + '<button class="spq2" data-sp="newcode" data-id="' + esc(st.spar.id) + '">Send a new code</button>')
+        + sparRule('If the room changes, send the new code. It changes on both screens.')
+      : spBan('<div class="k">SPAR ON \u00b7 <em>' + esc(who) + '</em></div>'
+          + '<div class="s">No room code yet. Make the room in the game and send it.</div>' + codeField
+          + '<div class="one1"><button class="spbt go wide" data-sp="sendcode" data-id="' + esc(st.spar.id) + '">Send code</button></div>'
+          + '<button class="spq2" data-sp="calloff" data-id="' + esc(st.spar.id) + '">Call it off</button>')
+        + sparRule(esc(who) + ' sees the code the moment you send it.');
   }
 
-  /* SOMEONE IS ASKING — accepting hands them your code. */
-  if(st.incoming){
-    var again = !!st.incoming.again;
-    el.innerHTML = '<div class="sp-who"><div style="flex:1"><div class="t">' + esc(st.incoming.from_name)
-      + (again ? ' wants to go again' : ' wants to spar') + '</div><div class="s">'
-      + (again ? 'same room as last time' : 'answer within 5 min') + '</div></div>'
-      + '<span class="sp-clock">' + sparClock(st.incoming.expires_at) + '</span></div>'
-      + '<div class="sp-hint" style="margin-top:10px">'
-      + (again ? 'accepting puts you straight back in the same room' : 'accepting hands over your room code')
-      + ' · '
-      + '<u>Not now = they can’t ask again for 10 min</u></div>'
-      + '<div class="sp-stack">'
-      + spPlate('Accept', 'yes', { cap:'Not', capSub:'now', capAct:'no', id:st.incoming.id })
-      + '</div>';
-    return;
+  /* SOMEONE IS ASKING — accepting hands them your code. Accept and Not now
+     sit side by side at the same size: Not now carries a 10-minute cooldown,
+     so it is never a corner of the Accept button again. */
+  else if(st.incoming){
+    var from = st.incoming.from_name || 'Someone', again = !!st.incoming.again;
+    var left = Math.max(0, Math.min(100, (new Date(st.incoming.expires_at).getTime() - Date.now()) / 3000));
+    sparSetLive('ASKING YOU', true);
+    html = spBan('<div class="who">' + sparAv(sparFace(lobbies, from)) + '<div class="sptx"><div class="n">' + esc(from) + '</div>'
+        + '<div class="q">' + (again ? 'wants to go again \u00b7 same room as last time' : 'wants to spar') + '</div></div>'
+        + '<div class="clk"><b data-until="' + esc(st.incoming.expires_at) + '">' + sparClock(st.incoming.expires_at) + '</b><s>to answer</s></div></div>'
+        + '<div class="tbar"><i style="width:' + left.toFixed(1) + '%"></i></div>'
+        + '<div class="acts"><button class="spbt go full" data-sp="yes" data-id="' + esc(st.incoming.id) + '">Accept</button>'
+        + '<button class="spbt no full" data-sp="no" data-id="' + esc(st.incoming.id) + '">Not now</button></div>')
+      + sparRule((again ? 'Accepting puts you straight back in the same room.' : 'Accepting hands ' + esc(from) + ' your room code.')
+        + ' <b>Not now</b> stops them asking for 10 min.')
+      + (lobbies.length ? '<div class="lab"><b>Still waiting</b><i></i><s>' + lobbies.length + '</s></div>' + sparList(lobbies, false) : '');
   }
 
   /* A REQUEST IS OUT — you stay on the board while they decide. */
-  if(st.asked){
-    el.innerHTML = '<div class="sp-who"><div style="flex:1"><div class="t">Asked ' + esc(st.asked.to_name) + '</div>'
-      + '<div class="s">5 min to answer · you’re still on the board</div></div>'
-      + '<span class="sp-clock">' + sparClock(st.asked.expires_at) + '</span></div>'
-      + '<div class="sp-stack">'
-      + spPlate('Cancel request', 'cancel', { cls:'v sm', id:st.asked.id })
-      + '</div>'
-      + '<div class="sp-hint">one request out at a time</div>'
-      + '<div class="lab"><b>Open lobbies</b><i></i><s>' + lobbies.length + '</s></div>'
-      + lobbies.map(function(r){ return sparLobbyRow(r, true); }).join('');
-    return;
+  else if(st.asked){
+    var to = st.asked.to_name || 'them';
+    var them = lobbies.filter(function(r){ return r.name === to; })[0] || { name: to };
+    sparSetLive('ASKED', true);
+    html = spBan(sparAv(them) + '<div class="sptx"><div class="k sm">ASKED ' + esc(to) + '</div>'
+        + '<div class="s"><span data-until="' + esc(st.asked.expires_at) + '">' + sparClock(st.asked.expires_at) + '</span> to answer</div></div>'
+        + '<div class="col"><button class="spbt no sm" data-sp="cancel" data-id="' + esc(st.asked.id) + '">Cancel</button></div>', true)
+      + sparRule('One request out at a time. Everyone else unlocks if ' + esc(to) + ' says no or the clock runs out.')
+      + sparList(lobbies, true, to);
   }
 
-  /* THE 30 MINUTES AFTER A SPAR. Walking the whole board again is where a
-     rematch goes to die, so the person you just fought stays one tap away —
-     same room, nothing typed. */
-  var again = st.last ? '<div class="sp-who" style="border-left-color:#5FD98A"><div style="flex:1">'
-      + '<div class="t">You just sparred ' + esc(st.last.partner) + '</div>'
-      + '<div class="s">same room, one tap</div></div>'
-      + '<button class="sp-spar" data-sp="again" data-id="' + esc(st.last.id) + '">GO AGAIN</button></div>' : '';
-  var mine = st.lobby;
-  var others = lobbies.filter(function(r){ return !mine || r.card_id !== mine.card_id; });
+  else {
+    var mine = st.lobby;
+    var others = lobbies.filter(function(r){ return !mine || r.card_id !== mine.card_id; });
 
-  /* HOSTING — a state, not an action: nothing to press but the way out. */
-  if(mine){
-    el.innerHTML = again + '<div class="sp-count"><b>' + others.length + '</b><span>other lobbies open<br>'
-      + esc(sparTypeLabel(mine.spar_type)) + ' · ' + esc(sparMins(mine.ends_at)) + '</span></div>'
-      + '<div class="sp-room"><div style="flex:1"><div class="k">YOUR ROOM</div><div class="c">'
-      + esc(mine.room_code || 'no code') + '</div></div>'
-      + '<button class="sp-spar" data-sp="recode">CHANGE</button></div>'
-      + '<div class="sp-stack">'
-      + spPlate('Give me 30 more', 'more', { cls:'o sm' })
-      + spPlate('Close lobby', 'close', { cls:'o sm' })
-      + '</div>'
-      + '<div class="sp-hint">waiting on someone to ask · <u>your code stays hidden until you accept</u></div>'
-      + '<div class="lab"><b>Join one instead</b><i></i><s>' + others.length + '</s></div>'
-      + (others.length ? others.map(function(r){ return sparLobbyRow(r, false); }).join('')
-                       : '<div class="empty">Nobody else is hosting right now.</div>');
-    return;
+    /* HOSTING — a state, not an action: the code, the time, the two ways to
+       change it. +30 is the solid one; Close is the outline. */
+    if(mine){
+      sparSetLive('HOSTING');
+      html = spBan('<div class="sptx"><div class="k">LOBBY <em>UP</em></div>'
+          + '<div class="mono">' + esc(mine.room_code || 'no code yet') + '</div>'
+          + '<div class="s">' + esc(sparTypeWord(mine.spar_type)) + ' \u00b7 ' + esc(sparMins(mine.ends_at)) + '</div></div>'
+          + '<div class="col"><button class="spbt go sm" data-sp="more">+30 min</button>'
+          + '<button class="spbt no sm" data-sp="close">Close</button></div>', true)
+        + sparRule('Waiting for someone to ask. Your code stays hidden until you accept. '
+          + '<button class="spq2 inl" data-sp="recode">Change code</button>')
+        + (others.length ? '<div class="lab"><b>Others waiting</b><i></i><s>' + others.length + '</s></div>' + sparList(others, false)
+                         : '<div class="spempty"><b>Nobody else is hosting.</b>You are the only lobby up right now.</div>');
+    }
+
+    /* THE HOST FORM — the banner opening in place when you tap Host. */
+    else if(sparHostForm){
+      sparSetLive(lobbies.length + ' OPEN');
+      html = spBan('<div class="k">HOST A LOBBY</div><div class="s">Make the room in the game first, then type its code.</div>'
+          + codeField
+          + '<div class="typeseg">' + SPAR_TYPES.map(function(t){
+              return '<button class="' + (t[0] === sparType ? 'on' : '') + '" data-sp="settype" data-id="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>'
+          + '<div class="one1"><button class="spbt go wide" data-sp="open">Open lobby</button></div>'
+          + '<button class="spq2" data-sp="hostcancel">Cancel</button>')
+        + sparRule('Nobody sees your code until you accept them.')
+        + (lobbies.length ? '<div class="lab"><b>Waiting now</b><i></i><s>' + lobbies.length + '</s></div>' + sparList(lobbies, false) : '');
+    }
+
+    /* AT REST — host one, or join one. Those are the only two roles. The 30
+       minutes after a spar put the person you just fought one tap away
+       instead: walking the whole board again is where a rematch goes to die. */
+    else {
+      if(lobbies.length && !sparPicks.length) sparPrefetch();   /* ready before you press Find a spar */
+      sparSetLive(lobbies.length + ' OPEN');
+      var mineDiv = sparMine && sparMine.weight_class
+        ? lobbies.filter(function(r){ return r.weight_class === sparMine.weight_class; }).length : null;
+      var ban = st.last
+        ? spBan(sparAv(sparFace(lobbies, st.last.partner)) + '<div class="sptx"><div class="k sm">GO AGAIN?</div>'
+            + '<div class="s">You just sparred ' + esc(st.last.partner) + '</div></div>'
+            + '<div class="col"><button class="spbt go sm" data-sp="again" data-id="' + esc(st.last.id) + '">Go again</button>'
+            + '<button class="spbt no sm" data-sp="hostform">Host</button></div>', true)
+        : lobbies.length
+          ? spBan('<div class="sptx"><div class="k"><em>' + lobbies.length + '</em> WAITING</div>'
+              + '<div class="s">' + (mineDiv != null ? mineDiv + ' in your division' : 'Tap Spar on anyone') + '</div></div>'
+              + '<div class="col"><button class="spbt lav sm" data-sp="find">Find a spar</button>'
+              + '<button class="spbt go sm" data-sp="hostform">Host</button></div>', true)
+          : spBan('<div class="sptx"><div class="k">NOBODY WAITING</div><div class="s">Open a lobby and people come to you.</div></div>'
+              + '<div class="col"><button class="spbt go sm" data-sp="hostform">Host</button></div>', true);
+      html = ban + (lobbies.length ? sparList(lobbies, false)
+        : '<div class="spempty"><b>The board is empty.</b>When someone opens a lobby here or in the server, they show up on this list.</div>');
+    }
   }
-
-  /* AT REST — host one, or join one. Those are the only two roles. */
-  if(lobbies.length && !sparPicks.length) sparPrefetch();   /* ready before you press Find a spar */
-  var head = lobbies.length
-    ? '<div class="sp-count"><b>' + lobbies.length + '</b><span>lobbies open<br>tap SPAR on anyone</span></div>'
-    : '<div class="empty"><b>Nobody is hosting right now.</b><br>Open a lobby and people come to you.</div>';
-  el.innerHTML = again + head
-    + '<div class="sp-field"><input id="sp-code" placeholder="your room code" maxlength="24" autocomplete="off"></div>'
-    + '<div class="sp-stack">'
-    + spPlate('Open lobby', 'open', { cap:sparTypeLabel(sparType), capSub:'⇄' })
-    + (lobbies.length ? spPlate('Find a spar', 'find', { cls:'v sm', cap:String(lobbies.length), capSub:'open' }) : '')
-    + '</div>'
-    + '<div class="sp-hint">make the room in the game, type its code · <u>nobody sees it until you accept them</u></div>'
-    + (lobbies.length ? '<div class="lab"><b>Open lobbies</b><i></i><s>' + lobbies.length + '</s></div>'
-        + lobbies.map(function(r){ return sparLobbyRow(r, false); }).join('') : '');
+  el.innerHTML = html;
+  spDustRun();
 }
 
 /* What the screen says the moment you press, before the server has answered.
    The server still decides — sparPaint() overwrites this with the truth a
    moment later — but a button that goes dead for half a second with nothing on
    screen reads as broken. */
-function sparPending(html){
+function sparPending(title, sub){
   var el = document.getElementById('spb');
-  if(el) el.innerHTML = html + '<div class="sp-hint">saving\u2026</div>';
+  if(el){ el.innerHTML = spBan('<div class="sptx"><div class="k sm">' + esc(title) + '</div><div class="s">' + esc(sub) + '</div></div>', true)
+    + sparRule('Saving\u2026'); spDustRun(); }
   sparSeen = '';
 }
 
@@ -12625,15 +12837,6 @@ var SPAR_SAID = {
    that list and nothing here re-sorts it. */
 var sparPicks = [], sparPick = 0, sparMine = null;
 
-function sparArt(f, side){
-  var art = f.cutout_url
-      ? '<img src="' + esc(f.cutout_url) + '" alt="">'
-      : '<svg><use href="#i-boxer"/></svg>'
-        + (f.photo_square_url || f.photo_thumb_url
-            ? '<img class="sq" src="' + esc(f.photo_square_url || f.photo_thumb_url) + '" alt="">'
-            : '<span class="ini">' + esc((f.name || '?').slice(0, 2).toUpperCase()) + '</span>');
-  return '<div class="sp-fig ' + side + '">' + art + '</div>';
-}
 /* A row of the tape. The lead is marked only when BOTH numbers are real —
    an empty reach must never look like somebody is shorter. */
 function sparTapeRow(label, a, b, better){
@@ -12642,8 +12845,8 @@ function sparTapeRow(label, a, b, better){
     var na = parseFloat(String(a).replace(/[^\d.]/g,'')), nb = parseFloat(String(b).replace(/[^\d.]/g,''));
     if(isFinite(na) && isFinite(nb) && na !== nb) lead = (better === 'high' ? (na > nb) : (na < nb)) ? 'a' : 'b';
   }
-  return '<div class="sp-tp"><b class="' + (lead === 'a' ? 'sp-up' : '') + '">' + esc(a == null || a === '' ? '\u2014' : a)
-    + '</b><s>' + esc(label) + '</s><b class="' + (lead === 'b' ? 'sp-up' : '') + '">'
+  return '<div class="sptp"><b class="' + (lead === 'a' ? 'up' : '') + '">' + esc(a == null || a === '' ? '\u2014' : a)
+    + '</b><s>' + esc(label) + '</s><b class="' + (lead === 'b' ? 'up' : '') + '">'
     + esc(b == null || b === '' ? '\u2014' : b) + '</b></div>';
 }
 function sparRecord(w, l){ return (w == null ? 0 : w) + '-' + (l == null ? 0 : l); }
@@ -12653,34 +12856,63 @@ function sparHeight(inches){
   return Math.floor(n / 12) + "'" + (n % 12) + '"';
 }
 
-function sparFaceoff(){
+function sparFaceoff(fresh){
   var el = document.getElementById('spb');
   if(!el) return;
   var f = sparPicks[sparPick];
-  if(!f){ sparPaint(); return; }
-  var m = sparMine || {};
-  el.innerHTML = '<div class="lab"><b>Found you one</b><i></i><s>' + (sparPick + 1) + ' of ' + sparPicks.length + '</s></div>'
-    + '<div class="sp-fo">' + sparArt({ cutout_url:m.cutout_url, photo_square_url:m.photo_square_url || m.photo_thumb_url, name:m.name }, 'me')
-    + '<span class="sp-vs">VS</span>' + sparArt(f, 'them') + '</div>'
-    + '<div class="sp-names"><span>' + esc((m.name || 'You').toUpperCase())
-    + '<small>' + esc(sparLine({ weight_class:m.weight_class, rank:m.rank, wins:m.wins, losses:m.losses, region:m.region })) + '</small></span>'
-    + '<span>' + esc((f.name || 'Them').toUpperCase()) + '<small>' + esc(sparLine(f)) + '</small></span></div>'
-    + '<div class="sp-tape">'
+  if(!f){ sparFacing = false; sparSeen = ''; sparPaint(); return; }
+  sparFacing = true;
+  sparSetLive('PICKING');
+  var m = sparMine || {}, n = sparPicks.length;
+  /* The next three in the database's order. Not shuffled: the order IS the
+     matchmaking rule, and a random one would put a poor match first. What
+     moves is the row itself, refreshed as lobbies open and close. */
+  var next = [];
+  for(var i = 1; i <= 3 && i < n; i++) next.push((sparPick + i) % n);
+  el.innerHTML = spBan('<div class="k">FOUND YOU <em>ONE</em><span class="of">' + (sparPick + 1) + ' OF ' + n + '</span></div>'
+      + '<div class="spvs"><div class="side">' + sparAv({ name: m.name || 'You', photo_square_url: m.photo_square_url })
+      + '<b>' + esc(m.name || 'You') + '</b><small>' + esc(sparLine(m)) + '</small></div>'
+      + '<span class="x">VS</span>'
+      + '<div class="side"' + (f.slug ? ' data-slug="' + esc(f.slug) + '"' : '') + '>' + sparAv(f)
+      + '<b>' + esc(f.name || 'Them') + '</b><small>' + esc(sparLine(f)) + '</small></div></div>')
+    + '<div class="sptape">'
     + sparTapeRow('record', sparRecord(m.wins, m.losses), sparRecord(f.wins, f.losses))
     + sparTapeRow('rank', m.rank ? '#' + m.rank : '', f.rank ? '#' + f.rank : '', 'low')
     + sparTapeRow('height', sparHeight(m.height), sparHeight(f.height), 'high')
     + sparTapeRow('reach', m.reach ? m.reach + '"' : '', f.reach ? f.reach + '"' : '', 'high')
     + sparTapeRow('stance', m.stance || '', f.stance || '')
     + sparTapeRow('region', m.region || '', f.region || '')
-    + sparTapeRow('spar', sparTypeLabel(sparType), sparTypeLabel(f.spar_type))
+    + sparTapeRow('spar', sparTypeWord(sparType), sparTypeWord(f.spar_type))
     + '</div>'
-    + '<div class="sp-stack">'
-    + '<div class="sp-plate" data-sp="askpick"><span class="cap" data-sp="prev">\u2039</span>'
-    + '<span class="go" data-sp="askpick">Ask to join</span>'
-    + '<span class="cap" data-sp="next">\u203A</span></div>'
-    + '</div>'
-    + '<div class="sp-hint">' + esc(sparMins(f.ends_at)) + ' on their lobby · '
-    + '<u>\u2039 \u203A steps through the ' + sparPicks.length + '</u></div>';
+    + '<div class="spnav">' + (n > 1 ? '<button class="spbt no sm" data-sp="prev" aria-label="Previous">\u2039</button>' : '')
+    + '<button class="spbt lav full" data-sp="askpick">Ask to join</button>'
+    + (n > 1 ? '<button class="spbt no sm" data-sp="next" aria-label="Next">\u203A</button>' : '') + '</div>'
+    + (next.length ? '<div class="lab"><b>Up next</b><i></i><s>tap to compare</s></div>'
+        + '<div class="spupn' + (fresh ? ' fresh' : '') + '">' + next.map(function(k){ var p = sparPicks[k];
+            return '<button class="u" data-sp="pickto" data-id="' + k + '">' + sparRing(p)
+              + '<b>' + esc(p.name || 'A fighter') + '</b><small>' + esc(sparLine(p)) + '</small></button>'; }).join('') + '</div>' : '')
+    + sparRule(esc(sparMins(f.ends_at)) + ' on their lobby. Best fit first: your division, then your region, then the closest rank.')
+    + '<button class="spback" data-sp="board">\u2039 Back to the board</button>';
+  spDustRun();
+}
+/* While the faceoff is open, a change on the board re-asks the database for
+   the picks. The one you are looking at stays put if it is still open; if it
+   closed, say so and move to the best one left. Unchanged picks repaint
+   nothing. */
+async function sparRefreshPicks(){
+  var cur = sparPicks[sparPick] && sparPicks[sparPick].card_id;
+  var before = sparPicks.map(function(p){ return p.card_id; }).join(',');
+  var got = await sparSuggest();
+  if(!sparFacing) return;
+  var after = got.map(function(p){ return p.card_id; }).join(',');
+  if(after === before) return;
+  sparPicks = got;
+  var at = -1;
+  for(var i = 0; i < got.length; i++) if(got[i].card_id === cur) at = i;
+  if(at < 0){ sparPick = 0; if(cur) toast('That lobby just closed.'); }
+  else sparPick = at;
+  if(!got.length){ sparFacing = false; sparSeen = ''; sparPaint(); return; }
+  sparFaceoff(true);
 }
 
 /* The two reads Find a spar needs, fetched while you are still looking at the
@@ -12724,8 +12956,8 @@ async function sparDo(act, id, btn){
   }
   if(act === 'askpick'){
     var pick = sparPicks[sparPick];
-    sparPending('<div class="sp-who"><div style="flex:1"><div class="t">Asking ' + esc(pick.name || 'them') + '\u2026</div>'
-      + '<div class="s">5 minutes to answer</div></div></div>');
+    sparFacing = false;
+    sparPending('Asking ' + (pick.name || 'them') + '\u2026', '5 minutes to answer');
     r = await rpc('app_spar_ask', { p_card: pick.card_id });
     busy(btn, false);
     if(r && r.ok === false) toast(SPAR_SAID[r.reason] || "That didn't go through.");
@@ -12754,20 +12986,17 @@ async function sparDo(act, id, btn){
     r = await rpc('app_spar_open', { p_code: '', p_type: lob.spar_type || 'open' });
   }
   else if(act === 'again'){
-    sparPending('<div class="sp-who"><div style="flex:1"><div class="t">Asking for a rematch\u2026</div>'
-      + '<div class="s">same room as last time</div></div></div>');
+    sparPending('Asking for a rematch\u2026', 'Same room as last time');
     r = await rpc('app_spar_rematch', { p_request: id });
   }
   else if(act === 'close')  r = await rpc('app_spar_close');
   else if(act === 'ask'){
-    sparPending('<div class="sp-who"><div style="flex:1"><div class="t">Asking\u2026</div>'
-      + '<div class="s">they get 5 minutes to answer</div></div></div>');
+    sparPending('Asking\u2026', 'They get 5 minutes to answer');
     r = await rpc('app_spar_ask', { p_card: id });
   }
   else if(act === 'cancel') r = await rpc('app_spar_cancel', { p_request: id });
   else if(act === 'yes'){
-    sparPending('<div class="sp-who"><div style="flex:1"><div class="t">Accepting\u2026</div>'
-      + '<div class="s">handing over your room code</div></div></div>');
+    sparPending('Accepting\u2026', 'Handing over your room code');
     r = await rpc('app_spar_answer', { p_request: id, p_accept: true });
   }
   else if(act === 'no')     r = await rpc('app_spar_answer', { p_request: id, p_accept: false });
@@ -12779,6 +13008,8 @@ async function sparDo(act, id, btn){
   else if(act === 'calloff') r = await rpc('app_spar_call_off', { p_request: id });
   busy(btn, false);
   sparSeen = '';                                   /* a write always repaints */
+  /* the form closes once the lobby is up; a code sent clears the draft */
+  if(r && r.ok !== false && (act === 'open' || act === 'sendcode')){ sparHostForm = false; sparCodeDraft = ''; }
   if(r && r.ok === false) toast(SPAR_SAID[r.reason] || r.message || "That didn't go through.");
   else if(act === 'ask') toast('Asked — they have 5 min.');
   else if(act === 'again' && r && r.ok) toast('Rematch asked — 5 min to answer.');
@@ -12787,16 +13018,23 @@ async function sparDo(act, id, btn){
 }
 
 document.addEventListener('click', function(e){
+  var fc = e.target.closest('[data-spf]');
+  if(fc){ sparFilter = fc.getAttribute('data-spf'); sparSeen = ''; sparPaint(); return; }
   var t = e.target.closest('[data-sp]');
   if(!t) return;
   var act = t.getAttribute('data-sp');
-  if(act === 'type'){
-    var i = 0;
-    for(var k = 0; k < SPAR_TYPES.length; k++) if(SPAR_TYPES[k][0] === sparType) i = k;
-    sparType = SPAR_TYPES[(i + 1) % SPAR_TYPES.length][0];
-    sparPaint();
+  /* screen-only moves: nothing is written, so nothing is busied */
+  if(act === 'hostform' || act === 'hostcancel' || act === 'settype'){
+    var cf = document.getElementById('sp-code'); if(cf) sparCodeDraft = cf.value;
+    if(act === 'hostform') sparHostForm = true;
+    if(act === 'hostcancel'){ sparHostForm = false; sparCodeDraft = ''; }
+    if(act === 'settype') sparType = t.getAttribute('data-id') || 'open';
+    sparSeen = ''; sparPaint();
+    if(act === 'hostform') setTimeout(function(){ var f = document.getElementById('sp-code'); if(f) f.focus(); }, 350);
     return;
   }
+  if(act === 'board'){ sparFacing = false; sparSeen = ''; sparPaint(); return; }
+  if(act === 'pickto'){ sparPick = Number(t.getAttribute('data-id')) || 0; sparFaceoff(); return; }
   if(act === 'copy'){
     /* navigator.clipboard is missing on older iOS and on any non-https origin;
        falling back to a selected field beats a button that does nothing. */
