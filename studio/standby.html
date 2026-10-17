@@ -652,6 +652,24 @@
   .cseg::after{content:'';flex:1;height:2px;background:linear-gradient(90deg,var(--pur),transparent);}
   .cseg:first-child{margin-top:0;}
   .cbout.done{opacity:.62;}
+  /* A result arriving from the deck re-draws the card IN PLACE: the card is not
+     dealt again (that replayed on every tap), only the bout that was scored moves.
+     Gold light sweeps the row, the winner punches up, the loser's line is drawn
+     in, the centre flips to how it ended, then the row settles to done. */
+  .cbouts.still > *{animation:none!important;}
+  .cbouts.still > .cbout.scored{position:relative;overflow:hidden;animation:cwSettle .8s ease 1.4s backwards!important;}
+  @keyframes cwSettle{from{opacity:1;box-shadow:0 0 0 2px rgba(255,206,0,.7),0 0 40px rgba(255,206,0,.35);}}
+  .cbout.scored::before{content:'';position:absolute;top:0;bottom:0;left:-40%;width:40%;pointer-events:none;
+    background:linear-gradient(100deg,transparent,rgba(255,206,0,.28) 45%,rgba(255,240,190,.45) 55%,transparent);
+    animation:cwSweep .8s cubic-bezier(.4,0,.2,1) forwards;}
+  @keyframes cwSweep{to{left:110%;}}
+  .cbout.scored .win{animation:cwPunch .7s cubic-bezier(.2,1.6,.4,1) .15s backwards;}
+  @keyframes cwPunch{0%{transform:scale(1);color:#fff;text-shadow:none;}
+    35%{transform:scale(1.2);text-shadow:0 0 40px rgba(255,206,0,1);}100%{transform:scale(1);}}
+  .cbout.scored .lose{animation:cwStrike .5s ease .45s backwards;}
+  @keyframes cwStrike{from{color:#fff;text-decoration-color:transparent;}}
+  .cbout.scored .vs.fin{animation:cwFlip .5s cubic-bezier(.2,1.4,.4,1) .3s backwards;}
+  @keyframes cwFlip{from{transform:rotateX(90deg);opacity:0;}}
   .cbout .fa.win,.cbout .fb.win{color:#ffce00;text-shadow:0 0 18px rgba(255,206,0,.55);}
   .cbout .fa.lose,.cbout .fb.lose{color:var(--dim);text-decoration:line-through;
     text-decoration-thickness:3px;}
@@ -1787,7 +1805,7 @@ async function showCard(eventName, pushed){
   // wins are clicks that haven't reached the database yet — re-fetching here
   // would quietly undo them on screen.
   if(pushed && pushed.bouts && pushed.bouts.length){
-    renderCard({name:pushed.event||eventName||'THE CARD', event_date:pushed.date||null},
+    renderCard({id:pushed.eventId||null, name:pushed.event||eventName||'THE CARD', event_date:pushed.date||null},
                pushed.bouts, pushed.filter)
     return
   }
@@ -1828,7 +1846,38 @@ let segTimer=null
 const winOf=b=> /^(a|fighter_a)$/i.test(b.winner_corner||b.winner||'') ? 'a'
               : /^(b|fighter_b)$/i.test(b.winner_corner||b.winner||'') ? 'b' : null
 
-function renderCard(ev, bouts, filter){
+/* ── WINS: the deck's results, kept HERE too ──────────────────────────────
+   The database only learns tonight's results at the close, so a card drawn from
+   it (a 🃏 button, this page reloading, OBS refreshing the source) used to come
+   up blank and stay blank until the next tap. The deck now sends each result on
+   its own (cardwin) and this screen keeps them, keyed by event + match and saved
+   in localStorage, and lays them over every card it draws. A screen that loads
+   mid-show also asks the deck (cardhello) for everything scored so far. */
+const WINS_KEY='vga-card-wins'
+let WINS={}
+try{ WINS=JSON.parse(localStorage.getItem(WINS_KEY)||'{}')||{} }catch(e){ WINS={} }
+const winsSave=()=>{ try{
+  const ids=Object.keys(WINS); if(ids.length>6) ids.slice(0,ids.length-6).forEach(k=>delete WINS[k])   // the last few nights is plenty
+  localStorage.setItem(WINS_KEY, JSON.stringify(WINS)) }catch(e){} }
+const winsFor=id=> WINS[id] || (WINS[id]={})
+let CUR=null   // the card on screen: { ev, bouts, filter }
+function winTaken(c){
+  if(!c.eventId) return false
+  const w=winsFor(c.eventId)
+  if(c.type==='cardwins') (c.wins||[]).forEach(x=>{ if(x.match_id) w[x.match_id]={ w:x.winner_corner||null, m:x.method||null } })
+  else if(c.match_id) w[c.match_id]={ w:c.winner_corner||null, m:c.method||null }
+  else return false
+  winsSave()
+  // only the card already on screen is touched; nothing here changes the view
+  if(CUR && CUR.ev.id===c.eventId) renderCard(CUR.ev, CUR.bouts, CUR.filter, c.type==='cardwin' ? c.match_id : '')
+  return true
+}
+
+function renderCard(ev, bouts, filter, scored){
+  CUR={ ev, bouts, filter }
+  const w=(ev.id && WINS[ev.id]) || {}
+  bouts=bouts.map(b=>{ const t=b.match_id && w[b.match_id]
+    return t ? { ...b, winner_corner:t.w, method:t.w ? t.m : null } : b })
   document.getElementById('cardTitle').textContent=ev.name
   // no date -> blank, not "WED DEC 31". The runner pushes rows without one and
   // fdate(null) happily formats the epoch.
@@ -1850,7 +1899,8 @@ function renderCard(ev, bouts, filter){
     // rendered straight through the fighter names on either side of it.
     const m=(w && b.method) ? METHOD(b.method) : ''
     const ko=/^(KO|TKO|SUB)/.test(m)
-    return `<div class="cbout${b.is_title_fight?' title':''}${w?' done':''}${ko?' ko':''}">
+    const hit = scored && b.match_id===scored && w
+    return `<div class="cbout${b.is_title_fight?' title':''}${w?' done':''}${ko?' ko':''}${hit?' scored':''}">
       ${b.is_title_fight?`<div class="cbadge">★ ${b.title_name||'Title Fight'} ★</div>`:''}
       <span class="fa${cls('a')}">${b.fighter_a_name}</span>
       <span class="vs${m?' fin':''}${ko?' ko':''}">${m||'VS'}</span>
@@ -1873,6 +1923,8 @@ function renderCard(ev, bouts, filter){
   const done=open.filter(winOf).length
   if(done) html+=`<div class="cprog"><span>DISCORD.GG/UBA</span><span><b>${done}</b> / ${open.length} COMPLETE</span></div>`
   box.classList.toggle('tight', open.length>8)
+  // scored === undefined: a fresh card, dealt in. Anything else: a result came in.
+  box.classList.toggle('still', scored!==undefined)
   box.innerHTML=html
 }
 
@@ -2501,13 +2553,16 @@ function fillBar(d){
       </div></div>`).join('')
 }
 
-sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
+const LINK=sb.channel('vga-overlay')
+LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
   // A kiosk is somebody else's laptop, not a source in the rig — the deck must
   // not be able to change what they are looking at. See KIOSK MODE below.
   if(document.body.classList.contains('kiosk')) return
   // A Contender Series card on the deck dresses this screen in Ice; any other
   // card puts it back. Read off the league stamp every command carries.
   if(c.league) document.documentElement.dataset.series = c.series ? 'cs' : ''
+  // A scored fight. Never a reason to change what this screen shows.
+  if(c.type==='cardwin' || c.type==='cardwins'){ winTaken(c); return }
   // THE CONTENDER SERIES VERDICT SCREEN RIDES IN THIS SOURCE. The verdicts are
   // given at the end of the night, on the Waiting scene, and this is the source
   // that scene has -- so nothing is added to OBS for them. The screen is its
@@ -2585,7 +2640,11 @@ sb.channel('vga-overlay').on('broadcast',{event:'cmd'},async ({payload:c})=>{
     setTimeout(()=>{ box.classList.remove('on') }, 6800)                                     // transition out
     setTimeout(()=>{ coin.classList.remove('flip') }, 7400)
   }
-}).subscribe(s=>{ $('status').textContent='standby: '+(s==='SUBSCRIBED'?'● live':s.toLowerCase()) })
+}).subscribe(s=>{ $('status').textContent='standby: '+(s==='SUBSCRIBED'?'● live':s.toLowerCase())
+  // just joined (a reload, OBS refreshing the source): ask the deck what has been scored
+  if(s==='SUBSCRIBED' && !document.body.classList.contains('kiosk'))
+    LINK.send({ type:'broadcast', event:'cmd', payload:{ type:'cardhello' } })
+})
 
 // ── KIOSK MODE ───────────────────────────────────────────────────────────
 // A link that can be handed to anybody for a pre-show chat: it drives itself,
