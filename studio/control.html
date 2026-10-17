@@ -467,6 +467,8 @@
       <button class="lg-ubae" onclick="standby('vsrosters')">Rosters VS</button>
       <button class="lg-uba"  onclick="standby('ubarank')">UBA rankings</button>
       <button class="lg-uba"  onclick="standby('gflrank')">GFL rankings</button>
+      <!-- only on a contender night (csGate shows it): the series, the card a page at a time, Up Next following ARM -->
+      <button id="csHomeBtn" style="display:none" onclick="csHome()">🧊 Contender home</button>
       <button class="lg-ubae" onclick="standby('schedule')">UBAe schedule + playoffs</button>
       <button class="lg-uba" onclick="standby('next3')">UBA schedule · next 3</button>
       <button class="lg-ubae" onclick="standby('teamvs')">Team vs team</button>
@@ -2128,7 +2130,15 @@ const csLoad=()=>{ CSN.v={}; CSN.rev={}
   try{ const o=JSON.parse(sessionStorage.getItem(csKey())||'{}')||{}
     // the first build stored the verdicts bare, with no "revealed" beside them
     if(o.v){ CSN.v=o.v||{}; CSN.rev=o.rev||{} } else CSN.v=o }catch(e){} }
+// Contender home on the standby screen. It reads the card itself; this tells it
+// which card, whose series, and what is armed. ARM and results keep it current.
+window.csHome=()=>{
+  if(!UBA.id || UBA.id==='csdemo'){ deckLog('⚠ load a contender card above first'); return }
+  const armed=UBA.armed!=null ? ((UBA.bouts[UBA.armed]||{}).id||null) : null
+  send({ type:'standby', view:'cshome', on:true, event:UBA.name, eventId:UBA.id, armed })
+}
 const csGate=on=>{ document.getElementById('csSec').style.display = on ? '' : 'none'
+  const hb=document.getElementById('csHomeBtn'); if(hb) hb.style.display = on ? '' : 'none'
   document.getElementById('csNone').style.display = on ? 'none' : ''
   if(!on) document.getElementById('csTitle').textContent='' }
 async function csCheck(ev){
@@ -2384,7 +2394,7 @@ window.ubaArm=i=>{
   // edited, not two names typed from scratch under the lights.
   ;[['clkNameL',b.a],['clkNameR',b.b]].forEach(([id,v])=>{
     const el=document.getElementById(id); if(el) el.value=v })
-  send({type:'bout', d:{ a:b.a, b:b.b,
+  send({type:'bout', eventId:UBA.id, match_id:b.id||null, d:{ a:b.a, b:b.b,
     label: b.bout_number===1?'MAIN EVENT':'BOUT '+b.bout_number,
     sub: b.title? '5 ROUNDS · TITLE' : b.wc,
     colorL:document.getElementById('ubaColorL').value,
@@ -2453,7 +2463,8 @@ window.winsHeard=p=>{
     // every bout's null would erase what the screen already holds.
     const w=winsRead()
     const wins=UBA.bouts.filter(b=>b.id && (w[winKey(b)] || b.winner)).map(b=>({ match_id:b.id, winner_corner:b.winner, method:b.method||null }))
-    if(wins.length) send({ type:'cardwins', eventId:UBA.id, event:UBA.name, wins })
+    const armed=UBA.armed!=null ? ((UBA.bouts[UBA.armed]||{}).id||null) : null
+    if(wins.length || armed) send({ type:'cardwins', eventId:UBA.id, event:UBA.name, wins, armed })
     return
   }
   if(p.eventId!==UBA.id) return
