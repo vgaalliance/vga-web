@@ -146,8 +146,7 @@ a{color:inherit;text-decoration:none}
    The inset shadow is gone too -- it read as a boxy cut-out rather than a
    press. Scale and brightness alone do the job. */
 .fcard:active{transform:scale(.97);filter:brightness(.93)}
-.mrow:active, .twin .tw:active, .slabw:active,
-.bpill:active, .evbet:active, .brec:active,
+.mrow:active, .twin .tw:active, .slabw:active, .bk-tk:active,
 .signin:active, .watchbtn:active,
 #tear .tapopen:active, #tear .tclose:active{
   transform:scale(.97);filter:brightness(1.28)}
@@ -161,13 +160,8 @@ a{color:inherit;text-decoration:none}
 .chips span:active, .betback:active, .chipb:active{transform:scale(.93);filter:brightness(1.28)}
 /* The price cell IS the pick control, so it presses like one. It is not an
    `.act`, so the shared button rule above does not reach it. */
-/* .bhero runs the riding/pays-out tint on a keyframe animation, and an
-   animation beats a plain declaration. filter is a separate property, so it
-   still lands. */
-.bhero:active{transform:scale(.985);filter:brightness(1.2)}
 @media (prefers-reduced-motion:reduce){
-  .fcard:active, .mrow:active, .twin .tw:active, .slabw:active, .bpill:active,
-  .evbet:active, .brec:active, .bhero:active{transform:none}}
+  .fcard:active, .mrow:active, .twin .tw:active, .slabw:active, .bk-tk:active{transform:none}}
 
 button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 :focus-visible{outline:2px solid #C3A6FF;outline-offset:2px}
@@ -1488,112 +1482,43 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
 /* ── BETTING ──────────────────────────────────────────────────────────
    Two levels: what is open, then one card. A card is five to fifteen bouts,
    so a flat board is forty rows of scroll. */
-/* The hero. One number at a time — what you staked, then what it pays — because
-   two big numbers side by side read as a table and this block is a headline.
-   The digits ROLL rather than the block turning over: a card flip hides the
-   number for a quarter of a second, and that number is why the tab was opened. */
-.bhero{margin:2px 16px 10px;padding:16px 34px 16px 16px;border-radius:16px;position:relative;
-  cursor:pointer;border:1px solid rgba(110,231,183,.34);
-  background:linear-gradient(155deg,rgba(110,231,183,.18),rgba(20,14,38,.9));
-  animation:btint 8s infinite}
-.bhero .chev{position:absolute;right:13px;top:50%;transform:translateY(-50%);
-  color:#6EE7B7;font-size:26px;line-height:0;animation:barw 8s infinite}
-@keyframes btint{
-  0%,40%  {border-color:rgba(110,231,183,.34);
-           background:linear-gradient(155deg,rgba(110,231,183,.18),rgba(20,14,38,.9))}
-  52%,88% {border-color:rgba(245,200,66,.36);
-           background:linear-gradient(155deg,rgba(245,200,66,.16),rgba(20,14,38,.9))}
-  100%    {border-color:rgba(110,231,183,.34);
-           background:linear-gradient(155deg,rgba(110,231,183,.18),rgba(20,14,38,.9))}
-}
-@keyframes barw{0%,40%{color:#6EE7B7}52%,88%{color:#F5C842}100%{color:#6EE7B7}}
-.bhero .lin{position:relative;height:9px}
-.bhero .lin span{position:absolute;left:0;top:0;white-space:nowrap;
-  font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.2em;
-  text-transform:uppercase;color:#8FD9BE}
-.bhero .lin.two span{font-size:7px;letter-spacing:.13em;color:#5C8874}
-.bhero .lin span.a{animation:bfa 8s infinite}
-.bhero .lin span.b{animation:bfb 8s infinite;color:#D6B463}
-.bhero .lin.two span.b{color:#8A7546}
-@keyframes bfa{0%,40%{opacity:1}48%,88%{opacity:0}96%,100%{opacity:1}}
-@keyframes bfb{0%,40%{opacity:0}48%,88%{opacity:1}96%,100%{opacity:0}}
-.bhero .num{display:flex;align-items:baseline;margin:5px 0 9px;height:44px}
-.bhero .dig{display:block;height:44px;overflow:hidden}
-.bhero .dig u{display:block;text-decoration:none;font-family:'Bebas Neue',sans-serif;
-  font-size:50px;line-height:44px;animation:broll 8s infinite}
-.bhero .dig i{display:block;font-style:normal;height:44px}
-.bhero .dig i.a{color:#6EE7B7}
-.bhero .dig i.b{color:#F5C842}
-@keyframes broll{0%,40%{transform:translateY(0)}50%,88%{transform:translateY(-44px)}
-  98%,100%{transform:translateY(0)}}
-.bhero .vcx{font-family:'Space Mono',monospace;font-size:12px;color:#4E9B80;margin-left:6px;
-  animation:bvc 8s infinite}
-@keyframes bvc{0%,40%{color:#4E9B80}52%,88%{color:#8A7546}100%{color:#4E9B80}}
-
-/* Nothing riding, so nothing to flip. The block stops being money and becomes
-   the next card — motion only ever means you have something on the line. */
-.bhero.still{animation:none;cursor:pointer;border-color:rgba(167,139,250,.34);
-  background:linear-gradient(155deg,rgba(167,139,250,.16),rgba(20,14,38,.9))}
-.bhero.still .chev{animation:none;color:#C3A6FF}
-.bhero.still .lin span{color:#C3A6FF}
-.bhero.still .lin.two span{color:#8B83AC}
-.bhero .nx{font-family:'Bebas Neue',sans-serif;font-size:42px;line-height:.88;
-  margin:6px 0 10px;color:#EFEAFF}
-
-/* Your money, one strip per event, a pill per bet, scrolled sideways. A single
-   block listing fifteen bets is a page of scroll before the markets; a strip is
-   44px whether you have two bets or twenty, and every one stays reachable. */
-.bstrip{margin:0 0 10px}
-.bstrip .eh{display:flex;align-items:center;gap:7px;margin:0 16px 7px;
-  font-family:'Space Mono',monospace;font-size:6.5px;font-weight:700;letter-spacing:.16em;
-  text-transform:uppercase;color:#FFB4AE}
-.bstrip .eh .dot{width:6px;height:6px;border-radius:50%;background:#E8362B;flex-shrink:0}
-.bstrip .eh s{margin-left:auto;text-decoration:none;color:#FFD9D5;letter-spacing:.1em}
-.bstrip.live2 .eh{color:#C9BCF5}
-.bstrip.live2 .eh .dot{background:#A78BFA}
-.bstrip.live2 .eh s{color:#B8AEDA}
-.bstrip .row{display:flex;gap:6px;margin:0 16px;overflow-x:auto;scrollbar-width:none;
-  padding-bottom:2px}
-.bstrip .row::-webkit-scrollbar{display:none}
-.bpill{flex-shrink:0;display:flex;align-items:stretch;border-radius:9px;overflow:hidden;
-  cursor:pointer;white-space:nowrap;border:1px solid rgba(232,54,43,.45)}
-.bpill .l{padding:8px 10px;background:rgba(232,54,43,.16);display:flex;flex-direction:column;
-  justify-content:center}
-.bpill .l b{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13.5px;
-  text-transform:uppercase;letter-spacing:.02em;line-height:1}
-.bpill .l s{text-decoration:none;font-family:'Space Mono',monospace;font-size:5.5px;
-  color:#D2A8A4;letter-spacing:.08em;margin-top:2px}
-.bpill .r{padding:8px 10px;background:rgba(20,14,38,.7);text-align:right;display:flex;
-  flex-direction:column;justify-content:center;border-left:1px solid rgba(232,54,43,.32)}
-.bpill .r b{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:#F5C842;
-  line-height:1}
-.bpill .r s{text-decoration:none;font-family:'Space Mono',monospace;font-size:5.5px;
-  color:#D2A8A4;margin-top:3px}
-.bpill.open2{border-color:rgba(167,139,250,.45)}
-.bpill.open2 .l{background:rgba(167,139,250,.16)}
-.bpill.open2 .r{border-left-color:rgba(167,139,250,.32)}
-.bpill.open2 .l s,.bpill.open2 .r s{color:#B8AEDA}
-
-/* Shown only when nothing is riding — otherwise the strips are the story. */
-.brec{display:flex;margin:0 16px 8px;padding:12px 14px;border-radius:12px;cursor:pointer;
-  background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12)}
-.brec div{flex:1;text-align:center}
-.brec b{display:block;font-family:'Bebas Neue',sans-serif;font-size:26px;line-height:1}
-.brec s{display:block;text-decoration:none;font-family:'Space Mono',monospace;font-size:7.5px;
-  color:#8B83AC;margin-top:5px}
-
-/* level one — a card per row */
-.evbet{display:flex;align-items:center;gap:11px;margin:0 16px 8px;padding:12px 14px;
-  border-radius:12px;cursor:pointer;
-  background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12)}
-.evbet.dim{opacity:.5;cursor:default}
-.evbet .eb1{flex:1;min-width:0}
-.evbet .en2{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.02em;line-height:1}
-.evbet .es2{font-family:'Space Mono',monospace;font-size:7.5px;color:#8B83AC;margin-top:5px}
-.evbet .minetag{flex-shrink:0;font-family:'Space Mono',monospace;font-size:6.5px;font-weight:700;
-  letter-spacing:.12em;text-transform:uppercase;color:#06281D;background:#6EE7B7;
-  border-radius:20px;padding:3px 8px}
-.evbet .chev{color:#6E6688;font-size:20px}
+/* Level one: ONE TICKET PER CARD. The card, its date and a clock to the bell
+   on the left; a stub on the right with your money on that card, or its pots;
+   the main event as one line under the clock with its two prices. */
+.bk-tk{display:grid;grid-template-columns:minmax(0,1fr) 92px;margin:0 16px 10px;border-radius:16px;overflow:hidden;cursor:pointer;
+  border:1px solid rgba(185,162,255,.45);background:rgba(16,12,38,.88);-webkit-tap-highlight-color:transparent}
+.bk-main{padding:11px 12px 10px;display:grid;gap:3px;min-width:0}
+.bk-hd{display:flex;align-items:baseline;gap:8px;min-width:0}
+.bk-hd b{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:24px;line-height:1;letter-spacing:.02em;white-space:nowrap}
+.bk-hd span{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.06em;text-transform:uppercase;color:#9C96B5;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bk-clock{font-family:'Bebas Neue',sans-serif;font-size:34px;line-height:.9;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+.bk-clock span span{color:#6E6888}
+.bk-live{display:inline-block;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:#fff;background:#E8362B;border-radius:6px;padding:5px 8px;margin:4px 0 2px}
+.bk-live.o{background:#2E2860;color:#C9BCF2}
+.bk-me{display:flex;align-items:center;gap:3px;min-width:0;margin-top:5px;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.01em;line-height:1}
+.bk-me .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bk-me i{font-style:normal;color:#6E6888;font-size:11px;padding:0 1px}
+.bk-px{appearance:none;flex:0 0 auto;border:0;border-radius:5px;padding:4px 4px;color:#fff;cursor:pointer;
+  font-family:'Space Mono',monospace;font-size:9px;font-weight:700;line-height:1}
+.bk-px.r{background:#B3323F} .bk-px.b{background:#2F5BD0}
+.bk-px:focus-visible{outline:2px solid #fff;outline-offset:1px}
+.bk-stub{position:relative;border-left:2px dashed rgba(185,162,255,.45);padding:10px;display:grid;align-content:center;gap:2px;
+  background:rgba(185,162,255,.08)}
+.bk-stub::before,.bk-stub::after{content:'';position:absolute;left:-9px;width:16px;height:16px;border-radius:50%;background:#110D28}
+.bk-stub::before{top:-9px} .bk-stub::after{bottom:-9px}
+.bk-stub .k{font-family:'Space Mono',monospace;font-size:7.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#B9B0DE;white-space:nowrap}
+.bk-stub .v{font-family:'Bebas Neue',sans-serif;font-size:22px;line-height:1;letter-spacing:.02em;margin-bottom:3px}
+.bk-stub .v.g{color:#6EE7B7}
+.bk-soon{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 16px 8px;padding:10px 12px;
+  border:1px dashed rgba(196,182,246,.3);border-radius:14px}
+.bk-soon b{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:20px;color:#BDB4E2;line-height:1}
+.bk-soon span{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:#8E86B3;text-align:right}
+.bk-foot{display:flex;justify-content:space-between;align-items:center;margin:4px 16px 0;padding:8px 2px;cursor:pointer;
+  font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#9C96B5}
+.bk-foot b{color:#fff}
+.bk-foot .go{font-weight:700;color:#B9A2FF}
 .betback{display:block;margin:2px 16px 4px;font-family:'Space Mono',monospace;font-size:8px;
   font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#C3A6FF;background:none;
   border:1px solid rgba(167,139,250,.35);border-radius:20px;padding:7px 13px;cursor:pointer}
@@ -7399,6 +7324,13 @@ document.addEventListener('click', function(e){
   if(ev && String(ev.getAttribute('data-event')).indexOf('tm:') === 0){ e.preventDefault(); return; }
   if(ev){ e.preventDefault(); openSheet({kind:'event', id:ev.getAttribute('data-event')}); return; }
   if(e.target.closest('[data-all-events]')){ openSheet({kind:'events'}); return; }
+  var bp = e.target.closest('[data-bpick]');
+  if(bp){
+    e.preventDefault();
+    var bq = bp.getAttribute('data-bpick').split('|');
+    tk.event = bq[0]; tk.picks = {}; tk.own = {}; tk.open = false; tk.picks[bq[1]] = bq[2];
+    renderBetEvent(bq[0]); return;
+  }
   var be = e.target.closest('[data-bevent]');
   if(be){ e.preventDefault(); renderBetEvent(be.getAttribute('data-bevent')); return; }
   /* A slab opens its card -- except the one ALREADY on the card page. slabHTML
@@ -11067,7 +10999,7 @@ async function renderOffers(){
 
    Everything here is pari-mutuel — the price moves until the bell, so every
    figure says "pays now" rather than pretending it is a quote. */
-var betEvent = null, myBets = null, betPools = null;
+var betEvent = null, myBets = null, betPools = null, myPickem = null;
 
 async function renderBetting(){
   var el = document.getElementById('betting-body');
@@ -11087,7 +11019,8 @@ async function loadBetting(){
     me ? qMe("my_bets?select=*&order=placed_at.desc") : Promise.resolve([]),
     me ? qMe("my_profile?select=vc_balance&limit=1") : Promise.resolve([]),
     q("events_public?select=id,name,event_date,status&order=event_date.asc&limit=30"),
-    pkRules ? Promise.resolve([pkRules]) : q("pickem_rules_public?select=*")
+    pkRules ? Promise.resolve([pkRules]) : q("pickem_rules_public?select=*"),
+    me ? qMe("my_pickem?select=event_id,amount,state,pays_if_all_win&state=neq.settled") : Promise.resolve([])
   ]);
   if(!el.isConnected) return;
   if(!got[0]){
@@ -11096,6 +11029,7 @@ async function loadBetting(){
   }
   betPools = got[0];
   myBets   = got[1] || [];
+  myPickem = got[5] || [];
   /* No rules, no Pick'em tab: the ticket falls back to single bets rather
      than offering a game whose multipliers it cannot state. */
   if(got[4] && got[4][0]) pkRules = got[4][0];
@@ -11117,160 +11051,109 @@ function poolsFor(eventId){
   return (betPools || []).filter(function(p){ return p.event_id === eventId; });
 }
 
-/* ── level one: your money, then the cards ── */
+/* ── level one: one ticket per card (2026-10-17) ──
+   Every card with betting open, or live, is its own ticket, nearest bell
+   first: the card and its date, a clock to the bell, a stub with YOUR money on
+   that card (singles and Pick'em) or its pots when you have none there, and
+   the main event as one line with its two prices. A price opens the card with
+   that pick on the slip; anywhere else on the ticket opens the card. Single
+   bets or Pick'em is chosen on the card itself, never here. */
 function renderBetLevel(upcoming){
   var el = document.getElementById('bet-list');
   if(!el) return;
-
-  var open   = (myBets || []).filter(function(b){ return b.state === 'open'; });
-  var locked = (myBets || []).filter(function(b){ return b.state === 'locked'; });
-  var live   = open.concat(locked);
-  var riding = live.reduce(function(n,b){ return n + Number(b.amount||0); }, 0);
-
+  var evById = {};
+  (upcoming || []).forEach(function(e){ evById[e.id] = e; });
   var evIds = [];
   (betPools || []).forEach(function(p){ if(evIds.indexOf(p.event_id) === -1) evIds.push(p.event_id); });
 
-  var html = '', heroEv = null;
-  if(me && riding){ html += heroHTML(riding, live); }
-  else {
-    var nx = nextHTML(evIds, upcoming);
-    html += nx.html; heroEv = nx.eventId;
-  }
-
-  /* Locked first — that is the money you cannot touch, on a fight happening
-     right now. Then what is still open and still moveable. */
-  html += stripsHTML(locked, false) + stripsHTML(open, true);
-
-  /* The card in the block above is not listed a second time under it. */
-  var listIds = evIds.filter(function(id){ return id !== heroEv; });
-
-  if(listIds.length){
-    html += '<div class="lab"><b>'+(heroEv ? 'Also open' : 'Place your bets')+'</b><i></i><s>'
-      + listIds.length + (listIds.length === 1 ? ' card' : ' cards') + '</s></div>';
-  } else if(!evIds.length && !upcoming.length){
-    html += '<div class="empty"><b>Nothing is scheduled.</b><br>'
-      + 'Pools open the moment a card is published.</div>';
-  }
-
-  listIds.forEach(function(id){
+  var tickets = evIds.map(function(id){
     var ps = poolsFor(id);
-    var pool = ps.reduce(function(n,p){ return n + Number(p.pool||0); }, 0);
-    var bets = ps.reduce(function(n,p){ return n + Number(p.bets||0); }, 0);
-    var mine = (myBets || []).filter(function(b){
-      return b.event_id === id && b.state !== 'settled'; }).length;
-    html += '<div class="evbet" data-bevent="'+esc(id)+'">'
-      + '<div class="eb1"><div class="en2">'+esc(ps[0].event_name || 'Event')+'</div>'
-      + '<div class="es2">'+ps.length+(ps.length===1?' market':' markets')+' \u00b7 '
-      + pool.toLocaleString()+' VC in the pools \u00b7 '+bets+(bets===1?' bet':' bets')+'</div></div>'
-      + (mine ? '<span class="minetag">'+mine+' yours</span>' : '')
-      + '<span class="chev">&rsaquo;</span></div>';
-  });
+    var open = ps.some(function(p){ return p.market_status === 'open'; });
+    var live = !open && ps.some(function(p){ return p.market_status === 'locked'; });
+    if(!open && !live) return null;   // every pool settled: the card is over
+    var ev = evById[id], date = ev ? ev.event_date : null;
+    return { id: id, ps: ps, open: open, date: date, bell: date ? new Date(date).getTime() : null,
+             name: ps[0].event_name || (ev && ev.name) || 'Event' };
+  }).filter(Boolean).sort(function(x, y){ return (x.bell || 9e15) - (y.bell || 9e15); });
 
-  /* cards with no market yet */
-  var waiting = upcoming.filter(function(e){
-    return evIds.indexOf(e.id) === -1 && e.id !== heroEv; }).slice(0, 4);
+  var html = '';
+  if(tickets.length){
+    html += '<div class="lab"><b>Open now</b><i></i><s>' + tickets.length + (tickets.length === 1 ? ' card' : ' cards') + '</s></div>'
+      + tickets.map(bkTicketHTML).join('');
+  }
+  var waiting = (upcoming || []).filter(function(e){ return evIds.indexOf(e.id) === -1; }).slice(0, 4);
   if(waiting.length){
     html += '<div class="lab"><b>Not open yet</b><i></i></div>'
       + waiting.map(function(e){
-          var when = new Date(e.event_date).toLocaleString('en-US',{ timeZone:'America/New_York',
-            weekday:'short', month:'short', day:'numeric' });
-          return '<div class="evbet dim"><div class="eb1"><div class="en2">'+esc(e.name)+'</div>'
-            + '<div class="es2">'+esc(when)
-            + ' \u00b7 opens when the card is published</div></div></div>';
+          return '<div class="bk-soon"><b>' + esc(e.name) + '</b><span>' + esc(dstr(e.event_date, { weekday:'short' }))
+            + ' · opens when<br>the card is published</span></div>';
         }).join('');
   }
-
-  /* The record only earns its space when there is nothing riding. With live
-     bets on screen, all-time numbers are the least interesting thing here. */
-  if(me && !riding) html += recordHTML();
-
+  if(!tickets.length && !waiting.length){
+    html += '<div class="empty"><b>Nothing is scheduled.</b><br>Pools open the moment a card is published.</div>';
+  }
+  if(me){
+    var r = betRecord();
+    html += '<div class="bk-foot" data-hub="mybets"><span>' + (r.settled ? 'All time <b>' + r.won + '–' + r.lost + '</b>'
+      + (r.hit == null ? '' : ' · ' + r.hit + '% won') : 'No bets settled yet') + '</span><span class="go">My bets ›</span></div>';
+  }
   html += '<div class="foot">Pari-mutuel &middot; no rake &middot; the price moves until the bell</div>';
   el.innerHTML = html;
 }
 
-/* The rolling number. Both figures are padded to the same width with figure
-   spaces so the columns line up — otherwise 800 rolling into 1,240 shifts every
-   digit sideways mid-roll. */
-function odoHTML(a, b){
-  var w = Math.max(a.length, b.length), i;
-  while(a.length < w) a = '\u2007' + a;
-  while(b.length < w) b = '\u2007' + b;
-  var out = '';
-  for(i = 0; i < w; i++){
-    out += '<span class="dig"><u style="animation-delay:'+(i*55)+'ms">'
-      + '<i class="a">'+esc(a[i])+'</i><i class="b">'+esc(b[i])+'</i></u></span>';
-  }
-  return out;
-}
-
-function heroHTML(riding, live){
-  var ret = live.reduce(function(n,b){
+/* Your money on one card: every single bet still riding (an open one at the
+   pot as it stands now, a locked one at its locked odds) plus every Pick'em
+   entry at what it pays if all its picks win. */
+function bkMoney(id){
+  var singles = (myBets || []).filter(function(b){ return b.event_id === id && (b.state === 'open' || b.state === 'locked'); });
+  var pk = (myPickem || []).filter(function(x){ return x.event_id === id && x.state !== 'settled'; });
+  var riding = 0, pays = 0;
+  singles.forEach(function(b){
     var p = (betPools || []).filter(function(x){ return x.match_id === b.match_id; })[0];
-    return n + Math.round(Number(b.amount||0) * livePays(p, b));
-  }, 0);
-  var nOpen = live.filter(function(b){ return b.state === 'open'; }).length;
-  return '<div class="bhero" data-hub="mybets">'
-    + '<div class="lin"><span class="a">Riding right now</span><span class="b">Pays out</span></div>'
-    + '<div class="num">' + odoHTML(riding.toLocaleString(), ret.toLocaleString())
-    + '<span class="vcx">VC</span></div>'
-    + '<div class="lin two"><span class="a">'+live.length+(live.length===1?' bet':' bets')
-    + ' \u00b7 '+(live.length - nOpen)+' locked</span>'
-    + '<span class="b">If they all land</span></div>'
-    + '<span class="chev">&rsaquo;</span></div>';
-}
-
-/* Nothing riding. The block points at the next card instead, and holds still. */
-function nextHTML(evIds, upcoming){
-  var first = evIds.length ? poolsFor(evIds[0]) : null;
-  if(first && first.length){
-    var pot = first.reduce(function(n,p){ return n + Number(p.pool||0); }, 0);
-    var nb = first.reduce(function(n,p){ return n + Number(p.bets||0); }, 0);
-    return { eventId: evIds[0], html: '<div class="bhero still" data-bevent="'+esc(evIds[0])+'">'
-      + '<div class="lin"><span>Open now</span></div>'
-      + '<div class="nx">'+esc(first[0].event_name || 'Next card')+'</div>'
-      + '<div class="lin two"><span>'+first.length+(first.length===1?' market':' markets')
-      + ' \u00b7 '+pot.toLocaleString()+' VC in the pools \u00b7 '+nb+(nb===1?' bet':' bets')+'</span></div>'
-      + '<span class="chev">&rsaquo;</span></div>' };
-  }
-  var nx = (upcoming || [])[0];
-  if(!nx) return { eventId: null, html: '' };
-  return { eventId: nx.id, html: '<div class="bhero still">'
-    + '<div class="lin"><span>Next card</span></div>'
-    + '<div class="nx">'+esc(nx.name)+'</div>'
-    + '<div class="lin two"><span>'+esc(dstr(nx.event_date, { weekday:'short' }))
-    + ' \u00b7 pools open when the card is published</span></div></div>' };
-}
-
-/* One strip per event. Tapping a pill goes to that card's board, which is the
-   only place the bet can be read in full. */
-function stripsHTML(bets, isOpen){
-  if(!bets.length) return '';
-  var order = [], byEv = {};
-  bets.forEach(function(b){
-    var k = b.event_id || 'x';
-    if(!byEv[k]){ byEv[k] = []; order.push(k); }
-    byEv[k].push(b);
+    riding += Number(b.amount || 0);
+    pays += Math.round(Number(b.amount || 0) * (b.state === 'open' ? livePays(p, b) : Number(b.odds || 1)));
   });
-  return order.map(function(k){
-    var rows = byEv[k];
-    var sum  = rows.reduce(function(n,b){ return n + Number(b.amount||0); }, 0);
-    var name = rows[0].event_name || 'Event';
-    return '<div class="bstrip'+(isOpen ? ' live2' : '')+'">'
-      + '<div class="eh"><span class="dot"></span>'
-      + esc(name) + (isOpen ? ' \u2014 still open' : ' \u2014 on now')
-      + '<s>'+rows.length+(rows.length===1?' bet':' bets')+' \u00b7 '+sum.toLocaleString()+'</s></div>'
-      + '<div class="row">' + rows.map(function(b){
-          var p = (betPools || []).filter(function(x){ return x.match_id === b.match_id; })[0];
-          var pays = isOpen ? Math.round(Number(b.amount||0) * livePays(p, b))
-                            : Math.round(Number(b.amount||0) * Number(b.odds||1));
-          return '<div class="bpill'+(isOpen ? ' open2' : '')+'" data-bevent="'+esc(b.event_id||'')+'">'
-            + '<div class="l"><b>'+esc(b.pick_name || 'Your pick')+'</b>'
-            + '<s>'+(b.bout_number ? 'BOUT '+b.bout_number : (isOpen ? 'OPEN' : 'LOCKED'))+'</s></div>'
-            + '<div class="r"><b>'+Number(b.amount||0).toLocaleString()+'</b>'
-            + '<s>\u2192 '+pays.toLocaleString()+'</s></div></div>';
-        }).join('') + '</div></div>';
-  }).join('');
+  pk.forEach(function(x){ riding += Number(x.amount || 0); pays += Number(x.pays_if_all_win || 0); });
+  return { riding: riding, pays: pays };
 }
+function bkClockHTML(bell){
+  var s = Math.max(0, Math.floor((bell - Date.now()) / 1000));
+  if(!s) return 'Starting';
+  function two(n){ return (n < 10 ? '0' : '') + n; }
+  var d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
+  return (d ? d + '<span>D</span> ' : '') + two(h) + '<span>:</span>' + two(m) + '<span>:</span>' + two(s % 60);
+}
+function bkTicketHTML(t){
+  var main = t.ps.slice().sort(function(a, b){ return (a.bout_number || 99) - (b.bout_number || 99); })[0];
+  var money = me ? bkMoney(t.id) : { riding: 0 };
+  var pot = t.ps.reduce(function(n, p){ return n + Number(p.pool || 0); }, 0);
+  var when = t.date ? dstr(t.date, { weekday:'short' }) + ' · '
+    + new Date(t.date).toLocaleTimeString('en-US', { timeZone:'America/New_York', hour:'numeric', minute:'2-digit' }) + ' ET' : '';
+  var clock = !t.open ? '<span class="bk-live">Live</span>'
+    : t.bell ? '<span data-bkbell="' + t.bell + '">' + bkClockHTML(t.bell) + '</span>' : '<span class="bk-live o">Open</span>';
+  var stub = money.riding
+    ? '<span class="k">Riding</span><span class="v">' + pkN(money.riding) + '</span><span class="k">Pays about</span><span class="v g">' + pkN(money.pays) + '</span>'
+    : '<span class="k">Pots</span><span class="v">' + pkN(pot) + '</span><span class="k">' + (t.open ? 'No bets yet' : 'Betting closed') + '</span>';
+  /* the main event's line: both names, each price a chip you can press while
+     its fight is open; a side nobody has backed yet has no price to show */
+  function chip(side){
+    var tot = Number(main.pool || 0), sd = Number(side === 'a' ? main.total_a : main.total_b);
+    var label = sd > 0 ? pkX(tot / sd) : 'new';
+    if(main.market_status !== 'open') return '';
+    return '<button type="button" class="bk-px ' + (side === 'a' ? 'r' : 'b') + '" data-bpick="' + esc(t.id + '|' + main.match_id + '|' + side) + '"'
+      + ' aria-label="Back ' + esc(side === 'a' ? main.side_a : main.side_b) + ' at ' + label + '">' + label + '</button>';
+  }
+  return '<div class="bk-tk" data-bevent="' + esc(t.id) + '"><div class="bk-main">'
+    + '<div class="bk-hd"><b>' + esc(t.name) + '</b><span>' + esc(when) + '</span></div>'
+    + '<div class="bk-clock">' + clock + '</div>'
+    + '<div class="bk-me"><span class="nm">' + esc(main.side_a || '—') + '</span>' + chip('a') + '<i>vs</i>' + chip('b') + '<span class="nm">' + esc(main.side_b || '—') + '</span></div>'
+    + '</div><div class="bk-stub">' + stub + '</div></div>';
+}
+/* one clock for every ticket, ticking only while the Betting tab is showing */
+setInterval(function(){
+  if(typeof currentTab === 'undefined' || currentTab !== 'betting' || document.hidden) return;
+  [].forEach.call(document.querySelectorAll('[data-bkbell]'), function(x){ x.innerHTML = bkClockHTML(+x.getAttribute('data-bkbell')); });
+}, 1000);
 
 /* ONE record, read by the Betting tab and by My bets. The two screens used to
    count it differently — this one divided wins by everything that was not still
@@ -11289,17 +11172,6 @@ function betRecord(list){
   return { placed: all.length, won: won, lost: lost, settled: settled, net: net,
            hit: settled ? Math.round(won / settled * 100) : null };
 }
-function recordHTML(){
-  var r = betRecord();
-  if(!r.settled && !r.net) return '';
-  return '<div class="lab"><b>Your record</b><i></i><s>all time</s></div>'
-    + '<div class="brec" data-hub="mybets">'
-    + '<div><b>'+r.settled.toLocaleString()+'</b><s>Settled</s></div>'
-    + '<div><b>'+(r.hit == null ? '\u2014' : r.hit + '%')+'</b><s>Hit rate</s></div>'
-    + '<div><b style="color:'+(r.net >= 0 ? '#6EE7B7' : '#FF8A80')+'">'
-    + (r.net >= 0 ? '+' : '') + r.net.toLocaleString()+'</b><s>Net VC</s></div></div>';
-}
-
 /* What a stake pays AT THE CURRENT POOL. Pari-mutuel: your side's share of the
    whole pool. The stored `odds` is a snapshot from placement and settlement
    overwrites it, so showing that number would be showing history. */
