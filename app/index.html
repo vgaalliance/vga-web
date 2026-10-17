@@ -6063,10 +6063,13 @@ var hSwipe = false;
   el.addEventListener('touchcancel', done, { passive: true });
 });
 
-/* bold / italic / underline markers out, the words kept: "| ** FIGHTER
-   INTERVIEW ** GUTS" reads "| FIGHTER INTERVIEW GUTS" */
+/* bold / italic / underline markers out, the words kept, and the pipes
+   Discord posts wrap a title in dropped from the ends only: "| ** FIGHTER
+   INTERVIEW ** GUTS "THE FLASH"|" reads "FIGHTER INTERVIEW GUTS "THE FLASH"".
+   A pipe in the middle is a separator ("UBA FN33 ︱ Fighter Interview") and stays. */
 function unMd(s){
-  return String(s || '').replace(/\*\*|__|~~/g, '').replace(/\s{2,}/g, ' ').trim();
+  return String(s || '').replace(/\*\*|__|~~/g, '')
+    .replace(/^[\s|｜︱]+|[\s|｜︱]+$/g, '').replace(/\s{2,}/g, ' ').trim();
 }
 
 /* the deck holds the newest few videos; the rest become accents in the list */
