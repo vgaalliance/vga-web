@@ -164,6 +164,11 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
    shown edge to edge, where a rectangle reads as a picture and not a mistake */
 #sPhoto{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom}
 #sPhotoBox.full #sPhoto{object-fit:cover;object-position:center 18%}
+/* no photo: a lit silhouette stands in the window instead of an empty hole,
+   so the split still reads as host and FIGHTER */
+#sSil{position:absolute;left:50%;bottom:0;height:94%;width:auto;transform:translateX(-50%);color:rgba(23,135,189,.24);display:none}
+#sPhotoBox.nopic #sSil{display:block}
+#sPhotoBox.nopic #sPhoto{display:none}
 #cband > *{position:relative;z-index:1}
 
 /* THE WAIT. A line draws across the band, the label blinks, and the page
@@ -244,8 +249,9 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 <div class="screen" id="split">
   <div class="frame ink"></div>
   <!-- the fighter's window carries their photo when they have one (most
-       fighters are not on camera); with no photo it stays a hole, like the host's -->
-  <div class="abs paper" id="sPhotoBox" style="left:984px;top:128px;width:880px;height:520px;overflow:hidden;display:none"><img id="sPhoto" alt=""></div>
+       fighters are not on camera); with no photo it carries a silhouette.
+       ?cams=1 keeps it a hole, like the host's, for a fighter on camera -->
+  <div class="abs paper" id="sPhotoBox" style="left:984px;top:128px;width:880px;height:520px;overflow:hidden;display:none"><img id="sPhoto" alt=""><svg id="sSil" viewBox="0 0 100 100" aria-hidden="true"><path fill="currentColor" d="M50 14c9 0 16 8 16 18s-7 19-16 19-16-9-16-19 7-18 16-18zM14 100c0-21 15-38 36-38s36 17 36 38z"/></svg></div>
   <i class="sh t ink" style="left:56px"></i><i class="sh b ink" style="left:56px"></i>
   <i class="sh t two ink" style="left:984px"></i><i class="sh b two ink" style="left:984px"></i>
   <div id="sLock"><div class="lab" id="sLockSub" style="color:var(--ice2);margin-bottom:10px"></div><div class="big">THE VERDICTS</div></div>
@@ -372,12 +378,15 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 
   // The fighter's photo, on the contract page and in their window on the split.
   // Most fighters have none: the page then simply has no figure on it, and the
-  // window stays a hole. ?cams=1 keeps the window a hole always, for a night
-  // when the fighter IS on camera.
+  // window shows a silhouette. ?cams=1 keeps the window a hole always, for a
+  // night when the fighter IS on camera.
   const CAMS = new URLSearchParams(location.search).get('cams') === '1'
-  const noPhoto = () => { $('cPhoto').style.display = 'none'; $('sPhotoBox').style.display = 'none' }
+  // the split's window with no picture: the silhouette, or the hole on a cams night
+  const silhouette = () => { const box = $('sPhotoBox')
+    box.classList.add('nopic'); box.classList.remove('full'); box.style.display = CAMS ? 'none' : 'block' }
+  const noPhoto = () => { $('cPhoto').style.display = 'none'; silhouette() }
   $('cPhoto').addEventListener('error', () => { $('cPhoto').style.display = 'none' })
-  $('sPhoto').addEventListener('error', () => { $('sPhotoBox').style.display = 'none' })
+  $('sPhoto').addEventListener('error', silhouette)
   async function photo(d){
     // Not in hand yet (no prep reached this page, or it was reloaded since):
     // the windows go empty for the round trip rather than keep the last face.
@@ -391,6 +400,8 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
       box.style.display = showIt ? 'block' : 'none'
       if(showIt && img.getAttribute('src') !== url){ img.crossOrigin = 'anonymous'; img.src = url }
     })
+    $('sPhotoBox').classList.toggle('nopic', !url)
+    if(!url) silhouette()
     // A photo with its backdrop still on it is not a cut-out. One corner pixel
     // says which: transparent = a figure to stand on the page; solid = a
     // picture, which fills its window on the split and is left OFF the
@@ -398,7 +409,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     if(url) warm(url)
     const cut = url ? await CUT.get(url) : true
     if(cur !== d) return
-    $('sPhotoBox').classList.toggle('full', !cut)
+    $('sPhotoBox').classList.toggle('full', !!url && !cut)
     if(!cut) $('cPhoto').style.display = 'none'
     const onPage = !!url && cut
     // the name gives up the right half of the page to the figure
