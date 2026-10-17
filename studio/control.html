@@ -1688,6 +1688,13 @@ window.mnTape=async()=>{
     return like.sort((a,b)=>a.display_name.length-b.display_name.length)[0]
   }
   const [A,B]=await Promise.all([one(an),one(bn)])
+  // The gym each corner trains at (the gyms in Discord), read beside the roster
+  // because fighter_cards_roster does not carry it. A failed read just leaves
+  // the GYM row off; it never stops the tape.
+  if(A&&B){ try{
+    const {data:gy}=await sb.from('fighter_gyms_public').select('slug,gym').in('slug',[A.slug,B.slug])
+    for(const r of gy||[]){ if(r.slug===A.slug) A.gym=r.gym; if(r.slug===B.slug) B.gym=r.gym }
+  }catch{} }
   if(!A||!B){
     warn('⚠ tale of the tape: no fighter matching "'+(A?bn:an)+'"')
     document.getElementById('mnState').innerHTML='TAPE: fighter not found'; return false }
@@ -1715,7 +1722,7 @@ window.mnTape=async()=>{
     // the UBAe side they're signed to -- picked over the gym column because
     // gym is free text 76 people filled in, while the team is league data the
     // draft maintains. Either missing collapses its row on the tape.
-    stance:cap(x.stance||'')||null, team:x.team||null,
+    stance:cap(x.stance||'')||null, team:x.team||null, gym:x.gym||null,
     // for the intro only: where the globe puts them, and the KOs its record row ends on
     region:x.region||null, kos:x.kos??null,
     // slug drives the photo lookup by convention; photo_url wins if one

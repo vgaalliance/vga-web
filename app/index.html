@@ -1109,6 +1109,8 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
 .tr2 b.l{text-align:right;padding-right:12px;color:#F19C96}
 .tr2 b.r{text-align:left;padding-left:12px;color:#8FC6FF}
 .tr2 b.wd2{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:13px;color:#9D96BE}
+.tr2 b.gy2{line-height:1.12;overflow-wrap:anywhere;min-width:0}
+.tr2 b.gy2.sz2{font-size:12px} .tr2 b.gy2.sz3{font-size:11px}
 .tr2 b.na2{font-family:'Space Mono',monospace;font-weight:400;font-size:10px;color:#5C557A;
   letter-spacing:.1em}
 .tr2 s{text-decoration:none;text-align:center;font-family:'Barlow Condensed',sans-serif;
@@ -7802,6 +7804,9 @@ async function loadCard(e){
     var fs = await q("fighter_cards?select=slug,profile_photo_url,profile_photo_thumb_url,headline_wins,headline_losses,"
       + "headline_draws,height,reach,stance,headline_ko_wins&slug=in.(" + slugs.join(',') + ")");
     if(fs) fs.forEach(function(f){ tape[f.slug] = f; });
+    /* the gym each fighter trains at; a failed read just leaves the row off */
+    var gy = await q("fighter_gyms_public?select=slug,gym&slug=in.(" + slugs.join(',') + ")");
+    if(gy) gy.forEach(function(g){ if(tape[g.slug]) tape[g.slug].gym = g.gym; });
   }
   if(!el.isConnected) return;
 
@@ -8005,6 +8010,10 @@ function tapeRows(A, B){
     ['Reach',  A.reach ? Math.round(A.reach)+'<em>\u2033</em>' : null,
                B.reach ? Math.round(B.reach)+'<em>\u2033</em>' : null, false],
     ['Stance', A.stance, B.stance, true],
+    /* Gym names run to 32 characters: the row is words (escaped), wraps to two
+       lines inside its own column, and steps the size down as a name gets
+       longer, so a long gym never runs into the label or off the card. */
+    ['Gym', A.gym || null, B.gym || null, true, 'gy2'],
     /* 659 of 686 fighters have no KO on file, so 0 v 0 is not a fact: the
        row shows only when either corner has one */
     ['By KO',  koAny ? String(A.headline_ko_wins || 0) : null,
@@ -8021,7 +8030,8 @@ function tapeRows(A, B){
        that greys its prime marks, so it must not be. */
     function cell(v, cls){
       if(v == null) return '<b class="' + cls + ' na2">N/A</b>';
-      return '<b class="' + cls + (r[3] ? ' wd2' : '') + '">'
+      var sz = r[4] === 'gy2' ? (v.length > 20 ? ' sz3' : v.length > 13 ? ' sz2' : '') : '';
+      return '<b class="' + cls + (r[3] ? ' wd2' : '') + (r[4] ? ' ' + r[4] + sz : '') + '">'
            + (r[3] ? esc(v) : v) + '</b>';
     }
     return '<div class="tr2' + side + '">' + cell(r[1], 'l')
