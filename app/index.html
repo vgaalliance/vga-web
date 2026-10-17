@@ -3573,16 +3573,21 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .sptp b.up{color:#5FD98A;font-weight:700}
 .sptp s{text-decoration:none;text-align:center;font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:#8B83AC}
 .spnav{display:flex;gap:8px;margin:12px 12px 0}
-.spupn{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 12px}
-.spupn.fresh{animation:spIn .35s ease both}
-.spupn .u{min-width:0;padding:9px 6px 8px;border-radius:12px;text-align:center;cursor:pointer;
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}
-.spupn .u .spring{display:block;margin:0 auto}
-.spupn .u b{display:block;font-size:12.5px;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.spupn .u small{display:block;font-family:'Space Mono',monospace;font-size:9px;color:#ADA4D6;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sprail{position:relative;display:flex;gap:12px;overflow-x:auto;padding:4px 14px 6px;scrollbar-width:none;scroll-snap-type:x proximity}
+.sprail::-webkit-scrollbar{display:none}
+.sprail.fresh{animation:spIn .35s ease both}
+.sprail .f{flex:none;width:64px;text-align:center;cursor:pointer;opacity:.72;scroll-snap-align:center}
+.sprail .f.on{opacity:1}
+.sprail .f .k{display:block;font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.08em;color:#B9A2FF;margin-bottom:3px}
+.sprail .f .spring{display:block;width:58px;height:58px;margin:0 auto}
+.sprail .f .spring svg{width:58px;height:58px}
+.sprail .f .spring .spav{inset:5px}
+.sprail .f.on .spring::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:2px solid #B9A2FF}
+.sprail .f b{display:block;font-size:11.5px;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sprail .f small{display:block;font-family:'Space Mono',monospace;font-size:8.5px;color:#ADA4D6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .spback{display:block;margin:14px auto 0;padding:4px 8px;cursor:pointer;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;
   letter-spacing:.1em;text-transform:uppercase;color:#B0A4D8}
-@media (prefers-reduced-motion:reduce){#spb,.spupn.fresh{animation:none}.spdust .tbar i{transition:none}}
+@media (prefers-reduced-motion:reduce){#spb,.sprail.fresh{animation:none}.spdust .tbar i{transition:none}}
 
 </style>
 <!-- ═══ FIRST OPEN · the splash, the loader and the welcome (boot.js) ═══
@@ -12762,8 +12767,8 @@ async function sparPaint(quiet){
           + codeField
           + '<div class="typeseg">' + SPAR_TYPES.map(function(t){
               return '<button class="' + (t[0] === sparType ? 'on' : '') + '" data-sp="settype" data-id="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>'
-          + '<div class="one1"><button class="spbt go wide" data-sp="open">Open lobby</button></div>'
-          + '<button class="spq2" data-sp="hostcancel">Cancel</button>')
+          + '<div class="acts"><button class="spbt go full" data-sp="open">Open lobby</button>'
+          + '<button class="spbt no sm" data-sp="hostcancel">Cancel</button></div>')
         + sparRule('Nobody sees your code until you accept them.')
         + (lobbies.length ? '<div class="lab"><b>Waiting now</b><i></i><s>' + lobbies.length + '</s></div>' + sparList(lobbies, false) : '');
     }
@@ -12864,11 +12869,10 @@ function sparFaceoff(fresh){
   sparFacing = true;
   sparSetLive('PICKING');
   var m = sparMine || {}, n = sparPicks.length;
-  /* The next three in the database's order. Not shuffled: the order IS the
+  /* EVERY pick, in the database's order, as one row of faces you swipe
+     through — the one on the faceoff lit. Not shuffled: the order IS the
      matchmaking rule, and a random one would put a poor match first. What
      moves is the row itself, refreshed as lobbies open and close. */
-  var next = [];
-  for(var i = 1; i <= 3 && i < n; i++) next.push((sparPick + i) % n);
   el.innerHTML = spBan('<div class="k">FOUND YOU <em>ONE</em><span class="of">' + (sparPick + 1) + ' OF ' + n + '</span></div>'
       + '<div class="spvs"><div class="side">' + sparAv({ name: m.name || 'You', photo_square_url: m.photo_square_url })
       + '<b>' + esc(m.name || 'You') + '</b><small>' + esc(sparLine(m)) + '</small></div>'
@@ -12887,13 +12891,18 @@ function sparFaceoff(fresh){
     + '<div class="spnav">' + (n > 1 ? '<button class="spbt no sm" data-sp="prev" aria-label="Previous">\u2039</button>' : '')
     + '<button class="spbt lav full" data-sp="askpick">Ask to join</button>'
     + (n > 1 ? '<button class="spbt no sm" data-sp="next" aria-label="Next">\u203A</button>' : '') + '</div>'
-    + (next.length ? '<div class="lab"><b>Up next</b><i></i><s>tap to compare</s></div>'
-        + '<div class="spupn' + (fresh ? ' fresh' : '') + '">' + next.map(function(k){ var p = sparPicks[k];
-            return '<button class="u" data-sp="pickto" data-id="' + k + '">' + sparRing(p)
-              + '<b>' + esc(p.name || 'A fighter') + '</b><small>' + esc(sparLine(p)) + '</small></button>'; }).join('') + '</div>' : '')
+    + (n > 1 ? '<div class="lab"><b>All picks</b><i></i><s>swipe \u00b7 tap a face</s></div>'
+        + '<div class="sprail' + (fresh ? ' fresh' : '') + '" id="sp-rail">' + sparPicks.map(function(p, k){
+            return '<button class="f' + (k === sparPick ? ' on' : '') + '" data-sp="pickto" data-id="' + k + '"'
+              + (k === sparPick ? ' aria-current="true"' : '') + '>'
+              + '<span class="k">' + (k === sparPick ? 'NOW' : '#' + (k + 1)) + '</span>' + sparRing(p)
+              + '<b>' + esc(String(p.name || 'A fighter').split(' ')[0]) + '</b><small>' + esc(sparLine(p)) + '</small></button>'; }).join('') + '</div>' : '')
     + sparRule(esc(sparMins(f.ends_at)) + ' on their lobby. Best fit first: your division, then your region, then the closest rank.')
     + '<button class="spback" data-sp="board">\u2039 Back to the board</button>';
   spDustRun();
+  /* keep the lit face in view when the pick is far along the rail */
+  var rail = document.getElementById('sp-rail'), on = rail && rail.querySelector('.f.on');
+  if(on) rail.scrollLeft = Math.max(0, on.offsetLeft - (rail.clientWidth - on.clientWidth) / 2);
 }
 /* While the faceoff is open, a change on the board re-asks the database for
    the picks. The one you are looking at stays put if it is still open; if it
