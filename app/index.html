@@ -887,6 +887,12 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
 #ev-bouts .pw2.win::after{display:none}
 #ev-bouts .bout3.fx-done .pw2:not(.win) .cut2{filter:grayscale(1) brightness(.48)}
 #ev-bouts .bout3.fx-done .pw2:not(.win) .sil2{opacity:.4}
+/* a closed bout peeks: one row of stats, fading out */
+#ev-bouts .bout3:not(.open) .tape2{max-height:38px;-webkit-mask-image:linear-gradient(#000 40%,transparent);mask-image:linear-gradient(#000 40%,transparent)}
+#ev-bouts .more2{font:600 13px 'Barlow',sans-serif;letter-spacing:0;text-transform:none;color:#C8B9FF;padding:8px 0 12px}
+/* the tape control says what a tap will do */
+#ev-bouts .more2 .fx-hd,#ev-bouts .bout3.open .more2 .fx-sh{display:none}
+#ev-bouts .bout3.open .more2 .fx-hd{display:inline}
 /* a decided bout: the winner keeps the colour and the weight; the loser steps back */
 .bout3.fx-done .tr2.nm2 b:not(.win){font-weight:500;color:#8D86AF}
 /* the arena behind the photo: a black room, a violet haze, the stand's lit
@@ -7816,7 +7822,11 @@ async function loadCard(e){
              reason you opened the bout, so the chevron hides it rather than
              revealing it. The record line that used to sit under the names is
              gone — the tape's own Record row already says it. */
-          return '<div class="bout3 open'+(isMain?' me3':'')+(mine?' you':'')+(done?' fx-done':'')+'" data-bout>'
+          /* only the main event's tape is open on arrival. Every other bout
+             PEEKS: its first stats row (Record) shows, fading out, with "More
+             stats" under it, so a closed bout reads as having more rather than
+             as finished. All seven open made the page ~3,000px of tapes. */
+          return '<div class="bout3'+(isMain?' open me3':'')+(mine?' you':'')+(done?' fx-done':'')+'" data-bout>'
             + (mine ? '<span class="youtag">Your bout</span>' : '')
             + '<div class="wc4">'
             + (isMain ? '<em>Main event</em> \u00b7 ' : '')
@@ -7839,7 +7849,7 @@ async function loadCard(e){
             + esc(b.fighter_b_name || 'TBA') + '</b></div></div>'
             + poolHTML(pools[b.match_id])
             + '<div class="tape2">' + tapeRows(A, Bf) + '</div>'
-            + '<div class="more2"><span>Hide the tape</span><i>&#9662;</i></div>'
+            + '<div class="more2"><span class="fx-sh">More stats</span><span class="fx-hd">Fewer stats</span><i>&#9662;</i></div>'
             + '</div>';
         }).join('') + '</div>';
   }).join('') + '<div class="foot">'+rows.length+' bouts</div>';
