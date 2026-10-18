@@ -1489,14 +1489,19 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
    the main event as one line under the clock with its two prices. */
 .bk-tk{display:grid;grid-template-columns:minmax(0,1fr) 92px;margin:0 16px 10px;border-radius:16px;overflow:hidden;cursor:pointer;
   border:1px solid rgba(185,162,255,.45);background:rgba(16,12,38,.88);-webkit-tap-highlight-color:transparent}
-.bk-main{padding:11px 12px 10px;display:grid;gap:3px;min-width:0}
+.bk-main{padding:10px 11px 9px;display:grid;gap:3px;min-width:0;align-content:center}
 .bk-ev{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:24px;line-height:1;letter-spacing:.02em}
-.bk-clock{font-family:'Bebas Neue',sans-serif;font-size:34px;line-height:.9;letter-spacing:.02em;font-variant-numeric:tabular-nums}
-.bk-clock span span{color:#6E6888}
+.bk-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.bk-sc{flex:0 0 auto;font-family:'Bebas Neue',sans-serif;font-size:21px;line-height:1;letter-spacing:.03em;color:#E9E4FA;font-variant-numeric:tabular-nums}
+.bk-sc span{color:#7D76A0;font-size:15px;margin-left:1px}
+.bk-sc.today{color:#B9A2FF} .bk-sc.today span{color:#8F7FD0}
 .bk-when{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.06em;text-transform:uppercase;color:#9C96B5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bk-live{display:inline-block;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
-  color:#fff;background:#E8362B;border-radius:6px;padding:5px 8px;margin:4px 0 2px}
-.bk-live.o{background:#2E2860;color:#C9BCF2}
+.bk-live{flex:0 0 auto;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:#fff;background:#E8362B;border-radius:4px;padding:3px 6px}
+.bk-live::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:#fff;margin-right:5px;vertical-align:1px;animation:bkpulse 1.4s ease-in-out infinite}
+@keyframes bkpulse{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){ .bk-live::before{animation:none} }
+.bk-tk.live{border-color:rgba(232,54,43,.7)}
 /* the main event: a thin red / blue edge across the whole foot of the ticket */
 .bk-hl{grid-column:1 / -1;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:6px;padding:4px 10px 5px;
   background:linear-gradient(90deg,rgba(179,50,63,.55),rgba(124,32,48,.35) 49.6%,rgba(35,64,143,.35) 50.4%,rgba(47,91,208,.55));
@@ -1504,15 +1509,17 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
 .bk-hl span{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.03em;line-height:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bk-hl span.b{text-align:right}
 .bk-hl em{font-style:normal;font-family:'Space Mono',monospace;font-size:7px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#F5C842}
-.bk-px{appearance:none;background:none;border:0;color:#fff;font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;padding:2px 1px;cursor:pointer;opacity:.95}
+.bk-px{appearance:none;position:relative;background:none;border:0;color:#fff;font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;padding:2px 1px;cursor:pointer;opacity:.95}
+/* the price is small to look at and big to press: the tap area reaches up into the ticket */
+.bk-px::after{content:'';position:absolute;left:-10px;right:-10px;top:-16px;bottom:-6px}
 .bk-px:focus-visible{outline:1px solid #fff;outline-offset:1px}
 .bk-stub{position:relative;border-left:2px dashed rgba(185,162,255,.45);padding:10px;display:grid;align-content:center;gap:2px;
   background:rgba(185,162,255,.08)}
-.bk-stub::before,.bk-stub::after{content:'';position:absolute;left:-9px;width:16px;height:16px;border-radius:50%;background:#110D28}
-.bk-stub::before{top:-9px} .bk-stub::after{bottom:-9px}
+.bk-stub::before{content:'';position:absolute;left:-9px;top:-9px;width:16px;height:16px;border-radius:50%;background:#110D28}
 .bk-stub .k{font-family:'Space Mono',monospace;font-size:7.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#B9B0DE;white-space:nowrap}
 .bk-stub .v{font-family:'Bebas Neue',sans-serif;font-size:22px;line-height:1;letter-spacing:.02em;margin-bottom:3px}
 .bk-stub .v.g{color:#6EE7B7}
+.bk-stub .p{font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;color:#6EE7B7;white-space:nowrap}
 .bk-soon{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 16px 8px;padding:10px 12px;
   border:1px dashed rgba(196,182,246,.3);border-radius:14px}
 .bk-soon b{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:20px;color:#BDB4E2;line-height:1}
@@ -5274,7 +5281,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v254';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v256';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -11126,23 +11133,33 @@ function bkMoney(id){
   pk.forEach(function(x){ riding += Number(x.amount || 0); pays += Number(x.pays_if_all_win || 0); });
   return { riding: riding, pays: pays };
 }
+/* The clock beside the card's name, calm: days and hours, then hours and
+   minutes on the last day, and seconds only in the last hour. The units are
+   grey so it reads as part of the ticket, not a badge. */
 function bkClockHTML(bell){
   var s = Math.max(0, Math.floor((bell - Date.now()) / 1000));
-  if(!s) return 'Starting';
+  if(!s) return 'Now';
   function two(n){ return (n < 10 ? '0' : '') + n; }
   var d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
-  return (d ? d + '<span>D</span> ' : '') + two(h) + '<span>:</span>' + two(m) + '<span>:</span>' + two(s % 60);
+  if(d) return d + '<span>D</span> ' + h + '<span>H</span>';
+  if(h) return h + '<span>H</span> ' + two(m) + '<span>M</span>';
+  return m + '<span>M</span> ' + two(s % 60) + '<span>S</span>';
 }
+/* the same day in New York, compared as dates */
+function bkEtDate(t){ return new Date(t).toLocaleDateString('en-CA', { timeZone:'America/New_York' }); }
 function bkTicketHTML(t){
   var main = t.ps.slice().sort(function(a, b){ return (a.bout_number || 99) - (b.bout_number || 99); })[0];
   var money = me ? bkMoney(t.id) : { riding: 0 };
   var pot = t.ps.reduce(function(n, p){ return n + Number(p.pool || 0); }, 0);
   var when = t.date ? dstr(t.date, { weekday:'short' }) + ' · '
     + new Date(t.date).toLocaleTimeString('en-US', { timeZone:'America/New_York', hour:'numeric', minute:'2-digit' }) + ' ET' : '';
+  var today = t.bell && bkEtDate(t.bell) === bkEtDate(Date.now());
   var clock = !t.open ? '<span class="bk-live">Live</span>'
-    : t.bell ? '<span data-bkbell="' + t.bell + '">' + bkClockHTML(t.bell) + '</span>' : '<span class="bk-live o">Open</span>';
+    : t.bell ? '<span class="bk-sc' + (today ? ' today' : '') + '" data-bkbell="' + t.bell + '">' + bkClockHTML(t.bell) + '</span>' : '';
+  /* three lines, never four: a four-line stub was taller than the ticket and
+     squeezed the main event edge off the bottom */
   var stub = money.riding
-    ? '<span class="k">Riding</span><span class="v">' + pkN(money.riding) + '</span><span class="k">Pays about</span><span class="v g">' + pkN(money.pays) + '</span>'
+    ? '<span class="k">Riding</span><span class="v">' + pkN(money.riding) + '</span><span class="p">pays ' + pkN(money.pays) + '</span>'
     : '<span class="k">Pots</span><span class="v">' + pkN(pot) + '</span><span class="k">' + (t.open ? 'No bets yet' : 'Betting closed') + '</span>';
   /* the main event along the foot: both names on a thin red / blue edge, each
      price pressable while its fight is open; a side nobody has backed yet
@@ -11154,9 +11171,8 @@ function bkTicketHTML(t){
     return '<button type="button" class="bk-px" data-bpick="' + esc(t.id + '|' + main.match_id + '|' + side) + '"'
       + ' aria-label="Back ' + esc(side === 'a' ? main.side_a : main.side_b) + ' at ' + label + '">' + label + '</button>';
   }
-  return '<div class="bk-tk" data-bevent="' + esc(t.id) + '"><div class="bk-main">'
-    + '<b class="bk-ev">' + esc(t.name) + '</b>'
-    + '<div class="bk-clock">' + clock + '</div>'
+  return '<div class="bk-tk' + (t.open ? '' : ' live') + '" data-bevent="' + esc(t.id) + '"><div class="bk-main">'
+    + '<div class="bk-row"><b class="bk-ev">' + esc(t.name) + '</b>' + clock + '</div>'
     + '<span class="bk-when">' + esc(when) + '</span>'
     + '</div><div class="bk-stub">' + stub + '</div>'
     + '<div class="bk-hl"><span class="a">' + esc(main.side_a || '—') + ' ' + chip('a') + '</span><em>Main</em>'
