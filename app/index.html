@@ -1694,10 +1694,12 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .stbrief{font-size:13px;color:#B7AEDC;line-height:1.45;margin-top:8px;white-space:pre-line}
 .sta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:11px}
 .stb,.v2b{min-height:44px;padding:0 16px;border-radius:12px;border:0;font:600 14.5px 'Barlow',sans-serif;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
-.stb.gold,.v2b.s3{background:#F5C842;color:#1A1533}
-.stb.violet,.v2b.s1{background:#A78BFA;color:#140F2B}
+.stb.gold{background:#F5C842;color:#1A1533}
+/* Discord's style 3 is "success": green, never gold (gold here means spends VC) */
+.v2b.s3{background:#5FD98A;color:#082416}
+.stb.violet,.v2b.s1{background:#B9A2FF;color:#1A1236}
 .stb.ghost,.v2b.s2{background:rgba(255,255,255,.1);color:#EDEAF6}
-.v2b.s4{background:#F19C96;color:#2A0F0D}
+.v2b.s4{background:none;color:#F19C96;box-shadow:inset 0 0 0 1px rgba(241,156,150,.5)}
 .v2b.s5{background:rgba(255,255,255,.06);color:#C3A6FF;border:1px solid rgba(195,166,255,.35)}
 .stb:disabled,.v2b:disabled{opacity:.45;cursor:default}
 .stok{font-size:13px;font-weight:600;color:#6EE7B7;padding:0 4px}
@@ -1713,9 +1715,109 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .stvet{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#F5C842;background:rgba(245,200,66,.16);padding:3px 7px;border-radius:6px;margin-left:6px;vertical-align:2px}
 .stmd{font-size:14px;line-height:1.5;margin-top:8px;color:#D9D3F0}
 .stlk{display:block;color:#C3A6FF;font-size:14px;padding:6px 0;text-decoration:none}
+/* ── THE ROOM AS A GIG APP (2026-10-18) ── see staff-room.js. A money pill,
+   tabs, shifts with a day block, a level card per department. No gold: nothing
+   in this room spends VC. */
+.sgx{min-height:100dvh;padding-bottom:28px;background:#16122C}
+.sghead{display:flex;align-items:center;gap:12px;padding:calc(12px + env(safe-area-inset-top,0px)) 14px 6px}
+.sheet .sghead .back{position:static;flex:none}
+.sghead .t{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:.06em;line-height:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#st-pill{margin-left:auto;flex:none}
+.sgpill{display:flex;align-items:center;gap:6px;border-radius:999px;padding:6px 11px 6px 9px;text-decoration:none;
+  font-family:'Space Mono',monospace;font-size:11px;font-weight:700;white-space:nowrap}
+.sgpill.cash{background:#5FD98A;color:#082416;box-shadow:0 0 16px rgba(110,231,183,.35)}
+.sgpill.cash i{font-style:normal;width:16px;height:16px;border-radius:50%;background:#082416;color:#5FD98A;display:flex;align-items:center;justify-content:center;font-size:10px}
+.sgpill.calm{border:1px solid rgba(255,255,255,.2);color:#D9D0FF;padding:6px 11px}
+.sgtabs{display:flex;gap:18px;padding:6px 16px 0;border-bottom:1px solid rgba(255,255,255,.08);overflow-x:auto;scrollbar-width:none}
+.sgtabs::-webkit-scrollbar{display:none}
+.sgtabs button{flex:none;position:relative;padding:6px 0 10px;cursor:pointer;font-family:'Barlow',sans-serif;font-size:14px;font-weight:600;color:#8B83AC;white-space:nowrap}
+.sgtabs button.on{color:#fff}
+.sgtabs button.on::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;border-radius:2px;background:#B9A2FF}
+.sgtabs em{font-style:normal;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;margin-left:5px;padding:1px 5px;border-radius:999px;background:#F19C96;color:#2A0F0D;vertical-align:1px}
+.sgtabs em.n{background:rgba(255,255,255,.12);color:#D9D0FF}
+#stb .spdust{margin-top:12px}
+.sgmc{margin:12px 0 0}
+.sgsec{display:flex;align-items:baseline;gap:8px;margin:20px 16px 4px}
+.sgsec b{font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#8B83AC}
+.sgsec b.r{color:#F19C96}
+.sgsec i{flex:1}
+.sgsec a{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:#C3A6FF;text-decoration:none;white-space:nowrap}
+.sgb{display:inline-flex;align-items:center;justify-content:center;min-height:36px;border-radius:10px;padding:0 12px;cursor:pointer;flex:none;text-decoration:none;
+  font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;border:1px solid transparent}
+.sgb.lav{background:#B9A2FF;color:#1A1236}
+.sgb.go{background:#5FD98A;color:#082416}
+.sgb.no{background:none;border-color:rgba(255,255,255,.28);color:#EDEAF6}
+.sgb.full{flex:1}
+.sgb:disabled{opacity:.45;cursor:default}
+.sgb:active{transform:translateY(1px) scale(.97);filter:brightness(1.1)}
+.sgsft{display:flex;gap:12px;align-items:flex-start;padding:12px 16px}
+.sgsft + .sgsft{border-top:1px solid rgba(255,255,255,.07)}
+.sgday{width:42px;flex:none;text-align:center;border-radius:10px;padding:5px 0 6px;background:rgba(255,255,255,.06)}
+.sgday s{display:block;text-decoration:none;font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.12em;color:#B0A4D8}
+.sgday b{display:block;font-family:'Bebas Neue',sans-serif;font-size:22px;line-height:1;font-weight:400}
+.sgday.late{background:rgba(241,156,150,.16)}.sgday.late s,.sgday.late b{color:#F19C96}
+.sgday.now{background:rgba(185,162,255,.18)}
+.sgday.cash{background:rgba(110,231,183,.16)}.sgday.cash b{color:#6EE7B7}
+.sgday.done{background:rgba(110,231,183,.1)}.sgday.done b{color:#6EE7B7}
+.sgtx{flex:1;min-width:0}
+.sgtx .t{font-size:14.5px;font-weight:600;line-height:1.25;overflow-wrap:anywhere}
+.sgtx .m{font-size:12px;color:#9C94BE;margin-top:2px;line-height:1.35}
+.sgtx .m .late{color:#F19C96;font-weight:600}
+.sgrt{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.sgvc{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:#EDEAF6}
+.sgvc.g{color:#6EE7B7}
+.sgok{font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6EE7B7}
+.sgq{font-family:'Space Mono',monospace;font-size:9.5px;color:#8B83AC}
+.sghow{display:inline-block;margin-top:5px;font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:5px}
+.sghow.lp{background:rgba(185,162,255,.16);color:#D9D0FF}
+.sghow.inv{background:rgba(245,200,66,.14);color:#F5C842}
+.sgbrief{font-size:12.5px;color:#B7AEDC;line-height:1.4;margin-top:6px;white-space:pre-line}
+.sgacts{display:flex;gap:8px;margin-top:9px}
+.sgnote{margin:12px 16px 0;font-size:12.5px;color:#9C94BE;line-height:1.45}
+.sgnote b{color:#D9D0FF}
+.sgcalm{margin:16px 12px 0;padding:16px;border-radius:14px;border:1px dashed rgba(255,255,255,.16);font-size:13px;color:#B0A4D8;text-align:center;line-height:1.45}
+.sgcalm b{display:block;color:#fff;font-size:15px;margin-bottom:3px}
+.sgcalm b.in{display:inline;font-size:13px}
+.sgcalm .sgacts{margin-top:12px}
+.sgbig{padding:16px 16px 4px}
+.sgbig .k{font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:.18em;color:#8B83AC}
+.sgbig .n{font-family:'Bebas Neue',sans-serif;font-size:46px;line-height:.95;margin-top:2px}
+.sgbig .n.g{color:#6EE7B7}
+.sgchart{display:flex;align-items:flex-end;gap:10px;height:120px;margin:12px 16px 0;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sgchart .c{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;position:relative;min-width:0}
+.sgchart .c i{width:100%;max-width:46px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#C3A6FF,#7C5CFF)}
+.sgchart .c i.cur{background:linear-gradient(180deg,#9FF2CB,#37B98C)}
+.sgchart .c b{font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;margin-bottom:4px}
+.sgchart .c s{position:absolute;bottom:-18px;text-decoration:none;font-family:'Space Mono',monospace;font-size:8px;color:#8B83AC;white-space:nowrap}
+.sghist{display:flex;align-items:center;gap:10px;padding:10px 16px}
+.sghist + .sghist{border-top:1px solid rgba(255,255,255,.06)}
+.sglv{margin:12px 12px 0;padding:12px 13px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}
+.sglv .h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.sglv .h b{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.04em;line-height:1;font-weight:400}
+.sglv .h span{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.1em;padding:2px 6px;border-radius:5px;background:rgba(255,255,255,.1);color:#D9D0FF}
+.sglv .h span.ft{background:rgba(95,217,138,.16);color:#8FEFB4}
+.sglv .h span.ld{background:rgba(185,162,255,.2);color:#E2D9FF}
+.sglv .h span.tr{background:rgba(245,200,66,.16);color:#F5C842}
+.sglv .h span.vet{background:rgba(245,200,66,.16);color:#F5C842}
+.sglv .h em{margin-left:auto;font-style:normal;font-family:'Space Mono',monospace;font-size:10px;color:#B0A4D8}
+.sglv .goal{font-size:12.5px;color:#C7BEE4;margin-top:6px}
+.sglv .goal b{color:#F5C842}
+.sgck{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
+.sgck li{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#C7BEE4}
+.sgck li i{width:16px;height:16px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:9px;font-weight:700}
+.sgck li.y i{background:#5FD98A;color:#082416}
+.sgck li.n i{border:1.5px solid #4A4378}
+.sgck .bar{flex:0 0 60px;height:4px;border-radius:2px;background:#2E2752;overflow:hidden;margin-left:auto}
+.sgck .bar b{display:block;height:100%;background:#F5C842}
+.sgck .pr{font-family:'Space Mono',monospace;font-size:10px;color:#8B83AC;margin-left:6px}
+.sglv .pb{display:flex;justify-content:space-between;gap:10px;margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.07);font-size:12.5px;color:#C3A6FF;text-decoration:none}
+.sglv .pb span{color:#8B83AC;white-space:nowrap}
+.sgpb{margin:12px 16px 0}
+
 /* a Discord message, in the app's look */
 .v2wrap{margin:0 14px 12px}
-.v2c{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-left:4px solid;border-radius:0 14px 14px 0;padding:12px 14px;margin-bottom:8px}
+.v2c{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-left:4px solid;border-radius:6px 14px 14px 6px;padding:12px 14px;margin-bottom:8px}
+#stb .v2wrap{margin:12px 12px 0}
 .v2t{font-size:14px;line-height:1.45;color:#EDEAF6;margin:4px 0}
 .v2t code{font-family:'Space Mono',monospace;font-size:11.5px;background:rgba(255,255,255,.08);padding:1px 5px;border-radius:5px}
 .v2t a{color:#C3A6FF}
@@ -3471,6 +3573,7 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .spdust.one .k{font-size:26px}
 .spdust .k.sm{font-size:22px}
 .spdust .k em{font-style:normal;color:#5FD98A}
+.spdust .k em.r{color:#F19C96}
 .spdust .k .of{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;color:#B0A4D8;margin-left:4px}
 .spdust .s{font-size:12.5px;color:#D9D0FF;margin-top:3px;line-height:1.35}
 .spdust .mono{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;letter-spacing:.04em;color:#5FD98A;margin-top:3px}
@@ -12444,7 +12547,7 @@ function spBan(inner, one){
 var spDustRaf = 0, spDustPos = 0, spDustLast = 0;
 function spDustFrame(t){
   spDustRaf = 0;
-  var bars = document.querySelectorAll('#spb .spdust');
+  var bars = document.querySelectorAll('#spb .spdust, #stb .spdust');
   if(!bars.length || document.hidden) return;
   var dt = spDustLast ? Math.min(.05, (t - spDustLast) / 1000) : .016; spDustLast = t;
   spDustPos += .055 * dt;
@@ -12467,7 +12570,7 @@ function spDustRun(){
   if(spDustRaf) cancelAnimationFrame(spDustRaf);
   spDustLast = 0; spDustRaf = requestAnimationFrame(spDustFrame);
 }
-document.addEventListener('visibilitychange', function(){ if(!document.hidden && document.getElementById('spb')) spDustRun(); });
+document.addEventListener('visibilitychange', function(){ if(!document.hidden && (document.getElementById('spb') || document.getElementById('stb'))) spDustRun(); });
 /* "#4 MW · 8-6 · NA" — the same line the Discord card prints, from the same
    numbers (spar-core.js cardLine). A rank only shows with its division, a
    record only when there is one. */

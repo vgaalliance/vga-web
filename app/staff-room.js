@@ -35,24 +35,7 @@ function stfRole(h){
   if(h.me.producer) return 'Producer';
   return (h.depts || []).some(function(d){ return d.role === 'lead'; }) ? 'Lead' : 'Crew';
 }
-function stfBack(){ return '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'; }
 
-async function renderStaff(sub){
-  stf.sub = sub || 'home';
-  var body = document.getElementById('sheet-body');
-  var title = { home: 'Staff', open: 'Up for grabs', jobs: 'My jobs', pay: 'Pay', ladder: 'Ladder', desks: 'Dashboards', mission: 'Mission Control' }[stf.sub.split(':')[0]]
-    || (stf.sub.indexOf('playbook:') === 0 ? 'Playbook' : 'Dashboard');
-  body.innerHTML = stfBack() + '<div class="kick">You · Staff</div><h3>' + esc(title) + '</h3></div>'
-    + '<div id="stb"><div class="skel" style="height:90px"></div><div class="skel" style="width:60%"></div></div>'
-    + '<div id="stpanel" class="stpanel" aria-hidden="true"></div>';
-  await stfLoad();
-  if(stf.sub === 'home' && stf.home && stf.home.me){
-    var h3 = document.querySelector('#sheet-body .evhead h3');
-    if(h3) h3.textContent = stfRole(stf.home);
-  }
-  stfPaint();
-  stfRealtime();
-}
 
 /* app_staff_home() answers NULL for somebody who is not on staff, and the
    shared rpc() turns a null answer into "No answer from the server" -- which
@@ -76,130 +59,400 @@ async function stfLoad(){
   if(stf.home && stf.home.me && stf.home.me.producer && typeof mcLoad === 'function') mc.data = await mcLoad();
 }
 
-/* ── the crew half ─────────────────────────────────────────────────────── */
-function stfLab(t, link, linkSub){
-  return '<div class="lab"><b>' + esc(t) + '</b><i></i>'
-    + (link ? '<a href="#" data-stsub="' + esc(linkSub) + '">' + esc(link) + '</a>' : '') + '</div>';
-}
-function stfBtn(cid, label, cls, extra){
-  return '<button class="stb ' + (cls || '') + '" data-stpress="' + esc(cid) + '"' + (extra || '') + '>' + esc(label) + '</button>';
-}
+
+/* ── THE ROOM AS A GIG APP (redrawn 2026-10-18) ─────────────────────────
+   Settled with Castle after research into the apps that do this for a living:
+   · a MONEY PILL in the header on every screen (Uber's earnings pill) — green
+     with the amount when there is pay to claim, quiet otherwise; it opens Money;
+   · TABS instead of one long scroll: Today, Open, Schedule, Levels, and Desk
+     for leads and producers. A red count on a tab means something there needs
+     you; a grey one is just how many;
+   · open work drawn as SHIFTS with a day block (Deputy), and a tag that says
+     how you get it — your lead picks;
+   · a LEVEL CARD per department with a tick for each requirement of the next
+     rung (DoorDash Top Dasher, Fiverr seller levels), its playbook inside it.
+   Nothing here is gold: nothing in this room spends VC. Claim is green (money
+   coming in); everything you ask for is lavender; the rest is an outline. */
+var STF_TABS = ['home', 'open', 'jobs', 'ladder', 'desks'];
+var RUNG_WORD = { onboarded:'Onboarded', tryout:'Tryout · half pay', full_time:'Full time', instructor:'Instructor', lead:'Lead', signup:'Signed up' };
+
 function stfWhen(iso){
   if(!iso) return '';
   try{ return new Date(iso).toLocaleString('en-US', { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit', timeZone:'America/New_York' }) + ' ET'; }
   catch(e){ return ''; }
 }
-function vcs(n){ return Number(n || 0).toLocaleString() + ' VC'; }
-var RUNG_WORD = { onboarded:'Onboarded', tryout:'Tryout · half pay', full_time:'Full time', instructor:'Instructor', lead:'Lead', signup:'Signed up' };
-
-function stfCallCard(c, depts){
-  var d = (depts || []).filter(function(x){ return x.id === c.dept_id; })[0] || {};
-  var backup = d.rung === 'onboarded';
-  /* app_staff_home returns needed: null once a call is crewed, and this line
-     used to print "null seats" straight onto the card. */
-  var seats = c.needed == null ? '' : ' · ' + c.needed + (c.needed === 1 ? ' seat' : ' seats');
-  var line = esc(c.dept) + ' · ' + esc(stfWhen(c.at)) + ' · ' + vcs(c.rate) + seats
-    + (c.hands ? ' · ' + c.hands + (c.hands === 1 ? ' request' : ' requests') : '');
-  /* The same three buttons as the call post (bot/src/lib/call-buttons.js):
-     Request -- "I'm free if needed" once it is booked -- Backup, and I'm out.
-     A call stays answerable after the pick on purpose; it closes at delivered. */
-  var act, open = c.status === 'calling' || c.status === 'crewed';
-  var ask = stfBtn('prod_in:' + c.pd_id, c.status === 'crewed' ? CREW.free : CREW.request, 'gold');
-  var bk = stfBtn('prod_backup:' + c.pd_id, CREW.backup, 'ghost');
-  var out = stfBtn('prod_out:' + c.pd_id, CREW.out, 'ghost');
-  if(c.mine === 'in') act = '<span class="stok">' + CREW.requested + ' · your lead books</span>' + out;
-  else if(c.mine === 'booked' || c.mine === 'confirmed') act = '<span class="stok">' + CREW.booked + '</span>' + out;
-  else if(c.mine === 'standby') act = '<span class="stok">Backup</span>' + out;
-  else if(c.mine === 'invited') act = stfBtn('inv_yes:' + c.mine_id, CREW.accept, 'gold') + stfBtn('inv_no:' + c.mine_id, CREW.cant, 'ghost');
-  else if(open) act = (backup ? '' : ask) + bk;
-  else act = '<span class="stq">Closed</span>';
-  return '<div class="stc"><div class="t">' + esc(c.show) + '</div><div class="s">' + line + '</div>'
-    + (backup && open && !c.mine ? '<div class="s">You\'re onboarded: Backup puts you on the list. Your first booking makes you a tryout.</div>' : '')
-    + '<div class="sta">' + act + '</div></div>';
+function stfDate(iso){
+  try{ return new Date(iso).toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', timeZone:'America/New_York' }); }
+  catch(e){ return ''; }
 }
-function stfJobCard(j){
-  var meta = esc(j.dept) + (j.show ? ' · ' + esc(j.show) : '') + (j.due ? ' · due ' + esc(stfWhen(j.due)) : '') + ' · ' + vcs(j.rate)
-    + (j.asks ? ' · ' + j.asks + (j.asks === 1 ? ' request' : ' requests') : '');
-  var act = j.mine === 'in' ? '<span class="stok">' + CREW.requested + ' · your lead books</span>' : stfBtn('job_take:' + j.id, CREW.request, 'violet');
-  return '<div class="stc"><div class="t">' + esc(j.title) + '</div><div class="s">' + meta + '</div>'
-    + (j.brief ? '<div class="stbrief">' + esc(j.brief) + '</div>' : '') + '<div class="sta">' + act + '</div></div>';
+function vcs(n){ return Number(n || 0).toLocaleString() + ' VC'; }
+function stfLate(iso){ return !!iso && new Date(iso).getTime() < Date.now(); }
+/* How late, in words a person says: "2 days late", "5 hours late". */
+function stfLateBy(iso){
+  var h = Math.floor((Date.now() - new Date(iso).getTime()) / 3600000);
+  if(h < 24) return Math.max(1, h) + (h === 1 ? ' hour' : ' hours') + ' late';
+  var d = Math.floor(h / 24);
+  return d + (d === 1 ? ' day' : ' days') + ' late';
 }
 function stfJobDone(j){ return j.status === 'published' || (j.review && j.review.status === 'approved'); }
-function stfMyJob(j){
-  var r = j.review;
-  if(stfJobDone(j)) return '<div class="stc"><div class="t">' + esc(j.title) + '</div><div class="s">' + esc(j.dept) + ' · Approved' + (j.amount ? ' · ' + vcs(j.amount) + ' when it pays' : '') + '</div></div>';
-  var state = r && r.status === 'submitted' ? 'Submitted · round ' + r.round + ' · waiting for review'
-    : r && r.status === 'revise' ? 'Sent back' + (r.note ? ': ' + r.note : '') : (j.due ? 'Due ' + stfWhen(j.due) : 'In progress');
-  var act = r && r.status === 'submitted' ? '' : stfBtn('job_handin:' + j.crew_id, r && r.status === 'revise' ? CREW.submitAgain : CREW.submit, 'gold')
-    + '<button class="stb ghost" data-stdrop="' + esc(j.crew_id) + '" data-sttitle="' + esc(j.title) + '">' + CREW.drop + '…</button>';
-  return '<div class="stc"><div class="t">' + esc(j.title) + '</div><div class="s">' + esc(j.dept) + ' · ' + esc(state) + (j.amount ? ' · ' + vcs(j.amount) : '') + '</div>'
-    + (j.brief ? '<div class="stbrief">' + esc(j.brief) + '</div>' : '') + (act ? '<div class="sta">' + act + '</div>' : '') + '</div>';
-}
-function stfPayBlock(pay){
-  var pend = pay.pending || [];
-  var sum = pend.reduce(function(a, r){ return a + Number(r.vc || 0); }, 0);
-  var html = '<div class="stc stpay"><div><div class="big">' + Number(sum).toLocaleString() + '</div><div class="s">VC to claim</div></div>'
-    + '<div><div class="big dim">' + Number(pay.month || 0).toLocaleString() + '</div><div class="s">this month</div></div></div>';
-  pend.forEach(function(r){
-    html += '<div class="stc strow"><div><div class="t">' + esc(r.reason || 'Pay') + '</div><div class="s">' + vcs(r.vc) + '</div></div>'
-      + stfBtn('reward_claim:' + r.id, CREW.claim, 'gold') + '</div>';
-  });
-  return html;
-}
 
-function stfHomeHTML(h){
-  var html = '';
-  var me = h.me || {};
-  var depts = h.depts || [];
-  var leads = depts.filter(function(d){ return d.role === 'lead'; });
-  var views = stf.views || [];
-  /* Waiting on you: what needs this person, first. */
-  var wait = '';
-  (h.my_shows || []).filter(function(s){ return s.status === 'invited'; }).forEach(function(s){
-    wait += '<div class="stc"><div class="t">' + esc(s.show) + ' · ' + esc(s.dept) + '</div><div class="s">Your lead invited you · ' + esc(stfWhen(s.at)) + '</div>'
-      + '<div class="sta">' + stfBtn('inv_yes:' + s.crew_id, CREW.accept, 'gold') + stfBtn('inv_no:' + s.crew_id, CREW.cant, 'ghost') + '</div></div>';
-  });
-  (h.my_jobs || []).filter(function(j){ return !(j.review && j.review.status === 'submitted') && !stfJobDone(j); }).forEach(function(j){ wait += stfMyJob(j); });
-  if((h.pay.pending || []).length) wait += stfPayBlock(h.pay);
-  /* A producer or a lead opens on their dashboards: that is the work they
-     came for. Crew open on what is waiting on them. */
-  var dash = '';
-  if(views.length){
-    dash += stfLab('Your dashboards', views.length > 1 ? 'Open all' : '', 'desks');
-    dash += views.filter(function(v){ return v.key === 'producer' || v.key.indexOf('desk:') === 0; }).map(function(v){
-      return '<a href="#" class="mrow" data-stsub="desk:' + esc(v.key) + '"><span class="mic">' + (v.key === 'producer' ? '\uD83C\uDFAC' : '\uD83D\uDCCB') + '</span>'
-        + '<div style="flex:1;min-width:0"><div class="t">' + esc(stfViewTitle(v)) + '</div><div class="s">The same card as Discord · live</div></div>'
-        + '<span class="rr"><span class="c">&rsaquo;</span></span></a>';
-    }).join('');
+/* ── pieces ─────────────────────────────────────────────────────────────── */
+function stfBtn(cid, label, cls, extra){
+  return '<button class="sgb ' + (cls || '') + '" data-stpress="' + esc(cid) + '"' + (extra || '') + '>' + esc(label) + '</button>';
+}
+function stfSec(t, cls, link, linkSub){
+  return '<div class="sgsec"><b class="' + (cls || '') + '">' + esc(t) + '</b><i></i>'
+    + (link ? '<a href="#" data-stsub="' + esc(linkSub) + '">' + esc(link) + ' ›</a>' : '') + '</div>';
+}
+/* A day block, the way a calendar app marks a shift: weekday over the date. */
+function stfDay(iso, cls){
+  if(!iso) return '<div class="sgday ' + (cls || '') + '"><s>ANY</s><b>—</b></div>';
+  var d = new Date(iso), wd = '', dn = '';
+  try{
+    wd = d.toLocaleDateString('en-US', { weekday:'short', timeZone:'America/New_York' }).toUpperCase();
+    dn = d.toLocaleDateString('en-US', { day:'numeric', timeZone:'America/New_York' });
+  }catch(e){}
+  return '<div class="sgday ' + (cls || '') + '"><s>' + esc(wd) + '</s><b>' + esc(dn) + '</b></div>';
+}
+function stfIcon(sym, cls){ return '<div class="sgday ' + (cls || '') + '"><s>&nbsp;</s><b>' + sym + '</b></div>'; }
+/* One shift row: the day block, what it is, and on the right the pay and the
+   one button. `extra` is anything under the line: a tag, a brief, actions. */
+function stfShift(day, title, meta, right, extra){
+  return '<div class="sgsft">' + day + '<div class="sgtx"><div class="t">' + title + '</div><div class="m">' + meta + '</div>' + (extra || '') + '</div>'
+    + (right ? '<div class="sgrt">' + right + '</div>' : '') + '</div>';
+}
+function stfHow(t, cls){ return '<span class="sghow ' + (cls || '') + '">' + esc(t) + '</span>'; }
+function stfCalm(html){ return '<p class="sgnote">' + html + '</p>'; }
+
+/* ── the cards, one per kind of work ───────────────────────────────────── */
+function stfCallRow(c, depts){
+  var d = (depts || []).filter(function(x){ return x.id === c.dept_id; })[0] || {};
+  var backup = d.rung === 'onboarded';
+  /* app_staff_home returns needed: null once a call is crewed; "null seats"
+     used to be printed straight onto the card. */
+  var seats = c.needed == null ? '' : ' · ' + c.needed + (c.needed === 1 ? ' seat' : ' seats');
+  var meta = esc(c.dept) + ' · ' + esc(stfWhen(c.at)) + seats + (c.status === 'crewed' ? ' · crewed' : '')
+    + (c.hands ? ' · ' + c.hands + (c.hands === 1 ? ' request' : ' requests') : '');
+  /* The same buttons as the call post (bot/src/lib/call-buttons.js): Request —
+     "I'm free if needed" once it is booked — Backup, and I'm out. A call stays
+     answerable after the pick on purpose; it closes at delivered. */
+  var open = c.status === 'calling' || c.status === 'crewed', right = '', below = '';
+  if(c.mine === 'in'){ right = '<span class="sgok">' + CREW.requested + '</span>'; below = '<div class="sgacts">' + stfBtn('prod_out:' + c.pd_id, CREW.out, 'no') + '</div>'; }
+  else if(c.mine === 'booked' || c.mine === 'confirmed'){ right = '<span class="sgok">' + CREW.booked + '</span>'; below = '<div class="sgacts">' + stfBtn('prod_out:' + c.pd_id, CREW.out, 'no') + '</div>'; }
+  else if(c.mine === 'standby'){ right = '<span class="sgok">Backup</span>'; below = '<div class="sgacts">' + stfBtn('prod_out:' + c.pd_id, CREW.out, 'no') + '</div>'; }
+  else if(c.mine === 'invited'){ below = '<div class="sgacts">' + stfBtn('inv_yes:' + c.mine_id, CREW.accept, 'lav full') + stfBtn('inv_no:' + c.mine_id, CREW.cant, 'no') + '</div>'; }
+  else if(open){
+    right = backup ? '' : stfBtn('prod_in:' + c.pd_id, c.status === 'crewed' ? CREW.free : CREW.request, 'lav');
+    below = '<div class="sgacts">' + stfBtn('prod_backup:' + c.pd_id, CREW.backup, 'no') + '</div>';
   }
-  /* A producer's room opens on Mission Control: every coming show at a glance. */
-  if(me.producer && typeof mcTile === 'function') dash = mcTile() + dash;
-  html += dash + stfLab('Waiting on you') + (wait || '<div class="stc stq">Nothing. You\'re clear.</div>');
+  else right = '<span class="sgq">Closed</span>';
+  return stfShift(stfDay(c.at), esc(c.show) + ' · ' + esc(c.dept), meta,
+    '<span class="sgvc">' + Number(c.rate || 0).toLocaleString() + '</span>' + right,
+    stfHow(c.mine === 'invited' ? 'Invite' : 'Lead picks', c.mine === 'invited' ? 'inv' : 'lp')
+    + (backup && open && !c.mine ? '<div class="m">You\'re onboarded: Backup puts you on the list. Your first booking makes you a tryout.</div>' : '')
+    + below);
+}
+function stfOpenJobRow(j){
+  var meta = esc(j.dept) + (j.show ? ' · ' + esc(j.show) : '') + (j.asks ? ' · ' + j.asks + (j.asks === 1 ? ' request' : ' requests') : ' · nobody yet');
+  var right = '<span class="sgvc">' + Number(j.rate || 0).toLocaleString() + '</span>'
+    + (j.mine === 'in' ? '<span class="sgok">' + CREW.requested + '</span>' : stfBtn('job_take:' + j.id, CREW.request, 'lav'));
+  return stfShift(stfDay(j.due), esc(j.title), meta, right, stfHow('Lead picks', 'lp')
+    + (j.brief ? '<div class="sgbrief">' + esc(j.brief) + '</div>' : ''));
+}
+/* My job: where it is, and the one thing to do with it. */
+function stfMyJobRow(j){
+  var r = j.review;
+  if(stfJobDone(j)) return stfShift(stfIcon('✓', 'done'), esc(j.title), esc(j.dept) + ' · approved', j.amount ? '<span class="sgvc g">+' + Number(j.amount).toLocaleString() + '</span>' : '');
+  var submitted = r && r.status === 'submitted', sent = r && r.status === 'revise';
+  var late = !submitted && stfLate(j.due);
+  var meta = esc(j.dept) + (j.show ? ' · ' + esc(j.show) : '') + ' · '
+    + (submitted ? 'submitted · round ' + r.round + ' · waiting for your lead'
+      : sent ? '<span class="late">sent back</span>' + (r.note ? ': ' + esc(r.note) : '')
+      : late ? '<span class="late">' + stfLateBy(j.due) + '</span>'
+      : (j.due ? 'due ' + esc(stfDate(j.due)) : 'in progress'));
+  var acts = submitted ? '' : '<div class="sgacts">' + stfBtn('job_handin:' + j.crew_id, sent ? CREW.submitAgain : CREW.submit, 'lav full')
+    + '<button class="sgb no" data-stdrop="' + esc(j.crew_id) + '" data-sttitle="' + esc(j.title) + '">' + CREW.drop + '…</button></div>';
+  return stfShift(stfDay(j.due, late ? 'late' : submitted ? '' : 'now'), esc(j.title), meta,
+    j.amount ? '<span class="sgvc">' + Number(j.amount).toLocaleString() + '</span>' : '',
+    (j.brief && !submitted ? '<div class="sgbrief">' + esc(j.brief) + '</div>' : '') + acts);
+}
+function stfInviteRow(s){
+  return stfShift(stfDay(s.at), esc(s.show) + ' · ' + esc(s.dept), 'Your lead invited you · ' + esc(stfWhen(s.at)),
+    s.amount ? '<span class="sgvc">' + Number(s.amount).toLocaleString() + '</span>' : '',
+    stfHow('Invite', 'inv') + '<div class="sgacts">' + stfBtn('inv_yes:' + s.crew_id, CREW.accept, 'lav full') + stfBtn('inv_no:' + s.crew_id, CREW.cant, 'no') + '</div>');
+}
+function stfShowRow(s){
+  return stfShift(stfDay(s.at), esc(s.show) + ' · ' + esc(s.dept),
+    (s.status === 'standby' ? 'Backup ' + (s.standby || '') : 'Booked') + ' · ' + esc(stfWhen(s.at)),
+    s.amount ? '<span class="sgvc">' + Number(s.amount).toLocaleString() + '</span>' : '');
+}
+function stfClaimRow(r){
+  return stfShift(stfIcon('$', 'cash'), 'Claim ' + Number(r.vc || 0).toLocaleString() + ' VC', esc(r.reason || 'Pay'), stfBtn('reward_claim:' + r.id, CREW.claim, 'go'));
+}
 
-  var calls = h.calls || [], open = h.open_jobs || [];
-  html += stfLab('Up for grabs', (calls.length + open.length) > 2 ? 'See all ' + (calls.length + open.length) : '', 'open');
-  var first = calls.slice(0, 1).map(function(c){ return stfCallCard(c, depts); }).concat(open.slice(0, calls.length ? 1 : 2).map(stfJobCard));
-  html += first.join('') || '<div class="stc stq">No open calls or jobs right now.</div>';
+/* ── levels: a card per department, a tick per requirement ──────────────── */
+function stfLevel(d){
+  var vetRung = d.rung === 'full_time' || d.rung === 'instructor' || d.rung === 'lead';
+  var vet = vetRung && d.delivered >= 10;
+  var clean = !d.no_shows;
+  var tag = { onboarded:['ONBOARDED',''], tryout:['TRYOUT','tr'], full_time:['FULL TIME','ft'], instructor:['INSTRUCTOR','ft'], lead:['LEAD','ld'] }[d.rung] || [String(d.rung || '').toUpperCase(), ''];
+  var next, items;
+  if(d.rung === 'onboarded'){
+    next = 'Tryout: your first booking';
+    items = [[false, 'Get booked on a show or a job']];
+  } else if(d.rung === 'tryout'){
+    next = 'Full time: full pay';
+    items = [[true, 'Booked once'], [d.delivered >= 3, '3 delivered', Math.min(100, d.delivered / 3 * 100), Math.min(d.delivered, 3) + '/3'], [clean, clean ? 'No no-shows' : d.no_shows + ' no-show · two takes you off']];
+  } else if(vet){
+    next = 'Veteran reached: 1.2× pay';
+    items = [[true, RUNG_WORD[d.rung] || d.rung], [true, '10 delivered', 100, d.delivered + ''], [clean, clean ? 'No no-shows' : d.no_shows + ' no-show · two takes you off']];
+  } else {
+    next = 'Veteran: 1.2× pay';
+    items = [[true, RUNG_WORD[d.rung] || d.rung], [false, '10 delivered', d.delivered * 10, d.delivered + '/10'], [clean, clean ? 'No no-shows' : d.no_shows + ' no-show · two takes you off']];
+  }
+  var pb = d.playbook || {};
+  var written = pb.text || (Array.isArray(pb.links) && pb.links.length);
+  return '<div class="sglv"><div class="h"><b>' + esc(d.name) + '</b><span class="' + tag[1] + '">' + tag[0] + '</span>'
+    + (vet ? '<span class="vet">VETERAN</span>' : '') + '<em>' + d.delivered + ' delivered</em></div>'
+    + '<div class="goal">Next: <b>' + esc(next) + '</b></div>'
+    + '<ul class="sgck">' + items.map(function(it){
+        return '<li class="' + (it[0] ? 'y' : 'n') + '"><i>' + (it[0] ? '✓' : '') + '</i>' + esc(it[1])
+          + (it[2] != null ? '<span class="bar"><b style="width:' + Math.round(it[2]) + '%"></b></span>' : '')
+          + (it[3] ? '<span class="pr">' + esc(it[3]) + '</span>' : '') + '</li>'; }).join('') + '</ul>'
+    + '<a href="#" class="pb" data-stsub="playbook:' + esc(d.id) + '">How ' + esc(d.name) + ' works<span>'
+    + (written ? 'read ›' : d.role === 'lead' ? 'write it ›' : 'not written yet ›') + '</span></a></div>';
+}
+/* The one level-up that is closest, for Today. Smallest number still to do. */
+function stfClosest(depts){
+  var best = null;
+  (depts || []).forEach(function(d){
+    var left, what;
+    if(d.rung === 'onboarded'){ left = 1; what = 'your first booking makes you a tryout'; }
+    else if(d.rung === 'tryout'){ left = Math.max(0, 3 - d.delivered); what = left + ' more ' + (left === 1 ? 'show' : 'shows') + ' and you’re on full pay'; }
+    else if(d.delivered < 10){ left = 10 - d.delivered; what = left + ' more delivered for Veteran: 1.2× pay'; }
+    else return;
+    if(!best || left < best.left) best = { left: left, what: what, d: d };
+  });
+  return best;
+}
+
+/* ── the screens ────────────────────────────────────────────────────────── */
+function stfWaiting(h){
+  var jobs = (h.my_jobs || []).filter(function(j){ return !stfJobDone(j) && !(j.review && j.review.status === 'submitted'); });
+  var late = jobs.filter(function(j){ return stfLate(j.due) || (j.review && j.review.status === 'revise'); });
+  var invites = (h.my_shows || []).filter(function(s){ return s.status === 'invited'; });
+  var claims = (h.pay && h.pay.pending) || [];
+  return { jobs: jobs, late: late, invites: invites, claims: claims, n: late.length + invites.length + (claims.length ? 1 : 0) };
+}
+function stfTodayHTML(h){
+  var w = stfWaiting(h), html = '';
+  var claimSum = w.claims.reduce(function(a, r){ return a + Number(r.vc || 0); }, 0);
+  var parts = [];
+  if(claimSum) parts.push(claimSum.toLocaleString() + ' VC to claim');
+  if(w.late.length) parts.push(w.late.length === 1 ? 'one job is late' : w.late.length + ' jobs are late');
+  if(w.invites.length) parts.push(w.invites.length === 1 ? 'one invite to answer' : w.invites.length + ' invites to answer');
+  var openN = (h.calls || []).length + (h.open_jobs || []).length;
+  var ban = w.n
+    ? '<div class="sptx"><div class="k"><em class="r">' + w.n + '</em> ' + (w.n === 1 ? 'THING NEEDS' : 'THINGS NEED') + ' YOU</div>'
+      + '<div class="s">' + esc(parts.join(', ').replace(/^./, function(c){ return c.toUpperCase(); })) + '.</div></div>'
+    : '<div class="sptx"><div class="k">ALL <em>CLEAR</em></div><div class="s">Nothing needs you.'
+      + (openN ? ' ' + openN + ' open in your departments.' : '') + '</div></div>';
+  html += spBan(ban, true);
+  /* A producer's room opens on Mission Control: every coming show at a glance. */
+  if(h.me && h.me.producer && typeof mcTile === 'function') html += '<div class="sgmc">' + mcTile() + '</div>';
+
+  if(w.n){
+    html += stfSec('Needs you', 'r');
+    html += w.late.map(stfMyJobRow).join('') + w.invites.map(stfInviteRow).join('') + w.claims.map(stfClaimRow).join('');
+  }
+  /* jobs in progress that are not late yet */
+  var doing = w.jobs.filter(function(j){ return w.late.indexOf(j) < 0; });
+  if(doing.length) html += stfSec('In progress', '', doing.length > 1 ? 'All ' + doing.length : '', 'jobs') + stfMyJobRow(doing[0]);
+
+  var first = (h.calls || []).slice(0, 1).map(function(c){ return stfCallRow(c, h.depts); })
+    .concat((h.open_jobs || []).slice(0, (h.calls || []).length ? 1 : 2).map(stfOpenJobRow));
+  html += stfSec('Open work', '', openN > first.length ? 'All ' + openN : '', 'open')
+    + (first.join('') || stfCalm('No open calls or jobs in your departments right now.'));
 
   var booked = (h.my_shows || []).filter(function(s){ return s.status !== 'invited'; });
-  html += stfLab('My jobs', 'See all', 'jobs');
-  html += '<a href="#" class="stc stlink" data-stsub="jobs"><div><div class="t">' + (h.my_jobs || []).length + ' job' + ((h.my_jobs || []).length === 1 ? '' : 's') + ' · ' + booked.length + ' show' + (booked.length === 1 ? '' : 's') + '</div>'
-    + '<div class="s">' + (booked[0] ? esc(booked[0].show) + ' · ' + esc(stfWhen(booked[0].at)) : 'Nothing booked') + '</div></div><span class="c">&rsaquo;</span></a>';
+  html += stfSec('Next up', '', booked.length > 1 ? 'Schedule' : '', 'jobs')
+    + (booked[0] ? stfShowRow(booked[0]) : stfCalm('Nothing booked yet. Request something above.'));
 
-  html += stfLab('Pay', 'History', 'pay');
-  if(!(h.pay.pending || []).length) html += '<div class="stc stpay"><div><div class="big dim">0</div><div class="s">to claim</div></div><div><div class="big dim">' + Number(h.pay.month || 0).toLocaleString() + '</div><div class="s">this month</div></div></div>';
-
-  html += stfLab('Standing', 'Ladder', 'ladder');
-  html += depts.map(function(d){
-    var vet = (d.rung === 'full_time' || d.rung === 'instructor' || d.rung === 'lead') && d.delivered >= 10;
-    return '<a href="#" class="stc stlink" data-stsub="ladder"><div><div class="t">' + esc(d.name) + '</div><div class="s">' + esc(RUNG_WORD[d.rung] || d.rung) + (vet ? ' · Veteran' : '') + ' · ' + d.delivered + ' delivered</div></div><span class="c">&rsaquo;</span></a>';
-  }).join('');
-
-  html += stfLab('Playbooks');
-  html += depts.map(function(d){
-    return '<a href="#" class="stc stlink" data-stsub="playbook:' + esc(d.id) + '"><div class="t">How ' + esc(d.name) + ' works</div><span class="c">&rsaquo;</span></a>';
-  }).join('');
+  var c = stfClosest(h.depts);
+  if(c) html += stfSec('Closest level-up', '', 'Levels', 'ladder')
+    + stfShift(stfIcon('↑', 'now'), esc(c.d.name), esc(c.what));
   return html;
+}
+function stfOpenHTML(h){
+  return stfCalm('Shows and jobs in your departments. <b>Lead picks</b>: your request goes to the lead, who books who gets it.')
+    + stfSec('Jobs') + (((h.open_jobs || []).map(stfOpenJobRow).join('')) || stfCalm('No open jobs.'))
+    + stfSec('Show calls') + (((h.calls || []).map(function(c){ return stfCallRow(c, h.depts); }).join('')) || stfCalm('No open calls.'));
+}
+function stfScheduleHTML(h){
+  var w = stfWaiting(h), html = '';
+  var all = h.my_jobs || [];
+  var waitingReview = all.filter(function(j){ return j.review && j.review.status === 'submitted' && !stfJobDone(j); });
+  var doing = w.jobs.filter(function(j){ return w.late.indexOf(j) < 0; });
+  var done = all.filter(stfJobDone);
+  var booked = (h.my_shows || []).filter(function(s){ return s.status !== 'invited'; });
+  if(w.late.length) html += stfSec('Late', 'r') + w.late.map(stfMyJobRow).join('');
+  if(w.invites.length) html += stfSec('Invites') + w.invites.map(stfInviteRow).join('');
+  if(doing.length) html += stfSec('To do') + doing.map(stfMyJobRow).join('');
+  if(waitingReview.length) html += stfSec('Waiting for review') + waitingReview.map(stfMyJobRow).join('');
+  html += stfSec('Booked shows') + (booked.map(stfShowRow).join('') || stfCalm('Nothing booked.'));
+  if(done.length) html += stfSec('Approved') + done.map(stfMyJobRow).join('');
+  if(!w.late.length && !w.invites.length && !doing.length && !waitingReview.length && !done.length)
+    html = stfCalm('No jobs right now. Open has work in your departments.') + html;
+  return html;
+}
+/* Money: the pill, opened. What is ready, the month, a bar per week from the
+   recent pay, and the history. */
+function stfMoneyHTML(h){
+  var pend = h.pay.pending || [];
+  var sum = pend.reduce(function(a, r){ return a + Number(r.vc || 0); }, 0);
+  var html = '<div class="sgbig"><div class="k">READY TO CLAIM</div><div class="n' + (sum ? ' g' : '') + '">' + sum.toLocaleString() + ' VC</div></div>'
+    + pend.map(stfClaimRow).join('')
+    + '<div class="sgbig"><div class="k">THIS MONTH</div><div class="n">' + Number(h.pay.month || 0).toLocaleString() + '</div></div>';
+  /* Weeks start Monday, the day crew pay lands. */
+  var weeks = {}, order = [];
+  (h.pay.recent || []).forEach(function(r){
+    var d = new Date(r.at); if(isNaN(d)) return;
+    var day = (d.getUTCDay() + 6) % 7, mon = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - day));
+    var k = mon.toISOString().slice(0, 10);
+    if(!weeks[k]){ weeks[k] = 0; order.push(k); }
+    weeks[k] += Number(r.vc || 0);
+  });
+  order.sort();
+  if(order.length){
+    var max = Math.max.apply(null, order.map(function(k){ return weeks[k]; })) || 1;
+    html += '<div class="sgchart">' + order.slice(-5).map(function(k, i, arr){
+      var label = new Date(k + 'T12:00:00Z').toLocaleDateString('en-US', { month:'short', day:'numeric', timeZone:'UTC' }).toUpperCase();
+      return '<div class="c"><b>' + weeks[k].toLocaleString() + '</b><i class="' + (i === arr.length - 1 ? 'cur' : '') + '" style="height:' + Math.max(6, Math.round(weeks[k] / max * 72)) + '%"></i><s>WK OF ' + esc(label) + '</s></div>'; }).join('') + '</div>';
+  }
+  html += stfSec('Recent') + ((h.pay.recent || []).map(function(r){
+      return '<div class="sghist"><div class="sgtx"><div class="t">' + esc(r.reason || 'Pay') + '</div><div class="m">' + esc(stfDate(r.at)) + '</div></div><span class="sgvc g">+' + Number(r.vc || 0).toLocaleString() + '</span></div>';
+    }).join('') || stfCalm('Nothing yet.'))
+    + stfCalm('Crew pay lands every Monday. A show pays when the producer pays it; a job when your lead approves it.');
+  return html;
+}
+function stfLevelsHTML(h){
+  return stfCalm('Each department is its own level. Two no-shows in one takes you off it; a drop isn’t a no-show, but your lead sees it. A cancelled job never counts.')
+    + (h.depts || []).map(stfLevel).join('');
+}
+function stfPlaybookHTML(h, id){
+  var d = (h.depts || []).filter(function(x){ return x.id === id; })[0];
+  if(!d) return stfCalm('That department is gone.');
+  var pb = d.playbook || {};
+  var links = Array.isArray(pb.links) ? pb.links : [];
+  if(!pb.text && !links.length){
+    var desk = (stf.views || []).filter(function(v){ return v.key === 'desk:' + id; })[0];
+    return d.role === 'lead'
+      ? '<div class="sgcalm"><b>Not written yet</b>You lead ' + esc(d.name) + ', so this one’s yours: the rules, how work runs here, and the links your crew needs.'
+        + (desk ? '<div class="sgacts" style="justify-content:center"><a href="#" class="sgb lav" data-stsub="desk:' + esc(desk.key) + '">Write it on your desk</a></div>' : '') + '</div>'
+      : '<div class="sgcalm"><b>Not written yet</b>Your lead is writing this. It shows up here when it’s done.</div>';
+  }
+  return '<div class="sgpb">' + (pb.text ? '<div class="stmd">' + stfMd(pb.text) + '</div>' : '')
+    + (links.length ? stfSec('Links') + links.map(function(l){ return '<a class="stlk" href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.label || l.url) + '</a>'; }).join('') : '')
+    + (pb.by ? '<div class="sgnote" style="margin:12px 0 0">Written by ' + esc(pb.by) + '</div>' : '') + '</div>';
+}
+function stfDesksHTML(list){
+  return list.map(function(v){ return '<div class="v2wrap" data-stview="' + esc(v.key) + '">' + v2HTML(v.payload, 'view:' + v.key) + '</div>'; }).join('');
+}
+
+/* ── the frame: header with the money pill, the tabs, the screen ────────── */
+function stfPill(h){
+  if(!h || !h.me || !h.pay) return '';
+  var sum = (h.pay.pending || []).reduce(function(a, r){ return a + Number(r.vc || 0); }, 0);
+  return sum
+    ? '<a href="#" class="sgpill cash" data-stsub="pay" aria-label="' + sum.toLocaleString() + ' VC to claim"><i>$</i>' + sum.toLocaleString() + '</a>'
+    : '<a href="#" class="sgpill calm" data-stsub="pay">' + Number(h.pay.month || 0).toLocaleString() + ' this month</a>';
+}
+function stfTabsHTML(h){
+  var w = stfWaiting(h);
+  var openN = (h.calls || []).length + (h.open_jobs || []).length;
+  var leadDesks = (stf.views || []).length;
+  var T = [['home', 'Today', w.n, true], ['open', 'Open', openN, false], ['jobs', 'Schedule', w.late.length + w.invites.length, true], ['ladder', 'Levels', 0, false]];
+  if(leadDesks) T.push(['desks', 'Desk', leadDesks, false]);
+  return '<div class="sgtabs" role="tablist">' + T.map(function(t){
+    return '<button role="tab" aria-selected="' + (stf.sub === t[0]) + '" class="' + (stf.sub === t[0] ? 'on' : '') + '" data-sttab="' + t[0] + '">' + t[1]
+      + (t[2] ? '<em class="' + (t[3] ? '' : 'n') + '">' + t[2] + '</em>' : '') + '</button>'; }).join('') + '</div>';
+}
+function stfTitle(sub, h){
+  if(sub === 'pay') return 'MONEY';
+  if(sub.indexOf('playbook:') === 0){
+    var d = ((h && h.depts) || []).filter(function(x){ return x.id === sub.slice(9); })[0];
+    return d ? String(d.name).toUpperCase() : 'PLAYBOOK';
+  }
+  if(sub.indexOf('desk:') === 0) return 'DASHBOARD';
+  return 'STAFF';
+}
+
+async function renderStaff(sub){
+  stf.sub = sub || 'home';
+  var body = document.getElementById('sheet-body');
+  /* Mission Control keeps its own amber header (mission-control.js). */
+  if(stf.sub === 'mission'){
+    body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div><div class="kick">You · Staff</div><h3>Mission Control</h3></div>'
+      + '<div id="stb"><div class="skel" style="height:90px"></div></div><div id="stpanel" class="stpanel" aria-hidden="true"></div>';
+  } else {
+    body.innerHTML = '<div class="sgx"><div class="sghead">' + backButton() + '<div class="t" id="st-title">' + esc(stfTitle(stf.sub, stf.home)) + '</div><span id="st-pill"></span></div>'
+      + '<div id="st-tabs"></div>'
+      + '<div id="stb"><div class="skel" style="height:90px;margin:12px"></div><div class="skel" style="width:60%;margin:10px 12px"></div></div></div>'
+      + '<div id="stpanel" class="stpanel" aria-hidden="true"></div>';
+  }
+  await stfLoad();
+  stfPaint();
+  stfRealtime();
+}
+
+/* Switching tabs redraws in place and REPLACES the history entry, so Back
+   leaves the room rather than walking back through every tab you looked at. */
+function stfTab(sub){
+  stf.sub = sub;
+  try{
+    if(typeof sheetStack !== 'undefined' && sheetStack.length) sheetStack[sheetStack.length - 1].sub = sub;
+    history.replaceState(history.state, '', hashFor({ kind: 'staff', sub: sub }));
+  }catch(e){}
+  var sh = document.getElementById('sheet'); if(sh) sh.scrollTop = 0;
+  stfPaint();
+}
+
+function stfPaint(){
+  var el = document.getElementById('stb');
+  if(!el) return;
+  var tabsEl = document.getElementById('st-tabs'), pillEl = document.getElementById('st-pill'), titleEl = document.getElementById('st-title');
+  if(!me){ el.innerHTML = '<div class="sgcalm"><b>Sign in to see your staff work.</b>Your calls, jobs and pay live here.</div>'; return; }
+  var h = stf.home;
+  if(h && h.ok === false){ retryHandlers['staff'] = function(){ renderStaff(stf.sub); }; el.innerHTML = failHTML(h.message || "Couldn't load your staff work.", 'staff'); return; }
+  if(!h){
+    if(tabsEl) tabsEl.innerHTML = '';
+    el.innerHTML = '<div class="sgcalm"><b>You’re not on staff.</b>Join through <b class="in">Join the VGA crew</b> in the UBA server. Your work shows up here the day you’re approved.</div>';
+    return;
+  }
+  var sub = stf.sub, html = '';
+  var tabbed = STF_TABS.indexOf(sub) >= 0 || sub.indexOf('desk:') === 0;
+  if(titleEl) titleEl.textContent = stfTitle(sub, h);
+  if(pillEl) pillEl.innerHTML = sub === 'pay' ? '' : stfPill(h);
+  if(tabsEl) tabsEl.innerHTML = tabbed ? stfTabsHTML(h) : '';
+  if(sub === 'home') html = stfTodayHTML(h);
+  else if(sub === 'open') html = stfOpenHTML(h);
+  else if(sub === 'jobs') html = stfScheduleHTML(h);
+  else if(sub === 'pay') html = stfMoneyHTML(h);
+  else if(sub === 'ladder') html = stfLevelsHTML(h);
+  else if(sub === 'mission') html = typeof mcHTML === 'function' ? mcHTML() : '';
+  else if(sub.indexOf('playbook:') === 0) html = stfPlaybookHTML(h, sub.slice(9));
+  else if(sub === 'desks'){
+    html = stfDesksHTML(stf.views || []) || '<div class="sgcalm"><b>No dashboards for you.</b>Leads and producers see theirs here.</div>';
+  }
+  else if(sub.indexOf('desk:') === 0){
+    var key = sub.slice(5);
+    var mine = (stf.views || []).filter(function(v){
+      return v.key === key || (key.indexOf('desk:') === 0 && v.key.indexOf('show:') === 0 && v.dept_id && ('desk:' + v.dept_id) === key);
+    });
+    html = stfDesksHTML(mine) || '<div class="sgcalm"><b>That dashboard is gone.</b></div>';
+  }
+  el.innerHTML = html;
+  if(typeof spDustRun === 'function') spDustRun();
 }
 
 function stfViewTitle(v){
@@ -214,78 +467,6 @@ function stfFirstText(p){
   return out;
 }
 
-function stfLadderHTML(h){
-  return (h.depts || []).map(function(d){
-    var steps = ['onboarded','tryout','full_time'];
-    var at = Math.max(0, steps.indexOf(d.rung));
-    if(d.rung === 'instructor' || d.rung === 'lead') at = 2;
-    var vet = at === 2 && d.delivered >= 10;
-    var bar = steps.map(function(s, i){ return '<i class="' + (i < at ? 'on' : i === at ? 'now' : '') + '"></i>'; }).join('');
-    var next = d.rung === 'onboarded' ? 'Your first booking makes you a tryout.'
-      : d.rung === 'tryout' ? 'Three delivered with no no-shows makes you full time.'
-      : vet ? 'Veteran: every job and show here pays you 1.2×.' : (10 - d.delivered) + ' more delivered for Veteran — 1.2× pay.';
-    return stfLab(d.name) + '<div class="stc"><div class="stbar">' + bar + '</div>'
-      + '<div class="t">' + esc(RUNG_WORD[d.rung] || d.rung) + (vet ? ' <span class="stvet">Veteran</span>' : '') + '</div>'
-      + '<div class="s">' + d.delivered + ' delivered · ' + d.dropped + ' dropped · ' + d.no_shows + ' no-show' + (d.no_shows === 1 ? '' : 's') + '</div>'
-      + '<div class="s">' + esc(next) + '</div></div>';
-  }).join('') + '<div class="stc stq">Two no-shows in a department takes you off it. A drop isn\'t a no-show, but your lead sees it. A cancelled job never counts.</div>';
-}
-function stfPlaybookHTML(h, id){
-  var d = (h.depts || []).filter(function(x){ return x.id === id; })[0];
-  if(!d) return '<div class="empty">That department is gone.</div>';
-  var pb = d.playbook || {};
-  var links = Array.isArray(pb.links) ? pb.links : [];
-  if(!pb.text && !links.length) return '<div class="stc"><div class="t">How ' + esc(d.name) + ' works</div><div class="s">Your lead is writing this — the rules, how shows run here, and the links you\'ll need. Coming soon.</div></div>';
-  return '<div class="stc"><div class="t">How ' + esc(d.name) + ' works</div>' + (pb.text ? '<div class="stmd">' + stfMd(pb.text) + '</div>' : '')
-    + (links.length ? '<div class="lab" style="margin:14px 0 8px"><b>Links</b><i></i></div>' + links.map(function(l){ return '<a class="stlk" href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.label || l.url) + '</a>'; }).join('') : '')
-    + (pb.by ? '<div class="s" style="margin-top:10px">Written by ' + esc(pb.by) + '</div>' : '') + '</div>';
-}
-
-function stfPaint(){
-  var el = document.getElementById('stb');
-  if(!el) return;
-  if(!me){ el.innerHTML = '<div class="empty">Sign in with Discord to see your staff work.</div>'; return; }
-  var h = stf.home;
-  if(h && h.ok === false){ retryHandlers['staff'] = function(){ renderStaff(stf.sub); }; el.innerHTML = failHTML(h.message || "Couldn't load your staff work.", 'staff'); return; }
-  if(!h){ el.innerHTML = '<div class="empty"><b>You\'re not on staff.</b><br>Join through <b>Join the VGA crew</b> in the UBA server.</div>'; return; }
-  var sub = stf.sub, html = '';
-  if(sub === 'home') html = stfHomeHTML(h);
-  else if(sub === 'open'){
-    html = stfLab('Show calls') + ((h.calls || []).map(function(c){ return stfCallCard(c, h.depts); }).join('') || '<div class="stc stq">No open calls.</div>')
-      + stfLab('Jobs') + '<div class="s" style="margin:0 18px 8px">Your lead books who gets each one. A request puts your name in front of them.</div>'
-      + ((h.open_jobs || []).map(stfJobCard).join('') || '<div class="stc stq">No open jobs.</div>');
-  }
-  else if(sub === 'jobs'){
-    var booked = (h.my_shows || []).filter(function(s){ return s.status !== 'invited'; });
-    html = stfLab('Jobs') + ((h.my_jobs || []).map(stfMyJob).join('') || '<div class="stc stq">No jobs right now.</div>')
-      + stfLab('Shows') + (booked.map(function(s){
-          return '<div class="stc"><div class="t">' + esc(s.show) + ' · ' + esc(s.dept) + '</div><div class="s">'
-            + (s.status === 'standby' ? 'Standby ' + (s.standby || '') : 'Booked') + ' · ' + esc(stfWhen(s.at)) + (s.amount ? ' · ' + vcs(s.amount) : '') + '</div></div>';
-        }).join('') || '<div class="stc stq">Nothing booked.</div>');
-  }
-  else if(sub === 'pay'){
-    html = stfPayBlock(h.pay) + stfLab('Recent') + ((h.pay.recent || []).map(function(r){
-      return '<div class="stc strow"><div><div class="t">' + esc(r.reason || 'Pay') + '</div><div class="s">' + esc(stfWhen(r.at)) + '</div></div><b class="stvc">+' + Number(r.vc || 0).toLocaleString() + '</b></div>';
-    }).join('') || '<div class="stc stq">Nothing yet.</div>')
-      + '<div class="s" style="margin:10px 18px">Crew pay lands every Monday. A show pays when the producer pays it; a job when your lead approves it.</div>';
-  }
-  else if(sub === 'ladder') html = stfLadderHTML(h);
-  else if(sub === 'mission') html = typeof mcHTML === 'function' ? mcHTML() : '';
-  else if(sub.indexOf('playbook:') === 0) html = stfPlaybookHTML(h, sub.slice(9));
-  else if(sub === 'desks'){
-    html = (stf.views || []).map(function(v){ return '<div class="v2wrap" data-stview="' + esc(v.key) + '">' + v2HTML(v.payload, 'view:' + v.key) + '</div>'; }).join('')
-      || '<div class="empty">No dashboards for you. Leads and producers see theirs here.</div>';
-  }
-  else if(sub.indexOf('desk:') === 0){
-    var key = sub.slice(5);
-    var mine = (stf.views || []).filter(function(v){
-      return v.key === key || (key.indexOf('desk:') === 0 && v.key.indexOf('show:') === 0 && v.dept_id && ('desk:' + v.dept_id) === key);
-    });
-    html = mine.map(function(v){ return '<div class="v2wrap" data-stview="' + esc(v.key) + '">' + v2HTML(v.payload, 'view:' + v.key) + '</div>'; }).join('')
-      || '<div class="empty">That dashboard is gone.</div>';
-  }
-  el.innerHTML = html;
-}
 
 /* ── Discord messages, drawn in the app's look ─────────────────────────── */
 function stfMd(s){
@@ -428,8 +609,18 @@ function stfSourceMessage(src){
 
 document.addEventListener('click', function(e){
   if(!document.getElementById('stb')) return;
+  var tb = e.target.closest('[data-sttab]');
+  if(tb){ e.preventDefault(); stfTab(tb.getAttribute('data-sttab')); return; }
+  /* A link to another tab switches in place; anything else (Money, a
+     playbook, one dashboard) is a page of its own that Back returns from. */
   var s = e.target.closest('[data-stsub]');
-  if(s){ e.preventDefault(); openSheet({ kind: 'staff', sub: s.getAttribute('data-stsub') }); return; }
+  if(s){
+    e.preventDefault();
+    var to = s.getAttribute('data-stsub');
+    if(STF_TABS.indexOf(to) >= 0 && STF_TABS.indexOf(stf.sub) >= 0) stfTab(to);
+    else openSheet({ kind: 'staff', sub: to });
+    return;
+  }
   if(e.target.closest('[data-stclose]')){ stfPanel(null); return; }
   var dr = e.target.closest('[data-stdrop]');
   if(dr){
