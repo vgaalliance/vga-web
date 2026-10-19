@@ -245,14 +245,15 @@ video.addEventListener("ratechange", () => { if (video.playbackRate !== st.rate)
 // ---------- the air: video + drawings, in this window ----------
 let isDirty = true;
 function dirty(){ isDirty = true; }
+const born = new WeakMap();      // when each stroke arrived, so arrows and spotlights draw themselves on
 function fitInk(){ const r = ink.getBoundingClientRect(); ink.width = Math.round(r.width*devicePixelRatio); ink.height = Math.round(r.height*devicePixelRatio); dirty(); }
 new ResizeObserver(fitInk).observe(ink);
 (function frame(){
   if (isDirty){
     isDirty = false;
     ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0, 0, ink.width, ink.height);
-    for (const s of st.strokes) replayInk(ctx, s, ink.width, ink.height);
-    for (const s of st.live.values()) replayInk(ctx, s, ink.width, ink.height);
+    const moving = replayInk.drawAll(ctx, st.strokes.concat([...st.live.values()]), ink.width, ink.height, s => born.get(s), performance.now());
+    if (moving) isDirty = true;          // keep drawing until the animation lands
   }
   requestAnimationFrame(frame);
 })();
@@ -290,12 +291,20 @@ function onCtl(m){
     // Drawing. A pen stroke arrives as only its NEW points ("add"), so a long
     // line costs the same per message as a short one.
     case "live": {
+      // An arrow, a punch path or a spotlight appears on air only when the
+      // analyst lets go, and then draws itself on. Dragging it live would show
+      // the finished shape before its animation.
+      if (replayInk.ANIMATED.includes(m.tool)) break;
       const s = st.live.get(m.id);
       if (s && m.add) s.pts.push(...m.pts);
       else st.live.set(m.id, { tool: m.tool, color: m.color, width: m.width, pts: m.pts.slice() });
       dirty(); break;
     }
-    case "stroke": st.live.delete(m.id); st.strokes.push({ tool: m.tool, color: m.color, width: m.width, pts: m.pts }); dirty(); break;
+    case "stroke": {
+      st.live.delete(m.id);
+      const s = { tool: m.tool, color: m.color, width: m.width, pts: m.pts };
+      born.set(s, performance.now()); st.strokes.push(s); dirty(); break;
+    }
     // Match / round. "next-match" starts its round at 1; "new-show" also hides
     // every clip saved before now, the way the old list started each show empty.
     case "next-match": st.match++; st.round = 1; saveMR(); publishClips(); break;

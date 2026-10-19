@@ -117,6 +117,8 @@
       <div class="group" data-tools>
         <button data-tool="pen" class="on">Pen</button>
         <button data-tool="arrow">Arrow</button>
+        <button data-tool="curve" title="drag the path of a hook or uppercut">Punch path</button>
+        <button data-tool="spot" title="tap a fighter, or drag out from them to size the ring">Spotlight</button>
         <button data-tool="circle">Circle</button>
         <button data-tool="line">Line</button>
       </div>
@@ -205,12 +207,16 @@ function renderList(){
     if (!rounds.length){ add("wait", "Waiting for the first replay…"); continue; }
     for (const r of rounds){
       add("round" + past, `Round ${r}`);
-      for (const c of by[m][r].sort((a, b) => b.time - a.time)){
+      // Clip 1 is the first one saved in that round; the newest is listed first.
+      const inOrder = by[m][r].sort((a, b) => a.time - b.time);
+      inOrder.forEach((c, i) => c.no = i + 1);
+      for (const c of inOrder.slice().reverse()){
         const b = document.createElement("button");
         b.className = "clip list-clip" + past + (c.name === cur ? " on" : "") + (Date.now() - c.time < 90000 ? " new" : "");
         b.dataset.name = c.name;
         b.innerHTML = "<span></span><small></small>";
-        b.firstChild.textContent = label(c.name);
+        b.firstChild.textContent = `Clip ${c.no}`;
+        b.title = c.name;          // the real file name, on hover only
         b.lastChild.textContent = ago(c.time);
         frag.appendChild(b);
       }
@@ -309,10 +315,15 @@ $("#clear").onclick = () => { st.strokes = []; redraw(); send({ type: "clear" })
 
 function fit(){ const r = ink.getBoundingClientRect(); ink.width = Math.round(r.width*devicePixelRatio); ink.height = Math.round(r.height*devicePixelRatio); redraw(); }
 new ResizeObserver(fit).observe(ink);
+// Arrows, punch paths and spotlights draw themselves on here exactly as they do
+// on air, so the analyst sees the same moment the viewers do.
+const born = new WeakMap();
+let animating = false;
 function redraw(){
   ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0, 0, ink.width, ink.height);
-  for (const s of st.strokes) replayInk(ctx, s, ink.width, ink.height);
-  if (st.drawing) replayInk(ctx, st.drawing, ink.width, ink.height);
+  const all = st.drawing ? st.strokes.concat([st.drawing]) : st.strokes;
+  const moving = replayInk.drawAll(ctx, all, ink.width, ink.height, s => born.get(s), performance.now());
+  if (moving && !animating){ animating = true; requestAnimationFrame(() => { animating = false; redraw(); }); }
 }
 const r4 = v => Math.round(v*10000)/10000;
 function norm(e){ const r = ink.getBoundingClientRect(); return [r4((e.clientX-r.left)/r.width), r4((e.clientY-r.top)/r.height)]; }
@@ -320,6 +331,7 @@ function norm(e){ const r = ink.getBoundingClientRect(); return [r4((e.clientX-r
 let sentN = 0, lastLive = 0;
 function flushLive(){
   const d = st.drawing; if (!d) return;
+  if (replayInk.ANIMATED.includes(d.tool)) return;     // these go on air when released
   const base = { type: "live", id: d.id, tool: d.tool, color: d.color, width: d.width };
   if (d.tool === "pen"){
     if (d.pts.length <= sentN) return;
@@ -329,22 +341,26 @@ function flushLive(){
 ink.onpointerdown = e => {
   if (!st.status || !st.status.name) return;
   ink.setPointerCapture(e.pointerId);
-  st.drawing = { id: Math.random().toString(36).slice(2), tool: st.tool, color: st.color, width: st.width, pts: [norm(e)] };
+  st.drawing = { id: Math.random().toString(36).slice(2), tool: st.tool, color: st.color, width: st.width, pts: [norm(e)],
+                 raw: st.tool === "curve" || undefined };
   sentN = 0;
 };
 ink.onpointermove = e => {
   const d = st.drawing; if (!d) return;
   const p = norm(e);
-  if (d.tool === "pen") d.pts.push(p); else d.pts[1] = p;
+  if (d.tool === "pen" || d.tool === "curve") d.pts.push(p); else d.pts[1] = p;
   redraw();
   const now = performance.now(); if (now - lastLive > 30){ lastLive = now; flushLive(); }
 };
 ink.onpointerup = ink.onpointercancel = () => {
   const d = st.drawing; if (!d) return;
   st.drawing = null;
-  if (d.pts.length > 1){
-    st.strokes.push({ tool: d.tool, color: d.color, width: d.width, pts: d.pts });
-    send({ type: "stroke", id: d.id, tool: d.tool, color: d.color, width: d.width, pts: d.pts });
+  // A punch path is smoothed into one clean curve; a spotlight may be a tap.
+  const pts = d.tool === "curve" ? replayInk.smoothCurve(d.pts) : d.pts;
+  if (pts.length > 1 || d.tool === "spot"){
+    const s = { tool: d.tool, color: d.color, width: d.width, pts };
+    born.set(s, performance.now()); st.strokes.push(s);
+    send({ type: "stroke", id: d.id, ...s });
   } else send({ type: "clear-live", id: d.id });
   redraw();
 };
