@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VGA replay analyst</title>
+<!--
+  VGA replay analyst  (opened by the analyst, anywhere)
+
+  The picture here is a live video of the replay player on the streaming PC --
+  the clip that is actually going out. Every button drives THAT player; there
+  is no second copy of the clip to keep in step. Drawings appear under the pen
+  at once and are sent to the player as points, where they are drawn on air.
+
+  The link carries the room: replay-analyst.html?room=<code>. The player shows
+  it (step 3) and a new link there retires this one.
+-->
+<style>
+  :root{ --bg:#15181d; --panel:#1c2026; --line:#2b313a; --ink:#e9e6df; --dim:#8b919c; --hot:#ffd23f; --live:#d64545; --good:#4fc36b }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--bg);color:var(--ink);font:15px/1.4 "Avenir Next","Segoe UI",system-ui,sans-serif;overflow:hidden}
+  button{font:inherit;color:inherit;background:none;border:1px solid var(--line);border-radius:6px;padding:8px 12px;cursor:pointer;min-height:40px}
+  button:hover{border-color:var(--dim)}
+  button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  button:disabled{opacity:.4;cursor:default}
+  button:focus-visible{outline:2px solid var(--hot);outline-offset:2px}
+
+  #app{display:grid;grid-template-columns:290px 1fr;height:100%}
+  #clips{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+  #clips header{padding:14px 16px;border-bottom:1px solid var(--line)}
+  #clips header h1{font-size:15px;font-weight:600}
+  #clips header p{color:var(--dim);font-size:13px;margin-top:2px}
+  #list{overflow:auto;flex:1;padding:6px 0}
+  .clip{display:block;width:100%;text-align:left;border:0;border-radius:0;padding:9px 16px;min-height:44px}
+  .clip:hover{background:#242932}
+  .clip.on{background:#2c3340;box-shadow:inset 3px 0 0 var(--hot)}
+  .clip small{display:block;color:var(--dim);font-size:12px}
+  .clip.new::after{content:"NEW";float:right;font-size:11px;font-weight:700;color:#111;background:var(--hot);border-radius:3px;padding:1px 5px;margin-top:-30px}
+  #empty{padding:24px 16px;color:var(--dim);font-size:14px}
+
+  #stage{display:grid;grid-template-rows:1fr auto auto;min-height:0}
+  #frame{position:relative;background:#000;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  #box{position:relative;background:#000;aspect-ratio:16/9;width:min(100%, calc((100vh - 140px) * 16 / 9))}
+  #box video{position:absolute;inset:0;width:100%;height:100%;background:#000}
+  #box canvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;touch-action:none}
+  #nothing{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--dim);pointer-events:none;text-align:center;padding:20px}
+
+  .bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+  .group{display:flex;gap:6px;align-items:center}
+  .gap{width:1px;height:28px;background:var(--line);margin:0 6px}
+  .swatch{width:34px;height:34px;min-height:0;padding:0;border-radius:50%;border:2px solid transparent}
+  .swatch.on{border-color:var(--ink);transform:scale(1.1)}
+  #clear{color:var(--live);border-color:var(--live)}
+  #clear:hover{background:var(--live);color:#fff}
+  #width{width:110px;accent-color:var(--ink)}
+  #mute{min-width:92px}
+  #mute.off{color:var(--live);border-color:var(--live)}
+  #vol{width:90px;accent-color:var(--ink)}
+  #play{width:56px;font-size:18px}
+  #scrub{flex:1;min-width:160px;accent-color:var(--hot)}
+  #time{color:var(--dim);font-variant-numeric:tabular-nums;min-width:110px;text-align:right}
+  .push{margin-left:auto}
+  #conn{font-size:13px;font-weight:600;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--live);border-color:var(--live);white-space:nowrap}
+  #conn::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:currentColor;margin-right:6px;vertical-align:1px}
+  #conn.ok{color:var(--good);border-color:var(--good)}
+  #conn.wait{color:var(--hot);border-color:var(--hot)}
+
+  @media (max-width:820px){
+    #app{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+    #clips{max-height:30vh;border-right:0;border-bottom:1px solid var(--line)}
+    #box{width:100%}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="clips">
+    <header>
+      <h1>Replay analyst</h1>
+      <p>Newest clip at the top. Pick one to put it up.</p>
+    </header>
+    <div id="list"><div id="empty">No clips yet. They show up here as soon as the streaming PC saves a replay.</div></div>
+  </aside>
+
+  <main id="stage">
+    <div id="frame">
+      <div id="box">
+        <video id="video" playsinline autoplay muted></video>
+        <canvas id="ink"></canvas>
+        <div id="nothing">Connecting to the replay player…</div>
+      </div>
+    </div>
+
+    <div class="bar">
+      <div class="group" data-tools>
+        <button data-tool="pen" class="on">Pen</button>
+        <button data-tool="arrow">Arrow</button>
+        <button data-tool="circle">Circle</button>
+        <button data-tool="line">Line</button>
+      </div>
+      <div class="gap"></div>
+      <div class="group" data-colors>
+        <button class="swatch on" data-c="#ffd23f" style="background:#ffd23f" aria-label="yellow"></button>
+        <button class="swatch" data-c="#ffffff" style="background:#fff" aria-label="white"></button>
+        <button class="swatch" data-c="#3fd7ff" style="background:#3fd7ff" aria-label="cyan"></button>
+        <button class="swatch" data-c="#ff4fa3" style="background:#ff4fa3" aria-label="pink"></button>
+      </div>
+      <input id="width" type="range" min="2" max="14" value="5" aria-label="line width">
+      <div class="group push">
+        <button id="undo" title="Z">Undo</button>
+        <button id="clear">Clear</button>
+      </div>
+    </div>
+
+    <div class="bar">
+      <button id="play" aria-label="play or pause" title="Space">▶</button>
+      <button id="back" title="back 1 second (Shift + ←)">−1s</button>
+      <button id="stepB" title="back one frame (←)">◂ frame</button>
+      <button id="stepF" title="forward one frame (→)">frame ▸</button>
+      <button id="fwd" title="forward 1 second (Shift + →)">+1s</button>
+      <div class="gap"></div>
+      <div class="group" data-rates>
+        <button data-rate="0.25">¼</button>
+        <button data-rate="0.5">½</button>
+        <button data-rate="1" class="on">1×</button>
+      </div>
+      <div class="group">
+        <button id="mute" title="mute or unmute the replay on air (M)">Sound 10%</button>
+        <input id="vol" type="range" min="0" max="100" value="10" aria-label="replay volume on air">
+      </div>
+      <div class="gap"></div>
+      <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="scrub">
+      <span id="time">0:00.0 / 0:00.0</span>
+      <span id="conn" class="push">Not connected</span>
+    </div>
+  </main>
+</div>
+
+<script src="replay-ink.js"></script>
+<script src="replay-link.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const room = new URLSearchParams(location.search).get("room");
+const video = $("#video"), ink = $("#ink"), ctx = ink.getContext("2d");
+const st = { tool: "pen", color: "#ffd23f", width: 5, strokes: [], drawing: null,
+             clips: [], status: null, vol: 0.10, muted: false };
+
+// ---------- talking to the player ----------
+function send(m){ if (dc && dc.readyState === "open"){ dc.send(JSON.stringify(m)); return true; } return false; }
+function setConn(cls, text){ const c = $("#conn"); c.className = cls + " push"; c.textContent = text; }
+function nothing(text){ $("#nothing").textContent = text || ""; $("#nothing").style.display = text ? "flex" : "none"; }
+
+function onCtl(m){
+  if (m.type === "clips"){ st.clips = m.list; renderList(); }
+  if (m.type === "strokes"){ st.strokes = m.list; redraw(); }
+  if (m.type === "status"){ st.status = m; showStatus(); }
+}
+
+// ---------- clip list ----------
+function label(name){ return name.replace(/\.[^.]+$/, "").replace(/^replay[\s_-]*/i, "") || name; }
+function ago(t){
+  if (!t) return "";
+  const s = Math.max(0, (Date.now() - t)/1000);
+  return s < 60 ? "just now" : s < 3600 ? `${Math.floor(s/60)} min ago` : new Date(t).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+function renderList(){
+  const list = $("#list");
+  if (!st.clips.length){ list.innerHTML = '<div id="empty">No clips yet. They show up here as soon as the streaming PC saves a replay.</div>'; return; }
+  const cur = st.status && st.status.name;
+  list.innerHTML = "";
+  for (const c of st.clips){
+    const b = document.createElement("button");
+    b.className = "clip" + (c.name === cur ? " on" : "") + (c.time && Date.now() - c.time < 90000 ? " new" : "");
+    b.dataset.name = c.name;
+    b.innerHTML = `<span></span><small></small>`;
+    b.firstChild.textContent = label(c.name);
+    b.lastChild.textContent = ago(c.time);
+    list.appendChild(b);
+  }
+}
+setInterval(renderList, 20000);       // keep "2 min ago" honest
+$("#list").addEventListener("click", e => {
+  const b = e.target.closest(".clip"); if (!b) return;
+  st.strokes = []; st.drawing = null; redraw();
+  send({ type: "load", name: b.dataset.name });
+});
+
+// ---------- transport (the player is the clock; this page only asks) ----------
+function fmt(t){ if (!isFinite(t)) t = 0; const m = Math.floor(t/60), s = (t%60).toFixed(1).padStart(4, "0"); return `${m}:${s}`; }
+let scrubbing = false;
+function showStatus(){
+  const s = st.status; if (!s) return;
+  $("#play").textContent = s.paused ? "▶" : "❚❚";
+  if (!scrubbing && s.dur) $("#scrub").value = s.t / s.dur * 1000;
+  $("#time").textContent = `${fmt(s.t)} / ${fmt(s.dur)}`;
+  document.querySelectorAll("[data-rate]").forEach(b => b.classList.toggle("on", +b.dataset.rate === s.rate));
+  const cur = document.querySelector(".clip.on");
+  if ((cur && cur.dataset.name) !== s.name) renderList();
+  nothing(s.name ? "" : "Pick a clip on the left");
+}
+const T = () => (st.status && st.status.t) || 0;
+$("#play").onclick  = () => send({ type: st.status && !st.status.paused ? "pause" : "play" });
+$("#back").onclick  = () => send({ type: "seek", t: T() - 1 });
+$("#fwd").onclick   = () => send({ type: "seek", t: T() + 1 });
+$("#stepB").onclick = () => send({ type: "step", d: -1/30 });
+$("#stepF").onclick = () => send({ type: "step", d:  1/30 });
+document.querySelector("[data-rates]").addEventListener("click", e => {
+  const b = e.target.closest("[data-rate]"); if (b) send({ type: "rate", r: +b.dataset.rate });
+});
+let lastSeek = 0;
+$("#scrub").oninput = e => {
+  scrubbing = true;
+  const now = performance.now(), d = st.status && st.status.dur;
+  if (d && now - lastSeek > 80){ lastSeek = now; send({ type: "seek", t: e.target.value/1000*d }); }
+};
+$("#scrub").onchange = e => {
+  scrubbing = false;
+  const d = st.status && st.status.dur; if (d) send({ type: "seek", t: e.target.value/1000*d });
+};
+
+// ---------- sound on air ----------
+// Replays go out at 10% unless turned up: crowd noise over the commentators is the
+// one thing that can't be fixed afterwards. Remembered in this browser.
+const SOUND_KEY = "vga-replay-sound";
+try { Object.assign(st, JSON.parse(localStorage.getItem(SOUND_KEY)) || {}); } catch {}
+let lastVol = 0;
+function sendSound(){ send({ type: "vol", v: st.vol, muted: st.muted }); }
+function showSound(){
+  $("#vol").value = Math.round(st.vol*100);
+  $("#mute").textContent = st.muted ? "Muted" : `Sound ${Math.round(st.vol*100)}%`;
+  $("#mute").classList.toggle("off", st.muted);
+  try { localStorage.setItem(SOUND_KEY, JSON.stringify({ vol: st.vol, muted: st.muted })); } catch {}
+}
+function toggleMute(){ st.muted = !st.muted; showSound(); sendSound(); }
+$("#mute").onclick = toggleMute;
+$("#vol").oninput = e => {
+  st.vol = e.target.value/100; st.muted = false; showSound();
+  const now = performance.now(); if (now - lastVol > 100){ lastVol = now; sendSound(); }
+};
+$("#vol").onchange = sendSound;
+showSound();
+
+// ---------- drawing ----------
+// The pen draws here at once; the player gets the same stroke as points. A pen
+// stroke is sent as only its new points, every 30ms, so a long line costs no
+// more per message than a short one.
+document.querySelector("[data-tools]").addEventListener("click", e => {
+  const b = e.target.closest("[data-tool]"); if (!b) return;
+  st.tool = b.dataset.tool; document.querySelectorAll("[data-tool]").forEach(x => x.classList.toggle("on", x === b));
+});
+document.querySelector("[data-colors]").addEventListener("click", e => {
+  const b = e.target.closest(".swatch"); if (!b) return;
+  st.color = b.dataset.c; document.querySelectorAll(".swatch").forEach(x => x.classList.toggle("on", x === b));
+});
+$("#width").oninput = e => st.width = +e.target.value;
+function undo(){ st.strokes.pop(); redraw(); send({ type: "undo" }); }
+$("#undo").onclick = undo;
+$("#clear").onclick = () => { st.strokes = []; redraw(); send({ type: "clear" }); };
+
+function fit(){ const r = ink.getBoundingClientRect(); ink.width = Math.round(r.width*devicePixelRatio); ink.height = Math.round(r.height*devicePixelRatio); redraw(); }
+new ResizeObserver(fit).observe(ink);
+function redraw(){
+  ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0, 0, ink.width, ink.height);
+  for (const s of st.strokes) replayInk(ctx, s, ink.width, ink.height);
+  if (st.drawing) replayInk(ctx, st.drawing, ink.width, ink.height);
+}
+const r4 = v => Math.round(v*10000)/10000;
+function norm(e){ const r = ink.getBoundingClientRect(); return [r4((e.clientX-r.left)/r.width), r4((e.clientY-r.top)/r.height)]; }
+
+let sentN = 0, lastLive = 0;
+function flushLive(){
+  const d = st.drawing; if (!d) return;
+  const base = { type: "live", id: d.id, tool: d.tool, color: d.color, width: d.width };
+  if (d.tool === "pen"){
+    if (d.pts.length <= sentN) return;
+    send({ ...base, pts: d.pts.slice(sentN), add: sentN > 0 }); sentN = d.pts.length;
+  } else send({ ...base, pts: d.pts, add: false });
+}
+ink.onpointerdown = e => {
+  if (!st.status || !st.status.name) return;
+  ink.setPointerCapture(e.pointerId);
+  st.drawing = { id: Math.random().toString(36).slice(2), tool: st.tool, color: st.color, width: st.width, pts: [norm(e)] };
+  sentN = 0;
+};
+ink.onpointermove = e => {
+  const d = st.drawing; if (!d) return;
+  const p = norm(e);
+  if (d.tool === "pen") d.pts.push(p); else d.pts[1] = p;
+  redraw();
+  const now = performance.now(); if (now - lastLive > 30){ lastLive = now; flushLive(); }
+};
+ink.onpointerup = ink.onpointercancel = () => {
+  const d = st.drawing; if (!d) return;
+  st.drawing = null;
+  if (d.pts.length > 1){
+    st.strokes.push({ tool: d.tool, color: d.color, width: d.width, pts: d.pts });
+    send({ type: "stroke", id: d.id, tool: d.tool, color: d.color, width: d.width, pts: d.pts });
+  } else send({ type: "clear-live", id: d.id });
+  redraw();
+};
+
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT") return;
+  if (e.code === "Space"){ e.preventDefault(); $("#play").click(); }
+  if (e.code === "ArrowLeft")  send(e.shiftKey ? { type: "seek", t: T() - 1 } : { type: "step", d: -1/30 });
+  if (e.code === "ArrowRight") send(e.shiftKey ? { type: "seek", t: T() + 1 } : { type: "step", d:  1/30 });
+  if ((e.key === "z" || e.key === "Z") && !e.shiftKey){ e.preventDefault(); undo(); }
+  if (e.key === "m" || e.key === "M") toggleMute();
+});
+
+// ---------- the connection ----------
+const aid = Math.random().toString(36).slice(2);
+let sig = null, pc = null, dc = null, sid = null, pending = [], ice = null, heardPlayer = 0;
+
+function closePeer(){ try { dc && dc.close(); } catch {} try { pc && pc.close(); } catch {} pc = dc = null; }
+function hello(){ if (sig) sig({ type: "hello", aid }); }
+
+async function onSig(m){
+  if (m.type === "player"){ heardPlayer = Date.now(); hello(); return; }
+  if (m.to && m.to !== aid) return;                 // meant for another analyst tab
+  if (m.type === "offer"){
+    heardPlayer = Date.now();
+    closePeer(); sid = m.sid;
+    if (!ice) ice = await replayLink.ice();
+    const my = sid;
+    pc = new RTCPeerConnection({ iceServers: ice.iceServers });
+    pc.ontrack = e => { video.srcObject = e.streams[0] || new MediaStream([e.track]); video.play().catch(() => {}); };
+    pc.ondatachannel = e => {
+      dc = e.channel;
+      dc.onmessage = ev => { try { onCtl(JSON.parse(ev.data)); } catch (err) { console.error(err); } };
+      dc.onopen = () => { setConn("ok", "Connected"); sendSound(); };
+      dc.onclose = () => { if (sid === my){ setConn("", "Lost the player, reconnecting…"); } };
+    };
+    pc.onicecandidate = e => { if (e.candidate && sid === my) sig({ type: "ice", sid: my, c: e.candidate.toJSON() }); };
+    pc.onconnectionstatechange = () => {
+      if (sid !== my) return;
+      const s = pc.connectionState;
+      if (s === "connecting") setConn("wait", "Connecting…");
+      if (s === "failed" || s === "disconnected") setConn("", "Lost the player, reconnecting…");
+    };
+    await pc.setRemoteDescription(m.sdp);
+    for (const p of pending.filter(p => p.sid === my)) pc.addIceCandidate(p.c).catch(() => {});
+    pending = [];
+    const ans = await pc.createAnswer();
+    await pc.setLocalDescription(ans);
+    sig({ type: "answer", sid: my, sdp: pc.localDescription.toJSON() });
+    setConn("wait", "Connecting…");
+    return;
+  }
+  if (m.type === "ice"){
+    if (pc && m.sid === sid && pc.remoteDescription) pc.addIceCandidate(m.c).catch(() => {});
+    else pending.push(m);
+  }
+}
+
+// Keep knocking until the player answers: it may not be open yet, or it may
+// have been restarted. A dead connection knocks again by itself.
+setInterval(() => {
+  const up = dc && dc.readyState === "open" && pc && pc.connectionState === "connected";
+  if (up) return;
+  if (pc && ["failed", "disconnected", "closed"].includes(pc.connectionState)) closePeer();
+  if (!pc){
+    if (Date.now() - heardPlayer > 8000){ setConn("", "Player not open"); nothing("Waiting for the replay player on the streaming PC to open."); }
+  }
+  hello();
+}, 3000);
+
+if (!room){
+  nothing("This link is missing its room code. Ask for the analyst link from the replay player.");
+} else {
+  replayLink.ice().then(i => { ice = i; });
+  replayLink.signal(room, onSig, send => send({ type: "hello", aid })).then(f => { sig = f; })
+    .catch(e => nothing("Couldn't reach the connection service: " + e.message));
+}
+</script>
+</body>
+</html>
