@@ -5313,7 +5313,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v257';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v258';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -8070,7 +8070,7 @@ function tapeRows(A, B){
        are escaped. The rest we build ourselves, and Height carries the <em>
        that greys its prime marks, so it must not be. */
     function cell(v, cls){
-      if(v == null) return '<b class="' + cls + ' na2">Not on file</b>';
+      if(v == null) return '<b class="' + cls + ' na2">N/A</b>';
       var sz = r[4] === 'gy2' ? (v.length > 20 ? ' sz3' : v.length > 13 ? ' sz2' : '') : '';
       return '<b class="' + cls + (r[3] ? ' wd2' : '') + (r[4] ? ' ' + r[4] + sz : '') + '">'
            + (r[3] ? esc(v) : v) + '</b>';
@@ -9158,7 +9158,7 @@ function fpProfileHTML(f, done, soon, ctx){
                   ['Stance', f.stance ? esc(fpCap(f.stance)) : null, o.stance ? esc(fpCap(o.stance)) : null]]
         .filter(function(r){ return r[1] || r[2]; });
       tale = rows.map(function(r, i){
-        function c(v, cls){ return '<b class="' + cls + '">' + (v || '<span class="fx-na">Not on file</span>') + '</b>'; }
+        function c(v, cls){ return '<b class="' + cls + '">' + (v || '<span class="fx-na">N/A</span>') + '</b>'; }
         return '<div class="fx-tt' + (i % 2 ? ' fx-z' : '') + '">' + c(r[1], '') + '<s>' + r[0] + '</s>' + c(r[2], 'fx-rt') + '</div>';
       }).join('');
     }
