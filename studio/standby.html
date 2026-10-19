@@ -588,6 +588,25 @@
   .setfoot{margin-top:9px;font-family:'Press Start 2P',monospace;font-size:9px;
     letter-spacing:.14em;color:var(--dim);}
   .setfoot b{color:#ffce00;}
+  /* THE CARDS THEMSELVES (2026-10-19): a set's twelve rarest as their real
+     renders, six across, with what a Pack and a Box cost on the head. The
+     still is a 600x600 square with the card standing in its middle 70%, so
+     the frame is the card's own shape and the picture is cropped to it. */
+  .setprice{display:flex;gap:10px;align-items:baseline;}
+  .setprice span{font-family:'Press Start 2P',monospace;font-size:11px;letter-spacing:.14em;color:var(--dim);
+    border:1px solid var(--line);background:var(--panel);padding:9px 12px 8px;}
+  .setprice b{color:#ffce00;font-weight:400;margin-left:8px;}
+  .sart{display:grid;grid-template-columns:repeat(6,1fr);gap:22px 18px;}
+  .sart-c{position:relative;}
+  .sart-f{position:relative;aspect-ratio:420/600;overflow:hidden;}
+  .sart-f img{position:absolute;top:0;left:50%;height:100%;width:auto;transform:translateX(-50%);
+    filter:drop-shadow(0 10px 22px rgba(0,0,0,.55));}
+  .sart-c.r-legendary .sart-f,.sart-c.r-prismatic .sart-f,.sart-c.r-one_of_one .sart-f{
+    filter:drop-shadow(0 0 16px rgba(255,206,0,.35));}
+  .sart-l{display:flex;justify-content:space-between;margin-top:8px;font-family:'Press Start 2P',monospace;
+    font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);}
+  .sart-l b{color:#fff;font-weight:400;}
+  .sart-c.r-legendary .sart-l .rr,.sart-c.r-prismatic .sart-l .rr,.sart-c.r-one_of_one .sart-l .rr{color:#ffce00;}
 
   /* schedule + next-events list */
   .list{display:flex;flex-direction:column;gap:12px;}
@@ -1086,7 +1105,7 @@
     </div>
 
     <div class="view" id="v-cards">
-      <div class="eyebrow">VGA · UBA</div>
+      <div class="eyebrow" data-lg="VGA · {L}">VGA · UBA</div>
       <div class="title sm">Card Collection</div>
       <div class="setgrid" id="cardsContent"></div>
     </div>
@@ -1300,7 +1319,8 @@ async function loadUba(rk){
     renderChamps(champs)
     renderP4P(p4||[], champs)
     renderFotm((fm||[])[0], champs)
-    renderCards(sets||[], coll||[])
+    // the real cards when every read answers; the text checklist when one does not
+    if(!(await renderCardArt())) renderCards(sets||[], coll||[])
     // 'next event' is resolved when it's SHOWN, not at boot -- see showNextEv.
     // Which event is "next" depends on which one you're currently running.
     void nx
@@ -1390,7 +1410,55 @@ const METHOD=raw=>{
 }
 // Rarest first, matching the website's stash ordering so the two views agree
 // about what "top of the set" means.
-const RANK={one_of_one:0,legendary:1,mystic:2,rare:3,uncommon:4,common:5}
+const RANK={one_of_one:0,prismatic:1,legendary:2,mystic:3,rare:4,uncommon:5,common:6}
+// THE CARD COLLECTION, AS CARDS. One set a screen: its twelve rarest (rarity,
+// then fewest printed), each its own render, and what a Pack and a Box of it
+// cost today. Three public reads; if ANY fails this returns false and the text
+// checklist below is drawn instead, so a bad read is never an empty screen.
+// A card with no still is left out rather than drawn as a hole.
+const SET_SHOW = 12
+async function renderCardArt(){
+  try{
+    const [{data:cards,error:e1},{data:art,error:e2},{data:shop,error:e3}] = await Promise.all([
+      sb.from('cards_public').select('card_id,name,rarity,set_name,set_code,set_status,prints_made'),
+      sb.from('graphic_assets').select('key,url').like('key','collect-%'),
+      sb.from('shop_public').select('name,vc_price').eq('effect_kind','pack'),
+    ])
+    if(e1||e2||e3||!cards||!art) return false
+    const pic={}; art.forEach(a=>{ pic[a.key.slice(8)]=a.url })
+    const sets={}
+    cards.forEach(c=>{ if(c.set_status==='open' || c.set_status==='sealed') (sets[c.set_code]=sets[c.set_code]||{ name:c.set_name, cards:[] }).cards.push(c) })
+    // A shop item names its set by a PREFIX of the set's name ("Throwback Pack" is
+    // "Throwback: The Ring Era"). Exact first, then the ONE set that starts with
+    // it; two candidates = no price, because a wrong price is worse than none.
+    const setOf=pre=>{ const all=Object.values(sets)
+      return all.find(x=>x.name===pre) || ((m=>m.length===1?m[0]:null)(all.filter(x=>x.name.startsWith(pre)))) }
+    ;(shop||[]).forEach(it=>{ const m=String(it.name||'').match(/^(.*) (Pack|Box)$/); if(!m) return
+      const st=setOf(m[1]); if(st) st[m[2].toLowerCase()]=it.vc_price })
+    const vc=n=>Number(n).toLocaleString('en-US')+' VC'
+    const pages=Object.values(sets).map(st=>{
+      const shown=st.cards.filter(c=>pic[c.card_id])
+        .sort((a,b)=>(RANK[a.rarity]??9)-(RANK[b.rarity]??9) || (a.prints_made||0)-(b.prints_made||0))
+        .slice(0,SET_SHOW)
+      if(!shown.length) return ''
+      const total=st.cards.reduce((n,c)=>n+(c.prints_made||0),0)
+      const price=[st.pack!=null&&`<span>PACK<b>${vc(st.pack)}</b></span>`, st.box!=null&&`<span>BOX<b>${vc(st.box)}</b></span>`].filter(Boolean).join('')
+      return '<div class="setpage">'
+        + `<div class="sethead"><div><div class="setname">${cshEsc(st.name)}</div>`
+        + `<div class="setprog" style="margin-top:8px">THE ${shown.length} RAREST OF ${st.cards.length} · ${total} IN CIRCULATION</div></div>`
+        + `<div class="setprice">${price}</div></div>`
+        + '<div class="sart">' + shown.map(c=>`<div class="sart-c r-${c.rarity}"><div class="sart-f"><img src="${cshEsc(pic[c.card_id])}" alt="" loading="eager"></div>`
+          + `<div class="sart-l"><span class="rr">${c.rarity==='one_of_one'?'1 of 1':cshEsc(c.rarity)}</span><b>${c.prints_made||0} PULLED</b></div></div>`).join('') + '</div>'
+        + '</div>'
+    }).filter(Boolean)
+    if(!pages.length) return false
+    const box=document.getElementById('cardsContent')
+    box.innerHTML=pages.join(''); box.querySelector('.setpage').classList.add('on')
+    setTimer=null; setCycle()
+    return true
+  }catch(e){ return false }
+}
+
 function renderCards(sets, coll){
   const meta={}; (sets||[]).forEach(x=>{ meta[x.code]={size:x.set_size,name:x.name} })
   const byCode={}
