@@ -1861,7 +1861,10 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
 .mb-row .mb-tx{min-width:0}
 .mb-row .mb-tx b{display:block;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:18px;letter-spacing:.03em;line-height:1.05;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mb-row .mb-tx b .w{color:#6EE7B7} .mb-row .mb-tx b .l{color:#FF8A80;text-decoration:line-through} .mb-row .mb-tx b .v{color:#6E6688}
+.mb-picks{display:block;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.03em;line-height:1.2;color:#E9E4FA;margin-top:2px}
+.mb-picks i{font-style:normal;color:#6E6888;font-size:12px}
+.mb-picks span{white-space:nowrap}
+.mb-picks .w{color:#6EE7B7} .mb-picks .l{color:#FF8A80;text-decoration:line-through} .mb-picks .v{color:#6E6888}
 .mb-row .mb-tx small{display:block;font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.06em;text-transform:uppercase;color:#A9A2C8;margin-top:2px}
 .mb-row .mb-am{text-align:right}
 .mb-row .mb-am b{display:block;font-family:'Space Mono',monospace;font-size:12px;font-weight:700}
@@ -5655,7 +5658,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v261';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v262';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -12472,7 +12475,7 @@ function mbShowHTML(group, tab){
 
 /* One bet as a row: who, what kind, the price, what went in and what comes back. */
 function mbLine(it){
-  var bar, title, sub, big, small, cls, stake, pays = 0, net = 0;
+  var bar, title, sub, big, small, cls, stake, pays = 0, net = 0, picksLine = '';
   if(it.kind === 'single'){
     var b = it.b, amt = Number(b.amount || 0), st = b.bet_status;
     var pool = (betPools || []).filter(function(x){ return x.match_id === b.match_id; })[0];
@@ -12494,16 +12497,20 @@ function mbLine(it){
       var c = l.status === 'won' ? 'w' : l.status === 'lost' ? 'l' : l.status === 'void' ? 'v' : '';
       return '<span class="' + c + '">' + esc(l.pick_name || '?') + '</span>';
     });
-    title = 'Pick\'em: ' + (names.length > 3 ? names.slice(0, 2).join(' + ') + ' + ' + (names.length - 2) + ' more' : names.join(' + '));
+    /* every pick by name on its own line under the title, wrapping if it has
+       to: 4 or 5 picks used to show two names and "+ 2 more", hiding the very
+       picks that decided the entry */
+    title = 'Pick\'em · ' + (e.picks || names.length) + ' picks';
+    var picksLine = '<span class="mb-picks">' + names.join(' <i>+</i> ') + '</span>';
     var dropped = Number(e.picks || 0) - live;
-    sub = live + ' picks · all must win · ' + pkX(mult) + (dropped > 0 ? ' · ' + dropped + ' called off' : '');
+    sub = 'all must win · ' + pkX(mult) + (dropped > 0 ? ' · ' + dropped + ' called off' : '');
     if(es === 'won'){ net = Number(e.payout_amount || 0) - amt2; big = '+' + net.toLocaleString(); small = amt2.toLocaleString() + ' in · ' + Number(e.payout_amount || 0).toLocaleString() + ' back'; cls = 'g'; bar = 'won'; }
     else if(es === 'lost'){ net = -amt2; big = '−' + amt2.toLocaleString(); small = amt2.toLocaleString() + ' in'; cls = 'r'; bar = 'lost'; }
     else if(es === 'void'){ big = '0'; small = amt2.toLocaleString() + ' back'; cls = 'm'; bar = 'void'; }
     else { pays = Number(e.pays_if_all_win != null ? e.pays_if_all_win : Math.floor(amt2 * mult)); big = amt2.toLocaleString(); small = 'pays ' + pays.toLocaleString(); cls = 'y'; bar = it.state === 'locked' ? 'live' : 'open'; }
   }
   return { stake: stake, pays: pays, net: net,
-    html: '<div class="mb-row ' + bar + '"><div class="mb-tx"><b>' + title + '</b><small>' + esc(sub) + '</small></div>'
+    html: '<div class="mb-row ' + bar + '"><div class="mb-tx"><b>' + title + '</b>' + picksLine + '<small>' + esc(sub) + '</small></div>'
       + '<div class="mb-am ' + cls + '"><b class="num">' + big + '</b><small>' + esc(small) + '</small></div></div>' };
 }
 
