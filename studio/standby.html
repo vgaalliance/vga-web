@@ -808,6 +808,16 @@
   .csh-rule .n{font-family:'Press Start 2P',monospace;font-size:11px;letter-spacing:.24em;color:var(--hi);}
   .csh-rule h3{font-weight:900;font-size:48px;text-transform:uppercase;line-height:.95;margin-top:10px;}
   .csh-rule p{font-family:'Barlow',sans-serif;font-weight:500;font-size:23px;color:var(--dim);margin-top:8px;line-height:1.3;}
+  /* GFL: the Path to Pros. Three rungs, the first lit as tonight, an arrow down between each */
+  .csh-rules .csh-chead{margin-bottom:-4px;}
+  .csh-rule.step{position:relative;border-left-color:rgba(var(--hi-rgb),.35);}
+  .csh-rule.step:not(:last-child)::after{content:'▼';position:absolute;left:30px;bottom:-21px;z-index:1;
+    font-family:'Press Start 2P',monospace;font-size:12px;line-height:20px;color:var(--pink);text-shadow:0 0 10px rgba(var(--pink-rgb),.7);}
+  .csh-rule.step.here{border-left-color:#ffce00;background:rgba(var(--deep2-rgb),.9);
+    box-shadow:0 0 0 2px rgba(255,206,0,.45),0 0 30px rgba(255,206,0,.18);}
+  .csh-rule.step .tag{position:absolute;right:22px;top:20px;font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.2em;
+    color:#111;background:#ffce00;padding:6px 9px 5px;}
+  .csh-rule.step.last h3{color:#ffce00;text-shadow:0 0 22px rgba(255,206,0,.35);}
   .csh-right{position:absolute;left:690px;right:0;top:166px;display:flex;flex-direction:column;gap:16px;}
   .csh-card{display:flex;flex-direction:column;gap:8px;}
   .csh-chead{display:flex;align-items:center;gap:14px;font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.2em;color:var(--hi);}
@@ -1098,14 +1108,11 @@
         <symbol id="cshSil" viewBox="0 0 100 100"><path fill="currentColor" d="M50 14c9 0 16 8 16 18s-7 19-16 19-16-9-16-19 7-18 16-18zM14 100c0-21 15-38 36-38s36 17 36 38z"/></symbol>
       </defs></svg>
       <div class="csh-head">
-        <div><div class="eyebrow">VGA · CONTENDER SERIES</div><div class="csh-title" id="cshTitle"></div></div>
+        <div><div class="eyebrow" id="cshEyebrow">VGA · CONTENDER SERIES</div><div class="csh-title" id="cshTitle"></div></div>
         <div class="csh-when" id="cshWhen"></div>
       </div>
-      <div class="csh-rules">
-        <div class="csh-rule"><div class="n">THE NIGHT</div><h3>One owner. One card.</h3><p id="cshOwnerLine"></p></div>
-        <div class="csh-rule"><div class="n">THE FIGHTERS</div><h3>GFL's amateurs</h3><p>It counts on their amateur record.</p></div>
-        <div class="csh-rule"><div class="n">THE PRIZE</div><h3>A UBA contract</h3><p>Every fighter gets a verdict at the end of the night. Win or lose, the performance decides.</p></div>
-      </div>
+      <!-- the left column: what the night is (Contender Series) or the Path to Pros (GFL). cshFrame() fills it -->
+      <div class="csh-rules" id="cshRules"></div>
       <div class="csh-right">
         <div class="csh-up" id="cshUp"></div>
         <div class="csh-card" id="cshCard"></div>
@@ -2612,7 +2619,8 @@ function show(view, league){
   if(view==='off'||!view) return
   if(view==='auto'){
     let list = league==='gfl' ? VIEWS_GFL : league==='uba' ? VIEWS_UBA : VIEWS
-    if(document.documentElement.dataset.series==='cs' && CSH.eventId) list=['cshome', ...list.filter(v=>v!=='card')]
+    if(CSH.eventId && (document.documentElement.dataset.series==='cs' ? CSH.mode==='cs' : league==='gfl' && CSH.mode==='gfl'))
+      list=['cshome', ...list.filter(v=>v!=='card')]
     let i=0; const step=()=>{ hideAll(); showView($('v-'+list[i%list.length])); i++ }
     step(); cycle=setInterval(step,15000); return }
   showView($('v-'+view))
@@ -2707,7 +2715,10 @@ function fillBar(d){
 const CS_OWNER={ MCS:'Maki', CCS:'Castle', HPCS:'1hp' }   // whose night each brand is (ama-plan §11). A new brand: add it here too
 const CSH_PAGE=4
 const CSH_ARMED={}   // what the deck said is armed, by event, in case it answers before the card is read
-const CSH={ eventId:null, name:'', brand:null, bouts:[], pics:{}, armed:null, shownNext:undefined, shownPage:undefined }
+// mode: 'cs' (a Contender Series night) or 'gfl' (an ordinary GFL night: the same
+// screen, with the Path to Pros on the left instead of what the series is).
+// It follows the brand: no brand = GFL, so a contender stamp can never leak onto a GFL card.
+const CSH={ eventId:null, name:'', brand:null, mode:'cs', bouts:[], pics:{}, armed:null, shownNext:undefined, shownPage:undefined }
 const cshEsc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))
 
 async function cshLoad(eventId, name, brand){
@@ -2723,7 +2734,7 @@ async function cshLoad(eventId, name, brand){
     const { data:fc } = await sb.from('fighter_cards').select('slug,profile_photo_url').in('slug', slugs)
     ;(fc||[]).forEach(f=>{ if(f.profile_photo_url) pics[f.slug]=f.profile_photo_url })
   }
-  Object.assign(CSH,{ eventId, name:name||'', brand:brand||CSH.brand, bouts, pics, armed:CSH_ARMED[eventId]??null, shownNext:undefined, shownPage:undefined })
+  Object.assign(CSH,{ eventId, name:name||'', brand:brand||null, mode:brand?'cs':'gfl', bouts, pics, armed:CSH_ARMED[eventId]??null, shownNext:undefined, shownPage:undefined })
   try{ localStorage.setItem('vga-cshome', JSON.stringify({ eventId, name:CSH.name, brand:CSH.brand, at:Date.now() })) }catch(e){}
   return true
 }
@@ -2784,6 +2795,9 @@ function cshUpDraw(cls){
     ? `<div class="lab"><div class="eyebrow">${nx===cshMain()?'MAIN EVENT · UP NEXT':'UP NEXT'}</div>
          <div class="meta">${cshEsc(String(nx.weight_class||'').replace(/_/g,' ').toUpperCase())}${nx.weight_class?' · ':''}FIGHT ${cshNo(nx)} OF ${CSH.bouts.length}</div></div>
        ${cshFig('l', nx.fighter_a_name, nx.fighter_a_slug)}<div class="x">VS</div>${cshFig('r', nx.fighter_b_name, nx.fighter_b_slug)}`
+    : CSH.mode==='gfl'
+    ? `<div class="lab"><div class="eyebrow">THAT'S THE CARD</div></div>
+       <div class="done"><b>See you next GFL</b><span>MONDAYS &amp; THURSDAYS · THE PATH TO PROS</span></div>`
     : `<div class="lab"><div class="eyebrow">THAT'S THE CARD</div></div>
        <div class="done"><b>The verdicts are next</b><span>CONTRACT OR NO CONTRACT · EVERY FIGHTER</span></div>`
   $('cshVlink').classList.toggle('hot', !nx)
@@ -2791,11 +2805,32 @@ function cshUpDraw(cls){
   up.querySelectorAll('.nm').forEach(n=>{ let px=62; n.style.fontSize=px+'px'
     while(n.scrollWidth>400 && px>34) n.style.fontSize=(--px)+'px' })
 }
+// The left column. A contender night says what the series is; a GFL night shows
+// the Path to Pros, three rungs with GFL lit as tonight. The words of each rung
+// are here and nowhere else (docs/ama-plan.md §11 is the ladder they describe).
+const CSH_PATH=[
+  { n:'STEP 1 · GFL',              h:'Fight in GFL',  p:'Mondays &amp; Thursdays. Build your amateur record.' },
+  { n:'STEP 2 · CONTENDER SERIES', h:'Get called up', p:'The best of GFL get the call, with a UBA contract on the line.' },
+  { n:'STEP 3 · UBA',              h:'Become a pro!', p:'Earn the contract. Fight on UBA cards with a pro record.' },
+]
+const cshRule=(n,h,p,cls,tag)=>`<div class="csh-rule ${cls||''}">${tag?`<span class="tag">${tag}</span>`:''}<div class="n">${n}</div><h3>${h}</h3><p>${p}</p></div>`
 function cshFrame(){
   $('cshTitle').textContent=CSH.name
+  $('cshVlink').style.display = CSH.mode==='gfl' ? 'none' : ''   // there are no verdicts on a GFL night
+  if(CSH.mode==='gfl'){
+    $('cshEyebrow').textContent='VGA · GLORY FIGHTING LEAGUE'
+    $('cshWhen').innerHTML='GFL · MONDAYS &amp; THURSDAYS<br>THE PATH TO PROS STARTS HERE'
+    $('cshRules').innerHTML=`<div class="csh-chead"><span>THE PATH TO PROS</span><span class="ln"></span></div>`
+      + CSH_PATH.map((r,i)=>cshRule(r.n, r.h, r.p, 'step'+(i===0?' here':'')+(i===CSH_PATH.length-1?' last':''), i===0?'TONIGHT':'')).join('')
+    return
+  }
   const owner=CS_OWNER[CSH.brand]
+  $('cshEyebrow').textContent='VGA · CONTENDER SERIES'
   $('cshWhen').innerHTML = (owner ? `${cshEsc(owner.toUpperCase())}'S NIGHT<br>` : '') + 'GFL FIGHTERS · CONTRACTS ON THE LINE'
-  $('cshOwnerLine').textContent = owner ? `${owner} picked every fight on it.` : 'The owner picked every fight on it.'
+  $('cshRules').innerHTML=
+      cshRule('THE NIGHT', 'One owner. One card.', owner ? `${cshEsc(owner)} picked every fight on it.` : 'The owner picked every fight on it.')
+    + cshRule('THE FIGHTERS', "GFL's amateurs", 'It counts on their amateur record.')
+    + cshRule('THE PRIZE', 'A UBA contract', 'Every fighter gets a verdict at the end of the night. Win or lose, the performance decides.')
 }
 // Redraw after anything changed. On screen, a new next fight slides the pair
 // out and the new one in, and a new page lifts the old four away and deals the
@@ -2878,7 +2913,8 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
     if(c.view==='cshome'){
       if(!c.eventId) return
       if(c.eventId!==CSH.eventId && !(await cshLoad(c.eventId, c.event, c.series))) return   // no card read = stay on what is up
-      if(c.series) CSH.brand=c.series
+      // whatever the deck says now wins: a series stamp = contender, none = GFL
+      CSH.brand=c.series||null; CSH.mode=c.series?'cs':'gfl'
       if(c.armed!==undefined) CSH.armed=c.armed
       CSH.shownNext=undefined; cshUpdate(); show('cshome'); return }
     show(c.view, c.league); return   // league only matters to 'auto' — it picks the rotation
