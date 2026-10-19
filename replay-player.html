@@ -103,7 +103,24 @@ const st = {
   clips: [], current: null, blob: null,
   strokes: [], live: new Map(),
   rate: 1, vol: 0.10, muted: false,
+  match: 1, round: 1,        // what the show is on; a clip is filed under it when OBS saves it
+  tags: {},                  // file name -> [match, round]
+  since: 0,                  // "start of a new show": clips saved before this are not listed
 };
+// Kept in this browser, so a restart mid-show keeps every clip in its match.
+const MR_KEY = "vga-replay-mr";
+try { Object.assign(st, JSON.parse(localStorage.getItem(MR_KEY)) || {}); } catch {}
+function saveMR(){
+  // only the tags still worth keeping: the list never shows anything older than the window
+  const keep = Object.entries(st.tags).slice(-400);
+  st.tags = Object.fromEntries(keep);
+  try { localStorage.setItem(MR_KEY, JSON.stringify({ match: st.match, round: st.round, tags: st.tags, since: st.since })); } catch {}
+}
+// The list shows clips saved in the last two hours, and nothing from before the
+// last "start of a new show". Nothing is ever deleted from the disk; old clips
+// simply drop off the list.
+const WINDOW_MS = 2*60*60*1000;
+const cutoff = () => Math.max(st.since, Date.now() - WINDOW_MS);
 
 // ---------- small bits ----------
 function say(el, text, cls){ const e = $(el); e.textContent = text; e.className = "msg " + (cls || "dimt"); }
@@ -159,14 +176,22 @@ async function scan(){
       if (h.kind !== "file" || !/^replay/i.test(name) || !VIDEO_EXT.test(name)) continue;
       seen.add(name);
       const rec = st.files.get(name);
-      if (rec && rec.ready) continue;
+      if (rec && (rec.ready || rec.old)) continue;
       const f = await h.getFile();
-      if (rec && f.size > 0 && rec.size === f.size){ if (++rec.stable >= 2){ rec.ready = true; rec.time = f.lastModified; } }
+      // A file already older than the window is looked at once and never again,
+      // so a folder of last month's replays costs nothing after the first second.
+      if (!rec && f.lastModified < Date.now() - WINDOW_MS){ st.files.set(name, { h, old: true }); continue; }
+      if (rec && f.size > 0 && rec.size === f.size){
+        if (++rec.stable >= 2){
+          rec.ready = true; rec.time = f.lastModified;
+          if (!st.tags[name]){ st.tags[name] = [st.match, st.round]; saveMR(); }
+        }
+      }
       else st.files.set(name, { h, size: f.size, time: f.lastModified, stable: 0, ready: false });
     }
     for (const k of [...st.files.keys()]) if (!seen.has(k)) st.files.delete(k);
-    const n = [...st.files.values()].filter(r => r.ready).length;
-    say("#folderMsg", `Watching "${st.dir.name}" · ${n} replay clip${n === 1 ? "" : "s"}.`, "good");
+    const n = [...st.files.values()].filter(r => r.ready && r.time >= cutoff()).length;
+    say("#folderMsg", `Watching "${st.dir.name}" · ${n} replay clip${n === 1 ? "" : "s"} from the last 2 hours.`, "good");
   } catch (e) {
     say("#folderMsg", "Lost the folder (" + e.message + "). Pick it again.", "bad");
     st.dir = null; $("#regrant").hidden = false;
@@ -177,9 +202,11 @@ setInterval(scan, 1000);
 
 let lastClips = "";
 function publishClips(){
-  const list = [...st.tests.keys()].map(name => ({ name, time: 0 }))
-    .concat([...st.files].filter(([, r]) => r.ready).map(([name, r]) => ({ name, time: r.time })))
-    .sort((a, b) => b.time - a.time).slice(0, 60);
+  const tag = name => st.tags[name] || [st.match, st.round];
+  const list = [...st.tests.keys()].map(name => ({ name, time: Date.now(), m: tag(name)[0], r: tag(name)[1] }))
+    .concat([...st.files].filter(([, r]) => r.ready && r.time >= cutoff())
+      .map(([name, r]) => ({ name, time: r.time, m: tag(name)[0], r: tag(name)[1] })))
+    .sort((a, b) => b.time - a.time).slice(0, 80);
   st.clips = list;
   const key = JSON.stringify(list);
   if (key !== lastClips){ lastClips = key; send({ type: "clips", list }); }
@@ -269,6 +296,11 @@ function onCtl(m){
       dirty(); break;
     }
     case "stroke": st.live.delete(m.id); st.strokes.push({ tool: m.tool, color: m.color, width: m.width, pts: m.pts }); dirty(); break;
+    // Match / round. "next-match" starts its round at 1; "new-show" also hides
+    // every clip saved before now, the way the old list started each show empty.
+    case "next-match": st.match++; st.round = 1; saveMR(); publishClips(); break;
+    case "next-round": st.round++; saveMR(); publishClips(); break;
+    case "new-show":   st.match = 1; st.round = 1; st.since = Date.now(); saveMR(); publishClips(); break;
     case "clear-live": st.live.delete(m.id); dirty(); break;     // a tap, not a stroke
     case "undo":  st.strokes.pop(); dirty(); break;
     case "clear": st.strokes = []; st.live.clear(); dirty(); break;
@@ -278,7 +310,7 @@ function onCtl(m){
 function sendStatus(){
   send({ type: "status", name: st.current, t: video.currentTime, dur: video.duration || 0,
          paused: video.paused || video.ended, rate: st.rate, vol: st.vol, muted: st.muted,
-         ready: video.readyState >= 2 });
+         ready: video.readyState >= 2, match: st.match, round: st.round });
 }
 setInterval(sendStatus, 250);
 
@@ -372,7 +404,8 @@ document.addEventListener("keydown", e => {
 
 // ---------- start ----------
 for (const u of (qs.get("clip") || "").split(",").filter(Boolean)){
-  st.tests.set(decodeURIComponent(u.split("/").pop()) || u, u);
+  const n = decodeURIComponent(u.split("/").pop()) || u;
+  st.tests.set(n, u); st.tags[n] ??= [st.match, st.round];
 }
 publishClips();
 restoreDir();

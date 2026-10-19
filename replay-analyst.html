@@ -37,6 +37,22 @@
   .clip small{display:block;color:var(--dim);font-size:12px}
   .clip.new::after{content:"NEW";float:right;font-size:11px;font-weight:700;color:#111;background:var(--hot);border-radius:3px;padding:1px 5px;margin-top:-30px}
   #empty{padding:24px 16px;color:var(--dim);font-size:14px}
+  #current{padding:12px 16px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  #current .now{grid-column:1/3;font-size:22px;font-weight:600;letter-spacing:-.01em}
+  #current .now small{color:var(--dim);font-size:13px;font-weight:400;margin-left:8px}
+  /* Quiet on purpose: a stray click mid-show re-files every clip that follows. */
+  #newShow{grid-column:1/3;min-height:0;padding:4px;border:0;color:var(--dim);font-size:12px}
+  #newShow:hover{color:var(--ink)}
+  .match{padding:10px 16px 4px;font-weight:600}
+  .match.now{color:var(--hot)}
+  .match.now small{color:var(--dim);font-weight:400;font-size:12px;margin-left:8px}
+  .round{padding:6px 16px 2px 24px;color:var(--dim);font-size:13px}
+  .wait{padding:4px 16px 10px 24px;color:var(--dim);font-size:13px;font-style:italic}
+  .list-clip{padding-left:36px !important}
+  /* Matches before the one the show is on fade back but stay clickable. */
+  .past{opacity:.38;transition:opacity .15s}
+  .clip.past:hover{opacity:.85}
+  .clip.past.on{opacity:1}
 
   #stage{display:grid;grid-template-rows:1fr auto auto;min-height:0}
   #frame{position:relative;background:#000;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
@@ -77,8 +93,14 @@
   <aside id="clips">
     <header>
       <h1>Replay analyst</h1>
-      <p>Newest clip at the top. Pick one to put it up.</p>
+      <p>Clips from the last 2 hours. Pick one to put it up.</p>
     </header>
+    <div id="current">
+      <div class="now">Match <span id="mNo">1</span><small>round <span id="rNo">1</span></small></div>
+      <button id="nextMatch">Next match</button>
+      <button id="nextRound">Next round</button>
+      <button id="newShow">Reset to match 1 · start of a new show</button>
+    </div>
     <div id="list"><div id="empty">No clips yet. They show up here as soon as the streaming PC saves a replay.</div></div>
   </aside>
 
@@ -165,18 +187,39 @@ function ago(t){
 }
 function renderList(){
   const list = $("#list");
-  if (!st.clips.length){ list.innerHTML = '<div id="empty">No clips yet. They show up here as soon as the streaming PC saves a replay.</div>'; return; }
+  const M = (st.status && st.status.match) || 1, R = (st.status && st.status.round) || 1;
+  $("#mNo").textContent = M; $("#rNo").textContent = R;
   const cur = st.status && st.status.name;
-  list.innerHTML = "";
-  for (const c of st.clips){
-    const b = document.createElement("button");
-    b.className = "clip" + (c.name === cur ? " on" : "") + (c.time && Date.now() - c.time < 90000 ? " new" : "");
-    b.dataset.name = c.name;
-    b.innerHTML = `<span></span><small></small>`;
-    b.firstChild.textContent = label(c.name);
-    b.lastChild.textContent = ago(c.time);
-    list.appendChild(b);
+  // Grouped like the old list: the match the show is on first and in yellow,
+  // earlier matches faded below it, newest round and newest clip first.
+  const by = {};
+  for (const c of st.clips) ((by[c.m] ??= {})[c.r] ??= []).push(c);
+  by[M] ??= {};                      // the match on now always gets a header, clips or not
+  const frag = document.createDocumentFragment();
+  const add = (cls, text, small) => { const d = document.createElement("div"); d.className = cls; d.textContent = text;
+    if (small){ const s = document.createElement("small"); s.textContent = small; d.appendChild(s); } frag.appendChild(d); };
+  for (const m of Object.keys(by).map(Number).sort((a, b) => (b === M) - (a === M) || b - a)){
+    const past = m !== M ? " past" : "";
+    add("match" + (m === M ? " now" : past), `Match ${m}`, m === M ? "on now" : "");
+    const rounds = Object.keys(by[m]).map(Number).sort((a, b) => b - a);
+    if (!rounds.length){ add("wait", "Waiting for the first replay…"); continue; }
+    for (const r of rounds){
+      add("round" + past, `Round ${r}`);
+      for (const c of by[m][r].sort((a, b) => b.time - a.time)){
+        const b = document.createElement("button");
+        b.className = "clip list-clip" + past + (c.name === cur ? " on" : "") + (Date.now() - c.time < 90000 ? " new" : "");
+        b.dataset.name = c.name;
+        b.innerHTML = "<span></span><small></small>";
+        b.firstChild.textContent = label(c.name);
+        b.lastChild.textContent = ago(c.time);
+        frag.appendChild(b);
+      }
+    }
   }
+  list.innerHTML = "";
+  list.appendChild(frag);
+  if (!st.clips.length){ const d = document.createElement("div"); d.id = "empty";
+    d.textContent = "No clips yet. They show up here as soon as the streaming PC saves a replay."; list.appendChild(d); }
 }
 setInterval(renderList, 20000);       // keep "2 min ago" honest
 $("#list").addEventListener("click", e => {
@@ -184,6 +227,13 @@ $("#list").addEventListener("click", e => {
   st.strokes = []; st.drawing = null; redraw();
   send({ type: "load", name: b.dataset.name });
 });
+
+$("#nextMatch").onclick = () => send({ type: "next-match" });
+$("#nextRound").onclick = () => send({ type: "next-round" });
+$("#newShow").onclick = () => {
+  if (!confirm("Start a new show at match 1, round 1?\n\nEvery clip from before now leaves the list, and new clips are filed under match 1.")) return;
+  send({ type: "new-show" });
+};
 
 // ---------- transport (the player is the clock; this page only asks) ----------
 function fmt(t){ if (!isFinite(t)) t = 0; const m = Math.floor(t/60), s = (t%60).toFixed(1).padStart(4, "0"); return `${m}:${s}`; }
@@ -195,7 +245,7 @@ function showStatus(){
   $("#time").textContent = `${fmt(s.t)} / ${fmt(s.dur)}`;
   document.querySelectorAll("[data-rate]").forEach(b => b.classList.toggle("on", +b.dataset.rate === s.rate));
   const cur = document.querySelector(".clip.on");
-  if ((cur && cur.dataset.name) !== s.name) renderList();
+  if ((cur && cur.dataset.name) !== s.name || $("#mNo").textContent != s.match || $("#rNo").textContent != s.round) renderList();
   nothing(s.name ? "" : "Pick a clip on the left");
 }
 const T = () => (st.status && st.status.t) || 0;
