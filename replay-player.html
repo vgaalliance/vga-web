@@ -103,6 +103,7 @@ const st = {
   clips: [], current: null, blob: null,
   strokes: [], live: new Map(),
   rate: 1, vol: 0.10, muted: false,
+  loop: { on: true, a: 0, b: null },   // replays loop by default; a..b is a marked part, b null = to the end
   match: 1, round: 1,        // what the show is on; a clip is filed under it when OBS saves it
   tags: {},                  // file name -> [match, round]
   since: 0,                  // "start of a new show": clips saved before this are not listed
@@ -213,7 +214,7 @@ function publishClips(){
 }
 
 // ---------- playing a clip ----------
-async function loadClip(name){
+async function loadClip(name, opts = {}){
   let url;
   if (st.tests.has(name)){
     // a test clip from a URL is pulled down whole, so it behaves like a file
@@ -227,8 +228,12 @@ async function loadClip(name){
   if (st.blob) URL.revokeObjectURL(st.blob);
   st.blob = url.startsWith("blob:") ? url : null;
   st.current = name; st.strokes = []; st.live.clear(); dirty();
+  st.loop.a = 0; st.loop.b = null; applyLoop();
+  if (opts.rate) st.rate = +opts.rate;
   video.src = url; video.load(); video.playbackRate = st.rate;
   applySound();
+  // From the queue a clip starts by itself; from the list it waits for Play.
+  if (opts.autoplay) video.addEventListener("canplay", () => { if (st.current === name) play(); }, { once: true });
   send({ type: "strokes", list: [] });
 }
 function seekTo(t){
@@ -241,6 +246,18 @@ function play(){
 }
 function applySound(){ video.volume = Math.max(0, Math.min(1, st.vol)); video.muted = st.muted; }
 video.addEventListener("ratechange", () => { if (video.playbackRate !== st.rate) video.playbackRate = st.rate; });
+
+// ---------- loop ----------
+// The whole clip loops by the browser's own loop, which is seamless. A marked
+// part is watched on a short timer and sent back to its start.
+function applyLoop(){ video.loop = st.loop.on && !st.loop.b && !st.loop.a; }
+setInterval(() => {
+  const L = st.loop;
+  if (!L.on || video.paused || !video.src || video.loop) return;
+  const end = L.b ?? video.duration;
+  if (end && video.currentTime >= end - 0.02){ video.currentTime = L.a || 0; }
+}, 15);
+video.addEventListener("ended", () => { if (st.loop.on){ video.currentTime = st.loop.a || 0; play(); } });
 
 // ---------- the air: video + drawings, in this window ----------
 let isDirty = true;
@@ -281,7 +298,13 @@ setInterval(() => {
 // ---------- what the analyst says ----------
 function onCtl(m){
   switch (m.type){
-    case "load":  loadClip(m.name); break;
+    case "load":  loadClip(m.name, { autoplay: m.autoplay, rate: m.rate }); break;
+    case "loop":
+      st.loop = { on: !!m.on, a: Math.max(0, +m.a || 0), b: m.b == null ? null : +m.b };
+      if (st.loop.b != null && st.loop.b <= st.loop.a + 0.1) st.loop.b = null;
+      applyLoop();
+      if (st.loop.on && (video.currentTime < st.loop.a || (st.loop.b && video.currentTime > st.loop.b))) seekTo(st.loop.a);
+      break;
     case "play":  play(); break;
     case "pause": video.pause(); break;
     case "seek":  seekTo(+m.t || 0); break;
@@ -319,7 +342,7 @@ function onCtl(m){
 function sendStatus(){
   send({ type: "status", name: st.current, t: video.currentTime, dur: video.duration || 0,
          paused: video.paused || video.ended, rate: st.rate, vol: st.vol, muted: st.muted,
-         ready: video.readyState >= 2, match: st.match, round: st.round });
+         ready: video.readyState >= 2, match: st.match, round: st.round, loop: st.loop });
 }
 setInterval(sendStatus, 250);
 
