@@ -13,8 +13,8 @@
   at once and are sent to the player as points, where they are drawn on air.
 
   Laid out like the Fan Cam deck: clips on the left, the picture in the middle
-  with the tools beside it, and Up next on the right -- queue clips during a
-  round, then press Next between rounds and each one plays at its own speed.
+  with the tools beside it, and the Queue on the right -- queue clips during a
+  round, then press Play next between rounds and each one plays at its own speed.
 
   The link carries the room: replay-analyst.html?room=<code>. The player shows
   it (step 3) and a new link there retires this one.
@@ -186,10 +186,11 @@
   </main>
 
   <aside id="queue" class="side">
-    <div class="sh">Up next <small id="qCount">empty</small></div>
-    <div class="qctl"><button id="qPrev">◀ Prev</button><button id="qNext" class="big go">▶ Next</button></div>
+    <div class="sh">Queue <small id="qCount">empty</small></div>
+    <div class="qctl"><button id="qPrev">◀ Prev</button><button id="qNext" class="big go">▶ Play next</button></div>
     <div id="qlist"></div>
-    <div class="qhint">Add clips with <b>+ Next</b>. A queued clip plays by itself at its own speed (tap the speed to change it). A clip picked on the left loads paused.</div>
+    <div class="qhint">Add clips with <b>+ Queue</b>. A queued clip plays by itself at its own speed (tap the speed to change it). A clip picked on the left loads paused.</div>
+    <div style="padding:0 10px 12px"><button id="qClear" style="width:100%;color:var(--live)">Clear queue</button></div>
   </aside>
 </div>
 
@@ -260,8 +261,8 @@ function renderList(){
         if (Date.now() - c.time < 90000) meta.insertAdjacentHTML("beforeend", '<em class="new">NEW</em>');
         meta.insertAdjacentHTML("beforeend", `<small>${ago(c.time)}</small>`);
         const isIn = queued.has(c.name);
-        addB.textContent = isIn ? "✓ queued" : "+ Next"; addB.classList.toggle("in", isIn);
-        addB.title = isIn ? "Already in Up next" : "Add to Up next";
+        addB.textContent = isIn ? "✓ queued" : "+ Queue"; addB.classList.toggle("in", isIn);
+        addB.title = isIn ? "Already in the queue" : "Add to the queue";
         frag.appendChild(row);
       }
     }
@@ -280,7 +281,7 @@ $("#list").addEventListener("click", e => {
   send({ type: "load", name: b.dataset.name });
 });
 
-// ---------- up next ----------
+// ---------- the queue ----------
 // Kept in this browser per room, so a reload mid-show keeps the running order.
 const QKEY = "vga-replay-q:" + room;
 try { Object.assign(st, JSON.parse(localStorage.getItem(QKEY)) || {}); } catch {}
@@ -309,6 +310,11 @@ function step(dir){
 }
 $("#qNext").onclick = () => step(1);
 $("#qPrev").onclick = () => step(-1);
+$("#qClear").onclick = () => {
+  if (!st.queue.length) return;
+  if (!confirm(`Clear all ${st.queue.length} clips from the queue? The clips stay in the list on the left.`)) return;
+  st.queue = []; st.qi = -1; saveQ(); renderQueue(); renderList();
+};
 function renderQueue(){
   const el = $("#qlist");
   $("#qCount").textContent = st.queue.length ? `${st.queue.length} queued` : "empty";
@@ -331,6 +337,7 @@ function renderQueue(){
   if (!st.queue.length) el.innerHTML = '<div class="qhint" style="padding:6px 2px">Nothing queued yet.</div>';
   $("#qNext").disabled = !st.queue.slice(st.qi + 1).some(q => clipOf(q.name));
   $("#qPrev").disabled = !st.queue.slice(0, Math.max(0, st.qi)).some(q => clipOf(q.name));
+  $("#qClear").disabled = !st.queue.length;
 }
 
 // ---------- match / round ----------
@@ -365,7 +372,7 @@ function showStatus(){
   } else band.style.display = "none";
   const cur = document.querySelector(".crow.on .pick");
   if ((cur && cur.dataset.name) !== s.name || $("#mNo").textContent != s.match || $("#rNo").textContent != s.round) renderList();
-  nothing(s.name ? "" : "Pick a clip on the left, or press ▶ Next");
+  nothing(s.name ? "" : "Pick a clip on the left, or press ▶ Play next");
 }
 const T = () => (st.status && st.status.t) || 0;
 $("#play").onclick  = () => send({ type: st.status && !st.status.paused ? "pause" : "play" });
