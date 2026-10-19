@@ -1033,7 +1033,7 @@
     </div>
 
     <div class="view" id="v-nextev">
-      <div class="eyebrow">VGA · UBA</div>
+      <div class="eyebrow" id="nextevBrand">VGA · UBA</div>
       <div class="title sm" id="nextevTitle">Next Event</div>
       <div class="cdate" id="nextevDate"></div>
       <div class="cbouts" id="nextevContent"></div>
@@ -1061,7 +1061,7 @@
 
     <!-- POSTER + CARD — a scene of its own, picked like any other. -->
     <div class="view" id="v-poster">
-      <div class="eyebrow">VGA · UBA</div>
+      <div class="eyebrow" data-lg="VGA · {L}">VGA · UBA</div>
       <div class="title sm" id="promoTitle">Fight Night</div>
       <div class="promo" id="promo">
         <div class="promo-cell" id="promoPosterCell">
@@ -1079,7 +1079,7 @@
          set look like at once. Two layouts, picked with ?wall=all / ?wall=3,
          so the two can be compared rather than argued about. -->
     <div class="view" id="v-cardwall">
-      <div class="eyebrow">VGA · UBA</div>
+      <div class="eyebrow" data-lg="VGA · {L}">VGA · UBA</div>
       <div class="title sm">The Cards</div>
       <div class="cw" id="cwContent"></div>
       <div class="cw-cap">EARNED · TRADED · FUSED</div>
@@ -1104,7 +1104,7 @@
     </div>
 
     <div class="view" id="v-card">
-      <div class="eyebrow">VGA · UBA · Fight Card</div>
+      <div class="eyebrow" id="cardBrand">VGA · UBA · Fight Card</div>
       <div class="title" id="cardTitle">The Card</div>
       <div class="cdate" id="cardDate"></div>
       <div class="cbouts" id="cardContent"></div>
@@ -1364,6 +1364,7 @@ async function showNextEv(exclude){
 
 function renderNextEv(ev, bouts){
   document.getElementById('nextevTitle').textContent=ev.name
+  document.getElementById('nextevBrand').textContent=`VGA · ${lgOfName(ev.name)}`
   document.getElementById('nextevDate').textContent=fdate(ev.event_date).toUpperCase()
   const open=(bouts||[]).filter(b=>b.fighter_a_name&&b.fighter_b_name)
   document.getElementById('nextevContent').innerHTML = open.length ? open.map(b=>
@@ -1942,12 +1943,25 @@ function syncPromo(){
   } else promoFilmEl.pause()
 }
 
+let ctaCount=0
 function renderCta(count){
+  ctaCount=count
   const floor=Math.max(0, Math.floor(count/50)*50)
+  const gfl=document.documentElement.dataset.series==='gfl'
   document.getElementById('ctaStats').innerHTML=
     `<div class="ctastat"><div class="num">${floor}+</div><div class="lbl">Registered Fighters</div></div>
      <div class="ctastat"><div class="num">4</div><div class="lbl">Divisions</div></div>
-     <div class="ctastat"><div class="num">1</div><div class="lbl">Team League</div></div>`
+     ${gfl ? '<div class="ctastat"><div class="num">2</div><div class="lbl">GFL Nights a Week</div></div>'
+           : '<div class="ctastat"><div class="num">1</div><div class="lbl">Team League</div></div>'}`
+}
+// Which league an event belongs to, read off its name (the deck's leagueOf rule):
+// a contender night is a GFL event with a tag, so it reads GFL too.
+const lgOfName=n=> /^(GFL|MCS|CCS|HPCS)\b/i.test(n||'') ? 'GFL' : 'UBA'
+// The words that follow the NIGHT (poster, card wall, CTA): set with the colours.
+function lgWords(){
+  const L=document.documentElement.dataset.series==='gfl' ? 'GFL' : 'UBA'
+  document.querySelectorAll('[data-lg]').forEach(el=>{ el.textContent=el.dataset.lg.replace('{L}', L) })
+  renderCta(ctaCount)
 }
 
 // card reveal for a SPECIFIC event (by name) or the soonest upcoming one
@@ -2033,6 +2047,7 @@ function renderCard(ev, bouts, filter, scored){
   bouts=bouts.map(b=>{ const t=b.match_id && w[b.match_id]
     return t ? { ...b, winner_corner:t.w, method:t.w ? t.m : null } : b })
   document.getElementById('cardTitle').textContent=ev.name
+  document.getElementById('cardBrand').textContent=`VGA · ${lgOfName(ev.name)} · Fight Card`
   // no date -> blank, not "WED DEC 31". The runner pushes rows without one and
   // fdate(null) happily formats the epoch.
   document.getElementById('cardDate').textContent =
@@ -2867,7 +2882,9 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
   // A Contender Series card on the deck dresses this screen in Ice; any other
   // card puts it back. Read off the league stamp every command carries.
   // A plain GFL card (league gfl, no series) dresses it in Ember, the GFL clock's fire.
-  if(c.league) document.documentElement.dataset.series = c.series ? 'cs' : c.league==='gfl' ? 'gfl' : ''
+  if(c.league){ const was=document.documentElement.dataset.series
+    document.documentElement.dataset.series = c.series ? 'cs' : c.league==='gfl' ? 'gfl' : ''
+    if(document.documentElement.dataset.series!==was) lgWords() }
   // A scored fight. Never a reason to change what this screen shows.
   if(c.type==='cardwin' || c.type==='cardwins'){ winTaken(c); return }
   // ARM on the deck: Up Next follows it. Also never a reason to change the view.

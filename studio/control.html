@@ -458,7 +458,7 @@
     <div class="row" style="margin-bottom:10px">
       <button onclick="fireCoin()">🪙 Coin toss</button>
       <button class="only-ubae" onclick="mnCountdown()">Update teams</button>
-      <button onclick="loadStandings()">Final result / standings</button>
+      <button class="only-ubae" onclick="loadStandings()">Final result / standings</button>
     </div>
     <h5>Standby views — one scene, toggle any</h5>
     <div class="row">
@@ -2599,7 +2599,7 @@ window.ubaPush=()=>{
   }})
 }
 
-window.segCard=label=>send({type:'segcard', label, sub:UBA.name||'UBA Fight Night'})
+window.segCard=label=>send({type:'segcard', label, sub:UBA.name||(EV==='gfl'?'GFL Fight Night':'UBA Fight Night')})
 
 /* Preset trunk colours — the shorts fighters actually wear. One click sets
    the side AND fires the reveal, so mid-show you never open a colour picker.
