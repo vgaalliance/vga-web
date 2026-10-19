@@ -20,6 +20,14 @@
     --panel:rgba(8,30,46,.84); --line:rgba(79,195,240,.30); --dim:rgba(170,220,245,.60);
     --pur-rgb:47,168,220; --hi-rgb:143,219,250; --pink-rgb:79,195,240; --deep-rgb:10,52,78; --deep2-rgb:14,70,104;
     --pur2:#6FD2F7; --pur3:#2FA8DC; --pur4:#1C6E94; }
+  /* EMBER — a GFL night. The deck stamps league 'gfl' on every command; with no
+     contender series on it, that sets data-series="gfl". The same fire as the GFL
+     fight clock (fight-clock.html body.gfl: key 255,106,31 · deep 255,60,0 · lit
+     #ffb066), so the standby and the clock read as one show. Colour only. */
+  :root[data-series="gfl"]{ --pur:#ff5a1a; --hi:#ffb066; --pink:#ff3c00; --bg:#100402;
+    --panel:rgba(54,13,4,.84); --line:rgba(255,106,31,.30); --dim:rgba(255,205,175,.60);
+    --pur-rgb:255,106,31; --hi-rgb:255,176,102; --pink-rgb:255,60,0; --deep-rgb:78,14,2; --deep2-rgb:110,22,4;
+    --pur2:#ff8a4a; --pur3:#ff5a1a; --pur4:#b8360a; }
   html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;
     font-family:'Barlow Condensed',sans-serif;color:#fff;}
 
@@ -2858,7 +2866,8 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
   if(document.body.classList.contains('kiosk')) return
   // A Contender Series card on the deck dresses this screen in Ice; any other
   // card puts it back. Read off the league stamp every command carries.
-  if(c.league) document.documentElement.dataset.series = c.series ? 'cs' : ''
+  // A plain GFL card (league gfl, no series) dresses it in Ember, the GFL clock's fire.
+  if(c.league) document.documentElement.dataset.series = c.series ? 'cs' : c.league==='gfl' ? 'gfl' : ''
   // A scored fight. Never a reason to change what this screen shows.
   if(c.type==='cardwin' || c.type==='cardwins'){ winTaken(c); return }
   // ARM on the deck: Up Next follows it. Also never a reason to change the view.
