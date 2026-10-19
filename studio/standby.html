@@ -28,6 +28,14 @@
     --panel:rgba(54,13,4,.84); --line:rgba(255,106,31,.30); --dim:rgba(255,205,175,.60);
     --pur-rgb:255,106,31; --hi-rgb:255,176,102; --pink-rgb:255,60,0; --deep-rgb:78,14,2; --deep2-rgb:110,22,4;
     --pur2:#ff8a4a; --pur3:#ff5a1a; --pur4:#b8360a; }
+  /* UBA STAYS PURPLE. A screen about UBA (its rankings, champions, P4P, fighter
+     of the month, next 3, or a card / next event that is a UBA show) keeps the
+     UBA colours on a GFL or contender night: the night's skin is for the
+     night's league, not for every board shown during it. */
+  :root[data-series] .uba-skin{ --pur:#9b30ff; --hi:#cc66ff; --pink:#ff33cc;
+    --panel:rgba(14,0,30,.82); --line:rgba(155,48,255,.28); --dim:rgba(200,160,255,.55);
+    --pur-rgb:155,48,255; --hi-rgb:204,102,255; --pink-rgb:255,51,204; --deep-rgb:60,0,110; --deep2-rgb:90,0,160;
+    --pur2:#b565ff; --pur3:#8a2be2; --pur4:#7a1fb0; }
   html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;
     font-family:'Barlow Condensed',sans-serif;color:#fff;}
 
@@ -1014,7 +1022,7 @@
       <div id="vsrContent"></div>
     </div>
 
-    <div class="view" id="v-ubarank">
+    <div class="view uba-skin" id="v-ubarank">
       <div class="eyebrow">VGA · UBA</div>
       <div class="title">Division Rankings</div>
       <div class="rgrid" id="ubarankContent"></div>
@@ -1033,19 +1041,19 @@
       <div id="schedPlayoff"></div>
     </div>
 
-    <div class="view" id="v-champs">
+    <div class="view uba-skin" id="v-champs">
       <div class="eyebrow">VGA · UBA</div>
       <div class="title">Champions</div>
       <div class="beltlist" id="champContent"></div>
     </div>
 
-    <div class="view" id="v-p4p">
+    <div class="view uba-skin" id="v-p4p">
       <div class="eyebrow">VGA · UBA</div>
       <div class="title sm">Pound For Pound</div>
       <div class="p4pgrid" id="p4pContent"></div>
     </div>
 
-    <div class="view" id="v-fotm">
+    <div class="view uba-skin" id="v-fotm">
       <div class="eyebrow">VGA · UBA</div>
       <div class="title sm">Fighter Of The Month</div>
       <div class="fotm" id="fotmContent"></div>
@@ -1110,7 +1118,7 @@
       <div class="setgrid" id="cardsContent"></div>
     </div>
 
-    <div class="view" id="v-next3">
+    <div class="view uba-skin" id="v-next3">
       <div class="eyebrow">VGA · UBA</div>
       <div class="title sm">Next 3 Events</div>
       <div class="list" id="nextContent"></div>
@@ -1385,6 +1393,7 @@ async function showNextEv(exclude){
 function renderNextEv(ev, bouts){
   document.getElementById('nextevTitle').textContent=ev.name
   document.getElementById('nextevBrand').textContent=`VGA · ${lgOfName(ev.name)}`
+  document.getElementById('v-nextev').classList.toggle('uba-skin', lgOfName(ev.name)==='UBA')
   document.getElementById('nextevDate').textContent=fdate(ev.event_date).toUpperCase()
   const open=(bouts||[]).filter(b=>b.fighter_a_name&&b.fighter_b_name)
   document.getElementById('nextevContent').innerHTML = open.length ? open.map(b=>
@@ -2116,6 +2125,7 @@ function renderCard(ev, bouts, filter, scored){
     return t ? { ...b, winner_corner:t.w, method:t.w ? t.m : null } : b })
   document.getElementById('cardTitle').textContent=ev.name
   document.getElementById('cardBrand').textContent=`VGA · ${lgOfName(ev.name)} · Fight Card`
+  document.getElementById('v-card').classList.toggle('uba-skin', lgOfName(ev.name)==='UBA')
   // no date -> blank, not "WED DEC 31". The runner pushes rows without one and
   // fdate(null) happily formats the epoch.
   document.getElementById('cardDate').textContent =
