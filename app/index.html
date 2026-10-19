@@ -1871,20 +1871,24 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   line-height:1.05;margin-top:6px}
 .ofr .s{font-family:'Space Mono',monospace;font-size:8px;color:#8B83AC;margin-top:5px}
 
-/* wallet */
-.bigbal{margin:2px 16px 4px;padding:18px 16px;border-radius:15px;text-align:center;
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}
-.bigbal .k{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.16em;
-  text-transform:uppercase;color:#8B83AC}
-.bigbal .v{font-family:'Bebas Neue',sans-serif;font-size:52px;line-height:1;letter-spacing:.02em;
-  color:#F5C842;margin-top:6px}
-.bigbal .v em{font-style:normal;font-family:'Space Mono',monospace;font-size:12px;
-  letter-spacing:.1em;color:#B39B4E;margin-left:6px}
-.bigbal .io{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:10px;
-  font-family:'Space Mono',monospace;font-size:10px;font-variant-numeric:tabular-nums}
-.bigbal .io .up{color:#6EE7B7}
-.bigbal .io .dn{color:#F19C96}
-.bigbal .io .lbl{font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;color:#7E7699}
+/* wallet: the headline balance, then one band per Eastern day */
+.wlh{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:6px 18px 4px}
+.wlv{font-family:'Bebas Neue',sans-serif;font-size:46px;line-height:.9;color:#F4F1FF;font-variant-numeric:tabular-nums;white-space:nowrap}
+.wlv em{font-style:normal;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.12em;margin-left:6px;color:#A79DCB}
+.wlio{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-family:'Space Mono',monospace;font-size:10.5px;font-weight:700;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.wlio .up,.wlday .up{color:#6EE7B7}.wlio .dn,.wlday .dn{color:#F19C96}.wlio .mut{color:#7E7699;font-weight:400;font-size:10px}
+.wlday{padding-bottom:4px}
+.wlday.odd{background:rgba(185,162,255,.07)}
+.wldh{display:flex;justify-content:space-between;align-items:baseline;padding:10px 18px 5px;border-bottom:1px solid rgba(255,255,255,.08)}
+.wldh b{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#C9C1E6}
+.wldh span{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;font-variant-numeric:tabular-nums}
+.wlr{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:8px 18px}
+.wlr .w{font-size:14px;min-width:0}
+.wlr .w em{font-style:normal;color:#9C93BC;font-size:12.5px}
+.wlr .a{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.wlr .a i{display:block;font-style:normal;font-weight:400;font-size:10px;color:#7E7699;margin-top:1px}
+.wlrule{margin:16px 18px 0;font-size:13px;line-height:1.45;color:#EFEAFF;opacity:.7}
 
 /* contract */
 /* the sign / turn-down row sits inside the same 16px the deal card does */
@@ -10434,15 +10438,24 @@ async function rpc0(fn){
   }catch(e){ return null; }
 }
 
-/* ── WALLET ── the balance, and every move behind it. */
+/* ── WALLET ── the balance, and every move behind it.
+   Designed with Castle 2026-10-19 (the Wallet page: option A, day bands). The
+   balance is the same headline as Your money on the You tab. Below it, one
+   band per Eastern day, every other band shaded, and back-to-back moves of the
+   same kind AND the same amount folded into one line with a count — thirteen
+   7,000 VC shop buys are one line, but a 40,000 belt beside three 29,000
+   cases stays two, because folding different prices would hide what you paid.
+   Each line keeps what was left after it (balance_after, already in the row). */
 /* The ledger is the screen people open when money is missing, so it must not
-   answer in the database's own words. Anything not on this list falls back to
-   its own text with the underscores taken out. */
+   answer in the database's own words. Some reasons run both ways, so the word
+   depends on the sign: admin_adjust (173 rows, which used to print "Admin
+   adjust") and signature (paid for one, or paid by one). Anything not here
+   falls back to its own text with the underscores taken out. */
 var VC_REASON = {
   shop_purchase:'Bought in the shop', purchase:'Purchase', refund:'Refunded',
-  reward:'Reward', payout:'Payout', fight_payout:'Fight purse',
-  bet_placed:'Bet placed', bet:'Bet placed', bet_payout:'Bet won',
-  staff_job:'Staff job', staff_pay:'Staff pay', signature:'Autograph',
+  reward:['Reward','Rewards'], payout:'Payout', fight_payout:['Fight purse','Fight purses'],
+  bet_placed:['Bet placed','Bets placed'], bet:['Bet placed','Bets placed'], bet_payout:['Bet won','Bets won'],
+  staff_job:['Paid for a staff job','Paid for staff jobs'], staff_pay:'Staff pay',
   trade:'Trade', trade_tax:'Trade tax', trade_escrow:'Held for a trade',
   trade_refund:'Trade called off', transfer:'Transfer',
   transfer_in:'Sent to you', transfer_out:'Sent by you',
@@ -10452,10 +10465,24 @@ var VC_REASON = {
   gym_payout:'Gym payout', gym_refund:'Gym refund', gym_tax:'Gym tax',
   gym_session_fee:'Training session', manual:'Adjusted by staff'
 };
-function vcReason(r){
+function vcReason(r, amount, n){
+  var many = n > 1;
+  if(r === 'admin_adjust' || r === 'manual') return amount < 0 ? 'Taken by staff' : 'Added by staff';
+  if(r === 'signature') return amount < 0 ? (many ? 'Asked for autographs' : 'Asked for an autograph')
+                                          : (many ? 'Signed cards' : 'Signed a card');
   if(!r) return 'Adjustment';
-  return VC_REASON[r] || String(r).replace(/_/g, ' ').replace(/^./, function(c){ return c.toUpperCase(); });
+  var w = VC_REASON[r];
+  if(Array.isArray(w)) return many ? w[1] : w[0];
+  return w || String(r).replace(/_/g, ' ').replace(/^./, function(c){ return c.toUpperCase(); });
 }
+/* "Wed 15 Oct", always in Eastern time: a move at 8pm ET is that day's. */
+function walDay(iso){
+  var p = {};
+  new Intl.DateTimeFormat('en-US', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'America/New_York' })
+    .formatToParts(new Date(iso)).forEach(function(x){ p[x.type] = x.value; });
+  return p.weekday + ' ' + p.day + ' ' + p.month;
+}
+function walAmt(a){ return (a > 0 ? '+' : '−') + Math.abs(a).toLocaleString(); }
 
 async function renderWallet(){
   var body = document.getElementById('sheet-body');
@@ -10475,22 +10502,44 @@ async function renderWallet(){
   var bal = got[0].length ? Number(got[0][0].vc_balance||0) : 0;
   var tx = got[1];
   var inn = 0, out = 0;
-  tx.forEach(function(t){ if(Number(t.amount) >= 0) inn += Number(t.amount); else out += Number(t.amount); });
-  el.innerHTML = '<div class="bigbal"><div class="k">Balance</div>'
-    + '<div class="v">'+bal.toLocaleString()+'<em>VC</em></div>'
-    + '<div class="io"><span class="up">+'+inn.toLocaleString()+'</span>'
-    + '<span class="dn">'+out.toLocaleString()+'</span>'
-    + '<span class="lbl">last '+tx.length+'</span></div></div>'
-    + '<div class="lab"><b>Every move</b><i></i></div>'
-    + (tx.length ? tx.map(function(t){
-        var up = Number(t.amount) >= 0;
-        return '<div class="tx"><span class="amt '+(up?'up':'dn')+'">'
-          + (up?'+':'') + Number(t.amount).toLocaleString() + '</span>'
-          + '<span class="why">'+esc(vcReason(t.reason))+'</span>'
-          + '<span class="when">'+esc(dstr(t.created_at))+'</span></div>';
+  tx.forEach(function(t){ var a = Number(t.amount || 0); if(a >= 0) inn += a; else out += a; });
+
+  var html = '<div class="wlh"><div class="wlv">' + bal.toLocaleString() + '<em>VC</em></div>'
+    + (tx.length ? '<div class="wlio"><span class="up">+' + inn.toLocaleString() + ' in</span><span class="dn">'
+      + walAmt(out) + ' out</span><span class="mut">last ' + tx.length + (tx.length === 1 ? ' move' : ' moves') + '</span></div>' : '')
+    + '</div>';
+
+  if(!tx.length){
+    el.innerHTML = html + '<div class="empty">No VC movement yet.</div>' + walRule();
+    return;
+  }
+  /* newest first, as the view returns them: group by day, then fold */
+  var days = [];
+  tx.forEach(function(t){
+    var d = walDay(t.created_at), a = Number(t.amount || 0), last = days[days.length - 1];
+    if(!last || last.d !== d){ last = { d: d, net: 0, rows: [] }; days.push(last); }
+    last.net += a;
+    var r = last.rows[last.rows.length - 1];
+    if(r && r.reason === t.reason && r.each === a){ r.n++; r.sum += a; }
+    else last.rows.push({ reason: t.reason, each: a, sum: a, n: 1, after: t.balance_after });
+  });
+  html += '<div class="lab"><b>Every move</b><i></i></div>'
+    + days.map(function(day, i){
+        return '<div class="wlday' + (i % 2 ? ' odd' : '') + '"><div class="wldh"><b>' + esc(day.d) + '</b>'
+          + '<span class="' + (day.net >= 0 ? 'up' : 'dn') + '">' + walAmt(day.net) + '</span></div>'
+          + day.rows.map(function(r){
+              return '<div class="wlr"><span class="w">' + esc(vcReason(r.reason, r.sum, r.n))
+                + (r.n > 1 ? ' <em>× ' + r.n + '</em>' : '') + '</span>'
+                + '<span class="a ' + (r.sum >= 0 ? 'up' : 'dn') + '">' + walAmt(r.sum)
+                + (r.after != null ? '<i>' + Number(r.after).toLocaleString() + ' left</i>' : '') + '</span></div>';
+            }).join('') + '</div>';
       }).join('')
-      : '<div class="empty">No VC movement yet.</div>')
-    + '<div class="foot">VC is league currency \u2014 it is never real money</div>';
+    + walRule();
+  el.innerHTML = html;
+}
+/* The one rule of the screen, at body size, under the thing it explains. */
+function walRule(){
+  return '<div class="wlrule">VC is league currency. It is never real money and can\'t be cashed out.</div>';
 }
 
 /* ── CONTRACT ── the terms, and the offer if one is on the table. */
