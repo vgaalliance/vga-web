@@ -179,7 +179,7 @@
       <div id="scrubWrap"><input id="scrub" type="range" min="0" max="1000" value="0" aria-label="scrub"><span id="loopBand"></span></div>
       <span id="time">0:00.0 / 0:00.0</span>
       <div class="gap"></div>
-      <button id="mute" title="mute or unmute the replay on air (M)">Sound 10%</button>
+      <button id="mute" class="off" title="mute or unmute the replay on air (M)">Muted</button>
       <input id="vol" type="range" min="0" max="100" value="10" aria-label="replay volume on air">
       <span id="conn">Not connected</span>
     </div>
@@ -201,7 +201,7 @@ const $ = s => document.querySelector(s);
 const room = new URLSearchParams(location.search).get("room");
 const video = $("#video"), ink = $("#ink"), ctx = ink.getContext("2d");
 const st = { tool: "pen", color: "#ffd23f", width: 5, strokes: [], drawing: null,
-             clips: [], status: null, vol: 0.10, muted: false,
+             clips: [], status: null, vol: 0.10, muted: true,
              queue: [], qi: -1 };          // qi = the queued clip on air now, -1 before the first
 
 // ---------- talking to the player ----------
@@ -407,9 +407,10 @@ $("#markB").onclick = () => { const l = L(); if (T() > (l.a || 0) + 0.1) sendLoo
 $("#loop").ondblclick = () => sendLoop(true, 0, null);   // double-click: back to the whole clip
 
 // ---------- sound on air ----------
-// Replays go out at 10% unless turned up: crowd noise over the commentators is the
-// one thing that can't be fixed afterwards. Remembered in this browser.
-const SOUND_KEY = "vga-replay-sound";
+// Muted by default: a replay clip carries the show's own commentary, so its
+// sound would put the old commentators under the live ones. Unmuted, it starts
+// at 10%. Remembered in this browser (a new key, so an old "on" is not kept).
+const SOUND_KEY = "vga-replay-sound-2";
 try { const v = JSON.parse(localStorage.getItem(SOUND_KEY)) || {}; if (v.vol != null) st.vol = v.vol; if (v.muted != null) st.muted = v.muted; } catch {}
 let lastVol = 0;
 function sendSound(){ send({ type: "vol", v: st.vol, muted: st.muted }); }
