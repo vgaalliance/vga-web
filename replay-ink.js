@@ -12,8 +12,8 @@
 //           is being dragged it is { raw:true } and drawn as
 //           the hand moved.
 //   circle  an ellipse in the box of two points
-//   spot    spotlight: [centre] or [centre, edge]; the frame (fades in)
-//           dims outside the ring
+//   spot    spotlight: [edge, edge] dragged across the fighter, (fades in)
+//           or [centre] for a tap; the frame dims outside the ring
 //
 // `p` is how far the stroke has drawn itself on, 0..1. A caller that does not
 // animate passes nothing and gets the finished stroke.
@@ -76,9 +76,10 @@
     const L = 18*k + s.width*k*2;
 
     if (s.tool === "spot"){
-      // Centre and, if dragged, an edge; a tap gets a ring about a fighter wide.
-      const [c] = P;
-      const r = P[1] ? Math.hypot(P[1][0] - c[0], P[1][1] - c[1]) : W*0.11;
+      // Dragged from one side of the fighter to the other, like the circle
+      // tool; a tap gets a ring about a fighter wide, centred on the tap.
+      const c = P[1] ? [(P[0][0] + P[1][0])/2, (P[0][1] + P[1][1])/2] : P[0];
+      const r = P[1] ? Math.max(W*0.02, Math.hypot(P[1][0] - P[0][0], P[1][1] - P[0][1])/2) : W*0.11;
       const e = ease(p);
       ctx.shadowBlur = 0;
       ctx.fillStyle = `rgba(0,0,0,${0.62*e})`;

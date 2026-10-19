@@ -53,6 +53,11 @@
   .wait{padding:4px 14px 10px 22px;color:var(--dim);font-size:13px;font-style:italic}
   .past{opacity:.4}
   .crow{display:flex;align-items:center;gap:6px;padding:2px 8px 2px 22px}
+  /* How fresh a clip is: just saved = a faint yellow wash, a few minutes = fainter, then plain. */
+  .crow.fresh{background:rgba(255,210,63,.15)}
+  .crow.warm{background:rgba(255,210,63,.06)}
+  .keys{padding:8px 14px 12px;border-top:1px solid var(--line);color:var(--dim);font-size:11.5px;line-height:1.7}
+  .keys kbd{font:600 11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:3px;padding:0 4px}
   .crow.on{background:#2c3340;box-shadow:inset 3px 0 0 var(--hot)}
   .crow.past:hover{opacity:.85}
   .crow .pick{flex:1;display:flex;justify-content:space-between;align-items:center;gap:8px;text-align:left;background:none;border:0;padding:6px 6px;min-height:34px}
@@ -135,16 +140,22 @@
       <button id="newShow">Reset to match 1 · start of a new show</button>
     </div>
     <div id="list"><div id="empty">No clips yet. They show up here as soon as the streaming PC saves a replay.</div></div>
+    <div class="keys">
+      <kbd>Space</kbd> play / pause · <kbd>←</kbd><kbd>→</kbd> frame (<kbd>Shift</kbd> 1s)<br>
+      <kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd> ¼ ½ 1× · <kbd>L</kbd> loop · <kbd>[</kbd><kbd>]</kbd> loop from / to<br>
+      <kbd>1</kbd>–<kbd>6</kbd> tools · <kbd>C</kbd> clear · <kbd>Z</kbd> undo (right after C: brings it back)<br>
+      <kbd>N</kbd> play next · <kbd>P</kbd> previous · <kbd>M</kbd> sound
+    </div>
   </aside>
 
   <main id="stage">
     <div id="rail">
-      <button data-tool="pen" class="on" title="Pen"><i>✎</i>Pen</button>
-      <button data-tool="arrow" title="Arrow: draws itself on"><i>➚</i>Arrow</button>
-      <button data-tool="curve" title="Punch path: drag the arc of a hook or uppercut"><i>⤻</i>Curve</button>
-      <button data-tool="circle" title="Circle"><i>◯</i>Circle</button>
-      <button data-tool="spot" title="Spotlight: tap a fighter, or drag out to size the ring"><i>◎</i>Spot</button>
-      <button data-tool="line" title="Straight line"><i>╱</i>Line</button>
+      <button data-tool="pen" class="on" title="Pen (1)"><i>✎</i>Pen</button>
+      <button data-tool="arrow" title="Arrow: draws itself on (2)"><i>➚</i>Arrow</button>
+      <button data-tool="curve" title="Punch path: drag the arc of a hook or uppercut (3)"><i>⤻</i>Curve</button>
+      <button data-tool="circle" title="Circle (4)"><i>◯</i>Circle</button>
+      <button data-tool="spot" title="Spotlight: drag across a fighter, or tap one (5)"><i>◎</i>Spot</button>
+      <button data-tool="line" title="Straight line (6)"><i>╱</i>Line</button>
       <hr>
       <button class="sw on" data-c="#ffd23f" style="background:#ffd23f" aria-label="yellow"></button>
       <button class="sw" data-c="#ffffff" style="background:#fff" aria-label="white"></button>
@@ -194,8 +205,8 @@
   </aside>
 </div>
 
-<script src="replay-ink.js"></script>
-<script src="replay-link.js"></script>
+<script src="replay-ink.js?v=3"></script>
+<script src="replay-link.js?v=3"></script>
 <script>
 const $ = s => document.querySelector(s);
 const room = new URLSearchParams(location.search).get("room");
@@ -251,7 +262,8 @@ function renderList(){
       add("round" + past, `Round ${r}`);
       for (const c of by[m][r].slice().sort((a, b) => b.time - a.time)){
         const row = document.createElement("div");
-        row.className = "crow" + past + (c.name === cur ? " on" : "");
+        const age = Date.now() - c.time;
+        row.className = "crow" + past + (c.name === cur ? " on" : "") + (age < 120000 ? " fresh" : age < 600000 ? " warm" : "");
         row.innerHTML = `<button class="pick"><b></b><span style="display:flex;gap:6px;align-items:center"></span></button><button class="add"></button>`;
         const pick = row.firstChild, addB = row.lastChild;
         pick.dataset.name = addB.dataset.name = c.name;
@@ -432,8 +444,7 @@ showSound();
 // ---------- drawing ----------
 // The pen draws here at once; the player gets the same stroke as points. Arrows,
 // punch paths and spotlights go on air when the pen lifts and draw themselves on,
-// here and there alike. Starting to draw pauses a playing clip: analysis happens
-// on a still frame.
+// here and there alike. Drawing works on a playing clip too; Space pauses it.
 $("#rail").addEventListener("click", e => {
   const t = e.target.closest("[data-tool]");
   if (t){ st.tool = t.dataset.tool; document.querySelectorAll("[data-tool]").forEach(x => x.classList.toggle("on", x === t)); return; }
@@ -442,8 +453,20 @@ $("#rail").addEventListener("click", e => {
   const w = e.target.closest("[data-w]");
   if (w){ st.width = +w.dataset.w; document.querySelectorAll("[data-w]").forEach(x => x.classList.toggle("on", x === w)); }
 });
-function undo(){ st.strokes.pop(); redraw(); send({ type: "undo" }); }
-function clearDrawings(tell){ st.strokes = []; st.drawing = null; redraw(); if (tell) send({ type: "clear" }); }
+// Undo straight after a Clear puts the whole drawing back: a C pressed by
+// mistake on air is one key away from fixed.
+let cleared = null;
+function undo(){
+  if (cleared && !st.strokes.length){
+    for (const s of cleared){ st.strokes.push(s); send({ type: "stroke", id: Math.random().toString(36).slice(2), ...s }); }
+    cleared = null; redraw(); return;
+  }
+  cleared = null; st.strokes.pop(); redraw(); send({ type: "undo" });
+}
+function clearDrawings(tell){
+  if (tell && st.strokes.length) cleared = st.strokes.slice(); else cleared = null;
+  st.strokes = []; st.drawing = null; redraw(); if (tell) send({ type: "clear" });
+}
 $("#undo").onclick = undo;
 $("#clear").onclick = () => clearDrawings(true);
 
@@ -473,7 +496,6 @@ function flushLive(){
 ink.onpointerdown = e => {
   if (!st.status || !st.status.name) return;
   ink.setPointerCapture(e.pointerId);
-  if (!st.status.paused) send({ type: "pause" });
   st.drawing = { id: Math.random().toString(36).slice(2), tool: st.tool, color: st.color, width: st.width, pts: [norm(e)],
                  raw: st.tool === "curve" || undefined };
   sentN = 0;
@@ -498,18 +520,35 @@ ink.onpointerup = ink.onpointercancel = () => {
   redraw();
 };
 
+// ---------- keys ----------
+// Every key works wherever the focus is: a slider that was just dragged keeps the
+// keyboard, and Space or an arrow would otherwise move the slider instead.
+const TOOL_KEYS = ["pen", "arrow", "curve", "circle", "spot", "line"];
+const RATE_KEYS = { q: 0.25, w: 0.5, e: 1 };
 document.addEventListener("keydown", e => {
-  if (e.target.tagName === "INPUT") return;
-  if (e.code === "Space"){ e.preventDefault(); $("#play").click(); }
-  if (e.code === "ArrowLeft")  send(e.shiftKey ? { type: "seek", t: T() - 1 } : { type: "step", d: -1/30 });
-  if (e.code === "ArrowRight") send(e.shiftKey ? { type: "seek", t: T() + 1 } : { type: "step", d:  1/30 });
-  if ((e.key === "z" || e.key === "Z") && !e.shiftKey){ e.preventDefault(); undo(); }
-  if (e.key === "m" || e.key === "M") toggleMute();
-  if (e.key === "l" || e.key === "L") $("#loop").click();
-  if (e.key === "[") $("#markA").click();
-  if (e.key === "]") $("#markB").click();
-  if (e.key === "n" || e.key === "N") step(1);
+  if (e.ctrlKey || e.metaKey || e.altKey) return;              // leave Ctrl+R and friends alone
+  const k = e.key.toLowerCase();
+  const ours = e.code === "Space" || e.code === "ArrowLeft" || e.code === "ArrowRight" ||
+               "123456qweclzmnp[]".includes(k) && k.length === 1;
+  if (!ours) return;
+  e.preventDefault();
+  if (e.target.tagName === "INPUT") e.target.blur();
+  if (e.code === "Space") return $("#play").click();
+  if (e.code === "ArrowLeft")  return send(e.shiftKey ? { type: "seek", t: T() - 1 } : { type: "step", d: -1/30 });
+  if (e.code === "ArrowRight") return send(e.shiftKey ? { type: "seek", t: T() + 1 } : { type: "step", d:  1/30 });
+  if (k >= "1" && k <= "6") return document.querySelector(`[data-tool="${TOOL_KEYS[+k - 1]}"]`).click();
+  if (k in RATE_KEYS) return document.querySelector(`[data-rate="${RATE_KEYS[k]}"]`).click();
+  if (k === "c") return clearDrawings(true);
+  if (k === "z") return undo();
+  if (k === "l") return $("#loop").click();
+  if (k === "[") return $("#markA").click();
+  if (k === "]") return $("#markB").click();
+  if (k === "m") return toggleMute();
+  if (k === "n") return step(1);
+  if (k === "p") return step(-1);
 });
+// A slider gives the keyboard back as soon as it is let go.
+document.querySelectorAll('input[type="range"]').forEach(r => r.addEventListener("change", () => r.blur()));
 
 // ---------- the connection ----------
 const aid = Math.random().toString(36).slice(2);
