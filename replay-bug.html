@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VGA replay analysis bug</title>
+<!--
+  The "this is a replay breakdown" label, an OBS browser source (1920x1080,
+  transparent) laid over the replay player's Window Capture in the replay scene.
+
+  ?s=1..5   which design (1 corner bug, 2 viewfinder frame, 3 lower third,
+            4 top tab, 5 corner slab)
+  ?name=    the analyst's name for designs that show one (3); leave it off and
+            the line reads "LIVE ANALYSIS"
+  ?bg=1     a dark test background, to check it in a normal browser
+
+  It animates in when the source loads, so tick "Refresh browser when scene
+  becomes active" in OBS and it plays in every time the replay scene is cut to.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,900;1,900&family=Share+Tech+Mono&display=swap">
+<style id="bug-css">
+  .rb{position:absolute;inset:0;width:1920px;height:1080px;pointer-events:none;overflow:hidden;
+      --p1:#8b5cf6; --p2:#6d28d9; --ink:#f4f1ff; --glass:rgba(15,11,26,.9); --teal:#3ee8d8; --red:#ff3b4e;
+      font-family:"Barlow Condensed","Arial Narrow",sans-serif;color:var(--ink)}
+  .rb *{box-sizing:border-box;margin:0;padding:0}
+  .rb .mono{font-family:"Share Tech Mono",Consolas,monospace}
+  .rb .dot{display:inline-block;width:14px;height:14px;border-radius:50%;background:var(--red);box-shadow:0 0 12px var(--red);animation:rbPulse 1.4s ease-in-out infinite}
+  @keyframes rbPulse{0%,100%{opacity:1}50%{opacity:.35}}
+  @keyframes rbInL{from{transform:translateX(-60px);opacity:0}to{transform:none;opacity:1}}
+  @keyframes rbInR{from{transform:translateX(60px);opacity:0}to{transform:none;opacity:1}}
+  @keyframes rbInDown{from{transform:translateY(-100%)}to{transform:none}}
+  @keyframes rbInUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+  @keyframes rbFade{from{opacity:0}to{opacity:1}}
+  @keyframes rbGrow{from{transform:scale(1.04);opacity:0}to{transform:none;opacity:1}}
+
+  /* 1 · corner bug: the classic network "REPLAY" box, top left */
+  .s1 .box{position:absolute;left:56px;top:52px;display:flex;align-items:stretch;animation:rbInL .5s cubic-bezier(.2,.8,.2,1) both}
+  .s1 .bar{width:10px;background:linear-gradient(180deg,var(--p1),var(--p2))}
+  .s1 .body{background:var(--glass);padding:14px 30px 16px 22px;border-top:2px solid rgba(139,92,246,.5);border-bottom:2px solid rgba(139,92,246,.5)}
+  .s1 .eye{font-size:20px;letter-spacing:6px;color:var(--teal);display:flex;align-items:center;gap:12px}
+  .s1 .big{font-weight:900;font-style:italic;font-size:64px;line-height:.95;letter-spacing:1px}
+  .s1 .sub{font-weight:700;font-size:26px;letter-spacing:4px;color:#c9bdf5;margin-top:4px}
+
+  /* 2 · viewfinder: the whole picture framed, so the change of mode is unmissable */
+  .s2 .frame{position:absolute;inset:26px;border:3px solid rgba(139,92,246,.55);border-radius:6px;animation:rbGrow .6s ease-out both}
+  .s2 .c{position:absolute;width:90px;height:90px;border:8px solid var(--p1)}
+  .s2 .tl{left:14px;top:14px;border-right:0;border-bottom:0}
+  .s2 .tr{right:14px;top:14px;border-left:0;border-bottom:0}
+  .s2 .bl{left:14px;bottom:14px;border-right:0;border-top:0}
+  .s2 .br{right:14px;bottom:14px;border-left:0;border-top:0}
+  .s2 .tag{position:absolute;left:50%;bottom:46px;transform:translateX(-50%);display:flex;align-items:center;gap:16px;
+           background:var(--glass);border:2px solid var(--p1);padding:10px 30px;border-radius:4px;animation:rbInUp .5s .2s ease-out both}
+  .s2 .tag b{font-weight:900;font-style:italic;font-size:44px;letter-spacing:3px}
+  .s2 .tag span{font-size:22px;letter-spacing:5px;color:var(--teal)}
+  .s2 .tc{position:absolute;right:60px;top:52px;font-size:28px;letter-spacing:4px;color:#d8ccff;display:flex;align-items:center;gap:12px;animation:rbFade .6s .3s both}
+
+  /* 3 · lower third: who is breaking it down, like a studio analyst */
+  .s3 .lt{position:absolute;left:0;bottom:80px;display:flex;align-items:stretch;animation:rbInL .55s cubic-bezier(.2,.8,.2,1) both}
+  .s3 .badge{background:linear-gradient(135deg,var(--p1),var(--p2));padding:0 34px 0 70px;display:flex;align-items:center;
+             clip-path:polygon(0 0,100% 0,calc(100% - 26px) 100%,0 100%)}
+  .s3 .badge b{font-weight:900;font-style:italic;font-size:54px;letter-spacing:2px}
+  .s3 .info{background:var(--glass);margin-left:-26px;padding:12px 48px 14px 52px;clip-path:polygon(26px 0,100% 0,calc(100% - 26px) 100%,0 100%)}
+  .s3 .info .t{font-weight:700;font-size:40px;letter-spacing:2px;line-height:1.05}
+  .s3 .info .n{font-size:22px;letter-spacing:5px;color:var(--teal);display:flex;align-items:center;gap:10px;margin-top:2px}
+
+  /* 4 · top tab: drops from the top edge, esports style */
+  .s4 .tab{position:absolute;left:50%;top:0;transform:translateX(-50%);animation:rbFade .3s both}
+  .s4 .in{display:flex;align-items:center;gap:22px;background:var(--glass);border:2px solid var(--p1);border-top:0;
+          border-radius:0 0 18px 18px;padding:12px 40px 16px;animation:rbInDown .5s cubic-bezier(.2,.8,.2,1) both}
+  .s4 .in b{font-weight:900;font-size:46px;letter-spacing:6px}
+  .s4 .chip{font-weight:700;font-size:24px;letter-spacing:3px;padding:4px 12px;border-radius:4px;background:var(--p1)}
+  .s4 .chip.t{background:transparent;border:2px solid var(--teal);color:var(--teal)}
+  .s4 .glow{position:absolute;left:0;right:0;top:0;height:5px;background:linear-gradient(90deg,transparent,var(--p1),var(--teal),var(--p1),transparent);animation:rbFade 1s both}
+
+  /* 5 · corner slab: a big angled block, top right, the boldest of the five */
+  .s5 .slab{position:absolute;right:0;top:60px;animation:rbInR .55s cubic-bezier(.2,.8,.2,1) both}
+  .s5 .top{background:linear-gradient(120deg,var(--p2),var(--p1));padding:12px 60px 10px 70px;clip-path:polygon(40px 0,100% 0,100% 100%,0 100%)}
+  .s5 .top b{display:block;font-weight:900;font-style:italic;font-size:72px;line-height:.9;letter-spacing:1px}
+  .s5 .bot{background:var(--glass);margin-left:40px;padding:10px 60px 12px 50px;display:flex;align-items:center;gap:12px;
+           font-weight:700;font-size:28px;letter-spacing:5px;clip-path:polygon(24px 0,100% 0,100% 100%,0 100%)}
+  .s5 .bot .mono{color:var(--teal);font-size:22px}
+  .s5 .edge{position:absolute;inset:0;box-shadow:inset 0 0 160px rgba(109,40,217,.45);animation:rbFade .8s both}
+</style>
+<style>
+  html,body{margin:0;width:1920px;height:1080px;background:transparent;overflow:hidden}
+  body.bg{background:#222 linear-gradient(135deg,#2a3446,#141821)}
+</style>
+</head>
+<body>
+<script id="bug-js">
+// Builds design n (1..5) into `host`. `name` is the analyst's name, or empty.
+window.replayBug = function(host, n, name){
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+  const who = name ? esc(name.toUpperCase()) : "LIVE ANALYSIS";
+  const html = {
+    1: `<div class="box"><div class="bar"></div><div class="body">
+          <div class="eye mono"><span class="dot"></span>INSTANT REPLAY</div>
+          <div class="big">BREAKDOWN</div>
+          <div class="sub">ADVANCED ANALYSIS</div></div></div>`,
+    2: `<div class="frame"></div><div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div>
+        <div class="tc mono"><span class="dot"></span>REPLAY | SLOW MOTION</div>
+        <div class="tag"><b>REPLAY BREAKDOWN</b><span class="mono">ADVANCED ANALYSIS</span></div>`,
+    3: `<div class="lt"><div class="badge"><b>REPLAY</b></div>
+          <div class="info"><div class="t">ADVANCED ANALYSIS</div><div class="n mono"><span class="dot"></span>${who}</div></div></div>`,
+    4: `<div class="glow"></div><div class="tab"><div class="in"><span class="dot"></span><b>TELESTRATOR</b>
+          <span class="chip">REPLAY</span><span class="chip t">ANALYSIS</span></div></div>`,
+    5: `<div class="edge"></div><div class="slab"><div class="top"><b>INSTANT<br>REPLAY</b></div>
+          <div class="bot"><span class="dot"></span>BREAKDOWN <span class="mono">ANALYST LIVE</span></div></div>`,
+  }[n] || "";
+  const el = document.createElement("div");
+  el.className = "rb s" + n; el.innerHTML = html;
+  host.appendChild(el);
+  return el;
+};
+</script>
+<script>
+const q = new URLSearchParams(location.search);
+if (q.has("bg")) document.body.classList.add("bg");
+replayBug(document.body, Math.min(5, Math.max(1, +q.get("s") || 1)), q.get("name") || "");
+</script>
+</body>
+</html>
