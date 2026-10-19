@@ -864,6 +864,37 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
 .fx-evar .fx-fl{-webkit-mask-image:none;mask-image:none}
 .fx-arena.fx-evar{background:radial-gradient(70% 70% at 15% 95%,rgba(80,62,160,.32),transparent 70%),#07060E}
 .fx-eh::after{content:'';position:absolute;inset:auto 0 0 0;height:40px;background:linear-gradient(180deg,transparent,#1A1533);pointer-events:none}
+/* ── EVERY EVENT (2026-10-19): a row per show, its main event's faces first ── */
+.fx-evr{display:grid;grid-template-columns:60px minmax(0,1fr) auto;gap:0 12px;align-items:center;min-height:62px;padding:10px 14px;cursor:pointer}
+.fx-evr.fx-z{background:rgba(255,255,255,.045)}
+.fx-evx{min-width:0}
+.fx-evx b{display:block;font:400 21px/1 'Bebas Neue',sans-serif;letter-spacing:.02em;color:#F2EFFA}
+.fx-evx s{margin-top:5px;text-decoration:none;font:500 13px/1.25 'Barlow',sans-serif;color:#A39CC6;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.fx-evx s strong{font-weight:700;color:#F2EFFA}
+.fx-evx s em{font-style:normal;color:#C9C2E6}
+.fx-evm{display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.fx-evm u{text-decoration:none;font:700 11.5px 'Barlow',sans-serif;color:#C9C2E6}
+.fx-evr.fx-soon .fx-evm u{color:#F5C842}
+.fx-evm u.fx-live{color:#FF8A80}
+.fx-lg{font:700 10.5px 'Barlow',sans-serif;letter-spacing:.1em;text-transform:uppercase;padding:3px 7px;border-radius:6px}
+.fx-lg.uba{color:#C9B8FF;background:rgba(179,155,255,.16)}
+.fx-lg.gfl{color:#F5D26B;background:rgba(245,200,66,.13)}
+.fx-lg.ice{color:#9EDCFF;background:rgba(143,216,255,.14)}
+.fx-evf{position:relative;width:60px;height:38px}
+.fx-evf .fx-f{position:absolute;top:0;left:0;box-shadow:0 0 0 2px #211B45}
+.fx-evf .fx-f + .fx-f{left:22px}
+.fx-evr.fx-z .fx-evf .fx-f{box-shadow:0 0 0 2px #2A2450}
+.fx-f.fx-lo img{filter:grayscale(1) brightness(.55)}
+.fx-f.fx-lo .sil{fill:#3A3368}
+.fx-evp{display:flex;gap:7px;padding:4px 12px 0;overflow-x:auto;scrollbar-width:none}
+.fx-evp::-webkit-scrollbar{display:none}
+.fx-evp button{flex:none;font:700 12px 'Barlow',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#C9C2E6;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:999px;padding:7px 12px;cursor:pointer}
+.fx-evp button i{font-style:normal;color:#9E98C2;margin-left:5px}
+.fx-evp button.on{background:#B39BFF;color:#14102A;border-color:#B39BFF}
+.fx-evp button.on i{color:#3B2F7A}
+.fx-hide{display:none!important}
 /* the liquid arch: banner stars across the sky, swelling and brightening where they cross the rim */
 .fx-sky,.fx-lens{position:absolute;inset:0;pointer-events:none}
 .fx-sky{z-index:0;filter:brightness(1.2)}
@@ -7725,11 +7756,20 @@ async function loadArticleResults(eventId, elId){
    for the other half: what has already happened, and what is announced but
    far out. A lookup, not a browse — which is why it is one tap off an event
    rather than a tab of its own. */
+/* EVERY EVENT (2026-10-19): the Event page's arena header, a starry banner per
+   month, and each show as a row led by its main event's two faces — the winner
+   in front, the loser greyed. Pills cut the list to one league (GFL is most of
+   the calendar). The main event is the card's first bout, segment first, then
+   bout_number; a cancelled bout is never shown, so nobody's no-show is either. */
+var EV_PICK = 'all';
+function evLeague(e){
+  if(/^(MCS|CCS|HPCS)\b/.test(e.name || '')) return ['Contender', 'ice'];
+  return e.type === 'ama' ? ['GFL', 'gfl'] : ['UBA', 'uba'];
+}
 async function renderEvents(){
   var body = document.getElementById('sheet-body');
-  body.innerHTML = '<div class="evhead">' + backButton()
-    + '<div style="height:34px"></div>'
-    + '<div class="kick">The calendar</div><h3>Every event</h3></div>'
+  body.innerHTML = '<div class="fx-eh">' + FX_EVARENA + backButton()
+    + '<div class="fx-et"><div class="fx-ek"><em>The calendar</em></div><h3>Every event</h3><div class="fx-ew" id="all-ev-n"></div></div></div>'
     + '<div id="all-ev"><div class="skel"></div><div class="skel" style="width:70%"></div></div>';
   var el = document.getElementById('all-ev');
   var rows = await q("events_public?select=id,name,type,status,event_date,stream_platform"
@@ -7739,31 +7779,82 @@ async function renderEvents(){
     retryHandlers['allev'] = renderEvents;
     el.innerHTML = failHTML("Couldn't load the calendar.", 'allev'); return;
   }
-  var now = Date.now();
-  var live = [], soon = [], past = [];
+  /* the main events; if either read fails the rows still draw, without faces */
+  var ms = rows.length ? await q("event_matches?select=event_id,bout_number,card_segment,status,method,"
+    + "fighter_a_name,fighter_a_slug,fighter_b_name,fighter_b_slug,winner_corner&event_id=in.("
+    + rows.map(function(e){ return e.id; }).join(',') + ")&limit=2000") : [];
+  if(!el.isConnected) return;
+  var order = ['main_card','featured','undercard','prelim','prelims','early_prelims'], by = {}, slugs = {};
+  (ms || []).forEach(function(m){ if(m.status !== 'cancelled') (by[m.event_id] = by[m.event_id] || []).push(m); });
   rows.forEach(function(e){
-    var t = new Date(e.event_date).getTime();
-    if(eventIsOver(e)) past.push(e);
-    else if(t <= now) live.push(e);
-    else soon.push(e);
+    var l = by[e.id] || [];
+    l.sort(function(a, b){ return (order.indexOf(a.card_segment || 'undercard') - order.indexOf(b.card_segment || 'undercard'))
+      || (a.bout_number - b.bout_number); });
+    e._main = l[0] || null;
+    if(e._main){ slugs[e._main.fighter_a_slug] = 1; slugs[e._main.fighter_b_slug] = 1; }
   });
-  soon.sort(function(a,b){ return new Date(a.event_date) - new Date(b.event_date); });
+  var sl = Object.keys(slugs).filter(function(x){ return x && x !== 'null'; });
+  var fc = sl.length ? await q("fighter_cards?select=slug,profile_photo_thumb_url,profile_photo_url&slug=in.("
+    + sl.map(function(x){ return '"' + encodeURIComponent(x) + '"'; }).join(',') + ")") : [];
+  if(!el.isConnected) return;
+  var ph = {}; (fc || []).forEach(function(f){ ph[f.slug] = f; });
 
-  function grp(title, list, cls){
-    if(!list.length) return '';
-    return '<div class="seg">'+esc(title)+'</div>' + list.map(function(e){
-      var when = new Date(e.event_date).toLocaleString('en-US',{ timeZone:'America/New_York',
-        weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
-      return '<div class="evrow '+cls+'" data-event="'+esc(e.id)+'">'
-        + '<div class="en">'+esc(e.name)+'</div>'
-        + '<div class="ew">'+esc(when)+' ET'+(e.stream_platform?' · '+esc(e.stream_platform):'')+'</div>'
-        + '<span class="est">'+(cls==='live'?'On now':cls==='past'?'Result':'Upcoming')+'</span>'
-        + '</div>';
-    }).join('');
+  var now = Date.now();
+  function et(e, o){ return new Date(e.event_date).toLocaleString('en-US', Object.assign({ timeZone: 'America/New_York' }, o)); }
+  function meth(m){ var x = String(m || '').toLowerCase();
+    return x === 'decision' ? 'Dec' : x === 'ko' || x === 'tko' ? x.toUpperCase() : fpCap(m || ''); }
+  function face(slug, lose){ var f = ph[slug], src = f && (f.profile_photo_thumb_url || f.profile_photo_url);
+    return '<span class="fx-f' + (lose ? ' fx-lo' : '') + '">' + (src ? '<img src="' + esc(src) + '" alt="" crossorigin="anonymous"'
+      + ' loading="lazy" decoding="async" onload="fxHead(this)" onerror="fxSil(this)">' : '') + SILHOUETTE + '</span>'; }
+  function row(e, i){
+    var L = evLeague(e), m = e._main, over = eventIsOver(e), live = !over && new Date(e.event_date).getTime() <= now;
+    var won = over && m && (m.winner_corner === 'a' || m.winner_corner === 'b');
+    var w = m && (m.winner_corner === 'b' ? 'b' : 'a'), l = w === 'a' ? 'b' : 'a';
+    var faces = m ? (won ? face(m['fighter_' + l + '_slug'], true) + face(m['fighter_' + w + '_slug'])
+                         : face(m.fighter_a_slug) + face(m.fighter_b_slug)) : face('') + face('');
+    var line = !m ? 'Card not out yet'
+      : won ? '<strong>' + esc(m['fighter_' + w + '_name']) + '</strong> def. ' + esc(m['fighter_' + l + '_name']) + ' · <em>' + esc(meth(m.method)) + '</em>'
+      : over && /draw/i.test(m.method || '') ? esc(m.fighter_a_name) + ' drew with ' + esc(m.fighter_b_name)
+      : esc(m.fighter_a_name) + ' vs ' + esc(m.fighter_b_name);
+    return '<div class="fx-evr' + (over ? '' : ' fx-soon') + (i % 2 ? ' fx-z' : '') + '" data-event="' + esc(e.id) + '" data-lg="' + L[1] + '">'
+      + '<span class="fx-evf">' + faces + '</span>'
+      + '<span class="fx-evx"><b>' + esc(e.name) + '</b><s>' + line + '</s></span>'
+      + '<span class="fx-evm"><span class="fx-lg ' + L[1] + '">' + L[0] + '</span>'
+      + (live ? '<u class="fx-live">On now</u>' : '<u>' + et(e, { month: 'short', day: 'numeric' }) + '</u>') + '</span></div>';
   }
-  el.innerHTML = grp('On now', live, 'live') + grp('Coming', soon, 'soon')
-    + grp('Been and gone', past, 'past')
-    + '<div class="foot">'+rows.length+' events</div>';
+  /* coming up first, soonest at the top; then month by month, newest first */
+  var soon = rows.filter(function(e){ return !eventIsOver(e); }).sort(function(a, b){ return new Date(a.event_date) - new Date(b.event_date); });
+  var G = [];
+  if(soon.length) G.push({ t: 'Coming up', sub: 'Next', list: soon });
+  rows.filter(eventIsOver).forEach(function(e){
+    var k = et(e, { month: 'long', year: 'numeric' }), g = G[G.length - 1];
+    if(!g || g.k !== k) G.push(g = { k: k, t: et(e, { month: 'long' }), sub: et(e, { year: 'numeric' }), list: [] });
+    g.list.push(e);
+  });
+  var cnt = { uba: 0, gfl: 0, ice: 0 }; rows.forEach(function(e){ cnt[evLeague(e)[1]]++; });
+  var n = document.getElementById('all-ev-n');
+  if(n) n.textContent = rows.length + ' events' + (soon.length ? ' · ' + soon.length + ' coming up' : '');
+  el.innerHTML = '<div class="fx-evp" role="group" aria-label="League">'
+    + [['all', 'All', rows.length], ['uba', 'UBA', cnt.uba], ['gfl', 'GFL', cnt.gfl], ['ice', 'Contender', cnt.ice]]
+      .filter(function(p){ return p[0] === 'all' || p[2]; })
+      .map(function(p){ return '<button type="button" data-evpick="' + p[0] + '" aria-pressed="false">' + p[1] + '<i>' + p[2] + '</i></button>'; }).join('')
+    + '</div>'
+    + G.map(function(g){ return '<div class="fx-wrap"><div class="fx-card">' + fpBanner(g.t, g.sub, g.list.length, g.list.length === 1 ? 'event' : 'events')
+      + g.list.map(row).join('') + '</div></div>'; }).join('');
+  function pick(lg){
+    if(lg !== 'all' && !el.querySelector('[data-evpick="' + lg + '"]')) lg = 'all';
+    EV_PICK = lg;
+    el.querySelectorAll('[data-evpick]').forEach(function(b){ var on = b.dataset.evpick === lg; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+    el.querySelectorAll('.fx-wrap').forEach(function(w){
+      var vis = 0;
+      w.querySelectorAll('.fx-evr').forEach(function(r){ var show = lg === 'all' || r.dataset.lg === lg;
+        r.classList.toggle('fx-hide', !show); if(show) r.classList.toggle('fx-z', vis++ % 2 === 1); });
+      w.classList.toggle('fx-hide', !vis);
+      var c = w.querySelector('.fx-ban .fx-n'); if(c){ c.querySelector('b').textContent = vis; c.querySelector('span').textContent = vis === 1 ? 'event' : 'events'; }
+    });
+  }
+  el.addEventListener('click', function(ev){ var b = ev.target.closest('[data-evpick]'); if(b) pick(b.dataset.evpick); });
+  pick(EV_PICK);
 }
 
 /* ── the fight card for one event ── */
