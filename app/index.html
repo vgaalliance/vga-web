@@ -1826,32 +1826,47 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
 .pkband.pkfx{--star:.6;--flow:24s}
 .pktk > .pkstars{--star:.27;--flow:40s}
 
-/* My bets: a Pick'em entry is one row with its picks under it */
-.mpk .legs{font-family:'Space Mono',monospace;font-size:7.5px;color:#8B83AC;margin-top:4px;line-height:1.5}
-.mpk .legs .w{color:#6EE7B7} .mpk .legs .l{color:#FF8A80;text-decoration:line-through} .mpk .legs .v{color:#6E6688}
-
-/* the sheet */
-.summ{display:flex;gap:8px;margin:16px 16px 4px}
-.summ div{flex:1;padding:11px 6px;border-radius:11px;text-align:center;
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}
-.summ b{display:block;font-family:'Bebas Neue',sans-serif;font-size:22px;line-height:1}
-.summ b.g{color:#6EE7B7}.summ b.r{color:#F19C96}
-.summ s{display:block;text-decoration:none;font-family:'Space Mono',monospace;font-size:6px;
-  letter-spacing:.12em;text-transform:uppercase;color:#8B83AC;margin-top:5px}
-.mbet{display:flex;align-items:center;gap:10px;margin:0 16px 7px;padding:10px 12px;
-  border-radius:11px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12)}
-.mbet .st2{width:5px;align-self:stretch;border-radius:3px;background:#A78BFA;flex-shrink:0}
-.mbet.lock .st2{background:#E8362B}
-.mbet.won .st2{background:#6EE7B7}
-.mbet.lost .st2{background:#F19C96}
-.mbet .t{font-size:14px;font-weight:600}
-.mbet .s{font-family:'Space Mono',monospace;font-size:7px;color:#7E7699;margin-top:3px}
-.mbet .amt{margin-left:auto;text-align:right;flex-shrink:0}
-.mbet .amt b{display:block;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:#F5C842}
-.mbet .amt s{display:block;text-decoration:none;font-family:'Space Mono',monospace;
-  font-size:6.5px;color:#7E7699;margin-top:2px}
-.mbet.won .amt b{color:#6EE7B7}
-.mbet.lost .amt b{color:#F19C96}
+/* MY BETS: the record in one line, tabs by status, a banner per show, its bets under it.
+   A flat ground behind every word; the rows sit one step lighter. */
+.mb-rec{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;margin:14px 16px 10px;font-family:'Space Mono',monospace;font-size:9px;
+  letter-spacing:.1em;text-transform:uppercase;color:#A9A2C8}
+.mb-rec b{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:21px;letter-spacing:.02em;color:#fff}
+.mb-rec b.g{color:#6EE7B7} .mb-rec b.r{color:#FF8A80}
+.mb-tabs{display:flex;gap:18px;margin:0 16px 12px;border-bottom:1px solid rgba(196,182,246,.2)}
+.mb-tabs button{appearance:none;background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:0 0 7px;cursor:pointer;
+  font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.04em;color:#8E86B3}
+.mb-tabs button.on{color:#fff;border-bottom-color:#B9A2FF}
+.mb-tabs button s{text-decoration:none;font-family:'Space Mono',monospace;font-size:9px;color:#B9A2FF;margin-left:4px;vertical-align:2px}
+.mb-tabs button:focus-visible{outline:2px solid #B9A2FF;outline-offset:2px}
+.mb-show{display:grid;gap:6px;margin:0 16px 14px}
+.mb-bn{position:relative;overflow:hidden;border-radius:12px;padding:10px 12px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px;
+  background:radial-gradient(1.2px 1.2px at 12% 30%,#fff,transparent 70%),radial-gradient(1px 1px at 33% 70%,#fff,transparent 70%),
+    radial-gradient(1.4px 1.4px at 58% 22%,#EDE6FF,transparent 70%),radial-gradient(1px 1px at 82% 64%,#fff,transparent 70%),
+    radial-gradient(1.1px 1.1px at 92% 18%,#fff,transparent 70%),linear-gradient(120deg,#2B2066,#1A1446);
+  box-shadow:inset 0 1px 0 rgba(185,162,255,.7)}
+.mb-bn.live{background:radial-gradient(1.2px 1.2px at 12% 30%,#fff,transparent 70%),radial-gradient(1px 1px at 58% 70%,#fff,transparent 70%),linear-gradient(120deg,#3A1A2E,#1A1230);
+  box-shadow:inset 0 1px 0 rgba(255,90,78,.7)}
+.mb-bn.done{background:linear-gradient(120deg,#221C44,#17132F);box-shadow:inset 0 1px 0 rgba(196,182,246,.25)}
+.mb-bn i{font-style:normal;font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#C9BCF2}
+.mb-bn.live i{color:#FF8A80}
+.mb-bn b{display:block;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:30px;line-height:.95;letter-spacing:.02em}
+.mb-bn .rt{text-align:right}
+.mb-bn .rt b{font-size:20px}
+.mb-bn .rt b.g{color:#6EE7B7} .mb-bn .rt b.r{color:#FF8A80}
+.mb-bn .rt span{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.06em;text-transform:uppercase;color:#C9BCF2}
+.mb-bn .rt span i{font-size:8px;letter-spacing:.06em;color:#6EE7B7}
+.mb-row{display:grid;grid-template-columns:4px minmax(0,1fr) auto;gap:10px;align-items:center;border-radius:10px;background:#1A1634;padding:8px 10px}
+.mb-row::before{content:'';width:4px;height:28px;border-radius:2px;background:#B9A2FF}
+.mb-row.live::before{background:#FF5A4E} .mb-row.won::before{background:#6EE7B7} .mb-row.lost::before{background:#FF6B60} .mb-row.void::before{background:#5E5880}
+.mb-row .mb-tx{min-width:0}
+.mb-row .mb-tx b{display:block;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:18px;letter-spacing:.03em;line-height:1.05;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mb-row .mb-tx b .w{color:#6EE7B7} .mb-row .mb-tx b .l{color:#FF8A80;text-decoration:line-through} .mb-row .mb-tx b .v{color:#6E6688}
+.mb-row .mb-tx small{display:block;font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.06em;text-transform:uppercase;color:#A9A2C8;margin-top:2px}
+.mb-row .mb-am{text-align:right}
+.mb-row .mb-am b{display:block;font-family:'Space Mono',monospace;font-size:12px;font-weight:700}
+.mb-row .mb-am small{display:block;font-family:'Space Mono',monospace;font-size:7.5px;color:#A9A2C8;margin-top:2px}
+.mb-row .mb-am.y b{color:#F5C842} .mb-row .mb-am.g b{color:#6EE7B7} .mb-row .mb-am.r b{color:#FF8A80} .mb-row .mb-am.m b{color:#A9A2C8}
 
 /* ── THINGS THAT WRITE ────────────────────────────────────────────────
    Every button here spends something or commits you to something, so they
@@ -5640,7 +5655,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v260';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v261';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -12369,6 +12384,12 @@ document.addEventListener('click', function(e){
 });
 
 /* ── the My bets sheet ── */
+/* ── MY BETS (2026-10-19): the show first ──
+   Tabs by status, the way every betting app splits it (Open · Live ·
+   Settled), and inside a tab one banner per show with the show's name big,
+   when it is, and what went in or came back; its bets under it, single bets
+   and Pick'em together. The record is one line at the top. */
+var mbTab = null;
 async function renderMyBets(){
   var body = document.getElementById('sheet-body');
   body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'
@@ -12388,89 +12409,102 @@ async function renderMyBets(){
       + 'Pools open when a card is published and lock at the first bell.</div>';
     return;
   }
-  /* the tallies live in betRecord() so this screen and the Betting tab can
-     never disagree; the only list this one needs of its own is the group. */
-  var done = rows.filter(function(b){ return b.state === 'settled'; });
-
-  function group(title, list, note){
-    if(!list.length) return '';
-    return '<div class="lab"><b>'+esc(title)+'</b><i></i>'
-      + (note ? '<s>'+esc(note)+'</s>' : '') + '</div>'
-      + list.map(function(b){
-          var cls = b.state === 'locked' ? ' lock'
-            : b.bet_status === 'won' ? ' won'
-            : b.bet_status === 'lost' ? ' lost' : '';
-          var right = b.bet_status === 'won'
-              ? '+' + Number(b.payout_amount||0).toLocaleString()
-            : b.bet_status === 'lost' ? '\u2212' + Number(b.amount||0).toLocaleString()
-            : b.bet_status === 'void' ? 'refund'
-            : Number(b.amount||0).toLocaleString();
-          var under = b.bet_status === 'won' ? 'from ' + Number(b.amount||0).toLocaleString()
-            : b.bet_status === 'lost' ? 'lost'
-            : b.bet_status === 'void' ? Number(b.amount||0).toLocaleString() + ' back'
-            : 'pays ' + Math.round(Number(b.amount||0) * Number(b.odds||1)).toLocaleString();
-          return '<div class="mbet'+cls+'"><span class="st2"></span>'
-            + '<div style="flex:1;min-width:0"><div class="t">'
-            + esc(b.pick_name || 'Your pick') + ' to win</div>'
-            + '<div class="s">'+esc(b.event_name)
-            + (b.bout_number ? ' \u00b7 bout '+b.bout_number : '')
-            + ' \u00b7 ' + esc(dstr(b.placed_at)) + '</div></div>'
-            + '<div class="amt"><b>'+right+'</b><s>'+under+'</s></div></div>';
-        }).join('');
-  }
-
-  /* The headline counts the picks still live: a cancelled fight drops out, so
-     an open entry of 3 with one called off pays as 2 and says so. A settled
-     entry keeps the multiplier it was paid at. */
-  function pkHead(e){
-    var live = e.live_picks != null ? Number(e.live_picks) : Number(e.picks || 0);
-    var dropped = Number(e.picks || 0) - live;
-    var mult = e.entry_status === 'placed' && e.pays_if_all_win != null && Number(e.amount) > 0
-      ? Math.round(Number(e.pays_if_all_win) / Number(e.amount)) : Number(e.multiplier || 0);
-    return live + ' picks \u00b7 ' + mult + '\u00d7' + (dropped > 0 ? ' \u00b7 ' + dropped + ' called off' : '');
-  }
-
-  /* Pick'em entries (D53): one row per entry, its picks underneath, each pick
-     coloured by how it went. An open entry shows what it pays if every pick
-     wins; the multiplier is the one stored on the entry, so it is exact. */
-  function pickemGroup(list){
-    if(!list.length) return '';
-    return '<div class="lab"><b>Pick\'em</b><i></i><s>' + list.length + (list.length === 1 ? ' entry' : ' entries') + '</s></div>'
-      + list.map(function(e){
-          var st = e.entry_status, amt = Number(e.amount || 0);
-          var cls = st === 'won' ? ' won' : st === 'lost' ? ' lost' : e.state === 'locked' ? ' lock' : '';
-          var right = st === 'won' ? '+' + Number(e.payout_amount || 0).toLocaleString()
-            : st === 'lost' ? '\u2212' + amt.toLocaleString()
-            : amt.toLocaleString();
-          var under = st === 'won' ? 'from ' + amt.toLocaleString()
-            : st === 'lost' ? 'lost'
-            : st === 'void' ? 'returned'
-            : 'pays ' + Number(e.pays_if_all_win != null ? e.pays_if_all_win : Math.floor(amt * Number(e.multiplier || 0))).toLocaleString();
-          var legs = (e.legs || []).map(function(l){
-            var c = l.status === 'won' ? 'w' : l.status === 'lost' ? 'l' : l.status === 'void' ? 'v' : '';
-            return '<span class="' + c + '">' + esc(l.pick_name || '?') + '</span>';
-          }).join(' \u00b7 ');
-          return '<div class="mbet mpk' + cls + '"><span class="st2"></span>'
-            + '<div style="flex:1;min-width:0"><div class="t">' + pkHead(e) + '</div>'
-            + '<div class="s">' + esc(e.event_name) + ' \u00b7 ' + esc(dstr(e.placed_at)) + '</div>'
-            + '<div class="legs">' + legs + '</div></div>'
-            + '<div class="amt"><b>' + right + '</b><s>' + under + '</s></div></div>';
-        }).join('');
-  }
-
-  /* the SAME numbers the Betting tab shows — one function, one denominator */
+  /* one list: a single bet and a Pick'em entry are both "a bet" here */
+  var items = rows.map(function(b){ return { kind: 'single', b: b, state: b.state, ev: b.event_id, evName: b.event_name, evDate: b.event_date }; })
+    .concat(pkRows.map(function(e){ return { kind: 'pick', e: e, state: e.state, ev: e.event_id, evName: e.event_name, evDate: e.event_date }; }));
+  var tabOf = { open: 'open', locked: 'live', settled: 'settled' };
+  var counts = { open: 0, live: 0, settled: 0 };
+  items.forEach(function(it){ counts[tabOf[it.state] || 'settled']++; });
+  if(!mbTab || !counts[mbTab]) mbTab = counts.open ? 'open' : counts.live ? 'live' : 'settled';
+  /* the SAME numbers the Betting tab shows: one function, one denominator */
   var rec = betRecord(rows.concat(pkAsBets(pkRows)));
-  el.innerHTML = '<div class="summ">'
-      + '<div><b>'+rec.settled+'</b><s>settled</s></div>'
-      + '<div><b class="'+(rec.hit != null && rec.hit >= 50 ? 'g' : '')+'">'
-        + (rec.hit == null ? '\u2014' : rec.hit + '%') + '</b><s>hit rate</s></div>'
-      + '<div><b class="'+(rec.net >= 0 ? 'g' : 'r')+'">'+(rec.net >= 0 ? '+' : '')
-        + rec.net.toLocaleString()+'</b><s>net VC</s></div></div>'
-    + pickemGroup(pkRows)
-    + group('Open', rows.filter(function(b){ return b.state === 'open'; }))
-    + group('Locked', rows.filter(function(b){ return b.state === 'locked'; }), 'settling at the bell')
-    + group('Settled', done.slice(0, 40), done.length + ' resolved')
-    + '<div class="foot">Pari-mutuel &middot; no rake &middot; a price is only final once it settles</div>';
+
+  function draw(){
+    var list = items.filter(function(it){ return (tabOf[it.state] || 'settled') === mbTab; });
+    var order = [], by = {};
+    list.forEach(function(it){ if(!by[it.ev]){ by[it.ev] = []; order.push(it.ev); } by[it.ev].push(it); });
+    /* coming shows soonest first; settled ones newest first */
+    order.sort(function(x, y){
+      var dx = new Date(by[x][0].evDate || 0).getTime(), dy = new Date(by[y][0].evDate || 0).getTime();
+      return mbTab === 'settled' ? dy - dx : dx - dy;
+    });
+    if(mbTab === 'settled') order = order.slice(0, 12);
+    var tabs = '<div class="mb-tabs" role="tablist">' + [['open', 'Open'], ['live', 'Live'], ['settled', 'Settled']].map(function(t){
+        return '<button type="button" role="tab" data-mbtab="' + t[0] + '" aria-selected="' + (mbTab === t[0]) + '"' + (mbTab === t[0] ? ' class="on"' : '') + '>'
+          + t[1] + (counts[t[0]] ? '<s>' + counts[t[0]] + '</s>' : '') + '</button>';
+      }).join('') + '</div>';
+    el.innerHTML = '<div class="mb-rec"><span><b>' + rec.won + '–' + rec.lost + '</b> all time</span>'
+        + (rec.hit != null ? '<span><b>' + rec.hit + '%</b> won</span>' : '')
+        + '<span><b class="' + (rec.net >= 0 ? 'g' : 'r') + '">' + (rec.net >= 0 ? '+' : '−') + Math.abs(rec.net).toLocaleString() + '</b> net</span></div>'
+      + tabs
+      + (order.length ? order.map(function(id){ return mbShowHTML(by[id], mbTab); }).join('')
+          : '<div class="empty">' + (mbTab === 'live' ? 'Nothing live right now. A bet moves here when its show starts.' : 'Nothing here yet.') + '</div>')
+      + '<div class="foot">Pari-mutuel &middot; no rake &middot; a price is only final once it settles</div>';
+    [].forEach.call(el.querySelectorAll('[data-mbtab]'), function(btn){
+      btn.onclick = function(){ mbTab = btn.getAttribute('data-mbtab'); draw(); };
+    });
+  }
+  draw();
+}
+
+/* One show: its banner, then its bets. */
+function mbShowHTML(group, tab){
+  var first = group[0], when = '', right = '';
+  if(first.evDate){
+    var d = new Date(first.evDate);
+    var day = bkEtDate(d.getTime()) === bkEtDate(Date.now()) ? 'Tonight' : dstr(first.evDate, { weekday:'short' });
+    var hr = d.toLocaleTimeString('en-US', { timeZone:'America/New_York', hour:'numeric', minute:'2-digit' }).replace(':00', '') + ' ET';
+    when = tab === 'settled' ? 'Settled · ' + dstr(first.evDate, { weekday:'short' }) : tab === 'live' ? 'Live now · started ' + hr : day + ' · ' + hr;
+  }
+  var lines = group.map(mbLine);
+  if(tab === 'settled'){
+    var net = lines.reduce(function(n, l){ return n + l.net; }, 0);
+    right = '<b class="num ' + (net > 0 ? 'g' : net < 0 ? 'r' : '') + '">' + (net > 0 ? '+' : net < 0 ? '−' : '') + Math.abs(net).toLocaleString() + '</b>'
+      + '<span>' + group.length + (group.length === 1 ? ' bet' : ' bets') + '</span>';
+  } else {
+    var inn = lines.reduce(function(n, l){ return n + l.stake; }, 0), up = lines.reduce(function(n, l){ return n + l.pays; }, 0);
+    right = '<b class="num">' + inn.toLocaleString() + '</b><span>in · pays up to <i class="g">' + up.toLocaleString() + '</i></span>';
+  }
+  return '<div class="mb-show"><div class="mb-bn' + (tab === 'settled' ? ' done' : tab === 'live' ? ' live' : '') + '">'
+    + '<div><i>' + esc(when) + '</i><b>' + esc(first.evName || 'Event') + '</b></div><div class="rt">' + right + '</div></div>'
+    + lines.map(function(l){ return l.html; }).join('') + '</div>';
+}
+
+/* One bet as a row: who, what kind, the price, what went in and what comes back. */
+function mbLine(it){
+  var bar, title, sub, big, small, cls, stake, pays = 0, net = 0;
+  if(it.kind === 'single'){
+    var b = it.b, amt = Number(b.amount || 0), st = b.bet_status;
+    var pool = (betPools || []).filter(function(x){ return x.match_id === b.match_id; })[0];
+    var price = it.state === 'open' && pool ? livePays(pool, b) : Number(b.odds || 1);
+    stake = amt;
+    title = esc(b.pick_name || 'Your pick') + ' to win';
+    sub = (b.bout_number ? 'bout ' + b.bout_number + ' · ' : '') + 'single';
+    if(st === 'won'){ net = Number(b.payout_amount || 0) - amt; big = '+' + net.toLocaleString(); small = amt.toLocaleString() + ' in · ' + Number(b.payout_amount || 0).toLocaleString() + ' back'; cls = 'g'; bar = 'won'; sub += ' · won at ' + pkX(Number(b.odds || 1)); }
+    else if(st === 'lost'){ net = -amt; big = '−' + amt.toLocaleString(); small = amt.toLocaleString() + ' in'; cls = 'r'; bar = 'lost'; sub += ' · lost'; }
+    else if(st === 'void'){ big = '0'; small = amt.toLocaleString() + ' back'; cls = 'm'; bar = 'void'; sub += ' · called off'; }
+    else { pays = Math.round(amt * price); big = amt.toLocaleString(); small = (it.state === 'open' ? 'pays about ' : 'pays ') + pays.toLocaleString(); cls = 'y'; bar = it.state === 'locked' ? 'live' : 'open'; sub += ' · ' + pkX(price); }
+  } else {
+    var e = it.e, amt2 = Number(e.amount || 0), es = e.entry_status;
+    var live = e.live_picks != null ? Number(e.live_picks) : Number(e.picks || 0);
+    var mult = es === 'placed' && e.pays_if_all_win != null && amt2 > 0 ? Number(e.pays_if_all_win) / amt2 : Number(e.multiplier || 0);
+    stake = amt2;
+    /* the picks by name, each coloured by how it went */
+    var names = (e.legs || []).map(function(l){
+      var c = l.status === 'won' ? 'w' : l.status === 'lost' ? 'l' : l.status === 'void' ? 'v' : '';
+      return '<span class="' + c + '">' + esc(l.pick_name || '?') + '</span>';
+    });
+    title = 'Pick\'em: ' + (names.length > 3 ? names.slice(0, 2).join(' + ') + ' + ' + (names.length - 2) + ' more' : names.join(' + '));
+    var dropped = Number(e.picks || 0) - live;
+    sub = live + ' picks · all must win · ' + pkX(mult) + (dropped > 0 ? ' · ' + dropped + ' called off' : '');
+    if(es === 'won'){ net = Number(e.payout_amount || 0) - amt2; big = '+' + net.toLocaleString(); small = amt2.toLocaleString() + ' in · ' + Number(e.payout_amount || 0).toLocaleString() + ' back'; cls = 'g'; bar = 'won'; }
+    else if(es === 'lost'){ net = -amt2; big = '−' + amt2.toLocaleString(); small = amt2.toLocaleString() + ' in'; cls = 'r'; bar = 'lost'; }
+    else if(es === 'void'){ big = '0'; small = amt2.toLocaleString() + ' back'; cls = 'm'; bar = 'void'; }
+    else { pays = Number(e.pays_if_all_win != null ? e.pays_if_all_win : Math.floor(amt2 * mult)); big = amt2.toLocaleString(); small = 'pays ' + pays.toLocaleString(); cls = 'y'; bar = it.state === 'locked' ? 'live' : 'open'; }
+  }
+  return { stake: stake, pays: pays, net: net,
+    html: '<div class="mb-row ' + bar + '"><div class="mb-tx"><b>' + title + '</b><small>' + esc(sub) + '</small></div>'
+      + '<div class="mb-am ' + cls + '"><b class="num">' + big + '</b><small>' + esc(small) + '</small></div></div>' };
 }
 
 /* ── THE BINDER ───────────────────────────────────────────────────────
