@@ -864,6 +864,20 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
 .fx-evar .fx-fl{-webkit-mask-image:none;mask-image:none}
 .fx-arena.fx-evar{background:radial-gradient(70% 70% at 15% 95%,rgba(80,62,160,.32),transparent 70%),#07060E}
 .fx-eh::after{content:'';position:absolute;inset:auto 0 0 0;height:40px;background:linear-gradient(180deg,transparent,#1A1533);pointer-events:none}
+/* the liquid arch: banner stars across the sky, swelling and brightening where they cross the rim */
+.fx-sky,.fx-lens{position:absolute;inset:0;pointer-events:none}
+.fx-sky{z-index:0;filter:brightness(1.2)}
+.fx-skb{position:absolute;left:0;right:0;height:70px;overflow:hidden}
+.fx-skb .fx-stars{z-index:0;-webkit-mask-image:none;mask-image:none}
+.fx-sky .fx-stars .s1{opacity:.85}
+.fx-skb:nth-child(2) i{animation-delay:-37s}.fx-skb:nth-child(3) i{animation-delay:-81s}.fx-skb:nth-child(4) i{animation-delay:-19s}
+.fx-skb:nth-child(even){transform:scaleX(-1)}
+.fx-lens{-webkit-mask-image:radial-gradient(circle at -30px 280px,transparent 0 336px,#000 352px 392px,transparent 410px);
+                mask-image:radial-gradient(circle at -30px 280px,transparent 0 336px,#000 352px 392px,transparent 410px)}
+.fx-lens::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at -30px 280px,transparent 0 350px,rgba(150,120,255,.14) 371px,transparent 395px)}
+.fx-lz{position:absolute;inset:0;transform:scale(1.28);transform-origin:-30px 280px;filter:brightness(2.4) drop-shadow(0 0 2px rgba(200,180,255,.9))}
+.fx-lz .fx-stars{transform:scaleY(1.6)}
+.fx-lz .fx-stars .s1{opacity:1}
 .fx-et{position:relative;z-index:3;padding:58px 18px 22px;max-width:278px}
 .fx-ek{font-size:12.5px;font-weight:700;color:#C9C2E6}
 .fx-ek em{font-style:normal;color:#F5C842}
@@ -7749,7 +7763,7 @@ var SEGS = { main_card:'Main card', undercard:'Undercard', prelim:'Prelims', pre
   featured:'Featured', early_prelims:'Early prelims' };
 async function renderEvent(id){
   var body = document.getElementById('sheet-body');
-  var evs = await q("events_public?select=id,name,type,status,event_date,stream_platform&id=eq."
+  var evs = await q("events_public?select=id,name,type,status,event_date,stream_platform,vod_link&id=eq."
     + encodeURIComponent(id) + "&limit=1");
   if(!evs){
     retryHandlers['event'] = function(){ renderEvent(id); };
@@ -7768,12 +7782,14 @@ async function renderEvent(id){
      cutting through them. Watch is a small link now, not the loudest thing on
      a page about the fights. */
   var over = e.status === 'completed';
+  // a finished show links straight to its own recording when one is on file
+  var watch = over && e.vod_link && /^https?:\/\//.test(e.vod_link) ? e.vod_link : 'https://youtube.com/vgaglobal';
   body.innerHTML = '<div class="fx-eh">' + FX_EVARENA + backButton()
     + '<div class="fx-et"><div class="fx-ek">' + (over ? 'Results' : '<em>Fight card</em>') + '</div>'
     + '<h3>'+esc(e.name)+'</h3>'
     + '<div class="fx-ew">'+esc(when)+' ET'+(e.stream_platform ? ' · '+esc(e.stream_platform) : '')+'</div>'
-    + '<div class="fx-ea"><a class="fx-watch" href="https://youtube.com/vgaglobal" target="_blank" rel="noopener">\u25b6 '
-    + (over ? 'Watch the replay' : 'Watch the event') + '</a>'
+    + '<div class="fx-ea"><a class="fx-watch" href="' + esc(watch) + '" target="_blank" rel="noopener">\u25b6 '
+    + (over ? 'Watch the VOD' : 'Watch the event') + '</a>'
     + '<button type="button" class="fx-allev" data-all-events>Every event \u2192</button></div></div>'
     + '</div><div id="ev-bouts"><div class="skel"></div><div class="skel" style="width:70%"></div></div>';
 
@@ -8900,8 +8916,13 @@ var FX_EVARENA = (function(){
     } }
   });
   var base = all.filter(function(_, i){ return i % 4 === 0; }), surge = all.filter(function(_, i){ return i % 4 !== 0; });
-  return '<div class="fx-arena fx-evar" aria-hidden="true"><div class="fx-ar"><div class="fx-tiers"></div>'
-    + '<div class="fx-fl fx-base">' + base.join('') + '</div><div class="fx-fl fx-surge">' + surge.join('') + '</div></div></div>';
+  // the starry banner's stars, in four stacked bands so the tall header is as full as a banner;
+  // a second, magnified copy shows only inside the arch's rim, so it reads as curved glass
+  var st = '<span class="fx-stars"><i class="s1"></i><i class="s2"></i></span>', bands = '';
+  for (var b = 0; b < 4; b++) bands += '<span class="fx-skb" style="top:' + (b * 66) + 'px">' + st + '</span>';
+  return '<div class="fx-arena fx-evar" aria-hidden="true"><div class="fx-ar"><div class="fx-sky">' + bands + '</div><div class="fx-tiers"></div>'
+    + '<div class="fx-fl fx-base">' + base.join('') + '</div><div class="fx-fl fx-surge">' + surge.join('') + '</div>'
+    + '<div class="fx-lens"><div class="fx-lz">' + bands + '</div></div></div></div>';
 })();
 
 function fighterPageHTML(p){
