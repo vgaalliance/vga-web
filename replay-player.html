@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VGA replay player</title>
+<!--
+  VGA replay player  (runs on the STREAMING PC, in Chrome, captured by OBS)
+
+  The replay plays HERE and only here, straight off this PC's disk: nothing is
+  uploaded. The analyst, anywhere, gets a live video of this page's clip and
+  drives it remotely; their drawings come back as points and are drawn on top.
+  OBS shows this window with a Window Capture, so the clip and the drawings
+  reach the stream as one picture and can never drift apart.
+
+  Setup is in docs/obs-setup.md (Replay telestrator). The short version:
+    1. Open it from the desktop shortcut (an app window on its own Chrome profile).
+    2. Pick the OBS replay folder once.
+    3. Copy the analyst link to the analyst.
+    4. H hides this panel. Keep the window open; minimised, it stops drawing.
+
+  Testing: ?clip=<url>[,<url>] adds clips from a URL, ?room=<code> fixes the
+  room, ?direct=1 allows a connection without the relay.
+-->
+<style>
+  :root{ --bg:#000; --panel:#1c2026; --line:#2b313a; --ink:#e9e6df; --dim:#8b919c; --hot:#ffd23f; --bad:#e05252; --good:#4fc36b }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--bg);color:var(--ink);font:15px/1.45 "Segoe UI","Avenir Next",system-ui,sans-serif;overflow:hidden}
+  #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000}
+  #box{position:relative;width:min(100vw,177.78vh);aspect-ratio:16/9;background:#000}
+  #box video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+  #box canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+
+  #panel{position:fixed;top:16px;left:16px;width:440px;max-width:calc(100vw - 32px);max-height:calc(100vh - 32px);overflow:auto;
+         background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+  #panel.hide{display:none}
+  #panel h1{font-size:17px;font-weight:600;margin-bottom:2px}
+  #panel .sub{color:var(--dim);font-size:13px;margin-bottom:12px}
+  .step{border-top:1px solid var(--line);padding:12px 0}
+  .step b{display:block;font-size:13px;color:var(--dim);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  button{font:inherit;color:inherit;background:#262c35;border:1px solid var(--line);border-radius:6px;padding:7px 12px;cursor:pointer;min-height:36px}
+  button:hover{border-color:var(--dim)}
+  button.main{background:var(--hot);color:#111;border-color:var(--hot);font-weight:600}
+  input[type=text]{flex:1;min-width:0;font:13px/1 ui-monospace,Menlo,Consolas,monospace;color:var(--ink);background:#11151a;border:1px solid var(--line);border-radius:6px;padding:9px 10px}
+  .msg{font-size:14px;margin-top:6px}
+  .good{color:var(--good)} .bad{color:var(--bad)} .warn{color:var(--hot)} .dimt{color:var(--dim)}
+  label{font-size:13px;color:var(--dim);display:flex;gap:6px;align-items:center;margin-top:6px;cursor:pointer}
+  .foot{color:var(--dim);font-size:12px;border-top:1px solid var(--line);padding-top:10px}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="box">
+    <video id="video" playsinline preload="auto"></video>
+    <canvas id="ink"></canvas>
+  </div>
+</div>
+
+<div id="panel">
+  <h1>Replay player</h1>
+  <div class="sub">This window is what OBS shows. Press <b style="display:inline;color:var(--ink)">H</b> to hide or show this panel.</div>
+
+  <div class="step">
+    <b>1 · Replay folder</b>
+    <div class="row">
+      <button id="pick" class="main">Pick the OBS replay folder</button>
+      <button id="regrant" hidden class="main">Reconnect the folder</button>
+    </div>
+    <div class="msg dimt" id="folderMsg">No folder yet.</div>
+  </div>
+
+  <div class="step">
+    <b>2 · Relay (keeps this PC's IP hidden)</b>
+    <div class="msg dimt" id="relayMsg">Checking…</div>
+    <label><input type="checkbox" id="direct"> Allow a direct connection without the relay (the analyst can see this PC's IP)</label>
+  </div>
+
+  <div class="step">
+    <b>3 · Analyst link</b>
+    <div class="row">
+      <input type="text" id="link" readonly>
+      <button id="copy">Copy</button>
+    </div>
+    <div class="row" style="margin-top:6px"><button id="newRoom">New link</button><span class="dimt" style="font-size:12px">Old links stop working.</span></div>
+    <div class="msg dimt" id="analystMsg">Waiting for the analyst to open the link.</div>
+  </div>
+
+  <div class="foot">Keep this window open and don't minimise it: a minimised window stops drawing and goes black in OBS. Behind other windows is fine.</div>
+</div>
+
+<script src="replay-ink.js"></script>
+<script src="replay-link.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const qs = new URLSearchParams(location.search);
+const video = $("#video"), ink = $("#ink"), ctx = ink.getContext("2d");
+
+const st = {
+  dir: null,                 // the folder handle
+  files: new Map(),          // name -> { h, size, time, stable, ready }
+  tests: new Map(),          // name -> url, from ?clip=
+  clips: [], current: null, blob: null,
+  strokes: [], live: new Map(),
+  rate: 1, vol: 0.10, muted: false,
+};
+
+// ---------- small bits ----------
+function say(el, text, cls){ const e = $(el); e.textContent = text; e.className = "msg " + (cls || "dimt"); }
+function send(m){ if (dc && dc.readyState === "open") dc.send(JSON.stringify(m)); }
+
+// ---------- the folder, remembered across restarts ----------
+// The handle itself is kept in IndexedDB. Chrome may still ask again after a
+// restart -- that is the "Reconnect the folder" button, one click.
+const idb = {
+  open(){ return new Promise((ok, no) => { const r = indexedDB.open("vga-replay", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("kv"); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); }); },
+  async get(k){ const db = await this.open(); return new Promise(ok => { const q = db.transaction("kv").objectStore("kv").get(k);
+    q.onsuccess = () => ok(q.result); q.onerror = () => ok(undefined); }); },
+  async set(k, v){ const db = await this.open(); return new Promise(ok => { const t = db.transaction("kv", "readwrite");
+    t.objectStore("kv").put(v, k); t.oncomplete = ok; t.onerror = ok; }); },
+};
+
+$("#pick").onclick = async () => {
+  if (!window.showDirectoryPicker){ say("#folderMsg", "This browser can't open a folder. Use Chrome or Edge.", "bad"); return; }
+  try {
+    const h = await showDirectoryPicker({ id: "vga-replays", mode: "read" });
+    await idb.set("dir", h); useDir(h);
+  } catch (e) { if (e.name !== "AbortError") say("#folderMsg", "Couldn't open that folder: " + e.message, "bad"); }
+};
+$("#regrant").onclick = async () => {
+  const h = await idb.get("dir"); if (!h) return;
+  if (await h.requestPermission({ mode: "read" }) === "granted") useDir(h);
+};
+async function restoreDir(){
+  const h = await idb.get("dir").catch(() => null); if (!h) return;
+  if (await h.queryPermission({ mode: "read" }) === "granted") useDir(h);
+  else { $("#regrant").hidden = false; say("#folderMsg", `Chrome wants permission for "${h.name}" again.`, "warn"); }
+}
+function useDir(h){
+  st.dir = h; st.files.clear(); $("#regrant").hidden = true;
+  say("#folderMsg", `Watching "${h.name}". Clips appear here as OBS saves them.`, "good");
+  scan();
+}
+
+// ---------- watching the folder ----------
+// Only files starting with "Replay" (OBS's replay-buffer prefix): OBS writes full
+// recordings into the same folder by default, and there can be a thousand of them.
+// A clip is listed once its size has held still for two seconds -- OBS keeps writing
+// for a moment after the file appears, and a half-written mp4 will not play.
+const VIDEO_EXT = /\.(mp4|m4v|mov|webm|mkv)$/i;
+let scanning = false;
+async function scan(){
+  if (!st.dir || scanning) return;
+  scanning = true;
+  try {
+    const seen = new Set();
+    for await (const [name, h] of st.dir.entries()){
+      if (h.kind !== "file" || !/^replay/i.test(name) || !VIDEO_EXT.test(name)) continue;
+      seen.add(name);
+      const rec = st.files.get(name);
+      if (rec && rec.ready) continue;
+      const f = await h.getFile();
+      if (rec && f.size > 0 && rec.size === f.size){ if (++rec.stable >= 2){ rec.ready = true; rec.time = f.lastModified; } }
+      else st.files.set(name, { h, size: f.size, time: f.lastModified, stable: 0, ready: false });
+    }
+    for (const k of [...st.files.keys()]) if (!seen.has(k)) st.files.delete(k);
+    const n = [...st.files.values()].filter(r => r.ready).length;
+    say("#folderMsg", `Watching "${st.dir.name}" · ${n} replay clip${n === 1 ? "" : "s"}.`, "good");
+  } catch (e) {
+    say("#folderMsg", "Lost the folder (" + e.message + "). Pick it again.", "bad");
+    st.dir = null; $("#regrant").hidden = false;
+  } finally { scanning = false; }
+  publishClips();
+}
+setInterval(scan, 1000);
+
+let lastClips = "";
+function publishClips(){
+  const list = [...st.tests.keys()].map(name => ({ name, time: 0 }))
+    .concat([...st.files].filter(([, r]) => r.ready).map(([name, r]) => ({ name, time: r.time })))
+    .sort((a, b) => b.time - a.time).slice(0, 60);
+  st.clips = list;
+  const key = JSON.stringify(list);
+  if (key !== lastClips){ lastClips = key; send({ type: "clips", list }); }
+}
+
+// ---------- playing a clip ----------
+async function loadClip(name){
+  let url;
+  if (st.tests.has(name)){
+    // a test clip from a URL is pulled down whole, so it behaves like a file
+    try { url = URL.createObjectURL(await (await fetch(st.tests.get(name))).blob()); }
+    catch (e) { console.error(e); return; }
+  } else {
+    const rec = st.files.get(name); if (!rec) return;
+    try { url = URL.createObjectURL(await rec.h.getFile()); }
+    catch (e) { console.error(e); return; }
+  }
+  if (st.blob) URL.revokeObjectURL(st.blob);
+  st.blob = url.startsWith("blob:") ? url : null;
+  st.current = name; st.strokes = []; st.live.clear(); dirty();
+  video.src = url; video.load(); video.playbackRate = st.rate;
+  applySound();
+  send({ type: "strokes", list: [] });
+}
+function seekTo(t){
+  if (!video.src) return;
+  video.currentTime = Math.max(0, Math.min(video.duration || 0, t));
+}
+function play(){
+  if (!video.src) return;
+  video.play().catch(() => { video.muted = true; video.play().catch(() => {}); });   // better muted than frozen
+}
+function applySound(){ video.volume = Math.max(0, Math.min(1, st.vol)); video.muted = st.muted; }
+video.addEventListener("ratechange", () => { if (video.playbackRate !== st.rate) video.playbackRate = st.rate; });
+
+// ---------- the air: video + drawings, in this window ----------
+let isDirty = true;
+function dirty(){ isDirty = true; }
+function fitInk(){ const r = ink.getBoundingClientRect(); ink.width = Math.round(r.width*devicePixelRatio); ink.height = Math.round(r.height*devicePixelRatio); dirty(); }
+new ResizeObserver(fitInk).observe(ink);
+(function frame(){
+  if (isDirty){
+    isDirty = false;
+    ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0, 0, ink.width, ink.height);
+    for (const s of st.strokes) replayInk(ctx, s, ink.width, ink.height);
+    for (const s of st.live.values()) replayInk(ctx, s, ink.width, ink.height);
+  }
+  requestAnimationFrame(frame);
+})();
+
+// ---------- the analyst's picture ----------
+// The clip is painted into a 1280x720 canvas and THAT is sent, not the video
+// element: a video element's own stream swaps its tracks every time the clip
+// changes, which drops the connection's picture. A canvas track lives forever.
+// Painted on a timer, not per video frame, so a paused clip still reaches an
+// analyst who connects mid-pause.
+const feed = document.createElement("canvas"); feed.width = 1280; feed.height = 720;
+const fctx = feed.getContext("2d");
+const feedStream = feed.captureStream(30);
+const feedTrack = feedStream.getVideoTracks()[0];
+feedTrack.contentHint = "detail";      // sharp over smooth: the analyst is reading a frame
+setInterval(() => {
+  fctx.fillStyle = "#000"; fctx.fillRect(0, 0, 1280, 720);
+  const vw = video.videoWidth, vh = video.videoHeight;
+  if (video.readyState >= 2 && vw){
+    const s = Math.min(1280/vw, 720/vh), w = vw*s, h = vh*s;    // same fit as object-fit:contain
+    fctx.drawImage(video, (1280-w)/2, (720-h)/2, w, h);
+  }
+}, 1000/30);
+
+// ---------- what the analyst says ----------
+function onCtl(m){
+  switch (m.type){
+    case "load":  loadClip(m.name); break;
+    case "play":  play(); break;
+    case "pause": video.pause(); break;
+    case "seek":  seekTo(+m.t || 0); break;
+    case "step":  video.pause(); seekTo(video.currentTime + (+m.d || 0)); break;
+    case "rate":  st.rate = +m.r || 1; video.playbackRate = st.rate; break;
+    case "vol":   st.vol = +m.v || 0; st.muted = !!m.muted; applySound(); break;
+    // Drawing. A pen stroke arrives as only its NEW points ("add"), so a long
+    // line costs the same per message as a short one.
+    case "live": {
+      const s = st.live.get(m.id);
+      if (s && m.add) s.pts.push(...m.pts);
+      else st.live.set(m.id, { tool: m.tool, color: m.color, width: m.width, pts: m.pts.slice() });
+      dirty(); break;
+    }
+    case "stroke": st.live.delete(m.id); st.strokes.push({ tool: m.tool, color: m.color, width: m.width, pts: m.pts }); dirty(); break;
+    case "clear-live": st.live.delete(m.id); dirty(); break;     // a tap, not a stroke
+    case "undo":  st.strokes.pop(); dirty(); break;
+    case "clear": st.strokes = []; st.live.clear(); dirty(); break;
+  }
+  sendStatus();
+}
+function sendStatus(){
+  send({ type: "status", name: st.current, t: video.currentTime, dur: video.duration || 0,
+         paused: video.paused || video.ended, rate: st.rate, vol: st.vol, muted: st.muted,
+         ready: video.readyState >= 2 });
+}
+setInterval(sendStatus, 250);
+
+// ---------- the connection ----------
+const ROOM_KEY = "vga-replay-room";
+function newCode(){ return Array.from(crypto.getRandomValues(new Uint8Array(6)), b => b.toString(36).padStart(2, "0")).join("").slice(0, 10); }
+let room = qs.get("room");
+if (!room){ try { room = localStorage.getItem(ROOM_KEY); } catch {} }
+if (!room){ room = newCode(); try { localStorage.setItem(ROOM_KEY, room); } catch {} }
+function showLink(){ $("#link").value = new URL("replay-analyst.html?room=" + room, location.href).href; }
+showLink();
+$("#copy").onclick = () => { navigator.clipboard.writeText($("#link").value).then(() => { $("#copy").textContent = "Copied"; setTimeout(() => $("#copy").textContent = "Copy", 1500); }); };
+$("#newRoom").onclick = () => {
+  if (!confirm("Make a new analyst link? The old one stops working.")) return;
+  room = newCode(); try { localStorage.setItem(ROOM_KEY, room); } catch {}
+  location.reload();
+};
+if (qs.has("direct")) $("#direct").checked = true;
+
+let ice = null, iceAt = 0;
+async function getIce(){
+  if (!ice || Date.now() - iceAt > 60*60*1000){ ice = await replayLink.ice(); iceAt = Date.now(); }
+  say("#relayMsg", ice.relay ? "Relay on. The analyst can't see this PC's IP." : "Relay off: the bot isn't handing out relay passes.", ice.relay ? "good" : "bad");
+  return ice;
+}
+
+let sig = null, pc = null, dc = null, sid = null, aid = null, startedAt = 0, pendingIce = [];
+function closePeer(){ try { dc && dc.close(); } catch {} try { pc && pc.close(); } catch {} pc = dc = null; pendingIce = []; }
+
+async function connectAnalyst(fromAid){
+  const cfg = await getIce();
+  if (!cfg.relay && !$("#direct").checked){
+    say("#analystMsg", "The analyst is waiting, but the relay is off. Fix the relay, or tick \"allow direct\" above.", "bad");
+    return;
+  }
+  closePeer();
+  aid = fromAid; sid = newCode(); startedAt = Date.now();
+  const my = sid;
+  pc = new RTCPeerConnection({ iceServers: cfg.iceServers, iceTransportPolicy: cfg.relay ? "relay" : "all" });
+  const sender = pc.addTrack(feedTrack, feedStream);
+  dc = pc.createDataChannel("ctl", { ordered: true });
+  dc.onopen = () => { lastClips = ""; publishClips(); send({ type: "strokes", list: st.strokes }); sendStatus(); };
+  dc.onmessage = e => { try { onCtl(JSON.parse(e.data)); } catch (err) { console.error(err); } };
+  pc.onicecandidate = e => { if (e.candidate && sid === my) sig({ type: "ice", sid: my, to: aid, c: e.candidate.toJSON() }); };
+  pc.onconnectionstatechange = () => {
+    if (sid !== my) return;
+    const s = pc.connectionState;
+    if (s === "connected"){
+      say("#analystMsg", "Analyst connected" + (cfg.relay ? " through the relay." : " DIRECTLY (your IP is visible to them)."), cfg.relay ? "good" : "warn");
+      $("#panel").classList.add("hide");          // off the air once somebody is driving
+      try {
+        const p = sender.getParameters();
+        if (!p.encodings || !p.encodings.length) p.encodings = [{}];
+        p.encodings[0].maxBitrate = 4000000; p.encodings[0].maxFramerate = 30;
+        p.degradationPreference = "maintain-resolution";
+        sender.setParameters(p).catch(() => {});
+      } catch {}
+    } else if (s === "connecting" || s === "new") say("#analystMsg", "Analyst found, connecting…", "warn");
+    else say("#analystMsg", "Analyst disconnected. They reconnect by reloading their page.", "bad");
+  };
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  sig({ type: "offer", sid: my, to: aid, sdp: pc.localDescription.toJSON() });
+  say("#analystMsg", "Analyst found, connecting…", "warn");
+}
+
+async function onSig(m){
+  if (m.type === "hello"){
+    const state = pc && pc.connectionState;
+    const busy = pc && m.aid === aid && (state === "connected" || Date.now() - startedAt < 15000);
+    if (!busy) connectAnalyst(m.aid);
+    return;
+  }
+  if (!pc || m.sid !== sid) return;
+  if (m.type === "answer"){
+    await pc.setRemoteDescription(m.sdp);
+    for (const c of pendingIce) pc.addIceCandidate(c).catch(() => {});
+    pendingIce = [];
+  }
+  if (m.type === "ice"){
+    if (pc.remoteDescription) pc.addIceCandidate(m.c).catch(() => {});
+    else pendingIce.push(m.c);
+  }
+}
+
+// ---------- keys ----------
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT") return;
+  if (e.key === "h" || e.key === "H") $("#panel").classList.toggle("hide");
+});
+
+// ---------- start ----------
+for (const u of (qs.get("clip") || "").split(",").filter(Boolean)){
+  st.tests.set(decodeURIComponent(u.split("/").pop()) || u, u);
+}
+publishClips();
+restoreDir();
+getIce();
+replayLink.signal(room, onSig, send => send({ type: "player" })).then(f => { sig = f; })
+  .catch(e => say("#analystMsg", "Couldn't reach Supabase to meet the analyst: " + e.message, "bad"));
+</script>
+</body>
+</html>
