@@ -1811,6 +1811,65 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   border:1px solid rgba(255,255,255,.18);color:#EFEAFF;-moz-appearance:textfield}
 .shp .pin::-webkit-outer-spin-button,.shp .pin::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .shp .pin:focus{outline:none;border-color:rgba(167,139,250,.7)}
+/* MY SHELF: a grid of cards by set, and one sell sheet (redesign 2026-10-20) */
+.shempty{margin:0 18px;padding:10px 0;font-size:13px;line-height:1.45;color:#B7AEDC;border-top:1px solid rgba(255,255,255,.07);border-bottom:1px solid rgba(255,255,255,.07)}
+.shl{display:flex;align-items:center;gap:10px;margin:0 18px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.shth{position:relative;width:38px;height:52px;flex-shrink:0;border-radius:6px;overflow:hidden;border:2px solid var(--c);
+  background:linear-gradient(160deg,color-mix(in srgb,var(--c) 30%,#1A1533),#120E26);display:grid;place-items:center}
+.shth i{font-style:normal;font-family:'Bebas Neue',sans-serif;font-size:15px;color:var(--c);opacity:.8}
+.shth img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top}
+.shlg{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.shlg b{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shlg span{font-size:11.5px;color:#B7AEDC}
+.shlg em{font-style:normal;font-family:'Space Mono',monospace;font-size:10px;color:#9C93BC}
+.shout{flex-shrink:0;background:none;border:1px solid rgba(255,255,255,.22);color:#C9C1E6;border-radius:8px;padding:8px 10px;cursor:pointer;
+  font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.shset{margin:20px 18px 8px;display:flex;flex-direction:column;gap:1px}
+.shset b{font-size:15px;font-weight:700}
+.shset span{font-family:'Space Mono',monospace;font-size:10px;color:#9C93BC;letter-spacing:.06em}
+.shgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 18px}
+.shtile{display:flex;flex-direction:column;gap:3px;min-width:0;padding:0;background:none;border:0;color:inherit;text-align:left;cursor:pointer}
+.shart{position:relative;display:grid;place-items:center;width:100%;aspect-ratio:.72;border-radius:8px;overflow:hidden;border:2px solid var(--c);
+  background:linear-gradient(160deg,color-mix(in srgb,var(--c) 30%,#1A1533),#120E26)}
+.shart img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top}
+.shart > b{display:none;padding:6px;text-align:center;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:16px;line-height:1.05;color:var(--c);word-break:break-word}
+.shart.noart > b{display:block}
+.shart em{position:absolute;left:4px;bottom:4px;font-style:normal;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;padding:2px 5px;border-radius:4px;background:#B9A2FF;color:#170F38}
+.shn{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shc{font-family:'Space Mono',monospace;font-size:10px;color:#9C93BC}
+.shc.only{color:#F5C842}
+.shtile:active .shart{filter:brightness(1.15)}
+.shrule{margin:18px 18px 0;font-size:13px;line-height:1.45;color:#EFEAFF;opacity:.7}
+/* the sheet */
+.shscrim{position:fixed;inset:0;z-index:60;background:rgba(6,4,16,.55)}
+.shsheet{position:fixed;left:0;right:0;bottom:0;z-index:61;max-width:560px;margin:0 auto;max-height:82vh;overflow:auto;
+  padding:10px 18px calc(18px + env(safe-area-inset-bottom,0px));border-radius:18px 18px 0 0;background:#221B44;
+  border-top:1px solid rgba(185,162,255,.4);box-shadow:0 -14px 30px rgba(0,0,0,.55)}
+.shgrab{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.25);margin:0 auto 12px}
+.shsh{display:flex;align-items:center;gap:10px}
+.shx{align-self:flex-start;background:none;border:0;color:#9C93BC;font-size:17px;cursor:pointer;padding:4px}
+.shlab{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#ADA4D6;margin:14px 0 6px}
+.shdd2{display:grid;grid-template-columns:1.4fr 1fr;gap:8px}
+.shdd2 label,.shdd1{display:flex;flex-direction:column;gap:4px}
+.shdd1{margin-top:8px}
+.shdd2 small,.shdd1 small{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#9C93BC}
+.shsheet select{height:42px;padding:0 10px;border-radius:9px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);
+  color:#EFEAFF;font:600 14px 'Barlow',sans-serif}
+.shsheet select:focus{outline:none;border-color:#B9A2FF}
+.shfix{height:42px;display:flex;align-items:center;padding:0 11px;border-radius:9px;border:1px dashed rgba(255,255,255,.2);font-size:14px;font-weight:600}
+.shwarn{margin-top:10px;padding:9px 11px;border-radius:10px;font-size:13px;line-height:1.45;background:rgba(245,200,66,.1);border:1px solid rgba(245,200,66,.35);color:#F2E6BE}
+.shwarn b{color:#F5C842}
+.shnone{margin-top:12px;font-size:13px;line-height:1.45;color:#B7AEDC}
+.shpr{display:flex;align-items:center;gap:10px;margin-top:12px}
+.shpr input{flex:1;min-width:0;height:48px;padding:0 12px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);
+  color:#EFEAFF;font:700 22px 'Space Mono',monospace}
+.shpr input:focus{outline:none;border-color:#B9A2FF}
+.shpr span{font-family:'Space Mono',monospace;font-size:11px;color:#A79DCB}
+.shget{margin-top:6px;font-size:12.5px;color:#B7AEDC}
+.shget b{font-family:'Space Mono',monospace;color:#fff}.shget b.up{color:#6EE7B7}
+.shlist{display:block;width:100%;margin-top:12px;padding:13px;border:0;border-radius:10px;background:#B9A2FF;color:#170F38;cursor:pointer;
+  font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.shlist[disabled],.shlist.working{opacity:.55;pointer-events:none}
 /* THE CARD MARKET — two swipe rows. The buy row is legible at a glance; the
    sold row is deliberately half its size, because it is history you compare
    against rather than something you act on. Sizes are the whole hierarchy
@@ -8424,12 +8483,16 @@ document.addEventListener('click', async function(e){
     var box = document.getElementById('pin-' + pid);
     var price = Number(box && box.value);
     if(!price || price < 100){ toast('Set a price of at least 100 VC.', true); if(box) box.focus(); return; }
+    if(price > 1000000){ toast('The most a card can be listed for is 1,000,000 VC.', true); if(box) box.focus(); return; }
     /* The signed warning outranks the only-copy one and replaces it: an only
        copy can be bought back, and a signature cannot — buying the card again
        gets you a different print with nothing written on it. Two confirms in a
        row would also train the second one to be dismissed unread. */
-    var sgn = b.getAttribute('data-signed');
-    if(sgn){
+    /* The shelf's sell sheet shows these warnings ABOVE its button
+       (data-warned), so they are not asked a second time as a pop-up. */
+    var sgn = b.getAttribute('data-signed'), warned = b.getAttribute('data-warned');
+    if(warned){ /* already said in the sheet */ }
+    else if(sgn){
       if(!confirm('That copy is signed by ' + sgn + '. Signatures do not transfer to another print '
         + '\u2014 buying this card back will not get the signature back. Sell it anyway?')) return;
     } else if(b.getAttribute('data-only')
@@ -9834,12 +9897,29 @@ async function renderMarket(){
    Not a shop of your own that other people browse. The board is one place and
    everybody's cards are on it; this is the private page where you set prices,
    which is why a seller nobody buys from is invisible here rather than an
-   empty storefront with their name over the door. */
+   empty storefront with their name over the door.
+
+   Designed with Castle 2026-10-20 (the Shelf page, option 5 with its audit
+   fixes, and the Shelf Copy Picker). One tile per CARD, never per copy — the
+   old page drew one row per print, 2,637 of them for one collector — grouped
+   under its set, because 30 of one collector's cards share a name with a card
+   in another set and five identical "Boady" tiles would let you list the
+   wrong one. Tapping a tile opens one bottom sheet, the same every time, where
+   YOU pick the copy: Grade, then Copy, and Signed only when the card has a
+   signed copy. Nothing is chosen for you; a PSA 10 or a #1 print is exactly
+   what a collector wants to sell. */
+var SHF = null;   /* { live, cards: [{ card fields, prints: [] }], open } */
+
 async function renderShelf(){
   var body = document.getElementById('sheet-body');
-  body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'
-    + '<div class="kick">What you are selling</div><h3>My shelf</h3></div>'
-    + '<div id="shf"><div class="skel"></div><div class="skel" style="width:60%"></div></div>';
+  /* A re-render after a listing keeps the page where it is: only a fresh
+     visit shows the skeleton. */
+  if(!document.getElementById('shf')){
+    body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'
+      + '<div class="kick">What you are selling</div><h3>My shelf</h3></div>'
+      + '<div id="shf"><div class="skel"></div><div class="skel" style="width:60%"></div></div>';
+  }
+  shfClose();
   var el = document.getElementById('shf');
   if(!me){ el.innerHTML = '<div class="empty">Sign in to sell a card.</div>'; return; }
 
@@ -9851,56 +9931,189 @@ async function renderShelf(){
   if(!got[0] || !got[1]){ retryHandlers['shf'] = renderShelf;
     el.innerHTML = failHTML("Couldn't load your shelf.", 'shf'); return; }
   var live = got[0], prints = got[1];
+  var onSale = {};
+  live.forEach(function(r){ onSale[r.print_id] = true; });
 
-  var html = '<div class="lab"><b>On sale \u00b7 ' + live.length + ' of 20</b><i></i></div>';
+  var byCard = {}, cards = [];
+  prints.forEach(function(p){
+    var c = byCard[p.card_id];
+    if(!c){ c = byCard[p.card_id] = { card_id: p.card_id, name: p.name, rarity: p.rarity, set_name: p.set_name,
+      set_code: p.set_code, photo_url: p.photo_url, price_typical: p.price_typical, sales: p.sales, prints: [] }; cards.push(c); }
+    c.prints.push(p);
+  });
+  SHF = { live: live, cards: cards, byCard: byCard, onSale: onSale };
+
+  var html = '<div class="lab"><b>On sale</b><i></i><s>' + live.length + ' of 20 used</s></div>';
   html += live.length ? live.map(function(r){
-      return '<div class="shp"><div style="flex:1;min-width:0">'
-        + '<div class="t">' + esc(r.name) + '</div>'
-        + '<div class="s">#' + r.print_number + (r.grade != null ? ' · PSA ' + r.grade : '')
-        + ' · ' + esc(r.set_code || '') + '</div>'
-        + '<div class="stk">ends ' + esc(dstr(r.expires_at)) + '</div>'
-        + '</div><div class="prw"><div class="pr">' + Number(r.price||0).toLocaleString() + '<em>VC</em></div>'
-        + '<button class="act buy" data-unlist="' + esc(r.listing_id) + '">Take down</button>'
-        + '</div></div>';
+      var pr = Number(r.price || 0);
+      return '<div class="shl"><span class="shth r-' + esc(r.rarity || 'common') + '"><i>' + esc(initials(r.name)) + '</i>'
+        + (r.photo_url ? '<img src="' + esc(r.photo_url) + '" alt="" loading="lazy" onerror="this.remove()">' : '') + '</span>'
+        + '<div class="shlg"><b>' + esc(r.name) + '</b><span>#' + r.print_number + (r.grade != null ? ' · PSA ' + r.grade : '')
+        + ' · ends ' + esc(dstr(r.expires_at, { weekday: 'short' })) + '</span>'
+        + '<em>' + pr.toLocaleString() + ' VC · you get ' + Math.floor(pr * 0.9).toLocaleString() + '</em></div>'
+        + '<button class="shout" data-unlist="' + esc(r.listing_id) + '">Take down</button></div>';
     }).join('')
-    : '<div class="empty">Nothing listed. Pick a card below.</div>';
+    : '<div class="shempty">Nothing on sale. Tap a card below to sell a copy.</div>';
 
-  /* A card already in escrow is a card in a listing or a Discord trade. It is
-     shown rather than hidden, because a card that silently vanishes from your
-     own shelf reads as a card you lost. */
-  var free = prints.filter(function(r){ return !r.busy; });
-  html += '<div class="lab"><b>Your cards \u00b7 ' + free.length + '</b><i></i></div>';
-  html += free.length ? free.map(function(r){
-      var only = Number(r.you_own || 0) <= 1;
-      var suggested = r.price_typical ? Number(r.price_typical) : '';
-      /* The ink lives on the card ART, and this row has no art on it. Without
-         the words here somebody sells the signed copy having never been told
-         which one it was — and a signature cannot be re-made on another. */
-      var sg = r.signed_name ? ' \u00b7 \u2712\uFE0F ' + esc(r.signed_name) : '';
-      return '<div class="shp"><div style="flex:1;min-width:0">'
-        + '<div class="t">' + esc(r.name) + '</div>'
-        + '<div class="s">#' + r.print_number + (r.grade != null ? ' · PSA ' + r.grade : '')
-        + ' · ' + esc(r.set_code || '') + sg + '</div>'
-        + '<div class="stk">' + (r.signed_name ? 'SIGNED \u2014 CANNOT BE REMADE' : only ? 'YOUR ONLY COPY'
-            : r.sales ? 'usually ' + Number(r.price_typical).toLocaleString() + ' VC'
-            : 'never sold') + '</div>'
-        + '</div><div class="prw">'
-        + '<input class="pin" type="number" inputmode="numeric" min="100" max="1000000" '
-        + 'placeholder="' + (suggested || '100') + '" value="' + suggested + '" '
-        + 'id="pin-' + esc(r.print_id) + '">'
-        + '<button class="act buy" data-list="' + esc(r.print_id) + '" '
-        + 'data-name="' + esc(r.name) + '" data-signed="' + esc(r.signed_name || '') + '" '
-        + 'data-only="' + (only ? '1' : '') + '">List</button>'
-        + '</div></div>';
-    }).join('')
-    : '<div class="empty">No cards free to sell. Anything in a trade or already listed sits above.</div>';
-
-  el.innerHTML = html
-    + '<div class="doit">Lowest price is <b>100 VC</b> — below that it is a gift, and gifts belong in '
-    + '<b>/trade</b> where you can both see who you are giving it to. '
-    + 'The <b>10%</b> tax comes off what you receive.</div>';
+  if(!cards.length){
+    el.innerHTML = html + '<div class="empty">You have no cards yet. Packs are in the <a data-hub="shop">Shop</a>.</div>' + shfRule();
+    return;
+  }
+  /* sets in the order the view gives them; inside a set, rarest first */
+  var sets = [], bySet = {};
+  cards.forEach(function(c){
+    var k = c.set_code || c.set_name || '?';
+    if(!bySet[k]){ bySet[k] = { code: c.set_code, name: c.set_name || c.set_code, cards: [] }; sets.push(bySet[k]); }
+    bySet[k].cards.push(c);
+  });
+  html += sets.map(function(s){
+    var copies = s.cards.reduce(function(a, c){ return a + c.prints.length; }, 0);
+    s.cards.sort(function(a, b){ return RSORT.indexOf(b.rarity) - RSORT.indexOf(a.rarity) || String(a.name).localeCompare(String(b.name)); });
+    return '<div class="shset"><b>' + esc(s.name) + '</b><span>' + esc(s.code || '') + ' · ' + s.cards.length
+      + (s.cards.length === 1 ? ' card' : ' cards') + ' · ' + copies.toLocaleString() + (copies === 1 ? ' copy' : ' copies') + '</span></div>'
+      + '<div class="shgrid">' + s.cards.map(shfTile).join('') + '</div>';
+  }).join('') + shfRule();
+  el.innerHTML = html;
+}
+function shfTile(c){
+  var n = c.prints.length, listed = c.prints.filter(function(p){ return SHF.onSale[p.print_id]; }).length;
+  /* A card with no art shows its name inside its rarity frame: a quarter of
+     the cards have none, and blank frames read as a failed load. */
+  var art = c.photo_url
+    ? '<img src="' + esc(c.photo_url) + '" alt="" loading="lazy" onerror="this.parentNode.classList.add(\'noart\');this.remove()">'
+    : '';
+  return '<button class="shtile" data-shf="' + esc(c.card_id) + '"><span class="shart r-' + esc(c.rarity || 'common')
+    + (c.photo_url ? '' : ' noart') + '"><b>' + esc(c.name) + '</b>' + art
+    + (listed ? '<em>On sale</em>' : '') + '</span>'
+    + '<span class="shn">' + esc(c.name) + '</span>'
+    + '<span class="shc' + (n === 1 ? ' only' : '') + '">' + (n === 1 ? 'only copy' : n + ' copies')
+    + (listed ? ' · ' + listed + ' on sale' : '') + '</span></button>';
+}
+/* The rule of the screen, at body size, under what it explains. */
+function shfRule(){
+  return '<div class="shrule">Lowest price is 100 VC. Listings last 7 days. The 10% tax comes off what you get when it sells.</div>';
 }
 
+/* ── THE SELL SHEET ── one sheet, the same every time. The copies you can
+   pick are the ones not already on sale or held in a trade. */
+function shfOpen(cardId){
+  var c = SHF && SHF.byCard[cardId];
+  if(!c) return;
+  var free = c.prints.filter(function(p){ return !p.busy && !SHF.onSale[p.print_id]; });
+  var anySigned = free.some(function(p){ return p.signed_name; });
+  var anyPlain = free.some(function(p){ return !p.signed_name; });
+  SHF.open = { c: c, free: free, signed: anyPlain ? 'no' : 'yes', grade: null, pid: null, last: null };
+  shfPickDefaults();
+  var host = document.getElementById('shf-sheet');
+  /* On the page itself, not inside the sliding sheet: the sheet moves with a
+     transform, and a transform makes anything "fixed" inside it scroll away
+     with the content instead of sitting on the screen. */
+  if(!host){ host = document.createElement('div'); host.id = 'shf-sheet'; document.body.appendChild(host); }
+  shfDraw();
+  /* The last sale, with its grade: the going rate is per card, not per grade,
+     so the sheet says which grade sold rather than pretend to price yours. */
+  if(Number(c.sales || 0) > 0){
+    q("card_sales_public?select=price,grade&card_id=eq." + encodeURIComponent(cardId) + "&order=settled_at.desc&limit=1").then(function(r){
+      if(SHF && SHF.open && SHF.open.c === c && r && r.length){ SHF.open.last = r[0]; shfDraw(); }
+    });
+  }
+  if(!anySigned) SHF.open.signed = 'no';
+}
+function shfPool(){
+  var o = SHF.open;
+  return o.free.filter(function(p){ return o.signed === 'yes' ? !!p.signed_name : !p.signed_name; });
+}
+function shfPickDefaults(){
+  var o = SHF.open, pool = shfPool();
+  var grades = shfGrades(pool);
+  if(o.grade == null || !grades.some(function(g){ return g.g === o.grade; })) o.grade = grades.length ? grades[0].g : null;
+  var copies = pool.filter(function(p){ return p.grade === o.grade; }).sort(function(a, b){ return a.print_number - b.print_number; });
+  if(!copies.some(function(p){ return p.print_id === o.pid; })) o.pid = copies.length ? copies[0].print_id : null;
+}
+function shfGrades(pool){
+  var m = {};
+  pool.forEach(function(p){ m[p.grade] = (m[p.grade] || 0) + 1; });
+  return Object.keys(m).map(Number).sort(function(a, b){ return b - a; }).map(function(g){ return { g: g, n: m[g] }; });
+}
+function shfDraw(){
+  var host = document.getElementById('shf-sheet'), o = SHF && SHF.open;
+  if(!host || !o) return;
+  var c = o.c, pool = shfPool(), grades = shfGrades(pool);
+  var copies = pool.filter(function(p){ return p.grade === o.grade; }).sort(function(a, b){ return a.print_number - b.print_number; });
+  var sel = copies.filter(function(p){ return p.print_id === o.pid; })[0] || null;
+  var total = c.prints.length, only = total === 1;
+  var head = '<div class="shsh"><span class="shth r-' + esc(c.rarity || 'common') + '"><i>' + esc(initials(c.name)) + '</i>'
+    + (c.photo_url ? '<img src="' + esc(c.photo_url) + '" alt="" onerror="this.remove()">' : '') + '</span>'
+    + '<div class="shlg"><b>' + esc(c.name) + '</b><span>' + esc(c.set_name || '') + ' · ' + esc(c.set_code || '') + ' · '
+    + (only ? 'only copy' : total + ' copies') + '</span>'
+    + '<em>' + (o.last ? 'Last sold ' + Number(o.last.price).toLocaleString() + (o.last.grade != null ? ' (a PSA ' + o.last.grade + ')' : '')
+      : 'No sales yet') + '</em></div>'
+    + '<button class="shx" data-shfclose aria-label="Close">✕</button></div>';
+
+  var body;
+  if(!o.free.length){
+    body = '<div class="shnone">Every copy of this card is on sale or held in a trade.</div>';
+  } else {
+    var picker;
+    if(o.free.length === 1){
+      picker = '<div class="shfix">' + (sel ? 'PSA ' + sel.grade + ' · #' + sel.print_number : '') + (only ? ' · your only copy' : '') + '</div>';
+    } else {
+      picker = '<div class="shdd2"><label><small>Grade</small><select id="shf-grade">' + grades.map(function(g){
+          return '<option value="' + g.g + '"' + (g.g === o.grade ? ' selected' : '') + '>PSA ' + g.g + ' · ' + g.n + (g.n === 1 ? ' copy' : ' copies') + '</option>';
+        }).join('') + '</select></label>'
+        + '<label><small>Copy</small><select id="shf-copy">' + copies.map(function(p){
+          return '<option value="' + esc(p.print_id) + '"' + (p.print_id === o.pid ? ' selected' : '') + '>#' + p.print_number + '</option>';
+        }).join('') + '</select></label></div>';
+      var nS = o.free.filter(function(p){ return p.signed_name; }).length, nP = o.free.length - nS;
+      if(nS) picker += '<label class="shdd1"><small>Signed</small><select id="shf-signed">'
+        + (nP ? '<option value="no"' + (o.signed === 'no' ? ' selected' : '') + '>Unsigned · ' + nP + (nP === 1 ? ' copy' : ' copies') + '</option>' : '')
+        + '<option value="yes"' + (o.signed === 'yes' ? ' selected' : '') + '>Signed · ' + nS + (nS === 1 ? ' copy' : ' copies') + '</option></select></label>';
+    }
+    /* The warnings sit here, above the button, instead of a pop-up after it:
+       the signed one outranks the only-copy one, as it always has. */
+    var warn = '';
+    if(sel && sel.signed_name) warn = '<div class="shwarn"><b>Signed by ' + esc(sel.signed_name) + '.</b> The ink stays on this print. Buying the card back gets a different one.</div>';
+    else if(only) warn = '<div class="shwarn"><b>This is your only ' + esc(c.name) + '.</b> If it sells, it leaves your binder.</div>';
+    var full = SHF.live.length >= 20;
+    body = '<div class="shlab">Which copy</div>' + picker + warn
+      + (full ? '<div class="shnone">You have 20 on sale, the most at once. Take one down to list another.</div>'
+        : '<div class="shpr"><input type="text" inputmode="numeric" autocomplete="off" placeholder="Your price" id="pin-' + esc(o.pid || '')
+          + '" aria-label="Price in VC"><span>VC</span></div>'
+          + '<div class="shget" id="shf-get">100 to 1,000,000 VC.</div>'
+          + '<button class="shlist" data-list="' + esc(o.pid || '') + '" data-warned="1" data-name="' + esc(c.name) + '" data-signed="'
+          + esc(sel && sel.signed_name || '') + '" data-only="' + (only ? '1' : '') + '">'
+          + (sel && sel.signed_name ? 'List signed #' + sel.print_number : only ? 'List my only copy' : sel ? 'List #' + sel.print_number + ' · PSA ' + sel.grade : 'List')
+          + '</button>');
+  }
+  host.innerHTML = '<div class="shscrim" data-shfclose></div><div class="shsheet" role="dialog" aria-label="Sell ' + esc(c.name) + '">'
+    + '<div class="shgrab"></div>' + head + body + '</div>';
+  var g = document.getElementById('shf-grade'), cp = document.getElementById('shf-copy'), sg = document.getElementById('shf-signed');
+  if(g) g.onchange = function(){ o.grade = Number(g.value); o.pid = null; shfPickDefaults(); shfDraw(); };
+  if(cp) cp.onchange = function(){ o.pid = cp.value; shfDraw(); };
+  if(sg) sg.onchange = function(){ o.signed = sg.value; o.grade = null; o.pid = null; shfPickDefaults(); shfDraw(); };
+  var pin = document.getElementById('pin-' + (o.pid || ''));
+  if(pin) pin.oninput = function(){
+    pin.value = pin.value.replace(/[^0-9]/g, '').slice(0, 7);
+    var v = Number(pin.value || 0), out = document.getElementById('shf-get');
+    if(!out) return;
+    if(!v) out.textContent = '100 to 1,000,000 VC.';
+    else if(v < 100) out.textContent = 'At least 100 VC.';
+    else if(v > 1000000) out.textContent = 'At most 1,000,000 VC.';
+    else out.innerHTML = 'Buyer pays <b>' + v.toLocaleString() + '</b> · you get <b class="up">' + Math.floor(v * 0.9).toLocaleString() + '</b>';
+  };
+}
+function shfClose(){
+  if(SHF) SHF.open = null;
+  var h = document.getElementById('shf-sheet'); if(h) h.innerHTML = '';
+}
+document.addEventListener('click', function(e){
+  var t = e.target.closest('[data-shf]');
+  if(t){ shfOpen(t.getAttribute('data-shf')); return; }
+  if(e.target.closest('[data-shfclose]')) shfClose();
+});
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && SHF && SHF.open) shfClose(); });
+/* Back (or anything that leaves the shelf) closes it too. */
+window.addEventListener('popstate', function(){ if(SHF && SHF.open) shfClose(); });
 
 /* ── TRAIN ── the tap trainer. Design: docs/train-plan.md in VGA Systems.
    Every number on this screen comes from the server (train_rules via
