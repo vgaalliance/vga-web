@@ -103,6 +103,20 @@
     color:#fff;text-shadow:0 0 34px rgba(var(--pur-rgb),.7);margin-bottom:26px;}
   .title.sm{font-size:58px;}
 
+  /* CALLOUTS — the picture the bot drew, one at a time. The box is a fixed
+     height so a tall picture after a short one does not shove the dots about,
+     and the picture fits inside it rather than being cropped: the words on it
+     are the whole point. */
+  #v-callouts .title{margin-bottom:18px;}
+  .co-box{height:790px;display:flex;align-items:center;justify-content:center;}
+  .co-box img{display:block;max-width:1500px;max-height:790px;width:auto;height:auto;border-radius:22px;
+    box-shadow:0 0 0 2px rgba(var(--pur-rgb),.45),0 0 60px rgba(var(--pur-rgb),.45),0 0 140px rgba(var(--deep2-rgb),.55);
+    transition:opacity .35s ease;}
+  .co-box img.fade{opacity:0;}
+  .co-dots{display:flex;justify-content:center;gap:14px;margin-top:22px;height:14px;}
+  .co-dots i{width:12px;height:12px;border-radius:50%;background:rgba(var(--pur-rgb),.35);transition:all .35s;}
+  .co-dots i.on{background:var(--hi);box-shadow:0 0 10px rgba(var(--hi-rgb),.9),0 0 22px rgba(var(--pur-rgb),.8);transform:scale(1.25);}
+
   /* two-conference grid */
   .confs{display:grid;grid-template-columns:1fr 1fr;gap:34px;}
   .conf-h{font-family:'Press Start 2P',monospace;font-size:15px;letter-spacing:.2em;
@@ -1155,6 +1169,16 @@
       <div class="csh-vlink" id="cshVlink"><div><div class="l1">END OF THE NIGHT</div><div class="l2">The Verdicts</div></div><div class="arw">▶</div></div>
     </div>
 
+    <!-- CALLOUTS — paid for in VC in Discord; the bot draws each one as a
+         picture. Only joins the rotation while there is at least one from the
+         last 7 days, and the deck can take it out. -->
+    <div class="view" id="v-callouts">
+      <div class="eyebrow">CALLOUTS</div>
+      <div class="title sm">Fighting Words</div>
+      <div class="co-box"><img id="coImg" alt=""></div>
+      <div class="co-dots" id="coDots"></div>
+    </div>
+
     <div class="view" id="v-cta">
       <div class="eyebrow">Virtual Global Alliance</div>
       <div class="title">Step In The Ring</div>
@@ -1892,6 +1916,91 @@ function setCycle(){
   }, SET_HOLD)
 }
 
+// ── CALLOUTS ─────────────────────────────────────────────────────────────
+// The newest ten from the last 7 days, one picture every 12s, and only while
+// the screen is up. A picture is swapped in only once it has loaded, so the
+// screen never shows an empty frame between two. Each visit picks up where
+// the last one left off, so a 15s turn in the rotation is not always the
+// same callout.
+const CO_HOLD = 12000
+let CO = [], CO_ON = true, coAt = 0, coTimer = null, coLive = false, coSince = 0
+const coImgs = new Map()   // url -> Image, loaded ahead
+function coPreload(url){
+  if(!url) return Promise.resolve(false)
+  let im = coImgs.get(url)
+  if(!im){ im = new Image(); im.decoding = 'async'; im.src = url; coImgs.set(url, im) }
+  if(im.complete) return Promise.resolve(im.naturalWidth > 0)
+  return new Promise(r => { im.addEventListener('load', () => r(true), {once:true}); im.addEventListener('error', () => r(false), {once:true}) })
+}
+async function loadCallouts(){
+  try{
+    const since = new Date(Date.now() - 7*24*3600e3).toISOString()
+    const { data, error } = await sb.from('callouts_public')
+      .select('id,buyer_name,target_name,message,image_url,posted_at')
+      .gte('posted_at', since).order('posted_at', { ascending:false }).limit(10)
+    // a failed read keeps what is on screen; only a real answer changes it
+    if(error || !Array.isArray(data)) return
+    const next = data.filter(c => c && c.image_url)
+    const same = next.map(c => c.id).join() === CO.map(c => c.id).join()
+    if(same) return
+    const was = CO[coAt] && CO[coAt].id
+    CO = next
+    coAt = Math.max(0, CO.findIndex(c => c.id === was))
+    CO.forEach(c => coPreload(c.image_url))
+    coDots()
+    coLayout()
+  }catch(e){}
+}
+// The screen is in the rotation only with something to show and the deck's
+// switch on. Slotted before the call to action, which is how a rotation ends.
+function coLayout(){
+  const want = CO_ON && CO.length > 0
+  ;[VIEWS, VIEWS_UBA, VIEWS_GFL].forEach(list => {
+    const i = list.indexOf('callouts')
+    if(want && i < 0){ const c = list.indexOf('cta'); list.splice(c < 0 ? list.length : c, 0, 'callouts') }
+    if(!want && i >= 0) list.splice(i, 1)
+  })
+}
+function coDots(){
+  const d = $('coDots'); if(!d) return
+  d.innerHTML = CO.length > 1 ? CO.map((_, i) => `<i class="${i === coAt ? 'on' : ''}"></i>`).join('') : ''
+}
+async function coPaint(i){
+  const c = CO[i]; if(!c) return false
+  if(!(await coPreload(c.image_url))) return false
+  const img = $('coImg')
+  if(img.getAttribute('src') !== c.image_url){
+    if(img.getAttribute('src')){ img.classList.add('fade'); await new Promise(r => setTimeout(r, 350)) }
+    img.src = c.image_url
+    img.alt = (c.buyer_name || '') + ' calls out ' + (c.target_name || '')
+    img.classList.remove('fade')
+  }
+  coAt = i; coSince = Date.now(); coDots()
+  return true
+}
+function coCycle(){
+  const live = $('v-callouts').classList.contains('on')
+  if(!live){
+    clearTimeout(coTimer); coTimer = null
+    // leaving: the next visit starts on the next one, unless this one was barely up
+    if(coLive && CO.length && Date.now() - coSince > CO_HOLD/2) coAt = (coAt + 1) % CO.length
+    coLive = false
+    return
+  }
+  if(coLive) return
+  coLive = true
+  coPaint(coAt % Math.max(1, CO.length))
+  const tick = async () => {
+    if(!coLive) return
+    if(CO.length > 1){
+      // the next one that actually loads; a broken picture is skipped, not shown
+      for(let k = 1; k <= CO.length; k++){ if(await coPaint((coAt + k) % CO.length)) break }
+    }
+    if(coLive) coTimer = setTimeout(tick, CO_HOLD)
+  }
+  coTimer = setTimeout(tick, CO_HOLD)
+}
+
 // ── THE CARD WALL ────────────────────────────────────────────────────────
 // Cards with nothing else on the screen, in one of two layouts:
 //   ?wall=all   every card at once
@@ -2014,6 +2123,7 @@ function syncPromo(){
   if(wallOn) wallCycle()
   else { wallTimers.forEach(clearTimeout); wallTimers = [] }
   setCycle()
+  coCycle()
   if(!promoFilmEl) return
   if(document.getElementById('v-poster').classList.contains('on')){
     const p = promoFilmEl.play(); if(p && p.catch) p.catch(()=>{})
@@ -2715,6 +2825,7 @@ function show(view, league){
   // with nothing under it does nothing instead. The button cannot tell you the
   // files are missing; a blank screen is all the room would see.
   if(view==='prize' && !promoHas.prize) return
+  if(view==='callouts' && !CO.length) return
   clearInterval(cycle); cycle=null
   hideAll()
   if(view==='off'||!view) return
@@ -2998,6 +3109,8 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
   // ...and any board put up afterwards takes the screen back from it.
   if(c.type==='standby' && c.on!==false && window._csVerdict && window._csVerdict.ready)
     window._csVerdict.f.contentWindow.postMessage({ vgaCmd:{ type:'contender', on:false, soft:true } },'*')
+  // The deck's Callouts ON/OFF: the screen's place in the auto rotation, nothing else.
+  if(c.type==='callouts'){ CO_ON = c.on!==false; coLayout(); return }
   if(c.type==='loadbar'){
     if(c.show===false){ barShow(false); return }
     if(c.show===true && !c.d){ barShow(true); return }
@@ -3011,6 +3124,9 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
     document.querySelectorAll('.splitlbl').forEach(el=>{ el.textContent='UBAe · '+c.split })
   }
   if(c.type==='standby'){
+    // every board press carries the deck's Callouts switch, so a reloaded
+    // source picks it back up instead of defaulting to ON behind the deck's back
+    if(typeof c.callouts==='boolean' && c.callouts!==CO_ON){ CO_ON=c.callouts; coLayout() }
     if(c.on===false){ show('off'); return }
     if(c.view==='card'){ await showCard(c.event, c.d); show('card'); return }   // c.event picks FN29/FN30/… · c.d = live rows from the runner
     if(c.view==='nextev'){ await showNextEv(c.exclude); show('nextev'); return }  // c.exclude = the event you're running tonight
@@ -3100,6 +3216,7 @@ if(KIOSK.get('kiosk') === '1'){
 }else{
   loadAll()
 }
+loadCallouts(); setInterval(loadCallouts, 60000)
 cycAll()          // the alternating names, on one page-wide timer
 mountPoster()     // all three are no-ops unless the files are actually there,
 mountPrize()      // and the scene stays out of the rotation until one loads

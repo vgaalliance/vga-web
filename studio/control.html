@@ -454,6 +454,10 @@
            never league-specific -- gating the off switch is how the bar got
            stranded on a fight night with no way to clear it. -->
       <button id="loadbarTgl" onclick="mnLoadbarToggle()">Schedule bar: ON</button>
+      <!-- whether the Callouts screen takes a turn in Auto-cycle. It only ever
+           does while there is a callout from the last 7 days; this takes it
+           out regardless. Not league-gated, same reason as the bar. -->
+      <button id="coTgl" onclick="mnCalloutsToggle()">Callouts: ON</button>
     </div>
     <div class="row" style="margin-bottom:10px">
       <button onclick="fireCoin()">🪙 Coin toss</button>
@@ -490,6 +494,9 @@
       <!-- Its own scene, not a corner of the poster one: a giveaway is a thing,
            to somebody, for doing something, and all three have to be read. -->
       <button onclick="standby('prize')">🎁 Prize</button>
+      <!-- the newest paid callouts, one picture at a time. Does nothing while
+           there are none from the last 7 days, rather than put up a blank. -->
+      <button onclick="standby('callouts')">🗯 Callouts</button>
       <button onclick="standby('cta')">📣 Call to action</button>
       <button onclick="standby('auto')">▶ Auto-cycle</button>
       <button class="hide" onclick="standby('off')">Hide</button>
@@ -836,6 +843,8 @@ channel.subscribe(s=>{ const el=document.getElementById('status')
 // the UBA one, which is centred -- so where they sit depends on which show is
 // running, and the overlay cannot know unless we tell it on every message.
 window.send=cmd=>{ if(cmd && cmd.league==null) cmd.league = EV
+  // every board press also carries the Callouts switch (see mnCalloutsToggle)
+  if(cmd && cmd.type==='standby' && cmd.callouts==null) cmd.callouts = window._calloutsOn!==false
   // ...and, while a Contender Series card is loaded, whose series it is. That
   // one stamp is how every screen knows: the contender fight clock answers,
   // the solo clock steps aside, and the overlay lifts its lower-left cards
@@ -1683,6 +1692,13 @@ window.mnLoadbar=async()=>{
 window._loadbarOn=false
 function _loadbarBtn(){ const b=document.getElementById('loadbarTgl'); if(b){ b.textContent='Schedule bar: '+(window._loadbarOn?'ON':'OFF'); b.classList.toggle('hide',!window._loadbarOn) } }
 window.mnLoadbarToggle=()=>{ window._loadbarOn=!window._loadbarOn; send({type:'loadbar', show:window._loadbarOn}); _loadbarBtn() }
+
+// the Callouts screen's place in the auto rotation. ON by default, like the
+// standby's own default; every board press carries it too (send), so
+// a standby source that reloads mid-show comes back in step with this button.
+window._calloutsOn=true
+function _coBtn(){ const b=document.getElementById('coTgl'); if(b){ b.textContent='Callouts: '+(window._calloutsOn?'ON':'OFF'); b.classList.toggle('hide',!window._calloutsOn) } }
+window.mnCalloutsToggle=()=>{ window._calloutsOn=!window._calloutsOn; send({type:'callouts', on:window._calloutsOn}); _coBtn() }
 
 window.mnTape=async()=>{
   const warn=t=>{ const l=document.getElementById('log'); const d=document.createElement('div')

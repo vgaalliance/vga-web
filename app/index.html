@@ -2674,6 +2674,15 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
 .world #wgl{z-index:1}   /* the WebGL sphere under the 2D layer, which then only carries the arcs */
 .world svg{position:absolute;left:0;right:0;top:0;width:100%;height:340px;pointer-events:none;z-index:3}
 #feedtxt{transition:opacity .3s}
+/* A CALLOUT on the arc: gold, its own case (only the names are upper-cased),
+   and the one face that takes a tap. #feedhit is a fat invisible stroke along
+   the arc, because 8px glyphs are too thin a target for a thumb. */
+#feedtxt.co{fill:#F5C842;text-transform:none;pointer-events:auto;cursor:pointer}
+#feedhit{fill:none;stroke:transparent;stroke-width:30;pointer-events:none}
+#feedhit.on{pointer-events:stroke;cursor:pointer}
+.cosheet{padding:0 18px 28px}
+.cosheet img{display:block;width:100%;height:auto;border-radius:14px;background:#120A24}
+.cosheet .when{margin-top:12px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;color:#9C8FC4;text-transform:uppercase}
 .pv.home.offscreen .stand i{animation-play-state:paused}
 #turn{display:none;position:fixed;inset:0;z-index:200;background:#02010A;opacity:.995;color:#EFEAFF;align-items:center;justify-content:center;flex-direction:column;gap:8px;text-align:center}
 #turn .ic{font-size:44px;color:#A78BFA;animation:turnspin 2.4s ease-in-out infinite}
@@ -3424,6 +3433,7 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
 .world .dpkcap.on{opacity:1}
 .world .seat,#feedtxt,#bouttxt{transition:opacity .5s}
 .world.picking .seat,.world.picking #feedtxt,.world.picking #bouttxt{opacity:0 !important;pointer-events:none}
+.world.picking #feedhit{pointer-events:none}
 .dfly{position:fixed !important;left:0;top:0;z-index:95;pointer-events:none;will-change:transform;margin:0;transition:none !important}   /* .wrapper's .12s transform transition made the flyer trail and ghost onto the tear */
 .dfly.wrapper{width:42px;height:56px;border-radius:6px;transform-origin:50% 50%;box-shadow:0 0 22px rgba(176,139,250,.6)}
 #tear.daily{background:rgba(10,7,26,.42);-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2)}
@@ -4210,7 +4220,9 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
     <canvas id="wgl"></canvas><canvas id="wcv"></canvas>
     <svg id="wsvg" viewBox="0 0 393 340" preserveAspectRatio="xMidYMin meet"><defs>
       <path id="feedarc" d="M 65,223.5 A 142,142 0 0 0 328,223.5"/></defs>
+      <path id="feedhit" d="M 65,223.5 A 142,142 0 0 0 328,223.5"/>
       <text id="feedtxt"><textPath href="#feedarc" startOffset="50%" text-anchor="middle"></textPath></text>
+      <text id="feedmeasure" visibility="hidden" aria-hidden="true"></text>
       <path id="boutarc" d="M 0,0" fill="none"/>
       <text id="bouttxt"><textPath href="#boutarc" startOffset="50%" text-anchor="middle"></textPath></text></svg>
     <div class="gx"></div><div class="grab" id="wgrab"></div><div id="seats"></div>
@@ -4915,7 +4927,7 @@ async function loadHome(){
     loadFaceoffs(ids).then(function(){ renderFan(true); renderNextEvent(); });
     loadWorldArcs();
   }
-  await Promise.all([loadLive(), loadRanks(), loadHomeNews(), loadStrip(), loadWorldData()]);
+  await Promise.all([loadLive(), loadRanks(), loadHomeNews(), loadStrip(), loadWorldData(), loadArcCallouts()]);
   startWorld(); renderNextEvent();
   buildArcFaces();
   maybeDailyPick();
@@ -5806,7 +5818,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v263';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v265';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -6374,11 +6386,75 @@ function startWorld(){
 var worldResume = null, worldCtl = null;
 
 /* The feed line rides the arc under the sphere: the same strip text the old
-   home showed in a bar, now on the world. */
-function paintFeedArc(text){
+   home showed in a bar, now on the world. A face is a plain string, or
+   { co: row } for a callout — which scrolls instead of standing still. */
+var arcScroll = null;
+function paintFeedArc(face){
   var t = document.querySelector('#feedtxt textPath'); if(!t) return;
-  t.textContent = text ? '// FEED · ' + text : '';
+  var txt = document.getElementById('feedtxt'), hit = document.getElementById('feedhit');
+  if(arcScroll){ cancelAnimationFrame(arcScroll); arcScroll = null; }
+  clearTimeout(arcTimer); arcTimer = null;
+  var co = face && typeof face === 'object' ? face.co : null;
+  txt.classList.toggle('co', !!co);
+  if(hit) hit.classList.toggle('on', !!co);
+  t.setAttribute('startOffset', '50%'); t.setAttribute('text-anchor', 'middle');
+  if(!co){
+    t.textContent = face ? '// FEED · ' + face : '';
+    if(arcFaces.length > 1) arcTimer = setTimeout(flipArc, 8000);
+    return;
+  }
+  var line = '📣 ' + String(co.buyer_name || '').toUpperCase() + ' → '
+    + String(co.target_name || '').toUpperCase() + ' · “' + String(co.message || '').replace(/\s+/g, ' ').trim() + '”';
+  var arc = document.getElementById('feedarc'), len = arc && arc.getTotalLength ? arc.getTotalLength() : 336;
+  /* Reduced motion: no scroll, so the line is cut to what the arc holds and
+     stands for the usual 8s like any other face. */
+  if(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches){
+    var cut = line;
+    while(cut.length > 12 && arcTextWidth(cut + '…') > len - 12) cut = cut.slice(0, -1);
+    t.textContent = cut === line ? line : cut.replace(/\s+$/, '') + '…';
+    if(arcFaces.length > 1) arcTimer = setTimeout(flipArc, 8000);
+    return;
+  }
+  /* It enters at the right end of the arc and leaves off the left; glyphs
+     past either end are not drawn, so the arc itself is the window. The face
+     holds for exactly one pass, however long the message is. */
+  t.textContent = line;
+  t.setAttribute('text-anchor', 'start');
+  var w = arcTextWidth(line), from = len, to = -w, t0 = null, last = null;
+  var SPEED = 46;   // px a second: about four words, the pace a ticker is read at
+  t.setAttribute('startOffset', String(from));
+  function step(now){
+    arcScroll = requestAnimationFrame(step);
+    if(t0 === null){ t0 = now; last = now; }
+    /* Time off home, or with the app in the background (a long gap between
+       frames), is not scroll time: the line waits where it was. */
+    var gap = now - last; last = now;
+    if(currentTab !== 'home' || gap > 250){ t0 += gap; return; }
+    var x = from - (now - t0) / 1000 * SPEED;
+    t.setAttribute('startOffset', String(x));
+    if(x <= to){
+      cancelAnimationFrame(arcScroll); arcScroll = null;
+      if(arcFaces.length > 1) flipArc(); else paintFeedArc(face);
+    }
+  }
+  arcScroll = requestAnimationFrame(step);
 }
+/* The width a line takes on the arc, from a hidden twin with the same class,
+   because the font, the letter-spacing and the emoji all decide it. */
+function arcTextWidth(text){
+  var m = document.getElementById('feedmeasure'); if(!m || !m.getComputedTextLength) return text.length * 6.4;
+  m.setAttribute('class', document.getElementById('feedtxt').getAttribute('class') || '');
+  m.textContent = text;
+  var w = m.getComputedTextLength();
+  return w > 0 ? w : text.length * 6.4;
+}
+function openArcCallout(){
+  var f = arcFaces[arcAt];
+  if(f && typeof f === 'object' && f.co) openSheet({ kind:'callout', id: f.co.id, co: f.co });
+}
+['feedtxt', 'feedhit'].forEach(function(id){
+  var el = document.getElementById(id); if(el) el.addEventListener('click', openArcCallout);
+});
 
 /* THE ARC IS THE FEED NOW — one line under the sphere, rotating every 8s.
    Everything on it is already loaded for something else, so it costs no
@@ -6386,26 +6462,63 @@ function paintFeedArc(text){
    the newest headline. The order is the rule: LIVE first because it is
    happening now, then every PAID line in turn (somebody spent VC on it and it
    never gets buried), then the moments. A paid line is never dropped to make
-   room; the moments are what fill the gaps. */
+   room; the moments are what fill the gaps. Callouts are paid lines too, and
+   the newest kind, so they go first among them. */
 var arcFaces = [], arcAt = 0, arcTimer = null;
+function arcKey(x){ return typeof x === 'object' ? 'co:' + x.co.id : x; }
 function buildArcFaces(){
   var f = [];
   if(liveNow && liveNow.video_id) f.push(liveNow.match_kind === 'rerun' ? 'RERUN ON NOW' : 'LIVE NOW · ' + (liveNow.event_name || liveNow.title || 'VGA'));
+  var now = Date.now();
+  (arcCallouts || []).forEach(function(c){
+    if(c && c.id && c.message && !(new Date(c.arc_until).getTime() < now)) f.push({ co: c });
+  });
   (stripFaces || []).forEach(function(x){ if(x.tab === 'Feed') f.push(String(x.v || '').replace(/<[^>]+>/g, '')); });
   var mv = rankMover();
   if(mv) f.push(mv);
   (stripFaces || []).forEach(function(x){ if(x.tab === 'News') f.push(String(x.v || '').replace(/<[^>]+>/g, '')); });
   if(!f.length) f.push('Fight cards, rankings and the collection.');
-  var same = f.join('\n') === arcFaces.join('\n');
+  var same = f.map(arcKey).join('\n') === arcFaces.map(arcKey).join('\n');
   arcFaces = f;
   if(!same){ arcAt = 0; paintFeedArc(arcFaces[0]); }
-  if(arcFaces.length > 1 && !arcTimer) arcTimer = setInterval(flipArc, 8000);
+  else if(arcFaces.length > 1 && !arcTimer && !arcScroll) arcTimer = setTimeout(flipArc, 8000);
 }
 function flipArc(){
-  if(currentTab !== 'home' || document.hidden || arcFaces.length < 2) return;
+  arcTimer = null;
+  if(currentTab !== 'home' || document.hidden || arcFaces.length < 2){
+    if(arcFaces.length > 1) arcTimer = setTimeout(flipArc, 8000);
+    return;
+  }
   var t = document.getElementById('feedtxt'); if(!t) return;
   t.style.opacity = '0';
   setTimeout(function(){ arcAt = (arcAt + 1) % arcFaces.length; paintFeedArc(arcFaces[arcAt]); t.style.opacity = '1'; }, 300);
+}
+
+/* CALLOUTS on the arc: the live ones, newest first (the view only returns
+   rows still inside their 24h). Read with home's other data and every five
+   minutes while the app is open, like the live check. Any failure is silent
+   and just leaves the arc as it was. */
+var arcCallouts = [];
+async function loadArcCallouts(){
+  var rows = await q("callouts_public?select=id,buyer_name,target_name,message,image_url,posted_at,arc_until"
+    + "&on_arc=eq.true&order=posted_at.desc&limit=5");
+  if(!rows) return;
+  var next = rows.slice();
+  var changed = next.map(function(c){ return c.id; }).join() !== arcCallouts.map(function(c){ return c.id; }).join();
+  arcCallouts = next;
+  if(changed && arcFaces.length) buildArcFaces();
+}
+setInterval(function(){ if(document.visibilityState === 'visible') loadArcCallouts(); }, 5 * 60 * 1000);
+
+/* The callout's own sheet: the picture the bot drew, and when. Nothing else —
+   the picture already says who, to whom and what. */
+function renderCallout(entry){
+  var body = document.getElementById('sheet-body');
+  var c = entry.co || {};
+  body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div></div>'
+    + '<div class="cosheet">'
+    + (c.image_url ? '<img src="' + esc(c.image_url) + '" alt="' + esc((c.buyer_name || '') + ' calls out ' + (c.target_name || '') + ': ' + (c.message || '')) + '">' : '')
+    + '<div class="when">Posted ' + esc(agoStr(c.posted_at)) + '</div></div>';
 }
 /* The biggest climb on the board being shown, as a sentence — "Bloob up 3 to
    #2 HW · Sep 3". A fighter new to the board is not a climb (prev_rank null),
@@ -7839,6 +7952,7 @@ function renderSheet(entry){
   if(entry.kind === 'train')    return renderTrain();
   if(entry.kind === 'spar')      return renderSpar();
   if(entry.kind === 'staff')     return renderStaff(entry.sub);
+  if(entry.kind === 'callout')   return renderCallout(entry);
   if(entry.kind === 'kit')       return renderKit();
   if(entry.kind === 'kit-photo') return renderKitPhoto(entry.id);
   if(entry.kind === 'kit-file')  return renderKitFile(entry.id);
