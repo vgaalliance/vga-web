@@ -1422,8 +1422,7 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
 .ypgr b.up{color:#6EE7B7}
 .ypgr em{display:block;font-style:normal;font-size:11.5px;color:#9C93BC;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ypth{width:34px;height:46px;flex-shrink:0;border-radius:6px;overflow:hidden;border:2px solid var(--c);
-  background:linear-gradient(160deg,color-mix(in srgb,var(--c) 30%,#1A1533),#120E26)}
-.ypth{position:relative;display:grid;place-items:center}
+  background:linear-gradient(160deg,color-mix(in srgb,var(--c) 30%,#1A1533),#120E26);position:relative;display:grid;place-items:center}
 .ypth i{font-style:normal;font-family:'Bebas Neue',sans-serif;font-size:17px;color:var(--c);opacity:.8}
 .ypth img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top;display:block}
 .ypring{width:40px;height:40px;flex-shrink:0;border-radius:50%;display:grid;place-items:center;
@@ -1576,7 +1575,7 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
    on the left; a stub on the right with your money on that card, or its pots;
    the main event as one line under the clock with its two prices. */
 .bk-tk{display:grid;grid-template-columns:minmax(0,1fr) 92px;margin:0 16px 10px;border-radius:16px;overflow:hidden;cursor:pointer;
-  border:1px solid rgba(185,162,255,.45);background:rgba(16,12,38,.88);-webkit-tap-highlight-color:transparent}
+  border:1px solid rgba(185,162,255,.45);background:rgba(16,12,38,.88);-webkit-tap-highlight-color:transparent;position:relative;isolation:isolate}
 .bk-main{padding:10px 11px 9px;display:grid;gap:3px;min-width:0;align-content:center}
 .bk-ev{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:24px;line-height:1;letter-spacing:.02em}
 .bk-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
@@ -1591,7 +1590,6 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
 .bk-up span,.bk-up em{color:#B0544D;font-size:15px;margin-left:1px;font-style:normal}
 .bk-up em{margin-left:4px}
 .bk-when.on{color:#FF8A80}
-.bk-tk{position:relative;isolation:isolate}
 .bk-tk > .bk-main,.bk-tk > .bk-stub,.bk-tk > .bk-hl{position:relative;z-index:1}
 .bk-lq{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;border-radius:16px}
 .bk-lq .dzD{opacity:1}
@@ -2786,17 +2784,17 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
    shrink. */
 /* One shelf per set, scrolled sideways. A grid sorts by nothing a collector
    cares about; a shelf is the set, in order, ending in the pack that fills it. */
+/* The last card fades at the edge, so a shelf reads as a row that goes on. */
 .shelf{display:flex;gap:11px;margin:0 15px;padding:8px 0 10px;overflow-x:auto;
-  scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 44px),transparent);
+  mask-image:linear-gradient(90deg,#000 calc(100% - 44px),transparent)}
 /* SIDEWAYS ONLY. overflow-x:auto quietly turns overflow-y into auto as well,
    and the copy badge and the fanned ghosts poke a few pixels past the slab —
    so a shelf scrolled up and down by those few pixels under your thumb. The
    padding above makes room for the badge; hidden stops the wobble. */
 .shelf,.sealrail{overflow-y:hidden;overscroll-behavior-x:contain}
-/* The last card fades at the edge, so a shelf reads as a row that goes on.
-   `.end` takes the fade off once you have scrolled to the last card. */
-.shelf{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 44px),transparent);
-  mask-image:linear-gradient(90deg,#000 calc(100% - 44px),transparent)}
+/* `.end` takes the shelf's edge fade off once you have scrolled to the last card. */
 .shelf.end{-webkit-mask-image:none;mask-image:none}
 #binder .lab s{font-size:10px;letter-spacing:.06em;color:#B0A4D8}
 #binder .seeall{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.06em;
