@@ -2327,9 +2327,6 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
    FIGHTERS grid: same class name, defined later, so `display:flex` and a dark
    background landed on 445 fighter cards and the photos stopped showing.
    Dead CSS is not free when the name is already taken. */
-.ofr .vs3{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.02em;
-  line-height:1.05;margin-top:6px}
-.ofr .s{font-family:'Space Mono',monospace;font-size:8px;color:#8B83AC;margin-top:5px}
 
 /* wallet */
 .bigbal{margin:2px 16px 4px;padding:18px 16px;border-radius:15px;text-align:center;
@@ -2347,8 +2344,6 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
 .bigbal .io .lbl{font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;color:#7E7699}
 
 /* contract */
-/* the sign / turn-down row sits inside the same 16px the deal card does */
-#ctr > .acts{margin:11px 16px 0}
 .deal{margin:0 16px 8px;padding:15px 16px;border-radius:14px;position:relative;
   background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.13)}
 .deal.offer{border-color:rgba(245,200,66,.4);
@@ -2366,18 +2361,114 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
 .deal .since{margin-top:13px;font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.1em;
   text-transform:uppercase;color:#7E7699}
 
-/* offers */
-.ofr{margin:0 16px 8px;padding:13px 14px;border-radius:13px;
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.13)}
-.ofr.tent{border-color:rgba(167,139,250,.32)}
-.ofr .hd2{display:flex;align-items:center;gap:8px;font-family:'Space Mono',monospace;font-size:8px;
-  font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#C3A6FF}
-.ofr .hd2 .st{margin-left:auto;font-size:6.5px;letter-spacing:.13em;color:#F5C842;
-  border:1px solid rgba(245,200,66,.4);border-radius:20px;padding:3px 7px}
-.ofr.tent .hd2 .st{color:#C3A6FF;border-color:rgba(167,139,250,.4)}
-.ofrgo{display:block;width:100%;margin-top:11px;text-align:center;border:1px solid rgba(255,255,255,.2);
-  border-radius:7px;padding:9px 0;font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;
-  letter-spacing:.14em;text-transform:uppercase;color:#C3A6FF}
+/* ── FIGHT OFFERS + CONTRACT ── the two rooms behind "Needs you now".
+   An OFFER is a fight ticket: the two of you face off in a star window, the
+   date, bell and rounds ride a frosted bar inside the picture, and the ticket
+   ends in a split footer — the card's status on the left, See the card on the
+   right. One answer row under it: Accept, Tentative, and Decline as the
+   smallest thing on the row, which asks once before it does anything.
+   A CONTRACT is a tier card in its metal, a pip per guaranteed fight, and a
+   line that says when it ends: it runs out after its last guaranteed fight.
+   Nothing here spends VC, so nothing is gold except a title fight's star. */
+.ofx{position:relative;min-height:100dvh;padding-bottom:calc(90px + env(safe-area-inset-bottom,0px));
+  margin-bottom:calc(-62px - env(safe-area-inset-bottom,0px));background:#120E24}
+.ofhead{display:flex;align-items:center;gap:12px;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 8px}
+.sheet .ofhead .back{position:static;flex:none}
+.ofhead .up{font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.18em;color:#8B83AC;line-height:1;margin-bottom:4px}
+.ofhead .t{font-family:'Bebas Neue',sans-serif;font-size:27px;letter-spacing:.05em;line-height:1}
+.ofstars{background:
+  radial-gradient(1px 1px at 12% 22%,#fff,transparent 70%),radial-gradient(1px 1px at 78% 14%,#fff,transparent 70%),
+  radial-gradient(1.4px 1.4px at 34% 64%,rgba(255,255,255,.9),transparent 70%),radial-gradient(1px 1px at 88% 58%,#fff,transparent 70%),
+  radial-gradient(1px 1px at 58% 36%,rgba(255,255,255,.7),transparent 70%),radial-gradient(1.2px 1.2px at 22% 86%,rgba(255,255,255,.8),transparent 70%),
+  radial-gradient(ellipse at 50% 120%,rgba(185,162,255,.42),transparent 62%),linear-gradient(#0B0A12,#151030)}
+.otk{margin:4px 14px 0;border-radius:16px;overflow:hidden;background:#1B1638;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+.otk .win{position:relative;height:214px;overflow:hidden}
+.otk .win img{position:absolute;bottom:52px;height:138px;max-width:none}
+.otk .win img.l{left:3%}
+.otk .win img.r{right:3%;transform:scaleX(-1)}
+.otk .win .gh{position:absolute;bottom:52px;width:110px;height:140px;display:flex;align-items:flex-end;justify-content:center;color:rgba(185,162,255,.22)}
+.otk .win .gh svg{width:100%;height:100%;fill:currentColor}
+.otk .win .gh.l{left:5%}.otk .win .gh.r{right:5%}
+.otk .win .vs{position:absolute;left:0;right:0;bottom:104px;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:30px;color:#C3A6FF;z-index:3}
+.otk .win .ev{position:absolute;left:12px;top:10px;right:110px;z-index:3;text-shadow:0 1px 8px rgba(0,0,0,.8)}
+.otk .win .ev b{display:block;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:22px;line-height:1;letter-spacing:.04em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.otk .win .ev s{display:inline-block;text-decoration:none;font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.14em;margin-top:4px;color:#D9D0FF}
+.otk .win .ev s.ti{color:#F5C842}
+.otk .win .stamp{position:absolute;right:10px;top:10px;z-index:3;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.14em;
+  padding:4px 8px;border-radius:6px;border:1.5px solid #B9A2FF;color:#B9A2FF}
+.otk .win .fl{position:absolute;left:0;right:0;bottom:0;height:96px;background:linear-gradient(transparent,rgba(11,10,18,.96) 55%);z-index:2}
+.otk .win .nm{position:absolute;bottom:56px;z-index:3;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;
+  text-transform:uppercase;letter-spacing:.03em;max-width:46%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.otk .win .nm.l{left:12px}.otk .win .nm.r{right:12px;text-align:right}
+.otk .win .nm small{display:block;font-family:'Space Mono',monospace;font-size:8px;color:#9C94BE;letter-spacing:.1em;font-weight:400;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.otk .glass{position:absolute;left:8px;right:8px;bottom:8px;z-index:4;display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;white-space:nowrap;
+  background:rgba(20,16,40,.6);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.otk .glass b{font-family:'Bebas Neue',sans-serif;font-size:17px;font-weight:400;letter-spacing:.03em;line-height:1}
+.otk .glass b.t{color:#5FD98A}
+.otk .glass i{width:1px;height:16px;background:rgba(255,255,255,.2);flex:none}
+.otk .glass span{font-family:'Space Mono',monospace;font-size:10px;color:#D9D0FF}
+.otk .sf{display:flex;width:100%;height:42px;border:0;border-top:1px solid rgba(255,255,255,.12);background:none;padding:0;cursor:pointer;
+  font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.06em;white-space:nowrap;color:inherit;text-align:left}
+.otk .sf .st{flex:1;min-width:0;display:flex;align-items:center;gap:7px;padding:0 12px}
+.otk .sf .st i{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.otk .sf.on .st{background:rgba(95,217,138,.12);color:#6EE7B7}
+.otk .sf.on .st i{box-shadow:0 0 8px currentColor}
+.otk .sf.off .st{color:#9C94BE}
+.otk .sf.off .st i{background:none;border:1.5px solid currentColor;width:6px;height:6px}
+.otk .sf .go{display:flex;align-items:center;padding:0 13px;color:#C3A6FF;border-left:1px solid rgba(255,255,255,.12)}
+.ofans{display:flex;align-items:center;gap:8px;padding:14px 16px 22px}
+.ofbt{display:inline-flex;align-items:center;justify-content:center;height:44px;border-radius:12px;padding:0 14px;border:1px solid transparent;cursor:pointer;
+  font-family:'Space Mono',monospace;font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;background:none;color:#EDEAF6}
+.ofbt.go{background:#5FD98A;color:#082416;flex:1.5}
+.ofbt.ol{border-color:rgba(255,255,255,.28);flex:1}
+.ofbt.lav{background:#B9A2FF;color:#1A1236;flex:1}
+.ofbt.red{border-color:rgba(241,156,150,.6);color:#F19C96;flex:1}
+.ofbt.redf{background:#F19C96;color:#2A0F0D;flex:1}
+.ofbt[disabled]{opacity:.55}
+.ofdec{flex:none;padding:10px 4px 10px 6px;border:0;background:none;cursor:pointer;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;color:#F19C96;opacity:.85}
+.ofconf{margin:12px 16px 22px;padding:14px;border-radius:14px;background:rgba(241,156,150,.08);box-shadow:inset 0 0 0 1px rgba(241,156,150,.3)}
+.ofconf b{display:block;font-size:14.5px;margin-bottom:4px}
+.ofconf p{font-size:12.5px;color:#C7BEE4;margin:0 0 12px;line-height:1.45}
+.ofconf .row{display:flex;gap:8px}
+.ofempty{text-align:center;padding:60px 26px 0}
+.ofempty .ic{width:64px;height:64px;border-radius:50%;margin:0 auto 14px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;color:#8B83AC}
+.ofempty .ic svg{width:26px;height:26px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ofempty b{display:block;font-size:17px;margin-bottom:6px}
+.ofempty p{font-size:13px;color:#9C94BE;margin:0 auto;max-width:32ch;line-height:1.45}
+.ofsec{display:flex;align-items:baseline;gap:8px;margin:18px 16px 8px}
+.ofsec b{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.ofnote{margin:10px 16px 0;font-size:12.5px;color:#9C94BE;line-height:1.45}
+.ofrow{display:flex;gap:8px;padding:12px 16px 0}
+.ctc{margin:4px 14px 0;border-radius:16px;overflow:hidden;position:relative;padding:14px 14px 12px;color:#fff;background:linear-gradient(135deg,#4C4470,#221D3C 55%,#151228)}
+.ctc.bronze{background:linear-gradient(135deg,#8A5422,#3A2210 55%,#1E140C)}
+.ctc.silver{background:linear-gradient(135deg,#8E97A6,#3A3F4A 55%,#1A1C22)}
+.ctc.gold{background:linear-gradient(135deg,#B08A2A,#4A3A12 55%,#1E180A)}
+.ctc.platinum{background:linear-gradient(135deg,#7FB7C9,#2E4A55 55%,#122028)}
+.ctc.offer{box-shadow:0 0 0 2px #B9A2FF}
+.ctc::after{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.12) 45%,transparent 60%);pointer-events:none}
+.ctc .k{font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.18em;color:rgba(255,255,255,.75)}
+.ctc .tier{font-family:'Bebas Neue',sans-serif;font-size:44px;line-height:.9;letter-spacing:.04em;margin-top:2px}
+.ctc .pips{position:absolute;right:14px;top:14px;display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:124px}
+.ctc .pips i{width:11px;height:11px;border-radius:50%;border:1.5px solid rgba(255,255,255,.7)}
+.ctc .pips i.u{background:#fff;border-color:#fff}
+.ctc .pips em{font-style:normal;font-family:'Space Mono',monospace;font-size:11px;font-weight:700}
+.ctc .pay{display:grid;grid-template-columns:1fr 1fr;margin-top:12px;gap:8px}
+.ctc .pay b{display:block;font-family:'Space Mono',monospace;font-size:17px}
+.ctc .pay s{text-decoration:none;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.14em;color:rgba(255,255,255,.7)}
+.ctc .ends{margin-top:12px;padding-top:9px;border-top:1px solid rgba(255,255,255,.18);font-size:12.5px;display:flex;gap:6px;align-items:baseline}
+.ctc .ends em{margin-left:auto;font-style:normal;font-family:'Space Mono',monospace;font-size:9.5px;color:rgba(255,255,255,.7);white-space:nowrap}
+.ctdiff{display:flex;gap:6px;flex-wrap:wrap;margin:10px 16px 0}
+.ctdiff span{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;padding:4px 8px;border-radius:7px;background:rgba(255,255,255,.08);color:#D9D0FF}
+.ctdiff span.up{background:rgba(95,217,138,.14);color:#8FEFB4}
+.ctdiff span.dn{background:rgba(241,156,150,.14);color:#F19C96}
+.ctlad{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:0 16px}
+.ctlad div{padding:9px 0 8px;text-align:center;border-radius:9px;background:rgba(255,255,255,.04);font-family:'Barlow Condensed',sans-serif;
+  font-size:13px;font-weight:700;text-transform:uppercase;color:#8B83AC}
+.ctlad div.on{background:rgba(255,255,255,.12);color:#fff;box-shadow:inset 0 -2px 0 #B9A2FF}
+.ctlad div.nx{color:#D9D0FF}
 
 /* where you actually answer. The app has no member write path yet, so this
    points at the one that exists rather than showing a button that lies. */
@@ -9639,7 +9730,7 @@ document.addEventListener('click', async function(e){
     /* Accept and tentative are freely changeable, so they go straight through.
        Declining takes you OFF a built card and the matchmakers act on it, so it
        gets the one confirm in the app. */
-    if(b.getAttribute('data-answer') === 'declined'
+    if(b.getAttribute('data-answer') === 'declined' && !b.hasAttribute('data-confirmed')
        && !confirm('Decline this fight? The matchmakers will replace you on the card.')) return;
     busy(b, true, 'Saving…');
     var r = await rpc('app_answer_offer',
@@ -9655,7 +9746,7 @@ document.addEventListener('click', async function(e){
   }
 
   if((b = e.target.closest('[data-decline]'))){
-    if(!confirm('Turn down this contract? It cannot be re-opened from the app.')) return;
+    if(!b.hasAttribute('data-confirmed') && !confirm('Turn down this contract? It cannot be re-opened from the app.')) return;
     busy(b, true, '…');
     var r0 = await rpc('app_decline_contract', { p_contract_id: b.getAttribute('data-decline') });
     busy(b, false);
@@ -12029,101 +12120,203 @@ async function renderWallet(){
     + '<div class="foot">VC is league currency \u2014 it is never real money</div>';
 }
 
-/* ── CONTRACT ── the terms, and the offer if one is on the table. */
+/* ── FIGHT OFFERS + CONTRACT ─────────────────────────────────────────
+   Both rooms answer through the SAME server calls as the Discord DM
+   (app_answer_offer, app_accept_contract, app_decline_contract) and the one
+   write handler further up; nothing here writes on its own. Decline and Turn
+   down ask once IN the screen (data-confirmed tells the handler it was asked). */
+var OF_GHOST = '<svg viewBox="0 0 100 120"><circle cx="50" cy="30" r="17"/><path d="M14 120c0-34 14-58 36-58s36 24 36 58z"/></svg>';
+var OF_TIERS = ['bronze', 'silver', 'gold', 'platinum'];
+function ofHead(title){
+  return '<div class="ofhead">' + backButton() + '<div><div class="up">YOU</div><div class="t">' + esc(title) + '</div></div></div>';
+}
+function ofEmpty(icon, title, sub){
+  return '<div class="ofempty"><div class="ic"><svg viewBox="0 0 24 24">' + icon + '</svg></div><b>' + title + '</b><p>' + sub + '</p></div>';
+}
+var OF_MAIL = '<rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M4 7l8 6 8-6"/>';
+var OF_PEN = '<path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/>';
+
+/* Where a bout sits on its card, in the card's own words. Bout 1 of the main
+   card is the main event (card-format.js's rule: bout_number is card order). */
+function ofSlot(o){
+  if(o.is_title_fight) return o.title_name ? String(o.title_name).toUpperCase() : 'TITLE FIGHT';
+  var seg = String(o.card_segment || '');
+  if(seg === 'main_card') return o.bout_number === 1 ? 'MAIN EVENT' : o.bout_number === 2 ? 'CO-MAIN EVENT' : 'MAIN CARD';
+  return seg ? seg.replace(/_/g, ' ').toUpperCase() : '';
+}
+function ofEtDay(d){ return new Date(d).toLocaleDateString('en-US', { timeZone: 'America/New_York' }); }
+function ofTicket(o, pics){
+  var mine = myFighter && pics[myFighter.fighter_slug], his = o.opponent_slug && pics[o.opponent_slug];
+  function cut(p, side){ return p && (p.thumb_url || p.cutout_url)
+    ? '<img class="' + side + '" src="' + esc(p.thumb_url || p.cutout_url) + '" alt="" onerror="this.remove()">'
+    : '<span class="gh ' + side + '">' + OF_GHOST + '</span>'; }
+  var tonight = ofEtDay(o.event_date) === ofEtDay(Date.now());
+  var day = tonight ? 'TONIGHT' : new Date(o.event_date).toLocaleDateString('en-US', { timeZone: 'America/New_York',
+    weekday: 'short', month: 'short', day: 'numeric' }).replace(',', '').toUpperCase();
+  var bell = new Date(o.event_date).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' });
+  var slot = ofSlot(o);
+  return '<div class="otk"><div class="win ofstars">'
+    + '<div class="ev"><b>' + esc(String(o.event_name || '').toUpperCase()) + '</b>'
+    + (slot ? '<s' + (o.is_title_fight ? ' class="ti"' : '') + '>' + (o.is_title_fight ? '★ ' : '') + esc(slot) + '</s>' : '') + '</div>'
+    + (o.status === 'tentative' ? '<div class="stamp">TENTATIVE</div>' : '')
+    + cut(mine, 'l') + cut(his, 'r') + '<div class="vs">VS</div><div class="fl"></div>'
+    + '<div class="nm l">You<small>' + esc(String((myFighter && myFighter.fighter_name) || '').toUpperCase()) + '</small></div>'
+    + '<div class="nm r">' + esc(o.opponent_name || 'TBA') + '<small>' + esc(wc(o.weight_class).toUpperCase()) + '</small></div>'
+    + '<div class="glass"><b' + (tonight ? ' class="t"' : '') + '>' + esc(day) + '</b><i></i><b>' + esc(bell) + '</b><span>ET</span><i></i>'
+    + '<span>' + (o.scheduled_rounds ? o.scheduled_rounds + ' ROUNDS' : 'ROUNDS TBA') + '</span></div></div>'
+    + '<button class="sf ' + (o.card_published ? 'on' : 'off') + '" data-event="' + esc(o.event_id) + '">'
+    + '<span class="st"><i></i>' + (o.card_published ? 'CARD ANNOUNCED' : 'NOT ANNOUNCED YET') + '</span>'
+    + '<span class="go">SEE THE CARD ›</span></button></div>'
+    + '<div id="ofa-' + esc(o.offer_id) + '">' + ofAnswers(o) + '</div>';
+}
+function ofAnswers(o){
+  var id = esc(o.offer_id);
+  return '<div class="ofans">' + (o.status === 'tentative'
+      ? '<button class="ofbt go" data-answer="accepted" data-offer="' + id + '">Lock it in</button>'
+      : '<button class="ofbt go" data-answer="accepted" data-offer="' + id + '">Accept</button>'
+        + '<button class="ofbt ol" data-answer="tentative" data-offer="' + id + '">Tentative</button>')
+    + '<button class="ofdec" data-of-ask="' + id + '">Decline</button></div>';
+}
+var ofRows = [];
+
+/* ── OFFERS ── every fight waiting on your answer, soonest first. An offer
+   for a show that is over is not waiting on anybody: 45 such rows were live
+   on 2026-10-19, so they are left out here (the view keeps them). */
+async function renderOffers(){
+  var body = document.getElementById('sheet-body');
+  body.innerHTML = '<div class="ofx">' + ofHead('Fight offers') + '<div id="ofr"><div class="skel"></div><div class="skel" style="width:60%"></div></div></div>';
+  var el = document.getElementById('ofr');
+  if(!myFighter) await loadWhoAmI();
+  var rows = await qMe("my_offers?select=*&order=event_date.asc");
+  if(!el.isConnected) return;
+  if(!rows){ retryHandlers['ofr'] = renderOffers;
+    el.innerHTML = failHTML("Couldn't load your offers.", 'ofr'); return; }
+  var cutoff = Date.now() - 12 * 3600000;
+  rows = rows.filter(function(o){
+    return o.event_status !== 'completed' && o.event_status !== 'cancelled' && new Date(o.event_date).getTime() > cutoff;
+  });
+  ofRows = rows;
+  if(!rows.length){
+    el.innerHTML = ofEmpty(OF_MAIL, 'Nothing waiting.', 'When the matchmakers put you on a card, the offer lands here and in your Discord DMs. Answer in either.');
+    return;
+  }
+  var slugs = rows.map(function(o){ return o.opponent_slug; }).concat(myFighter ? [myFighter.fighter_slug] : []).filter(Boolean);
+  var pics = {};
+  var got = slugs.length ? await q("kit_fighters_public?select=slug,thumb_url,cutout_url&slug=in.("
+    + encodeURIComponent(slugs.map(function(x){ return '"' + String(x).replace(/"/g, '') + '"'; }).join(',')) + ")") : [];
+  if(!el.isConnected) return;
+  (got || []).forEach(function(p){ pics[p.slug] = p; });
+  el.innerHTML = rows.map(function(o){ return ofTicket(o, pics); }).join('');
+}
+
+/* ── CONTRACT ── the deal you have, and the one on the table if there is one. */
+function ctPay(c, k){ return c[k + '_vc'] != null ? Number(c[k + '_vc']).toLocaleString('en-US') : null; }
+function ctCard(c, offer){
+  var tier = String(c.tier || '').toLowerCase(), g = Number(c.guaranteed_fights || 0), u = Number(c.fights_used || 0), left = Math.max(0, g - u);
+  var pips = '';
+  if(g && g <= 12){ for(var i = 0; i < g; i++) pips += '<i' + (!offer && i < u ? ' class="u"' : '') + '></i>'; }
+  else if(g) pips = '<em>' + (offer ? g : u + '/' + g) + '</em>';
+  var show = ctPay(c, 'show'), win = ctPay(c, 'win');
+  var pay = show != null
+    ? '<div><b>' + show + '</b><s>VC TO SHOW</s></div><div><b>+' + win + '</b><s>VC TO WIN</s></div>'
+    : '<div><b>' + Number(c.show_pct || 0) + '%</b><s>OF THE PURSE</s></div><div><b>+' + Number(c.win_bonus_pct || 0) + '%</b><s>TO WIN</s></div>';
+  var ends = offer ? '<span>' + g + ' guaranteed ' + (g === 1 ? 'fight' : 'fights') + '</span>'
+    : (left === 0 ? 'Done after this event' : left === 1 ? 'Ends after your next fight' : 'Ends after ' + left + ' more fights')
+      + '<em>' + u + ' OF ' + g + ' USED</em>';
+  return '<div class="ctc ' + esc(tier) + (offer ? ' offer' : '') + '"><div class="k">' + (offer ? 'OFFERED TO YOU' : 'YOUR DEAL') + '</div>'
+    + '<div class="tier">' + esc(tier.toUpperCase() || 'SIGNED') + '</div><div class="pips">' + pips + '</div>'
+    + '<div class="pay">' + pay + '</div><div class="ends">' + ends + '</div></div>';
+}
+function ctLadder(tier){
+  var i = OF_TIERS.indexOf(String(tier || '').toLowerCase());
+  return '<div class="ofsec"><b>The ladder</b></div><div class="ctlad">' + OF_TIERS.map(function(t, j){
+    return '<div class="' + (j === i ? 'on' : j === i + 1 ? 'nx' : '') + '">' + t + '</div>'; }).join('') + '</div>';
+}
+function ctDiff(o, a){
+  if(!a) return '';
+  var out = [], oi = OF_TIERS.indexOf(o.tier), ai = OF_TIERS.indexOf(a.tier);
+  if(oi > ai) out.push('<span class="up">Up a tier</span>');
+  else if(oi < ai) out.push('<span class="dn">Down a tier</span>');
+  else out.push('<span>Same pay</span>');
+  if(o.guaranteed_fights !== a.guaranteed_fights) out.push('<span class="' + (o.guaranteed_fights > a.guaranteed_fights ? 'up' : 'dn') + '">'
+    + o.guaranteed_fights + ' fights, not ' + a.guaranteed_fights + '</span>');
+  return '<div class="ctdiff">' + out.join('') + '</div>';
+}
+function ctOfferActs(o){
+  return '<div id="cta-' + esc(o.contract_id) + '"><div class="ofrow"><button class="ofbt lav" data-sign="' + esc(o.contract_id) + '">Sign it</button>'
+    + '<button class="ofbt ol" data-ct-ask="' + esc(o.contract_id) + '">Turn down</button></div></div>';
+}
+var ctRows = null;
 async function renderMyContract(){
   var body = document.getElementById('sheet-body');
-  body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'
-    + '<div class="kick">Your deal</div><h3>Contract</h3></div>'
-    + '<div id="ctr"><div class="skel"></div><div class="skel" style="width:60%"></div></div>';
+  body.innerHTML = '<div class="ofx">' + ofHead('Contract') + '<div id="ctr"><div class="skel"></div><div class="skel" style="width:60%"></div></div></div>';
   var el = document.getElementById('ctr');
   var rows = await qMe("my_contract?select=*");
   if(!el.isConnected) return;
   if(!rows){ retryHandlers['ctr'] = renderMyContract;
     el.innerHTML = failHTML("Couldn't load your contract.", 'ctr'); return; }
+  ctRows = rows;
   var active  = rows.filter(function(c){ return c.status === 'active'; })[0];
   var offered = rows.filter(function(c){ return c.status === 'offered'; })[0];
   if(!active && !offered){
-    el.innerHTML = '<div class="empty"><b>No contract on file.</b><br>'
-      + 'Contracts are offered by the matchmakers as a Discord DM once you have fought.</div>';
+    el.innerHTML = ofEmpty(OF_PEN, 'No contract right now.', 'Deals are offered by the matchmakers as a Discord DM once you have fought. When one comes, you can sign it here too.')
+      + ctLadder('');
     return;
-  }
-  // Flat pay per fight (2026-09-24): show_vc/win_vc. A contract signed before
-  // the switch and never moved still has only the old % of revenue.
-  function pay(vc, pct){
-    return vc != null ? Number(vc).toLocaleString('en-US') + ' VC' : Number(pct||0) + '%';
-  }
-  function terms(c, tag){
-    return '<div class="deal '+(tag==='offer'?'offer':'')+'">'
-      + '<div class="tier">'+esc(String(c.tier||'Signed').toUpperCase())+'</div>'
-      + (tag==='offer' ? '<div class="tag">On the table</div>' : '')
-      + '<div class="grid">'
-      + '<div><span class="k">Show</span><span class="v">'+pay(c.show_vc, c.show_pct)+'</span></div>'
-      + '<div><span class="k">Win bonus</span><span class="v">'+(c.show_vc != null ? '+' : '')+pay(c.win_vc, c.win_bonus_pct)+'</span></div>'
-      + '<div><span class="k">Guaranteed</span><span class="v">'
-        + (c.guaranteed_fights ? c.guaranteed_fights + ' fights' : '\u2014')+'</span></div>'
-      + '<div><span class="k">Used</span><span class="v">'
-        + (c.guaranteed_fights ? Number(c.fights_used||0) + ' of ' + c.guaranteed_fights : Number(c.fights_used||0))
-        + '</span></div>'
-      + '</div>'
-      + (c.start_date
-          ? '<div class="since">Since '+esc(dstr(c.start_date,{year:'numeric'}))+'</div>' : '')
-      + '</div>';
   }
   var html = '';
   if(offered){
-    html += '<div class="lab"><b>Offered to you</b><i></i></div>' + terms(offered, 'offer')
-      + '<div class="acts">'
-      + '<button class="act yes" data-sign="'+esc(offered.contract_id)+'">Sign it</button>'
-      + '<button class="act no" data-decline="'+esc(offered.contract_id)+'">Turn it down</button>'
-      + '</div>'
-      + '<div class="doit">Signing retires your current deal in the same step. Turning it down '
-      + 'changes nothing — you keep the deal you have, and it cannot be re-opened from here.</div>';
+    html += ctCard(offered, true) + ctDiff(offered, active) + ctOfferActs(offered)
+      + '<div class="ofnote">' + (active ? 'Signing replaces your ' + esc(ofCap(active.tier)) + ' deal in the same step. Turning it down keeps the deal you have.'
+        : 'Paid automatically after every event you fight on.') + '</div>';
   }
   if(active){
-    html += '<div class="lab"><b>'+(offered ? 'Current deal' : 'Your deal')+'</b><i></i></div>' + terms(active);
-  }
-  html += '<div class="foot">Show and win bonus are shares of the event purse, paid in VC</div>';
+    html += (offered ? '<div class="ofsec"><b>Your deal now</b></div>' : '') + ctCard(active)
+      + (offered ? '' : ctLadder(active.tier) + '<div class="ofnote">Paid automatically after every event you fight on. When the last guaranteed fight is done, the deal ends.</div>');
+  } else html += ctLadder(offered.tier);
   el.innerHTML = html;
 }
+function ofCap(s){ s = String(s || ''); return s.charAt(0).toUpperCase() + s.slice(1); }
 
-/* ── OFFERS ── every fight waiting on your answer. */
-async function renderOffers(){
-  var body = document.getElementById('sheet-body');
-  body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'
-    + '<div class="kick">Waiting on you</div><h3>Fight offers</h3></div>'
-    + '<div id="ofr"><div class="skel"></div><div class="skel" style="width:60%"></div></div>';
-  var el = document.getElementById('ofr');
-  var rows = await qMe("my_offers?select=*&order=event_date.asc");
-  if(!el.isConnected) return;
-  if(!rows){ retryHandlers['ofr'] = renderOffers;
-    el.innerHTML = failHTML("Couldn't load your offers.", 'ofr'); return; }
-  if(!rows.length){
-    el.innerHTML = '<div class="empty"><b>Nothing waiting.</b><br>'
-      + 'Offers arrive as a Discord DM when the matchmakers put you on a card.</div>';
+/* The two in-screen asks. They only swap a row for a question; the write is
+   the same data-answer / data-decline button the handler above already runs. */
+document.addEventListener('click', function(e){
+  var a = e.target.closest('[data-of-ask]');
+  if(a){
+    var id = a.getAttribute('data-of-ask'), o = ofRows.filter(function(x){ return String(x.offer_id) === id; })[0];
+    var box = document.getElementById('ofa-' + id);
+    if(box) box.innerHTML = '<div class="ofconf"><b>Decline ' + esc((o && o.event_name) || 'this fight') + '?</b>'
+      + '<p>The matchmakers will replace you on the card. You can’t take it back from here.</p><div class="row">'
+      + '<button class="ofbt redf" data-answer="declined" data-confirmed data-offer="' + esc(id) + '">Decline</button>'
+      + '<button class="ofbt ol" data-of-keep="' + esc(id) + '">Keep it</button></div></div>';
     return;
   }
-  el.innerHTML = rows.map(function(o){
-    var when = new Date(o.event_date).toLocaleString('en-US',{ timeZone:'America/New_York',
-      weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
-    return '<div class="ofr'+(o.status==='tentative'?' tent':'')+'">'
-      + '<div class="hd2">'+esc(o.event_name)
-      + '<span class="st">'+(o.status === 'tentative' ? 'Tentative' : 'Unanswered')+'</span></div>'
-      + '<div class="vs3">'+esc(o.opponent_name || 'TBA')+'</div>'
-      + '<div class="s">'+esc(when)+' ET \u00b7 '+esc(wc(o.weight_class))
-      + (o.scheduled_rounds ? ' \u00b7 ' + o.scheduled_rounds + ' rounds' : '')
-      + (o.is_title_fight ? ' \u00b7 ' + esc(o.title_name || 'Title fight') : '')
-      + (o.card_published ? '' : ' \u00b7 card not announced')+'</div>'
-      + '<div class="acts">'
-      + '<button class="act yes" data-answer="accepted" data-offer="'+esc(o.offer_id)+'">Accept</button>'
-      + '<button class="act mid" data-answer="tentative" data-offer="'+esc(o.offer_id)+'">Tentative</button>'
-      + '<button class="act no" data-answer="declined" data-offer="'+esc(o.offer_id)+'">Decline</button>'
-      + '</div>'
-      + '<button class="ofrgo" data-event="'+esc(o.event_id)+'">See the card</button>'
-      + '</div>';
-  }).join('')
-  + '<div class="doit">Answering here is the same as answering the DM — one row, one answer. '
-  + 'Declining takes you off the card, and the matchmakers see it straight away.</div>';
-}
+  var k = e.target.closest('[data-of-keep]');
+  if(k){
+    var kid = k.getAttribute('data-of-keep'), ko = ofRows.filter(function(x){ return String(x.offer_id) === kid; })[0];
+    var kb = document.getElementById('ofa-' + kid);
+    if(kb && ko) kb.innerHTML = ofAnswers(ko);
+    return;
+  }
+  var c = e.target.closest('[data-ct-ask]');
+  if(c){
+    var cid = c.getAttribute('data-ct-ask'), rows = ctRows || [];
+    var off = rows.filter(function(x){ return String(x.contract_id) === cid; })[0], act = rows.filter(function(x){ return x.status === 'active'; })[0];
+    var cb = document.getElementById('cta-' + cid);
+    var keep = act ? 'You keep your ' + esc(ofCap(act.tier)) + ' deal: ' + Math.max(0, act.guaranteed_fights - act.fights_used) + ' '
+      + (act.guaranteed_fights - act.fights_used === 1 ? 'fight' : 'fights') + ' left. ' : '';
+    if(cb) cb.innerHTML = '<div class="ofconf"><b>Turn down ' + esc(ofCap(off && off.tier)) + ' × ' + esc((off && off.guaranteed_fights) || '') + '?</b>'
+      + '<p>' + keep + 'This offer can’t be re-opened from the app.</p><div class="row">'
+      + '<button class="ofbt red" data-decline="' + esc(cid) + '" data-confirmed>Turn it down</button>'
+      + '<button class="ofbt ol" data-ct-keep="' + esc(cid) + '">Keep it open</button></div></div>';
+    return;
+  }
+  var ck = e.target.closest('[data-ct-keep]');
+  if(ck){
+    var kc = ck.getAttribute('data-ct-keep'), ko2 = (ctRows || []).filter(function(x){ return String(x.contract_id) === kc; })[0];
+    var kcb = document.getElementById('cta-' + kc);
+    if(kcb && ko2) kcb.innerHTML = ctOfferActs(ko2).replace(/^<div id="cta-[^"]*">|<\/div>$/g, '');
+  }
+});
 
 /* ── BETTING ──────────────────────────────────────────────────────────
    TWO LEVELS, because a card is five to fifteen bouts and a flat board is
