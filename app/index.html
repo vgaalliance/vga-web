@@ -2203,8 +2203,8 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
 .sppk em{font-style:normal;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.2em;text-transform:uppercase;margin-top:4px;opacity:.7}
 .sppk i{position:absolute;left:0;right:0;height:9px;background:repeating-linear-gradient(90deg,rgba(0,0,0,.25) 0 3px,transparent 3px 6px)}
 .sppk i.t{top:0}.sppk i.b{bottom:0}
-.sprail{display:flex;gap:10px;overflow-x:auto;padding:2px 18px 6px;scroll-snap-type:x mandatory;scrollbar-width:none}
-.sprail::-webkit-scrollbar{display:none}
+.shprail{display:flex;gap:10px;overflow-x:auto;padding:2px 18px 6px;scroll-snap-type:x mandatory;scrollbar-width:none}
+.shprail::-webkit-scrollbar{display:none}
 .sppt{flex:none;width:104px;scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center}
 .sppt>b{font-size:12px;color:#fff;margin-top:6px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sppt>span{font-family:'Space Mono',monospace;font-size:11px;color:#fff;margin-bottom:4px}
@@ -11010,7 +11010,7 @@ async function renderShop(){
   if(packs.length){
     packs.forEach(function(r){ used[r.id] = 1; });
     html += '<div class="lab"><b>Packs</b><i></i><s>' + packs.length + (packs.length === 1 ? ' set' : ' sets') + '</s></div>'
-      + '<div class="sprail">' + packs.map(function(r){
+      + '<div class="shprail">' + packs.map(function(r){
           var s = shopSetOf(r.name);
           return '<div class="sppt">' + shopPack(s, 'Pack', 'm') + '<b>' + esc(s) + '</b><span>' + Number(r.vc_price).toLocaleString() + ' VC</span>' + buy(r) + '</div>';
         }).join('') + '</div>';
