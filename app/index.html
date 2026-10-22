@@ -2284,6 +2284,22 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
 .shlist{display:block;width:100%;margin-top:12px;padding:13px;border:0;border-radius:10px;background:#B9A2FF;color:#170F38;cursor:pointer;
   font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
 .shlist[disabled],.shlist.working{opacity:.55;pointer-events:none}
+/* WANTED: buy orders (economy plan §8). Green is money waiting for you. */
+.wntbox{margin-top:12px;padding:12px;border-radius:12px;background:rgba(110,231,183,.08);border:1px solid rgba(110,231,183,.35)}
+.wnthead{font-size:13px;line-height:1.4;color:#BFF3DD}
+.wnthead b{color:#fff}
+.wntbox .mkbig{margin-top:2px}
+.wntsell,.wntalt{display:block;width:100%;margin-top:10px;padding:13px;border-radius:10px;cursor:pointer;
+  font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.wntsell{border:0;background:#6EE7B7;color:#06281B}
+.wntalt{background:none;border:1px solid rgba(255,255,255,.22);color:#C9C1E6;padding:11px}
+.wntsell.working,.wntalt.working{opacity:.55;pointer-events:none}
+.shart em.wnt{top:4px;bottom:auto;background:#6EE7B7;color:#06281B}
+.mkp.wnt{color:#6EE7B7}
+.wntrow{display:flex;align-items:baseline;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:13px;color:#B7AEDC}
+.wntrow b{font-family:'Space Mono',monospace;color:#fff;font-size:13px}
+.wntrow span{margin-left:auto;font-size:11.5px}
+.wntrow.top b{color:#6EE7B7}
 /* THE CARD MARKET — two swipe rows. The buy row is legible at a glance; the
    sold row is deliberately half its size, because it is history you compare
    against rather than something you act on. Sizes are the whole hierarchy
@@ -10222,6 +10238,10 @@ async function loadCardMarket(cardId, cardName){
           + '</div>';
       }).join('') + '</div>'
     : '<div class="mnone">Nobody is selling this one</div>';
+  if(WNT_ON && me){
+    WNT_CARDS[cardId] = WNT_CARDS[cardId] || { card_id: cardId, name: cardName };
+    html += '<div style="margin:8px 18px 0"><button class="wntalt" data-wntnew="' + esc(cardId) + '">Post a Wanted for this card</button></div>';
+  }
 
   html += '<div class="sublab">Recently sold' + (sold.length ? ' \u00b7 ' + sold.length : '') + '</div>';
   html += sold.length
@@ -11063,6 +11083,7 @@ document.addEventListener('click', function(e){
 function cardIni(n){ return initials(String(n || '').replace(/["\u201c\u201d']/g, '')); }
 var MKT = null;
 var MKT_SORT = 'Cheapest';
+var MKT_VIEW = 'sale';   /* 'sale' | 'wanted' -- the second only while WNT_ON */
 var MKT_COLS = ['#B39BFF', '#F5C842', '#4FB8F0', '#6EE7B7', '#FF8FB1', '#FFB86B'];
 function mktColour(code){
   var h = 0; String(code || '').split('').forEach(function(ch){ h = (h * 31 + ch.charCodeAt(0)) >>> 0; });
@@ -11084,7 +11105,9 @@ async function renderMarket(){
     /* Which of these are MINE. Asked as a list of my own listing ids rather
        than by comparing a player id, because the page is never given one --
        app_me() lives in the database and the JWT carries a Discord id. */
-    me ? qMe("my_listings?select=listing_id") : Promise.resolve([])
+    me ? qMe("my_listings?select=listing_id") : Promise.resolve([]),
+    WNT_ON ? q("wanted_public?select=*&order=price.desc") : Promise.resolve([]),
+    WNT_ON && me ? qMe("my_wanted?select=wanted_id") : Promise.resolve([])
   ]);
   if(!el.isConnected) return;
   var rows = got[0];
@@ -11093,8 +11116,12 @@ async function renderMarket(){
   var bal = (got[1] && got[1].length) ? Number(got[1][0].vc_balance || 0) : null;
   var mine = {};
   (got[2] || []).forEach(function(r){ mine[r.listing_id] = true; });
+  var wanted = wntIndex(got[3] || [], got[4] || []);
 
-  if(!rows.length){ return mktEmpty(el); }
+  if(!rows.length){
+    MKT = { rows: [], cards: [], byCard: {}, bal: bal, wanted: wanted };
+    return MKT_VIEW === 'wanted' && WNT_ON ? wntDraw() : mktEmpty(el);
+  }
 
   /* the last sale of each card on the board, newest first */
   var ids = rows.map(function(r){ return r.card_id; }).filter(function(v, i, a){ return a.indexOf(v) === i; });
@@ -11119,8 +11146,8 @@ async function renderMarket(){
     c.newest = Math.max.apply(null, c.listings.map(function(l){ return Date.parse(l.created_at) || 0; }));
     c.allMine = !buyable.length;
   });
-  MKT = { rows: rows, cards: cards, byCard: byCard, bal: bal };
-  mktDraw();
+  MKT = { rows: rows, cards: cards, byCard: byCard, bal: bal, wanted: wanted };
+  if(MKT_VIEW === 'wanted' && WNT_ON) wntDraw(); else mktDraw();
 }
 
 function mktDraw(){
@@ -11137,7 +11164,7 @@ function mktDraw(){
     Newest: function(a, b){ return b.newest - a.newest; },
     Rarest: function(a, b){ return RSORT.indexOf(b.rarity) - RSORT.indexOf(a.rarity) || a.low - b.low; }
   }[MKT_SORT];
-  var html = '<div class="mkchips">' + ['Cheapest', 'Newest', 'Rarest'].map(function(s){
+  var html = wntViewChips() + '<div class="mkchips">' + ['Cheapest', 'Newest', 'Rarest'].map(function(s){
       return '<button data-mksort="' + s + '"' + (s === MKT_SORT ? ' class="on"' : '') + '>' + s + '</button>';
     }).join('') + '<span>' + MKT.cards.length + (MKT.cards.length === 1 ? ' card' : ' cards') + ' · '
     + MKT.rows.length + ' for sale</span></div>';
@@ -11169,12 +11196,21 @@ function mktTile(c){
     + '</span><span class="shn">' + esc(c.name) + '</span>'
     + '<span class="mkp">' + (n > 1 ? '<small>from </small>' : '') + c.low.toLocaleString() + '<i>VC</i></span>'
     + '<span class="mkcmp">' + cmp + '</span>'
-    + '<span class="shc">' + (c.allMine ? 'yours' : n + ' for sale' + (gr ? ' · ' + gr : '')) + '</span></button>';
+    + '<span class="shc">' + (c.allMine ? 'yours' : n + ' for sale' + (gr ? ' · ' + gr : '')) + '</span>'
+    + (WNT_ON && MKT.wanted.top[c.card_id] ? '<span class="shc mkup">wanted at ' + Number(MKT.wanted.top[c.card_id].price).toLocaleString() + '</span>' : '')
+    + '</button>';
 }
 
 async function mktEmpty(el){
-  el.innerHTML = '<div class="mkempty"><b>Nobody is selling right now.</b><span>Be the first: anything you list shows here for 7 days.</span>'
-    + '<button class="shlist" data-hub="shelf">Sell from your shelf</button></div><div id="mk-sold"></div>';
+  /* The sentence the Wanted board exists for: an empty shop with money
+     waiting in it is not a dead market. */
+  var nw = WNT_ON && MKT ? MKT.wanted.cards.length : 0;
+  el.innerHTML = wntViewChips() + (nw
+    ? '<div class="mkempty"><b>Nobody is selling — ' + nw + (nw === 1 ? ' card is' : ' cards are') + ' wanted.</b>'
+      + '<span>Players have VC held for these. If you have one, sell it now.</span>'
+      + '<button class="shlist" data-mkview="wanted">See what is wanted</button></div>'
+    : '<div class="mkempty"><b>Nobody is selling right now.</b><span>Be the first: anything you list shows here for 7 days.</span>'
+      + '<button class="shlist" data-hub="shelf">Sell from your shelf</button></div>') + '<div id="mk-sold"></div>';
   var sold = await q("card_sales_public?select=card_id,price,grade,settled_at&order=settled_at.desc&limit=8");
   var box = document.getElementById('mk-sold');
   if(!box || !sold || !sold.length) return;
@@ -11255,6 +11291,8 @@ function mktSheet(){
         + (bal >= price ? ' · after <b>' + (bal - price).toLocaleString() + '</b>' : '') + '</div>' : '')
       + btn;
   }
+  if(WNT_ON && me) bodyH += '<button class="wntalt" data-wntnew="' + esc(c.card_id) + '">Post a Wanted instead</button>';
+  WNT_CARDS[c.card_id] = c;
   host.innerHTML = '<div class="shscrim" data-mktclose></div><div class="shsheet" role="dialog" aria-label="Buy ' + esc(c.name) + '">'
     + '<div class="shgrab"></div>' + head + bodyH + '</div>';
   var g = document.getElementById('mkt-grade'), cp = document.getElementById('mkt-copy');
@@ -11270,6 +11308,11 @@ document.addEventListener('click', function(e){
   if(t){ mktOpen(t.getAttribute('data-mkt')); return; }
   var s = e.target.closest('[data-mksort]');
   if(s){ MKT_SORT = s.getAttribute('data-mksort'); mktDraw(); return; }
+  var v = e.target.closest('[data-mkview]');
+  if(v && MKT){ MKT_VIEW = v.getAttribute('data-mkview');
+    var mk = document.getElementById('mkt');
+    if(MKT_VIEW === 'wanted') wntDraw(); else if(MKT.rows.length) mktDraw(); else if(mk) mktEmpty(mk);
+    return; }
   if(e.target.closest('[data-mktclose]')) mktClose();
 });
 document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && MKT && MKT.open) mktClose(); });
@@ -11307,7 +11350,9 @@ async function renderShelf(){
 
   var got = await Promise.all([
     qMe("my_listings?select=*&order=created_at.desc"),
-    qMe("my_prints?select=*&order=set_code.asc,name.asc,print_number.asc")
+    qMe("my_prints?select=*&order=set_code.asc,name.asc,print_number.asc"),
+    WNT_ON ? q("wanted_public?select=*&order=price.desc") : Promise.resolve([]),
+    WNT_ON ? qMe("my_wanted?select=*&order=created_at.desc") : Promise.resolve([])
   ]);
   if(!el.isConnected) return;
   if(!got[0] || !got[1]){ retryHandlers['shf'] = renderShelf;
@@ -11323,7 +11368,8 @@ async function renderShelf(){
       set_code: p.set_code, photo_url: p.photo_url, price_typical: p.price_typical, sales: p.sales, prints: [] }; cards.push(c); }
     c.prints.push(p);
   });
-  SHF = { live: live, cards: cards, byCard: byCard, onSale: onSale };
+  var myW = got[3] || [];
+  SHF = { live: live, cards: cards, byCard: byCard, onSale: onSale, wanted: wntIndex(got[2] || [], myW) };
 
   var html = '<div class="lab"><b>On sale</b><i></i><s>' + live.length + ' of 20 used</s></div>';
   html += live.length ? live.map(function(r){
@@ -11336,6 +11382,7 @@ async function renderShelf(){
         + '<button class="shout" data-unlist="' + esc(r.listing_id) + '">Take down</button></div>';
     }).join('')
     : '<div class="shempty">Nothing on sale. Tap a card below to sell a copy.</div>';
+  if(WNT_ON) html += wntMineHTML(myW);
 
   if(!cards.length){
     el.innerHTML = html + '<div class="empty">You have no cards yet. Packs are in the <a data-hub="shop">Shop</a>.</div>' + shfRule();
@@ -11366,14 +11413,17 @@ function shfTile(c){
     : '';
   return '<button class="shtile" data-shf="' + esc(c.card_id) + '"><span class="shart r-' + esc(c.rarity || 'common')
     + (c.photo_url ? '' : ' noart') + '"><b>' + esc(c.name) + '</b>' + art
-    + (listed ? '<em>On sale</em>' : '') + '</span>'
+    + (listed ? '<em>On sale</em>' : '')
+    + (WNT_ON && SHF.wanted.top[c.card_id] ? '<em class="wnt">Wanted ' + Number(SHF.wanted.top[c.card_id].price).toLocaleString() + '</em>' : '')
+    + '</span>'
     + '<span class="shn">' + esc(c.name) + '</span>'
     + '<span class="shc' + (n === 1 ? ' only' : '') + '">' + (n === 1 ? 'only copy' : n + ' copies')
     + (listed ? ' · ' + listed + ' on sale' : '') + '</span></button>';
 }
 /* The rule of the screen, at body size, under what it explains. */
 function shfRule(){
-  return '<div class="shrule">Lowest price is 100 VC. Listings last 7 days. The 10% tax comes off what you get when it sells.</div>';
+  return '<div class="shrule">Lowest price is 100 VC. Listings last 7 days. The 10% tax comes off what you get when it sells.'
+    + (WNT_ON ? ' A Wanted holds your VC for 7 days. Sell now pays you the Wanted price less 10%.' : '') + '</div>';
 }
 
 /* ── THE SELL SHEET ── one sheet, the same every time. The copies you can
@@ -11457,7 +11507,9 @@ function shfDraw(){
     if(sel && sel.signed_name) warn = '<div class="shwarn"><b>Signed by ' + esc(sel.signed_name) + '.</b> The ink stays on this print. Buying the card back gets a different one.</div>';
     else if(only) warn = '<div class="shwarn"><b>This is your only ' + esc(c.name) + '.</b> If it sells, it leaves your binder.</div>';
     var full = SHF.live.length >= 20;
-    body = '<div class="shlab">Which copy</div>' + picker + warn
+    var wbox = WNT_ON ? wntSellHTML(SHF.wanted.byCard[c.card_id] || [], sel, c.name) : '';
+    body = '<div class="shlab">Which copy</div>' + picker + warn + wbox
+      + (wbox.indexOf('wntsell') >= 0 ? '<div class="shlab">Or list it</div>' : '')
       + (full ? '<div class="shnone">You have 20 on sale, the most at once. Take one down to list another.</div>'
         : '<div class="shpr"><input type="text" inputmode="numeric" autocomplete="off" placeholder="Your price" id="pin-' + esc(o.pid || '')
           + '" aria-label="Price in VC"><span>VC</span></div>'
@@ -11496,6 +11548,290 @@ document.addEventListener('click', function(e){
 document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && SHF && SHF.open) shfClose(); });
 /* Back (or anything that leaves the shelf) closes it too. */
 window.addEventListener('popstate', function(){ if(SHF && SHF.open) shfClose(); });
+
+/* ── WANTED ── buy orders on the Market. Design + the decisions Castle locked
+   on 2026-10-21: docs/economy-plan.md §8 in VGA Systems.
+   "I'll pay X VC for card Y, PSA N or better." The buyer's VC is held when it
+   goes up (app_post_wanted); anybody holding a copy that fits gets Sell now
+   (app_fill_wanted), which pays the Wanted price less the 10% tax.
+
+   HIDDEN until it is switched on: ?wanted=1 once on this device turns it on
+   (and remembers it), ?wanted=0 turns it off. Nobody sees a button until the
+   database half has been walked on live (the safety plan, §8). */
+var WNT_ON = (function(){
+  try{
+    var m = /[?&]wanted=([01])/.exec(location.search);
+    if(m) localStorage.setItem('vga-wanted', m[1]);
+    return localStorage.getItem('vga-wanted') === '1';
+  }catch(e){ return false; }
+})();
+var WNT_CARDS = {};   /* card fields a Post button can open with, by card_id */
+
+/* The board, grouped per card. `top` is the best Wanted somebody ELSE posted,
+   because a tile that shows your own price back to you reads as an offer. */
+function wntIndex(rows, mineRows){
+  var mine = {};
+  (mineRows || []).forEach(function(r){ mine[r.wanted_id] = true; });
+  var byCard = {}, cards = [], top = {};
+  (rows || []).forEach(function(r){
+    r.mine = !!mine[r.wanted_id];
+    if(!byCard[r.card_id]){ byCard[r.card_id] = []; cards.push(r.card_id); }
+    byCard[r.card_id].push(r);
+    if(!r.mine && (!top[r.card_id] || r.price > top[r.card_id].price)) top[r.card_id] = r;
+  });
+  return { rows: rows || [], byCard: byCard, cards: cards, top: top };
+}
+/* Which Wanted a copy fills: the highest price whose grade floor it meets,
+   oldest first on a tie. Never your own. */
+function wntBestFor(list, grade){
+  return (list || []).filter(function(w){
+    return !w.mine && (w.min_grade == null || (grade != null && grade >= w.min_grade));
+  }).sort(function(a, b){ return b.price - a.price || Date.parse(a.created_at) - Date.parse(b.created_at); })[0] || null;
+}
+function wntFloor(w){ return w.min_grade == null ? 'any grade' : 'PSA ' + w.min_grade + '+'; }
+
+function wntViewChips(){
+  if(!WNT_ON || !MKT) return '';
+  var nw = MKT.wanted.cards.length;
+  return '<div class="mkchips"><button data-mkview="sale"' + (MKT_VIEW === 'sale' ? ' class="on"' : '') + '>For sale · ' + MKT.rows.length + '</button>'
+    + '<button data-mkview="wanted"' + (MKT_VIEW === 'wanted' ? ' class="on"' : '') + '>Wanted · ' + nw + '</button></div>';
+}
+
+/* The Market's Wanted view: the same bands and tiles as For sale. */
+function wntDraw(){
+  var el = document.getElementById('mkt');
+  if(!el || !MKT) return;
+  var W = MKT.wanted;
+  var html = wntViewChips();
+  if(!W.cards.length){
+    el.innerHTML = html + '<div class="mkempty"><b>Nobody has posted a Wanted yet.</b>'
+      + '<span>Open any card and tap Post a Wanted: say what you will pay, and anyone holding one can sell it to you.</span></div>';
+    return;
+  }
+  var sets = [], bySet = {};
+  W.cards.forEach(function(id){
+    var r = W.byCard[id][0], k = r.set_code || r.set_name || '?';
+    if(!bySet[k]){ bySet[k] = { code: r.set_code, name: r.set_name || r.set_code, ids: [] }; sets.push(bySet[k]); }
+    bySet[k].ids.push(id);
+  });
+  html += sets.map(function(s){
+    var n = s.ids.reduce(function(a, id){ return a + W.byCard[id].length; }, 0);
+    s.ids.sort(function(a, b){ return (W.top[b] ? W.top[b].price : 0) - (W.top[a] ? W.top[a].price : 0); });
+    return '<div class="mkband" style="--bc:' + mktColour(s.code) + '"><b>' + esc(s.name) + '</b><span>' + s.ids.length
+      + (s.ids.length === 1 ? ' card' : ' cards') + ' · ' + n + ' wanted</span><em>' + esc(s.code || '') + '</em></div>'
+      + '<div class="shgrid">' + s.ids.map(wntTile).join('') + '</div>';
+  }).join('');
+  html += '<div class="shrule">A Wanted holds the buyer\'s VC for 7 days. Sell now pays you the price shown less the 10% tax.</div>';
+  el.innerHTML = html;
+}
+function wntTile(id){
+  var list = MKT.wanted.byCard[id], r = list[0], top = MKT.wanted.top[id], n = list.length;
+  var allMine = !top;
+  var floors = list.map(function(w){ return w.min_grade; });
+  var anyGrade = floors.some(function(g){ return g == null; });
+  var lo = anyGrade ? null : Math.min.apply(null, floors);
+  return '<button class="shtile" data-wnt="' + esc(id) + '"><span class="shart r-' + esc(r.rarity || 'common')
+    + (r.photo_url ? '' : ' noart') + '"><b>' + esc(r.name) + '</b>'
+    + (r.photo_url ? '<img src="' + esc(r.photo_url) + '" alt="" loading="lazy" onerror="this.parentNode.classList.add(\'noart\');this.remove()">' : '')
+    + '</span><span class="shn">' + esc(r.name) + '</span>'
+    + '<span class="mkp wnt">' + Number((top || r).price).toLocaleString() + '<i>VC</i></span>'
+    + '<span class="shc">' + (allMine ? 'yours' : n + ' wanted · ' + (lo == null ? 'any grade' : 'PSA ' + lo + '+')) + '</span></button>';
+}
+
+/* The Sell now block: in the shelf's sell sheet for the copy picked there, and
+   in the Market's Wanted sheet. It says what you GET, after the tax. */
+function wntSellHTML(list, sel, name){
+  var others = (list || []).filter(function(w){ return !w.mine; });
+  if(!others.length || !sel) return '';
+  var w = wntBestFor(others, sel.grade);
+  if(!w){
+    var floor = Math.min.apply(null, others.map(function(x){ return x.min_grade == null ? 0 : x.min_grade; }));
+    return '<div class="shnone">Wanted at ' + Number(others[0].price).toLocaleString() + ' VC needs PSA ' + floor
+      + ' or better — this copy is ' + (sel.grade != null ? 'PSA ' + sel.grade : 'ungraded') + '.</div>';
+  }
+  var get = Math.floor(Number(w.price) * 0.9);
+  return '<div class="wntbox"><div class="wnthead">Wanted by <b>' + esc(w.buyer || 'a player') + '</b> · ' + wntFloor(w)
+    + ' · ends ' + esc(dstr(w.expires_at, { weekday: 'short' })) + '</div>'
+    + '<div class="mkbig"><b>' + Number(w.price).toLocaleString() + '</b><span>VC</span></div>'
+    + '<div class="shget">You get <b class="up">' + get.toLocaleString() + '</b> after the 10% tax</div>'
+    + '<button class="wntsell" data-wntfill="' + esc(w.wanted_id) + '" data-print="' + esc(sel.print_id) + '" data-name="' + esc(name)
+    + '" data-get="' + get + '">Sell #' + sel.print_number + ' now · ' + get.toLocaleString() + '</button></div>';
+}
+
+/* What you want: your own Wanteds on the shelf, each with Cancel. */
+function wntMineHTML(rows){
+  var html = '<div class="lab"><b>What you want</b><i></i><s>' + rows.length + ' of 10 used</s></div>';
+  if(!rows.length) return html + '<div class="shempty">Nothing wanted. Open any card and tap Post a Wanted.</div>';
+  return html + rows.map(function(r){
+    return '<div class="shl"><span class="shth r-' + esc(r.rarity || 'common') + '"><i>' + esc(cardIni(r.name)) + '</i>'
+      + (r.photo_url ? '<img src="' + esc(r.photo_url) + '" alt="" loading="lazy" onerror="this.remove()">' : '') + '</span>'
+      + '<div class="shlg"><b>' + esc(r.name) + '</b><span>' + wntFloor(r) + ' · ends ' + esc(dstr(r.expires_at, { weekday: 'short' })) + '</span>'
+      + '<em>' + Number(r.price || 0).toLocaleString() + ' VC held</em></div>'
+      + '<button class="shout" data-wntcancel="' + esc(r.wanted_id) + '" data-price="' + Number(r.price || 0) + '">Cancel</button></div>';
+  }).join('');
+}
+
+/* ── the Wanted sheet (a Market tile) ── every Wanted for the card, and Sell
+   now when you hold a copy that fits. */
+var WNT = null;   /* { id, list, prints, pid } */
+async function wntOpen(id){
+  var list = MKT && MKT.wanted.byCard[id];
+  if(!list) return;
+  WNT = { id: id, list: list, prints: null, pid: null };
+  WNT_CARDS[id] = WNT_CARDS[id] || list[0];
+  wntSheet();
+  if(!me) return;
+  var p = await qMe("my_prints?select=print_id,print_number,grade,busy,signed_name,you_own&card_id=eq." + encodeURIComponent(id) + "&order=grade.desc,print_number.asc");
+  if(!WNT || WNT.id !== id) return;
+  WNT.prints = (p || []).filter(function(x){ return !x.busy; });
+  wntSheet();
+}
+function wntHost(){
+  var host = document.getElementById('wnt-sheet');
+  if(!host){ host = document.createElement('div'); host.id = 'wnt-sheet'; document.body.appendChild(host); }
+  return host;
+}
+function wntHead(c, sub){
+  return '<div class="shsh"><span class="shth r-' + esc(c.rarity || 'common') + '"><i>' + esc(cardIni(c.name)) + '</i>'
+    + (c.photo_url ? '<img src="' + esc(c.photo_url) + '" alt="" onerror="this.remove()">' : '') + '</span>'
+    + '<div class="shlg"><b>' + esc(c.name) + '</b><span>' + esc(c.set_name || '') + (c.set_code ? ' · ' + esc(c.set_code) : '') + '</span>'
+    + (sub ? '<em>' + sub + '</em>' : '') + '</div>'
+    + '<button class="shx" data-wntclose aria-label="Close">✕</button></div>';
+}
+function wntSheet(){
+  if(!WNT) return;
+  var host = wntHost(), list = WNT.list, c = list[0];
+  var rows = list.slice().sort(function(a, b){ return b.price - a.price; }).slice(0, 6).map(function(w, i){
+    return '<div class="wntrow' + (i === 0 ? ' top' : '') + '"><b>' + Number(w.price).toLocaleString() + '</b> ' + wntFloor(w)
+      + '<span>' + (w.mine ? 'yours' : esc(w.buyer || 'a player')) + ' · ends ' + esc(dstr(w.expires_at, { weekday: 'short' })) + '</span></div>';
+  }).join('');
+  var body = '<div class="shlab">Wanted · ' + list.length + '</div>' + rows;
+  if(!me) body += '<button class="shlist" data-signin="1">Sign in to sell</button>';
+  else if(WNT.prints === null) body += '<div class="shnone">Checking your copies…</div>';
+  else if(!WNT.prints.length) body += '<div class="shnone">You don\'t have a free copy of this card.</div>';
+  else {
+    /* Only the copies some Wanted would take, best grade first. */
+    var fits = WNT.prints.filter(function(p){ return wntBestFor(list, p.grade); });
+    if(!fits.length) body += wntSellHTML(list, WNT.prints[0], c.name);
+    else {
+      if(!fits.some(function(p){ return p.print_id === WNT.pid; })) WNT.pid = fits[0].print_id;
+      var sel = fits.filter(function(p){ return p.print_id === WNT.pid; })[0];
+      body += '<div class="shlab">Which copy</div>' + (fits.length === 1
+        ? '<div class="shfix">PSA ' + sel.grade + ' · #' + sel.print_number + '</div>'
+        : '<label class="shdd1"><small>Copy</small><select id="wnt-copy">' + fits.map(function(p){
+            return '<option value="' + esc(p.print_id) + '"' + (p.print_id === WNT.pid ? ' selected' : '') + '>#' + p.print_number + ' · PSA ' + p.grade
+              + (p.signed_name ? ' · signed' : '') + '</option>';
+          }).join('') + '</select></label>');
+      if(sel.signed_name) body += '<div class="shwarn"><b>Signed by ' + esc(sel.signed_name) + '.</b> The ink stays on this print. Buying the card back gets a different one.</div>';
+      else if(Number(sel.you_own) === 1) body += '<div class="shwarn"><b>This is your only ' + esc(c.name) + '.</b> If it sells, it leaves your binder.</div>';
+      body += wntSellHTML(list, sel, c.name);
+    }
+  }
+  if(me) body += '<button class="wntalt" data-wntnew="' + esc(WNT.id) + '">Post a Wanted</button>';
+  host.innerHTML = '<div class="shscrim" data-wntclose></div><div class="shsheet" role="dialog" aria-label="Wanted ' + esc(c.name) + '">'
+    + '<div class="shgrab"></div>' + wntHead(c, 'Best Wanted ' + Number((MKT.wanted.top[WNT.id] || c).price).toLocaleString() + ' VC') + body + '</div>';
+  var cp = document.getElementById('wnt-copy');
+  if(cp) cp.onchange = function(){ WNT.pid = cp.value; wntSheet(); };
+}
+
+/* ── posting one ── price, an optional grade floor, and the line that says
+   the VC is held. Opened from a card for sale, a Wanted tile, or any card. */
+async function wntPostOpen(id){
+  var c = WNT_CARDS[id] || { card_id: id, name: 'This card' };
+  WNT = { id: id, post: true };
+  var host = wntHost();
+  var draw = function(c, last, bal){
+    var grades = '<option value="">Any grade</option>';
+    for(var g = 10; g >= 1; g--) grades += '<option value="' + g + '">PSA ' + g + (g < 10 ? ' or better' : '') + '</option>';
+    host.innerHTML = '<div class="shscrim" data-wntclose></div><div class="shsheet" role="dialog" aria-label="Post a Wanted">'
+      + '<div class="shgrab"></div>' + wntHead(c, last ? 'Last sold ' + Number(last.price).toLocaleString() + (last.grade != null ? ' (a PSA ' + last.grade + ')' : '') : 'No sales yet')
+      + '<div class="shlab">Post a Wanted</div>'
+      + '<div class="shpr"><input type="text" inputmode="numeric" autocomplete="off" placeholder="What you\'ll pay" id="wnt-price" aria-label="Price in VC"><span>VC</span></div>'
+      + '<label class="shdd1"><small>Grade</small><select id="wnt-grade">' + grades + '</select></label>'
+      + '<div class="shget" id="wnt-get">100 to 1,000,000 VC' + (bal != null ? ' · you have <b>' + bal.toLocaleString() + '</b>' : '') + '.</div>'
+      + '<button class="shlist" data-wntpost="' + esc(id) + '">Post Wanted</button>'
+      + '<div class="shnone">The VC is held until it sells or you cancel, for 7 days. Cancelling is free.</div></div>';
+    var pin = document.getElementById('wnt-price'), btn = host.querySelector('[data-wntpost]');
+    pin.oninput = function(){
+      pin.value = pin.value.replace(/[^0-9]/g, '').slice(0, 7);
+      var v = Number(pin.value || 0), out = document.getElementById('wnt-get');
+      if(!v) out.textContent = '100 to 1,000,000 VC.';
+      else if(v < 100) out.textContent = 'At least 100 VC.';
+      else if(v > 1000000) out.textContent = 'At most 1,000,000 VC.';
+      else if(bal != null && v > bal) out.textContent = 'You have ' + bal.toLocaleString() + ' VC.';
+      else out.innerHTML = '<b>' + v.toLocaleString() + '</b> VC is held now' + (bal != null ? ' · you keep <b>' + (bal - v).toLocaleString() + '</b>' : '');
+      btn.textContent = v >= 100 ? 'Post Wanted · ' + v.toLocaleString() : 'Post Wanted';
+    };
+  };
+  draw(c, null, null);
+  var got = await Promise.all([
+    c.rarity ? Promise.resolve([c]) : q("cards_public?select=card_id,name,rarity,set_name,set_code,photo_url&card_id=eq." + encodeURIComponent(id)),
+    q("card_sales_public?select=price,grade&card_id=eq." + encodeURIComponent(id) + "&order=settled_at.desc&limit=1"),
+    qMe("my_profile?select=vc_balance&limit=1")
+  ]);
+  if(!WNT || WNT.id !== id || !WNT.post) return;
+  var full = (got[0] && got[0][0]) || c;
+  WNT_CARDS[id] = full;
+  var bal = (got[2] && got[2].length) ? Number(got[2][0].vc_balance || 0) : null;
+  var keep = document.getElementById('wnt-price'), kv = keep ? keep.value : '';
+  var kg = document.getElementById('wnt-grade'), kgv = kg ? kg.value : '';
+  draw(full, got[1] && got[1][0], bal);
+  if(kv){ var pi = document.getElementById('wnt-price'); pi.value = kv; pi.oninput(); }
+  if(kgv) document.getElementById('wnt-grade').value = kgv;
+}
+function wntClose(){
+  WNT = null;
+  var h = document.getElementById('wnt-sheet'); if(h) h.innerHTML = '';
+}
+/* After any Wanted write, redraw whatever screen is showing, from the server. */
+function wntRefresh(){
+  if(document.getElementById('mkt')) renderMarket();
+  if(document.getElementById('shf')) renderShelf();
+  loadMe();
+}
+document.addEventListener('click', async function(e){
+  var b;
+  if((b = e.target.closest('[data-wnt]'))){ wntOpen(b.getAttribute('data-wnt')); return; }
+  if((b = e.target.closest('[data-wntnew]'))){ mktClose(); shfClose(); wntPostOpen(b.getAttribute('data-wntnew')); return; }
+  if(e.target.closest('[data-wntclose]')){ wntClose(); return; }
+
+  /* POST. The button names the price, and the sheet says the VC is held, so
+     the press is the confirmation. */
+  if((b = e.target.closest('[data-wntpost]'))){
+    var price = Number((document.getElementById('wnt-price') || {}).value || 0);
+    var gv = (document.getElementById('wnt-grade') || {}).value;
+    if(!price || price < 100){ toast('Set a price of at least 100 VC.', true); return; }
+    if(price > 1000000){ toast('The most a Wanted can be is 1,000,000 VC.', true); return; }
+    busy(b, true, '…');
+    var r = await rpc('app_post_wanted', { p_card_id: b.getAttribute('data-wntpost'), p_price: price, p_min_grade: gv ? Number(gv) : null });
+    busy(b, false);
+    toast(r.ok ? 'Wanted posted. ' + price.toLocaleString() + ' VC is held for 7 days.' : r.message, !r.ok);
+    if(r.ok){ wntClose(); wntRefresh(); }
+    return;
+  }
+  /* SELL NOW. Final, like a buy. The button names the copy and what you get,
+     and the signed / only-copy warnings sit above it, so no pop-up. */
+  if((b = e.target.closest('[data-wntfill]'))){
+    busy(b, true, '…');
+    var rf = await rpc('app_fill_wanted', { p_offer_id: b.getAttribute('data-wntfill'), p_print_id: b.getAttribute('data-print') });
+    busy(b, false);
+    toast(rf.ok ? 'Sold ' + b.getAttribute('data-name') + ' · +' + Number(rf.paid || 0).toLocaleString() + ' VC' : rf.message, !rf.ok);
+    if(rf.ok){ wntClose(); shfClose(); wntRefresh(); }
+    else if(MKT || SHF) wntRefresh();
+    return;
+  }
+  /* CANCEL. No confirm: it is the undo, and it is free. */
+  if((b = e.target.closest('[data-wntcancel]'))){
+    busy(b, true, '…');
+    var rc = await rpc('app_cancel_wanted', { p_offer_id: b.getAttribute('data-wntcancel') });
+    busy(b, false);
+    toast(rc.ok ? 'Cancelled. ' + Number(b.getAttribute('data-price') || 0).toLocaleString() + ' VC is back.' : rc.message, !rc.ok);
+    if(rc.ok) wntRefresh();
+    return;
+  }
+});
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && WNT) wntClose(); });
+window.addEventListener('popstate', function(){ if(WNT) wntClose(); });
 
 /* ── TRAIN ── the tap trainer. Design: docs/train-plan.md in VGA Systems.
    Every number on this screen comes from the server (train_rules via
