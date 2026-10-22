@@ -12464,6 +12464,10 @@ var VC_REASON = {
   staff_job:['Paid for a staff job','Paid for staff jobs'], staff_pay:'Staff pay',
   trade:'Trade', trade_tax:'Trade tax', trade_escrow:'Held for a trade',
   trade_refund:'Trade called off', transfer:'Transfer',
+  /* A Wanted (a buy order on the Market) moves its VC through the trade
+     reasons; my_vc_history's trade_kind tells the two apart. */
+  wanted_trade_escrow:'Held for a Wanted', wanted_trade_refund:'Wanted ended · VC back',
+  wanted_trade:'Sold to a Wanted', wanted_trade_tax:'Wanted sale tax',
   transfer_in:'Sent to you', transfer_out:'Sent by you',
   loan:'Loan', loan_out:'Loan paid out', loan_payment:'Loan payment',
   loan_collect:'Loan collected', gym:'Gym', gym_buy:'Bought a gym',
@@ -12525,9 +12529,10 @@ async function renderWallet(){
     var d = walDay(t.created_at), a = Number(t.amount || 0), last = days[days.length - 1];
     if(!last || last.d !== d){ last = { d: d, net: 0, rows: [] }; days.push(last); }
     last.net += a;
+    var why = t.trade_kind === 'wanted' ? 'wanted_' + t.reason : t.reason;
     var r = last.rows[last.rows.length - 1];
-    if(r && r.reason === t.reason && r.each === a){ r.n++; r.sum += a; }
-    else last.rows.push({ reason: t.reason, each: a, sum: a, n: 1, after: t.balance_after });
+    if(r && r.reason === why && r.each === a){ r.n++; r.sum += a; }
+    else last.rows.push({ reason: why, each: a, sum: a, n: 1, after: t.balance_after });
   });
   html += '<div class="lab"><b>Every move</b><i></i></div>'
     + days.map(function(day, i){
