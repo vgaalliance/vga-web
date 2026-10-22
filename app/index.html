@@ -1811,6 +1811,34 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
   border:1px solid rgba(255,255,255,.18);color:#EFEAFF;-moz-appearance:textfield}
 .shp .pin::-webkit-outer-spin-button,.shp .pin::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .shp .pin:focus{outline:none;border-color:rgba(167,139,250,.7)}
+/* THE MARKET: grid 3 with a colour band per set, and the buy sheet (2026-10-21) */
+.mkchips{display:flex;align-items:center;gap:6px;margin:6px 18px 4px;flex-wrap:wrap}
+.mkchips button{font:600 13px 'Barlow',sans-serif;padding:7px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:none;color:#B7AEDC;cursor:pointer}
+.mkchips button.on{background:rgba(185,162,255,.2);border-color:#B9A2FF;color:#fff}
+.mkchips span{margin-left:auto;font-family:'Space Mono',monospace;font-size:10px;color:#9C93BC}
+.mkband{display:flex;align-items:baseline;gap:8px;white-space:nowrap;margin:18px 0 10px;padding:9px 18px;
+  background:color-mix(in srgb,var(--bc) 16%,transparent);border-left:3px solid var(--bc)}
+.mkband b{font-size:14.5px;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.mkband span{flex-shrink:0;font-size:12px;color:#B7AEDC}
+.mkband em{flex-shrink:0;margin-left:auto;font-style:normal;font-family:'Space Mono',monospace;font-size:10px;color:var(--bc)}
+.mkp{font-family:'Space Mono',monospace;font-size:14px;font-weight:700}
+.mkp small{font-family:'Barlow',sans-serif;font-size:11px;font-weight:400;color:#9C93BC}
+.mkp i{font-style:normal;font-size:10px;font-weight:400;color:#A79DCB;margin-left:3px}
+.mkcmp{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mkup{color:#6EE7B7}.mkdn{color:#F19C96}.mkeq{color:#9C93BC}
+.mkempty{margin:12px 18px 0;padding:18px 16px;border-radius:14px;border:1px dashed rgba(185,162,255,.4);text-align:center;display:flex;flex-direction:column;gap:6px}
+.mkempty b{font-size:16px}
+.mkempty span{font-size:13.5px;color:#B7AEDC}
+.mkpx{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;flex-shrink:0}
+.mksell{margin-top:12px;font-size:13px;color:#B7AEDC}
+.mkbig{display:flex;align-items:baseline;gap:6px;margin-top:4px}
+.mkbig b{font-family:'Bebas Neue',sans-serif;font-size:46px;font-weight:400;line-height:1}
+.mkbig span{font-family:'Space Mono',monospace;font-size:11px;color:#A79DCB}
+.mkbuy,.mkshort{display:block;width:100%;margin-top:12px;padding:13px;border:0;border-radius:10px;cursor:pointer;
+  font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.mkbuy{background:linear-gradient(90deg,#F5C842,#D6A81F);color:#2A1F00}
+.mkbuy.working{opacity:.55;pointer-events:none}
+.mkshort{background:none;border:1px solid rgba(255,255,255,.18);color:#9C93BC;cursor:default}
 /* MY SHELF: a grid of cards by set, and one sell sheet (redesign 2026-10-20) */
 .shempty{margin:0 18px;padding:10px 0;font-size:13px;line-height:1.45;color:#B7AEDC;border-top:1px solid rgba(255,255,255,.07);border-bottom:1px solid rgba(255,255,255,.07)}
 .shl{display:flex;align-items:center;gap:10px;margin:0 18px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.07)}
@@ -8567,7 +8595,10 @@ document.addEventListener('click', async function(e){
      gone, and there is no undo on the other side of it. */
   if((b = e.target.closest('[data-mktbuy]'))){
     var mp = Number(b.getAttribute('data-price') || 0);
-    if(!confirm('Buy ' + b.getAttribute('data-name') + ' for ' + mp.toLocaleString() + ' VC?')) return;
+    /* The Market's buy sheet names the copy and the price on its button and
+       shows your balance after, so that press IS the confirmation. */
+    if(!b.getAttribute('data-confirmed')
+       && !confirm('Buy ' + b.getAttribute('data-name') + ' for ' + mp.toLocaleString() + ' VC?')) return;
     busy(b, true, '…');
     var rb = await rpc('app_buy_listing', { p_offer_id: b.getAttribute('data-mktbuy') });
     busy(b, false);
@@ -9824,14 +9855,41 @@ async function renderShop(){
    for, and every field on it (card, set, print number, grade, seller name) is
    already public elsewhere in this app.
 
+   Designed with Castle 2026-10-21 (the Market page: grid 3 with set bands).
+   One tile per CARD under a colour band per set, each tile carrying its
+   cheapest price and how that compares with the card's last sale — the one
+   question a buyer has. Sorting reorders cards inside each set; the sets stay
+   put. Tapping a tile opens the same sheet as the shelf, the other way round:
+   Grade and Copy dropdowns, the seller, and a gold Buy that names the copy
+   and the price, with your balance after. That button IS the confirmation, so
+   the buy handler skips its pop-up for it (data-confirmed).
+
    BLOCK PRECEDENCE MATTERS, and it is: yours > signed out > can't afford.
    Telling somebody they are short of VC for a card that is their own listing
-   sends them to grind for something they already have. */
+   sends them to grind for something they already have.
+
+   When nobody is selling — most visits, for now — the page says so in one
+   line, points at your shelf, and shows the real last sales so it is never
+   blank. */
+/* Initials for a card with no picture: quote marks and nicknames aside, so
+   '"Comeback Kid" Makimastan' is CM, not "K. */
+function cardIni(n){ return initials(String(n || '').replace(/["\u201c\u201d']/g, '')); }
+var MKT = null;
+var MKT_SORT = 'Cheapest';
+var MKT_COLS = ['#B39BFF', '#F5C842', '#4FB8F0', '#6EE7B7', '#FF8FB1', '#FFB86B'];
+function mktColour(code){
+  var h = 0; String(code || '').split('').forEach(function(ch){ h = (h * 31 + ch.charCodeAt(0)) >>> 0; });
+  return MKT_COLS[h % MKT_COLS.length];
+}
+
 async function renderMarket(){
   var body = document.getElementById('sheet-body');
-  body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'
-    + '<div class="kick">Player to player</div><h3>Market</h3></div>'
-    + '<div id="mkt"><div class="skel"></div><div class="skel" style="width:60%"></div></div>';
+  if(!document.getElementById('mkt')){
+    body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'
+      + '<div class="kick">Player to player</div><h3>Market</h3></div>'
+      + '<div id="mkt"><div class="skel"></div><div class="skel" style="width:60%"></div></div>';
+  }
+  mktClose();
   var el = document.getElementById('mkt');
   var got = await Promise.all([
     q("market_public?select=*&order=created_at.desc"),
@@ -9845,53 +9903,190 @@ async function renderMarket(){
   var rows = got[0];
   if(!rows){ retryHandlers['mkt'] = renderMarket;
     el.innerHTML = failHTML("Couldn't load the market.", 'mkt'); return; }
-  if(!rows.length){
-    el.innerHTML = '<div class="empty"><b>Nobody is selling right now.</b><br>'
-      + 'Listings last 7 days. Put a spare up from <b>My shelf</b> and it shows here.</div>';
-    return;
-  }
   var bal = (got[1] && got[1].length) ? Number(got[1][0].vc_balance || 0) : null;
-  var minePlus = {};
-  (got[2] || []).forEach(function(r){ minePlus[r.listing_id] = true; });
+  var mine = {};
+  (got[2] || []).forEach(function(r){ mine[r.listing_id] = true; });
 
-  /* Grouped by SET, because that is how somebody chasing a set shops. Ordered
-     cheapest first inside each group -- a board sorted by recency makes the
-     buyer read every row to find the price they were going to pick anyway. */
-  var sets = [];
-  rows.forEach(function(r){ if(sets.indexOf(r.set_name || r.set_code) === -1) sets.push(r.set_name || r.set_code); });
+  if(!rows.length){ return mktEmpty(el); }
 
-  el.innerHTML = sets.map(function(sn){
-    var mine = rows.filter(function(r){ return (r.set_name || r.set_code) === sn; })
-                   .sort(function(a,b){ return Number(a.price) - Number(b.price); });
-    /* The count rides in the LABEL. `.lab i` is a 1px rule, not a slot -- text
-       put in it hangs under the divider at one pixel of height. */
-    return '<div class="lab"><b>' + esc(sn) + ' \u00b7 ' + mine.length + '</b><i></i></div>'
-      + mine.map(function(r){
-          var price = Number(r.price || 0);
-          var yours = !!minePlus[r.listing_id];
-          var bits = ['#' + r.print_number];
-          if(r.grade != null) bits.push('PSA ' + r.grade);
-          bits.push(esc(r.seller || 'someone'));
-          var btn;
-          if(yours)             btn = '<button class="act buy" disabled>Yours</button>';
-          else if(!me)          btn = '<button class="act buy" data-signin="1">Sign in</button>';
-          else if(bal !== null && bal < price)
-                                btn = '<button class="act buy" disabled>Short '
-                                      + (price - bal).toLocaleString() + '</button>';
-          else                  btn = '<button class="act buy" data-mktbuy="' + esc(r.listing_id)
-                                      + '" data-name="' + esc(r.name) + '" data-price="' + price + '">Buy</button>';
-          return '<div class="shp">'
-            + '<div style="flex:1;min-width:0">'
-            + '<div class="t">' + esc(r.name) + '</div>'
-            + '<div class="s">' + bits.join(' · ') + '</div>'
-            + '<div class="stk">' + esc(r.rarity || '') + '</div>'
-            + '</div><div class="prw"><div class="pr">' + price.toLocaleString() + '<em>VC</em></div>'
-            + btn + '</div></div>';
-        }).join('');
-  }).join('')
-  + '<div class="doit">Listings last <b>7 days</b>, then the card goes back to its owner. '
-  + 'The seller pays a <b>10%</b> tax on the sale — it is burned, not paid to anyone.</div>';
+  /* the last sale of each card on the board, newest first */
+  var ids = rows.map(function(r){ return r.card_id; }).filter(function(v, i, a){ return a.indexOf(v) === i; });
+  var sales = await q("card_sales_public?select=card_id,price,grade,settled_at&card_id=in.(" + ids.map(encodeURIComponent).join(',')
+    + ")&order=settled_at.desc&limit=500");
+  if(!el.isConnected) return;
+  var last = {};
+  (sales || []).forEach(function(s){ if(!last[s.card_id]) last[s.card_id] = s; });
+
+  var byCard = {}, cards = [];
+  rows.forEach(function(r){
+    var c = byCard[r.card_id];
+    if(!c){ c = byCard[r.card_id] = { card_id: r.card_id, name: r.name, rarity: r.rarity, set_name: r.set_name, set_code: r.set_code,
+      photo_url: r.photo_url, listings: [], last: last[r.card_id] || null }; cards.push(c); }
+    r.mine = !!mine[r.listing_id];
+    c.listings.push(r);
+  });
+  cards.forEach(function(c){
+    var buyable = c.listings.filter(function(l){ return !l.mine; });
+    var pool = buyable.length ? buyable : c.listings;
+    c.low = Math.min.apply(null, pool.map(function(l){ return Number(l.price || 0); }));
+    c.newest = Math.max.apply(null, c.listings.map(function(l){ return Date.parse(l.created_at) || 0; }));
+    c.allMine = !buyable.length;
+  });
+  MKT = { rows: rows, cards: cards, byCard: byCard, bal: bal };
+  mktDraw();
 }
+
+function mktDraw(){
+  var el = document.getElementById('mkt');
+  if(!el || !MKT) return;
+  var sets = [], bySet = {};
+  MKT.cards.forEach(function(c){
+    var k = c.set_code || c.set_name || '?';
+    if(!bySet[k]){ bySet[k] = { code: c.set_code, name: c.set_name || c.set_code, cards: [] }; sets.push(bySet[k]); }
+    bySet[k].cards.push(c);
+  });
+  var sorter = {
+    Cheapest: function(a, b){ return a.low - b.low; },
+    Newest: function(a, b){ return b.newest - a.newest; },
+    Rarest: function(a, b){ return RSORT.indexOf(b.rarity) - RSORT.indexOf(a.rarity) || a.low - b.low; }
+  }[MKT_SORT];
+  var html = '<div class="mkchips">' + ['Cheapest', 'Newest', 'Rarest'].map(function(s){
+      return '<button data-mksort="' + s + '"' + (s === MKT_SORT ? ' class="on"' : '') + '>' + s + '</button>';
+    }).join('') + '<span>' + MKT.cards.length + (MKT.cards.length === 1 ? ' card' : ' cards') + ' · '
+    + MKT.rows.length + ' for sale</span></div>';
+  html += sets.map(function(s){
+    var n = s.cards.reduce(function(a, c){ return a + c.listings.length; }, 0);
+    s.cards.sort(sorter);
+    return '<div class="mkband" style="--bc:' + mktColour(s.code) + '"><b>' + esc(s.name) + '</b><span>' + s.cards.length
+      + (s.cards.length === 1 ? ' card' : ' cards') + ' · ' + n + ' for sale</span><em>' + esc(s.code || '') + '</em></div>'
+      + '<div class="shgrid">' + s.cards.map(mktTile).join('') + '</div>';
+  }).join('');
+  html += '<div class="shrule">Listings last 7 days. The seller pays the 10% tax, so you pay exactly the price shown.</div>';
+  el.innerHTML = html;
+}
+function mktTile(c){
+  var n = c.listings.length;
+  var cmp = '';
+  if(c.last){
+    var d = c.low - Number(c.last.price || 0);
+    cmp = d < 0 ? '<span class="mkup">▼ ' + (-d).toLocaleString() + ' under last</span>'
+      : d > 0 ? '<span class="mkdn">▲ ' + d.toLocaleString() + ' over last</span>'
+      : '<span class="mkeq">same as last</span>';
+  } else cmp = '<span class="mkeq">never sold before</span>';
+  var grades = c.listings.map(function(l){ return l.grade; }).filter(function(g){ return g != null; });
+  var gr = grades.length ? (Math.min.apply(null, grades) === Math.max.apply(null, grades) ? 'PSA ' + grades[0]
+    : 'PSA ' + Math.min.apply(null, grades) + '–' + Math.max.apply(null, grades)) : '';
+  return '<button class="shtile" data-mkt="' + esc(c.card_id) + '"><span class="shart r-' + esc(c.rarity || 'common')
+    + (c.photo_url ? '' : ' noart') + '"><b>' + esc(c.name) + '</b>'
+    + (c.photo_url ? '<img src="' + esc(c.photo_url) + '" alt="" loading="lazy" onerror="this.parentNode.classList.add(\'noart\');this.remove()">' : '')
+    + '</span><span class="shn">' + esc(c.name) + '</span>'
+    + '<span class="mkp">' + (n > 1 ? '<small>from </small>' : '') + c.low.toLocaleString() + '<i>VC</i></span>'
+    + '<span class="mkcmp">' + cmp + '</span>'
+    + '<span class="shc">' + (c.allMine ? 'yours' : n + ' for sale' + (gr ? ' · ' + gr : '')) + '</span></button>';
+}
+
+async function mktEmpty(el){
+  el.innerHTML = '<div class="mkempty"><b>Nobody is selling right now.</b><span>Be the first: anything you list shows here for 7 days.</span>'
+    + '<button class="shlist" data-hub="shelf">Sell from your shelf</button></div><div id="mk-sold"></div>';
+  var sold = await q("card_sales_public?select=card_id,price,grade,settled_at&order=settled_at.desc&limit=8");
+  var box = document.getElementById('mk-sold');
+  if(!box || !sold || !sold.length) return;
+  var ids = sold.map(function(s){ return s.card_id; }).filter(function(v, i, a){ return a.indexOf(v) === i; });
+  var cards = await q("cards_public?select=card_id,name,rarity,photo_url&card_id=in.(" + ids.map(encodeURIComponent).join(',') + ")");
+  if(!box.isConnected) return;
+  var cm = {}; (cards || []).forEach(function(c){ cm[c.card_id] = c; });
+  box.innerHTML = '<div class="lab"><b>Recently sold</b><i></i></div>' + sold.map(function(s){
+    var c = cm[s.card_id] || { name: 'A card', rarity: 'common' };
+    return '<div class="shl"><span class="shth r-' + esc(c.rarity || 'common') + '"><i>' + esc(cardIni(c.name)) + '</i>'
+      + (c.photo_url ? '<img src="' + esc(c.photo_url) + '" alt="" loading="lazy" onerror="this.remove()">' : '') + '</span>'
+      + '<div class="shlg"><b>' + esc(c.name) + '</b><span>' + (s.grade != null ? 'PSA ' + s.grade + ' · ' : '') + esc(dstr(s.settled_at)) + '</span></div>'
+      + '<span class="mkpx">' + Number(s.price || 0).toLocaleString() + '</span></div>';
+  }).join('');
+}
+
+/* ── THE BUY SHEET ── */
+function mktOpen(cardId){
+  var c = MKT && MKT.byCard[cardId];
+  if(!c) return;
+  var buyable = c.listings.filter(function(l){ return !l.mine; });
+  /* Opens on the cheapest copy, the one the tile's "from" price promised. */
+  var cheapest = buyable.slice().sort(function(a, b){ return a.price - b.price; })[0];
+  MKT.open = { c: c, buyable: buyable, grade: cheapest ? cheapest.grade : null, lid: cheapest ? cheapest.listing_id : null };
+  mktDefaults();
+  var host = document.getElementById('mkt-sheet');
+  /* on the page itself, not inside the sliding sheet — see the shelf's sheet */
+  if(!host){ host = document.createElement('div'); host.id = 'mkt-sheet'; document.body.appendChild(host); }
+  mktSheet();
+}
+function mktGrades(pool){
+  var m = {};
+  pool.forEach(function(l){ m[l.grade] = (m[l.grade] || 0) + 1; });
+  return Object.keys(m).map(Number).sort(function(a, b){ return b - a; }).map(function(g){ return { g: g, n: m[g] }; });
+}
+function mktDefaults(){
+  var o = MKT.open, grades = mktGrades(o.buyable);
+  if(o.grade == null || !grades.some(function(g){ return g.g === o.grade; })) o.grade = grades.length ? grades[0].g : null;
+  var copies = o.buyable.filter(function(l){ return l.grade === o.grade; }).sort(function(a, b){ return a.price - b.price; });
+  if(!copies.some(function(l){ return l.listing_id === o.lid; })) o.lid = copies.length ? copies[0].listing_id : null;
+}
+function mktSheet(){
+  var host = document.getElementById('mkt-sheet'), o = MKT && MKT.open;
+  if(!host || !o) return;
+  var c = o.c, grades = mktGrades(o.buyable);
+  var copies = o.buyable.filter(function(l){ return l.grade === o.grade; }).sort(function(a, b){ return a.price - b.price; });
+  var sel = copies.filter(function(l){ return l.listing_id === o.lid; })[0] || null;
+  var mineN = c.listings.length - o.buyable.length;
+  var head = '<div class="shsh"><span class="shth r-' + esc(c.rarity || 'common') + '"><i>' + esc(cardIni(c.name)) + '</i>'
+    + (c.photo_url ? '<img src="' + esc(c.photo_url) + '" alt="" onerror="this.remove()">' : '') + '</span>'
+    + '<div class="shlg"><b>' + esc(c.name) + '</b><span>' + esc(c.set_name || '') + ' · ' + esc(c.set_code || '') + ' · '
+    + c.listings.length + ' for sale' + (mineN ? ' (' + mineN + ' yours)' : '') + '</span>'
+    + '<em>' + (c.last ? 'Last sold ' + Number(c.last.price).toLocaleString() + (c.last.grade != null ? ' (a PSA ' + c.last.grade + ')' : '')
+      + ' · ' + esc(dstr(c.last.settled_at)) : 'Never sold before') + '</em></div>'
+    + '<button class="shx" data-mktclose aria-label="Close">✕</button></div>';
+  var bodyH;
+  if(!o.buyable.length){
+    bodyH = '<div class="shnone">Every copy for sale here is yours. Take it down from My shelf.</div>';
+  } else {
+    var picker = o.buyable.length === 1
+      ? '<div class="shfix">PSA ' + sel.grade + ' · #' + sel.print_number + '</div>'
+      : '<div class="shdd2"><label><small>Grade</small><select id="mkt-grade">' + grades.map(function(g){
+          return '<option value="' + g.g + '"' + (g.g === o.grade ? ' selected' : '') + '>PSA ' + g.g + ' · ' + g.n + ' for sale</option>';
+        }).join('') + '</select></label><label><small>Copy</small><select id="mkt-copy">' + copies.map(function(l){
+          return '<option value="' + esc(l.listing_id) + '"' + (l.listing_id === o.lid ? ' selected' : '') + '>#' + l.print_number + ' · '
+            + Number(l.price).toLocaleString() + '</option>';
+        }).join('') + '</select></label></div>';
+    var price = Number(sel.price || 0), bal = MKT.bal;
+    var btn;
+    if(!me) btn = '<button class="shlist" data-signin="1">Sign in to buy</button>';
+    else if(bal !== null && bal < price) btn = '<button class="mkshort" disabled>Short ' + (price - bal).toLocaleString() + ' VC</button>';
+    else btn = '<button class="mkbuy" data-mktbuy="' + esc(sel.listing_id) + '" data-confirmed="1" data-name="' + esc(c.name) + '" data-price="' + price + '">'
+      + 'Buy #' + sel.print_number + ' for ' + price.toLocaleString() + '</button>';
+    bodyH = '<div class="shlab">Which copy</div>' + picker
+      + '<div class="mksell">Sold by ' + esc(sel.seller || 'a player') + ' · ends ' + esc(dstr(sel.expires_at, { weekday: 'short' })) + '</div>'
+      + '<div class="mkbig"><b>' + price.toLocaleString() + '</b><span>VC</span></div>'
+      + (bal !== null ? '<div class="shget">You have <b>' + bal.toLocaleString() + '</b>'
+        + (bal >= price ? ' · after <b>' + (bal - price).toLocaleString() + '</b>' : '') + '</div>' : '')
+      + btn;
+  }
+  host.innerHTML = '<div class="shscrim" data-mktclose></div><div class="shsheet" role="dialog" aria-label="Buy ' + esc(c.name) + '">'
+    + '<div class="shgrab"></div>' + head + bodyH + '</div>';
+  var g = document.getElementById('mkt-grade'), cp = document.getElementById('mkt-copy');
+  if(g) g.onchange = function(){ o.grade = Number(g.value); o.lid = null; mktDefaults(); mktSheet(); };
+  if(cp) cp.onchange = function(){ o.lid = cp.value; mktSheet(); };
+}
+function mktClose(){
+  if(MKT) MKT.open = null;
+  var h = document.getElementById('mkt-sheet'); if(h) h.innerHTML = '';
+}
+document.addEventListener('click', function(e){
+  var t = e.target.closest('[data-mkt]');
+  if(t){ mktOpen(t.getAttribute('data-mkt')); return; }
+  var s = e.target.closest('[data-mksort]');
+  if(s){ MKT_SORT = s.getAttribute('data-mksort'); mktDraw(); return; }
+  if(e.target.closest('[data-mktclose]')) mktClose();
+});
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && MKT && MKT.open) mktClose(); });
+window.addEventListener('popstate', function(){ if(MKT && MKT.open) mktClose(); });
 
 /* ── MY SHELF ── what you have listed, and what you could list ─────────
    Not a shop of your own that other people browse. The board is one place and
@@ -9946,7 +10141,7 @@ async function renderShelf(){
   var html = '<div class="lab"><b>On sale</b><i></i><s>' + live.length + ' of 20 used</s></div>';
   html += live.length ? live.map(function(r){
       var pr = Number(r.price || 0);
-      return '<div class="shl"><span class="shth r-' + esc(r.rarity || 'common') + '"><i>' + esc(initials(r.name)) + '</i>'
+      return '<div class="shl"><span class="shth r-' + esc(r.rarity || 'common') + '"><i>' + esc(cardIni(r.name)) + '</i>'
         + (r.photo_url ? '<img src="' + esc(r.photo_url) + '" alt="" loading="lazy" onerror="this.remove()">' : '') + '</span>'
         + '<div class="shlg"><b>' + esc(r.name) + '</b><span>#' + r.print_number + (r.grade != null ? ' · PSA ' + r.grade : '')
         + ' · ends ' + esc(dstr(r.expires_at, { weekday: 'short' })) + '</span>'
@@ -10042,7 +10237,7 @@ function shfDraw(){
   var copies = pool.filter(function(p){ return p.grade === o.grade; }).sort(function(a, b){ return a.print_number - b.print_number; });
   var sel = copies.filter(function(p){ return p.print_id === o.pid; })[0] || null;
   var total = c.prints.length, only = total === 1;
-  var head = '<div class="shsh"><span class="shth r-' + esc(c.rarity || 'common') + '"><i>' + esc(initials(c.name)) + '</i>'
+  var head = '<div class="shsh"><span class="shth r-' + esc(c.rarity || 'common') + '"><i>' + esc(cardIni(c.name)) + '</i>'
     + (c.photo_url ? '<img src="' + esc(c.photo_url) + '" alt="" onerror="this.remove()">' : '') + '</span>'
     + '<div class="shlg"><b>' + esc(c.name) + '</b><span>' + esc(c.set_name || '') + ' · ' + esc(c.set_code || '') + ' · '
     + (only ? 'only copy' : total + ' copies') + '</span>'
