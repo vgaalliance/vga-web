@@ -163,7 +163,39 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 /* a cut-out stands on the slate; a photo that still has its backdrop is
    shown edge to edge, where a rectangle reads as a picture and not a mistake */
 #sPhoto{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom}
+/* THE PRESS WALL behind the fighter (never the host): a step-and-repeat of the
+   series' mark and the UBA mark, every other row shifted half a step so the
+   logos run on the diagonal like a real backdrop. A pool of light sits behind
+   the figure so a cut-out or the silhouette stays the thing you look at. A
+   photo that still has its own backdrop (.full) simply covers it. */
+#sWall{position:absolute;inset:-30px -60px;display:flex;flex-direction:column;justify-content:space-around;
+  background:linear-gradient(180deg,#FBFDFE 0%,#E6EEF3 100%)}
+#sWall .wr{display:flex;justify-content:space-around;align-items:center;white-space:nowrap}
+#sWall .wr.o{transform:translateX(-92px)}
+#sWall .wt{font-family:'Anton',sans-serif;letter-spacing:2px;line-height:1.2}
+#sWall .wt.s{font-size:44px;border:4px solid currentColor;padding:0 14px;color:rgba(23,135,189,.42)}
+#sWall .wt.u{font-size:30px;border:3px solid currentColor;padding:0 10px;color:rgba(10,28,41,.22)}
+#sWall::after{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 34% 62% at 50% 72%,rgba(255,255,255,.92),rgba(255,255,255,.5) 45%,transparent 75%)}
+#sPhoto,#sSil{z-index:1}
+/* THE HOST AVATAR, in the LEFT window: a PNGtuber for an owner who is not on
+   camera. Four poses, each with the mouth shut and open; the deck picks the
+   pose and its mic opens the mouth (the same idea as veadotube). Every frame
+   is drawn on one canvas so a swap never moves the body. While it is on, the
+   window carries its own backdrop instead of being a hole for a camera. */
+#sHostAv{position:absolute;left:56px;top:128px;width:880px;height:520px;overflow:hidden;display:none;
+  background:radial-gradient(ellipse 45% 80% at 50% 78%,#2B7099 0%,#14466A 50%,#0B2233 100%)}
+#sHostAv.on{display:block}
+#sHostAv::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(112deg,rgba(255,255,255,.05) 0 1px,transparent 1px 57px)}
+#sHostAv .fr{position:absolute;left:50%;top:-4px;height:900px;width:auto;transform:translateX(-50%);visibility:hidden;transition:transform .07s ease-out}
+#sHostAv .fr.vis{visibility:visible}
+#sHostAv.talk .fr{transform:translateX(-50%) translateY(-7px)}   /* the little hop a PNGtuber makes on each word */
 #sPhotoBox.full #sPhoto{object-fit:cover;object-position:center 18%}
+/* no photo: a lit silhouette stands in the window instead of an empty hole,
+   so the split still reads as host and FIGHTER */
+#sSil{position:absolute;left:50%;bottom:0;height:94%;width:auto;transform:translateX(-50%);color:#BCD7E7;display:none}   /* solid, so it reads as a figure in front of the press wall */
+#sPhotoBox.nopic #sSil{display:block}
+#sPhotoBox.nopic #sPhoto{display:none}
 #cband > *{position:relative;z-index:1}
 
 /* THE WAIT. A line draws across the band, the label blinks, and the page
@@ -244,8 +276,11 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 <div class="screen" id="split">
   <div class="frame ink"></div>
   <!-- the fighter's window carries their photo when they have one (most
-       fighters are not on camera); with no photo it stays a hole, like the host's -->
-  <div class="abs paper" id="sPhotoBox" style="left:984px;top:128px;width:880px;height:520px;overflow:hidden;display:none"><img id="sPhoto" alt=""></div>
+       fighters are not on camera); with no photo it carries a silhouette.
+       ?cams=1 keeps it a hole, like the host's, for a fighter on camera -->
+  <div class="abs paper" id="sPhotoBox" style="left:984px;top:128px;width:880px;height:520px;overflow:hidden;display:none"><div id="sWall" aria-hidden="true"></div><img id="sPhoto" alt=""><svg id="sSil" viewBox="0 0 100 100" aria-hidden="true"><path fill="currentColor" d="M50 14c9 0 16 8 16 18s-7 19-16 19-16-9-16-19 7-18 16-18zM14 100c0-21 15-38 36-38s36 17 36 38z"/></svg></div>
+  <!-- the host's window, when the host is an avatar (deck ⑥ Verdicts → Host avatar) -->
+  <div id="sHostAv" aria-hidden="true"></div>
   <i class="sh t ink" style="left:56px"></i><i class="sh b ink" style="left:56px"></i>
   <i class="sh t two ink" style="left:984px"></i><i class="sh b two ink" style="left:984px"></i>
   <div id="sLock"><div class="lab" id="sLockSub" style="color:var(--ice2);margin-bottom:10px"></div><div class="big">THE VERDICTS</div></div>
@@ -372,12 +407,15 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 
   // The fighter's photo, on the contract page and in their window on the split.
   // Most fighters have none: the page then simply has no figure on it, and the
-  // window stays a hole. ?cams=1 keeps the window a hole always, for a night
-  // when the fighter IS on camera.
+  // window shows a silhouette. ?cams=1 keeps the window a hole always, for a
+  // night when the fighter IS on camera.
   const CAMS = new URLSearchParams(location.search).get('cams') === '1'
-  const noPhoto = () => { $('cPhoto').style.display = 'none'; $('sPhotoBox').style.display = 'none' }
+  // the split's window with no picture: the silhouette, or the hole on a cams night
+  const silhouette = () => { const box = $('sPhotoBox')
+    box.classList.add('nopic'); box.classList.remove('full'); box.style.display = CAMS ? 'none' : 'block' }
+  const noPhoto = () => { $('cPhoto').style.display = 'none'; silhouette() }
   $('cPhoto').addEventListener('error', () => { $('cPhoto').style.display = 'none' })
-  $('sPhoto').addEventListener('error', () => { $('sPhotoBox').style.display = 'none' })
+  $('sPhoto').addEventListener('error', silhouette)
   async function photo(d){
     // Not in hand yet (no prep reached this page, or it was reloaded since):
     // the windows go empty for the round trip rather than keep the last face.
@@ -391,6 +429,8 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
       box.style.display = showIt ? 'block' : 'none'
       if(showIt && img.getAttribute('src') !== url){ img.crossOrigin = 'anonymous'; img.src = url }
     })
+    $('sPhotoBox').classList.toggle('nopic', !url)
+    if(!url) silhouette()
     // A photo with its backdrop still on it is not a cut-out. One corner pixel
     // says which: transparent = a figure to stand on the page; solid = a
     // picture, which fills its window on the split and is left OFF the
@@ -398,7 +438,7 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     if(url) warm(url)
     const cut = url ? await CUT.get(url) : true
     if(cur !== d) return
-    $('sPhotoBox').classList.toggle('full', !cut)
+    $('sPhotoBox').classList.toggle('full', !!url && !cut)
     if(!cut) $('cPhoto').style.display = 'none'
     const onPage = !!url && cut
     // the name gives up the right half of the page to the figure
@@ -410,7 +450,19 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     b.className = v === 'contract' ? 'yes' : v === 'no_contract' ? 'no' : 'wait'
     $('sWord').textContent = v === 'contract' ? 'CONTRACT' : v === 'no_contract' ? 'NO CONTRACT' : 'THE VERDICT'
   }
+  // the press wall: drawn once per series, the brand and UBA in turn
+  let wallFor = null
+  function wall(brand){
+    const b = brand || 'CONTENDER'
+    if(wallFor === b) return
+    wallFor = b
+    const mark = b.replace(/[&<>"]/g, '')
+    const row = o => `<div class="wr${o ? ' o' : ''}">` + Array.from({ length: 6 }, (_, i) =>
+      (i + (o ? 1 : 0)) % 2 ? '<span class="wt u">UBA</span>' : `<span class="wt s">${mark}</span>`).join('') + '</div>'
+    $('sWall').innerHTML = Array.from({ length: 6 }, (_, r) => row(r % 2)).join('')
+  }
   function fillSplit(d){
+    wall(d.brand)
     $('sPill').textContent = (series(d) ? series(d) + ' · ' : '') + 'CONTENDER SERIES'
     $('sPill').style.marginLeft = (-$('sPill').offsetWidth / 2) + 'px'
     $('sLockSub').textContent = (series(d) ? series(d) + ' · ' : '') + (OWNER[d.brand] ? OWNER[d.brand] + "'S CONTENDER SERIES" : 'CONTENDER SERIES')
@@ -440,6 +492,8 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
 
   // 1 · SPLIT
   function showSplit(d){
+    // the split carries the avatar's state too, so a reloaded screen comes back with it
+    host({ brand: d.brand, ...(d.host || {}) })
     const sp = $('split')
     // The next fighter while the split is still up and in view: dip, swap, return.
     const swap = sp.classList.contains('on') && !$('contract').classList.contains('on')
@@ -573,8 +627,38 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     off($('split')); off($('contract')); off($('board'))
   }
 
+  // ── the host avatar ────────────────────────────────────────────────────
+  // Which brands have one, and where its eight frames live (p1…p4, each with
+  // -open). The deck keeps the same list (HOST_AVATARS in control.html): a
+  // brand missing there gets no buttons, a brand missing here draws nothing.
+  const HOSTS = { HPCS: 'assets/hosts/HPCS/' }
+  const HOST = { on: false, brand: null, pose: 1, mouth: false }
+  function hostDraw(){
+    const box = $('sHostAv'), dir = HOSTS[HOST.brand] || ''
+    if(box.dataset.dir !== dir){
+      box.dataset.dir = dir
+      // all eight are in the page at once, so a mouth flap is a visibility
+      // swap with nothing to load or decode mid-word
+      box.innerHTML = dir ? [1, 2, 3, 4].flatMap(p => ['p' + p, 'p' + p + '-open'])
+        .map(k => `<img class="fr" data-k="${k}" src="${dir}${k}.png" alt="">`).join('') : ''
+    }
+    box.classList.toggle('on', !!dir && HOST.on)
+    box.classList.toggle('talk', HOST.mouth)
+    const k = 'p' + HOST.pose + (HOST.mouth ? '-open' : '')
+    box.querySelectorAll('.fr').forEach(i => i.classList.toggle('vis', i.dataset.k === k))
+  }
+  function host(d){
+    if(d.brand !== undefined) HOST.brand = d.brand
+    if(d.on !== undefined) HOST.on = !!d.on
+    if(d.pose) HOST.pose = Math.min(4, Math.max(1, d.pose | 0))
+    if(d.mouth !== undefined) HOST.mouth = !!d.mouth
+    hostDraw()
+  }
+
   function handle(c){
     if(!c || c.type !== 'contender') return
+    // before the hide check: the avatar's own on/off must never hide the screen
+    if(c.action === 'host') return host(c.d || {})
     if(c.on === false){ hideAll(!!c.soft); return }
     const d = c.d || {}
     if(c.action === 'prep'){ prep(d.names); return }      // loads, shows nothing

@@ -231,6 +231,15 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;}
         <span class="stat-label">TEAM</span>
         <span class="stat-val right" id="teamRight">—</span>
       </div>
+      <!-- GYM is the gym they train at (the Discord gyms), not fighters.gym free
+           text. Gym names run to 32 characters: a long one shrinks to 18px like
+           the other rows, then wraps onto a second line (data-wrap) rather
+           than getting too small to read on stream. -->
+      <div class="stat-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 8px; border-top:1px solid hsla(276,25%,70%,0.13); border-bottom:1px solid hsla(276,25%,70%,0.13); opacity:0;">
+        <span class="stat-val left" id="gymLeft" data-wrap="1">—</span>
+        <span class="stat-label">GYM</span>
+        <span class="stat-val right" id="gymRight" data-wrap="1">—</span>
+      </div>
     </div>
 
     <!-- SPONSOR BAR — sits at the very bottom of the black panel,
@@ -899,7 +908,12 @@ function fitStatVals(){
       return r.getBoundingClientRect().width }
     const room = el.getBoundingClientRect().width - 2
     let size = 30; el.style.fontSize = size+'px'
-    while(size > 15 && measure() > room){ size -= 1; el.style.fontSize = size+'px' }
+    // A row that may wrap (GYM) stops shrinking at 18px and goes onto two
+    // lines instead: a 32-character gym name at 12px is unreadable on stream.
+    const wrap = el.dataset.wrap === '1'
+    if(wrap){ el.style.whiteSpace = 'nowrap'; el.style.lineHeight = '' }
+    while(size > (wrap ? 18 : 15) && measure() > room){ size -= 1; el.style.fontSize = size+'px' }
+    if(wrap && measure() > room){ el.style.whiteSpace = 'normal'; el.style.lineHeight = '1.05' }
   }
 }
 // A 46px name plate has the same failure at a bigger size -- long stage names
@@ -2933,6 +2947,7 @@ editOverlay.addEventListener('click', (e) => {
     // only collapses a row when BOTH sides are the dash.
     set('stanceLeft',L.stance||DASH); set('stanceRight',R.stance||DASH)
     set('teamLeft',L.team||DASH);     set('teamRight',R.team||DASH)
+    set('gymLeft',L.gym||DASH);       set('gymRight',R.gym||DASH)
     // A row where NEITHER fighter has the stat is noise: reach is missing for
     // 186 of 276 fighters and age for 143, so a typical bout rendered one real
     // number under three em-dashes and read as broken data rather than absent
@@ -3003,7 +3018,7 @@ function hideEmptyRows(){
   const blank=v=>{ const t=(v||'').trim(); return t===''||t==='\u2014'||t==='-'||t==='TBA' }
   for(const [l,r] of [['ageLeft','ageRight'],['heightLeft','heightRight'],
                       ['weightLeft','weightRight'],['reachLeft','reachRight'],
-                      ['stanceLeft','stanceRight'],['teamLeft','teamRight']]){
+                      ['stanceLeft','stanceRight'],['teamLeft','teamRight'],['gymLeft','gymRight']]){
     const el=document.getElementById(l); if(!el) continue
     const row=el.closest('.stat-row'); if(!row) continue
     const empty = blank(el.textContent) && blank(document.getElementById(r)?.textContent)

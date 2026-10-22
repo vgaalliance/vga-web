@@ -1283,8 +1283,8 @@ function handle(c){
     kLoad(c.d.left.name, c.d.right.name)
   }
   if(c.type==='keys'){
-    if(c.on===false){ kStop(); return }
-    if(c.on===true){ kStart(); return }
+    if(c.on===false){ K_RUN=false; kStop(); return }
+    if(c.on===true){ K_RUN=true; kStart(); return }
   }
 
   if(c.type==='odds'){
@@ -1685,6 +1685,7 @@ function kPaint(c){
 }
 function kStop(){ if(K_loop){clearTimeout(K_loop);K_loop=null}
   const el=$('keys'); if(el.classList.contains('in')){el.classList.remove('in');el.classList.add('out')} }
+let K_RUN=false   // has the operator pressed ▶ Start rotation (and not ■ Stop since)
 function kStart(){
   if(K_loop) clearTimeout(K_loop)
   const tick=()=>{
@@ -1763,7 +1764,10 @@ async function kLoad(nameA,nameB){
   const typed=built.filter(c=>c.tone==='keys'||c.eyebrow==='Fun fact').length
   console.log(`[keys] ${built.length} cards for ${a.display_name} vs ${b.display_name} `
     +`(${typed} typed, ${built.length-typed} automatic)`)
-  kStart()
+  // OFF until the deck's ▶ Start rotation (Castle, 2026-10-17): arming a bout
+  // loads the new fighters' cards but only keeps a rotation going that the
+  // operator already started; it never starts one by itself.
+  if(K_RUN) kStart()
 }
 
 // ?keysdemo=1 shows one of every card shape without a deck or a live bout.
