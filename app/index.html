@@ -9956,7 +9956,7 @@ async function renderShop(){
       var prices = items.map(function(r){ return Number(r.vc_price || 0); });
       var lo = Math.min.apply(null, prices), hi = Math.max.apply(null, prices);
       var open = !!SHOP_OPEN[c];
-      return head + '<button class="spfold" data-spfold="' + esc(c) + '" aria-expanded="' + open + '"><div class="spg"><b>' + items.length + ' kinds</b>'
+      return head + '<button class="spfold" data-spfold="' + esc(c) + '" aria-expanded="' + open + '"><div class="spg"><b>' + items.length + ' kinds \u00b7 ' + (open ? 'tap to fold' : 'tap to see each') + '</b>'
         + '<span>' + left + ' left across all ' + items.length + ' · ' + (lo === hi ? lo.toLocaleString() : lo.toLocaleString() + '–' + hi.toLocaleString()) + ' VC each</span></div>'
         + '<i>' + (open ? '▾' : '▸') + '</i></button>'
         + (open ? items.map(shopRow).join('') : '');
