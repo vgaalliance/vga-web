@@ -1279,7 +1279,7 @@ window.loadOdds=async()=>{
     const b=document.createElement('button')
     b.innerHTML=`${m.side_a} vs ${m.side_b}<small>${m.event_name} · ${m.pool.toLocaleString()} VC · ${m.bets} bets</small>`
     b.onclick=()=>send({type:'odds',on:true,d:{
-      a:m.side_a, b:m.side_b, total_a:m.total_a, total_b:m.total_b, bets:m.bets,
+      a:m.side_a, b:m.side_b, total_a:m.total_a, total_b:m.total_b, bets:m.bets, seed:m.house_seed||0,
       label:m.event_name }})
     box.appendChild(b)
   })
@@ -1933,7 +1933,7 @@ window.loadBetFeed=async()=>{
   const [{ data: feed }, { data: pools }] = await Promise.all([
     sb.from('bet_feed_public').select('*').eq('event_name',ev)
       .order('amount',{ascending:false}).limit(24),
-    sb.from('bet_pools_public').select('match_id,side_a,side_b,total_a,total_b'),
+    sb.from('bet_pools_public').select('match_id,side_a,side_b,total_a,total_b,house_seed'),
   ])
   // same narrowing as the odds board — armed bout only, when one is armed
   const b=armedBout()
@@ -1955,7 +1955,8 @@ window.loadBetFeed=async()=>{
     const p=pByM[w.match_id]; if(!p) return
     const pool=p.total_a+p.total_b
     const side= w.pick===p.side_a ? p.total_a : p.total_b
-    const odds= side ? pool/side : 1
+    const S=p.house_seed||0   // the house seed, economy plan D54
+    const odds= side+S ? (pool+2*S)/(side+S) : 1
     const b=document.createElement('button')
     b.innerHTML=`${w.amount.toLocaleString()} VC on ${w.pick}<small>${w.side_a} vs ${w.side_b} · ${w.event_name} · pays ${odds.toFixed(2)}×</small>`
     b.onclick=()=>send({type:'flash',w:'bet',d:{amt:w.amount,pick:w.pick,odds}})
@@ -2650,9 +2651,11 @@ window.fireCorners=()=>send({type:'corner', reveal:true, d:cornerPayload()})
    press it. A side with no money on it has no odds — shows "—", never NaN. */
 const isUbae=()=>document.body.classList.contains('ev-ubae')
 
-function americanOdds(pool, side){
-  if(!side || !pool) return '—'
-  const dec = pool/side
+// seed = the UBA pools' house seed (bet_pools_public.house_seed, economy plan
+// D54); UBAe pools have none, so they pass nothing.
+function americanOdds(pool, side, seed=0){
+  if(!(side+seed) || !(pool+seed)) return '—'
+  const dec = (pool+2*seed)/(side+seed)
   if(!isFinite(dec) || dec<=1) return '—'
   return dec>=2 ? '+'+Math.round((dec-1)*100) : '-'+Math.round(100/(dec-1))
 }
@@ -2696,7 +2699,7 @@ window.fireClockOdds=async()=>{
   const flipped = m.side_a!==b.a
   const stakeL = flipped ? m.total_b : m.total_a
   const stakeR = flipped ? m.total_a : m.total_b
-  const l=americanOdds(pool,stakeL), r=americanOdds(pool,stakeR)
+  const l=americanOdds(pool,stakeL,m.house_seed||0), r=americanOdds(pool,stakeR,m.house_seed||0)
   send({type:'clockodds', d:{ l, r }})
   hint.textContent=`${b.a} ${l} · ${b.b} ${r} · ${pool.toLocaleString()} VC`
 }

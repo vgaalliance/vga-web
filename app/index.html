@@ -5658,7 +5658,7 @@ var ISO={"United States":"US","United Kingdom":"GB","Brazil":"BR","Canada":"CA",
 function flagOf(country){ var c = ISO[country]; if(!c) return '';
   return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65); }
 
-var APP_BUILD = 'uba-v262';   // keep equal to CACHE_VERSION in sw.js
+var APP_BUILD = 'uba-v263';   // keep equal to CACHE_VERSION in sw.js
 (function(){ var b = document.getElementById('build'); if(b) b.textContent = 'build ' + APP_BUILD; })();
 /* the 108 flashes on the home card ran the whole time Home was open, even
    with the card a screen below the globe. paused while it is not in view. */
@@ -8234,7 +8234,7 @@ async function loadCard(e){
   // drop out, so this is empty except around a live card. That is correct,
   // not a failure, so nothing is rendered when there is nothing.
   var pools = {};
-  var poolRows = await q("bet_pools_public?select=match_id,side_a,side_b,total_a,total_b,pool,bets"
+  var poolRows = await q("bet_pools_public?select=match_id,side_a,side_b,total_a,total_b,pool,bets,house_seed"
     + "&event_id=eq." + e.id);
   if(poolRows) poolRows.forEach(function(r){ pools[r.match_id] = r; });
 
@@ -8488,22 +8488,22 @@ function tapeRows(A, B){
 }
 
 /* Pari-mutuel with no rake: back a side and you take a share of the WHOLE
-   pot, so the multiplier is pool / that side's total. It moves as people
-   bet, which is why it is drawn as a split bar rather than fixed odds. */
+   pot, plus the house seed (poolX), so the multiplier moves as people bet,
+   which is why it is drawn as a split bar rather than fixed odds. */
 function poolHTML(p){
   if(!p) return '';
   var a = Number(p.total_a || 0), b = Number(p.total_b || 0), tot = a + b;
-  if(!tot){
+  if(!tot && !Number(p.house_seed || 0)){
     return '<div class="pool"><div class="none">Betting open · no bets yet</div></div>';
   }
-  var pa = Math.round(a / tot * 100);
-  var mult = function(side){ return side > 0 ? '×' + (tot / side).toFixed(2) : '—'; };
+  var pa = tot ? Math.round(a / tot * 100) : 50;
+  var mult = function(side){ var m = poolX(p, side); return m ? '×' + m.toFixed(2) : '—'; };
   return '<div class="pool">'
     + '<div class="bar2"><i class="a" style="width:'+pa+'%"></i><i class="b" style="width:'+(100-pa)+'%"></i></div>'
     + '<div class="nums">'
-    + '<span class="la">'+a.toLocaleString()+' · '+mult(a)+'</span>'
+    + '<span class="la">'+a.toLocaleString()+' · '+mult('a')+'</span>'
     + '<span class="mid3">'+Number(p.bets||0)+' bets · '+tot.toLocaleString()+' VC</span>'
-    + '<span class="lb">'+mult(b)+' · '+b.toLocaleString()+'</span>'
+    + '<span class="lb">'+mult('b')+' · '+b.toLocaleString()+'</span>'
     + '</div></div>';
 }
 
@@ -11886,11 +11886,11 @@ function bkTicketHTML(t){
     ? '<span class="k">Riding</span><span class="v">' + pkN(money.riding) + '</span><span class="p">pays ' + pkN(money.pays) + '</span>'
     : '<span class="k">Pots</span><span class="v">' + pkN(pot) + '</span><span class="k">' + (t.open ? 'No bets yet' : 'Betting closed') + '</span>';
   /* the main event along the foot: both names on a thin red / blue edge, each
-     price pressable while its fight is open; a side nobody has backed yet
-     says "new" rather than inventing a price */
+     price pressable while its fight is open; with the house seed a side
+     nobody has backed yet has a real price, "new" only without one */
   function chip(side){
-    var tot = Number(main.pool || 0), sd = Number(side === 'a' ? main.total_a : main.total_b);
-    var label = sd > 0 ? pkX(tot / sd) : 'new';
+    var m = poolX(main, side);
+    var label = m ? pkX(m) : 'new';
     if(main.market_status !== 'open') return '';
     return '<button type="button" class="bk-px" data-bpick="' + esc(t.id + '|' + main.match_id + '|' + side) + '"'
       + ' aria-label="Back ' + esc(side === 'a' ? main.side_a : main.side_b) + ' at ' + label + '">' + label + '</button>';
@@ -11970,14 +11970,23 @@ function betRecord(list){
   return { placed: all.length, won: won, lost: lost, settled: settled, net: net,
            hit: settled ? Math.round(won / settled * 100) : null };
 }
+/* A fight pool's odds with the house seed (economy plan D54): the house
+   counts house_seed VC on each corner, so a side pays (pot + 2·seed) ÷
+   (side + seed) -- the sum settle_match_bets pays at the bell. `extra` is a
+   stake not placed yet, added to that side. 0 = no price (no seed, no money). */
+function poolX(p, side, extra){
+  var S = Number(p.house_seed || 0), x = Number(extra || 0);
+  var a = Number(p.total_a || 0), b = Number(p.total_b || 0);
+  var mine = (side === 'a' ? a : b) + x + S;
+  return mine > 0 ? (a + b + x + 2 * S) / mine : 0;
+}
+
 /* What a stake pays AT THE CURRENT POOL. Pari-mutuel: your side's share of the
-   whole pool. The stored `odds` is a snapshot from placement and settlement
-   overwrites it, so showing that number would be showing history. */
+   whole pool plus the seed. The stored `odds` is a snapshot from placement and
+   settlement overwrites it, so showing that number would be showing history. */
 function livePays(pool, bet){
   if(!pool) return Number(bet.odds || 1);
-  var a = Number(pool.total_a||0), b = Number(pool.total_b||0), tot = a + b;
-  var side = bet.pick_name === pool.side_a ? a : b;
-  return side > 0 ? tot / side : 1;
+  return poolX(pool, bet.pick_name === pool.side_a ? 'a' : 'b') || 1;
 }
 
 /* ── level two: one card's fights, and the ticket (economy plan D53) ──
@@ -12100,9 +12109,8 @@ function pkMaxAmt(){ return pkRules ? Number(pkRules.max_amount || 0) : 0; }
 /* What a single bet pays at the pot as it stands, your own stake included —
    the same sum settle_match_bets makes at the bell. */
 function pkEst(p, side, amt){
-  var a = Number(p.total_a || 0), b = Number(p.total_b || 0);
-  var mine = (side === 'a' ? a : b) + amt;
-  return mine > 0 ? Math.floor(amt * (a + b + amt) / mine) : amt;
+  var m = poolX(p, side, amt);
+  return m ? Math.floor(amt * m) : amt;
 }
 
 function renderBetEvent(eventId){
@@ -12154,12 +12162,11 @@ function pkDraw(){
     function half(side){
       var nm = side === 'a' ? p.side_a : p.side_b, ph = side === 'a' ? p.photo_a : p.photo_b;
       var w = side === 'a' ? p.wins_a : p.wins_b, l = side === 'a' ? p.losses_a : p.losses_b;
-      var tot = Number(p.pool || 0), sd = Number(side === 'a' ? p.total_a : p.total_b);
       var bits = [];
       if(w !== null && w !== undefined) bits.push(Number(w || 0) + '–' + Number(l || 0));
       var shown = null;
       if(!lock){
-        if(single){ shown = sd > 0 ? tot / sd : null; bits.push(shown ? shown.toFixed(2) + '×' : 'no bets'); }
+        if(single){ shown = poolX(p, side) || null; bits.push(shown ? shown.toFixed(2) + '×' : 'no bets'); }
         else { shown = pkPrice(p, side); bits.push('pick ' + pkX(shown)); }
       }
       var mv = shown ? pkMove(p.match_id + side + (single ? 's' : 'p'), shown) : '';

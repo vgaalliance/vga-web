@@ -1291,7 +1291,9 @@ function handle(c){
     if(c.on===false){ $('odds').classList.remove('show'); clearTimeout(oddsTimer); return }
     const d=c.d, pool=d.total_a+d.total_b
     const pa= pool? Math.round(d.total_a/pool*100):50
-    const oa= d.total_a? (pool/d.total_a):0, ob= d.total_b? (pool/d.total_b):0
+    // d.seed = the house seed (economy plan D54): (pool + 2·seed) ÷ (side + seed)
+    const S=+d.seed||0, x=side=> side+S? (pool+2*S)/(side+S):0
+    const oa=x(d.total_a), ob=x(d.total_b)
     $('ohpool').textContent=pool.toLocaleString(); $('ohbets').textContent=d.bets||0
     $('oa').textContent=d.a; $('ob').textContent=d.b
     fitOddsNames()
