@@ -1839,6 +1839,55 @@ button{font:inherit;background:none;border:none;color:inherit;cursor:pointer}
 .mkbuy{background:linear-gradient(90deg,#F5C842,#D6A81F);color:#2A1F00}
 .mkbuy.working{opacity:.55;pointer-events:none}
 .mkshort{background:none;border:1px solid rgba(255,255,255,.18);color:#9C93BC;cursor:default}
+/* SHOP: the current set featured, then shelves (redesign 2026-10-22) */
+.spbal{margin:4px 18px 0;font-size:13px;color:#9C93BC}
+.spbal b{color:#fff;font-weight:700}
+.sphero{position:relative;margin:14px 16px 0;padding:16px;border-radius:16px;display:flex;gap:12px;overflow:hidden;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--pc) 22%,#151027),#120D22 70%);
+  border:1px solid color-mix(in srgb,var(--pc) 35%,transparent)}
+.sphl{flex:1;min-width:0}
+.spk{font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--pc)}
+.spht{font-family:'Bebas Neue',sans-serif;font-size:30px;line-height:1;color:#fff;margin-top:5px}
+.sphd{font-size:13px;line-height:1.4;color:#C9C1E6;margin-top:6px}
+.sphb{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.sphb>div{display:flex;flex-direction:column;gap:2px}
+.sphb>div b{font-size:13px;color:#fff}
+.sphb>div span{font-family:'Space Mono',monospace;font-size:12px;color:#fff;margin-bottom:6px}
+.sphp{flex:none;display:flex;align-items:center}
+/* a drawn pack: foil crimps top and bottom, the set name down the face */
+.sppk{position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;
+  border-radius:6px;padding:14px 6px;color:#0B0816;overflow:hidden;
+  background:linear-gradient(160deg,color-mix(in srgb,var(--pc) 70%,#fff),var(--pc) 55%,color-mix(in srgb,var(--pc) 60%,#000));
+  box-shadow:0 8px 20px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.25)}
+.sppk.l{width:92px;height:128px;transform:rotate(4deg)}
+.sppk.m{width:72px;height:100px}
+.sppk b{font-family:'Bebas Neue',sans-serif;font-size:15px;line-height:1;word-break:break-word}
+.sppk.l b{font-size:18px}
+.sppk em{font-style:normal;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.2em;text-transform:uppercase;margin-top:4px;opacity:.7}
+.sppk i{position:absolute;left:0;right:0;height:9px;background:repeating-linear-gradient(90deg,rgba(0,0,0,.25) 0 3px,transparent 3px 6px)}
+.sppk i.t{top:0}.sppk i.b{bottom:0}
+.sprail{display:flex;gap:10px;overflow-x:auto;padding:2px 18px 6px;scroll-snap-type:x mandatory;scrollbar-width:none}
+.sprail::-webkit-scrollbar{display:none}
+.sppt{flex:none;width:104px;scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center}
+.sppt>b{font-size:12px;color:#fff;margin-top:6px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sppt>span{font-family:'Space Mono',monospace;font-size:11px;color:#fff;margin-bottom:4px}
+.sprow,.spfold{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid rgba(255,255,255,.06)}
+.sprow.out{opacity:.45}
+.spfold{width:100%;background:none;border:0;border-bottom:1px solid rgba(255,255,255,.06);color:inherit;font:inherit;text-align:left;cursor:pointer}
+.spfold>i{font-style:normal;color:#9C93BC;font-size:14px}
+.spg{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.spg b{font-size:14px;color:#fff;font-weight:600}
+.spg span{font-size:12.5px;line-height:1.35;color:#9C93BC}
+.spg em{font-style:normal;font-family:'Space Mono',monospace;font-size:10.5px;color:#C9C1E6}
+.spr{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.spr>b{font-family:'Space Mono',monospace;font-size:13px;color:#fff}
+.spr>b::after{content:' VC';font-size:10px;color:#9C93BC}
+.spbuy,.spsign{border:0;border-radius:999px;padding:7px 16px;font:700 12.5px/1 inherit;font-family:inherit;cursor:pointer}
+.spbuy{background:#F5C842;color:#1A1300}
+.spbuy.full,.sphb .spsign{width:100%;padding:9px 0}
+.spsign{background:none;color:#EFEAFF;box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
+.spshort,.spout{font-family:'Space Mono',monospace;font-size:10.5px;color:#9C93BC;padding:7px 0}
+.sphb .spshort,.sphb .spout{text-align:center;border-radius:999px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
 /* MY SHELF: a grid of cards by set, and one sell sheet (redesign 2026-10-20) */
 .shempty{margin:0 18px;padding:10px 0;font-size:13px;line-height:1.45;color:#B7AEDC;border-top:1px solid rgba(255,255,255,.07);border-bottom:1px solid rgba(255,255,255,.07)}
 .shl{display:flex;align-items:center;gap:10px;margin:0 18px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.07)}
@@ -9808,46 +9857,128 @@ function dailyEnd(){
   /* dailyUp stays true: the day is picked, and this session never asks again */
 }
 
-/* ── SHOP ── the price list, read-only. Buying happens in Discord. */
+/* ── SHOP ── Designed with Castle 2026-10-22 (the Shop page, option 1:
+   "Featured, then shelves"). Cards are most of what the shop takes in, so the
+   current set leads: its Pack and Box drawn big, side by side. The other sets'
+   packs sit on one swipeable rail. Then everything else by kind, with the
+   limited runs folded: seven sponsor editions and three belts are one line
+   each that opens, because ten identical rows read as one item repeated.
+
+   No item has a picture, so a pack is DRAWN in its set's colour. The current
+   set is the one with a Box on sale (only the current set sells Boxes); the
+   app is never told the set order, and asking for it would be a schema
+   change. Prices are white and only Buy is gold; anything you can't afford
+   says how short you are instead of offering a button that would fail.
+
+   sort_order FIRST, as before: the Discord panel honours an operator's
+   hand-placed order, and the app must list the same shop the same way. */
+/* gold is left out: gold means Buy here, and a gold pack beside a gold button reads as one */
+var SHOP_COLS = ['#4FB8F0', '#B39BFF', '#FF8FB1', '#6EE7B7', '#FFB86B', '#7DD3E8'];
+function shopColour(name){
+  var h = 0; String(name || '').split('').forEach(function(ch){ h = (h * 31 + ch.charCodeAt(0)) >>> 0; });
+  return SHOP_COLS[h % SHOP_COLS.length];
+}
+function shopSetOf(name){ return String(name || '').replace(/\s+(Pack|Box|Single)$/i, ''); }
+function shopPack(setName, kind, size){
+  return '<span class="sppk ' + size + '" style="--pc:' + shopColour(setName) + '"><i class="t"></i><b>' + esc(setName)
+    + '</b><em>' + esc(kind) + '</em><i class="b"></i></span>';
+}
+var SHOP_OPEN = {};
+
 async function renderShop(){
   var body = document.getElementById('sheet-body');
-  body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'
-    + '<div class="kick">Spend your VC</div><h3>Shop</h3></div>'
-    + '<div id="shp"><div class="skel"></div><div class="skel" style="width:60%"></div></div>';
+  if(!document.getElementById('shp')){
+    body.innerHTML = '<div class="evhead">' + backButton() + '<div style="height:34px"></div>'
+      + '<div class="kick">Spend your VC</div><h3>Shop</h3></div>'
+      + '<div id="shp"><div class="skel"></div><div class="skel" style="width:60%"></div></div>';
+  }
   var el = document.getElementById('shp');
-  /* sort_order FIRST. The Discord panel has always honoured an operator's
-     hand-placed order and this screen sorted by category+price, so the same
-     shop listed its items in two different orders. Price ordering is also wrong
-     across sets on its own terms: it lists every 600, then every 2,500, then
-     every 7,000, so one set's Single/Pack/Box are never next to each other.
-     Category order now falls out of sort_order too, which is why Purses stopped
-     landing third on nothing but the alphabet. */
-  var rows = await q("shop_public?select=*&order=sort_order.asc.nullslast,category.asc,vc_price.asc");
+  var got = await Promise.all([
+    q("shop_public?select=*&order=sort_order.asc.nullslast,category.asc,vc_price.asc"),
+    me ? qMe("my_profile?select=vc_balance&limit=1") : Promise.resolve([])
+  ]);
   if(!el.isConnected) return;
+  var rows = got[0];
   if(!rows){ retryHandlers['shp'] = renderShop;
     el.innerHTML = failHTML("Couldn't load the shop.", 'shp'); return; }
   if(!rows.length){ el.innerHTML = '<div class="empty">Nothing is for sale right now.</div>'; return; }
+  var bal = (got[1] && got[1].length) ? Number(got[1][0].vc_balance || 0) : null;
+
+  function buy(r, cls){
+    var p = Number(r.vc_price || 0);
+    if(r.stock != null && Number(r.stock) <= 0) return '<span class="spout">Sold out</span>';
+    if(!me) return '<button class="spsign" data-signin="1">Sign in</button>';
+    if(bal !== null && bal < p) return '<span class="spshort">Short ' + (p - bal).toLocaleString() + '</span>';
+    return '<button class="spbuy' + (cls ? ' ' + cls : '') + '" data-buy="' + esc(r.id) + '">Buy</button>';
+  }
+  function desc(r){ return r.description ? esc(noEmojiTokens(r.description)) : ''; }
+
+  var cards = rows.filter(function(r){ return r.category === 'Cards'; });
+  var box = cards.filter(function(r){ return / Box$/i.test(r.name); })[0];
+  var cur = box ? shopSetOf(box.name) : null;
+  var curPack = cur ? cards.filter(function(r){ return r.name === cur + ' Pack'; })[0] : null;
+  var used = {};
+  var html = bal !== null ? '<div class="spbal">You have <b>' + bal.toLocaleString() + ' VC</b></div>' : '';
+
+  if(cur && (curPack || box)){
+    if(curPack) used[curPack.id] = 1; used[box.id] = 1;
+    var lead = curPack || box;
+    html += '<div class="sphero" style="--pc:' + shopColour(cur) + '"><div class="sphl">'
+      + '<div class="spk">New set · featured</div><div class="spht">' + esc(cur) + '</div>'
+      + '<div class="sphd">' + desc(lead) + '</div><div class="sphb">'
+      + [curPack, box].filter(Boolean).map(function(r){
+          return '<div><b>' + (r === box ? 'Box' : 'Pack') + '</b><span>' + Number(r.vc_price).toLocaleString() + ' VC</span>' + buy(r, 'full') + '</div>';
+        }).join('') + '</div></div><div class="sphp">' + shopPack(cur, 'Pack', 'l') + '</div></div>';
+  }
+  var packs = cards.filter(function(r){ return !used[r.id] && / Pack$/i.test(r.name); });
+  if(packs.length){
+    packs.forEach(function(r){ used[r.id] = 1; });
+    html += '<div class="lab"><b>Packs</b><i></i><s>' + packs.length + (packs.length === 1 ? ' set' : ' sets') + '</s></div>'
+      + '<div class="sprail">' + packs.map(function(r){
+          var s = shopSetOf(r.name);
+          return '<div class="sppt">' + shopPack(s, 'Pack', 'm') + '<b>' + esc(s) + '</b><span>' + Number(r.vc_price).toLocaleString() + ' VC</span>' + buy(r) + '</div>';
+        }).join('') + '</div>';
+  }
+  /* everything else, by category, in the shop's own order; a category whose
+     items are all limited editions folds into one line that opens */
   var cats = [];
   rows.forEach(function(r){
+    if(used[r.id]) return;
     var c = r.category || 'Other';
     if(cats.indexOf(c) === -1) cats.push(c);
   });
-  el.innerHTML = cats.map(function(c){
-    return '<div class="lab"><b>'+esc(c)+'</b><i></i></div>'
-      + rows.filter(function(r){ return (r.category || 'Other') === c; }).map(function(r){
-        var out = r.stock !== null && Number(r.stock) <= 0;
-        return '<div class="shp'+(out?' out':'')+'">'
-          + '<div style="flex:1;min-width:0"><div class="t">'+esc(r.name)+'</div>'
-          + (r.description ? '<div class="s">'+esc(noEmojiTokens(r.description))+'</div>' : '')
-          + (r.stock !== null ? '<div class="stk">'+(out ? 'Sold out' : Number(r.stock)+' left')+'</div>' : '')
-          + '</div><div class="prw"><div class="pr">'+Number(r.vc_price||0).toLocaleString()+'<em>VC</em></div>'
-          + (out ? '' : '<button class="act buy" data-buy="'+esc(r.id)+'">Buy</button>')
-          + '</div></div>';
-      }).join('');
-  }).join('')
-  + '<div class="doit">Bought here or in Discord, it is the same wallet and the same stock. '
-  + 'Gifting stays in the server \u2014 <b>/buy</b> with a recipient.</div>';
+  html += cats.map(function(c){
+    var items = rows.filter(function(r){ return !used[r.id] && (r.category || 'Other') === c; });
+    var fold = items.length >= 3 && items.every(function(r){ return r.stock != null; });
+    var head = '<div class="lab"><b>' + esc(c) + '</b><i></i></div>';
+    if(fold){
+      var left = items.reduce(function(a, r){ return a + Math.max(0, Number(r.stock || 0)); }, 0);
+      var prices = items.map(function(r){ return Number(r.vc_price || 0); });
+      var lo = Math.min.apply(null, prices), hi = Math.max.apply(null, prices);
+      var open = !!SHOP_OPEN[c];
+      return head + '<button class="spfold" data-spfold="' + esc(c) + '" aria-expanded="' + open + '"><div class="spg"><b>' + items.length + ' kinds</b>'
+        + '<span>' + left + ' left across all ' + items.length + ' · ' + (lo === hi ? lo.toLocaleString() : lo.toLocaleString() + '–' + hi.toLocaleString()) + ' VC each</span></div>'
+        + '<i>' + (open ? '▾' : '▸') + '</i></button>'
+        + (open ? items.map(shopRow).join('') : '');
+    }
+    return head + items.map(shopRow).join('');
+  }).join('');
+  html += '<div class="shrule">Bought here or in Discord, it\'s the same wallet and the same stock. '
+    + 'Gifting stays in the server: <b>/buy</b> with a recipient.</div>';
+  el.innerHTML = html;
+
+  function shopRow(r){
+    var out = r.stock != null && Number(r.stock) <= 0;
+    return '<div class="sprow' + (out ? ' out' : '') + '"><div class="spg"><b>' + esc(r.name) + '</b>'
+      + (r.description ? '<span>' + desc(r) + '</span>' : '')
+      + (r.stock != null ? '<em>' + (out ? 'Sold out' : Number(r.stock) + ' left') + (r.max_per_player ? ' · ' + r.max_per_player + ' each' : '') + '</em>' : '')
+      + '</div><div class="spr"><b>' + Number(r.vc_price || 0).toLocaleString() + '</b>' + buy(r) + '</div></div>';
+  }
 }
+document.addEventListener('click', function(e){
+  var f = e.target.closest('[data-spfold]');
+  if(f){ var c = f.getAttribute('data-spfold'); SHOP_OPEN[c] = !SHOP_OPEN[c]; renderShop(); }
+});
 
 /* ── THE MARKET ── other players' cards, at prices they set ────────────
    Anon-readable on purpose. The board is a shop window: somebody who has not
