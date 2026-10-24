@@ -1134,56 +1134,49 @@
   .bb-none span{display:block;font-family:'Barlow',sans-serif;font-weight:500;font-size:24px;color:var(--dim);text-transform:none;margin-top:12px;}
   .bb-sum b.tick{animation:bbTick .6s ease;}
   @keyframes bbTick{30%{color:#7dffa8;transform:scale(1.06)}}
-  /* the second moment: the biggest bet of the night big on the left, and the
-     newest bets four at a time on the right, flipping like a carousel. Never a
-     wall: a busy night flips more pages, a quiet one shows what it has. */
-  .bb-feed{position:absolute;left:0;right:0;top:168px;height:772px;display:grid;grid-template-columns:600px 1fr;gap:24px;visibility:hidden;}
-  .bb-hero{position:relative;overflow:hidden;background:var(--panel);border:2px solid #ffce00;box-shadow:0 0 40px rgba(255,206,0,.2);}
-  .bb-hero .ph{position:absolute;left:0;right:0;bottom:0;height:520px;width:100%;object-fit:contain;object-position:50% 100%;
-    background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--c) 45%,transparent));}
-  .bb-hero .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,0,18,.94) 0%,rgba(8,0,18,.5) 34%,transparent 52%,transparent 70%,rgba(8,0,18,.92) 100%);}
-  .bb-hero .k{position:absolute;left:30px;top:26px;font-family:'Press Start 2P',monospace;font-size:13px;letter-spacing:.22em;color:#ffce00;}
-  .bb-hero .amt{position:absolute;left:28px;top:58px;font-weight:900;font-size:120px;line-height:.9;color:#ffce00;text-shadow:0 0 30px rgba(255,206,0,.45);font-variant-numeric:tabular-nums;}
-  .bb-hero .amt span{font-family:'Press Start 2P',monospace;font-size:16px;margin-left:10px;color:#ffe9a8;text-shadow:none;}
-  .bb-hero .who{position:absolute;left:30px;right:30px;bottom:74px;font-weight:900;font-size:72px;line-height:.9;text-transform:uppercase;white-space:nowrap;}
-  .bb-hero .who small{display:block;font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.2em;color:var(--dim);margin-bottom:12px;font-weight:400;}
-  .bb-hero .vs{position:absolute;left:30px;right:30px;bottom:30px;font-family:'Barlow',sans-serif;font-weight:600;font-size:24px;color:#e8e2f2;}
-  .bb-hero .vs b{color:#ffce00;font-weight:700;}
-  .bb-side{display:flex;flex-direction:column;gap:14px;min-width:0;}
-  .bb-sh{display:flex;align-items:center;gap:14px;height:28px;font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.2em;color:var(--hi);}
-  .bb-sh .ln{flex:1;height:2px;background:linear-gradient(90deg,var(--pur),transparent);}
-  .bb-sh .dots{display:flex;gap:6px;}.bb-sh .dots i{width:10px;height:10px;background:rgba(var(--hi-rgb),.25);display:block;}
-  .bb-sh .dots i.on{background:var(--hi);box-shadow:0 0 8px rgba(var(--hi-rgb),.8);}
-  .bb-sh .more{color:var(--dim);font-size:10px;}
-  .bb-page{display:flex;flex-direction:column;gap:12px;}
-  .bb-t{position:relative;display:grid;grid-template-columns:96px 250px minmax(0,1fr);align-items:center;height:118px;background:var(--panel);overflow:hidden;border-left:5px solid var(--c);}
-  .bb-t .tl{width:96px;height:118px;object-fit:cover;object-position:50% 0;display:block;
+  /* the second moment: tonight's bets as 12 small cards in the middle (4 × 3).
+     Every few seconds they turn over like blinds, card by card in a wave, to the
+     next 12. Fewer bets = fewer cards, centred, no turning. The biggest bet of
+     the night is always one of them, in gold. */
+  .bb-feed{position:absolute;left:0;right:0;top:168px;height:772px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;visibility:hidden;}
+  .bb-grid{display:grid;grid-template-columns:repeat(var(--cols,4),400px);grid-auto-rows:200px;gap:16px;justify-content:center;perspective:1800px;}
+  .bb-c{position:relative;}
+  .bb-c .in{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.65,0,.3,1);}
+  .bb-c.turned .in{transform:rotateX(180deg);}
+  .bb-c .f{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;}
+  .bb-c .f.back{transform:rotateX(180deg);}
+  .bb-t{position:relative;display:grid;grid-template-columns:110px 1fr;height:100%;background:var(--panel);overflow:hidden;border-left:5px solid var(--c);}
+  .bb-t .tl{width:110px;height:200px;object-fit:cover;object-position:50% 0;display:block;
     background:linear-gradient(180deg,color-mix(in srgb,var(--c) 60%,#000),rgba(20,4,40,.95));}
-  .bb-t span.tl{display:flex;align-items:center;justify-content:center;font-weight:900;font-size:40px;color:rgba(255,255,255,.4);}
-  .bb-t .amt{padding-left:24px;font-weight:900;font-size:60px;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;}
-  .bb-t .amt span{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--dim);margin-left:8px;}
-  .bb-t .b{display:flex;flex-direction:column;justify-content:center;gap:6px;padding-right:110px;min-width:0;}
-  .bb-t .on{font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.16em;color:var(--dim);}
-  .bb-t .who{font-weight:900;font-size:40px;text-transform:uppercase;white-space:nowrap;overflow:hidden;line-height:1;}
-  .bb-t .vs{font-family:'Barlow',sans-serif;font-weight:500;font-size:19px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .bb-t .ago{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-family:'Press Start 2P',monospace;font-size:10px;color:var(--dim);}
-  .bb-page.in .bb-t{animation:bbDeal .5s cubic-bezier(.16,1,.3,1) backwards;}
-  .bb-page.out .bb-t{animation:bbOut .32s cubic-bezier(.6,0,.9,.4) forwards;}
-  @keyframes bbOut{to{opacity:0;transform:translateX(-40px)}}
+  .bb-t span.tl{display:flex;align-items:center;justify-content:center;font-weight:900;font-size:44px;color:rgba(255,255,255,.4);}
+  .bb-t .b{display:flex;flex-direction:column;justify-content:center;gap:6px;padding:0 18px;min-width:0;}
+  .bb-t .amt{font-weight:900;font-size:54px;line-height:.9;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;}
+  .bb-t .amt span{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--dim);margin-left:6px;}
+  .bb-t .on{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.16em;color:var(--dim);}
+  .bb-t .who{font-weight:900;font-size:34px;text-transform:uppercase;white-space:nowrap;overflow:hidden;line-height:1;}
+  .bb-t .vs{font-family:'Barlow',sans-serif;font-weight:500;font-size:17px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .bb-t .ago{position:absolute;right:12px;top:12px;font-family:'Press Start 2P',monospace;font-size:8px;color:var(--dim);}
+  .bb-t.big{border:2px solid #ffce00;border-left-width:5px;box-shadow:0 0 26px rgba(255,206,0,.25);}
+  .bb-t.big .amt{color:#ffce00;text-shadow:0 0 16px rgba(255,206,0,.45);}
+  .bb-t.big .tag{position:absolute;right:12px;bottom:12px;font-family:'Press Start 2P',monospace;font-size:8px;letter-spacing:.14em;color:#ffce00;}
+  .bb-t.empty{border-left-color:transparent;background:rgba(20,2,40,.35);}
+  .bb-foot{display:flex;align-items:center;gap:16px;font-family:'Press Start 2P',monospace;font-size:11px;letter-spacing:.18em;color:var(--dim);}
+  .bb-foot .dots{display:flex;gap:6px;}.bb-foot .dots i{width:10px;height:10px;background:rgba(var(--hi-rgb),.25);display:block;}
+  .bb-foot .dots i.on{background:var(--hi);box-shadow:0 0 8px rgba(var(--hi-rgb),.8);}
   .bb-more{font-family:'Press Start 2P',monospace;font-size:11px;letter-spacing:.18em;color:var(--dim);}
   /* the switch: the board's rows go out to the left, the tickets deal in */
   #v-bets .bb-rows .bb-row{transition:opacity .35s,transform .45s cubic-bezier(.6,0,.4,1);}
   #v-bets.feed .bb-rows .bb-row{opacity:0;transform:translateX(-60px);}
   #v-bets.feed .bb-rows .bb-row:nth-child(n){transition-delay:calc(var(--i,0) * 35ms);}
   #v-bets.feed .bb-feed{visibility:visible;}
-  #v-bets.feed .bb-hero{animation:bbDeal .6s cubic-bezier(.16,1,.3,1) backwards;}
+  #v-bets.feed .bb-c{animation:bbDeal .5s cubic-bezier(.16,1,.3,1) backwards;}
   @keyframes bbDeal{from{opacity:0;transform:translateY(26px) scale(.96)}}
   .bb-title span{display:inline-block;transition:opacity .3s,transform .4s;}
   .bb-title .t2{position:absolute;left:0;opacity:0;transform:translateY(20px);}
   #v-bets.feed .bb-title .t1{opacity:0;transform:translateY(-20px);}
   #v-bets.feed .bb-title .t2{opacity:1;transform:none;}
   .bb-title{position:relative;}
-  @media (prefers-reduced-motion:reduce){ .bb-bar i{transition:none} .bb-row.in{animation:none} #v-bets.feed .bb-hero,.bb-page.in .bb-t,.bb-page.out .bb-t{animation:none} }
+  @media (prefers-reduced-motion:reduce){ .bb-bar i{transition:none} .bb-row.in{animation:none} #v-bets.feed .bb-c{animation:none} .bb-c .in{transition:none} }
   /* ── UBA HOME: THE LADDER (ladder-core.js decides who is on it) ──────────
      The left column on a UBA night. The fight up next, as the division's
      ladder from the lower fighter up to the higher one. The two in the fight
@@ -3658,61 +3651,60 @@ function bbDraw(fresh){
   document.querySelectorAll('#bbBody .nm').forEach(el=>{ el.style.fontSize=''
     let px=36; while(el.scrollWidth>el.clientWidth && px>22) el.style.fontSize=(--px)+'px' })
 }
-// The second moment. The biggest bet of the night stays big on the left; the
-// newest of the rest go 5 at a time on the right as fixed-size tickets (never
-// stretched to the screen), a page every 4 seconds, at most BB_PAGES pages (the
-// newest 20), then "+N more". bet_feed_public never carries
-// who placed a bet.
-const BB_PER=5, BB_PAGES=4, BB_FLIP=4000
+// The second moment: 12 cards in the middle, the newest bets first, the biggest
+// of the night always among them (gold). Every BB_FLIP they turn over like
+// blinds to the next 12, at most BB_PAGES sets (the newest 36), then "+N more".
+// bet_feed_public never carries who placed a bet.
+const BB_PER=12, BB_PAGES=3, BB_FLIP=5000
 const bbAgo=t=>{ const m=Math.max(0,Math.round((Date.now()-new Date(t))/60000)); return m<1?'JUST NOW':m<60?m+'M AGO':Math.round(m/60)+'H AGO' }
 const bbSide=b=>{ const p=(BB.rows.find(r=>r.match_id===b.match_id))||{}, a=b.pick===b.side_a
-  return { photo:a?p.photo_a:p.photo_b, opp:a?b.side_b:b.side_a, c:a?'rgb(var(--pink-rgb))':'#2f6bff', pays: p.pool!=null ? bbPays(+p.pool, +(a?p.total_a:p.total_b), +p.house_seed||0) : null } }
+  return { photo:a?p.photo_a:p.photo_b, opp:a?b.side_b:b.side_a, c:a?'rgb(var(--pink-rgb))':'#2f6bff' } }
 function bbFit(scope){ scope.querySelectorAll('.who, .amt').forEach(el=>{ el.style.fontSize=''
   let px=parseInt(getComputedStyle(el).fontSize)||40; const min=Math.round(px*.5)
   while(el.scrollWidth>el.clientWidth+1 && px>min) el.style.fontSize=(--px)+'px' }) }
+const bbCard=b=>{ if(!b) return '<div class="bb-t empty"></div>'
+  const x=bbSide(b), big=b===BB.big
+  const tile=x.photo ? `<img class="tl" src="${cshEsc(x.photo)}" alt="" onerror="this.remove()">` : `<span class="tl">${(String(b.pick||'?').trim()[0]||'?').toUpperCase()}</span>`
+  return `<div class="bb-t${big?' big':''}" style="--c:${x.c}">${tile}<div class="b"><div class="amt">${bbVc(b.amount)}<span>VC</span></div>
+    <div class="on">ON</div><div class="who">${cshEsc(b.pick)}</div><div class="vs">vs ${cshEsc(x.opp)}</div></div>
+    <span class="ago">${bbAgo(b.placed_at)}</span>${big?'<span class="tag">BIGGEST BET</span>':''}</div>` }
 function bbFeedDraw(){
   const feed=BB.feed||[]
   if(!feed.length){ $('bbFeed').innerHTML='<div class="bb-more">NO BETS YET TONIGHT</div>'; BB.pages=[]; return 0 }
-  const big=feed.reduce((m,b)=>!m || +b.amount>+m.amount ? b : m, null), bs=bbSide(big)
-  const rest=feed.filter(b=>b!==big), shown=rest.slice(0, BB_PER*BB_PAGES)
+  BB.big=feed.reduce((m,b)=>!m || +b.amount>+m.amount ? b : m, null)
+  // the biggest leads the first set; the rest newest first
+  const order=[BB.big, ...feed.filter(b=>b!==BB.big)], shown=order.slice(0, BB_PER*BB_PAGES)
   BB.pages=[]; for(let i=0;i<shown.length;i+=BB_PER) BB.pages.push(shown.slice(i,i+BB_PER))
-  BB.more=rest.length-shown.length; BB.page=0
-  const hero=`<div class="bb-hero" style="--c:${bs.c}">${bs.photo?`<img class="ph" src="${cshEsc(bs.photo)}" alt="" onerror="this.remove()">`:''}<div class="shade"></div>
-      <div class="k">BIGGEST BET TONIGHT</div><div class="amt">${bbVc(big.amount)}<span>VC</span></div>
-      <div class="who"><small>ON</small>${cshEsc(big.pick)}</div>
-      <div class="vs">vs ${cshEsc(bs.opp)}${bs.pays?` · wins back <b>${bbVc(Math.round(big.amount*bs.pays))} VC</b> at today's odds`:''}</div></div>`
-  $('bbFeed').innerHTML=hero+`<div class="bb-side"><div class="bb-sh" id="bbSh"></div><div class="bb-page" id="bbPage"></div></div>`
-  bbPageDraw('in'); bbFit($('bbFeed').querySelector('.bb-hero'))
+  BB.more=feed.length-shown.length; BB.page=0
+  const n=BB.pages[0].length, cols=n>=4 ? 4 : n, slots=BB.pages.length>1 ? BB_PER : n
+  $('bbFeed').innerHTML=`<div class="bb-grid" style="--cols:${cols}">`
+    + Array.from({length:slots},(_,i)=>`<div class="bb-c" style="animation-delay:${(i*0.04).toFixed(2)}s"><div class="in">
+        <div class="f front">${bbCard(BB.pages[0][i])}</div><div class="f back"></div></div></div>`).join('')
+    + `</div><div class="bb-foot" id="bbFoot"></div>`
+  bbFootDraw(); bbFit($('bbFeed'))
   return BB.pages.length
 }
-function bbPageDraw(cls){
-  const pg=BB.pages[BB.page]||[], n=BB.pages.length
-  $('bbSh').innerHTML=`<span>LATEST BETS</span><span class="ln"></span>`
-    + (n>1 ? `<span class="dots">${BB.pages.map((_,i)=>`<i class="${i===BB.page?'on':''}"></i>`).join('')}</span>` : '')
-    + (BB.more>0 && BB.page===n-1 ? `<span class="more">+ ${BB.more} MORE</span>` : '')
-  const el=$('bbPage'); el.className='bb-page '+(cls||'')
-  el.innerHTML = pg.length ? pg.map((b,i)=>{ const x=bbSide(b)
-    const tile=x.photo ? `<img class="tl" src="${cshEsc(x.photo)}" alt="" onerror="this.remove()">` : `<span class="tl">${(String(b.pick||'?').trim()[0]||'?').toUpperCase()}</span>`
-    return `<div class="bb-t" style="--c:${x.c};animation-delay:${(i*0.07).toFixed(2)}s">${tile}
-      <div class="amt">${bbVc(b.amount)}<span>VC</span></div>
-      <div class="b"><div class="on">ON</div><div class="who">${cshEsc(b.pick)}</div><div class="vs">vs ${cshEsc(x.opp)}</div></div>
-      <span class="ago">${bbAgo(b.placed_at)}</span></div>` }).join('')
-    : '<div class="bb-more">THE BIGGEST BET IS THE ONLY ONE SO FAR</div>'
-  bbFit(el)
-}
-// flip to the next page: the four go out to the left, the next four deal in
+function bbFootDraw(){ const n=BB.pages.length
+  $('bbFoot').innerHTML=(n>1 ? `<span class="dots">${BB.pages.map((_,i)=>`<i class="${i===BB.page?'on':''}"></i>`).join('')}</span>` : '')
+    + (BB.more>0 ? `<span>+ ${BB.more} MORE BETS TONIGHT</span>` : '') }
+// turn every card over to the next set: the face that is hidden gets the next
+// bet, then the card turns, in a wave across and down like blinds
 function bbFlip(){ if(BB.pages.length<2) return
-  $('bbPage').className='bb-page out'
-  setTimeout(()=>{ BB.page=(BB.page+1)%BB.pages.length; bbPageDraw('in') }, 340) }
-// The two moments take turns while the screen is up: the board for 14s, the
-// bets for 12s. Every return to the board re-reads first, so the odds are live.
-// The board for 14s, then the bets for as long as their pages need (4s a page,
-// at least 8s), flipping pages inside that; every return to the board re-reads.
+  BB.page=(BB.page+1)%BB.pages.length
+  const next=BB.pages[BB.page]
+  document.querySelectorAll('#bbFeed .bb-c').forEach((c,i)=>{
+    const hidden=c.classList.contains('turned') ? c.querySelector('.f.front') : c.querySelector('.f.back')
+    hidden.innerHTML=bbCard(next[i]); bbFit(hidden)
+    c.querySelector('.in').style.transitionDelay=((i%4)*90 + Math.floor(i/4)*140)+'ms'
+    c.classList.toggle('turned') })
+  bbFootDraw() }
+// The board for 14s, then the bets for as long as their sets need (5s a set,
+// at least 8s), turning inside that; every return to the board re-reads.
 function bbStart(){ clearTimeout(BB.timer); clearInterval(BB.flip); $('v-bets').classList.remove('feed'); bbDraw(true)
   const step=async feed=>{ clearInterval(BB.flip); if(!$('v-bets').classList.contains('on')) return
     let hold=14000
     if(feed){ const pages=bbFeedDraw(); $('v-bets').classList.add('feed')
-      hold=Math.max(8000, pages*BB_FLIP); if(pages>1) BB.flip=setInterval(bbFlip, BB_FLIP) }
+      hold=Math.max(8000, pages*BB_FLIP + 1000); if(pages>1) BB.flip=setInterval(bbFlip, BB_FLIP) }
     else { if(await bbLoad(BB.eventId, BB.event)) bbDraw(false); $('v-bets').classList.remove('feed') }
     BB.timer=setTimeout(()=>step(!feed), hold) }
   BB.timer=setTimeout(()=>step(true), 14000) }
