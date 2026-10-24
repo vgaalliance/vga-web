@@ -64,13 +64,22 @@ eq([L.kind, L.between.length], ['unranked', 0], 'two unranked fighters have no l
 L = ladder([{ name:'Big Woo ', rank:4 }, { name:'X', rank:5 }, { name:'m4', rank:6 }], 'big woo', 'M4')
 eq([L.top.rank, L.bottom.rank, ranks(L)], [4, 6, [5]], 'case and spaces do not stop a match')
 
-// catchweight: each fighter at their own division's rank, higher on top, nothing between
-const BY = { lightweight:[{name:'The Pooper',rank:3}], middleweight:[{name:'Bing Ling',rank:4},{name:'Tynado',rank:2}] }
-L = require('./ladder-core.js').catchweight(BY, { light_heavyweight:'Killer Kam' }, 'Bing Ling', 'The Pooper')
-eq([L.kind, L.top.name, L.top.rank, L.top.wc, L.bottom.name, L.bottom.wc], ['catch','The Pooper',3,'lightweight','Bing Ling','middleweight'], 'catchweight: own division ranks, the better number on top')
-eq([L.between.length, L.belt], [0, null], 'catchweight: nobody between, no belt')
-L = require('./ladder-core.js').catchweight(BY, { light_heavyweight:'Killer Kam' }, 'Nobody', 'killer kam')
-eq([L.top.rank, L.top.wc, L.bottom.rank], ['C','light_heavyweight',null], 'catchweight: a champion is C in their own division, a stranger is NR')
+// catchweight: each fighter gets their own short ladder, corners kept
+const CW = require('./ladder-core.js').catchweight
+const BY = { heavyweight:[{name:'R1',rank:1},{name:'R2',rank:2},{name:'Bloo',rank:3},{name:'Jester',rank:4}],
+             middleweight:[{name:'Adonnis',rank:1},{name:'Tynado',rank:2}], lightweight:[{name:'Top',rank:1}] }
+const CH = { heavyweight:'Boady', light_heavyweight:'Killer Kam' }
+const up = c => c.above.map(r => r.vacant ? 'VACANT' : r.rank+':'+r.name)
+L = CW(BY, CH, 'Jester', 'Tynado')
+eq([L.kind, L.cols[0].fighter.name, L.cols[1].fighter.name], ['catch','Jester','Tynado'], 'catchweight keeps the corners: a left, b right')
+eq([L.cols[0].fighter.wc, L.cols[0].fighter.rank, up(L.cols[0])], ['heavyweight', 4, ['2:R2','3:Bloo']], '#4 heavyweight: the 2 directly above')
+eq([L.cols[1].fighter.wc, up(L.cols[1])], ['middleweight', ['VACANT','1:Adonnis']], '#2 middleweight: #1, then the vacant belt above them')
+L = CW(BY, CH, 'Top', 'killer kam')
+eq(up(L.cols[0]), ['VACANT'], '#1 with no champion: just the vacant belt above')
+eq([L.cols[1].fighter.rank, L.cols[1].fighter.wc, up(L.cols[1])], ['C','light_heavyweight',[]], 'a champion has nobody above')
+L = CW(BY, CH, 'Nobody', 'R1')
+eq([L.cols[0].fighter.rank, up(L.cols[0])], [null, []], 'an unranked fighter has no ladder to show')
+eq(up(L.cols[1]), ['C:Boady'], '#1 heavyweight: the champion above')
 
 // an empty or broken ladder never throws
 eq(ladder(null, 'A', 'B').kind, 'unranked', 'no ladder at all is two unranked fighters, never a crash')

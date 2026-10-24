@@ -13,10 +13,12 @@
       passes first, and who the higher one would have under them.
    3. A title fight puts the BELT above the top fighter: the champion's belt
       when the champion is in the fight, VACANT when nobody holds it.
-   4. A CATCHWEIGHT bout has no ladder of its own (nobody is ranked at
-      catchweight), so it shows each fighter at their OWN division's rank,
-      higher on top, with no belt and nothing between them: two ladders
-      cannot be counted across.
+   4. A CATCHWEIGHT bout is two fighters from two divisions, so there is no
+      one ladder between them. It gives each fighter their OWN short ladder:
+      the fighter and the 2 rungs directly above them in their division (the
+      belt counts as the rung above #1, VACANT when nobody holds it). Corner
+      order is kept (a left, b right, like the face-off): neither is "above"
+      the other across two divisions.
    5. It never predicts. Rankings are set by the committee, so this says who is
       between the two, never where the winner will land.
    Names match ignoring case and spaces at the ends: the card and the rankings
@@ -59,6 +61,7 @@
     return { kind: all.length ? 'climb' : 'adjacent', top, bottom, belt, between, hidden }
   }
 
+  const ABOVE = 2
   // Catchweight: where each fighter stands in their own division.
   // byWc: { weight_class: [{ name, rank }] }, champs: { weight_class: name }.
   // A champion is C in their division; a name on no ladder is unranked (NR).
@@ -70,9 +73,16 @@
         if(r && key(r.name)===key(n) && Number.isFinite(+r.rank) && (!best || +r.rank < best.at)) best = { name:n, rank:+r.rank, at:+r.rank, wc }
       return best || { name:n, rank:null, at:Infinity, wc:null }
     }
-    const pa = find(a), pb = find(b)
-    const [top, bottom] = pa.at <= pb.at ? [pa, pb] : [pb, pa]
-    return { kind:'catch', top, bottom, belt:null, between:[], hidden:0 }
+    // the rungs above a fighter, nearest LAST so the column reads top-down:
+    // the belt, then #1, #2 … down to the fighter
+    const col = f => {
+      if(!f.wc || f.rank==='C') return { fighter:f, above:[] }
+      const rungs = [ champs && champs[f.wc] ? { name:champs[f.wc], rank:'C' } : { vacant:true, rank:'C' } ]
+        .concat((byWc[f.wc]||[]).filter(r => Number.isFinite(+r.rank) && +r.rank < f.at)
+          .map(r => ({ name:r.name, rank:+r.rank })).sort((x,y) => x.rank-y.rank))
+      return { fighter:f, above:rungs.slice(-ABOVE) }
+    }
+    return { kind:'catch', cols:[col(find(a)), col(find(b))], belt:null, between:[], hidden:0 }
   }
 
   return { ladder, catchweight, MAX_BETWEEN }
