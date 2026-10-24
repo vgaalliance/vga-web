@@ -592,12 +592,19 @@
   .card-vid{position:absolute;top:0;left:50%;transform:translateX(-50%);
     opacity:0;transition:opacity .6s ease;pointer-events:none;}
   .card-vid.on{opacity:1;position:relative;left:auto;transform:none;}
+  /* NO FRAME ON THE CARD EITHER. The rule below used to exempt it as "a printed
+     thing", and that was wrong: the card is a cut-out on transparent ground like
+     the prize is. Its webm is a 500x750 frame holding 260x491 of artwork, so a
+     border on the VIDEO traces the frame and not the card -- 145px of empty
+     space to its left, 95 to its right, a box that is not even centred on the
+     thing it is supposed to outline. The box-shadow was the same shape.
+     A drop-shadow FILTER follows the alpha instead, so the glow hugs the card. */
   .promo-cell video{display:block;height:auto;width:auto;max-height:560px;max-width:34vw;
-    border:1px solid var(--line);background:transparent;
-    box-shadow:0 0 46px rgba(var(--deep-rgb),.5);}
+    border:0;background:transparent;
+    filter:drop-shadow(0 0 30px rgba(var(--deep-rgb),.55));}
   /* No frame on the product: these are cut-out shots on transparent ground, and
-     a border round one draws a box round empty space. The posters and the card
-     are printed things and keep theirs. */
+     a border round one draws a box round empty space. The posters keep theirs --
+     they are printed sheets and their edge IS the artwork's edge. */
   #promoPrize{display:block;height:auto;width:auto;max-height:420px;max-width:26vw;
     filter:drop-shadow(0 18px 40px rgba(0,0,0,.55));}
   #promoPrizeLogo{display:block;height:38px;width:auto;max-width:26vw;opacity:.95;}
