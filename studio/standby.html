@@ -986,6 +986,51 @@
   .csh-up .done{position:absolute;inset:50px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;}
   .csh-up .done b{font-weight:900;font-size:84px;text-transform:uppercase;line-height:.9;text-shadow:0 0 30px rgba(var(--pur-rgb),.8);}
   .csh-up .done span{font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.22em;color:var(--hi);}
+  /* ── UBA HOME: THE LADDER (ladder-core.js decides who is on it) ──────────
+     The left column on a UBA night. The fight up next, as the division's
+     ladder from the lower fighter up to the higher one. The two in the fight
+     are the big rows; the fighters between them are small and dim, so the
+     eye reads the gap first and the names second. It builds from the BOTTOM
+     up, because it is a climb, and the line on the right grows with it. */
+  .lad{position:relative;display:flex;flex-direction:column;gap:8px;padding-right:46px;}
+  .lad-head{font-weight:900;font-size:58px;line-height:.92;text-transform:uppercase;margin:6px 0 2px;
+    text-shadow:0 0 26px rgba(var(--pur-rgb),.6);}
+  .lad-sub{font-family:'Press Start 2P',monospace;font-size:11px;letter-spacing:.2em;color:var(--dim);margin-bottom:10px;line-height:1.8;}
+  .lad-row{position:relative;display:grid;grid-template-columns:76px 52px 1fr;align-items:center;gap:14px;
+    height:56px;padding:0 18px 0 12px;background:rgba(14,0,30,.6);border-left:3px solid rgba(var(--hi-rgb),.25);}
+  .lad-row .rk{font-family:'Press Start 2P',monospace;font-size:16px;color:var(--dim);text-align:center;}
+  .lad-row .pic{width:44px;height:44px;border-radius:50%;overflow:hidden;background:rgba(var(--hi-rgb),.14);
+    display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;color:rgba(var(--hi-rgb),.6);}
+  .lad-row .pic img{width:100%;height:100%;object-fit:cover;object-position:50% 12%;}
+  .lad-row .nm{font-weight:700;font-size:30px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:rgba(255,255,255,.72);}
+  .lad-row.fx{height:84px;background:var(--panel);border-left-width:5px;}
+  .lad-row.fx .rk{font-size:24px;color:#fff;}
+  .lad-row.fx .pic{width:66px;height:66px;margin-left:-8px;}
+  .lad-row.fx .nm{font-weight:900;font-size:46px;color:#fff;}
+  .lad-row.top{border-left-color:#ffce00;box-shadow:0 0 26px rgba(255,206,0,.18);}
+  .lad-row.top .rk{color:#ffce00;}
+  .lad-row.bot{border-left-color:var(--pink);box-shadow:0 0 26px rgba(var(--pink-rgb),.18);}
+  .lad-row.bot .rk{color:var(--pink);font-size:15px;}
+  .lad-row .vs{position:absolute;right:16px;font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.16em;color:var(--dim);}
+  .lad-gap{height:34px;display:flex;align-items:center;justify-content:center;gap:12px;
+    font-family:'Press Start 2P',monospace;font-size:11px;letter-spacing:.2em;color:var(--dim);
+    border:1px dashed rgba(var(--hi-rgb),.25);}
+  .lad-belt{display:flex;align-items:center;gap:14px;height:52px;padding:0 18px;
+    background:linear-gradient(90deg,rgba(255,206,0,.22),rgba(255,206,0,.04));border-left:5px solid #ffce00;
+    font-family:'Press Start 2P',monospace;font-size:13px;letter-spacing:.18em;color:#ffce00;}
+  .lad-belt b{font-size:26px;}
+  .lad-none{padding:26px 28px;background:var(--panel);border-left:4px solid rgba(var(--hi-rgb),.35);
+    font-family:'Barlow',sans-serif;font-weight:500;font-size:24px;color:var(--dim);line-height:1.35;}
+  /* the climb: from the bottom fighter up to the top one */
+  .lad-line{position:absolute;right:10px;width:4px;border-radius:2px;
+    background:linear-gradient(0deg,var(--pink),#ffce00);box-shadow:0 0 14px rgba(var(--pink-rgb),.6);}
+  .lad-line::before{content:'';position:absolute;left:50%;top:-12px;transform:translateX(-50%);
+    border:9px solid transparent;border-bottom:12px solid #ffce00;border-top:0;}
+  .lad.in .lad-line{animation:ladGrow .9s cubic-bezier(.16,1,.3,1) .55s backwards;transform-origin:bottom;}
+  .lad.in .lad-r{animation:ladUp .5s cubic-bezier(.16,1,.3,1) backwards;}
+  @keyframes ladUp{from{opacity:0;transform:translateY(22px)}}
+  @keyframes ladGrow{from{transform:scaleY(0)}}
+  .lad.out{animation:cshFade .3s forwards;}
   /* a new fight: the last pair out to the sides, the new pair in, names wipe on, VS punches in last */
   .csh-up.leaving .fig.l{animation:cshOutL .42s cubic-bezier(.6,0,.9,.4) forwards;}
   .csh-up.leaving .fig.r{animation:cshOutR .42s cubic-bezier(.6,0,.9,.4) forwards;}
@@ -1255,6 +1300,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="playoff-core.js"></script>
+<script src="ladder-core.js"></script>
 <script>
 const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
   'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
@@ -2910,6 +2956,7 @@ const hideAll=()=>document.querySelectorAll('.view').forEach(hideView)
 function showView(el){
   if(!el) return
   if(el.id === 'v-prize') setTimeout(prizeCycle, 0)
+  if(el.id === 'v-cshome') setTimeout(ladFit, 0)
   clearTimeout(el._voutT)
   el.classList.remove('out')
   el.style.position=el.style.top=el.style.left=el.style.width=''
@@ -2935,7 +2982,8 @@ function show(view, league, exclude){
   if(view==='off'||!view) return
   if(view==='auto'){
     let list = league==='gfl' ? VIEWS_GFL : league==='uba' ? VIEWS_UBA : VIEWS
-    if(CSH.eventId && (document.documentElement.dataset.series==='cs' ? CSH.mode==='cs' : league==='gfl' && CSH.mode==='gfl'))
+    if(CSH.eventId && (document.documentElement.dataset.series==='cs' ? CSH.mode==='cs'
+        : (league==='gfl' && CSH.mode==='gfl') || (league==='uba' && CSH.mode==='uba')))
       list=['cshome', ...list.filter(v=>v!=='card')]
     // NEXT EVENT is filled when it is SHOWN (showNextEv), and the rotation used
     // to show it without filling it: a heading over an empty screen for 15s
@@ -3047,12 +3095,13 @@ const CSH_ARMED={}   // what the deck said is armed, by event, in case it answer
 // mode: 'cs' (a Contender Series night) or 'gfl' (an ordinary GFL night: the same
 // screen, with the Path to Pros on the left instead of what the series is).
 // It follows the brand: no brand = GFL, so a contender stamp can never leak onto a GFL card.
-const CSH={ eventId:null, name:'', brand:null, mode:'cs', bouts:[], pics:{}, armed:null, shownNext:undefined, shownPage:undefined }
+const CSH={ eventId:null, name:'', brand:null, mode:'cs', bouts:[], pics:{}, lad:null, armed:null, shownNext:undefined, shownPage:undefined }
 const cshEsc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))
 
-async function cshLoad(eventId, name, brand){
+async function cshLoad(eventId, name, brand, mode){
+  mode = mode || (brand ? 'cs' : 'gfl')
   const { data, error } = await sb.from('event_matches')
-    .select('match_id,bout_number,weight_class,status,method,fighter_a_name,fighter_b_name,fighter_a_slug,fighter_b_slug,winner_corner')
+    .select('match_id,bout_number,weight_class,status,method,fighter_a_name,fighter_b_name,fighter_a_slug,fighter_b_slug,winner_corner,is_title_fight')
     .eq('event_id', eventId).order('bout_number')
   if(error || !data) return false   // a failed read is never drawn as an empty card
   const bouts=data.filter(b=>b.fighter_a_name && b.fighter_b_name
@@ -3063,15 +3112,36 @@ async function cshLoad(eventId, name, brand){
     const { data:fc } = await sb.from('fighter_cards').select('slug,profile_photo_url').in('slug', slugs)
     ;(fc||[]).forEach(f=>{ if(f.profile_photo_url) pics[f.slug]=f.profile_photo_url })
   }
-  Object.assign(CSH,{ eventId, name:name||'', brand:brand||null, mode:brand?'cs':'gfl', bouts, pics, armed:CSH_ARMED[eventId]??null, shownNext:undefined, shownPage:undefined })
-  try{ localStorage.setItem('vga-cshome', JSON.stringify({ eventId, name:CSH.name, brand:CSH.brand, at:Date.now() })) }catch(e){}
+  // A UBA night's left column is the ladder, so it needs each division on the
+  // card: the pro rankings, who holds the belt, and a face for every name.
+  // A failed read leaves lad null and the column says nothing, never a wrong ladder.
+  let lad=null
+  if(mode==='uba'){
+    const wcs=[...new Set(bouts.map(b=>b.weight_class).filter(Boolean))]
+    const [{data:rk,error:e1},{data:tt,error:e2}] = await Promise.all([
+      sb.from('rankings_public').select('rank,fighter_name,weight_class,level').eq('scope','weight_class').in('weight_class', wcs),
+      sb.from('titles_public').select('weight_class,kind,is_interim,holder_name,level'),
+    ])
+    if(!e1 && !e2 && rk && tt){
+      lad={ rows:{}, champ:{}, pics:{} }
+      rk.filter(r=>r.level!=='amateur').forEach(r=>{ (lad.rows[r.weight_class]=lad.rows[r.weight_class]||[]).push({ name:r.fighter_name, rank:r.rank }) })
+      tt.filter(t=>t.kind==='weight_class' && t.level==='pro' && !t.is_interim && t.holder_name).forEach(t=>{ lad.champ[t.weight_class]=t.holder_name })
+      const names=[...new Set([...rk.map(r=>r.fighter_name), ...Object.values(lad.champ)])]
+      if(names.length){
+        const { data:lp } = await sb.from('fighter_cards').select('display_name,profile_photo_url').in('display_name', names)
+        ;(lp||[]).forEach(f=>{ if(f.profile_photo_url) lad.pics[String(f.display_name).trim().toLowerCase()]=f.profile_photo_url })
+      }
+    }
+  }
+  Object.assign(CSH,{ eventId, name:name||'', brand:brand||null, mode, bouts, pics, lad, armed:CSH_ARMED[eventId]??null, shownNext:undefined, shownPage:undefined })
+  try{ localStorage.setItem('vga-cshome', JSON.stringify({ eventId, name:CSH.name, brand:CSH.brand, mode, at:Date.now() })) }catch(e){}
   return true
 }
 // An OBS refresh mid-show forgets which card the home screen was on. It comes
 // back to it (within 12 hours) and draws it, without putting it on air; the
 // deck's answer to cardhello then brings back what is armed.
 ;(()=>{ try{ const o=JSON.parse(localStorage.getItem('vga-cshome')||'null')
-  if(o && o.eventId && Date.now()-o.at < 12*3600e3) cshLoad(o.eventId, o.name, o.brand).then(ok=>{ if(ok) cshUpdate() })
+  if(o && o.eventId && Date.now()-o.at < 12*3600e3) cshLoad(o.eventId, o.name, o.brand, o.mode).then(ok=>{ if(ok) cshUpdate() })
 }catch(e){} })()
 // the main event is bout 1 (card-format.js's rule); the rest run from the bottom of the card up
 const cshMain=()=> CSH.bouts.reduce((m,b)=> !m || b.bout_number<m.bout_number ? b : m, null)
@@ -3124,6 +3194,9 @@ function cshUpDraw(cls){
     ? `<div class="lab"><div class="eyebrow">${nx===cshMain()?'MAIN EVENT · UP NEXT':'UP NEXT'}</div>
          <div class="meta">${cshEsc(String(nx.weight_class||'').replace(/_/g,' ').toUpperCase())}${nx.weight_class?' · ':''}FIGHT ${cshNo(nx)} OF ${CSH.bouts.length}</div></div>
        ${cshFig('l', nx.fighter_a_name, nx.fighter_a_slug)}<div class="x">VS</div>${cshFig('r', nx.fighter_b_name, nx.fighter_b_slug)}`
+    : CSH.mode==='uba'
+    ? `<div class="lab"><div class="eyebrow">THAT'S THE CARD</div></div>
+       <div class="done"><b>See you next UBA</b><span>VGA · UBA FIGHT NIGHT</span></div>`
     : CSH.mode==='gfl'
     ? `<div class="lab"><div class="eyebrow">THAT'S THE CARD</div></div>
        <div class="done"><b>See you next GFL</b><span>MONDAYS &amp; THURSDAYS · THE PATH TO PROS</span></div>`
@@ -3143,9 +3216,61 @@ const CSH_PATH=[
   { n:'STEP 3 · UBA',              h:'Become a pro!', p:'Earn the contract. Fight on UBA cards with a pro record.' },
 ]
 const cshRule=(n,h,p,cls,tag)=>`<div class="csh-rule ${cls||''}">${tag?`<span class="tag">${tag}</span>`:''}<div class="n">${n}</div><h3>${h}</h3><p>${p}</p></div>`
+const WC_NAME=w=>({lightweight:'LIGHTWEIGHT',middleweight:'MIDDLEWEIGHT',light_heavyweight:'LIGHT HEAVYWEIGHT',heavyweight:'HEAVYWEIGHT'}[w] || String(w||'').replace(/_/g,' ').toUpperCase())
+// The ladder for the fight up next (UBA home's left column). Redrawn whenever
+// the next fight changes, with the same out-then-in as the face-off above it.
+function cshLadderDraw(cls){
+  const box=$('cshRules'), nx=cshNext()
+  const head=`<div class="csh-chead"><span>WHAT'S AT STAKE</span><span class="ln"></span></div>`
+  if(!nx || !CSH.lad){ box.innerHTML = head + `<div class="lad-none">${!nx ? 'That was the card. The rankings update after the show.' : 'The rankings could not be read.'}</div>`; return }
+  const wc=nx.weight_class, L=LADDER.ladder(CSH.lad.rows[wc]||[], nx.fighter_a_name, nx.fighter_b_name,
+    { champion:CSH.lad.champ[wc]||null, title:!!nx.is_title_fight })
+  const pic=n=>{ const u=CSH.lad.pics[String(n||'').trim().toLowerCase()], i=(String(n||'').trim()[0]||'?').toUpperCase()
+    return `<span class="pic">${u?`<img src="${cshEsc(u)}" alt="" onerror="this.outerHTML='${i}'">`:i}</span>` }
+  const rk=r=> r==='C' ? 'C' : r==null ? 'NR' : '#'+r
+  const row=(f,cls)=>`<div class="lad-row lad-r ${cls||''}" style="animation-delay:@Ds"><span class="rk">${rk(f.rank)}</span>${pic(f.name)}<span class="nm">${cshEsc(f.name)}</span></div>`
+  const all=L.between.filter(r=>!r.gap).length + L.hidden
+  const title = L.belt ? (L.belt.kind==='vacant' ? 'For the vacant belt' : 'Title defence')
+    : L.kind==='unranked' ? 'Both unranked'
+    : L.kind==='adjacent' ? 'Side by side'
+    : L.bottom.rank==null ? `Unranked v ${rk(L.top.rank)}`
+    : `${all} between them`
+  const sub = `${WC_NAME(wc)}${L.kind==='unranked' ? ' · NEITHER IS ON THE LADDER YET' : L.kind==='adjacent' ? ' · NOBODY BETWEEN THEM' : ''}`
+  const rows=[]
+  if(L.belt) rows.push(`<div class="lad-belt lad-r" style="animation-delay:@Ds"><b>🏆</b>${WC_NAME(wc)} TITLE${L.belt.kind==='vacant'?' · VACANT':''}</div>`)
+  if(L.kind==='unranked') rows.push(row(L.top,'fx bot'), row(L.bottom,'fx bot'))
+  else {
+    rows.push(row(L.top,'fx top'))
+    L.between.forEach(r=> rows.push(r.gap ? `<div class="lad-gap lad-r" style="animation-delay:@Ds">· · ·&nbsp; ${r.gap} MORE &nbsp;· · ·</div>` : row(r)))
+    rows.push(row(L.bottom,'fx bot'))
+  }
+  // dealt from the bottom up: the last row in the list comes in first
+  const n=rows.length
+  box.innerHTML = head + `<div class="lad-head">${cshEsc(title)}</div><div class="lad-sub">${sub}</div>`
+    + `<div class="lad ${cls||''}" id="cshLad">${rows.map((h,i)=>h.replace('@D',((n-1-i)*0.07).toFixed(2))).join('')}${L.kind==='unranked'?'':'<div class="lad-line"></div>'}</div>`
+  ladFit()
+}
+// Measured, so it can only run on a screen that is showing: drawn while hidden,
+// every row is 0px tall. showView() runs it again when the home comes on.
+function ladFit(){
+  const lad=$('cshLad'); if(!lad || !lad.offsetHeight) return
+  // the line runs from the middle of the bottom fighter's row to the middle of the top one's
+  const t=lad.querySelector('.lad-row.top'), b=lad.querySelector('.lad-row.bot'), ln=lad.querySelector('.lad-line')
+  if(ln && t && b){ const y1=t.offsetTop+t.offsetHeight/2, y2=b.offsetTop+b.offsetHeight/2
+    ln.style.top=y1+'px'; ln.style.height=Math.max(0,y2-y1)+'px' }
+  // a long name shrinks to fit its row; it is never cut short on a fighter in the bout
+  lad.querySelectorAll('.lad-row.fx .nm').forEach(el=>{ let px=46; el.style.fontSize=''
+    while(el.scrollWidth>el.clientWidth && px>28){ el.style.fontSize=(--px)+'px' } })
+}
 function cshFrame(){
   $('cshTitle').textContent=CSH.name
-  $('cshVlink').style.display = CSH.mode==='gfl' ? 'none' : ''   // there are no verdicts on a GFL night
+  $('cshVlink').style.display = CSH.mode!=='cs' ? 'none' : ''   // verdicts are a contender night's alone
+  if(CSH.mode==='uba'){
+    $('cshEyebrow').textContent='VGA · UBA'
+    $('cshWhen').innerHTML='PRO RECORDS<br>RANKINGS ON THE LINE'
+    cshLadderDraw('in')   // a view coming on replays its animations, so 'in' plays each time it is shown
+    return
+  }
   if(CSH.mode==='gfl'){
     $('cshEyebrow').textContent='VGA · GLORY FIGHTING LEAGUE'
     $('cshWhen').innerHTML='GFL · MONDAYS &amp; THURSDAYS<br>THE PATH TO PROS STARTS HERE'
@@ -3174,7 +3299,9 @@ function cshUpdate(scoredId){
   CSH.shownNext=nx; CSH.shownPage=pg
   if(!live){ cshFrame(); cshUpDraw(''); cshCardDraw(null, ''); return }
   if(upChanged){ $('cshUp').classList.add('leaving')
-    setTimeout(()=>cshUpDraw('arriving'), 430) }
+    setTimeout(()=>cshUpDraw('arriving'), 430)
+    if(CSH.mode==='uba'){ const l=$('cshLad'); if(l) l.classList.add('out')
+      setTimeout(()=>cshLadderDraw('in'), 430) } }
   if(pgChanged){ const sl=$('cshSlots'); if(sl) sl.classList.add('out')
     setTimeout(()=>cshCardDraw(scoredId, 'in'), 520) }
   else cshCardDraw(scoredId, '')
@@ -3249,9 +3376,10 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
     if(c.view==='nextev'){ await showNextEv(c.exclude); show('nextev'); return }  // c.exclude = the event you're running tonight
     if(c.view==='cshome'){
       if(!c.eventId) return
-      if(c.eventId!==CSH.eventId && !(await cshLoad(c.eventId, c.event, c.series))) return   // no card read = stay on what is up
+      const home = c.home || (c.series ? 'cs' : 'gfl')   // the deck says which home; an older deck sends no 'home'
+      if((c.eventId!==CSH.eventId || home!==CSH.mode) && !(await cshLoad(c.eventId, c.event, c.series, home))) return   // no card read = stay on what is up
       // whatever the deck says now wins: a series stamp = contender, none = GFL
-      CSH.brand=c.series||null; CSH.mode=c.series?'cs':'gfl'
+      CSH.brand=c.series||null; CSH.mode=home
       if(c.armed!==undefined) CSH.armed=c.armed
       CSH.shownNext=undefined; cshUpdate(); show('cshome'); return }
     show(c.view, c.league, c.exclude); return   // league + exclude only matter to 'auto' — the rotation, and which night Next event skips
