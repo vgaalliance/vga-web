@@ -220,16 +220,16 @@ body.co #sbw { opacity:0; }
   line-height:1; text-transform:uppercase; color:rgba(240,224,255,.42); text-shadow:2px 2px 0 #000;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .mi.on .mi-label { color:#fff; text-shadow:0 0 22px rgba(204,102,255,.8), 0 0 44px rgba(155,48,255,.45), 2px 2px 0 #000; }
-.mi-sub { font-family:'Share Tech Mono',monospace; font-size:14px; letter-spacing:.2em; margin-top:5px;
-  color:rgba(200,160,255,.38); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:1px 1px 0 #000; }
-.mi.on .mi-sub { color:rgba(230,200,255,.85); }
+/* Labels only, like a game's menu: every line says what it is. The second
+   lines (the clock, what is playing) are still written, just never shown --
+   the clock has its own corner and the promo is on screen. */
+.mi-sub { display:none; }
 .mi-bar { position:absolute; left:18px; right:16px; bottom:2px; height:3px; background:rgba(155,77,255,.18); opacity:0; }
 .mi.on .mi-bar { opacity:1; }
 .mi-bar i { display:block; height:100%; width:0; background:linear-gradient(90deg,var(--hi),var(--pink)); box-shadow:0 0 10px var(--hi); }
 .mi.start .mi-label { color:rgba(240,224,255,.62); }
-.mi.start .mi-sub { color:rgba(255,255,255,.55); }
+.mi.quit .mi-label { color:rgba(240,224,255,.2); }
 .mi.start.on .mi-label { color:#fff; }
-.mi.start.on .mi-sub { color:#fff; }
 .mi.select .mi-label { animation:selflash .12s steps(1) 5; }
 @keyframes selflash { 0%{color:#fff} 50%{color:var(--pink)} }
 .press-start { margin-top:26px; margin-left:18px; font-size:13px; letter-spacing:.5em;
@@ -603,6 +603,8 @@ function drawMenu(){
   breakItems[0].node = row('', '02', breakItems[0].title, breakItems[0].sub)
   coNode = row('', '03', 'CALLOUTS', '')
   breakItems[1].node = row('', '04', breakItems[1].title, breakItems[1].sub)
+  // every title screen ends here; greyed, and the cursor never lands on it
+  row('quit', '', 'QUIT GAME', '')
   coCount()
   clockText()
 }
