@@ -1944,14 +1944,15 @@ channel.subscribe(status=>{
 
 <script>
 // ── LIVE CHAT ───────────────────────────────────────────────────────────
-// Reads stream_chat_public every 4s while the deck has chat ON, and shows only
-// what arrived AFTER it was switched on -- a backlog dumped at once is not live
-// chat. Up to 5 rows, newest at the bottom; a row leaves after 30s, so a quiet
-// room empties the corner instead of freezing old lines on screen.
-const CHT={ on:false, hidden:new Set(), last:null, rows:[], poll:null, sweep:null }
-const CHT_MAX=5, CHT_LIFE=30000
+// Reads stream_chat_public every 4s while the deck has chat ON and keeps the
+// newest 5 up, newest at the bottom (Castle, 2026-10-24): switched on, it
+// shows the last five at once, so it reads as live even in a slow room. A new
+// message pushes the oldest out. Only the last 10 minutes count, so a room
+// that went quiet empties the corner instead of freezing old lines on screen.
+const CHT={ on:false, hidden:new Set(), rows:[], poll:null }
+const CHT_MAX=5, CHT_FRESH=10*60*1000
 async function chtRead(){
-  const { data, error } = await sb.from('stream_chat_public').select('id,author,content').limit(40)
+  const { data, error } = await sb.from('stream_chat_public').select('id,author,content,created_at').limit(40)
   return error || !data ? null : data
 }
 const chtName=n=>String(n||'').replace(/\s*\(\d+-\d+(-\d+)?\)\s*$/,'')   // the record rides in the nickname; this is chat
@@ -1969,33 +1970,25 @@ function chtDraw(freshId){
   })
 }
 async function chtTick(){
-  const got=await chtRead(); if(!got || !CHT.on) return
-  const top=got.reduce((m,r)=>Math.max(m,r.id),0)
-  if(CHT.last===null){ CHT.last=top; return }          // switched on: start from now
-  const fresh=got.filter(r=>r.id>CHT.last).sort((a,b)=>a.id-b.id)
-  CHT.last=Math.max(CHT.last, top)
-  if(!fresh.length) return
-  const now=Date.now(); fresh.forEach(r=>{ r.at=now })
-  CHT.rows=[...CHT.rows, ...fresh].slice(-CHT_MAX); chtDraw()
-}
-function chtSweep(){
-  const now=Date.now(), before=CHT.rows.length
-  CHT.rows=CHT.rows.filter(r=>now-r.at<CHT_LIFE)
-  if(CHT.rows.length!==before) chtDraw()
+  const got=await chtRead(); if(!got || !CHT.on) return       // a failed read keeps what is up
+  const now=Date.now()
+  CHT.rows=got.filter(r=>!CHT.hidden.has(Number(r.id)) && now-new Date(r.created_at).getTime()<CHT_FRESH)
+    .sort((a,b)=>a.id-b.id).slice(-CHT_MAX)
+  chtDraw()
 }
 function chCmd(c){
   if(Array.isArray(c.hidden)){ CHT.hidden=new Set(c.hidden.map(Number)); chtDraw() }   // Hide pulls it at once
   if(typeof c.on==='boolean' && c.on!==CHT.on){
-    CHT.on=c.on; clearInterval(CHT.poll); clearInterval(CHT.sweep); CHT.rows=[]; chtDraw()
-    if(CHT.on){ CHT.last=null; chtTick(); CHT.poll=setInterval(chtTick, 4000); CHT.sweep=setInterval(chtSweep, 1000) }
+    CHT.on=c.on; clearInterval(CHT.poll); CHT.rows=[]; chtDraw()
+    if(CHT.on){ chtTick(); CHT.poll=setInterval(chtTick, 4000) }
   }
 }
 // ?chatdemo=1 -- made-up lines arriving one after another, no deck and no database
 if(new URLSearchParams(location.search).get('chatdemo')==='1'){
   const D=[['Galf (3-1-0)','TYNADO IN TWO, CALLING IT NOW'],['Maki','that body shot changed the whole round'],['Kazekage','yo they got me judging'],
     ['Ziegendieb','bing ling is slowing down, watch the jab'],['Natsu','gg'],['Jay','first time watching, this is sick']]
-  let i=0; const add=()=>{ const d=D[i%D.length]; CHT.rows=[...CHT.rows,{id:1000+i,author:d[0],content:d[1],at:Date.now()}].slice(-CHT_MAX); i++; chtDraw() }
-  for(let n=0;n<4;n++) add(); setInterval(add, 3000); setInterval(chtSweep, 1000)
+  let i=0; const add=()=>{ const d=D[i%D.length]; CHT.rows=[...CHT.rows,{id:1000+i,author:d[0],content:d[1]}].slice(-CHT_MAX); i++; chtDraw() }
+  for(let n=0;n<5;n++) add(); setInterval(add, 3000)
 }
 </script>
 </body>
