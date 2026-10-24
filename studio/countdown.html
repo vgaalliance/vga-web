@@ -233,14 +233,17 @@ body.brk #sbw { opacity:1; }
 
 /* during a standby break the board is the screen: our chrome steps aside and
    the clock shrinks to a corner, because the card fills the whole frame */
-body.brk #reel { opacity:.25; filter:blur(8px) saturate(.6); }
+/* Two worlds: the promos are the cinematics, everything else is the menu's
+   world on the synthwave grid -- a paused promo frame behind the card was
+   whatever frame the cut landed on, blurred into mud behind the text. */
+body.brk #reel { opacity:0; }
 body.brk .me { transform: perspective(900px) rotateY(-9deg) translateY(56px) scale(.62); transform-origin:right bottom; }
 body.brk .me-tag, body.brk .me-names { opacity:0; }
 
 /* ── FINAL MINUTE ── */
 #final { z-index:35; pointer-events:none; opacity:0; transition:opacity .8s ease; }
 body.final #final { opacity:1; }
-body.final #reel { opacity:.22; filter:blur(7px) saturate(.6); }
+body.final #reel { opacity:0; }
 body.final .me { opacity:0; transform: perspective(900px) rotateY(-9deg) translateX(160px); }
 .fn-head { position:absolute; top:150px; left:0; right:0; text-align:center; }
 .fn-tag { font-size:16px; letter-spacing:.5em; color:var(--hi); text-shadow:0 0 14px rgba(204,102,255,.8), 2px 2px 0 #000; }
@@ -290,7 +293,7 @@ body.red .sc { animation:none; border-color:var(--red); box-shadow:0 0 16px var(
   align-items:center; justify-content:center; text-align:center; }
 body.live #live { opacity:1; }
 body.live #final { opacity:0; }
-body.live #reel { opacity:.15; filter:blur(10px) saturate(.4); }
+body.live #reel { opacity:0; }
 .lv-pre { font-size:22px; letter-spacing:.6em; color:#fff; text-shadow:0 0 16px rgba(255,34,68,.8), 2px 2px 0 #000; }
 .lv-word { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-style:italic; font-size:380px; line-height:.85;
   letter-spacing:.02em; margin:14px 0 10px; color:#fff;
@@ -303,6 +306,37 @@ body.live .lv-word { animation:liveslam .6s cubic-bezier(.15,1.6,.35,1), livepul
   box-shadow:0 0 18px var(--red); animation:selblink 1s steps(1) infinite; vertical-align:middle; }
 .lv-event { font-family:'Barlow Condensed',sans-serif; font-size:72px; font-weight:900; letter-spacing:.3em;
   text-transform:uppercase; color:#fff; text-shadow:0 0 24px rgba(204,102,255,.7), 3px 3px 0 #000; }
+
+/* ── ACHIEVEMENT POP-UPS: above the menu, sliding in from the left like a
+   console achievement. A slim strip in the menu's own highlight, never a box. ── */
+#toasts { position:absolute; left:110px; top:205px; width:620px; height:150px; z-index:32; pointer-events:none;
+  transform: perspective(900px) rotateY(9deg); transform-origin:left center; transition:opacity .5s; }
+body.final #toasts, body.live #toasts { opacity:0; }
+.tst { position:absolute; left:0; top:0; display:flex; align-items:center; gap:18px; padding:14px 40px 14px 16px;
+  background:linear-gradient(90deg, rgba(10,0,26,.92) 0%, rgba(30,6,60,.78) 60%, transparent 100%);
+  border-left:4px solid var(--tc, var(--hi)); box-shadow:-6px 0 22px var(--tg, rgba(204,102,255,.5));
+  animation:tstIn .5s cubic-bezier(.2,1.3,.4,1) both; }
+.tst.out { animation:tstOut .45s ease-in forwards; }
+@keyframes tstIn  { from{transform:translateX(-110%); opacity:0} to{transform:none; opacity:1} }
+@keyframes tstOut { to{transform:translateX(-30px); opacity:0} }
+.tst-ic { width:64px; height:64px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  font-size:34px; background:rgba(0,0,0,.35); border:2px solid var(--tc, var(--hi));
+  box-shadow:inset 0 0 14px var(--tg, rgba(204,102,255,.5)); }
+.tst-lab { font-size:11px; letter-spacing:.35em; color:var(--tc, var(--hi)); text-shadow:0 0 10px var(--tg, rgba(204,102,255,.6)), 1px 1px 0 #000; }
+.tst-ttl { font-family:'Barlow Condensed',sans-serif; font-size:40px; font-weight:900; letter-spacing:.06em; line-height:1;
+  text-transform:uppercase; color:#fff; margin-top:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:460px;
+  text-shadow:0 0 18px var(--tg, rgba(204,102,255,.6)), 2px 2px 0 #000; }
+.tst-sub { font-family:'Share Tech Mono',monospace; font-size:15px; letter-spacing:.18em; color:rgba(230,210,255,.8);
+  margin-top:5px; text-shadow:1px 1px 0 #000; white-space:nowrap; }
+.tst.prismatic .tst-ic { animation:hueshift 2.5s linear infinite; }
+
+/* ── LOADING TIPS: one line under PRESS START, typed out like a load screen ── */
+.tip { margin-top:16px; margin-left:18px; width:600px; min-height:20px; font-family:'Share Tech Mono',monospace; white-space:nowrap;
+  font-size:15px; letter-spacing:.08em; color:rgba(230,210,255,.85); text-shadow:1px 1px 0 #000; }
+.tip b { font-family:'Press Start 2P',monospace; font-weight:normal; font-size:11px; color:var(--hi); margin-right:12px;
+  letter-spacing:.2em; text-shadow:0 0 10px rgba(204,102,255,.6); }
+.tip i { font-style:normal; display:inline-block; width:10px; height:16px; margin-left:4px; vertical-align:-2px;
+  background:var(--hi); animation:selblink .8s steps(1) infinite; }
 </style>
 </head>
 <body>
@@ -344,7 +378,10 @@ body.live .lv-word { animation:liveslam .6s cubic-bezier(.15,1.6,.35,1), livepul
   <div class="menu-head"><span class="mh-tag">MAIN MENU</span><span class="mh-line"></span></div>
   <div id="menuItems"><div id="menuHi"></div></div>
   <div class="press-start">PRESS START</div>
+  <div class="tip" id="tip"></div>
 </div>
+
+<div id="toasts"></div>
 
 <!-- MAIN EVENT + CLOCK -->
 <div class="me" id="mePanel">
@@ -644,9 +681,10 @@ function enterFinal(){
   setTimeout(() => {
     b.classList.remove('brk'); el('brkA').classList.remove('on'); el('brkB').classList.remove('on')
     b.classList.add('final')
-    // the promo underneath keeps rolling, blurred, but its sound goes
+    // the promo fades out under the grid with its sound, then stops
     const v = liveVid
-    if(v){ const step = setInterval(() => { v.volume = Math.max(0, v.volume - .05); if(v.volume <= 0) clearInterval(step) }, 120) }
+    if(v){ const step = setInterval(() => { v.volume = Math.max(0, v.volume - .05)
+      if(v.volume <= 0){ clearInterval(step); v.pause() } }, 120) }
   }, 650)
 }
 function leaveFinal(){
@@ -660,6 +698,7 @@ function leaveFinal(){
 function tick(){
   clockText()
   const ms = remaining()
+  milestone(ms)
   if(ms === null || ms > FINAL_SECS * 1000){ lastSec = null; leaveFinal(); return }
   const sec = Math.max(0, Math.ceil(ms / 1000))
   if(sec === lastSec) return
@@ -680,6 +719,95 @@ function tick(){
   if(sec <= 10){ slam(); sfxBoom() } else sfxTick()
 }
 setInterval(tick, 100)
+
+// ── ACHIEVEMENT POP-UPS ─────────────────────────────────────────────────
+// One at a time, newest first. Fed by the feed poll at the bottom of the file
+// (bets, big pulls, new fighters) and by the clock's own milestones. When the
+// queue runs dry the screen replays something from the last few, so a quiet
+// pre-show is never a dead one -- but never the same one twice in a row.
+const toastQ = [], toastSeen = new Set(), toastPast = []
+let toastBusy = false, toastLast = null, toastIdle = 0
+const RARITY = {
+  mystic:     { lab:'MYSTIC PULL',     c:'#c084fc', g:'rgba(192,132,252,.6)', ic:'🔮' },
+  legendary:  { lab:'LEGENDARY PULL',  c:'#ffcc33', g:'rgba(255,204,51,.6)',  ic:'👑' },
+  one_of_one: { lab:'1 OF 1 PULLED',   c:'#ff3355', g:'rgba(255,51,85,.6)',   ic:'💎' },
+  prismatic:  { lab:'PRISMATIC PULL',  c:'#7df9ff', g:'rgba(125,249,255,.6)', ic:'🌈' },
+}
+// a raw feed row -> what the strip says. Every word typed by a member goes in
+// through textContent, never markup.
+function toastOf(r){
+  if(r.kind === 'bet') return { ic:'🎲', lab:'NEW BET', ttl:r.pick + ' BACKED',
+    sub:Number(r.amount).toLocaleString('en-US') + ' VC ON THE LINE', c:'#ff33cc', g:'rgba(255,51,204,.55)' }
+  if(r.kind === 'pull'){ const k = RARITY[r.rarity] || RARITY.mystic
+    return { ic:k.ic, lab:k.lab, ttl:r.name, sub:(r.set_code || '') + ' · OPENED IN DISCORD', c:k.c, g:k.g, cls:r.rarity } }
+  if(r.kind === 'signup') return { ic:'🥊', lab:'NEW CHALLENGER', ttl:r.name,
+    sub:'JOINED THE LEAGUE', c:'#00e5ff', g:'rgba(0,229,255,.5)' }
+  return r   // already a strip (the clock's milestones)
+}
+function pushToast(r, front){
+  if(r.key){ if(toastSeen.has(r.key)) return; toastSeen.add(r.key) }
+  const t = toastOf(r); t.key = r.key || null
+  front ? toastQ.unshift(t) : toastQ.push(t)
+}
+function showToast(t){
+  const box = el('toasts'), d = document.createElement('div')
+  d.className = 'tst ' + (t.cls || '')
+  d.style.setProperty('--tc', t.c); d.style.setProperty('--tg', t.g)
+  d.innerHTML = '<div class="tst-ic"></div><div><div class="tst-lab"></div><div class="tst-ttl"></div><div class="tst-sub"></div></div>'
+  d.querySelector('.tst-ic').textContent = t.ic
+  d.querySelector('.tst-lab').textContent = t.lab
+  d.querySelector('.tst-ttl').textContent = t.ttl
+  d.querySelector('.tst-sub').textContent = t.sub
+  box.appendChild(d); toastBusy = true; toastLast = t
+  if(t.key){ toastPast.unshift(t); toastPast.length = Math.min(toastPast.length, 12) }
+  setTimeout(() => d.classList.add('out'), 5200)
+  setTimeout(() => { d.remove(); toastBusy = false }, 5700)
+}
+setInterval(() => {
+  const b = document.body
+  if(toastBusy || b.classList.contains('final') || b.classList.contains('live')) return
+  if(toastQ.length){ toastIdle = 0; showToast(toastQ.shift()); return }
+  // dry: after ~40s of nothing, replay one of the recent ones
+  if(++toastIdle >= 5 && toastPast.length > 1){
+    toastIdle = 0
+    const pick = toastPast.filter(t => t !== toastLast)
+    showToast(pick[Math.floor(Math.random() * pick.length)])
+  }
+}, 8000)
+
+// the clock's own milestones ride the same strip
+const MILESTONES = { 600:'10 MINUTES TO THE BELL', 300:'5 MINUTES TO THE BELL', 120:'2 MINUTES · GET YOUR BETS IN' }
+let milestoneAt = null
+function milestone(ms){
+  if(ms === null) return
+  const sec = Math.ceil(ms / 1000)
+  if(MILESTONES[sec] && milestoneAt !== sec){
+    milestoneAt = sec
+    toastQ.unshift({ ic:'⏱', lab:'COUNTDOWN', ttl:MILESTONES[sec], sub:CFG.eventMain, c:'#ffe066', g:'rgba(255,224,102,.55)' })
+  }
+}
+
+// ── LOADING TIPS ─────────────────────────────────────────────────────────
+// Typed out one character at a time, like a game's load screen. Every command
+// here is a real one in bot/src/commands -- check before adding a line.
+const TIPS = [   // one line each: 52 characters is what fits under the menu
+  "Bet on tonight's fights in Discord before the bell.",
+  '/rip a pack. Big pulls show up right here.',
+  "/register to fight. You'll show up here too.",
+  '/my-cards to see every card you own.',
+  'KO, FOTN and POTN all pay a bonus.',
+  '/callout any fighter on the roster.',
+  'Every record lives at ubaesports.com.',
+  '/fight-history for any fighter, fight by fight.',
+]
+let tipAt = Math.floor(Math.random() * TIPS.length)
+function nextTip(){
+  const box = el('tip'), text = TIPS[tipAt++ % TIPS.length]
+  box.innerHTML = '<b>TIP</b><span></span><i></i>'
+  const span = box.querySelector('span'); let n = 0
+  const type = setInterval(() => { span.textContent = text.slice(0, ++n); if(n >= text.length) clearInterval(type) }, 28)
+}
+nextTip(); setInterval(nextTip, 9000)
 
 // ── NAMES ── both corners share one size: whatever fits the longer name.
 function fitPair(L, R, MAX, MIN, maxW){
@@ -784,6 +912,27 @@ loadPromos().then(() => { buildReel(); progress(); next() })
   // HPCS) is a GFL event with a tag, so it gets GFL's board
   const leagueFrom = m => { m = String(m || '').toUpperCase()
     return m === 'UBAE' ? 'ubae' : m === 'UBA' ? 'uba' : m ? 'gfl' : null }
+  // ── THE FEED ── bets on the open and locked pools, and activity_public's
+  // big pulls and new fighters. The first read only fills the strip's backlog
+  // (oldest at the back); anything new after that jumps the queue.
+  let primed = false
+  async function feed(){
+    const [bets, act] = await Promise.all([
+      _sb.from('bet_feed_public').select('match_id,pick,amount,placed_at').order('placed_at',{ascending:false}).limit(10),
+      _sb.from('activity_public').select('*').order('at',{ascending:false}).limit(12),
+    ])
+    const rows = []
+    ;(bets.data || []).forEach(b => rows.push({ kind:'bet', at:b.placed_at, pick:b.pick, amount:b.amount,
+      key:'b' + b.match_id + b.placed_at + b.pick }))
+    ;(act.data || []).forEach(a => rows.push({ ...a, key:a.kind[0] + a.at + a.name }))
+    rows.sort((x, y) => new Date(y.at) - new Date(x.at))
+    // everything in the first read counts as seen, or the rows past the first
+    // eight would come back on the next poll dressed up as new
+    if(!primed){ rows.forEach((r, i) => i < 8 ? pushToast(r, false) : toastSeen.add(r.key)); primed = true }
+    else rows.reverse().forEach(r => pushToast(r, true))
+  }
+  feed(); setInterval(feed, 20000)
+
   _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
     if(c.type==='sponsor'){
       if(pinSponsor(c.key))
