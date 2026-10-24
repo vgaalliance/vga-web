@@ -992,6 +992,92 @@
   .csh-up .done{position:absolute;inset:50px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;}
   .csh-up .done b{font-weight:900;font-size:84px;text-transform:uppercase;line-height:.9;text-shadow:0 0 30px rgba(var(--pur-rgb),.8);}
   .csh-up .done span{font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.22em;color:var(--hi);}
+
+  /* ── GYM WAR (a UBA card, the gyms on it, and the month's gym race) ─────────
+     Left: the fights where both fighters belong to DIFFERENT gyms, the highest
+     on the card big. Right: one list that is two moments. First the gyms with
+     fighters on tonight (their fighters as tiles), then the same rows slide into
+     race order and show counted wins toward the next reward. A gym is its name
+     in a block of its colour (no invented logos); a fighter is a cut-out on that
+     colour. Laid out on the 1740 stage like the home screen. Every class is gw-. */
+  #v-gymwar{max-width:none;height:940px;position:relative;font-family:'Barlow Condensed',sans-serif;}
+  .gw-eye{font-family:'Press Start 2P',monospace;font-size:14px;letter-spacing:.28em;color:var(--hi);}
+  .gw-title{font-weight:900;font-size:110px;line-height:.86;text-transform:uppercase;margin-top:10px;text-shadow:0 0 34px rgba(var(--pur-rgb),.7);}
+  .gw-when{position:absolute;right:0;top:12px;text-align:right;font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.2em;color:var(--dim);line-height:2.2;}
+  .gw-when b{color:#fff;font-size:28px;font-weight:400;}
+  .gw-wm{display:inline-block;font-weight:900;text-transform:uppercase;line-height:1;color:#fff;background:var(--c);
+    padding:.14em .34em .1em;font-size:var(--fs,24px);letter-spacing:.01em;white-space:nowrap;text-shadow:0 1px 0 rgba(0,0,0,.3);}
+  .gw-left{position:absolute;left:0;top:176px;width:1080px;display:flex;flex-direction:column;gap:12px;}
+  .gw-hero{position:relative;height:360px;overflow:hidden;border:2px solid rgba(255,206,0,.55);box-shadow:0 0 40px rgba(255,206,0,.18);}
+  .gw-hero .sd{position:absolute;top:0;bottom:0;width:62%;}
+  .gw-hero .sd.a{left:0;background:linear-gradient(110deg,color-mix(in srgb,var(--c) 55%,transparent) 0%,color-mix(in srgb,var(--c) 18%,transparent) 70%,transparent 100%);clip-path:polygon(0 0,100% 0,78% 100%,0 100%);}
+  .gw-hero .sd.b{right:0;background:linear-gradient(250deg,color-mix(in srgb,var(--c) 55%,transparent) 0%,color-mix(in srgb,var(--c) 18%,transparent) 70%,transparent 100%);clip-path:polygon(22% 0,100% 0,100% 100%,0 100%);}
+  .gw-hero .ph{position:absolute;bottom:0;width:390px;height:390px;object-fit:contain;object-position:50% 100%;filter:drop-shadow(0 10px 30px rgba(0,0,0,.6));}
+  .gw-hero .ph.a{left:10px}.gw-hero .ph.b{right:10px;transform:scaleX(-1)}
+  .gw-hero .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,0,18,.35) 0%,transparent 30%,transparent 48%,rgba(8,0,18,.92) 100%);}
+  .gw-hero .kick{position:absolute;left:0;right:0;top:18px;z-index:1;text-align:center;font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.22em;color:#ffce00;}
+  .gw-hero .who{position:absolute;bottom:26px;display:flex;flex-direction:column;gap:12px;max-width:470px;}
+  .gw-hero .who.a{left:28px;align-items:flex-start}.gw-hero .who.b{right:28px;align-items:flex-end;text-align:right}
+  .gw-hero .nm{font-weight:900;font-size:78px;line-height:.86;text-transform:uppercase;white-space:nowrap;text-shadow:0 4px 0 rgba(0,0,0,.4),0 0 26px rgba(0,0,0,.6);}
+  .gw-hero .gy{display:flex;align-items:center;gap:14px;}
+  .gw-hero .who.b .gy{flex-direction:row-reverse}
+  .gw-hero .gy small{font-family:'Press Start 2P',monospace;font-size:10px;color:#ffce00;letter-spacing:.16em;}
+  .gw-hero .x{position:absolute;left:50%;top:156px;transform:translateX(-50%);font-family:'Press Start 2P',monospace;font-size:42px;color:#fff;text-shadow:0 0 24px rgba(var(--pink-rgb),.9);}
+  .gw-f{position:relative;display:grid;grid-template-columns:1fr 70px 1fr;align-items:stretch;height:114px;background:var(--panel);overflow:hidden;}
+  .gw-f .s{display:flex;align-items:center;justify-content:space-between;gap:16px;min-width:0;}
+  .gw-f .s.a{text-align:right}.gw-f .s.b{flex-direction:row-reverse}
+  .gw-tile{flex:none;object-fit:cover;object-position:50% 0;border-bottom:5px solid var(--c);display:block;
+    background:linear-gradient(180deg,color-mix(in srgb,var(--c) 70%,#000) 0%,color-mix(in srgb,var(--c) 30%,#0b0018) 100%);}
+  .gw-f .gw-tile{width:100px;height:114px;}
+  .gw-tile.none{display:flex;align-items:center;justify-content:center;font-weight:900;font-size:40px;color:rgba(255,255,255,.4);}
+  .gw-f .t{display:flex;flex-direction:column;gap:8px;min-width:0;padding:0 4px;align-self:center;}
+  .gw-f .s.a .t{align-items:flex-end}.gw-f .s.b .t{align-items:flex-start}
+  .gw-f .nm{font-weight:900;font-size:46px;line-height:.9;text-transform:uppercase;white-space:nowrap;}
+  .gw-f .x{align-self:center;text-align:center;font-family:'Press Start 2P',monospace;font-size:15px;color:var(--pink);}
+  .gw-more{font-family:'Press Start 2P',monospace;font-size:11px;letter-spacing:.18em;color:var(--dim);padding:4px 2px;}
+  .gw-nofight{height:360px;display:flex;flex-direction:column;justify-content:center;gap:14px;padding:0 40px;background:var(--panel);border-left:5px solid var(--pur);}
+  .gw-nofight b{font-weight:900;font-size:60px;text-transform:uppercase;line-height:.95;}
+  .gw-nofight span{font-family:'Barlow',sans-serif;font-weight:500;font-size:24px;color:var(--dim);}
+  .gw-right{position:absolute;right:0;top:176px;width:610px;height:764px;}
+  .gw-ph{position:relative;height:50px;border-bottom:2px solid rgba(var(--hi-rgb),.35);}
+  .gw-ph span{position:absolute;left:0;bottom:12px;font-family:'Press Start 2P',monospace;font-size:13px;letter-spacing:.22em;color:var(--hi);transition:opacity .4s,transform .5s cubic-bezier(.16,1,.3,1);}
+  .gw-ph .rc{opacity:0;transform:translateY(14px);color:#ffce00;}
+  .gw-race .gw-ph .cd{opacity:0;transform:translateY(-14px);}
+  .gw-race .gw-ph .rc{opacity:1;transform:none;}
+  .gw-rows{position:relative;margin-top:14px;height:588px;}
+  .gw-row{position:absolute;left:0;right:0;height:76px;display:grid;grid-template-columns:38px 1fr 176px;align-items:center;gap:14px;padding:0 16px 0 8px;
+    background:var(--panel);border-left:4px solid var(--c);transition:top .85s cubic-bezier(.65,0,.25,1),box-shadow .5s;}
+  .gw-row .pos{font-family:'Press Start 2P',monospace;font-size:15px;color:var(--dim);text-align:center;transition:color .4s;}
+  .gw-row .nm{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:7px;}
+  .gw-row .nm small{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.14em;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  .gw-row .r{position:relative;height:60px;}
+  .gw-pips,.gw-score{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;}
+  .gw-pips{gap:3px;}
+  .gw-pips .gw-tile{width:34px;height:50px;border-bottom-width:4px;transform-origin:50% 100%;transition:transform .45s cubic-bezier(.6,0,.4,1),opacity .35s;}
+  .gw-pips .gw-tile.none{font-size:18px;}
+  .gw-pips em{font-style:normal;font-weight:900;font-size:36px;margin-left:12px;min-width:24px;text-align:right;transition:opacity .3s;}
+  .gw-pips em.zero{color:var(--dim);}
+  .gw-score{flex-direction:column;align-items:flex-end;justify-content:center;gap:8px;opacity:0;transition:opacity .4s .9s;}
+  .gw-score .n{font-weight:900;font-size:42px;line-height:.8;font-variant-numeric:tabular-nums;}
+  .gw-score .n span{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.12em;color:var(--dim);margin-left:8px;}
+  .gw-score .bar{position:relative;width:170px;height:8px;background:rgba(255,255,255,.1);}
+  .gw-score .bar i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--c);filter:brightness(1.4);box-shadow:0 0 10px var(--c);transition:width .9s cubic-bezier(.16,1,.3,1) 1.1s;}
+  .gw-score .bar u{position:absolute;top:-4px;bottom:-4px;width:2px;background:rgba(255,255,255,.45);}
+  .gw-race .gw-pips .gw-tile{transform:scaleY(0);opacity:0;}
+  .gw-race .gw-pips em{opacity:0;}
+  .gw-race .gw-score{opacity:1;}
+  .gw-race .gw-row.lead{box-shadow:0 0 28px rgba(255,206,0,.22);}
+  .gw-race .gw-row.lead .pos{color:#ffce00;}
+  .gw-foot{position:absolute;left:0;right:0;bottom:0;height:78px;}
+  .gw-foot > div{position:absolute;inset:0;display:flex;align-items:center;gap:18px;padding:0 22px;transition:opacity .45s,transform .55s cubic-bezier(.16,1,.3,1);}
+  .gw-foot .fa{background:rgba(255,255,255,.04);font-family:'Press Start 2P',monospace;font-size:11px;letter-spacing:.16em;color:var(--dim);line-height:1.9;}
+  .gw-foot .fa b{font-family:'Barlow Condensed',sans-serif;font-size:40px;color:#fff;font-weight:900;letter-spacing:0;}
+  .gw-foot .fb{opacity:0;transform:translateY(16px);background:linear-gradient(90deg,rgba(255,206,0,.24),rgba(255,206,0,.04));border-left:5px solid #ffce00;}
+  .gw-foot .fb b{font-weight:900;font-size:44px;color:#ffce00;text-shadow:0 0 20px rgba(255,206,0,.45);}
+  .gw-foot .fb span{font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.18em;color:#ffe9a8;line-height:1.9;}
+  .gw-race .gw-foot .fa{opacity:0;transform:translateY(-16px);}
+  .gw-race .gw-foot .fb{opacity:1;transform:none;}
+  @media (prefers-reduced-motion:reduce){ .gw-row,.gw-pips .gw-tile,.gw-score,.gw-score .bar i,.gw-ph span,.gw-foot > div{transition:none!important} }
   /* ── UBA HOME: THE LADDER (ladder-core.js decides who is on it) ──────────
      The left column on a UBA night. The fight up next, as the division's
      ladder from the lower fighter up to the higher one. The two in the fight
@@ -1289,6 +1375,19 @@
       <div class="csh-vlink" id="cshVlink"><div><div class="l1">END OF THE NIGHT</div><div class="l2">The Verdicts</div></div><div class="arw">▶</div></div>
     </div>
 
+
+    <!-- GYM WAR — a UBA card's gym-vs-gym fights, then the month's gym race. gwDraw() fills it -->
+    <div class="view" id="v-gymwar">
+      <div class="gw-eye" id="gwEye">VGA · UBA</div>
+      <div class="gw-title">Gym war</div>
+      <div class="gw-when" id="gwWhen"></div>
+      <div class="gw-left" id="gwLeft"></div>
+      <div class="gw-right">
+        <div class="gw-ph"><span class="cd">ON THE CARD TONIGHT</span><span class="rc" id="gwRaceHead">THE GYM RACE</span></div>
+        <div class="gw-rows" id="gwRows"></div>
+        <div class="gw-foot"><div class="fa" id="gwFa"></div><div class="fb" id="gwFb"></div></div>
+      </div>
+    </div>
     <!-- CALLOUTS — paid for in VC in Discord; the bot draws each one as a
          picture. Only joins the rotation while there is at least one from the
          last 7 days, and the deck can take it out. -->
@@ -2982,6 +3081,7 @@ function showView(el){
   if(!el) return
   if(el.id === 'v-prize') setTimeout(prizeCycle, 0)
   if(el.id === 'v-cshome') setTimeout(ladFit, 0)
+  if(el.id === 'v-gymwar') setTimeout(gwStart, 0)
   clearTimeout(el._voutT)
   el.classList.remove('out')
   el.style.position=el.style.top=el.style.left=el.style.width=''
@@ -3010,6 +3110,7 @@ function show(view, league, exclude){
     if(CSH.eventId && (document.documentElement.dataset.series==='cs' ? CSH.mode==='cs'
         : (league==='gfl' && CSH.mode==='gfl') || (league==='uba' && CSH.mode==='uba')))
       list=['cshome', ...list.filter(v=>v!=='card')]
+    if(league==='uba' && GW.ready && !list.includes('gymwar')) list=[...list.slice(0,1), 'gymwar', ...list.slice(1)]
     // NEXT EVENT is filled when it is SHOWN (showNextEv), and the rotation used
     // to show it without filling it: a heading over an empty screen for 15s
     // until somebody pressed its own button. So the rotation fills it too --
@@ -3358,6 +3459,119 @@ function cshUpdate(scoredId){
   else cshCardDraw(scoredId, '')
 }
 
+
+/* ── GYM WAR ────────────────────────────────────────────────────────────────
+   Read once per card: the bouts, each fighter's gym (fighter_gyms_public), their
+   cut-out photos, and the gym race (gym_race_public(), the same numbers as the
+   rankings post in Discord). A failed read keeps whatever was drawn before and
+   never draws an empty war. The race and the card take turns every 7 seconds
+   while the screen is up. */
+const GW={ eventId:null, name:'', ready:false, race:false, timer:null }
+// One colour per gym for the whole night, handed out in name order so the same
+// gyms always get the same colours. Distinct hues that hold white text.
+const GW_PAL=['#2f6bff','#16a37a','#e2551a','#d81f3f','#8b46ff','#0aa3c2','#c99a06','#d6339a','#5b8c1a','#7a5cff']
+const GW_MONTH=['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER']
+const gwK=n=>{ n=+n||0; return n>=1000 ? (n%1000 ? (n/1000).toFixed(1) : n/1000)+'K' : String(n) }
+async function gwLoad(eventId, name){
+  const [{data:bouts,error:e1},{data:race,error:e2}] = await Promise.all([
+    sb.from('event_matches').select('bout_number,card_segment,weight_class,is_title_fight,status,method,fighter_a_name,fighter_b_name,fighter_a_slug,fighter_b_slug').eq('event_id',eventId).order('bout_number'),
+    sb.rpc('gym_race_public'),
+  ])
+  if(e1 || e2 || !bouts || !race) return false
+  const live=bouts.filter(b=>b.fighter_a_name && b.fighter_b_name && b.status!=='cancelled' && String(b.method||'').toLowerCase()!=='cancelled')
+  const slugs=[...new Set(live.flatMap(b=>[b.fighter_a_slug,b.fighter_b_slug]).filter(Boolean))]
+  const [{data:fg,error:e3},{data:fc}] = slugs.length ? await Promise.all([
+    sb.from('fighter_gyms_public').select('slug,gym').in('slug',slugs),
+    sb.from('fighter_cards').select('slug,profile_photo_url').in('slug',slugs),
+  ]) : [{data:[]},{data:[]}]
+  if(e3) return false
+  const gymOf={}, pic={}
+  ;(fg||[]).forEach(r=>{ gymOf[r.slug]=r.gym })
+  ;(fc||[]).forEach(r=>{ if(r.profile_photo_url) pic[r.slug]=r.profile_photo_url })
+  const names=[...new Set([...(race.gyms||[]).map(g=>g.name), ...Object.values(gymOf)])].sort()
+  const col={}; names.forEach((n,i)=>{ col[n]=GW_PAL[i%GW_PAL.length] })
+  Object.assign(GW,{ eventId, name:name||'', bouts:live, gymOf, pic, race, col, ready:true })
+  return true
+}
+const gwWm=(g,fs)=>`<span class="gw-wm" style="--c:${GW.col[g]};--fs:${fs}px">${cshEsc(String(g).replace(/\s*\p{Extended_Pictographic}.*$/u,'').trim()||g)}</span>`
+const gwTile=(slug,name,g)=>{ const u=GW.pic[slug], i=(String(name||'').trim()[0]||'?').toUpperCase()
+  return u ? `<img class="gw-tile" style="--c:${GW.col[g]}" src="${cshEsc(u)}" alt="" onerror="this.outerHTML='<span class=&quot;gw-tile none&quot; style=&quot;--c:${GW.col[g]}&quot;>${i}</span>'">`
+           : `<span class="gw-tile none" style="--c:${GW.col[g]}">${i}</span>` }
+function gwDraw(){
+  if(!GW.ready) return
+  const owner={}; (GW.race.gyms||[]).forEach(g=>{ owner[g.name]=g.owner })
+  // the fights between two DIFFERENT gyms, highest on the card first (bout 1 is the main event)
+  const wars=GW.bouts.filter(b=>{ const a=GW.gymOf[b.fighter_a_slug], c=GW.gymOf[b.fighter_b_slug]; return a && c && a!==c })
+  const inGym=GW.bouts.reduce((n,b)=>n+(GW.gymOf[b.fighter_a_slug]?1:0)+(GW.gymOf[b.fighter_b_slug]?1:0),0), all=GW.bouts.length*2
+  $('gwEye').textContent='VGA · UBA · '+GW.name.toUpperCase()
+  $('gwWhen').innerHTML=`<b>${wars.length}</b> GYM-VS-GYM FIGHT${wars.length===1?'':'S'}<br><b>${inGym}</b> OF ${all} FIGHTERS FIGHT FOR A GYM`
+  const main=GW.bouts.length ? GW.bouts[0] : null
+  const side=(b,c)=>({ n:b['fighter_'+c+'_name'], s:b['fighter_'+c+'_slug'], g:GW.gymOf[b['fighter_'+c+'_slug']] })
+  let left=''
+  if(!wars.length){
+    left=`<div class="gw-nofight"><b>No gym-vs-gym fights tonight</b><span>${inGym} of ${all} fighters on this card fight for a gym.</span></div>`
+  } else {
+    const h=wars[0], a=side(h,'a'), b=side(h,'b')
+    const seg = h===main ? 'MAIN EVENT' : ({main_card:'MAIN CARD',undercard:'UNDERCARD',prelim:'PRELIMS'}[h.card_segment]||'ON THE CARD')
+    const kick=[seg, WC_NAME(h.weight_class), h.is_title_fight?'TITLE FIGHT':''].filter(Boolean).join(' · ')
+    const ph=(x,cls)=>GW.pic[x.s] ? `<img class="ph ${cls}" src="${cshEsc(GW.pic[x.s])}" alt="" onerror="this.remove()">` : ''
+    const head=x=> owner[x.g] && owner[x.g]===x.n ? '<small>HEAD OWNER</small>' : ''
+    left=`<div class="gw-hero"><div class="sd a" style="--c:${GW.col[a.g]}"></div><div class="sd b" style="--c:${GW.col[b.g]}"></div>
+        ${ph(a,'a')}${ph(b,'b')}<div class="shade"></div><div class="kick">${kick}</div><div class="x">VS</div>
+        <div class="who a"><div class="nm">${cshEsc(a.n)}</div><div class="gy">${gwWm(a.g,30)}${head(a)}</div></div>
+        <div class="who b"><div class="nm">${cshEsc(b.n)}</div><div class="gy">${gwWm(b.g,30)}${head(b)}</div></div></div>`
+      + wars.slice(1,4).map(w=>{ const x=side(w,'a'), y=side(w,'b')
+        return `<div class="gw-f"><div class="s a">${gwTile(x.s,x.n,x.g)}<div class="t"><span class="nm">${cshEsc(x.n)}</span>${gwWm(x.g,20)}</div></div>
+          <span class="x">VS</span><div class="s b">${gwTile(y.s,y.n,y.g)}<div class="t"><span class="nm">${cshEsc(y.n)}</span>${gwWm(y.g,20)}</div></div></div>` }).join('')
+      + (wars.length>4 ? `<div class="gw-more">+ ${wars.length-4} MORE GYM-VS-GYM FIGHT${wars.length-4===1?'':'S'} ON THE CARD</div>` : '')
+  }
+  $('gwLeft').innerHTML=left
+  // the right list: every gym with fighters tonight, topped up from the race to 7
+  const on={}; GW.bouts.forEach(b=>['a','b'].forEach(c=>{ const g=GW.gymOf[b['fighter_'+c+'_slug']]
+    if(g) (on[g]=on[g]||[]).push({ s:b['fighter_'+c+'_slug'], n:b['fighter_'+c+'_name'] }) }))
+  const raceNames=(GW.race.gyms||[]).map(g=>g.name)
+  const cardOrder=Object.keys(on).sort((x,y)=>on[y].length-on[x].length || raceNames.indexOf(x)-raceNames.indexOf(y))
+  const set=[...cardOrder]; raceNames.forEach(n=>{ if(set.length<7 && !set.includes(n)) set.push(n) })
+  const rows=set.slice(0,7)
+  GW.cardOrder=[...rows].sort((x,y)=>(on[y]||[]).length-(on[x]||[]).length || raceNames.indexOf(x)-raceNames.indexOf(y))
+  GW.raceOrder=[...rows].sort((x,y)=>{ const i=raceNames.indexOf(x), j=raceNames.indexOf(y); return (i<0?99:i)-(j<0?99:j) })
+  const tiers=GW.race.tiers||{wins:[],vc:[]}, R={}; (GW.race.gyms||[]).forEach(g=>{ R[g.name]=g })
+  $('gwRows').innerHTML=rows.map(g=>{ const f=on[g]||[], r=R[g]||{counted:0}, v=+r.counted||0
+    const k=(tiers.wins||[]).findIndex(t=>v<t), goal=k<0 ? v||1 : tiers.wins[k]
+    const lbl=k<0 ? 'TOP REWARD' : `/ ${goal} · ${gwK(tiers.vc[k])}`
+    const tick=k>0 ? `<u style="left:${tiers.wins[k-1]/goal*100}%"></u>` : ''
+    return `<div class="gw-row" data-g="${cshEsc(g)}" style="--c:${GW.col[g]}"><span class="pos"></span>
+      <span class="nm">${gwWm(g,28)}<small>${owner[g]?'HEAD OWNER · '+cshEsc(owner[g].toUpperCase()):'&nbsp;'}</small></span>
+      <div class="r"><div class="gw-pips">${f.slice(0,5).map((x,i)=>gwTile(x.s,x.n,g).replace('class="gw-tile','style="transition-delay:'+(i*0.06)+'s" class="gw-tile')).join('')}<em class="${f.length?'':'zero'}">${f.length||'—'}</em></div>
+      <div class="gw-score"><span class="n">${v}<span>${lbl}</span></span><span class="bar"><i data-w="${Math.min(v/goal,1)*100}"></i>${tick}</span></div></div></div>` }).join('')
+  const noGym=all-inGym
+  $('gwFa').innerHTML=`<b>${noGym}</b><span>FIGHTER${noGym===1?'':'S'} TONIGHT<br>${noGym===1?'HAS':'HAVE'} NO GYM</span>`
+  const mk=String(GW.race.month||''), mi=+mk.slice(5,7)-1
+  $('gwRaceHead').textContent='THE GYM RACE'+(mi>=0&&mi<12 ? ' · '+GW_MONTH[mi] : '')
+  $('gwFb').innerHTML=GW.race.bonus ? `<b>+${gwK(GW.race.bonus)}</b><span>GYM OF THE MONTH<br>THE TOP GYM AT THE MONTH'S END</span>` : ''
+  gwPaint()
+}
+function gwPaint(){
+  const v=$('v-gymwar'), order=GW.race ? GW.raceOrder : GW.cardOrder
+  if(!order) return
+  order.forEach((g,i)=>{ const r=$('gwRows').querySelector(`[data-g="${CSS.escape(g)}"]`); if(!r) return
+    r.style.top=(i*84)+'px'
+    r.querySelector('.pos').textContent=GW.race ? i+1 : ''
+    const bar=r.querySelector('.bar i'); bar.style.width=GW.race ? bar.dataset.w+'%' : '0%'
+    const R=(GW.race.gyms||[]).find(x=>x.name===g); r.classList.toggle('lead', GW.race && i===0 && R && +R.counted>0) })
+  v.classList.toggle('gw-race', GW.race)
+}
+// the two moments take turns while the screen is up, starting on the card
+function gwStart(){ clearInterval(GW.timer); GW.race=false; gwPaint(); gwFit()
+  GW.timer=setInterval(()=>{ if(!$('v-gymwar').classList.contains('on')){ clearInterval(GW.timer); return }
+    GW.race=!GW.race; gwPaint() }, 7000) }
+// a long name shrinks until it fits its space; it is never cut short
+function gwFit(){
+  document.querySelectorAll('#v-gymwar .gw-hero .nm, #v-gymwar .gw-f .nm').forEach(el=>{ el.style.fontSize=''
+    let px=parseInt(getComputedStyle(el).fontSize)||46; const max=el.closest('.gw-hero') ? 470 : 380, min=Math.round(px*.55)
+    while(el.scrollWidth>max && px>min) el.style.fontSize=(--px)+'px' })
+}
+
 const LINK=sb.channel('vga-overlay')
 LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
   // A kiosk is somebody else's laptop, not a source in the rig — the deck must
@@ -3425,6 +3639,10 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
     if(c.on===false){ show('off'); return }
     if(c.view==='card'){ await showCard(c.event, c.d); show('card'); return }   // c.event picks FN29/FN30/… · c.d = live rows from the runner
     if(c.view==='nextev'){ await showNextEv(c.exclude); show('nextev'); return }  // c.exclude = the event you're running tonight
+    if(c.view==='gymwar'){
+      if(!c.eventId) return
+      if((c.eventId!==GW.eventId || !GW.ready) && !(await gwLoad(c.eventId, c.event))) return   // no read = stay on what is up
+      gwDraw(); show('gymwar'); return }
     if(c.view==='cshome'){
       if(!c.eventId) return
       const home = c.home || (c.series ? 'cs' : 'gfl')   // the deck says which home; an older deck sends no 'home'

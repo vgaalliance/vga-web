@@ -479,6 +479,8 @@
       <!-- only with a card loaded (csHomeBtnUI shows it): the card a page at a time, Up Next following ARM,
            and on the left the ladder between the two (UBA), the Path to Pros (GFL) or what the series is (contender) -->
       <button id="csHomeBtn" style="display:none" onclick="csHome()">🧊 Contender home</button>
+      <!-- only with a UBA card loaded: the card's gym-vs-gym fights, then the month's gym race -->
+      <button id="gymWarBtn" style="display:none" onclick="gymWar()">🏋 Gym war</button>
       <button class="lg-ubae" onclick="standby('schedule')">UBAe schedule + playoffs</button>
       <button class="lg-uba" onclick="standby('next3')">UBA schedule · next 3</button>
       <button class="lg-ubae" onclick="standby('teamvs')">Team vs team</button>
@@ -2188,7 +2190,13 @@ const homeOf=()=> CSN.brand ? 'cs' : !UBA.id || UBA.id==='csdemo' ? null : leagu
 const csHomeBtnUI=()=>{ const hb=document.getElementById('csHomeBtn'); if(!hb) return
   const h=homeOf()
   hb.style.display = h ? '' : 'none'
-  hb.textContent = h==='cs' ? '🧊 Contender home' : h==='gfl' ? '🥊 GFL home · Path to Pros' : '🏠 UBA home · rankings at stake' }
+  hb.textContent = h==='cs' ? '🧊 Contender home' : h==='gfl' ? '🥊 GFL home · Path to Pros' : '🏠 UBA home · rankings at stake'
+  const gw=document.getElementById('gymWarBtn'); if(gw) gw.style.display = h==='uba' ? '' : 'none' }
+// Gym war on the standby screen: it reads the card and the gym race itself; this says which card.
+window.gymWar=()=>{
+  if(homeOf()!=='uba'){ deckLog('⚠ load a UBA card above first'); return }
+  send({ type:'standby', view:'gymwar', on:true, event:UBA.name, eventId:UBA.id })
+}
 window.csHome=()=>{
   const home=homeOf()
   if(!home){ deckLog('⚠ load a UBA, GFL or contender card above first'); return }
