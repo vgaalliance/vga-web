@@ -133,6 +133,21 @@ img.rv.on { animation:pushin 12s ease-out forwards; }
   transform: perspective(1500px) rotateY(-8deg); transform-origin:right center;
   opacity:0; transition:opacity .6s ease; }
 body.brk #sbw { opacity:1; }
+
+/* ── CALLOUTS: the same picture the bot posts in Discord, three at a time on
+   the right zone's tilt; every few seconds the three slide out and the next
+   three slide in, staggered. One design for a callout, wherever it shows. ── */
+#cob { position:absolute; left:var(--zl); right:var(--zr); top:186px; height:800px; z-index:15; pointer-events:none;
+  transform: perspective(1500px) rotateY(-8deg); transform-origin:right center; opacity:0; transition:opacity .5s ease; }
+body.co #cob { opacity:1; }
+body.co #sbw { opacity:0; }
+.co-page { position:absolute; left:0; right:0; top:0; display:flex; flex-direction:column; align-items:center; gap:18px; }
+.co-card { width:780px; height:243px; object-fit:contain; border-radius:16px;
+  box-shadow:0 12px 40px rgba(0,0,0,.55), 0 0 30px rgba(155,48,255,.25); }
+.co-card.in  { animation:coIn .55s cubic-bezier(.2,1.2,.4,1) both; }
+.co-card.out { animation:coOut .4s ease-in both; }
+@keyframes coIn  { from{ transform:translateX(140px); opacity:0 } to{ transform:none; opacity:1 } }
+@keyframes coOut { to{ transform:translateX(-90px); opacity:0 } }
 .sbf { position:absolute; left:0; top:0; width:1920px; height:1080px; border:0;
   transform:scale(.68); transform-origin:0 0;
   opacity:0; pointer-events:none; transition:opacity .6s ease; background:transparent; }
@@ -338,8 +353,10 @@ body.final #toasts, body.live #toasts { opacity:0; }
   stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 6px rgba(255,255,255,.35)); }
 .tst-ic svg .f { fill:currentColor; stroke:none; }
 
-/* ── LOADING TIPS: one line under PRESS START, typed out like a load screen ── */
-.tip { margin-top:16px; margin-left:18px; width:600px; min-height:20px; font-family:'Share Tech Mono',monospace; white-space:nowrap;
+/* ── LOADING TIPS: along the bottom, just above the sponsor bar, where a game
+   puts its load-screen tip; typed out one character at a time. Flat, like the
+   bar under it -- it belongs to the screen's frame, not the menu. ── */
+.tip { position:absolute; left:128px; bottom:66px; z-index:40; width:1100px; min-height:20px; font-family:'Share Tech Mono',monospace; white-space:nowrap;
   font-size:15px; letter-spacing:.08em; color:rgba(230,210,255,.85); text-shadow:1px 1px 0 #000; }
 .tip b { font-family:'Press Start 2P',monospace; font-weight:normal; font-size:11px; color:var(--hi); margin-right:12px;
   letter-spacing:.2em; text-shadow:0 0 10px rgba(204,102,255,.6); }
@@ -359,6 +376,7 @@ body.final #toasts, body.live #toasts { opacity:0; }
   <img   class="rv" id="rvS" alt="">
 </div>
 <div id="shade"></div>
+<div id="cob"></div>
 <div id="sbw">
   <iframe class="sbf" id="brkA" title="standby" allow="autoplay"></iframe>
   <iframe class="sbf" id="brkB" title="standby" allow="autoplay"></iframe>
@@ -387,8 +405,9 @@ body.final #toasts, body.live #toasts { opacity:0; }
   <div class="menu-head"><span class="mh-tag">MAIN MENU</span><span class="mh-line"></span></div>
   <div id="menuItems"><div id="menuHi"></div></div>
   <div class="press-start">PRESS START</div>
-  <div class="tip" id="tip"></div>
 </div>
+
+<div class="tip" id="tip"></div>
 
 <!-- MAIN EVENT + CLOCK -->
 <div class="me" id="mePanel">
@@ -496,7 +515,10 @@ const sfxSelect= () => { tone(660, 660, .07, .08, 'square'); setTimeout(() => to
 let promos = [], deck = [], lapSize = 0, lastPromo = null
 let slot = -1, item = null, itemTimer = null, itemStart = 0, itemLen = 0, liveVid = null, gen = 0
 let promoNode = null, breakItems = []
-const SLOTS = ['promo', 'promo', 0, 'promo', 'promo', 1]
+// two promos between every board; 'co' is CALLOUTS, skipped while there are none
+const SLOTS = ['promo', 'promo', 0, 'promo', 'promo', 'co', 'promo', 'promo', 1]
+let callouts = [], coAt = 0, coNode = null, coTimer = null
+const CO_ITEM = { kind:'callouts' }, CO_PER = 3, CO_SECS = 7, CO_PAGES = 3
 const vids = [el('rvA'), el('rvB')]
 const LEAGUE_BREAKS = {
   uba:  [{ view:'card',   title:"TONIGHT'S CARD", sub:'THE FULL LINEUP' }, { view:'cta', title:'JOIN UBA', sub:'DISCORD.GG/UBA' }],
@@ -569,8 +591,49 @@ function drawMenu(){
   }
   row('start', '▶', 'START MATCH', '').id = 'miStart'
   promoNode = row('', '01', 'PROMOS', promos.length + (promos.length === 1 ? ' PROMO' : ' PROMOS'))
-  breakItems.forEach((b, i) => { b.node = row('', pad(i + 2), b.title, b.sub) })
+  breakItems[0].node = row('', '02', breakItems[0].title, breakItems[0].sub)
+  coNode = row('', '03', 'CALLOUTS', '')
+  breakItems[1].node = row('', '04', breakItems[1].title, breakItems[1].sub)
+  coCount()
   clockText()
+}
+
+// ── CALLOUTS ── fed by the poll at the bottom of the file (callouts_public,
+// the ones still on their arc, newest first). The menu line hides itself while
+// there are none, and its slot in the running order is skipped.
+function setCallouts(rows){
+  callouts = rows
+  rows.forEach(r => { const im = new Image(); im.src = r.image_url })   // warm the cache before a page needs them
+  coCount()
+}
+function coCount(){
+  if(!coNode) return
+  coNode.style.display = callouts.length ? '' : 'none'
+  coNode.querySelector('.mi-sub').textContent = callouts.length + ' ON THE BOARD'
+}
+// one page: the next three, old ones out first
+function coPage(){
+  const box = el('cob'), n = callouts.length
+  if(!n) return
+  const from = coAt % n, pick = []
+  for(let i = 0; i < Math.min(CO_PER, n); i++) pick.push(callouts[(from + i) % n])
+  coAt = (from + pick.length) % n
+  const old = box.querySelector('.co-page')
+  if(old){
+    old.querySelectorAll('.co-card').forEach((c, i) => { c.style.animationDelay = i * 80 + 'ms'; c.classList.remove('in'); c.classList.add('out') })
+    setTimeout(() => old.remove(), 800)
+  }
+  const pg = document.createElement('div'); pg.className = 'co-page'
+  pick.forEach((c, i) => {
+    const im = new Image(); im.className = 'co-card in'; im.alt = ''
+    im.style.animationDelay = (old ? 420 : 0) + i * 110 + 'ms'
+    im.onerror = () => im.remove()
+    im.src = c.image_url; pg.appendChild(im)
+  })
+  box.appendChild(pg)
+  const last = from + pick.length
+  coNode.querySelector('.mi-sub').textContent = n <= CO_PER ? n + ' ON THE BOARD'
+    : (from + 1) + '–' + (last > n ? last - n : last) + ' OF ' + n
 }
 
 // PROMOS' second line says what is on: TONIGHT for tonight's, else NOW, and
@@ -593,6 +656,7 @@ function cut(){ const c = el('cut'); c.classList.remove('go'); void c.offsetWidt
 
 function stopItem(){
   clearTimeout(itemTimer); itemTimer = null; gen++
+  clearInterval(coTimer); coTimer = null
   vids.forEach(v => { v.onended = v.onerror = v.onplaying = null })
 }
 
@@ -603,6 +667,7 @@ function next(){
   for(let i = 0; i < SLOTS.length; i++){
     slot = (slot + 1) % SLOTS.length
     const sl = SLOTS[slot]
+    if(sl === 'co'){ if(callouts.length) return play(CO_ITEM); continue }
     if(sl !== 'promo') return play(breakItems[sl])
     const p = nextPromo()
     if(p) return play(p)
@@ -612,9 +677,22 @@ function next(){
 function play(it){
   item = it
   if(it.kind === 'break') point(it.node)
+  else if(it.kind === 'callouts') point(coNode)
   else { point(promoNode); promoSub(it); lastPromo = it }
+  document.body.classList.toggle('co', it.kind === 'callouts')
   cut()
   itemStart = performance.now()
+  if(it.kind === 'callouts'){
+    document.body.classList.add('brk')
+    if(liveVid) liveVid.pause()
+    el('brkA').classList.remove('on'); el('brkB').classList.remove('on')
+    const pages = Math.min(CO_PAGES, Math.ceil(callouts.length / CO_PER))
+    el('cob').querySelectorAll('.co-page').forEach(p => p.remove())
+    coPage(); if(pages > 1) coTimer = setInterval(coPage, CO_SECS * 1000)
+    itemLen = pages * CO_SECS * 1000
+    itemTimer = setTimeout(next, itemLen)
+    return
+  }
   if(it.kind === 'break'){
     const breaks = LEAGUE_BREAKS[CFG.league] || LEAGUE_BREAKS.uba
     const frame = it.view === breaks[0].view ? el('brkA') : el('brkB')
@@ -678,7 +756,7 @@ function progress(){
     if(st && ms !== null) st.querySelector('.mi-bar i').style.width =
       Math.min(100, Math.max(0, 1 - ms / (FINAL_SECS * 1000)) * 100) + '%'
   }else if(item){
-    const node = item.kind === 'break' ? item.node : promoNode
+    const node = item.kind === 'break' ? item.node : item.kind === 'callouts' ? coNode : promoNode
     let f = 0
     if(item.kind === 'video' && liveVid && liveVid.duration)
       f = liveVid.currentTime / (item.secs ? Math.min(item.secs, liveVid.duration) : liveVid.duration)
@@ -746,7 +824,7 @@ function enterFinal(){
   setTimeout(() => {
     if(!finalPending) return
     finalPending = false
-    b.classList.remove('brk'); el('brkA').classList.remove('on'); el('brkB').classList.remove('on')
+    b.classList.remove('brk', 'co'); el('brkA').classList.remove('on'); el('brkB').classList.remove('on')
     b.classList.add('final')
     // the promo fades out under the grid with its sound, then stops
     const v = liveVid
@@ -1023,6 +1101,15 @@ loadPromos().then(() => { buildReel(); progress(); next() })
     else rows.reverse().forEach(r => pushToast(r, true))
   }
   feed(); setInterval(feed, 20000)
+
+  // the callouts board. A failed read keeps the board it had: an empty answer
+  // would hide the menu line over a database that simply did not reply.
+  async function calloutsFeed(){
+    const { data, error } = await _sb.from('callouts_public').select('id,image_url,posted_at')
+      .eq('on_arc', true).order('posted_at', { ascending:false }).limit(30)
+    if(!error && data) setCallouts(data)
+  }
+  calloutsFeed(); setInterval(calloutsFeed, 60000)
 
   // ── SURVIVE A RELOAD ── the deck only sends on a press, so an OBS source
   // that reloads (a crash, a scene-collection switch, a refresh) used to come
