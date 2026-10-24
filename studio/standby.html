@@ -3738,7 +3738,9 @@ function bbStart(){ clearTimeout(BB.timer); (BB.flips||[]).forEach(clearTimeout)
    rankings post in Discord). A failed read keeps whatever was drawn before and
    never draws an empty war. The race and the card take turns every 7 seconds
    while the screen is up. */
-const GW={ eventId:null, name:'', ready:false, race:false, timer:null }
+// race = the gym_race_public() data; onRace = which moment is up. One field
+// once did both, and a second press of Gym war drew the board from a boolean.
+const GW={ eventId:null, name:'', ready:false, race:null, onRace:false, timer:null }
 // One colour per gym for the whole night, handed out in name order so the same
 // gyms always get the same colours. Distinct hues that hold white text.
 const GW_PAL=['#2f6bff','#16a37a','#e2551a','#d81f3f','#8b46ff','#0aa3c2','#c99a06','#d6339a','#5b8c1a','#7a5cff']
@@ -3824,19 +3826,19 @@ function gwDraw(){
   gwPaint()
 }
 function gwPaint(){
-  const v=$('v-gymwar'), order=GW.race ? GW.raceOrder : GW.cardOrder
+  const v=$('v-gymwar'), on=GW.onRace, order=on ? GW.raceOrder : GW.cardOrder
   if(!order) return
   order.forEach((g,i)=>{ const r=$('gwRows').querySelector(`[data-g="${CSS.escape(g)}"]`); if(!r) return
     r.style.top=(i*84)+'px'
-    r.querySelector('.pos').textContent=GW.race ? i+1 : ''
-    const bar=r.querySelector('.bar i'); bar.style.width=GW.race ? bar.dataset.w+'%' : '0%'
-    const R=(GW.race.gyms||[]).find(x=>x.name===g); r.classList.toggle('lead', GW.race && i===0 && R && +R.counted>0) })
-  v.classList.toggle('gw-race', GW.race)
+    r.querySelector('.pos').textContent=on ? i+1 : ''
+    const bar=r.querySelector('.bar i'); bar.style.width=on ? bar.dataset.w+'%' : '0%'
+    const R=((GW.race||{}).gyms||[]).find(x=>x.name===g); r.classList.toggle('lead', !!(on && i===0 && R && +R.counted>0)) })
+  v.classList.toggle('gw-race', on)
 }
 // the two moments take turns while the screen is up, starting on the card
-function gwStart(){ clearInterval(GW.timer); GW.race=false; gwPaint(); gwFit()
+function gwStart(){ clearInterval(GW.timer); GW.onRace=false; gwPaint(); gwFit()
   GW.timer=setInterval(()=>{ if(!$('v-gymwar').classList.contains('on')){ clearInterval(GW.timer); return }
-    GW.race=!GW.race; gwPaint() }, 7000) }
+    GW.onRace=!GW.onRace; gwPaint() }, 7000) }
 // a long name shrinks until it fits its space; it is never cut short
 function gwFit(){
   document.querySelectorAll('#v-gymwar .gw-hero .nm, #v-gymwar .gw-f .nm').forEach(el=>{ el.style.fontSize=''
