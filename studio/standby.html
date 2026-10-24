@@ -1262,6 +1262,13 @@ const poPic=st=>PLAYOFF.picture(st, undefined, undefined, poWon())
 // The deck picks the rotation by mode, so 'auto' doesn't parade team standings
 // through a solo card.
 const VIEWS_UBA=['card','ubarank','champs','p4p','fotm','nextev','next3','cards','cta']
+// A kiosk link that NAMES its screens (?kiosk=1&views=card) gets exactly those.
+// The poster, the prize, the card wall and callouts each add themselves to the
+// rotation when their files land -- right for the deck's own rotation, wrong
+// here: the countdown's "Tonight's card" break opened this page for the card
+// alone and got the posters cycling in after it.
+const VIEWS_PINNED = (() => { const q = new URLSearchParams(location.search)
+  return q.get('kiosk') === '1' && !!(q.get('views') || '').trim() })()
 // GFL has no champions crowned and no P4P board yet, so its rotation is the
 // views that actually have something in them. Listing empty screens would put
 // a blank panel on air every 15 seconds.
@@ -1568,6 +1575,7 @@ function promoLayout(){
   // The scene joins the rotation the moment it has something to show, and only
   // then. A rotation that parades an empty screen every 15 seconds is worse
   // than one screen short.
+  if(VIEWS_PINNED) return
   if(n && !VIEWS.includes('poster')) VIEWS.splice(0, 0, 'poster')
   if(n && !VIEWS_UBA.includes('poster')) VIEWS_UBA.splice(0, 0, 'poster')
   if(promoHas.prize && !VIEWS.includes('prize')) VIEWS.splice(1, 0, 'prize')
@@ -1888,8 +1896,8 @@ async function mountCardFilm(){
   // for it, so trying a layout can never change what a live show puts up.
   if(WALL_MODE && cardList.length){
     mountCardWall()
-    if(!VIEWS.includes('cardwall')) VIEWS.splice(0, 0, 'cardwall')
-    if(!VIEWS_UBA.includes('cardwall')) VIEWS_UBA.splice(0, 0, 'cardwall')
+    if(!VIEWS_PINNED && !VIEWS.includes('cardwall')) VIEWS.splice(0, 0, 'cardwall')
+    if(!VIEWS_PINNED && !VIEWS_UBA.includes('cardwall')) VIEWS_UBA.splice(0, 0, 'cardwall')
   }
 }
 
@@ -1954,6 +1962,7 @@ async function loadCallouts(){
 // The screen is in the rotation only with something to show and the deck's
 // switch on. Slotted before the call to action, which is how a rotation ends.
 function coLayout(){
+  if(VIEWS_PINNED) return
   const want = CO_ON && CO.length > 0
   ;[VIEWS, VIEWS_UBA, VIEWS_GFL].forEach(list => {
     const i = list.indexOf('callouts')
