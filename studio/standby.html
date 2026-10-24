@@ -1155,20 +1155,18 @@
   .bb-sh .dots{display:flex;gap:6px;}.bb-sh .dots i{width:10px;height:10px;background:rgba(var(--hi-rgb),.25);display:block;}
   .bb-sh .dots i.on{background:var(--hi);box-shadow:0 0 8px rgba(var(--hi-rgb),.8);}
   .bb-sh .more{color:var(--dim);font-size:10px;}
-  .bb-page{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:14px;min-height:0;}
-  .bb-t{position:relative;display:grid;grid-template-columns:150px 1fr;background:var(--panel);overflow:hidden;border-left:5px solid var(--c);}
-  .bb-t .tl{width:150px;height:100%;object-fit:cover;object-position:50% 0;display:block;
+  .bb-page{display:flex;flex-direction:column;gap:12px;}
+  .bb-t{position:relative;display:grid;grid-template-columns:96px 250px minmax(0,1fr);align-items:center;height:118px;background:var(--panel);overflow:hidden;border-left:5px solid var(--c);}
+  .bb-t .tl{width:96px;height:118px;object-fit:cover;object-position:50% 0;display:block;
     background:linear-gradient(180deg,color-mix(in srgb,var(--c) 60%,#000),rgba(20,4,40,.95));}
-  .bb-t span.tl{display:flex;align-items:center;justify-content:center;font-weight:900;font-size:60px;color:rgba(255,255,255,.4);}
-  .bb-t .b{display:flex;flex-direction:column;justify-content:center;gap:10px;padding:0 24px;min-width:0;}
-  .bb-t .amt{font-weight:900;font-size:76px;line-height:.9;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;}
-  .bb-t .amt span{font-family:'Press Start 2P',monospace;font-size:12px;color:var(--dim);margin-left:8px;}
-  .bb-t .on{font-family:'Press Start 2P',monospace;font-size:11px;letter-spacing:.16em;color:var(--dim);}
-  .bb-t .who{font-weight:900;font-size:46px;text-transform:uppercase;white-space:nowrap;overflow:hidden;line-height:1;}
-  .bb-t .vs{font-family:'Barlow',sans-serif;font-weight:500;font-size:21px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .bb-t .ago{position:absolute;right:14px;top:14px;font-family:'Press Start 2P',monospace;font-size:10px;color:var(--dim);}
-  .bb-page.tall .bb-t{grid-template-columns:300px 1fr;}
-  .bb-page.tall .bb-t .tl{width:300px;object-fit:contain;object-position:50% 100%;}
+  .bb-t span.tl{display:flex;align-items:center;justify-content:center;font-weight:900;font-size:40px;color:rgba(255,255,255,.4);}
+  .bb-t .amt{padding-left:24px;font-weight:900;font-size:60px;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;}
+  .bb-t .amt span{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--dim);margin-left:8px;}
+  .bb-t .b{display:flex;flex-direction:column;justify-content:center;gap:6px;padding-right:110px;min-width:0;}
+  .bb-t .on{font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.16em;color:var(--dim);}
+  .bb-t .who{font-weight:900;font-size:40px;text-transform:uppercase;white-space:nowrap;overflow:hidden;line-height:1;}
+  .bb-t .vs{font-family:'Barlow',sans-serif;font-weight:500;font-size:19px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .bb-t .ago{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-family:'Press Start 2P',monospace;font-size:10px;color:var(--dim);}
   .bb-page.in .bb-t{animation:bbDeal .5s cubic-bezier(.16,1,.3,1) backwards;}
   .bb-page.out .bb-t{animation:bbOut .32s cubic-bezier(.6,0,.9,.4) forwards;}
   @keyframes bbOut{to{opacity:0;transform:translateX(-40px)}}
@@ -3661,10 +3659,11 @@ function bbDraw(fresh){
     let px=36; while(el.scrollWidth>el.clientWidth && px>22) el.style.fontSize=(--px)+'px' })
 }
 // The second moment. The biggest bet of the night stays big on the left; the
-// newest of the rest go 4 at a time on the right, a page every 4 seconds, at most
-// BB_PAGES pages (the newest 20), then "+N more". bet_feed_public never carries
+// newest of the rest go 5 at a time on the right as fixed-size tickets (never
+// stretched to the screen), a page every 4 seconds, at most BB_PAGES pages (the
+// newest 20), then "+N more". bet_feed_public never carries
 // who placed a bet.
-const BB_PER=4, BB_PAGES=5, BB_FLIP=4000
+const BB_PER=5, BB_PAGES=4, BB_FLIP=4000
 const bbAgo=t=>{ const m=Math.max(0,Math.round((Date.now()-new Date(t))/60000)); return m<1?'JUST NOW':m<60?m+'M AGO':Math.round(m/60)+'H AGO' }
 const bbSide=b=>{ const p=(BB.rows.find(r=>r.match_id===b.match_id))||{}, a=b.pick===b.side_a
   return { photo:a?p.photo_a:p.photo_b, opp:a?b.side_b:b.side_a, c:a?'rgb(var(--pink-rgb))':'#2f6bff', pays: p.pool!=null ? bbPays(+p.pool, +(a?p.total_a:p.total_b), +p.house_seed||0) : null } }
@@ -3692,13 +3691,12 @@ function bbPageDraw(cls){
     + (n>1 ? `<span class="dots">${BB.pages.map((_,i)=>`<i class="${i===BB.page?'on':''}"></i>`).join('')}</span>` : '')
     + (BB.more>0 && BB.page===n-1 ? `<span class="more">+ ${BB.more} MORE</span>` : '')
   const el=$('bbPage'); el.className='bb-page '+(cls||'')
-  el.style.gridTemplateRows = pg.length<=2 ? '1fr' : '1fr 1fr'   // one or two bets fill the height
-  el.classList.toggle('tall', pg.length<=2)
   el.innerHTML = pg.length ? pg.map((b,i)=>{ const x=bbSide(b)
     const tile=x.photo ? `<img class="tl" src="${cshEsc(x.photo)}" alt="" onerror="this.remove()">` : `<span class="tl">${(String(b.pick||'?').trim()[0]||'?').toUpperCase()}</span>`
     return `<div class="bb-t" style="--c:${x.c};animation-delay:${(i*0.07).toFixed(2)}s">${tile}
-      <div class="b"><div class="amt">${bbVc(b.amount)}<span>VC</span></div><div class="on">ON</div><div class="who">${cshEsc(b.pick)}</div>
-      <div class="vs">vs ${cshEsc(x.opp)}</div></div><span class="ago">${bbAgo(b.placed_at)}</span></div>` }).join('')
+      <div class="amt">${bbVc(b.amount)}<span>VC</span></div>
+      <div class="b"><div class="on">ON</div><div class="who">${cshEsc(b.pick)}</div><div class="vs">vs ${cshEsc(x.opp)}</div></div>
+      <span class="ago">${bbAgo(b.placed_at)}</span></div>` }).join('')
     : '<div class="bb-more">THE BIGGEST BET IS THE ONLY ONE SO FAR</div>'
   bbFit(el)
 }
