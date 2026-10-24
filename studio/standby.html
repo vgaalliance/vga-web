@@ -2824,7 +2824,8 @@ function showView(el){
   syncPromo()
 }
 
-function show(view, league){
+let autoRun=0   // bumped by every show(): an auto-cycle still waiting on its first read must not start over a newer press
+function show(view, league, exclude){
   // Pressing the poster button before either file exists would put a heading
   // with nothing under it on air. The rotation already skips the scene; an
   // explicit press has to as well, because the button gives no sign that the
@@ -2836,14 +2837,28 @@ function show(view, league){
   if(view==='prize' && !promoHas.prize) return
   if(view==='callouts' && !CO.length) return
   clearInterval(cycle); cycle=null
+  const run=++autoRun
   hideAll()
   if(view==='off'||!view) return
   if(view==='auto'){
     let list = league==='gfl' ? VIEWS_GFL : league==='uba' ? VIEWS_UBA : VIEWS
     if(CSH.eventId && (document.documentElement.dataset.series==='cs' ? CSH.mode==='cs' : league==='gfl' && CSH.mode==='gfl'))
       list=['cshome', ...list.filter(v=>v!=='card')]
-    let i=0; const step=()=>{ hideAll(); showView($('v-'+list[i%list.length])); i++ }
-    step(); cycle=setInterval(step,15000); return }
+    // NEXT EVENT is filled when it is SHOWN (showNextEv), and the rotation used
+    // to show it without filling it: a heading over an empty screen for 15s
+    // until somebody pressed its own button. So the rotation fills it too --
+    // before the start, and again one step before each turn so it is never
+    // stale. With no event from the deck, it skips the one on the card screen,
+    // or the two screens would show the same night back to back.
+    const fillNext=()=>{
+      if(!list.includes('nextev')) return Promise.resolve()
+      const card=$('cardTitle').textContent.trim()
+      return showNextEv(exclude || (card && card!=='The Card' ? card : null)).catch(()=>{})
+    }
+    let i=0; const step=()=>{ hideAll(); showView($('v-'+list[i%list.length])); i++
+      if(list[i%list.length]==='nextev') fillNext() }
+    fillNext().then(()=>{ if(run!==autoRun) return; step(); cycle=setInterval(step,15000) })
+    return }
   showView($('v-'+view))
 }
 
@@ -3146,7 +3161,7 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
       CSH.brand=c.series||null; CSH.mode=c.series?'cs':'gfl'
       if(c.armed!==undefined) CSH.armed=c.armed
       CSH.shownNext=undefined; cshUpdate(); show('cshome'); return }
-    show(c.view, c.league); return   // league only matters to 'auto' — it picks the rotation
+    show(c.view, c.league, c.exclude); return   // league + exclude only matter to 'auto' — the rotation, and which night Next event skips
   }
   // when the deck loads a match in the tracker, mirror it on the team-vs-team
   // screen AND roster 2.0 (teams + revealed starters ride the same push)
