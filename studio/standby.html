@@ -3658,10 +3658,11 @@ function bbDraw(fresh){
     let px=36; while(el.scrollWidth>el.clientWidth && px>22) el.style.fontSize=(--px)+'px' })
 }
 // The second moment: 12 cards in the middle, the newest bets first, the biggest
-// of the night always among them (gold). Every BB_FLIP they turn over like
-// blinds to the next 12, at most BB_PAGES sets (the newest 36), then "+N more".
+// of the night always among them (gold). Each set stays up BB_HOLD, then they
+// turn over like blinds to the next 12: at most BB_PAGES sets (the newest 36),
+// so at most BB_PAGES-1 flips, never back round to the first.
 // bet_feed_public never carries who placed a bet.
-const BB_PER=12, BB_PAGES=3, BB_FLIP=5000
+const BB_PER=12, BB_PAGES=3, BB_HOLD=8000
 const bbAgo=t=>{ const m=Math.max(0,Math.round((Date.now()-new Date(t))/60000)); return m<1?'JUST NOW':m<60?m+'M AGO':Math.round(m/60)+'H AGO' }
 const bbSide=b=>{ const p=(BB.rows.find(r=>r.match_id===b.match_id))||{}, a=b.pick===b.side_a
   return { photo:a?p.photo_a:p.photo_b, opp:a?b.side_b:b.side_a, c:a?'rgb(var(--pink-rgb))':'#2f6bff' } }
@@ -3705,13 +3706,15 @@ function bbFlip(){ if(BB.pages.length<2) return
     c.querySelector('.in').style.transitionDelay=((i%4)*90 + Math.floor(i/4)*140)+'ms'
     c.classList.toggle('turned') })
   bbFootDraw() }
-// The board for 14s, then the bets for as long as their sets need (5s a set,
-// at least 8s), turning inside that; every return to the board re-reads.
-function bbStart(){ clearTimeout(BB.timer); clearInterval(BB.flip); $('v-bets').classList.remove('feed'); bbDraw(true)
-  const step=async feed=>{ clearInterval(BB.flip); if(!$('v-bets').classList.contains('on')) return
+// The board for 14s, then the bets: each set held BB_HOLD, one flip between
+// sets (sets-1 flips, never wrapping to the first), and after the last set's
+// hold, back to the board, which re-reads. The next round starts on the newest.
+function bbStart(){ clearTimeout(BB.timer); (BB.flips||[]).forEach(clearTimeout); BB.flips=[]; $('v-bets').classList.remove('feed'); bbDraw(true)
+  const step=async feed=>{ (BB.flips||[]).forEach(clearTimeout); BB.flips=[]; if(!$('v-bets').classList.contains('on')) return
     let hold=14000
     if(feed){ const pages=bbFeedDraw(); $('v-bets').classList.add('feed')
-      hold=Math.max(8000, pages*BB_FLIP + 1000); if(pages>1) BB.flip=setInterval(bbFlip, BB_FLIP) }
+      hold=Math.max(1, pages)*BB_HOLD
+      BB.flips=[]; for(let k=1;k<pages;k++) BB.flips.push(setTimeout(bbFlip, k*BB_HOLD)) }
     else { if(await bbLoad(BB.eventId, BB.event)) bbDraw(false); $('v-bets').classList.remove('feed') }
     BB.timer=setTimeout(()=>step(!feed), hold) }
   BB.timer=setTimeout(()=>step(true), 14000) }
