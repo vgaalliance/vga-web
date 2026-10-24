@@ -124,17 +124,17 @@ img.rv.on { animation:pushin 12s ease-out forwards; }
 /* ── STANDBY BREAKS (.sbf -- never .brk, which is the BODY's break state and
    would hide the whole page): the real standby board, in kiosk mode, so the call to
    action and the card are the same design here as everywhere else. The board is
-   1920x1080; it is SCALED into the window, never reflowed. ── */
-#sbw { position:absolute; left:var(--zl); top:178px; width:1120px; height:630px; z-index:15;
+   1920x1080; it is SCALED into the right zone, never reflowed, and loaded with
+   clear=1 so it floats over the dimmed promo with no box of its own. ── */
+/* no box means nothing to stay inside: scaled so the board's own content
+   (max 1640 wide, centred in its 1920) fills the right zone, its empty margins
+   hanging past it unseen -- 1306x734 at .68, centred on the zone's middle */
+#sbw { position:absolute; left:657px; top:173px; width:1306px; height:734px; z-index:15;
   transform: perspective(1500px) rotateY(-8deg); transform-origin:right center;
-  background:#04000c; overflow:hidden; opacity:0; transition:opacity .6s ease;
-  border:2px solid rgba(155,77,255,.55);
-  box-shadow:0 0 44px rgba(155,48,255,.35), 0 0 0 6px rgba(3,0,10,.6); }
-#sbw::before { content:''; position:absolute; left:0; right:0; top:0; height:2px; z-index:2;
-  background:linear-gradient(90deg,transparent,#9b4dff 20%,#ff0080 50%,#9b4dff 80%,transparent); }
+  opacity:0; transition:opacity .6s ease; }
 body.brk #sbw { opacity:1; }
 .sbf { position:absolute; left:0; top:0; width:1920px; height:1080px; border:0;
-  transform:scale(.58333); transform-origin:0 0;
+  transform:scale(.68); transform-origin:0 0;
   opacity:0; pointer-events:none; transition:opacity .6s ease; background:transparent; }
 .sbf.on { opacity:1; }
 
@@ -233,7 +233,7 @@ body.brk #sbw { opacity:1; }
 
 /* during a standby break the board is the screen: our chrome steps aside and
    the clock shrinks to a corner, because the card fills the whole frame */
-body.brk #reel { opacity:.35; filter:blur(6px) saturate(.7); }
+body.brk #reel { opacity:.25; filter:blur(8px) saturate(.6); }
 body.brk .me { transform: perspective(900px) rotateY(-9deg) translateY(56px) scale(.62); transform-origin:right bottom; }
 body.brk .me-tag, body.brk .me-names { opacity:0; }
 
@@ -478,8 +478,8 @@ function buildReel(){
   })
   if(!reel.length || reel[reel.length - 1].kind !== 'break') reel.push({ kind:'break', ...breaks[b % breaks.length] })
   // both boards are loaded up front so a break never opens on an empty frame
-  el('brkA').src = 'standby.html?kiosk=1&league=' + CFG.league + '&views=' + breaks[0].view
-  el('brkB').src = 'standby.html?kiosk=1&league=' + CFG.league + '&views=' + breaks[1].view
+  el('brkA').src = 'standby.html?kiosk=1&clear=1&league=' + CFG.league + '&views=' + breaks[0].view
+  el('brkB').src = 'standby.html?kiosk=1&clear=1&league=' + CFG.league + '&views=' + breaks[1].view
   drawMenu()
 }
 
