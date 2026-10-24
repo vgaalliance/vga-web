@@ -55,6 +55,8 @@
   button.hide{border-color:var(--gdim);color:var(--gdim);}
   button.hide:hover{background:var(--gdim);color:var(--bg);}
   button.active{background:var(--g);color:var(--bg);text-shadow:none;border-color:var(--g);}
+  /* the Match panel's groups (see GROUPED IN SHOW ORDER) */
+  .mgrp{margin:24px 0 8px;font-size:16px;letter-spacing:.3em;color:var(--g);border-bottom:1px solid rgba(58,255,110,.25);padding-bottom:4px;}
   /* the standby views, grouped (see #sbViews) */
   #sbViews .sbgrp{margin:12px 0 6px;font-size:15px;}
   #sbViews .sbgrp:first-child{margin-top:0;}
@@ -628,6 +630,29 @@
         <button class="hide" onclick="hideTimer()">Hide timer</button>
       </div>
     </div>
+    <!-- GROUPED IN SHOW ORDER (Castle, 2026-10-24), the same way the standby
+         views were: what runs all fight, then what you fire to promote, then
+         fighter info, the money, and the hand-typed pieces last. Same buttons,
+         same commands. The dead "Show stakes" (nothing listens for 'stakes'
+         since stakes.html went) was dropped here. -->
+    <p class="mgrp">ALL FIGHT — switch on, leave running</p>
+    <div>
+      <h5>💬 Live chat — #general, right side, the newest 5</h5>
+      <div class="row">
+        <button id="chatOnBtn" onclick="chatSet(true)">💬 Chat ON</button>
+        <button class="hide" id="chatOffBtn" onclick="chatSet(false)">■ Chat OFF</button>
+        <span style="color:var(--gdim);font-size:15px">off on every load · ✕ pulls a message off the overlay AND the standby wall</span>
+      </div>
+      <div id="chatList" style="margin-top:8px;font-size:17px;max-height:260px;overflow-y:auto"></div>
+
+      <h5>Keys to victory / fun facts — bottom-left, this fight only</h5>
+      <div class="row">
+        <button onclick="send({type:'keys',on:true})">▶ Start rotation</button>
+        <button class="hide" onclick="send({type:'keys',on:false})">■ Stop</button>
+        <span style="color:var(--gdim);font-size:15px">off until you press Start · this fight only, arming the next bout stops it · written in the admin card builder</span>
+      </div>
+    </div>
+    <p class="mgrp">PROMOTE</p>
     <!-- The CTA box runs DURING the match, so its buttons live in the MATCH
          panel with everything else. Deliberately OUTSIDE #clockKit: that div
          relocates into the tracker rail at load, and the CTA rode along --
@@ -661,6 +686,46 @@
       <button class="hide" onclick="hideNextEvent()">Hide</button>
       <span id="nextevHint" style="color:var(--gdim);font-size:16px"></span>
     </div>
+    <p class="mgrp">FIGHTER INFO</p>
+    <h5>Fighter dossier — lower third</h5>
+    <div class="row">
+      <input id="fq" placeholder="QUERY FIGHTER NAME…" onkeydown="if(event.key==='Enter')searchFighter()">
+      <button onclick="searchFighter()">Search</button>
+      <button class="hide" onclick="send({type:'fighter',on:false})">Hide</button>
+    </div>
+    <div class="row" id="fresults" style="margin-top:10px"></div>
+    <h5>Rankings at stake — who can jump who</h5>
+      <div class="row">
+        <button onclick="send({type:'rankstakes',event:(window.UBA&&UBA.name)||null,on:true})">▶ Show ladder</button>
+        <button class="hide" onclick="send({type:'rankstakes',on:false})">■ Hide</button>
+        <span style="color:var(--gdim);font-size:15px">reads the card you loaded above</span>
+      </div>
+    <h5>Rankings + league table — pick the ladder first</h5>
+    <div class="row">
+      <span id="rankLeague" style="display:contents"></span>
+      <span class="arr" style="color:var(--gdim)">→</span>
+      <span id="rankBtnsWrap" style="display:contents"><span id="rankBtns" style="display:contents"></span></span>
+      <button class="only-ubae" onclick="loadStandings()">UBAe standings</button>
+      <button class="hide" onclick="send({type:'panel',on:false})">Hide panel</button>
+    </div>
+      <div class="row" style="margin-top:6px"><span id="voCover" style="color:var(--gdim);font-size:15px"></span></div>
+    <p class="mgrp">MONEY</p>
+    <!-- UBAe bets ride the documented workaround (BACKLOG): team-named placeholder
+         `fighters` rows in `matches` under an event called "UBAe Week N", so the
+         deck resolves the event from the loaded match's week. -->
+    <div>
+      <h5>Wagers — this match / card only</h5>
+      <select id="evFilter" style="display:none"><option value="">ALL EVENTS</option></select>
+      <div class="row" style="margin-bottom:10px">
+        <button onclick="loadOdds();loadBetFeed()">Reload</button>
+        <button class="hide" onclick="send({type:'odds',on:false})">Hide odds</button>
+      </div>
+      <h5>Odds board — click a fight</h5>
+      <div class="row" id="oddsFights">SCANNING MARKETS…</div>
+      <h5>Bet alerts — click a bet (anonymous)</h5>
+      <div class="row" id="betFeed">SCANNING WAGERS…</div>
+    </div>
+    <p class="mgrp">TYPE IT YOURSELF</p>
     <h5>💬 Message — fastest reach</h5>
     <div class="row">
       <select id="msgPlat" style="width:120px" title="which platform the card wears — 'none' shows no platform block">
@@ -683,76 +748,6 @@
       <button onclick="fireBug(true)">📍 Keep bug up</button>
       <button class="hide" onclick="send({type:'bug',d:{on:false}})">Hide bug</button>
       <button class="lg-uba" onclick="fireResult()">🏅 Fire result</button>
-    </div>
-    <h5>Fighter dossier — lower third</h5>
-    <div class="row">
-      <input id="fq" placeholder="QUERY FIGHTER NAME…" onkeydown="if(event.key==='Enter')searchFighter()">
-      <button onclick="searchFighter()">Search</button>
-      <button class="hide" onclick="send({type:'fighter',on:false})">Hide</button>
-    </div>
-    <div class="row" id="fresults" style="margin-top:10px"></div>
-    <h5>Rankings + league table — pick the ladder first</h5>
-    <div class="row">
-      <span id="rankLeague" style="display:contents"></span>
-      <span class="arr" style="color:var(--gdim)">→</span>
-      <span id="rankBtnsWrap" style="display:contents"><span id="rankBtns" style="display:contents"></span></span>
-      <button class="only-ubae" onclick="loadStandings()">UBAe standings</button>
-      <button class="hide" onclick="send({type:'panel',on:false})">Hide panel</button>
-    </div>
-    <!-- UBAe bets ride the documented workaround (BACKLOG): team-named placeholder
-         `fighters` rows in `matches` under an event called "UBAe Week N", so the
-         deck resolves the event from the loaded match's week. -->
-    <div>
-      <h5>Wagers — this match / card only</h5>
-      <select id="evFilter" style="display:none"><option value="">ALL EVENTS</option></select>
-      <div class="row" style="margin-bottom:10px">
-        <button onclick="loadOdds();loadBetFeed()">Reload</button>
-        <button class="hide" onclick="send({type:'odds',on:false})">Hide odds</button>
-      </div>
-      <h5>Odds board — click a fight</h5>
-      <div class="row" id="oddsFights">SCANNING MARKETS…</div>
-      <h5>Bet alerts — click a bet (anonymous)</h5>
-      <div class="row" id="betFeed">SCANNING WAGERS…</div>
-    </div>
-
-    <!-- ── THE 2026-08-29 GRAPHICS ────────────────────────────────────
-         These four shipped self-driving — they read the bout you armed
-         and need nothing pressed to be CORRECT. What they had no way to
-         do was be turned OFF, or be pointed at a different fighter, and
-         a graphic an operator cannot stop is a graphic that eventually
-         will not stop. -->
-    <div>
-      <h5>Keys to victory / fun facts — bottom-left, this fight only</h5>
-      <div class="row">
-        <button onclick="send({type:'keys',on:true})">▶ Start rotation</button>
-        <button class="hide" onclick="send({type:'keys',on:false})">■ Stop</button>
-        <span style="color:var(--gdim);font-size:15px">off until you press Start · this fight only, arming the next bout stops it · written in the admin card builder</span>
-      </div>
-
-      <h5>💬 Live chat — #general on the match overlay (right side, one at a time)</h5>
-      <div class="row">
-        <button id="chatOnBtn" onclick="chatSet(true)">💬 Chat ON</button>
-        <button class="hide" id="chatOffBtn" onclick="chatSet(false)">■ Chat OFF</button>
-        <span style="color:var(--gdim);font-size:15px">only messages that arrive after ON · ✕ pulls one off the overlay AND the standby wall</span>
-      </div>
-      <div id="chatList" style="margin-top:8px;font-size:17px;max-height:260px;overflow-y:auto"></div>
-
-      <div class="row">
-        <button onclick="send({type:'stakes',on:true})">▶ Show stakes</button>
-        <button class="hide" onclick="send({type:'stakes',on:false})">■ Hide</button>
-      </div>
-
-
-
-      <div class="row" style="margin-top:6px"><span id="voCover" style="color:var(--gdim);font-size:15px"></span></div>
-
-      <h5>Rankings at stake — who can jump who</h5>
-      <div class="row">
-        <button onclick="send({type:'rankstakes',event:(window.UBA&&UBA.name)||null,on:true})">▶ Show ladder</button>
-        <button class="hide" onclick="send({type:'rankstakes',on:false})">■ Hide</button>
-        <span style="color:var(--gdim);font-size:15px">reads the card you loaded above</span>
-      </div>
-
     </div>
   </div></div>
 
