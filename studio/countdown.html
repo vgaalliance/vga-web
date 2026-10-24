@@ -670,14 +670,21 @@ function slam(){
   s.classList.add('shake'); f.classList.add('go'); w.classList.add('go')
 }
 
+// The takeover lands 650ms after START MATCH is selected. A reset from the
+// deck inside that gap must cancel it, or the screen goes back to the reel and
+// then flips into the final minute anyway with ten minutes on the clock.
+let finalPending = false
 function enterFinal(){
   const b = document.body
-  if(b.classList.contains('final')) return
+  if(b.classList.contains('final') || finalPending) return
+  finalPending = true
   stopItem()
   // the menu SELECTS start match first -- the one beat that sells the menu
   const st = el('miStart'); point(st); st.classList.add('select'); sfxSelect()
   setTimeout(() => st.classList.remove('select'), 700)
   setTimeout(() => {
+    if(!finalPending) return
+    finalPending = false
     b.classList.remove('brk'); el('brkA').classList.remove('on'); el('brkB').classList.remove('on')
     b.classList.add('final')
     // the promo fades out under the grid with its sound, then stops
@@ -688,7 +695,8 @@ function enterFinal(){
 }
 function leaveFinal(){
   const b = document.body
-  if(!b.classList.contains('final') && !b.classList.contains('live')) return
+  if(!b.classList.contains('final') && !b.classList.contains('live') && !finalPending) return
+  finalPending = false
   b.classList.remove('final', 'red', 'live')
   if(liveVid) liveVid.volume = 1
   next()
@@ -932,19 +940,49 @@ loadPromos().then(() => { buildReel(); progress(); next() })
   }
   feed(); setInterval(feed, 20000)
 
+  // ── SURVIVE A RELOAD ── the deck only sends on a press, so an OBS source
+  // that reloads (a crash, a scene-collection switch, a refresh) used to come
+  // back as --:-- and TBA until somebody pressed Start again. The last push is
+  // kept in this source's own storage and replayed on load -- the clock only if
+  // it is still in the future, so a reload after the show never opens on LIVE.
+  const KEY = 'vga-countdown-last'
+  function remember(d){
+    try{
+      const last = JSON.parse(localStorage.getItem(KEY) || '{}')
+      localStorage.setItem(KEY, JSON.stringify({ ...last, ...d }))
+    }catch(e){}
+  }
+  function apply(d){
+    if(d.a||d.b) setNames(d.a, d.b)
+    if(d.eventMain) setEvent(d.eventMain)
+    if(d.eventSub) document.getElementById('tbEventSub').textContent=d.eventSub
+    const lg = leagueFrom(d.league); if(lg) setLeague(lg)
+  }
+  try{
+    const last = JSON.parse(localStorage.getItem(KEY) || 'null')
+    if(last){
+      apply(last)
+      // ?t= on the URL is an explicit clock and wins over a remembered one
+      if(last.target && !QS.get('t') && new Date(last.target) > Date.now()){ CFG.target = new Date(last.target); tick() }
+    }
+  }catch(e){}
+
+  // one deck push. On window so a test (or the console) can play a push
+  // exactly as the deck sends it, without broadcasting to the live channel.
+  function onCountdown(d){
+    remember(d)
+    apply(d)
+    if(d.target){ CFG.target=new Date(d.target); tick() }
+  }
+  window.onCountdown = onCountdown
+
   _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
     if(c.type==='sponsor'){
       if(pinSponsor(c.key))
         document.getElementById('sponsorSite').textContent = sponsorSite(activeSponsor())
       return
     }
-    if(c.type!=='countdown') return
-    const d=c.d||{}
-    if(d.a||d.b) setNames(d.a, d.b)
-    if(d.eventMain) setEvent(d.eventMain)
-    if(d.eventSub) document.getElementById('tbEventSub').textContent=d.eventSub
-    const lg = leagueFrom(d.league); if(lg) setLeague(lg)
-    if(d.target){ CFG.target=new Date(d.target); tick() }
+    if(c.type==='countdown') onCountdown(c.d||{})
   }).subscribe()
 })()
 </script>
