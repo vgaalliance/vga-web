@@ -183,6 +183,27 @@
 
   /* the kit's charcoal, not a violet gradient — same ground as the bar and
      the keys card, so all three read as one object seen three ways */
+  /* ── LIVE CHAT — #general during the fight (2026-10-24). ONE message at a
+     time on the right, where nothing else lives (the corner and the left are
+     the dossier, keys, odds and the post card). Standby shows a whole wall;
+     here a wall would be watched instead of the fight. Off until the deck's
+     💬 Chat ON; the deck's Hide pulls the one on screen. */
+  #chat{position:fixed;right:48px;bottom:200px;width:440px;display:flex;gap:16px;align-items:flex-start;
+    background:rgba(10,8,16,.94);border:1px solid rgba(181,101,255,.38);border-right:5px solid var(--red);
+    border-radius:6px;padding:16px 20px 18px;opacity:0;transform:translateX(120%);pointer-events:none;
+    box-shadow:0 10px 40px rgba(0,0,0,.45);}
+  #chat.in{animation:chin .5s cubic-bezier(.16,1,.3,1) forwards;}
+  #chat.out{animation:chout .4s cubic-bezier(.5,0,.75,.2) forwards;}
+  @keyframes chin{from{opacity:0;transform:translateX(120%);}to{opacity:1;transform:none;}}
+  @keyframes chout{from{opacity:1;transform:none;}to{opacity:0;transform:translateX(120%);}}
+  #chat .av{flex:0 0 52px;width:52px;height:52px;border-radius:50%;object-fit:cover;background:#2a1640;
+    box-shadow:0 0 0 2px rgba(181,101,255,.75);display:flex;align-items:center;justify-content:center;
+    font:900 24px 'Barlow Condensed';color:#fff;}
+  #chat .tx{min-width:0;flex:1;}
+  #chat .lb{font:700 13px 'Barlow';letter-spacing:.2em;color:#8f8fa0;text-transform:uppercase;margin-bottom:3px;}
+  #chat .nm{font:900 24px/1 'Barlow Condensed';text-transform:uppercase;letter-spacing:.03em;color:#d7b0ff;}
+  #chat .ms{font:600 25px/1.2 'Barlow';color:#fff;margin-top:6px;overflow-wrap:anywhere;
+    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
   #post{display:none;flex-direction:column;position:relative;
     background:var(--kit-bg);backdrop-filter:blur(3px);
     box-shadow:0 24px 60px rgba(0,0,0,.6);}
@@ -822,6 +843,7 @@
     </div>
   </div>
 
+  <div id="chat"><div class="av" id="chAv">?</div><div class="tx"><div class="lb">Live from #general</div><div class="nm" id="chNm"></div><div class="ms" id="chMs"></div></div></div>
   <div id="flash">
   <!-- the message shape. Hidden unless data-kind="msg"; every other flash
        kind still uses .card below. -->
@@ -1281,6 +1303,7 @@ function handle(c){
       ? String(c.d.title).toUpperCase() : null
     kLoad(c.d.left.name, c.d.right.name)
   }
+  if(c.type==='chat'){ chCmd(c); return }
   if(c.type==='keys'){
     if(c.on===false){ K_RUN=false; kStop(); return }
     if(c.on===true){ K_RUN=true; kStart(); return }
@@ -1926,5 +1949,61 @@ channel.subscribe(status=>{
   </div>
 </div>
 
+<script>
+// ── LIVE CHAT ───────────────────────────────────────────────────────────
+// Reads stream_chat_public every 4s while the deck has chat ON, and shows only
+// what arrived AFTER it was switched on -- a backlog dumped in a row is not
+// live chat. The queue keeps the newest 3, so a busy room never falls behind.
+const CHT={ on:false, hidden:new Set(), last:null, q:[], cur:null, poll:null, hold:null }
+const CHT_HOLD=9000, CHT_GAP=1600
+async function chtRead(){
+  const { data, error } = await sb.from('stream_chat_public').select('id,author,avatar_url,content').limit(40)
+  return error || !data ? null : data
+}
+async function chtTick(){
+  const rows=await chtRead(); if(!rows || !CHT.on) return
+  const top=rows.reduce((m,r)=>Math.max(m,r.id),0)
+  if(CHT.last===null){ CHT.last=top; return }          // switched on: start from now
+  const fresh=rows.filter(r=>r.id>CHT.last).sort((a,b)=>a.id-b.id)
+  CHT.last=Math.max(CHT.last, top)
+  CHT.q.push(...fresh); CHT.q=CHT.q.slice(-3)
+  if(!CHT.cur) chtNext()
+}
+function chtNext(){
+  clearTimeout(CHT.hold)
+  let r; do { r=CHT.q.shift() } while(r && CHT.hidden.has(Number(r.id)))
+  if(!r || !CHT.on){ CHT.cur=null; return }
+  CHT.cur=r
+  const ini=esc((String(r.author||'?').trim()[0]||'?').toUpperCase())
+  $('chAv').outerHTML = r.avatar_url
+    ? `<img class="av" id="chAv" src="${esc(r.avatar_url)}" alt="" onerror="this.outerHTML='<div class=&quot;av&quot; id=&quot;chAv&quot;>${ini}</div>'">`
+    : `<div class="av" id="chAv">${ini}</div>`
+  $('chNm').textContent=String(r.author||'').replace(/\s*\(\d+-\d+(-\d+)?\)\s*$/,'');  // the record rides in the nickname; this is chat
+  $('chMs').textContent=r.content
+  const el=$('chat'); el.classList.remove('out'); void el.offsetWidth; el.classList.add('in')
+  CHT.hold=setTimeout(()=>chtOut(true), CHT_HOLD)
+}
+function chtOut(then){
+  clearTimeout(CHT.hold)
+  const el=$('chat'); if(el.classList.contains('in')){ el.classList.remove('in'); el.classList.add('out') }
+  CHT.cur=null
+  if(then) CHT.hold=setTimeout(chtNext, CHT_GAP)
+}
+function chCmd(c){
+  if(Array.isArray(c.hidden)) CHT.hidden=new Set(c.hidden.map(Number))
+  // Hide pulls the one on screen at once, and it never comes back
+  if(CHT.cur && CHT.hidden.has(Number(CHT.cur.id))) chtOut(true)
+  if(typeof c.on==='boolean' && c.on!==CHT.on){
+    CHT.on=c.on; clearInterval(CHT.poll); CHT.q=[]
+    if(CHT.on){ CHT.last=null; chtTick(); CHT.poll=setInterval(chtTick, 4000) }
+    else chtOut(false)
+  }
+}
+// ?chatdemo=1 -- one made-up message after another, no deck and no database
+if(new URLSearchParams(location.search).get('chatdemo')==='1'){
+  CHT.on=true; CHT.q=[{id:1,author:'Galf',content:'TYNADO IN TWO, CALLING IT NOW'},{id:2,author:'Maki',content:'that body shot changed the whole round, bing ling is slowing down'},{id:3,author:'Natsu',content:'gg'}]
+  setTimeout(chtNext, 800)
+}
+</script>
 </body>
 </html>

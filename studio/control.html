@@ -519,6 +519,7 @@
       <!-- the newest paid callouts, one picture at a time. Does nothing while
            there are none from the last 7 days, rather than put up a blank. -->
       <button onclick="standby('callouts')">🗯 Callouts</button>
+      <button onclick="standby('chat')">💬 Chat wall</button>
       <button class="lg-uba" onclick="standby('cards')">Card collection</button>
       <button onclick="standby('cta')">📣 Call to action</button>
       <button class="lg-uba"  onclick="standby('gflrank')">GFL rankings</button>
@@ -728,7 +729,14 @@
         <span style="color:var(--gdim);font-size:15px">off until you press Start · this fight only, arming the next bout stops it · written in the admin card builder</span>
       </div>
 
-      <h5>What's on the line — full screen, ProTubeVR</h5>
+      <h5>💬 Live chat — #general on the match overlay (right side, one at a time)</h5>
+      <div class="row">
+        <button id="chatOnBtn" onclick="chatSet(true)">💬 Chat ON</button>
+        <button class="hide" id="chatOffBtn" onclick="chatSet(false)">■ Chat OFF</button>
+        <span style="color:var(--gdim);font-size:15px">only messages that arrive after ON · ✕ pulls one off the overlay AND the standby wall</span>
+      </div>
+      <div id="chatList" style="margin-top:8px;font-size:17px;max-height:260px;overflow-y:auto"></div>
+
       <div class="row">
         <button onclick="send({type:'stakes',on:true})">▶ Show stakes</button>
         <button class="hide" onclick="send({type:'stakes',on:false})">■ Hide</button>
@@ -859,6 +867,7 @@ channel.on('broadcast',{event:'cmd'},({payload:p})=>{
   if(!p) return
   // A standby screen that just loaded asks what has been scored, and another deck
   // scoring a fight tells this one. Both live with the card code (WINS below).
+  if(p.type==='cardhello' && window.chatSend) window.chatSend()   // a reloaded standby gets the hidden list back
   if(p.type==='cardhello' || p.type==='cardwin'){ if(window.winsHeard) window.winsHeard(p); return }
   if(p.type!=='tape-state') return
   if(window.setTapeBtn) window.setTapeBtn(p.on)
@@ -1916,6 +1925,35 @@ document.addEventListener('click',e=>{ const b=e.target.closest && e.target.clos
   if(b.closest('#sbViews')) sbLit(b.classList.contains('sbhide') ? null : b)
   else if(b.closest('#cardEvents') || /type:'standby',on:false/.test(b.getAttribute('onclick')||'')) sbLit(null)
 })
+
+// LIVE CHAT. The bot writes #general (filtered) to stream_chat; the overlay
+// shows what arrives after ON, the standby wall shows the newest five while it
+// is up. Hidden ids live HERE (this browser) and ride with every chat command,
+// re-sent every 20s while ON so a reloaded overlay comes back the same.
+const CHAT={ on: localStorage.getItem('vga-chat-on')==='1', rows:[],
+  hidden: (()=>{ try{ return JSON.parse(localStorage.getItem('vga-chat-hidden')||'[]') }catch(e){ return [] } })() }
+window.chatSend=()=>send({ type:'chat', on:CHAT.on, hidden:CHAT.hidden.slice(-200) })
+window.chatSet=on=>{ CHAT.on=on; localStorage.setItem('vga-chat-on', on?'1':'0'); chatSend(); chatDraw() }
+window.chatHide=id=>{ if(!CHAT.hidden.includes(id)) CHAT.hidden.push(id)
+  localStorage.setItem('vga-chat-hidden', JSON.stringify(CHAT.hidden.slice(-200))); chatSend(); chatDraw() }
+function chatDraw(){
+  const on=document.getElementById('chatOnBtn'), off=document.getElementById('chatOffBtn'); if(!on) return
+  on.classList.toggle('active', CHAT.on); off.classList.toggle('active', false)
+  const esc=t=>String(t??'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]))
+  document.getElementById('chatList').innerHTML = CHAT.rows.length ? CHAT.rows.slice(0,12).map(r=>{
+    const gone=CHAT.hidden.includes(r.id)
+    return `<div class="row" style="gap:8px;margin-bottom:4px;flex-wrap:nowrap;${gone?'opacity:.35;text-decoration:line-through':''}">`
+      +(gone?'<span style="width:58px;color:var(--gdim)">hidden</span>':`<button class="hide" style="padding:2px 8px;font-size:15px" onclick="chatHide(${r.id})">✕</button>`)
+      +`<span style="color:var(--g);white-space:nowrap">${esc(r.author)}:</span><span style="color:#dfe;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.content)}</span></div>` }).join('')
+    : '<span style="color:var(--gdim)">nothing from #general in the last 3 hours</span>'
+}
+async function chatPoll(){
+  const { data, error } = await sb.from('stream_chat_public').select('id,author,content').limit(40)
+  if(!error && data){ CHAT.rows=data; chatDraw() }
+}
+chatPoll(); setInterval(chatPoll, 5000)
+setInterval(()=>{ if(CHAT.on) chatSend() }, 20000)
+setTimeout(chatDraw, 0)
 
 // coin toss — heads or tails
 window.fireCoin=()=>send({type:'coin', result: Math.random()<.5?'HEADS':'TAILS' })

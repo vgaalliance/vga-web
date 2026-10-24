@@ -108,6 +108,27 @@
      and the picture fits inside it rather than being cropped: the words on it
      are the whole point. */
   #v-callouts .title{margin-bottom:18px;}
+  /* ── LIVE CHAT — #general on the waiting screen (2026-10-24). A WALL, the
+     newest on top, because a room reads it while waiting; the match overlay
+     shows one message at a time instead. Rows come from stream_chat_public. */
+  #v-chat .title{margin-bottom:22px;}
+  .ch-wall{display:flex;flex-direction:column;gap:12px;height:700px;overflow:hidden;}
+  .ch-row{display:flex;align-items:center;gap:24px;padding:16px 28px;background:var(--panel);
+    border:1px solid var(--line);border-left:6px solid var(--pur3);border-radius:4px;
+    animation:chIn .55s cubic-bezier(.16,1,.3,1) backwards;}
+  .ch-row.new{border-left-color:var(--pink);box-shadow:0 0 34px rgba(var(--pink-rgb),.28);}
+  .ch-av{flex:0 0 64px;width:64px;height:64px;border-radius:50%;object-fit:cover;
+    box-shadow:0 0 0 3px rgba(var(--pur-rgb),.7);background:rgba(var(--deep2-rgb),.9);
+    display:flex;align-items:center;justify-content:center;font-weight:900;font-size:30px;color:#fff;}
+  .ch-tx{min-width:0;flex:1;}
+  .ch-nm{font-weight:900;font-size:26px;letter-spacing:.06em;text-transform:uppercase;color:var(--hi);line-height:1;}
+  .ch-msg{font-size:38px;line-height:1.15;color:#fff;margin-top:6px;overflow-wrap:anywhere;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .ch-row.old{opacity:.8;} .ch-row.older{opacity:.6;}
+  .ch-empty{height:700px;display:flex;align-items:center;justify-content:center;text-align:center;
+    font-weight:900;font-size:64px;line-height:1.05;text-transform:uppercase;color:var(--hi);}
+  .ch-foot{margin-top:18px;font-family:'Press Start 2P',monospace;font-size:14px;letter-spacing:.3em;color:var(--dim);}
+  @keyframes chIn{from{opacity:0;transform:translateY(-26px);}}
   .co-box{height:790px;display:flex;align-items:center;justify-content:center;}
   .co-box img{display:block;max-width:1500px;max-height:790px;width:auto;height:auto;border-radius:22px;
     box-shadow:0 0 0 2px rgba(var(--pur-rgb),.45),0 0 60px rgba(var(--pur-rgb),.45),0 0 140px rgba(var(--deep2-rgb),.55);
@@ -1513,6 +1534,13 @@
     <!-- CALLOUTS — paid for in VC in Discord; the bot draws each one as a
          picture. Only joins the rotation while there is at least one from the
          last 7 days, and the deck can take it out. -->
+    <div class="view" id="v-chat">
+      <div class="eyebrow">VGA · LIVE FROM #GENERAL</div>
+      <div class="title sm">The Chat</div>
+      <div class="ch-wall" id="chWall"></div>
+      <div class="ch-foot">TYPE IN #GENERAL ON DISCORD · YOUR MESSAGE CAN LAND ON STREAM</div>
+    </div>
+
     <div class="view" id="v-callouts">
       <div class="eyebrow">CALLOUTS</div>
       <div class="title sm">Fighting Words</div>
@@ -3217,6 +3245,7 @@ function showView(el){
   if(el.id === 'v-cshome') setTimeout(ladFit, 0)
   if(el.id === 'v-gymwar') setTimeout(gwStart, 0)
   if(el.id === 'v-bets') setTimeout(bbStart, 0)
+  if(el.id === 'v-chat') setTimeout(chStart, 0)
   clearTimeout(el._voutT)
   el.classList.remove('out')
   el.style.position=el.style.top=el.style.left=el.style.width=''
@@ -3899,6 +3928,10 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
   // ...and any board put up afterwards takes the screen back from it.
   if(c.type==='standby' && c.on!==false && window._csVerdict && window._csVerdict.ready)
     window._csVerdict.f.contentWindow.postMessage({ vgaCmd:{ type:'contender', on:false, soft:true } },'*')
+  // The deck's chat state: which messages it has hidden. The wall itself goes
+  // up only on its own button (view 'chat'); ON/OFF is the match overlay's.
+  if(c.type==='chat'){ if(Array.isArray(c.hidden)) CH.hidden=new Set(c.hidden.map(Number))
+    if($('v-chat').classList.contains('on')) chDraw(); return }
   // The deck's Callouts ON/OFF: the screen's place in the auto rotation, nothing else.
   if(c.type==='callouts'){ CO_ON = c.on!==false; coLayout(); return }
   if(c.type==='loadbar'){
@@ -3970,6 +4003,37 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
   if(s==='SUBSCRIBED' && !document.body.classList.contains('kiosk'))
     LINK.send({ type:'broadcast', event:'cmd', payload:{ type:'cardhello' } })
 })
+
+// ── LIVE CHAT ───────────────────────────────────────────────────────────
+// #general, read while the wall is up (stream_chat_public, every 4s). The rows
+// were filtered by the bot before they were written; the deck can still hide one.
+const CH={ rows:[], hidden:new Set(), timer:null, seen:0 }
+async function chLoad(){
+  const { data, error } = await sb.from('stream_chat_public').select('id,author,avatar_url,content').limit(40)
+  if(error || !data) return false            // a failed read keeps what is up
+  CH.rows=data; return true
+}
+// a server nickname carries the fight record -- "Galf (3-1-0)" -- and the wall is chat, not a ladder
+const chName=n=>String(n||'').replace(/\s*\(\d+-\d+(-\d+)?\)\s*$/,'')
+function chDraw(){
+  const rows=CH.rows.filter(r=>!CH.hidden.has(Number(r.id))).slice(0,5)
+  if(!rows.length){ $('chWall').innerHTML='<div class="ch-empty">Be the first —<br>type in #general</div>'; return }
+  const top=rows[0].id, fresh=top>CH.seen
+  $('chWall').innerHTML=rows.map((r,i)=>{
+    const ini=cshEsc((String(r.author||'?').trim()[0]||'?').toUpperCase())
+    const av=r.avatar_url ? `<img class="ch-av" src="${cshEsc(r.avatar_url)}" alt="" onerror="this.outerHTML='<div class=&quot;ch-av&quot;>${ini}</div>'">` : `<div class="ch-av">${ini}</div>`
+    const cls=['ch-row', i===0&&fresh?'new':'', i>=3?'older':i>=1?'old':''].filter(Boolean).join(' ')
+    return `<div class="${cls}" style="${i===0&&fresh?'':'animation:none'}">${av}<div class="ch-tx"><div class="ch-nm">${cshEsc(chName(r.author))}</div><div class="ch-msg">${cshEsc(r.content)}</div></div></div>` }).join('')
+  CH.seen=Math.max(CH.seen, top)
+}
+async function chStart(){ clearInterval(CH.timer)
+  if(await chLoad()) chDraw()
+  CH.timer=setInterval(async()=>{ if(!$('v-chat').classList.contains('on')){ clearInterval(CH.timer); return }
+    const before=CH.rows[0]&&CH.rows[0].id; if(await chLoad() && (CH.rows[0]&&CH.rows[0].id)!==before) chDraw() }, 4000) }
+// ?chatdemo=1 -- the wall with made-up rows, no deck and no database
+if(new URLSearchParams(location.search).get('chatdemo')==='1') setTimeout(()=>{
+  CH.rows=[['Galf','TYNADO IN TWO, CALLING IT NOW'],['Maki','northstar elite taking this whole card'],['Boiled One','who has the stream link for the prelims'],['Kam','bing ling by decision, his jab is too clean'],['Natsu','gg to everyone who fought tonight'],['Jay','first time watching, this is sick']]
+    .map((r,i)=>({id:100-i,author:r[0],avatar_url:null,content:r[1]})); CH.seen=99; hideAll(); showView($('v-chat')); clearInterval(CH.timer); chDraw() }, 1500)
 
 // ── KIOSK MODE ───────────────────────────────────────────────────────────
 // A link that can be handed to anybody for a pre-show chat: it drives itself,
