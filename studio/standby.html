@@ -939,6 +939,12 @@
   .csh-b.main .vs{color:#ffce00;}
   .csh-b .mtag{grid-column:1/-1;text-align:center;font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.2em;color:#ffce00;margin-bottom:3px;}
   .csh-b.done{opacity:.6;}
+  /* which part of the card a fight is on. The main event's row already says MAIN EVENT */
+  .csh-b .seg{position:absolute;right:14px;top:50%;transform:translateY(-50%);z-index:1;
+    font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.16em;padding:5px 7px;
+    color:var(--dim);border:1px solid rgba(var(--hi-rgb),.28);}
+  .csh-b .seg.main_card{color:#ffce00;border-color:rgba(255,206,0,.45);}
+  .csh-b .seg.undercard{color:var(--hi);}
   .csh-b.next{border-left-color:var(--hi);background:rgba(var(--deep2-rgb),.9);
     box-shadow:0 0 0 2px rgba(var(--hi-rgb),.6),0 0 30px rgba(var(--pur-rgb),.45);}
   .csh-b.next .vs{color:var(--hi);font-size:12px;letter-spacing:.1em;}
@@ -1012,6 +1018,11 @@
   .lad-row.bot{border-left-color:var(--pink);box-shadow:0 0 26px rgba(var(--pink-rgb),.18);}
   .lad-row.bot .rk{color:var(--pink);font-size:15px;}
   .lad-row .vs{position:absolute;right:16px;font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.16em;color:var(--dim);}
+  .lad-row .dv{position:absolute;right:18px;bottom:8px;font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.16em;color:var(--dim);}
+  .lad-row.catch{height:96px;align-items:center;}
+  .lad-row.catch .nm{padding-bottom:14px;}
+  .lad-vs{text-align:center;font-family:'Press Start 2P',monospace;font-size:20px;color:var(--pink);
+    text-shadow:0 0 18px rgba(var(--pink-rgb),.7);padding:6px 0;}
   .lad-gap{height:34px;display:flex;align-items:center;justify-content:center;gap:12px;
     font-family:'Press Start 2P',monospace;font-size:11px;letter-spacing:.2em;color:var(--dim);
     border:1px dashed rgba(var(--hi-rgb),.25);}
@@ -3101,7 +3112,7 @@ const cshEsc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt
 async function cshLoad(eventId, name, brand, mode){
   mode = mode || (brand ? 'cs' : 'gfl')
   const { data, error } = await sb.from('event_matches')
-    .select('match_id,bout_number,weight_class,status,method,fighter_a_name,fighter_b_name,fighter_a_slug,fighter_b_slug,winner_corner,is_title_fight')
+    .select('match_id,bout_number,card_segment,weight_class,status,method,fighter_a_name,fighter_b_name,fighter_a_slug,fighter_b_slug,winner_corner,is_title_fight')
     .eq('event_id', eventId).order('bout_number')
   if(error || !data) return false   // a failed read is never drawn as an empty card
   const bouts=data.filter(b=>b.fighter_a_name && b.fighter_b_name
@@ -3117,16 +3128,18 @@ async function cshLoad(eventId, name, brand, mode){
   // A failed read leaves lad null and the column says nothing, never a wrong ladder.
   let lad=null
   if(mode==='uba'){
-    const wcs=[...new Set(bouts.map(b=>b.weight_class).filter(Boolean))]
+    // every division, not just the card's: a catchweight bout shows each
+    // fighter at their own division's rank
     const [{data:rk,error:e1},{data:tt,error:e2}] = await Promise.all([
-      sb.from('rankings_public').select('rank,fighter_name,weight_class,level').eq('scope','weight_class').in('weight_class', wcs),
+      sb.from('rankings_public').select('rank,fighter_name,weight_class,level').eq('scope','weight_class'),
       sb.from('titles_public').select('weight_class,kind,is_interim,holder_name,level'),
     ])
     if(!e1 && !e2 && rk && tt){
       lad={ rows:{}, champ:{}, pics:{} }
       rk.filter(r=>r.level!=='amateur').forEach(r=>{ (lad.rows[r.weight_class]=lad.rows[r.weight_class]||[]).push({ name:r.fighter_name, rank:r.rank }) })
       tt.filter(t=>t.kind==='weight_class' && t.level==='pro' && !t.is_interim && t.holder_name).forEach(t=>{ lad.champ[t.weight_class]=t.holder_name })
-      const names=[...new Set([...rk.map(r=>r.fighter_name), ...Object.values(lad.champ)])]
+      // the ranked, the champions, and everyone on the card (an unranked fighter still has a face)
+      const names=[...new Set([...rk.map(r=>r.fighter_name), ...Object.values(lad.champ), ...bouts.flatMap(b=>[b.fighter_a_name,b.fighter_b_name])])]
       if(names.length){
         const { data:lp } = await sb.from('fighter_cards').select('display_name,profile_photo_url').in('display_name', names)
         ;(lp||[]).forEach(f=>{ if(f.profile_photo_url) lad.pics[String(f.display_name).trim().toLowerCase()]=f.profile_photo_url })
@@ -3159,12 +3172,15 @@ function cshNext(){
 function cshPages(){ const o=cshOthers(), out=[]; for(let i=0;i<o.length;i+=CSH_PAGE) out.push(o.slice(i,i+CSH_PAGE)); return out }
 function cshPageOf(nx){ const ps=cshPages(); const i=nx ? ps.findIndex(p=>p.includes(nx)) : -1; return i>=0 ? i : ps.length-1 }
 
+// card_segment → [the tag on a card row, the words in the Up Next line]
+const CSH_SEG={ main_card:['MAIN','MAIN CARD'], undercard:['UNDER','UNDERCARD'], prelim:['PRELIM','PRELIMS'] }
 function cshRow(b, nx, scoredId, isMain){
   const r=cshRes(b), isNext=b===nx
   const cls=['csh-b', isMain&&'main', r&&'done', isNext&&'next', r&&b.match_id===scoredId&&'scoring'].filter(Boolean).join(' ')
   const ca=r?(r.w==='a'?'win':'lose'):'', cb=r?(r.w==='b'?'win':'lose'):''
   const mid = r ? `<div class="vs fin">${r.m?METHOD(r.m):'WIN'}</div>` : `<div class="vs">${isNext?'NEXT':'VS'}</div>`
-  return `<div class="${cls}">${isMain?'<div class="mtag">MAIN EVENT</div>':`<span class="no">${cshNo(b)}</span>`}
+  const seg = !isMain && CSH_SEG[b.card_segment] ? `<span class="seg ${b.card_segment}">${CSH_SEG[b.card_segment][0]}</span>` : ''
+  return `<div class="${cls}">${seg}${isMain?'<div class="mtag">MAIN EVENT</div>':`<span class="no">${cshNo(b)}</span>`}
     <div class="a ${ca}">${cshEsc(b.fighter_a_name)}</div>${mid}<div class="b ${cb}">${cshEsc(b.fighter_b_name)}</div></div>`
 }
 function cshCardDraw(scoredId, slotCls){
@@ -3192,7 +3208,7 @@ function cshUpDraw(cls){
   up.className='csh-up '+(cls||'')
   up.innerHTML = nx
     ? `<div class="lab"><div class="eyebrow">${nx===cshMain()?'MAIN EVENT · UP NEXT':'UP NEXT'}</div>
-         <div class="meta">${cshEsc(String(nx.weight_class||'').replace(/_/g,' ').toUpperCase())}${nx.weight_class?' · ':''}FIGHT ${cshNo(nx)} OF ${CSH.bouts.length}</div></div>
+         <div class="meta">${nx!==cshMain() && CSH_SEG[nx.card_segment] ? CSH_SEG[nx.card_segment][1]+' · ' : ''}${cshEsc(String(nx.weight_class||'').replace(/_/g,' ').toUpperCase())}${nx.weight_class?' · ':''}FIGHT ${cshNo(nx)} OF ${CSH.bouts.length}</div></div>
        ${cshFig('l', nx.fighter_a_name, nx.fighter_a_slug)}<div class="x">VS</div>${cshFig('r', nx.fighter_b_name, nx.fighter_b_slug)}`
     : CSH.mode==='uba'
     ? `<div class="lab"><div class="eyebrow">THAT'S THE CARD</div></div>
@@ -3223,22 +3239,25 @@ function cshLadderDraw(cls){
   const box=$('cshRules'), nx=cshNext()
   const head=`<div class="csh-chead"><span>WHAT'S AT STAKE</span><span class="ln"></span></div>`
   if(!nx || !CSH.lad){ box.innerHTML = head + `<div class="lad-none">${!nx ? 'That was the card. The rankings update after the show.' : 'The rankings could not be read.'}</div>`; return }
-  const wc=nx.weight_class, L=LADDER.ladder(CSH.lad.rows[wc]||[], nx.fighter_a_name, nx.fighter_b_name,
-    { champion:CSH.lad.champ[wc]||null, title:!!nx.is_title_fight })
+  const wc=nx.weight_class, catchW=wc==='catch_weight'
+  const L = catchW ? LADDER.catchweight(CSH.lad.rows, CSH.lad.champ, nx.fighter_a_name, nx.fighter_b_name)
+    : LADDER.ladder(CSH.lad.rows[wc]||[], nx.fighter_a_name, nx.fighter_b_name, { champion:CSH.lad.champ[wc]||null, title:!!nx.is_title_fight })
   const pic=n=>{ const u=CSH.lad.pics[String(n||'').trim().toLowerCase()], i=(String(n||'').trim()[0]||'?').toUpperCase()
     return `<span class="pic">${u?`<img src="${cshEsc(u)}" alt="" onerror="this.outerHTML='${i}'">`:i}</span>` }
   const rk=r=> r==='C' ? 'C' : r==null ? 'NR' : '#'+r
-  const row=(f,cls)=>`<div class="lad-row lad-r ${cls||''}" style="animation-delay:@Ds"><span class="rk">${rk(f.rank)}</span>${pic(f.name)}<span class="nm">${cshEsc(f.name)}</span></div>`
+  const row=(f,cls)=>`<div class="lad-row lad-r ${cls||''}" style="animation-delay:@Ds"><span class="rk">${rk(f.rank)}</span>${pic(f.name)}<span class="nm">${cshEsc(f.name)}</span>${catchW?`<span class="dv">${f.wc?WC_NAME(f.wc).replace('LIGHT HEAVYWEIGHT','LIGHT HEAVY'):'NOT RANKED'}</span>`:''}</div>`
   const all=L.between.filter(r=>!r.gap).length + L.hidden
-  const title = L.belt ? (L.belt.kind==='vacant' ? 'For the vacant belt' : 'Title defence')
+  const title = catchW ? 'Catchweight'
+    : L.belt ? (L.belt.kind==='vacant' ? 'For the vacant belt' : 'Title defence')
     : L.kind==='unranked' ? 'Both unranked'
     : L.kind==='adjacent' ? 'Side by side'
     : L.bottom.rank==null ? `NR vs ${rk(L.top.rank)}`
     : `${all} between them`
-  const sub = `${WC_NAME(wc)}${L.kind==='unranked' ? ' · NEITHER IS ON THE LADDER YET' : L.kind==='adjacent' ? ' · NOBODY BETWEEN THEM' : ''}`
+  const sub = catchW ? "NO BELT · EACH FIGHTER'S OWN DIVISION" : `${WC_NAME(wc)}${L.kind==='unranked' ? ' · NEITHER IS ON THE LADDER YET' : L.kind==='adjacent' ? ' · NOBODY BETWEEN THEM' : ''}`
   const rows=[]
   if(L.belt) rows.push(`<div class="lad-belt lad-r" style="animation-delay:@Ds"><b>🏆</b>${WC_NAME(wc)} TITLE${L.belt.kind==='vacant'?' · VACANT':''}</div>`)
-  if(L.kind==='unranked') rows.push(row(L.top,'fx bot'), row(L.bottom,'fx bot'))
+  if(catchW) rows.push(row(L.top,'fx top catch'), `<div class="lad-vs lad-r" style="animation-delay:@Ds">VS</div>`, row(L.bottom,'fx bot catch'))
+  else if(L.kind==='unranked') rows.push(row(L.top,'fx bot'), row(L.bottom,'fx bot'))
   else {
     rows.push(row(L.top,'fx top'))
     L.between.forEach(r=> rows.push(r.gap ? `<div class="lad-gap lad-r" style="animation-delay:@Ds">· · ·&nbsp; ${r.gap} MORE &nbsp;· · ·</div>` : row(r)))
@@ -3247,7 +3266,7 @@ function cshLadderDraw(cls){
   // dealt from the bottom up: the last row in the list comes in first
   const n=rows.length
   box.innerHTML = head + `<div class="lad-head">${cshEsc(title)}</div><div class="lad-sub">${sub}</div>`
-    + `<div class="lad ${cls||''}" id="cshLad">${rows.map((h,i)=>h.replace('@D',((n-1-i)*0.07).toFixed(2))).join('')}${L.kind==='unranked'?'':'<div class="lad-line"></div>'}</div>`
+    + `<div class="lad ${cls||''}" id="cshLad">${rows.map((h,i)=>h.replace('@D',((n-1-i)*0.07).toFixed(2))).join('')}${L.kind==='unranked'||catchW?'':'<div class="lad-line"></div>'}</div>`
   ladFit()
 }
 // Measured, so it can only run on a screen that is showing: drawn while hidden,

@@ -13,7 +13,11 @@
       passes first, and who the higher one would have under them.
    3. A title fight puts the BELT above the top fighter: the champion's belt
       when the champion is in the fight, VACANT when nobody holds it.
-   4. It never predicts. Rankings are set by the committee, so this says who is
+   4. A CATCHWEIGHT bout has no ladder of its own (nobody is ranked at
+      catchweight), so it shows each fighter at their OWN division's rank,
+      higher on top, with no belt and nothing between them: two ladders
+      cannot be counted across.
+   5. It never predicts. Rankings are set by the committee, so this says who is
       between the two, never where the winner will land.
    Names match ignoring case and spaces at the ends: the card and the rankings
    are typed in different places. */
@@ -55,5 +59,21 @@
     return { kind: all.length ? 'climb' : 'adjacent', top, bottom, belt, between, hidden }
   }
 
-  return { ladder, MAX_BETWEEN }
+  // Catchweight: where each fighter stands in their own division.
+  // byWc: { weight_class: [{ name, rank }] }, champs: { weight_class: name }.
+  // A champion is C in their division; a name on no ladder is unranked (NR).
+  function catchweight(byWc, champs, a, b){
+    const find = n => {
+      for(const [wc, holder] of Object.entries(champs||{})) if(key(holder)===key(n)) return { name:n, rank:'C', at:0, wc }
+      let best = null
+      for(const [wc, rows] of Object.entries(byWc||{})) for(const r of rows||[])
+        if(r && key(r.name)===key(n) && Number.isFinite(+r.rank) && (!best || +r.rank < best.at)) best = { name:n, rank:+r.rank, at:+r.rank, wc }
+      return best || { name:n, rank:null, at:Infinity, wc:null }
+    }
+    const pa = find(a), pb = find(b)
+    const [top, bottom] = pa.at <= pb.at ? [pa, pb] : [pb, pa]
+    return { kind:'catch', top, bottom, belt:null, between:[], hidden:0 }
+  }
+
+  return { ladder, catchweight, MAX_BETWEEN }
 })

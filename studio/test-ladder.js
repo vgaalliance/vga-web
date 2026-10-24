@@ -64,6 +64,14 @@ eq([L.kind, L.between.length], ['unranked', 0], 'two unranked fighters have no l
 L = ladder([{ name:'Big Woo ', rank:4 }, { name:'X', rank:5 }, { name:'m4', rank:6 }], 'big woo', 'M4')
 eq([L.top.rank, L.bottom.rank, ranks(L)], [4, 6, [5]], 'case and spaces do not stop a match')
 
+// catchweight: each fighter at their own division's rank, higher on top, nothing between
+const BY = { lightweight:[{name:'The Pooper',rank:3}], middleweight:[{name:'Bing Ling',rank:4},{name:'Tynado',rank:2}] }
+L = require('./ladder-core.js').catchweight(BY, { light_heavyweight:'Killer Kam' }, 'Bing Ling', 'The Pooper')
+eq([L.kind, L.top.name, L.top.rank, L.top.wc, L.bottom.name, L.bottom.wc], ['catch','The Pooper',3,'lightweight','Bing Ling','middleweight'], 'catchweight: own division ranks, the better number on top')
+eq([L.between.length, L.belt], [0, null], 'catchweight: nobody between, no belt')
+L = require('./ladder-core.js').catchweight(BY, { light_heavyweight:'Killer Kam' }, 'Nobody', 'killer kam')
+eq([L.top.rank, L.top.wc, L.bottom.rank], ['C','light_heavyweight',null], 'catchweight: a champion is C in their own division, a stranger is NR')
+
 // an empty or broken ladder never throws
 eq(ladder(null, 'A', 'B').kind, 'unranked', 'no ladder at all is two unranked fighters, never a crash')
 
