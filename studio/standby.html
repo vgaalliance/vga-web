@@ -2083,10 +2083,22 @@ async function mountPoster(){
   // silently shoving the card off the frame.
   fan.innerHTML = ''
   const DROP = Math.round(H * 0.02), TILT = 6
+  // EQUAL AREA, NOT EQUAL HEIGHT. One shared height is right while every poster
+  // is the same printed portrait, and wrong the moment one is not: UBA Tokyo's
+  // square social graphic came out 572px wide beside two 333px posters at the
+  // same 520 height, which is 72% wider and reads as the square being stretched
+  // when nothing about it is distorted -- it is simply the only one you look at.
+  // Two shapes look the same SIZE when they cover the same area, so each poster
+  // takes its height from the area a portrait would have had. A wide poster can
+  // therefore only ever come out SHORTER than H, never wider than the height-
+  // based version, so the fan's footprint and the row budget above are safe.
+  const narrowest = Math.min(...posterList.map(ratio))
+  const AREA = H * H * narrowest
+  const heightFor = src => Math.round(Math.min(H, Math.sqrt(AREA / ratio(src))))
   const nodes = posterList.map(src => {
     const img = document.createElement('img')
     img.src = src
-    img.style.height = H + 'px'
+    img.style.height = heightFor(src) + 'px'
     fan.appendChild(img)
     return img
   })
