@@ -88,9 +88,11 @@ body {
 .rv.on { opacity:1; }
 @keyframes pushin { from{transform:scale(1)} to{transform:scale(1.08)} }
 img.rv.on { animation:pushin 12s ease-out forwards; }
-/* the left side darkens so the menu reads over any frame; the bottom for the bar */
+/* the left side darkens so the menu reads over any frame, the top right for
+   the event name, the bottom right for the clock, the bottom for the bar */
 #shade { position:absolute; inset:0; z-index:6; pointer-events:none; transition:opacity .6s;
   background:
+    radial-gradient(ellipse 820px 300px at 100% 0%, rgba(3,0,10,.88) 0%, rgba(3,0,10,.55) 50%, transparent 100%),
     radial-gradient(ellipse 760px 420px at 100% 100%, rgba(3,0,10,.9) 0%, rgba(3,0,10,.6) 50%, transparent 100%),
     linear-gradient(90deg, rgba(3,0,10,.9) 0%, rgba(3,0,10,.7) 22%, rgba(3,0,10,.18) 40%, transparent 52%),
     linear-gradient(0deg, rgba(3,0,10,.85) 0%, transparent 22%),
@@ -112,10 +114,27 @@ img.rv.on { animation:pushin 12s ease-out forwards; }
   100%{opacity:0; transform:none}
 }
 
+/* ── THE RIGHT ZONE: everything that is not the promo -- a break's board, the
+   final minute, LIVE -- lives right of the menu, tilted toward it, the mirror of
+   the menu's own tilt. The menu never leaves; this side is what changes. ── */
+:root { --zl:740px; --zr:40px; }
+.zone { position:absolute; left:var(--zl); right:var(--zr); top:0; bottom:0;
+  transform: perspective(1500px) rotateY(-8deg); transform-origin:right center; }
+
 /* ── STANDBY BREAKS (.sbf -- never .brk, which is the BODY's break state and
    would hide the whole page): the real standby board, in kiosk mode, so the call to
-   action and the card are the same design here as everywhere else ── */
-.sbf { position:absolute; inset:0; width:1920px; height:1080px; border:0; z-index:15;
+   action and the card are the same design here as everywhere else. The board is
+   1920x1080; it is SCALED into the window, never reflowed. ── */
+#sbw { position:absolute; left:var(--zl); top:178px; width:1120px; height:630px; z-index:15;
+  transform: perspective(1500px) rotateY(-8deg); transform-origin:right center;
+  background:#04000c; overflow:hidden; opacity:0; transition:opacity .6s ease;
+  border:2px solid rgba(155,77,255,.55);
+  box-shadow:0 0 44px rgba(155,48,255,.35), 0 0 0 6px rgba(3,0,10,.6); }
+#sbw::before { content:''; position:absolute; left:0; right:0; top:0; height:2px; z-index:2;
+  background:linear-gradient(90deg,transparent,#9b4dff 20%,#ff0080 50%,#9b4dff 80%,transparent); }
+body.brk #sbw { opacity:1; }
+.sbf { position:absolute; left:0; top:0; width:1920px; height:1080px; border:0;
+  transform:scale(.58333); transform-origin:0 0;
   opacity:0; pointer-events:none; transition:opacity .6s ease; background:transparent; }
 .sbf.on { opacity:1; }
 
@@ -184,6 +203,8 @@ img.rv.on { animation:pushin 12s ease-out forwards; }
 .mi-bar i { display:block; height:100%; width:0; background:linear-gradient(90deg,var(--hi),var(--pink)); box-shadow:0 0 10px var(--hi); }
 .mi.start .mi-label { color:rgba(240,224,255,.62); }
 .mi.start .mi-sub { color:rgba(255,255,255,.55); }
+.mi.start.on .mi-label { color:#fff; }
+.mi.start.on .mi-sub { color:#fff; }
 .mi.select .mi-label { animation:selflash .12s steps(1) 5; }
 @keyframes selflash { 0%{color:#fff} 50%{color:var(--pink)} }
 .press-start { margin-top:26px; margin-left:18px; font-size:13px; letter-spacing:.5em;
@@ -212,22 +233,19 @@ img.rv.on { animation:pushin 12s ease-out forwards; }
 
 /* during a standby break the board is the screen: our chrome steps aside and
    the clock shrinks to a corner, because the card fills the whole frame */
-body.brk .menu, body.brk .top-bar, body.brk .bottom-bar, body.brk #shade { opacity:0; }
-body.brk .menu { transform: perspective(900px) rotateY(9deg) translateX(-80px); }
+body.brk #reel { opacity:.35; filter:blur(6px) saturate(.7); }
 body.brk .me { transform: perspective(900px) rotateY(-9deg) translateY(56px) scale(.62); transform-origin:right bottom; }
 body.brk .me-tag, body.brk .me-names { opacity:0; }
 
 /* ── FINAL MINUTE ── */
-#final { position:absolute; inset:0; z-index:35; pointer-events:none; opacity:0; transition:opacity .8s ease; }
+#final { z-index:35; pointer-events:none; opacity:0; transition:opacity .8s ease; }
 body.final #final { opacity:1; }
 body.final #reel { opacity:.22; filter:blur(7px) saturate(.6); }
-body.final .menu { opacity:0; transform: perspective(900px) rotateY(9deg) translateX(-160px); }
 body.final .me { opacity:0; transform: perspective(900px) rotateY(-9deg) translateX(160px); }
-body.final #shade { opacity:.6; }
 .fn-head { position:absolute; top:150px; left:0; right:0; text-align:center; }
 .fn-tag { font-size:16px; letter-spacing:.5em; color:var(--hi); text-shadow:0 0 14px rgba(204,102,255,.8), 2px 2px 0 #000; }
 .fn-names { display:flex; justify-content:center; align-items:baseline; gap:34px; margin-top:16px; }
-.fn-names .tabbr { font-size:92px; }
+.fn-names .tabbr { font-size:84px; }
 .fn-names .me-vs { font-size:46px; }
 #ring { position:absolute; left:50%; top:585px; width:660px; height:660px; margin:-330px 0 0 -330px; }
 #ring circle { fill:none; }
@@ -257,7 +275,7 @@ body.red .sc { animation:none; border-color:var(--red); box-shadow:0 0 16px var(
 #flash { position:absolute; inset:0; z-index:70; pointer-events:none; background:#fff; opacity:0; }
 #flash.go { animation:flash .32s ease-out; }
 @keyframes flash { from{opacity:.55} to{opacity:0} }
-#wave { position:absolute; left:50%; top:585px; width:660px; height:660px; margin:-330px 0 0 -330px; z-index:36;
+#wave { position:absolute; left:50%; top:585px; width:660px; height:660px; margin:-330px 0 0 -330px; z-index:2;
   border-radius:50%; border:8px solid rgba(255,80,110,.9); opacity:0; pointer-events:none; }
 #wave.go { animation:wave .6s ease-out; }
 @keyframes wave { from{transform:scale(.7); opacity:.9} to{transform:scale(2.1); opacity:0} }
@@ -268,7 +286,7 @@ body.red .sc { animation:none; border-color:var(--red); box-shadow:0 0 16px var(
 }
 
 /* ── LIVE ── */
-#live { position:absolute; inset:0; z-index:45; pointer-events:none; opacity:0; display:flex; flex-direction:column;
+#live { z-index:45; pointer-events:none; opacity:0; display:flex; flex-direction:column;
   align-items:center; justify-content:center; text-align:center; }
 body.live #live { opacity:1; }
 body.live #final { opacity:0; }
@@ -299,8 +317,10 @@ body.live .lv-word { animation:liveslam .6s cubic-bezier(.15,1.6,.35,1), livepul
   <img   class="rv" id="rvS" alt="">
 </div>
 <div id="shade"></div>
-<iframe class="sbf" id="brkA" title="standby" allow="autoplay"></iframe>
-<iframe class="sbf" id="brkB" title="standby" allow="autoplay"></iframe>
+<div id="sbw">
+  <iframe class="sbf" id="brkA" title="standby" allow="autoplay"></iframe>
+  <iframe class="sbf" id="brkB" title="standby" allow="autoplay"></iframe>
+</div>
 <div id="cut"></div>
 
 <div class="sc sc-tl"></div><div class="sc sc-tr"></div>
@@ -336,7 +356,7 @@ body.live .lv-word { animation:liveslam .6s cubic-bezier(.15,1.6,.35,1), livepul
 </div>
 
 <!-- FINAL MINUTE -->
-<div id="final">
+<div id="final" class="zone">
   <div class="fn-head">
     <div class="fn-tag" id="fnTag">MAIN EVENT</div>
     <div class="fn-names">
@@ -353,11 +373,11 @@ body.live .lv-word { animation:liveslam .6s cubic-bezier(.15,1.6,.35,1), livepul
   </svg>
   <div class="fn-num" id="fnNum">60</div>
   <div class="fn-foot" id="fnFoot">FIGHT NIGHT · STARTING</div>
+  <div id="wave"></div>
 </div>
-<div id="wave"></div>
 
 <!-- LIVE -->
-<div id="live">
+<div id="live" class="zone">
   <div class="lv-pre"><span class="lv-dot"></span>WE ARE</div>
   <div class="lv-word">LIVE</div>
   <div class="lv-event" id="lvEvent">FIGHT NIGHT</div>
@@ -510,6 +530,8 @@ function play(item){
     const breaks = LEAGUE_BREAKS[CFG.league] || LEAGUE_BREAKS.uba
     const frame = item.view === breaks[0].view ? el('brkA') : el('brkB')
     document.body.classList.add('brk')
+    // the promo underneath freezes, dimmed: its sound would talk over the board
+    if(liveVid) liveVid.pause()
     el('brkA').classList.toggle('on', frame.id === 'brkA'); el('brkB').classList.toggle('on', frame.id === 'brkB')
     itemLen = BREAK_SECS * 1000
     itemTimer = setTimeout(next, itemLen)
@@ -560,8 +582,13 @@ function play(item){
 
 // the playing item's progress bar
 function progress(){
-  const item = reel[at]
-  if(item && item.node){
+  const item = reel[at], b = document.body
+  // in the last minute the cursor is on START MATCH, and its bar is the minute
+  if(b.classList.contains('final') || b.classList.contains('live')){
+    const ms = remaining(), st = el('miStart')
+    if(st && ms !== null) st.querySelector('.mi-bar i').style.width =
+      Math.min(100, Math.max(0, 1 - ms / (FINAL_SECS * 1000)) * 100) + '%'
+  }else if(item && item.node){
     let f = 0
     if(item.kind === 'video' && liveVid && liveVid.duration)
       f = liveVid.currentTime / (item.secs ? Math.min(item.secs, liveVid.duration) : liveVid.duration)
@@ -585,7 +612,8 @@ function clockText(){
   const txt = ms === null ? '--:--' : fmt(Math.max(0, ms))
   el('cdTimer').textContent = txt
   const st = el('miStart')
-  if(st) st.querySelector('.mi-sub').textContent = ms === null ? 'WAITING FOR THE BELL' : 'IN ' + txt
+  if(st) st.querySelector('.mi-sub').textContent =
+    ms === null ? 'WAITING FOR THE BELL' : ms <= 0 ? 'LIVE NOW' : 'IN ' + txt
 }
 
 function ring(){
@@ -662,7 +690,7 @@ function fitPair(L, R, MAX, MIN, maxW){
 }
 function fitAll(){
   fitPair(el('cdBigL'), el('cdBigR'), 56, 24, 330)
-  fitPair(el('fnL'), el('fnR'), 92, 40, 720)
+  fitPair(el('fnL'), el('fnR'), 84, 36, 440)
 }
 function setNames(a, b){
   if(a){ el('cdBigL').textContent = a; el('fnL').textContent = a }
