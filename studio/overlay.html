@@ -183,27 +183,32 @@
 
   /* the kit's charcoal, not a violet gradient — same ground as the bar and
      the keys card, so all three read as one object seen three ways */
-  /* ── LIVE CHAT — #general during the fight (2026-10-24). ONE message at a
-     time on the right, where nothing else lives (the corner and the left are
-     the dossier, keys, odds and the post card). Standby shows a whole wall;
-     here a wall would be watched instead of the fight. Off until the deck's
-     💬 Chat ON; the deck's Hide pulls the one on screen. */
-  #chat{position:fixed;right:48px;bottom:200px;width:440px;display:flex;gap:16px;align-items:flex-start;
-    background:rgba(10,8,16,.94);border:1px solid rgba(181,101,255,.38);border-right:5px solid var(--red);
-    border-radius:6px;padding:16px 20px 18px;opacity:0;transform:translateX(120%);pointer-events:none;
-    box-shadow:0 10px 40px rgba(0,0,0,.45);}
-  #chat.in{animation:chin .5s cubic-bezier(.16,1,.3,1) forwards;}
-  #chat.out{animation:chout .4s cubic-bezier(.5,0,.75,.2) forwards;}
-  @keyframes chin{from{opacity:0;transform:translateX(120%);}to{opacity:1;transform:none;}}
-  @keyframes chout{from{opacity:1;transform:none;}to{opacity:0;transform:translateX(120%);}}
-  #chat .av{flex:0 0 52px;width:52px;height:52px;border-radius:50%;object-fit:cover;background:#2a1640;
-    box-shadow:0 0 0 2px rgba(181,101,255,.75);display:flex;align-items:center;justify-content:center;
-    font:900 24px 'Barlow Condensed';color:#fff;}
-  #chat .tx{min-width:0;flex:1;}
-  #chat .lb{font:700 13px 'Barlow';letter-spacing:.2em;color:#8f8fa0;text-transform:uppercase;margin-bottom:3px;}
-  #chat .nm{font:900 24px/1 'Barlow Condensed';text-transform:uppercase;letter-spacing:.03em;color:#d7b0ff;}
-  #chat .ms{font:600 25px/1.2 'Barlow';color:#fff;margin-top:6px;overflow-wrap:anywhere;
-    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+  /* ── LIVE CHAT — #general during the fight (2026-10-24). The PRISM look
+     (Castle's pick of three): thin frosted rows that blur the fight behind
+     them, a rainbow edge, the name split pink/cyan like the countdown's VS,
+     under the countdown menu's LIVE CHAT tag. Right side, tilted toward
+     centre, and raised to 250px so it clears the fight clock at its widest
+     (1180px with odds, bottom 32px). Up to 5 rows, newest at the bottom,
+     each gone after 30s. Off until the deck's 💬 Chat ON. */
+  #chat{position:fixed;right:70px;bottom:250px;width:560px;display:flex;flex-direction:column;gap:6px;
+    transform:perspective(900px) rotateY(-13deg);transform-origin:right center;pointer-events:none;}
+  #chat .head{display:flex;align-items:center;gap:16px;margin-bottom:4px;flex-direction:row-reverse;transition:opacity .4s;}
+  #chat:not(.has) .head{opacity:0;}
+  #chat .tag{font:12px 'Press Start 2P',monospace;letter-spacing:.35em;color:#cc66ff;text-shadow:0 0 12px rgba(204,102,255,.7),1px 1px 0 #000;}
+  #chat .line{flex:1;height:2px;background:linear-gradient(270deg,rgba(204,102,255,.7),transparent);}
+  #chat .r{position:relative;display:flex;align-items:baseline;gap:12px;padding:7px 18px 8px;
+    background:linear-gradient(100deg,rgba(255,255,255,.10),rgba(155,48,255,.10) 60%,rgba(0,229,255,.06));
+    -webkit-backdrop-filter:blur(10px) saturate(1.4);backdrop-filter:blur(10px) saturate(1.4);
+    border:1px solid rgba(255,255,255,.14);animation:chrIn .5s cubic-bezier(.16,1,.3,1) backwards;transition:opacity .45s;}
+  #chat .r::before{content:"";position:absolute;right:-1px;top:-1px;bottom:-1px;width:3px;
+    background:linear-gradient(180deg,#00e5ff,#9b30ff,#ff33cc);box-shadow:0 0 14px rgba(204,102,255,.7);}
+  #chat .r.new{border-color:rgba(255,255,255,.3);box-shadow:0 0 28px rgba(204,102,255,.35);}
+  #chat .r.old{opacity:.7;} #chat .r.older{opacity:.42;} #chat .r.gone{opacity:0;}
+  #chat .nm{flex:0 0 auto;font:900 22px 'Barlow Condensed';letter-spacing:.08em;text-transform:uppercase;color:#fff;
+    text-shadow:2px 0 0 #ff33cc,-2px 0 0 rgba(0,229,255,.8);}
+  #chat .ms{font:600 22px/1.2 'Barlow';color:#f4ecff;min-width:0;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  @keyframes chrIn{from{opacity:0;transform:translateX(40px);filter:hue-rotate(90deg);}}
   #post{display:none;flex-direction:column;position:relative;
     background:var(--kit-bg);backdrop-filter:blur(3px);
     box-shadow:0 24px 60px rgba(0,0,0,.6);}
@@ -843,7 +848,7 @@
     </div>
   </div>
 
-  <div id="chat"><div class="av" id="chAv">?</div><div class="tx"><div class="lb">Live from #general</div><div class="nm" id="chNm"></div><div class="ms" id="chMs"></div></div></div>
+  <div id="chat"><div class="head"><span class="tag">LIVE CHAT</span><span class="line"></span></div></div>
   <div id="flash">
   <!-- the message shape. Hidden unless data-kind="msg"; every other flash
        kind still uses .card below. -->
@@ -1952,57 +1957,57 @@ channel.subscribe(status=>{
 <script>
 // ── LIVE CHAT ───────────────────────────────────────────────────────────
 // Reads stream_chat_public every 4s while the deck has chat ON, and shows only
-// what arrived AFTER it was switched on -- a backlog dumped in a row is not
-// live chat. The queue keeps the newest 3, so a busy room never falls behind.
-const CHT={ on:false, hidden:new Set(), last:null, q:[], cur:null, poll:null, hold:null }
-const CHT_HOLD=9000, CHT_GAP=1600
+// what arrived AFTER it was switched on -- a backlog dumped at once is not live
+// chat. Up to 5 rows, newest at the bottom; a row leaves after 30s, so a quiet
+// room empties the corner instead of freezing old lines on screen.
+const CHT={ on:false, hidden:new Set(), last:null, rows:[], poll:null, sweep:null }
+const CHT_MAX=5, CHT_LIFE=30000
 async function chtRead(){
-  const { data, error } = await sb.from('stream_chat_public').select('id,author,avatar_url,content').limit(40)
+  const { data, error } = await sb.from('stream_chat_public').select('id,author,content').limit(40)
   return error || !data ? null : data
 }
+const chtName=n=>String(n||'').replace(/\s*\(\d+-\d+(-\d+)?\)\s*$/,'')   // the record rides in the nickname; this is chat
+function chtDraw(freshId){
+  const box=$('chat'), rows=CHT.rows.filter(r=>!CHT.hidden.has(Number(r.id)))
+  box.classList.toggle('has', rows.length>0)
+  box.querySelectorAll('.r').forEach(el=>{ if(!rows.some(r=>String(r.id)===el.dataset.id)) el.remove() })
+  rows.forEach((r,i)=>{
+    let el=box.querySelector(`.r[data-id="${r.id}"]`)
+    if(!el){ el=document.createElement('div'); el.className='r'; el.dataset.id=r.id
+      el.innerHTML=`<span class="nm">${esc(chtName(r.author))}</span><span class="ms">${esc(r.content)}</span>`
+      box.appendChild(el) }
+    const age=rows.length-1-i
+    el.classList.toggle('new', age===0); el.classList.toggle('old', age>=1 && age<3); el.classList.toggle('older', age>=3)
+  })
+}
 async function chtTick(){
-  const rows=await chtRead(); if(!rows || !CHT.on) return
-  const top=rows.reduce((m,r)=>Math.max(m,r.id),0)
+  const got=await chtRead(); if(!got || !CHT.on) return
+  const top=got.reduce((m,r)=>Math.max(m,r.id),0)
   if(CHT.last===null){ CHT.last=top; return }          // switched on: start from now
-  const fresh=rows.filter(r=>r.id>CHT.last).sort((a,b)=>a.id-b.id)
+  const fresh=got.filter(r=>r.id>CHT.last).sort((a,b)=>a.id-b.id)
   CHT.last=Math.max(CHT.last, top)
-  CHT.q.push(...fresh); CHT.q=CHT.q.slice(-3)
-  if(!CHT.cur) chtNext()
+  if(!fresh.length) return
+  const now=Date.now(); fresh.forEach(r=>{ r.at=now })
+  CHT.rows=[...CHT.rows, ...fresh].slice(-CHT_MAX); chtDraw()
 }
-function chtNext(){
-  clearTimeout(CHT.hold)
-  let r; do { r=CHT.q.shift() } while(r && CHT.hidden.has(Number(r.id)))
-  if(!r || !CHT.on){ CHT.cur=null; return }
-  CHT.cur=r
-  const ini=esc((String(r.author||'?').trim()[0]||'?').toUpperCase())
-  $('chAv').outerHTML = r.avatar_url
-    ? `<img class="av" id="chAv" src="${esc(r.avatar_url)}" alt="" onerror="this.outerHTML='<div class=&quot;av&quot; id=&quot;chAv&quot;>${ini}</div>'">`
-    : `<div class="av" id="chAv">${ini}</div>`
-  $('chNm').textContent=String(r.author||'').replace(/\s*\(\d+-\d+(-\d+)?\)\s*$/,'');  // the record rides in the nickname; this is chat
-  $('chMs').textContent=r.content
-  const el=$('chat'); el.classList.remove('out'); void el.offsetWidth; el.classList.add('in')
-  CHT.hold=setTimeout(()=>chtOut(true), CHT_HOLD)
-}
-function chtOut(then){
-  clearTimeout(CHT.hold)
-  const el=$('chat'); if(el.classList.contains('in')){ el.classList.remove('in'); el.classList.add('out') }
-  CHT.cur=null
-  if(then) CHT.hold=setTimeout(chtNext, CHT_GAP)
+function chtSweep(){
+  const now=Date.now(), before=CHT.rows.length
+  CHT.rows=CHT.rows.filter(r=>now-r.at<CHT_LIFE)
+  if(CHT.rows.length!==before) chtDraw()
 }
 function chCmd(c){
-  if(Array.isArray(c.hidden)) CHT.hidden=new Set(c.hidden.map(Number))
-  // Hide pulls the one on screen at once, and it never comes back
-  if(CHT.cur && CHT.hidden.has(Number(CHT.cur.id))) chtOut(true)
+  if(Array.isArray(c.hidden)){ CHT.hidden=new Set(c.hidden.map(Number)); chtDraw() }   // Hide pulls it at once
   if(typeof c.on==='boolean' && c.on!==CHT.on){
-    CHT.on=c.on; clearInterval(CHT.poll); CHT.q=[]
-    if(CHT.on){ CHT.last=null; chtTick(); CHT.poll=setInterval(chtTick, 4000) }
-    else chtOut(false)
+    CHT.on=c.on; clearInterval(CHT.poll); clearInterval(CHT.sweep); CHT.rows=[]; chtDraw()
+    if(CHT.on){ CHT.last=null; chtTick(); CHT.poll=setInterval(chtTick, 4000); CHT.sweep=setInterval(chtSweep, 1000) }
   }
 }
-// ?chatdemo=1 -- one made-up message after another, no deck and no database
+// ?chatdemo=1 -- made-up lines arriving one after another, no deck and no database
 if(new URLSearchParams(location.search).get('chatdemo')==='1'){
-  CHT.on=true; CHT.q=[{id:1,author:'Galf',content:'TYNADO IN TWO, CALLING IT NOW'},{id:2,author:'Maki',content:'that body shot changed the whole round, bing ling is slowing down'},{id:3,author:'Natsu',content:'gg'}]
-  setTimeout(chtNext, 800)
+  const D=[['Galf (3-1-0)','TYNADO IN TWO, CALLING IT NOW'],['Maki','that body shot changed the whole round'],['Kazekage','yo they got me judging'],
+    ['Ziegendieb','bing ling is slowing down, watch the jab'],['Natsu','gg'],['Jay','first time watching, this is sick']]
+  let i=0; const add=()=>{ const d=D[i%D.length]; CHT.rows=[...CHT.rows,{id:1000+i,author:d[0],content:d[1],at:Date.now()}].slice(-CHT_MAX); i++; chtDraw() }
+  for(let n=0;n<4;n++) add(); setInterval(add, 3000); setInterval(chtSweep, 1000)
 }
 </script>
 </body>
