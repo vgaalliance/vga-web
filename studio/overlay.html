@@ -1271,9 +1271,8 @@ function handle(c){
     })
   }
   // ── keys / fun facts ──────────────────────────────────────────────
-  // Self-driving: it learns the bout from what the deck already sends, so it
-  // needs no button. {type:'keys',on:false} stops it when the corner is
-  // wanted for something else.
+  // It learns the bout from what the deck already sends. It plays only after
+  // ▶ Start, and arming the next fight stops it (see kLoad).
   if(c.type==='bout' && c.d && c.d.a && c.d.b){ kLoad(c.d.a, c.d.b) }
   if(c.type==='tape' && c.d && c.d.left && c.d.right && c.d.left.name && c.d.right.name){
     // the tape's title is the belt when it IS one, and the division otherwise —
@@ -1687,7 +1686,8 @@ function kPaint(c){
 }
 function kStop(){ if(K_loop){clearTimeout(K_loop);K_loop=null}
   const el=$('keys'); if(el.classList.contains('in')){el.classList.remove('in');el.classList.add('out')} }
-let K_RUN=false   // has the operator pressed ▶ Start rotation (and not ■ Stop since)
+let K_RUN=false   // has the operator pressed ▶ Start rotation for THIS fight (and not ■ Stop since)
+let K_pair=null   // the two fighters the rotation belongs to
 function kStart(){
   if(K_loop) clearTimeout(K_loop)
   const tick=()=>{
@@ -1705,6 +1705,12 @@ async function kLoad(nameA,nameB){
   const key=kNorm(nameA)+'|'+kNorm(nameB)+'|'+kNorm(K_TITLE)
   if(key===K_key) return                    // the deck re-pushes the same bout constantly
   K_key=key
+  // A NEW FIGHT STOPS THE ROTATION (Castle, 2026-10-24): ▶ Start is for one
+  // fight, not the night. Keyed on the two fighters only (either corner order),
+  // because the tape's title arrives after the bout and must not stop a
+  // rotation the operator started in between.
+  const pair=[kNorm(nameA),kNorm(nameB)].sort().join('|')
+  if(pair!==K_pair){ K_pair=pair; if(K_RUN){ K_RUN=false; kStop() } }
   const mine=++K_gen
   // supabase-js resolves {data:null,error} instead of throwing, so a failed read
   // must never be mistaken for "no fighters" — that would leave the corner dark
@@ -1766,9 +1772,9 @@ async function kLoad(nameA,nameB){
   const typed=built.filter(c=>c.tone==='keys'||c.eyebrow==='Fun fact').length
   console.log(`[keys] ${built.length} cards for ${a.display_name} vs ${b.display_name} `
     +`(${typed} typed, ${built.length-typed} automatic)`)
-  // OFF until the deck's ▶ Start rotation (Castle, 2026-10-17): arming a bout
-  // loads the new fighters' cards but only keeps a rotation going that the
-  // operator already started; it never starts one by itself.
+  // OFF until the deck's ▶ Start rotation (Castle, 2026-10-17), and a new
+  // fight has already stopped it above; this only re-starts it for the same
+  // fight (the title arriving late), never by itself.
   if(K_RUN) kStart()
 }
 
