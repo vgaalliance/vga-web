@@ -320,7 +320,7 @@ body.final #toasts, body.live #toasts { opacity:0; }
 @keyframes tstIn  { from{transform:translateX(-110%); opacity:0} to{transform:none; opacity:1} }
 @keyframes tstOut { to{transform:translateX(-30px); opacity:0} }
 .tst-ic { width:64px; height:64px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
-  font-size:34px; background:rgba(0,0,0,.35); border:2px solid var(--tc, var(--hi));
+  color:#fff; background:rgba(0,0,0,.35); border:2px solid var(--tc, var(--hi));
   box-shadow:inset 0 0 14px var(--tg, rgba(204,102,255,.5)); }
 .tst-lab { font-size:11px; letter-spacing:.35em; color:var(--tc, var(--hi)); text-shadow:0 0 10px var(--tg, rgba(204,102,255,.6)), 1px 1px 0 #000; }
 .tst-ttl { font-family:'Barlow Condensed',sans-serif; font-size:40px; font-weight:900; letter-spacing:.06em; line-height:1;
@@ -328,7 +328,9 @@ body.final #toasts, body.live #toasts { opacity:0; }
   text-shadow:0 0 18px var(--tg, rgba(204,102,255,.6)), 2px 2px 0 #000; }
 .tst-sub { font-family:'Share Tech Mono',monospace; font-size:15px; letter-spacing:.18em; color:rgba(230,210,255,.8);
   margin-top:5px; text-shadow:1px 1px 0 #000; white-space:nowrap; }
-.tst.prismatic .tst-ic { animation:hueshift 2.5s linear infinite; }
+.tst-ic svg { width:36px; height:36px; fill:none; stroke:currentColor; stroke-width:2.2;
+  stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 6px rgba(255,255,255,.35)); }
+.tst-ic svg .f { fill:currentColor; stroke:none; }
 
 /* ── LOADING TIPS: one line under PRESS START, typed out like a load screen ── */
 .tip { margin-top:16px; margin-left:18px; width:600px; min-height:20px; font-family:'Share Tech Mono',monospace; white-space:nowrap;
@@ -733,21 +735,34 @@ setInterval(tick, 100)
 // queue runs dry the screen replays something from the last few, so a quiet
 // pre-show is never a dead one -- but never the same one twice in a row.
 const toastQ = [], toastSeen = new Set(), toastPast = []
-let toastBusy = false, toastLast = null, toastIdle = 0
+let toastBusy = false, toastLast = null
+// White line icons, drawn here rather than emoji: an emoji is a coloured
+// cartoon from whatever font the machine has, and it read childish beside the
+// menu. These are ours, one stroke weight, and the rarity colour stays on the
+// frame around them. Markup we wrote, so it is the one thing set as innerHTML.
+const ICON = {
+  dice:  '<svg viewBox="0 0 32 32"><rect x="5" y="5" width="22" height="22" rx="4"/><circle class="f" cx="11" cy="11" r="2"/><circle class="f" cx="21" cy="11" r="2"/><circle class="f" cx="16" cy="16" r="2"/><circle class="f" cx="11" cy="21" r="2"/><circle class="f" cx="21" cy="21" r="2"/></svg>',
+  orb:   '<svg viewBox="0 0 32 32"><circle cx="16" cy="14" r="9"/><path d="M12 11a5 5 0 0 1 5-3"/><path d="M9 27h14M11 23l-2 4M21 23l2 4"/></svg>',
+  crown: '<svg viewBox="0 0 32 32"><path d="M5 23 4 9l7 6 5-9 5 9 7-6-1 14Z"/><path d="M6 27h20"/></svg>',
+  gem:   '<svg viewBox="0 0 32 32"><path d="M9 6h14l6 8-13 13L3 14Z"/><path d="M3 14h26M12 6l4 8 4-8M16 14v13"/></svg>',
+  prism: '<svg viewBox="0 0 32 32"><path d="M14 5 4 25h20Z"/><path d="M1 17h8M19 14l11-4M20 17h11M19 20l11 4"/></svg>',
+  glove: '<svg viewBox="0 0 32 32"><path d="M9 20V12c0-4 3-7 8-7h2c5 0 8 3 8 8v4c0 3-2 5-5 5h-9c-2 0-4-1-4-2Z"/><path d="M9 14c-3 0-5 2-5 4s2 3 5 3"/><path d="M10 22h12v5H10Z"/><path d="M17 10c2 0 4 1 5 3"/></svg>',
+  clock: '<svg viewBox="0 0 32 32"><circle cx="16" cy="17" r="11"/><path d="M16 11v6l4 3M13 3h6M16 3v3"/></svg>',
+}
 const RARITY = {
-  mystic:     { lab:'MYSTIC PULL',     c:'#c084fc', g:'rgba(192,132,252,.6)', ic:'🔮' },
-  legendary:  { lab:'LEGENDARY PULL',  c:'#ffcc33', g:'rgba(255,204,51,.6)',  ic:'👑' },
-  one_of_one: { lab:'1 OF 1 PULLED',   c:'#ff3355', g:'rgba(255,51,85,.6)',   ic:'💎' },
-  prismatic:  { lab:'PRISMATIC PULL',  c:'#7df9ff', g:'rgba(125,249,255,.6)', ic:'🌈' },
+  mystic:     { lab:'MYSTIC PULL',     c:'#c084fc', g:'rgba(192,132,252,.6)', ic:'orb' },
+  legendary:  { lab:'LEGENDARY PULL',  c:'#ffcc33', g:'rgba(255,204,51,.6)',  ic:'crown' },
+  one_of_one: { lab:'1 OF 1 PULLED',   c:'#ff3355', g:'rgba(255,51,85,.6)',   ic:'gem' },
+  prismatic:  { lab:'PRISMATIC PULL',  c:'#7df9ff', g:'rgba(125,249,255,.6)', ic:'prism' },
 }
 // a raw feed row -> what the strip says. Every word typed by a member goes in
 // through textContent, never markup.
 function toastOf(r){
-  if(r.kind === 'bet') return { ic:'🎲', lab:'NEW BET', ttl:r.pick + ' BACKED',
+  if(r.kind === 'bet') return { ic:'dice', lab:'NEW BET', ttl:r.pick + ' BACKED',
     sub:Number(r.amount).toLocaleString('en-US') + ' VC ON THE LINE', c:'#ff33cc', g:'rgba(255,51,204,.55)' }
   if(r.kind === 'pull'){ const k = RARITY[r.rarity] || RARITY.mystic
     return { ic:k.ic, lab:k.lab, ttl:r.name, sub:(r.set_code || '') + ' · OPENED IN DISCORD', c:k.c, g:k.g, cls:r.rarity } }
-  if(r.kind === 'signup') return { ic:'🥊', lab:'NEW CHALLENGER', ttl:r.name,
+  if(r.kind === 'signup') return { ic:'glove', lab:'NEW CHALLENGER', ttl:r.name,
     sub:'JOINED THE LEAGUE', c:'#00e5ff', g:'rgba(0,229,255,.5)' }
   return r   // already a strip (the clock's milestones)
 }
@@ -761,26 +776,32 @@ function showToast(t){
   d.className = 'tst ' + (t.cls || '')
   d.style.setProperty('--tc', t.c); d.style.setProperty('--tg', t.g)
   d.innerHTML = '<div class="tst-ic"></div><div><div class="tst-lab"></div><div class="tst-ttl"></div><div class="tst-sub"></div></div>'
-  d.querySelector('.tst-ic').textContent = t.ic
+  d.querySelector('.tst-ic').innerHTML = ICON[t.ic] || ''
   d.querySelector('.tst-lab').textContent = t.lab
   d.querySelector('.tst-ttl').textContent = t.ttl
   d.querySelector('.tst-sub').textContent = t.sub
   box.appendChild(d); toastBusy = true; toastLast = t
   if(t.key){ toastPast.unshift(t); toastPast.length = Math.min(toastPast.length, 12) }
-  setTimeout(() => d.classList.add('out'), 5200)
-  setTimeout(() => { d.remove(); toastBusy = false }, 5700)
+  setTimeout(() => d.classList.add('out'), 6000)
+  setTimeout(() => { d.remove(); toastBusy = false }, 6500)
 }
+// One every 25 seconds at most -- every 8 was a feed, not a moment. The clock's
+// own marks (urgent) skip the wait: "5 minutes to the bell" shown at 4:35 is wrong.
+const TOAST_GAP = 25000, TOAST_REPLAY = 120000
+let toastAt = 0
 setInterval(() => {
-  const b = document.body
+  const b = document.body, now = Date.now()
   if(toastBusy || b.classList.contains('final') || b.classList.contains('live')) return
-  if(toastQ.length){ toastIdle = 0; showToast(toastQ.shift()); return }
-  // dry: after ~40s of nothing, replay one of the recent ones
-  if(++toastIdle >= 5 && toastPast.length > 1){
-    toastIdle = 0
+  if(toastQ.length && (toastQ[0].urgent || now - toastAt >= TOAST_GAP)){
+    toastAt = now; showToast(toastQ.shift()); return
+  }
+  // dry: after two quiet minutes, replay one of the recent ones
+  if(!toastQ.length && now - toastAt >= TOAST_REPLAY && toastPast.length > 1){
+    toastAt = now
     const pick = toastPast.filter(t => t !== toastLast)
     showToast(pick[Math.floor(Math.random() * pick.length)])
   }
-}, 8000)
+}, 1000)
 
 // the clock's own milestones ride the same strip
 const MILESTONES = { 600:'10 MINUTES TO THE BELL', 300:'5 MINUTES TO THE BELL', 120:'2 MINUTES · GET YOUR BETS IN' }
@@ -790,7 +811,7 @@ function milestone(ms){
   const sec = Math.ceil(ms / 1000)
   if(MILESTONES[sec] && milestoneAt !== sec){
     milestoneAt = sec
-    toastQ.unshift({ ic:'⏱', lab:'COUNTDOWN', ttl:MILESTONES[sec], sub:CFG.eventMain, c:'#ffe066', g:'rgba(255,224,102,.55)' })
+    toastQ.unshift({ urgent:true, ic:'clock', lab:'COUNTDOWN', ttl:MILESTONES[sec], sub:CFG.eventMain, c:'#ffe066', g:'rgba(255,224,102,.55)' })
   }
 }
 
