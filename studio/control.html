@@ -635,7 +635,22 @@
          fighter info, the money, and the hand-typed pieces last. Same buttons,
          same commands. The dead "Show stakes" (nothing listens for 'stakes'
          since stakes.html went) was dropped here. -->
-    <p class="mgrp">ALL FIGHT — switch on, leave running</p>
+    <p class="mgrp">USED ALL FIGHT</p>
+    <h5>✍️ Message post — type one, fire it</h5>
+    <div class="row">
+      <select id="msgPlat" style="width:120px" title="which platform the card wears — 'none' shows no platform block">
+        <option value="none">NO PLATFORM</option>
+        <option value="discord" selected>DISCORD</option>
+        <option value="x">X</option>
+        <option value="tiktok">TIKTOK</option>
+      </select>
+      <input id="msgFrom" placeholder="FROM (name, optional)…" style="width:180px">
+      <input id="msgHandle" placeholder="@HANDLE…" style="width:150px">
+      <input id="msgText" placeholder="MESSAGE TEXT…" style="width:380px" onkeydown="if(event.key==='Enter')fireMsg()">
+      <input id="msgTag" placeholder="#HASHTAG (optional)…" style="width:180px">
+      <button onclick="fireMsg()">Fire message</button>
+    </div>
+
     <div>
       <h5>💬 Live chat — #general, right side, the newest 5</h5>
       <div class="row">
@@ -643,7 +658,7 @@
         <button class="hide" id="chatOffBtn" onclick="chatSet(false)">■ Chat OFF</button>
         <span style="color:var(--gdim);font-size:15px">off on every load · ✕ pulls a message off the overlay AND the standby wall</span>
       </div>
-      <div id="chatList" style="margin-top:8px;font-size:17px;max-height:260px;overflow-y:auto"></div>
+      <div id="chatList" style="margin-top:6px;font-size:16px;max-height:132px;overflow-y:auto;padding-right:4px"></div>
 
       <h5>Keys to victory / fun facts — bottom-left, this fight only</h5>
       <div class="row">
@@ -725,21 +740,7 @@
       <h5>Bet alerts — click a bet (anonymous)</h5>
       <div class="row" id="betFeed">SCANNING WAGERS…</div>
     </div>
-    <p class="mgrp">TYPE IT YOURSELF</p>
-    <h5>💬 Message — fastest reach</h5>
-    <div class="row">
-      <select id="msgPlat" style="width:120px" title="which platform the card wears — 'none' shows no platform block">
-        <option value="none">NO PLATFORM</option>
-        <option value="discord" selected>DISCORD</option>
-        <option value="x">X</option>
-        <option value="tiktok">TIKTOK</option>
-      </select>
-      <input id="msgFrom" placeholder="FROM (name, optional)…" style="width:180px">
-      <input id="msgHandle" placeholder="@HANDLE…" style="width:150px">
-      <input id="msgText" placeholder="MESSAGE TEXT…" style="width:380px" onkeydown="if(event.key==='Enter')fireMsg()">
-      <input id="msgTag" placeholder="#HASHTAG (optional)…" style="width:180px">
-      <button onclick="fireMsg()">Fire message</button>
-    </div>
+    <p class="mgrp">INFO BUG</p>
     <h5>📍 Info bug — lower-left graphic, auto-hides</h5>
     <div class="row">
       <input id="bugEyebrow" value="Live From London" style="width:230px">
@@ -1937,8 +1938,8 @@ function chatDraw(){
   const esc=t=>String(t??'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]))
   document.getElementById('chatList').innerHTML = CHAT.rows.length ? CHAT.rows.slice(0,12).map(r=>{
     const gone=CHAT.hidden.includes(r.id)
-    return `<div class="row" style="gap:8px;margin-bottom:4px;flex-wrap:nowrap;${gone?'opacity:.35;text-decoration:line-through':''}">`
-      +(gone?'<span style="width:58px;color:var(--gdim)">hidden</span>':`<button class="hide" style="padding:2px 8px;font-size:15px" onclick="chatHide(${r.id})">✕</button>`)
+    return `<div class="row" style="gap:8px;margin-bottom:2px;flex-wrap:nowrap;line-height:1.1;${gone?'opacity:.35;text-decoration:line-through':''}">`
+      +(gone?'<span style="width:58px;color:var(--gdim)">hidden</span>':`<button class="hide" style="padding:0 6px;font-size:14px;box-shadow:none" onclick="chatHide(${r.id})">✕</button>`)
       +`<span style="color:var(--g);white-space:nowrap">${esc(r.author)}:</span><span style="color:#dfe;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.content)}</span></div>` }).join('')
     : '<span style="color:var(--gdim)">nothing from #general in the last 3 hours</span>'
 }
