@@ -1078,6 +1078,59 @@
   .gw-race .gw-foot .fa{opacity:0;transform:translateY(-16px);}
   .gw-race .gw-foot .fb{opacity:1;transform:none;}
   @media (prefers-reduced-motion:reduce){ .gw-row,.gw-pips .gw-tile,.gw-score,.gw-score .bar i,.gw-ph span,.gw-foot > div{transition:none!important} }
+
+  /* ── THE BETTING BOARD (every open market on the night, one screen) ────────
+     A row per fight in card order, main event on top. Each side: a portrait
+     tile, the name, and what it PAYS (the same "1.43×" as the Discord betting
+     card, with the house seed, economy plan D54). Between them a bar split by
+     where the MONEY is, with the pool and bet count on it. The bigger payout
+     is the gold one: that is the number a viewer bets on. Reads
+     bet_pools_public, refreshed every 20s while up. Every class is bb-. */
+  #v-bets{max-width:none;height:940px;position:relative;font-family:'Barlow Condensed',sans-serif;}
+  .bb-eye{font-family:'Press Start 2P',monospace;font-size:14px;letter-spacing:.28em;color:var(--hi);}
+  .bb-title{font-weight:900;font-size:104px;line-height:.86;text-transform:uppercase;margin-top:10px;text-shadow:0 0 34px rgba(var(--pur-rgb),.7);}
+  .bb-sum{position:absolute;right:0;top:4px;display:flex;gap:16px;}
+  .bb-sum > div{background:var(--panel);padding:14px 22px 12px;border-top:4px solid var(--hi);min-width:170px;}
+  .bb-sum > div.pool{border-top-color:#ffce00;}
+  .bb-sum b{display:block;font-weight:900;font-size:52px;line-height:1;font-variant-numeric:tabular-nums;}
+  .bb-sum > div.pool b{color:#ffce00;text-shadow:0 0 20px rgba(255,206,0,.4);}
+  .bb-sum span{font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.18em;color:var(--dim);}
+  .bb-how{position:absolute;right:0;top:118px;font-family:'Press Start 2P',monospace;font-size:11px;letter-spacing:.18em;color:var(--dim);}
+  .bb-how b{color:#7dffa8;font-weight:400;}
+  .bb-rows{position:absolute;left:0;right:0;top:168px;display:flex;flex-direction:column;gap:6px;}
+  .bb-row{position:relative;display:grid;grid-template-columns:62px 72px minmax(0,1fr) 128px 560px 128px minmax(0,1fr) 72px;align-items:center;
+    height:var(--h,78px);background:var(--panel);overflow:hidden;}
+  .bb-row.main{border:2px solid rgba(255,206,0,.5);box-shadow:0 0 26px rgba(255,206,0,.14);}
+  .bb-row .no{font-family:'Press Start 2P',monospace;font-size:13px;color:var(--dim);text-align:center;line-height:1.6;}
+  .bb-row.main .no{color:#ffce00;font-size:10px;}
+  .bb-row .tl{width:72px;height:var(--h,78px);object-fit:cover;object-position:50% 0;display:block;
+    background:linear-gradient(180deg,rgba(var(--hi-rgb),.35),rgba(20,4,40,.9));}
+  .bb-row span.tl{display:flex;align-items:center;justify-content:center;font-weight:900;font-size:30px;color:rgba(255,255,255,.4);}
+  .bb-row .nm{font-weight:900;font-size:36px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 16px;line-height:1;}
+  .bb-row .nm.a{text-align:right}.bb-row .nm.b{text-align:left}
+  .bb-row .pay{text-align:center;font-weight:900;font-size:40px;font-variant-numeric:tabular-nums;line-height:1;}
+  .bb-row .pay small{display:block;font-family:'Press Start 2P',monospace;font-size:8px;letter-spacing:.14em;color:var(--dim);margin-top:6px;font-weight:400;}
+  .bb-row .pay.dog{color:#ffce00;text-shadow:0 0 18px rgba(255,206,0,.4);}
+  .bb-row .pay.none{color:var(--dim);}
+  .bb-bar{position:relative;height:42px;display:flex;background:rgba(255,255,255,.06);}
+  .bb-bar i{display:block;height:100%;transition:width .9s cubic-bezier(.16,1,.3,1);}
+  .bb-bar i.a{background:linear-gradient(90deg,rgba(var(--pink-rgb),.25),rgba(var(--pink-rgb),.85));}
+  .bb-bar i.b{background:linear-gradient(270deg,rgba(47,107,255,.25),rgba(47,107,255,.85));}
+  .bb-bar .lbl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:14px;
+    font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.1em;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9);}
+  .bb-bar .lbl b{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:28px;letter-spacing:0;}
+  .bb-bar .pc{position:absolute;top:50%;transform:translateY(-50%);font-family:'Press Start 2P',monospace;font-size:10px;color:rgba(255,255,255,.85);text-shadow:0 1px 3px rgba(0,0,0,.9);}
+  .bb-bar .pc.a{left:10px}.bb-bar .pc.b{right:10px}
+  .bb-row .tag{position:absolute;left:50%;top:3px;transform:translateX(-50%);font-family:'Press Start 2P',monospace;font-size:8px;letter-spacing:.16em;color:#ffce00;}
+  .bb-row.locked .bb-bar{opacity:.55;}
+  .bb-row.locked .tag{color:var(--dim);}
+  .bb-row.in{animation:bbIn .55s cubic-bezier(.16,1,.3,1) backwards;}
+  @keyframes bbIn{from{opacity:0;transform:translateX(-30px)}}
+  .bb-none{position:absolute;left:0;right:0;top:168px;padding:40px;background:var(--panel);font-weight:900;font-size:56px;text-transform:uppercase;}
+  .bb-none span{display:block;font-family:'Barlow',sans-serif;font-weight:500;font-size:24px;color:var(--dim);text-transform:none;margin-top:12px;}
+  .bb-sum b.tick{animation:bbTick .6s ease;}
+  @keyframes bbTick{30%{color:#7dffa8;transform:scale(1.06)}}
+  @media (prefers-reduced-motion:reduce){ .bb-bar i{transition:none} .bb-row.in{animation:none} }
   /* ── UBA HOME: THE LADDER (ladder-core.js decides who is on it) ──────────
      The left column on a UBA night. The fight up next, as the division's
      ladder from the lower fighter up to the higher one. The two in the fight
@@ -1376,6 +1429,15 @@
     </div>
 
 
+
+    <!-- THE BETTING BOARD — every open market on the night. bbDraw() fills it -->
+    <div class="view" id="v-bets">
+      <div class="bb-eye" id="bbEye">VGA · UBA · BETTING</div>
+      <div class="bb-title">Betting board</div>
+      <div class="bb-sum" id="bbSum"></div>
+      <div class="bb-how" id="bbHow"></div>
+      <div id="bbBody"></div>
+    </div>
     <!-- GYM WAR — a UBA card's gym-vs-gym fights, then the month's gym race. gwDraw() fills it -->
     <div class="view" id="v-gymwar">
       <div class="gw-eye" id="gwEye">VGA · UBA</div>
@@ -3082,6 +3144,7 @@ function showView(el){
   if(el.id === 'v-prize') setTimeout(prizeCycle, 0)
   if(el.id === 'v-cshome') setTimeout(ladFit, 0)
   if(el.id === 'v-gymwar') setTimeout(gwStart, 0)
+  if(el.id === 'v-bets') setTimeout(bbStart, 0)
   clearTimeout(el._voutT)
   el.classList.remove('out')
   el.style.position=el.style.top=el.style.left=el.style.width=''
@@ -3460,6 +3523,81 @@ function cshUpdate(scoredId){
 }
 
 
+/* ── THE BETTING BOARD ──────────────────────────────────────────────────────
+   Every open or locked market for one event, from bet_pools_public (aggregate
+   only: never a bettor). Pays = (pool + 2·seed) ÷ (side + seed), the settle's
+   own odds (economy plan D54), shown as the Discord card shows them. Re-read
+   every 20s while the screen is up, so a bet placed mid-show moves the board. */
+const BB={ eventId:null, event:null, rows:[], timer:null, drawn:false }
+const bbPays=(pool,side,seed)=>{ const d=(pool+2*seed)/(side+seed); return isFinite(d) && d>1 ? d : null }
+const bbVc=n=>Number(n||0).toLocaleString('en-US')
+async function bbLoad(eventId, event){
+  let q=sb.from('bet_pools_public').select('match_id,event_id,event_name,bout_number,side_a,side_b,total_a,total_b,pool,bets,is_title_fight,weight_class,photo_a,photo_b,market_status,house_seed')
+  q = eventId ? q.eq('event_id',eventId) : event ? q.eq('event_name',event) : q
+  const { data, error } = await q.order('bout_number')
+  if(error || !data) return false            // a failed read never draws an empty board
+  let rows=data
+  if(!eventId && !event && rows.length){ const first=rows[0].event_id; rows=rows.filter(r=>r.event_id===first) }   // no card named: the first night with markets
+  Object.assign(BB,{ eventId:eventId||(rows[0]&&rows[0].event_id)||null, event:event||(rows[0]&&rows[0].event_name)||'', rows })
+  return true
+}
+function bbDraw(fresh){
+  const rows=BB.rows
+  $('bbEye').textContent='VGA · UBA · '+String(BB.event||'').toUpperCase()
+  if(!rows.length){
+    $('bbSum').innerHTML=''; $('bbHow').innerHTML=''
+    $('bbBody').innerHTML='<div class="bb-none">No bets open yet<span>Betting opens when the card is published.</span></div>'
+    BB.drawn=false; return }
+  const pool=rows.reduce((n,r)=>n+(+r.pool||0),0), bets=rows.reduce((n,r)=>n+(+r.bets||0),0)
+  const open=rows.filter(r=>r.market_status==='open').length
+  const big=rows.reduce((m,r)=>!m || +r.pool>+m.pool ? r : m, null)
+  const prev=BB.sum||{}
+  $('bbSum').innerHTML=`<div class="pool"><b class="${prev.pool!=null&&prev.pool!==pool?'tick':''}">${bbVc(pool)}</b><span>VC ON THE NIGHT</span></div>`
+    + `<div><b class="${prev.bets!=null&&prev.bets!==bets?'tick':''}">${bets}</b><span>BETS</span></div>`
+    + `<div><b>${open}</b><span>${open===1?'FIGHT':'FIGHTS'} OPEN</span></div>`
+  BB.sum={ pool, bets }
+  $('bbHow').innerHTML = open ? 'BET IN <b>#BETTING</b> OR THE <b>VGA APP</b> · ODDS MOVE UNTIL THE BELL' : 'BETTING IS LOCKED · PAID OUT AFTER EACH FIGHT'
+  // rows share the height: 9 fights at 78px, more get shorter, fewer get taller (never past 96)
+  const h=Math.max(52, Math.min(96, Math.floor((772 - (rows.length-1)*6) / rows.length)))
+  const tile=(u,n)=> u ? `<img class="tl" src="${cshEsc(u)}" alt="" onerror="this.outerHTML='<span class=&quot;tl&quot;>${(String(n||'?').trim()[0]||'?').toUpperCase()}</span>'">`
+                       : `<span class="tl">${(String(n||'?').trim()[0]||'?').toUpperCase()}</span>`
+  const html=rows.map((r,i)=>{
+    const S=+r.house_seed||0, P=+r.pool||0, A=+r.total_a||0, B=+r.total_b||0
+    const pa=bbPays(P,A,S), pb=bbPays(P,B,S)
+    const dog = pa&&pb ? (pa>pb ? 'a' : pb>pa ? 'b' : '') : ''
+    const pay=(x,side)=> x ? `<div class="pay${dog===side?' dog':''}">${x.toFixed(2)}×<small>PAYS</small></div>` : `<div class="pay none">—<small>PAYS</small></div>`
+    const sa = P ? Math.round(A/P*100) : 50, sbb = P ? 100-sa : 50
+    const main=i===0, locked=r.market_status!=='open'
+    const tag = locked ? '🔒 LOCKED' : r===big && rows.length>1 ? 'BIGGEST POOL' : main && r.is_title_fight ? 'TITLE FIGHT' : ''
+    return `<div class="bb-row${main?' main':''}${locked?' locked':''}${fresh?' in':''}" style="--h:${h}px;animation-delay:${(i*0.05).toFixed(2)}s" data-m="${r.match_id}">
+      <div class="no">${main?'MAIN<br>EVENT':r.bout_number}</div>${tile(r.photo_a,r.side_a)}
+      <div class="nm a">${cshEsc(r.side_a)}</div>${pay(pa,'a')}
+      <div class="bb-bar"><i class="a" style="width:${sa}%"></i><i class="b" style="width:${sbb}%"></i>
+        ${P?`<span class="pc a">${sa}%</span><span class="pc b">${sbb}%</span>`:''}
+        <span class="lbl"><b>${bbVc(P)}</b> VC · ${r.bets} BET${r.bets===1?'':'S'}</span></div>
+      ${pay(pb,'b')}<div class="nm b">${cshEsc(r.side_b)}</div>${tile(r.photo_b,r.side_b)}
+      ${tag?`<span class="tag">${tag}</span>`:''}</div>` }).join('')
+  // a refresh with the same fights only moves the numbers; a new set of fights redraws
+  const same=BB.drawn && [...document.querySelectorAll('#bbBody .bb-row')].map(e=>e.dataset.m).join()===rows.map(r=>r.match_id).join()
+  if(same){
+    const tmp=document.createElement('div'); tmp.innerHTML='<div class="bb-rows">'+html+'</div>'
+    tmp.querySelectorAll('.bb-row').forEach((nr,i)=>{ const or=document.querySelectorAll('#bbBody .bb-row')[i]
+      or.querySelectorAll('.bb-bar i').forEach((bar,k)=>{ bar.style.width=nr.querySelectorAll('.bb-bar i')[k].style.width })
+      const ops=or.querySelectorAll('.pay'), nps=nr.querySelectorAll('.pay'); ops.forEach((o,k)=>{ o.outerHTML=nps[k].outerHTML })
+      const ol=or.querySelector('.lbl'), nl=nr.querySelector('.lbl'); if(ol&&nl) ol.innerHTML=nl.innerHTML
+      or.querySelectorAll('.pc').forEach((o,k)=>{ const n=nr.querySelectorAll('.pc')[k]; if(n) o.textContent=n.textContent })
+      const ot=or.querySelector('.tag'), nt=nr.querySelector('.tag'); if(ot) ot.remove(); if(nt) or.appendChild(nt)
+      or.className=nr.className.replace(' in','') })
+  } else $('bbBody').innerHTML='<div class="bb-rows">'+html+'</div>'
+  BB.drawn=true
+  // a long name shrinks to fit; it is never cut short
+  document.querySelectorAll('#bbBody .nm').forEach(el=>{ el.style.fontSize=''
+    let px=36; while(el.scrollWidth>el.clientWidth && px>22) el.style.fontSize=(--px)+'px' })
+}
+function bbStart(){ clearInterval(BB.timer); bbDraw(true)
+  BB.timer=setInterval(async ()=>{ if(!$('v-bets').classList.contains('on')){ clearInterval(BB.timer); return }
+    if(await bbLoad(BB.eventId, BB.event)) bbDraw(false) }, 20000) }
+
 /* ── GYM WAR ────────────────────────────────────────────────────────────────
    Read once per card: the bouts, each fighter's gym (fighter_gyms_public), their
    cut-out photos, and the gym race (gym_race_public(), the same numbers as the
@@ -3639,6 +3777,9 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
     if(c.on===false){ show('off'); return }
     if(c.view==='card'){ await showCard(c.event, c.d); show('card'); return }   // c.event picks FN29/FN30/… · c.d = live rows from the runner
     if(c.view==='nextev'){ await showNextEv(c.exclude); show('nextev'); return }  // c.exclude = the event you're running tonight
+    if(c.view==='bets'){
+      if(!(await bbLoad(c.eventId||null, c.event||null))) return   // no read = stay on what is up
+      show('bets'); return }
     if(c.view==='gymwar'){
       if(!c.eventId) return
       if((c.eventId!==GW.eventId || !GW.ready) && !(await gwLoad(c.eventId, c.event))) return   // no read = stay on what is up

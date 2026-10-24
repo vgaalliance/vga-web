@@ -499,6 +499,8 @@
       <!-- the newest paid callouts, one picture at a time. Does nothing while
            there are none from the last 7 days, rather than put up a blank. -->
       <button onclick="standby('callouts')">🗯 Callouts</button>
+      <!-- every open bet on the night: the loaded card's, or the first night with markets -->
+      <button onclick="betBoard()">💰 Betting board</button>
       <button onclick="standby('cta')">📣 Call to action</button>
       <button onclick="standby('auto')">▶ Auto-cycle</button>
       <button class="hide" onclick="standby('off')">Hide</button>
@@ -2192,6 +2194,9 @@ const csHomeBtnUI=()=>{ const hb=document.getElementById('csHomeBtn'); if(!hb) r
   hb.style.display = h ? '' : 'none'
   hb.textContent = h==='cs' ? '🧊 Contender home' : h==='gfl' ? '🥊 GFL home · Path to Pros' : '🏠 UBA home · rankings at stake'
   const gw=document.getElementById('gymWarBtn'); if(gw) gw.style.display = h==='uba' ? '' : 'none' }
+// The betting board: the loaded card's markets, or with no card loaded the first night with any.
+window.betBoard=()=> send({ type:'standby', view:'bets', on:true,
+  eventId: UBA.id && UBA.id!=='csdemo' ? UBA.id : null, event: UBA.id && UBA.id!=='csdemo' ? UBA.name : null })
 // Gym war on the standby screen: it reads the card and the gym race itself; this says which card.
 window.gymWar=()=>{
   if(homeOf()!=='uba'){ deckLog('⚠ load a UBA card above first'); return }
