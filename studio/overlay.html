@@ -535,40 +535,34 @@
        UBA  — the centred clock leaves the corner free, so it sits low.
        UBAe — the corner clock is ~150px tall, so it rides above at 190,
               same shelf as the flash card (operator: not both at once). */
-  #cta{position:fixed;left:48px;bottom:90px;width:400px;
-    overflow:hidden;opacity:0;transform:translateX(-130%);
-    transition:opacity .4s ease,transform .55s cubic-bezier(.16,1,.3,1);
-    background:rgba(4,0,12,.96);border:3px solid #cc66ff;
-    animation:ctacyc 3s linear infinite;
-    box-shadow:0 0 18px rgba(155,48,255,.4),inset 0 0 24px rgba(60,0,110,.4);
-    padding:18px 22px 16px;}
-  :root[data-league="ubae"] #cta{bottom:190px;}
-  :root[data-series="cs"] #cta{bottom:214px;}
-  #cta.show{opacity:1;transform:translateX(0);}
-  @keyframes ctacyc{
-    0%{border-color:#ff0080}17%{border-color:#ff8c00}33%{border-color:#ffe000}
-    50%{border-color:#cc66ff}67%{border-color:#ff33cc}83%{border-color:#9b4dff}100%{border-color:#ff0080}}
-  #cta .crtscan{position:absolute;inset:0;pointer-events:none;z-index:6;
-    background:repeating-linear-gradient(0deg,rgba(0,0,0,.2) 0 1px,transparent 1px 3px);}
-  .cta-ttl{font-family:'Press Start 2P',monospace;font-size:16px;line-height:1.6;letter-spacing:.06em;
-    background:linear-gradient(180deg,#d8b4fe,#818cf8 45%,#a855f7 80%,#d8b4fe);
-    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
-    filter:drop-shadow(0 0 12px rgba(155,48,255,.6));margin-bottom:12px;}
-  @keyframes ctablink{0%,49%{opacity:1}50%,100%{opacity:0}}
-  /* the league mark rides along but stays hidden — ctaCmd still writes it */
-  .cta-head{display:none;}
-  .cta-mark{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:19px;
-    letter-spacing:.06em;color:#fff;line-height:1;}
-  .cta-mark span{color:var(--red);}
-  .cta-tag{font:600 10px 'Barlow';letter-spacing:.24em;text-transform:uppercase;
-    color:#8b8b96;margin-left:auto;}
-  .cta-rows{display:flex;flex-direction:column;}
-  .cta-row{display:flex;justify-content:space-between;align-items:baseline;gap:14px;
-    padding:8px 0;border-top:1px solid rgba(155,48,255,.22);}
-  .cta-sub{font-family:'Press Start 2P',monospace;font-size:8px;letter-spacing:.12em;
-    color:#9a86c8;white-space:nowrap;}
-  .cta-url{font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.06em;
-    color:#fff;text-shadow:0 0 8px rgba(204,102,255,.6);white-space:nowrap;}
+  /* THE PRISM CTA (2026-10-24, Castle's pick of three). The chat stack's
+     frosted glass as one slim card: a league tag, JOIN THE LEAGUE. / CLIMB
+     THE RANKS. one line each, the join link, and a QR a phone can scan off the
+     stream. It sits IN the shared bottom-left slot (SLOT, slotShow) at the
+     slot's height, so the keys card and the dossier take turns with it
+     instead of drawing on top of it. As wide as its words, never a fixed box. */
+  #cta{position:fixed;left:60px;bottom:calc(190px + var(--ll-lift));display:flex;align-items:stretch;width:max-content;
+    opacity:0;transform:perspective(1000px) rotateY(10deg) translateX(-120%);transform-origin:left center;pointer-events:none;
+    transition:opacity .45s ease,transform .6s cubic-bezier(.16,1,.3,1),filter .6s;filter:hue-rotate(90deg);}
+  #cta.in{opacity:1;transform:perspective(1000px) rotateY(10deg);filter:none;}
+  #cta.out{opacity:0;transform:perspective(1000px) rotateY(10deg) translateX(-120%);}
+  #cta .glass{position:relative;padding:12px 22px 13px 24px;
+    background:linear-gradient(100deg,rgba(255,255,255,.12),rgba(155,48,255,.14) 60%,rgba(0,229,255,.08));
+    -webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4);border:1px solid rgba(255,255,255,.18);}
+  #cta .glass::before{content:"";position:absolute;left:-1px;top:-1px;bottom:-1px;width:6px;
+    background:linear-gradient(180deg,#00e5ff,#9b30ff,#ff33cc);box-shadow:0 0 18px rgba(204,102,255,.8);}
+  #cta .ctag{font:11px 'Press Start 2P',monospace;letter-spacing:.35em;color:#cc66ff;text-shadow:0 0 12px rgba(204,102,255,.7),1px 1px 0 #000;}
+  #cta .cbig{font:900 44px/.92 'Barlow Condensed',sans-serif;letter-spacing:.03em;text-transform:uppercase;color:#fff;margin-top:7px;white-space:nowrap;
+    text-shadow:3px 0 0 #ff33cc,-3px 0 0 rgba(0,229,255,.8),0 0 26px rgba(155,48,255,.5);}
+  #cta .cbig i{font-style:normal;color:#e8c8ff;}
+  #cta .curl{display:inline-block;margin-top:8px;font:900 28px 'Barlow Condensed',sans-serif;letter-spacing:.05em;color:#fff;
+    padding:2px 12px 3px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.22);}
+  #cta .cqr{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:10px 12px;
+    background:rgba(10,0,26,.82);border:1px solid rgba(255,255,255,.18);border-left:none;}
+  #cta .cqr[hidden]{display:none;}
+  #cta .qrbox{background:#fff;padding:8px;line-height:0;}
+  #cta .qrbox img,#cta .qrbox canvas{display:block;}
+  #cta .scan{font:11px 'Press Start 2P',monospace;letter-spacing:.3em;color:#00e5ff;text-shadow:0 0 10px rgba(0,229,255,.6);}
 
   /* ── RINGSIDE REPORTER — right edge, balance height, every league ──
      Arcade tag wearing the strap's band: pixel kicker, holo name, solid
@@ -918,27 +912,17 @@
 
   <div id="nextev"><div id="nxBlocks"></div></div>
 
-  <!-- CALL TO ACTION. Both lines are always shown: the site and the Discord
-       answer different questions ("where do I read more" / "how do I get in"),
-       and rotating them would mean whichever one a viewer needed was the one
-       off screen. -->
+  <!-- CALL TO ACTION. One reason, one link and a QR: a viewer on a phone
+       cannot click a link on a stream, but they can scan one. The site link
+       was dropped (2026-10-24) -- two links in a 14-second card means
+       neither is read. -->
   <div id="cta">
-    <div class="cta-ttl">JOIN THE<br>LEAGUE</div>
-    <div class="cta-head">
-      <div class="cta-mark" id="ctaMark">UBA</div>
-      <div class="cta-tag" id="ctaTag">VR BOXING</div>
+    <div class="glass">
+      <div class="ctag" id="ctaTag">UBA · VR BOXING</div>
+      <div class="cbig" id="ctaBig">Join the league.<br><i>Climb the ranks.</i></div>
+      <div class="curl" id="ctaJoin">discord.gg/uba</div>
     </div>
-    <div class="cta-rows">
-      <div class="cta-row">
-        <span class="cta-sub" id="ctaSiteSub">WATCH · RANKINGS</span>
-        <span class="cta-url" id="ctaSite">ubaesports.com</span>
-      </div>
-      <div class="cta-row">
-        <span class="cta-sub" id="ctaJoinSub">FIGHT · FREE BETS</span>
-        <span class="cta-url" id="ctaJoin">discord.gg/uba</span>
-      </div>
-    </div>
-    <div class="crtscan"></div>
+    <div class="cqr" id="ctaQrSide"><div class="qrbox" id="ctaQr"></div><span class="scan">SCAN ME</span></div>
   </div>
 
   <!-- RINGSIDE REPORTER — named from the deck, any league, any event -->
@@ -959,6 +943,7 @@
   </div>
 
 <script src="flag-codes.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
@@ -1062,46 +1047,49 @@ function showFlash(){
 // league is authoritative even out of order, and falls back to whatever the
 // last command set, which is what the rest of the overlay already keys off.
 const CTA_COPY = {
-  // subs are row LABELS now — pixel font, so they stay terse or they wrap
-  uba: {
-    mark: 'UBA<span>.</span>', tag: 'VR BOXING',
-    siteSub: 'WATCH · RANKINGS',
-    joinSub: 'FIGHT · FREE BETS',
-  },
-  gfl: {
-    mark: 'GF<span>L</span>', tag: 'GLORY FIGHTING LEAGUE',
-    siteSub: 'WATCH · RANKINGS',
-    joinSub: 'FIGHT · FREE BETS',
-  },
-  ubae: {
-    mark: 'UBA<span>e</span>', tag: 'TEAM LEAGUE',
-    siteSub: 'STANDINGS · ROSTERS',
-    joinSub: 'JOIN A TEAM · BET',
-  },
+  uba:  { tag:'UBA · VR BOXING',        big:'Join the league.<br><i>Climb the ranks.</i>' },
+  gfl:  { tag:'GFL · AMATEUR LEAGUE',   big:'Join the league.<br><i>Climb the ranks.</i>' },
+  ubae: { tag:'UBAe · TEAM LEAGUE',     big:'Join a team.<br><i>Climb the table.</i>' },
 }
+const CTA_LINK = 'discord.gg/uba'
 const CTA_HOLD = 14000     // long enough to read twice without becoming decor
-let ctaTimer = null
+let ctaTimer = null, ctaQrFor = null
+
+// The QR is drawn from the link on screen, so a link changed from the deck
+// (c.d.join) changes the code too. If the QR library did not load, the side
+// panel is left out rather than shown empty: the link is still there to type.
+function ctaQr(link){
+  const side = $('ctaQrSide'), box = $('ctaQr')
+  if(link === ctaQrFor) return
+  ctaQrFor = link; box.innerHTML = ''
+  if(typeof QRCode !== 'function'){ side.hidden = true; return }
+  try{
+    new QRCode(box, { text: /^https?:/.test(link) ? link : 'https://' + link, width:104, height:104,
+      colorDark:'#0a0014', colorLight:'#ffffff', correctLevel: QRCode.CorrectLevel.M })
+    side.hidden = false
+  }catch(e){ side.hidden = true }
+}
 
 function ctaCmd(c){
   const box = $('cta'); if(!box) return
   clearTimeout(ctaTimer)
-  if(c.show === false){ box.classList.remove('show'); return }
+  const off = () => { if(box.classList.contains('in')){ box.classList.remove('in'); box.classList.add('out') } }
+  if(c.show === false){ off(); return }
 
   const cp = CTA_COPY[c.league] || CTA_COPY[document.documentElement.dataset.league] || CTA_COPY.uba
-  $('ctaMark').innerHTML = cp.mark
   $('ctaTag').textContent = cp.tag
-  $('ctaSiteSub').innerHTML = cp.siteSub
-  $('ctaJoinSub').innerHTML = cp.joinSub
-  // overridable from the deck without a redeploy -- a changed invite or a
-  // campaign URL should not need this file edited on a fight night
-  if(c.d && c.d.site) $('ctaSite').textContent = c.d.site
-  if(c.d && c.d.join) $('ctaJoin').textContent = c.d.join
+  $('ctaBig').innerHTML = cp.big
+  // overridable from the deck without a redeploy -- a changed invite should
+  // not need this file edited on a fight night
+  const link = (c.d && c.d.join) || CTA_LINK
+  $('ctaJoin').textContent = link
+  ctaQr(link)
 
-  box.classList.add('show')
+  slotShow(box)   // it takes the bottom-left slot; the keys card and dossier step aside
   // hold:0 pins it up until it is hidden by hand; anything else auto-retracts,
   // because a CTA nobody took down becomes wallpaper by the third round
   const hold = c.hold === 0 ? 0 : (c.hold ? c.hold * 1000 : CTA_HOLD)
-  if(hold) ctaTimer = setTimeout(()=>box.classList.remove('show'), hold)
+  if(hold) ctaTimer = setTimeout(off, hold)
 }
 
 // ── CONTENDER SERIES RIDES IN THIS SOURCE ────────────────────────────────
@@ -1580,7 +1568,7 @@ const norm2 = v => String(v ?? '').trim().toLowerCase()
 // whole reason the keys card moved into this file: as its own browser source
 // it sat on identical coordinates with no way to know the dossier existed,
 // so firing a dossier mid-rotation drew the two on top of each other.
-const SLOT = ['flash','fighter','keys']
+const SLOT = ['flash','fighter','keys','cta']
 function slotShow(el){
   for(const id of SLOT){
     const o = $(id)
