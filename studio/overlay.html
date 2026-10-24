@@ -192,6 +192,15 @@
      each gone after 30s. Off until the deck's 💬 Chat ON. */
   #chat{position:fixed;right:70px;bottom:250px;width:560px;display:flex;flex-direction:column;gap:6px;
     transform:perspective(900px) rotateY(-13deg);transform-origin:right center;pointer-events:none;}
+  /* the RINGSIDE REPORTER tag lives on the right at 60% height (648-780px
+     down), in the middle of where the chat stack sits -- so while the tag is
+     up the stack rides above it. body.rr-on is kept by layoutWatch(). */
+  #chat{transition:bottom .5s cubic-bezier(.16,1,.3,1);}
+  body.rr-on #chat{bottom:452px;}
+  /* the CTA takes the bottom-left slot up to ~366px; an odds bar shown at
+     the same time rides above it rather than through it */
+  #odds{transition:bottom .5s cubic-bezier(.16,1,.3,1),transform .5s,opacity .4s;}
+  body.cta-on #odds{bottom:calc(390px + var(--ll-lift)) !important;}
   #chat .head{display:flex;align-items:center;gap:16px;margin-bottom:4px;flex-direction:row-reverse;transition:opacity .4s;}
   #chat:not(.has) .head{opacity:0;}
   #chat .tag{font:12px 'Press Start 2P',monospace;letter-spacing:.35em;color:#cc66ff;text-shadow:0 0 12px rgba(204,102,255,.7),1px 1px 0 #000;}
@@ -1943,6 +1952,17 @@ channel.subscribe(status=>{
 </div>
 
 <script>
+// Two pieces share space with pieces that do not know about them (the chat
+// with the reporter tag, the odds bar with the CTA). Rather than teach every
+// show/hide path about the other, one cheap watch mirrors what is up onto
+// body classes and the CSS moves the second piece out of the way.
+function layoutWatch(){
+  const on=(id,cls)=>{ const e=$(id); return !!(e && e.classList.contains(cls)) }
+  document.body.classList.toggle('rr-on', on('rrtag','show'))
+  document.body.classList.toggle('cta-on', on('cta','in'))
+}
+setInterval(layoutWatch, 300)
+
 // ── LIVE CHAT ───────────────────────────────────────────────────────────
 // Reads stream_chat_public every 4s while the deck has chat ON and keeps the
 // newest 5 up, newest at the bottom (Castle, 2026-10-24): switched on, it
