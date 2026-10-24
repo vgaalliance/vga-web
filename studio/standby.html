@@ -459,7 +459,35 @@
   .p4prow.champ .nm{color:#ffce00;}
   .p4prow .belt{margin-left:auto;font-size:22px;}
 
-  /* fighter of the month */
+  /* fighter of the month — a HERO screen, not a line of text: the face at size,
+     the name as big as the frame allows, and three numbers that say why.
+     Everything comes in once, in order (photo, name, numbers), then the light
+     keeps moving so a screen that sits for 15s is never a still. */
+  .fotm.hero{display:grid;grid-template-columns:minmax(0,640px) minmax(0,1fr);gap:70px;
+    align-items:center;margin-top:10px;}
+  .fotm-pic{position:relative;display:flex;justify-content:center;align-items:flex-end;height:760px;}
+  .fotm-pic::before{content:'';position:absolute;inset:4% -8% 0;z-index:0;
+    background:radial-gradient(ellipse at 50% 58%,rgba(255,206,0,.62) 0%,rgba(255,150,0,.28) 38%,rgba(var(--pur-rgb),.14) 56%,transparent 72%);
+    animation:fotmGlow 4s ease-in-out infinite alternate;}
+  .fotm-pic img{position:relative;z-index:1;max-height:760px;max-width:100%;object-fit:contain;
+    -webkit-mask-image:linear-gradient(180deg,#000 82%,transparent);mask-image:linear-gradient(180deg,#000 82%,transparent);
+    filter:drop-shadow(0 30px 60px rgba(0,0,0,.7));animation:fotmPic 1s cubic-bezier(.16,1,.3,1) backwards;}
+  .fotm-pic .init{position:relative;z-index:1;font-weight:900;font-size:340px;color:rgba(255,206,0,.25);align-self:center;}
+  .fotm-side{display:flex;flex-direction:column;gap:18px;min-width:0;}
+  .fotm-side .fotm-name{font-size:176px;animation:fotmIn .8s cubic-bezier(.16,1,.3,1) .25s backwards;
+    position:relative;overflow-wrap:anywhere;}
+  .fotm-nick{font-family:'Press Start 2P',monospace;font-size:22px;letter-spacing:.24em;color:#ffe9a8;
+    text-transform:uppercase;animation:fotmIn .7s cubic-bezier(.16,1,.3,1) .4s backwards;}
+  .fotm-stats{display:flex;gap:16px;margin-top:22px;flex-wrap:wrap;}
+  .fotm-stat{background:var(--panel);border-top:4px solid #ffce00;padding:18px 26px 16px;min-width:170px;
+    box-shadow:0 0 22px rgba(255,206,0,.12);animation:fotmIn .6s cubic-bezier(.16,1,.3,1) backwards;}
+  .fotm-stat:nth-child(1){animation-delay:.55s}.fotm-stat:nth-child(2){animation-delay:.65s}
+  .fotm-stat:nth-child(3){animation-delay:.75s}.fotm-stat:nth-child(4){animation-delay:.85s}
+  .fotm-stat b{display:block;font-weight:900;font-size:64px;line-height:1;color:#fff;margin-bottom:10px;text-transform:uppercase;}
+  .fotm-stat span{font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.22em;color:var(--dim);}
+  @keyframes fotmIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+  @keyframes fotmPic{from{opacity:0;transform:translateY(40px) scale(.96)}to{opacity:1;transform:none}}
+  @keyframes fotmGlow{from{opacity:.75}to{opacity:1}}
   .fotm{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:30px;}
   .fotm-name{font-weight:900;font-size:132px;line-height:.9;text-transform:uppercase;
     background:linear-gradient(180deg,#ffe9a8,#ffce00 52%,#c98f00);
@@ -510,6 +538,27 @@
   .prow .pn{font-family:'Press Start 2P',monospace;font-size:20px;color:#ffce00;text-align:center;}
   .prow .pw{font-weight:700;font-size:26px;text-transform:uppercase;line-height:1.1;}
   .prow .pnote{font-family:'Barlow',sans-serif;font-weight:500;font-size:15px;color:var(--dim);}
+  .prize-pitch{display:none;}
+  /* A GAME is not a product. Its pictures are full-frame screenshots, not a
+     cut-out, so they get the frame a cut-out must never have, and they turn
+     with a fade rather than a cut. The game's own header art is its logo, and
+     at logo size its title would be unreadable, so it is shown as a picture. */
+  #v-prize.game .prize-wrap{grid-template-columns:minmax(0,1000px) minmax(0,520px);gap:56px;}
+  #v-prize.game .prize-shot::before{inset:-10%;
+    background:radial-gradient(ellipse at 50% 55%,rgba(60,220,90,.20) 0%,rgba(var(--pur-rgb),.18) 40%,transparent 72%);}
+  #v-prize.game #prizeShot{width:1000px;max-width:52vw;max-height:none;aspect-ratio:16/9;object-fit:cover;
+    border:2px solid rgba(255,255,255,.14);border-radius:10px;filter:none;
+    box-shadow:0 30px 70px rgba(0,0,0,.65),0 0 60px rgba(var(--pur-rgb),.35);
+    transform:perspective(1600px) rotateY(6deg);}
+  #v-prize.game #prizeShot.swap{animation:prizeSwap .7s ease;}
+  @keyframes prizeSwap{from{opacity:.15}to{opacity:1}}
+  #v-prize.game #prizeLogo{height:auto;width:100%;max-width:440px;border-radius:8px;
+    box-shadow:0 14px 40px rgba(0,0,0,.6);margin-bottom:10px;}
+  #v-prize.game .prize-count b{color:#5cff7a;text-shadow:0 0 34px rgba(60,220,90,.55);}
+  #v-prize.game .prize-pitch{display:block;font-family:'Barlow',sans-serif;font-weight:600;
+    font-size:22px;line-height:1.35;color:#e8e2f2;max-width:520px;}
+  #v-prize.game .prow{border-left-color:#5cff7a;}
+  #v-prize.game .prow .pn{color:#5cff7a;}
 
   /* ── THE POSTER SCREEN ────────────────────────────────────────────────
      Its own view, like the rankings or the playoff picture. Everything the
@@ -1095,6 +1144,7 @@
           <img id="prizeLogo" alt="">
           <div class="prize-count"><b id="prizeCount">3</b><span id="prizeProduct">PROSTRAPS MK2</span></div>
           <div class="prize-sub" id="prizeSub">FOR META QUEST 3</div>
+          <div class="prize-pitch" id="prizePitch"></div>
           <div class="prize-awards" id="prizeAwards"></div>
         </div>
       </div>
@@ -1327,7 +1377,7 @@ async function loadUba(rk){
       // two silently shadowed the other depending on row order.
       sb.from('titles_public').select('name,weight_class,kind,is_interim,holder_name,level'),
       sb.from('rankings_public').select('rank,fighter_name').eq('scope','overall').order('rank').limit(16),
-      sb.from('fighter_of_month_public').select('name,tag').limit(1),
+      sb.from('fighter_of_month_public').select('name,slug,tag').limit(1),
       sb.from('card_sets_public').select('name,code,status,set_size'),
       // pre-aggregated: card_collections_public is one row per COPY (2592 of
       // them), and PostgREST caps a response at 1000, so reading it directly
@@ -1357,7 +1407,7 @@ async function loadUba(rk){
     renderRankBoard('gflrankContent', (rk||[]).filter(r=>r.level==='amateur'), gflChamps)
     renderChamps(champs)
     renderP4P(p4||[], champs)
-    renderFotm((fm||[])[0], champs)
+    renderFotm((fm||[])[0], champs, p4||[])
     // the real cards when every read answers; the text checklist when one does not
     if(!(await renderCardArt())) renderCards(sets||[], coll||[])
     // 'next event' is resolved when it's SHOWN, not at boot -- see showNextEv.
@@ -1392,13 +1442,40 @@ function renderP4P(rows, champs){
   }).join('') : '<div class="p4prow"><span class="nm">NO RANKINGS SET</span></div>'
 }
 
-function renderFotm(f, champs){
+// The name alone first, so the screen is never empty; then the fighter's card
+// (photo, record, division), and the hero replaces it. A failed card read keeps
+// the name-only screen rather than drawing a hero with a 0-0 record.
+async function renderFotm(f, champs, p4){
   const box=document.getElementById('fotmContent')
-  if(!f){ box.innerHTML='<div class="fotm-tag">NOT SET THIS MONTH</div>'; return }
+  if(!f){ box.className='fotm'; box.innerHTML='<div class="fotm-tag">NOT SET THIS MONTH</div>'; return }
   const c=champs.find(x=>x.display_name===f.name)
+  box.className='fotm'
   box.innerHTML=`<div class="fotm-name">${f.name}</div>
     ${f.tag?`<div class="fotm-tag">${f.tag}</div>`:''}
     ${c?`<div class="fotm-rec">${recOf(c)} · CHAMPION</div>`:''}`
+  if(!f.slug) return
+  const { data, error } = await sb.from('fighter_cards')
+    .select('display_name,nickname,weight_class,profile_photo_url,wins:headline_wins,losses:headline_losses,draws:headline_draws,ko:headline_ko_wins')
+    .eq('slug', f.slug).limit(1)
+  const fc = !error && data && data[0]; if(!fc) return
+  const p4rank = (p4.find(r=>r.fighter_name===f.name)||{}).rank
+  const stats = [
+    [recOf(fc), 'RECORD'],
+    c ? ['🏆', 'CHAMPION'] : p4rank ? ['#'+p4rank, 'POUND FOR POUND'] : null,
+    fc.ko ? [fc.ko, 'KNOCKOUTS'] : null,
+    fc.weight_class ? [cap1(fc.weight_class).replace('Light Heavyweight','Light Heavy'), 'DIVISION'] : null,
+  ].filter(Boolean)
+  const init = (f.name.trim()[0]||'?').toUpperCase()
+  box.className='fotm hero'
+  box.innerHTML=`<div class="fotm-pic">${fc.profile_photo_url
+      ? `<img src="${fc.profile_photo_url}" alt="" onerror="this.outerHTML='<span class=init>${init}</span>'">`
+      : `<span class="init">${init}</span>`}</div>
+    <div class="fotm-side">
+      <div class="fotm-name">${f.name}</div>
+      ${fc.nickname?`<div class="fotm-nick">“${fc.nickname}”</div>`:''}
+      ${f.tag?`<div class="fotm-tag">${f.tag}</div>`:''}
+      <div class="fotm-stats">${stats.map(([v,l])=>`<div class="fotm-stat"><b${String(v).length>6?' style="font-size:44px"':''}>${v}</b><span>${l}</span></div>`).join('')}</div>
+    </div>`
 }
 
 // The soonest scheduled event during a fight night IS that fight night, so
@@ -1804,7 +1881,11 @@ async function mountPrize(){
     const r = await fetch(PRIZE_INDEX, {cache:'no-store'})
     if(r.ok) spec = await r.json()
   }catch(e){}
-  const fix = n => n.startsWith('assets/') ? n : 'assets/' + n
+  // A full web address is used as it is: a game's art comes straight from its
+  // store page rather than being copied into this repo.
+  const fix = n => /^(https?:|assets\/)/.test(n) ? n : 'assets/' + n
+  const game = !!(spec && spec.kind === 'game')
+  document.getElementById('v-prize').classList.toggle('game', game)
   prizeList = (spec && Array.isArray(spec.images) && spec.images.length)
     ? spec.images.map(fix) : PROMO_PRIZE.slice()
 
@@ -1818,11 +1899,14 @@ async function mountPrize(){
     if(spec.product) document.getElementById('prizeProduct').textContent = spec.product
     if(spec.sub)     document.getElementById('prizeSub').textContent = spec.sub
     if(spec.count != null) document.getElementById('prizeCount').textContent = spec.count
+    if(spec.title)   document.getElementById('prizeTitle').textContent = spec.title
+    document.getElementById('prizePitch').textContent = spec.pitch || ''
     // WHO WINS ONE, as rows. Somebody reading this screen is half-listening to
-    // commentary and will take one line, not a paragraph.
+    // commentary and will take one line, not a paragraph. For a game the rows
+    // are the steps to enter, so they are numbered, not counted (×2).
     const aw = Array.isArray(spec.awards) ? spec.awards : []
     document.getElementById('prizeAwards').innerHTML = aw.map(a =>
-      '<div class="prow"><div class="pn">' + (a.n != null ? '×' + a.n : '') + '</div>'
+      '<div class="prow"><div class="pn">' + (a.n != null ? (game ? '' : '×') + a.n : '') + '</div>'
       + '<div><div class="pw">' + (a.who || '') + '</div>'
       + (a.note ? '<div class="pnote">' + a.note + '</div>' : '') + '</div></div>').join('')
   }
@@ -1846,7 +1930,9 @@ function prizeCycle(){
   if(!document.getElementById('v-prize').classList.contains('on')) return
   prizeTimer = setTimeout(()=>{
     prizeAt = (prizeAt + 1) % prizeList.length
-    document.getElementById('prizeShot').src = prizeList[prizeAt]
+    const shot = document.getElementById('prizeShot')
+    shot.classList.remove('swap'); void shot.offsetWidth; shot.classList.add('swap')
+    shot.src = prizeList[prizeAt]
     prizeCycle()
   }, PRIZE_HOLD)
 }
