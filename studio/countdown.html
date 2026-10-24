@@ -610,7 +610,29 @@ function drawMenu(){
 // ── CALLOUTS ── fed by the poll at the bottom of the file (callouts_public,
 // the ones still on their arc, newest first). The menu line hides itself while
 // there are none, and its slot in the running order is skipped.
+// A callout is a finished picture, so a word inside it cannot be blanked --
+// one with a flagged word is left off the STREAM instead. Discord keeps it as
+// posted. Matching undoes the usual dodges first (sh1t, f*ck, fuuuck), and the
+// list is stems, so "fucking" and "bullshit" are caught by "fuck" and "shit".
+// Three kinds of match, because one rule either misses or over-catches:
+// INSIDE: the words that compound ("bullshit", "motherfucker") -- anywhere.
+// START: the rest -- at the start of a word, so "Scunthorpe" and "pussycat" pass.
+// WHOLE: short ones that live inside ordinary words ("document", "cocky").
+const RUDE_INSIDE = ['fuck', 'shit', 'bitch', 'nigg', 'asshole', 'arsehole']
+const RUDE_START  = ['fuk', 'fck', 'cunt', 'whore', 'slut', 'bastard', 'twat', 'wank', 'retard', 'dildo', 'motherf', 'cocksuck']
+const RUDE_WHOLE  = ['puss', 'pussy', 'pussies', 'cum', 'kys', 'fag', 'fags', 'dick', 'dicks', 'cock', 'cocks']
+function rude(text){
+  const t = String(text || '').toLowerCase()
+    .replace(/[1!|]/g, 'i').replace(/3/g, 'e').replace(/[0]/g, 'o').replace(/[@4]/g, 'a').replace(/[$5]/g, 's')
+    .replace(/[*#]/g, 'u')
+  const squashed = t.replace(/(.)\1+/g, '$1')                       // fuuuck -> fuck
+  const words = (t + ' ' + squashed).split(/[^a-z]+/).filter(Boolean)
+  return RUDE_INSIDE.some(w => t.includes(w) || squashed.includes(w))
+      || words.some(x => RUDE_START.some(w => x.startsWith(w)) || RUDE_WHOLE.includes(x))
+      || /\bkill (yo)?urself\b/.test(t)
+}
 function setCallouts(rows){
+  rows = rows.filter(r => !rude(r.message))
   callouts = rows
   rows.forEach(r => { const im = new Image(); im.src = r.image_url })   // warm the cache before a page needs them
   coCount()
@@ -1114,7 +1136,7 @@ loadPromos().then(() => { buildReel(); progress(); next() })
   // the callouts board. A failed read keeps the board it had: an empty answer
   // would hide the menu line over a database that simply did not reply.
   async function calloutsFeed(){
-    const { data, error } = await _sb.from('callouts_public').select('id,image_url,posted_at')
+    const { data, error } = await _sb.from('callouts_public').select('id,image_url,posted_at,message')
       .eq('on_arc', true).order('posted_at', { ascending:false }).limit(30)
     if(!error && data) setCallouts(data)
   }
