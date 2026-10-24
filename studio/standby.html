@@ -3657,8 +3657,9 @@ function bbDraw(fresh){
   document.querySelectorAll('#bbBody .nm').forEach(el=>{ el.style.fontSize=''
     let px=36; while(el.scrollWidth>el.clientWidth && px>22) el.style.fontSize=(--px)+'px' })
 }
-// The second moment: 12 cards in the middle, the newest bets first, the biggest
-// of the night always among them (gold). Each set stays up BB_HOLD, then they
+// The second moment: 12 cards in the middle, the BIGGEST bets first (betting
+// closes when the show starts, so on air "newest" means nothing), ties to who
+// bet first; the biggest of the night is card 1, in gold. Each set stays up BB_HOLD, then they
 // turn over like blinds to the next 12: at most BB_PAGES sets (the newest 36),
 // so at most BB_PAGES-1 flips, never back round to the first.
 // bet_feed_public never carries who placed a bet.
@@ -3679,9 +3680,9 @@ const bbCard=b=>{ if(!b) return '<div class="bb-t empty"></div>'
 function bbFeedDraw(){
   const feed=BB.feed||[]
   if(!feed.length){ $('bbFeed').innerHTML='<div class="bb-more">NO BETS YET TONIGHT</div>'; BB.pages=[]; return 0 }
-  BB.big=feed.reduce((m,b)=>!m || +b.amount>+m.amount ? b : m, null)
-  // the biggest leads the first set; the rest newest first
-  const order=[BB.big, ...feed.filter(b=>b!==BB.big)], shown=order.slice(0, BB_PER*BB_PAGES)
+  const order=[...feed].sort((x,y)=>(+y.amount)-(+x.amount) || new Date(x.placed_at)-new Date(y.placed_at))
+  BB.big=order[0]
+  const shown=order.slice(0, BB_PER*BB_PAGES)
   BB.pages=[]; for(let i=0;i<shown.length;i+=BB_PER) BB.pages.push(shown.slice(i,i+BB_PER))
   BB.more=feed.length-shown.length; BB.page=0
   const n=BB.pages[0].length, cols=n>=4 ? 4 : n, slots=BB.pages.length>1 ? BB_PER : n
