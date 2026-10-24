@@ -1455,12 +1455,19 @@ async function renderFotm(f, champs, p4){
     ${c?`<div class="fotm-rec">${recOf(c)} · CHAMPION</div>`:''}`
   if(!f.slug) return
   const { data, error } = await sb.from('fighter_cards')
-    .select('display_name,nickname,weight_class,profile_photo_url,wins:headline_wins,losses:headline_losses,draws:headline_draws,ko:headline_ko_wins')
+    .select('display_name,nickname,weight_class,profile_photo_url,wins:headline_wins,losses:headline_losses,draws:headline_draws,ko:headline_ko_wins,am_wins,am_losses,am_draws')
     .eq('slug', f.slug).limit(1)
   const fc = !error && data && data[0]; if(!fc) return
   const p4rank = (p4.find(r=>r.fighter_name===f.name)||{}).rank
+  // A fighter just called up from GFL is 0-0 as a pro, and a 0-0 tile on the
+  // month's best fighter undersells the reason they are on it: their record
+  // is the GFL one, labelled as GFL. Two records, never merged (ama-plan A10).
+  const pro = (fc.wins||0)+(fc.losses||0)+(fc.draws||0)
+  const am  = (fc.am_wins||0)+(fc.am_losses||0)+(fc.am_draws||0)
+  const recTile = pro ? [recOf(fc), 'RECORD']
+    : am ? [`${fc.am_wins||0}-${fc.am_losses||0}${fc.am_draws?'-'+fc.am_draws:''}`, 'GFL RECORD'] : null
   const stats = [
-    [recOf(fc), 'RECORD'],
+    recTile,
     c ? ['🏆', 'CHAMPION'] : p4rank ? ['#'+p4rank, 'POUND FOR POUND'] : null,
     fc.ko ? [fc.ko, 'KNOCKOUTS'] : null,
     fc.weight_class ? [cap1(fc.weight_class).replace('Light Heavyweight','Light Heavy'), 'DIVISION'] : null,
@@ -1472,7 +1479,7 @@ async function renderFotm(f, champs, p4){
       : `<span class="init">${init}</span>`}</div>
     <div class="fotm-side">
       <div class="fotm-name">${f.name}</div>
-      ${fc.nickname?`<div class="fotm-nick">“${fc.nickname}”</div>`:''}
+      ${fc.nickname && fc.nickname.trim().toLowerCase()!==f.name.trim().toLowerCase()?`<div class="fotm-nick">“${fc.nickname}”</div>`:''}
       ${f.tag?`<div class="fotm-tag">${f.tag}</div>`:''}
       <div class="fotm-stats">${stats.map(([v,l])=>`<div class="fotm-stat"><b${String(v).length>6?' style="font-size:44px"':''}>${v}</b><span>${l}</span></div>`).join('')}</div>
     </div>`
