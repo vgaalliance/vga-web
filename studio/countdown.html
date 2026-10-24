@@ -94,9 +94,16 @@ img.rv.on { animation:pushin 12s ease-out forwards; }
   background:
     radial-gradient(ellipse 820px 300px at 100% 0%, rgba(3,0,10,.88) 0%, rgba(3,0,10,.55) 50%, transparent 100%),
     radial-gradient(ellipse 760px 420px at 100% 100%, rgba(3,0,10,.9) 0%, rgba(3,0,10,.6) 50%, transparent 100%),
-    linear-gradient(90deg, rgba(3,0,10,.9) 0%, rgba(3,0,10,.7) 22%, rgba(3,0,10,.18) 40%, transparent 52%),
+    linear-gradient(90deg, rgba(3,0,10,.93) 0%, rgba(3,0,10,.86) 26%, rgba(3,0,10,.55) 38%, rgba(3,0,10,.18) 48%, transparent 58%),
     linear-gradient(0deg, rgba(3,0,10,.85) 0%, transparent 22%),
     linear-gradient(180deg, rgba(3,0,10,.7) 0%, transparent 18%); }
+/* Behind the menu the promo goes soft, like a game's pause menu: still there as
+   colour, never competing with the words. Masked so it fades out before the
+   middle -- the right side stays the sharp, full-screen promo. */
+#blur { position:absolute; left:0; top:0; bottom:0; width:60%; z-index:6; pointer-events:none;
+  -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px);
+  -webkit-mask-image:linear-gradient(90deg,#000 0%,#000 55%,transparent 100%); mask-image:linear-gradient(90deg,#000 0%,#000 55%,transparent 100%); }
+body.brk #blur, body.final #blur, body.live #blur { display:none; }
 #crt { position:absolute; inset:0; z-index:58; pointer-events:none;
   background:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0,rgba(0,0,0,.14) 1px,transparent 1px,transparent 4px); }
 
@@ -375,6 +382,7 @@ body.final #toasts, body.live #toasts { opacity:0; }
   <video class="rv" id="rvB" playsinline preload="auto"></video>
   <img   class="rv" id="rvS" alt="">
 </div>
+<div id="blur"></div>
 <div id="shade"></div>
 <div id="cob"></div>
 <div id="sbw">
