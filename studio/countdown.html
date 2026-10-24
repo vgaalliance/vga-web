@@ -307,13 +307,13 @@ body.live .lv-word { animation:liveslam .6s cubic-bezier(.15,1.6,.35,1), livepul
 .lv-event { font-family:'Barlow Condensed',sans-serif; font-size:72px; font-weight:900; letter-spacing:.3em;
   text-transform:uppercase; color:#fff; text-shadow:0 0 24px rgba(204,102,255,.7), 3px 3px 0 #000; }
 
-/* ── ACHIEVEMENT POP-UPS: above the menu, sliding in from the left like a
-   console achievement. A slim strip in the menu's own highlight, never a box. ── */
-#toasts { position:absolute; left:110px; top:205px; width:620px; height:150px; z-index:32; pointer-events:none;
-  transform: perspective(900px) rotateY(9deg); transform-origin:left center; transition:opacity .5s; }
+/* ── ACHIEVEMENT POP-UPS: INSIDE the menu, above MAIN MENU, so they sit on
+   the menu's own 3D plane -- a strip with its own transform tilts around its
+   own middle and reads flat beside it. Full menu width, like a selected row. ── */
+#toasts { position:relative; height:104px; margin-bottom:46px; pointer-events:none; transition:opacity .5s; }
 body.final #toasts, body.live #toasts { opacity:0; }
-.tst { position:absolute; left:0; top:0; display:flex; align-items:center; gap:18px; padding:14px 40px 14px 16px;
-  background:linear-gradient(90deg, rgba(10,0,26,.92) 0%, rgba(30,6,60,.78) 60%, transparent 100%);
+.tst { position:absolute; left:0; right:0; top:0; display:flex; align-items:center; gap:18px; padding:14px 40px 14px 16px;
+  background:linear-gradient(90deg, rgba(10,0,26,.92) 0%, rgba(30,6,60,.8) 55%, rgba(30,6,60,.35) 85%, transparent 100%);
   border-left:4px solid var(--tc, var(--hi)); box-shadow:-6px 0 22px var(--tg, rgba(204,102,255,.5));
   animation:tstIn .5s cubic-bezier(.2,1.3,.4,1) both; }
 .tst.out { animation:tstOut .45s ease-in forwards; }
@@ -375,13 +375,12 @@ body.final #toasts, body.live #toasts { opacity:0; }
 
 <!-- MENU: one line per thing in the reel, the cursor on whatever is playing -->
 <div class="menu" id="menu">
+  <div id="toasts"></div>
   <div class="menu-head"><span class="mh-tag">MAIN MENU</span><span class="mh-line"></span></div>
   <div id="menuItems"><div id="menuHi"></div></div>
   <div class="press-start">PRESS START</div>
   <div class="tip" id="tip"></div>
 </div>
-
-<div id="toasts"></div>
 
 <!-- MAIN EVENT + CLOCK -->
 <div class="me" id="mePanel">
