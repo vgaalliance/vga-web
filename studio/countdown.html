@@ -10,15 +10,15 @@
 
   Three states, all driven by the one clock the deck sets:
 
-  1. REEL   — the promos play FULL SCREEN, one after another, with a game menu
-              over the left side whose cursor sits on whatever is playing. Every
-              two promos it cuts to the standby board (tonight's card, then the
-              Discord call to action) for a few seconds. The running order is
-              assets/promos/promos.json — see the README beside it.
-  2. FINAL  — at one minute out the menu selects START MATCH, the reel sinks
-              behind the grid and a giant clock takes the screen. The last ten
-              seconds hit: red, a flash, a shake and a low boom on every number.
-  3. LIVE   — at zero, WE ARE LIVE, and it holds there until the scene changes.
+  1. REEL   — the promos play FULL SCREEN with a game menu over the left side:
+              START MATCH, PROMOS, and two standby boards (tonight's card, then
+              the Discord call to action). PROMOS plays tonight's promo first,
+              then every other one shuffled; every two promos it cuts to a
+              board. The library is assets/promos/promos.json — see the README.
+  2. FINAL  — at one minute out the menu selects START MATCH, the promo hides
+              and a giant clock takes the screen on the grid. The last ten go
+              red; 3, 2, 1 punch in a little harder each.
+  3. LIVE   — at zero a soft glow into WE ARE LIVE, held until the scene changes.
 
   A new target from the deck that is more than a minute out puts it back in the
   reel, so a restarted clock never strands the screen in the takeover.
@@ -29,7 +29,7 @@
     ?t=5                  start a 5-minute clock on load (testing, or a show
                           with nobody on the deck)
     ?mute=1               promos play silent
-    ?sfx=0                no countdown sounds
+    ?sfx=1                the countdown's own tones (off by default)
 -->
 <style>
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
@@ -266,31 +266,30 @@ body.final .me { opacity:0; transform: perspective(900px) rotateY(-9deg) transla
 .fn-foot { position:absolute; left:0; right:0; top:950px; text-align:center;
   font-size:18px; letter-spacing:.55em; color:rgba(240,224,255,.85); text-shadow:0 0 14px rgba(204,102,255,.6), 2px 2px 0 #000; }
 
-/* The last ten BUILD rather than repeat: 10-4 go red and land firm with no
-   flash or shake; only 3, 2, 1 hit, each harder than the last (--k, 1..3);
-   zero is the one big flash. Ten identical hits stopped reading as hits by
-   the seventh. No burst ring either -- the countdown ring itself pulses. */
+/* The last ten BUILD rather than repeat, and stay quiet doing it: 10-4 go red
+   and land firm; 3, 2, 1 punch in a little harder each (--k, 1..3) with the
+   countdown ring pulsing and a small shake -- no flash; zero is one soft
+   purple glow into LIVE, never a white-out. A white flash on a stream reads as
+   a glitch, and three of them in three seconds read as a broken source. */
 body.red .fn-num { background:linear-gradient(180deg,#ffffff 0%,#ffd6dc 30%,#ff4d6a 65%,#b0002a 100%);
   -webkit-background-clip:text; background-clip:text;
   filter:drop-shadow(0 0 50px rgba(255,34,68,.9)) drop-shadow(-8px 0 0 rgba(0,229,255,.55)) drop-shadow(8px 0 0 rgba(255,51,204,.6)); }
 body.red .fn-num.slam { animation:numslam .42s cubic-bezier(.15,1.6,.35,1); }
-@keyframes numslam { from{transform:translateY(-50%) scale(calc(1.3 + .3 * var(--k, 1))); opacity:0} 60%{opacity:1} to{transform:translateY(-50%) scale(1)} }
+@keyframes numslam { from{transform:translateY(-50%) scale(calc(1.12 + .1 * var(--k, 1))); opacity:0} 60%{opacity:1} to{transform:translateY(-50%) scale(1)} }
 #ringArc.pulse { animation:ringpulse .5s ease-out; }
-@keyframes ringpulse { from{stroke-width:calc(10px + 8px * var(--k, 1)); filter:drop-shadow(0 0 40px rgba(255,34,68,1)) brightness(1.6)} }
+@keyframes ringpulse { from{stroke-width:calc(10px + 4px * var(--k, 1)); filter:drop-shadow(0 0 28px rgba(255,34,68,1)) brightness(1.3)} }
 body.red #ringArc { stroke:var(--red); filter:drop-shadow(0 0 20px rgba(255,34,68,1)); }
 body.red .fn-tag { color:#ff6680; }
 body.red .sc { animation:none; border-color:var(--red); box-shadow:0 0 16px var(--red); }
-#flash { position:absolute; inset:0; z-index:70; pointer-events:none; background:#fff; opacity:0; }
-#flash.go { animation:flash .32s ease-out; }
-#flash.big { animation:flash 1.1s ease-out; }
-@keyframes flash { from{opacity:calc(.12 + .14 * var(--k, 1))} to{opacity:0} }
-#flash.big { --k:6; }
+#flash { position:absolute; inset:0; z-index:70; pointer-events:none; opacity:0; }
+#flash.big { animation:flash 1.2s ease-out;
+  background:radial-gradient(ellipse 900px 640px at 68% 54%, rgba(214,140,255,.75), rgba(130,50,255,.3) 50%, transparent 80%); }
+@keyframes flash { from{opacity:.85} to{opacity:0} }
 #stage.shake { animation:shake .34s linear; }
 #stage.shake.big { animation-duration:.6s; }
 @keyframes shake {
-  0%{transform:translate(0,0)} 15%{transform:translate(calc(-5px * var(--k, 1)),calc(2px * var(--k, 1)))}
-  30%{transform:translate(calc(4px * var(--k, 1)),calc(-3px * var(--k, 1)))} 45%{transform:translate(calc(-3px * var(--k, 1)),calc(-1px * var(--k, 1)))}
-  60%{transform:translate(calc(2px * var(--k, 1)),calc(2px * var(--k, 1)))} 80%{transform:translate(-1px,1px)} 100%{transform:none}
+  0%{transform:translate(0,0)} 20%{transform:translate(calc(-2px * var(--k, 1)),calc(1px * var(--k, 1)))}
+  45%{transform:translate(calc(2px * var(--k, 1)),calc(-1px * var(--k, 1)))} 70%{transform:translate(calc(-1px * var(--k, 1)),0)} 100%{transform:none}
 }
 
 /* ── LIVE ── */
@@ -451,7 +450,9 @@ const CFG = {
   eventMain: 'FIGHT NIGHT',
   league: (QS.get('league') || 'uba').toLowerCase(),
 }
-const MUTE = QS.get('mute') === '1', SFX = QS.get('sfx') !== '0'
+// The countdown's own sounds are OFF unless ?sfx=1: they are tones the page
+// makes itself and they sounded like it. The stream's music carries it.
+const MUTE = QS.get('mute') === '1', SFX = QS.get('sfx') === '1'
 const FINAL_SECS = 60, BREAK_SECS = 14, STILL_SECS = 9
 const el = id => document.getElementById(id)
 const pad = n => String(n).padStart(2,'0')
@@ -483,10 +484,17 @@ const sfxLive  = () => { tone(150, 30, 1.6, .9); tone(70, 28, 1.8, .6, 'triangle
 const sfxSelect= () => { tone(660, 660, .07, .08, 'square'); setTimeout(() => tone(990, 990, .1, .08, 'square'), 80) }
 
 // ── THE REEL ─────────────────────────────────────────────────────────────
-// promos.json is the running order; every second promo is followed by a
-// standby break. A file that will not load is dropped for the rest of the
-// session rather than retried every lap.
-let promos = [], reel = [], at = -1, itemTimer = null, itemStart = 0, itemLen = 0, liveVid = null, gen = 0
+// The menu is four lines however big the library gets: START MATCH, PROMOS,
+// and the league's two standby boards. PROMOS is every promo and edit in
+// promos.json -- tonight's first (its title, or its "event", matches the event
+// name the deck sends), then the rest shuffled. Each lap is a fresh shuffle and
+// nothing repeats until every one has played. The running order is two promos,
+// a board, two promos, the other board. A file that will not load is dropped
+// for the rest of the session rather than retried every lap.
+let promos = [], deck = [], lapSize = 0, lastPromo = null
+let slot = -1, item = null, itemTimer = null, itemStart = 0, itemLen = 0, liveVid = null, gen = 0
+let promoNode = null, breakItems = []
+const SLOTS = ['promo', 'promo', 0, 'promo', 'promo', 1]
 const vids = [el('rvA'), el('rvB')]
 const LEAGUE_BREAKS = {
   uba:  [{ view:'card',   title:"TONIGHT'S CARD", sub:'THE FULL LINEUP' }, { view:'cta', title:'JOIN UBA', sub:'DISCORD.GG/UBA' }],
@@ -498,8 +506,8 @@ async function loadPromos(){
   try{
     const r = await fetch('assets/promos/promos.json', { cache:'no-store' })
     if(r.ok) promos = (await r.json()).map(p =>
-      p.file  ? { kind:'video', src:'assets/promos/' + p.file, title:p.title || '', sub:p.sub || '', secs:p.secs || 0 } :
-      p.image ? { kind:'still', src:'assets/' + p.image,      title:p.title || '', sub:p.sub || '', secs:p.secs || STILL_SECS } : null
+      p.file  ? { kind:'video', src:'assets/promos/' + p.file, title:p.title || '', event:p.event || '', secs:p.secs || 0 } :
+      p.image ? { kind:'still', src:'assets/' + p.image,      title:p.title || '', event:p.event || '', secs:p.secs || STILL_SECS } : null
     ).filter(Boolean)
   }catch(e){}
   // No promos is a still a screen: the posters the standby already shows.
@@ -507,22 +515,42 @@ async function loadPromos(){
     try{
       const r = await fetch('assets/posters.json', { cache:'no-store' })
       if(r.ok) promos = (await r.json()).map((f, i) =>
-        ({ kind:'still', src:'assets/' + f, title:'THE POSTER', sub:'NO. ' + pad(i + 1), secs:STILL_SECS }))
+        ({ kind:'still', src:'assets/' + f, title:'THE POSTER', event:'', secs:STILL_SECS }))
     }catch(e){}
   }
 }
 
+// "UBA Tokyo", "UBA TOKYO" and "uba-tokyo" are one event
+const norm = t => String(t || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+const isTonight = p => !!norm(CFG.eventMain) &&
+  (norm(p.event) === norm(CFG.eventMain) || norm(p.title) === norm(CFG.eventMain))
+function shuffle(a){
+  for(let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]] }
+  return a
+}
+function dealDeck(){
+  const live = promos.filter(p => !p.dead)
+  const tonight = live.filter(isTonight), rest = shuffle(live.filter(p => !isTonight(p)))
+  // never the same promo twice in a row across the seam between two laps
+  if(!tonight.length && rest.length > 1 && rest[0] === lastPromo) rest.push(rest.shift())
+  deck = [...tonight, ...rest]; lapSize = deck.length
+}
+function nextPromo(){
+  for(let i = 0; i < 2; i++){
+    while(deck.length && deck[0].dead) deck.shift()
+    if(deck.length) return deck.shift()
+    dealDeck()
+  }
+  return null
+}
+
 function buildReel(){
   const breaks = LEAGUE_BREAKS[CFG.league] || LEAGUE_BREAKS.uba
-  reel = []; let b = 0
-  promos.forEach((p, i) => {
-    reel.push(p)
-    if(i % 2 === 1) reel.push({ kind:'break', ...breaks[b++ % breaks.length] })
-  })
-  if(!reel.length || reel[reel.length - 1].kind !== 'break') reel.push({ kind:'break', ...breaks[b % breaks.length] })
+  breakItems = breaks.map(b => ({ kind:'break', ...b }))
   // both boards are loaded up front so a break never opens on an empty frame
   el('brkA').src = 'standby.html?kiosk=1&clear=1&league=' + CFG.league + '&views=' + breaks[0].view
   el('brkB').src = 'standby.html?kiosk=1&clear=1&league=' + CFG.league + '&views=' + breaks[1].view
+  dealDeck()
   drawMenu()
 }
 
@@ -538,8 +566,17 @@ function drawMenu(){
     box.appendChild(d); return d
   }
   row('start', '▶', 'START MATCH', '').id = 'miStart'
-  reel.forEach((r, i) => { r.node = row('', pad(i + 1), r.title, r.sub) })
+  promoNode = row('', '01', 'PROMOS', promos.length + (promos.length === 1 ? ' PROMO' : ' PROMOS'))
+  breakItems.forEach((b, i) => { b.node = row('', pad(i + 2), b.title, b.sub) })
   clockText()
+}
+
+// PROMOS' second line says what is on: TONIGHT for tonight's, else NOW, and
+// where it sits in this lap
+function promoSub(p){
+  const n = lapSize - deck.length
+  promoNode.querySelector('.mi-sub').textContent =
+    (isTonight(p) ? 'TONIGHT: ' : 'NOW: ') + (p.title || 'PROMO') + ' · ' + n + ' OF ' + lapSize
 }
 
 function point(node){
@@ -560,20 +597,27 @@ function stopItem(){
 function next(){
   if(document.body.classList.contains('final') || document.body.classList.contains('live')) return
   stopItem()
-  const live = reel.filter(r => !r.dead)
-  if(!live.length) return
-  do { at = (at + 1) % reel.length } while(reel[at].dead)
-  play(reel[at])
+  // a promo slot with nothing playable falls through to the next board
+  for(let i = 0; i < SLOTS.length; i++){
+    slot = (slot + 1) % SLOTS.length
+    const sl = SLOTS[slot]
+    if(sl !== 'promo') return play(breakItems[sl])
+    const p = nextPromo()
+    if(p) return play(p)
+  }
 }
 
-function play(item){
-  point(item.node); cut()
+function play(it){
+  item = it
+  if(it.kind === 'break') point(it.node)
+  else { point(promoNode); promoSub(it); lastPromo = it }
+  cut()
   itemStart = performance.now()
-  if(item.kind === 'break'){
+  if(it.kind === 'break'){
     const breaks = LEAGUE_BREAKS[CFG.league] || LEAGUE_BREAKS.uba
-    const frame = item.view === breaks[0].view ? el('brkA') : el('brkB')
+    const frame = it.view === breaks[0].view ? el('brkA') : el('brkB')
     document.body.classList.add('brk')
-    // the promo underneath freezes, dimmed: its sound would talk over the board
+    // the promo behind stops: the board sits on the grid, and its sound would talk over it
     if(liveVid) liveVid.pause()
     el('brkA').classList.toggle('on', frame.id === 'brkA'); el('brkB').classList.toggle('on', frame.id === 'brkB')
     itemLen = BREAK_SECS * 1000
@@ -583,14 +627,14 @@ function play(item){
   document.body.classList.remove('brk')
   el('brkA').classList.remove('on'); el('brkB').classList.remove('on')
 
-  if(item.kind === 'still'){
+  if(it.kind === 'still'){
     const s = el('rvS')
-    s.onerror = () => { item.dead = true; next() }
-    s.src = item.src
+    s.onerror = () => { it.dead = true; next() }
+    s.src = it.src
     s.classList.remove('on'); void s.offsetWidth; s.classList.add('on')
     vids.forEach(v => { v.classList.remove('on'); setTimeout(() => v.pause(), 700) })
     liveVid = null
-    itemLen = item.secs * 1000
+    itemLen = it.secs * 1000
     itemTimer = setTimeout(next, itemLen)
     return
   }
@@ -601,11 +645,11 @@ function play(item){
   // Every callback below checks it still belongs to THIS play. A late failure
   // from the promo before would otherwise skip the one now on screen.
   const my = ++gen, mine = f => (...a) => { if(my === gen) f(...a) }
-  v.src = item.src; v.muted = MUTE; v.volume = 1; v.currentTime = 0
+  v.src = it.src; v.muted = MUTE; v.volume = 1; v.currentTime = 0
   itemLen = 0
   // Only a file that cannot be read is dropped for good. A play that is merely
   // refused (a background tab) skips this lap and is tried again next lap.
-  v.onerror = mine(() => { item.dead = true; next() })
+  v.onerror = mine(() => { it.dead = true; next() })
   const skip = mine(next)
   v.onended = skip
   const go = v.play()
@@ -616,7 +660,7 @@ function play(item){
   itemTimer = setTimeout(mine(() => { if(v.paused || v.readyState < 2) next() }), 10000)
   v.onplaying = mine(() => {
     clearTimeout(itemTimer); itemTimer = null
-    if(item.secs) itemTimer = setTimeout(skip, item.secs * 1000)
+    if(it.secs) itemTimer = setTimeout(skip, it.secs * 1000)
     v.classList.add('on'); el('rvS').classList.remove('on')
     if(old && old !== v){ old.classList.remove('on'); setTimeout(() => { if(old !== liveVid) old.pause() }, 700) }
     liveVid = v; v.onplaying = null
@@ -625,18 +669,19 @@ function play(item){
 
 // the playing item's progress bar
 function progress(){
-  const item = reel[at], b = document.body
+  const b = document.body
   // in the last minute the cursor is on START MATCH, and its bar is the minute
   if(b.classList.contains('final') || b.classList.contains('live')){
     const ms = remaining(), st = el('miStart')
     if(st && ms !== null) st.querySelector('.mi-bar i').style.width =
       Math.min(100, Math.max(0, 1 - ms / (FINAL_SECS * 1000)) * 100) + '%'
-  }else if(item && item.node){
+  }else if(item){
+    const node = item.kind === 'break' ? item.node : promoNode
     let f = 0
     if(item.kind === 'video' && liveVid && liveVid.duration)
       f = liveVid.currentTime / (item.secs ? Math.min(item.secs, liveVid.duration) : liveVid.duration)
     else if(itemLen) f = (performance.now() - itemStart) / itemLen
-    item.node.querySelector('.mi-bar i').style.width = Math.min(100, f * 100) + '%'
+    node.querySelector('.mi-bar i').style.width = Math.min(100, f * 100) + '%'
   }
   ring()
   requestAnimationFrame(progress)
@@ -675,13 +720,13 @@ function hit(k){
   document.body.style.setProperty('--k', k)
   n.classList.add('slam'); r.classList.add('pulse'); shake(k, false)
 }
-// k scales the shake and the flash; big is zero's one long white-out
+// k scales the shake; big is zero's, and the only one that glows
 function shake(k, big){
   const s = el('stage'), f = el('flash')
-  s.classList.remove('shake', 'big'); f.classList.remove('go', 'big'); void s.offsetWidth
+  s.classList.remove('shake', 'big'); f.classList.remove('big'); void s.offsetWidth
   s.style.setProperty('--k', k)
-  s.classList.add('shake'); if(big) s.classList.add('big')
-  f.classList.add(big ? 'big' : 'go')
+  s.classList.add('shake')
+  if(big){ s.classList.add('big'); f.classList.add('big') }
 }
 
 // The takeover lands 650ms after START MATCH is selected. A reset from the
@@ -727,7 +772,7 @@ function tick(){
   const b = document.body
   if(sec === 0){
     if(!b.classList.contains('live')){
-      enterFinal(); b.classList.remove('red'); b.classList.add('live'); shake(5, true); sfxLive()
+      enterFinal(); b.classList.remove('red'); b.classList.add('live'); shake(3, true); sfxLive()
       if(liveVid) liveVid.volume = 0
     }
     return
@@ -866,7 +911,11 @@ function setNames(a, b){
   fitAll()
 }
 function setEvent(name){
+  // a new event can mean a different promo is tonight's: deal a fresh lap so
+  // it is the next one up, rather than waiting out the old lap
+  const changed = norm(name) !== norm(CFG.eventMain)
   CFG.eventMain = name
+  if(changed && promoNode) dealDeck()
   el('tbEventMain').textContent = name
   el('lvEvent').textContent = name
   el('fnFoot').textContent = name + ' · STARTING'
@@ -880,7 +929,7 @@ function setLeague(lg){
   CFG.league = lg
   // a different league is a different pair of standby boards; before the reel
   // exists there is nothing to rebuild, and the first build reads CFG.league
-  if(reel.length){ at = -1; buildReel(); next() }
+  if(promoNode){ slot = -1; buildReel(); next() }
 }
 // Measure in the font you draw in: the condensed face loads with display=swap,
 // and a fit against the fallback holds a size several steps too small.
