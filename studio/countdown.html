@@ -3,19 +3,45 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=1920">
-<title>UBAe — Match Countdown</title>
+<title>VGA — Countdown</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Barlow+Condensed:ital,wght@0,700;0,900;1,900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<!--
+  THE COUNTDOWN, AS A GAME'S TITLE SCREEN (2026-10-23)
+
+  Three states, all driven by the one clock the deck sets:
+
+  1. REEL   — the promos play FULL SCREEN, one after another, with a game menu
+              over the left side whose cursor sits on whatever is playing. Every
+              two promos it cuts to the standby board (tonight's card, then the
+              Discord call to action) for a few seconds. The running order is
+              assets/promos/promos.json — see the README beside it.
+  2. FINAL  — at one minute out the menu selects START MATCH, the reel sinks
+              behind the grid and a giant clock takes the screen. The last ten
+              seconds hit: red, a flash, a shake and a low boom on every number.
+  3. LIVE   — at zero, WE ARE LIVE, and it holds there until the scene changes.
+
+  A new target from the deck that is more than a minute out puts it back in the
+  reel, so a restarted clock never strands the screen in the takeover.
+
+  URL params (all optional):
+    ?league=uba|ubae|gfl  which standby board the breaks show (the deck's push
+                          overrides it)
+    ?t=5                  start a 5-minute clock on load (testing, or a show
+                          with nobody on the deck)
+    ?mute=1               promos play silent
+    ?sfx=0                no countdown sounds
+-->
 <style>
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-:root { --pur:#9b30ff; --hi:#cc66ff; --pink:#ff33cc; --white:#f0e8ff; --bg:#03000a; }
+:root { --pur:#9b30ff; --hi:#cc66ff; --pink:#ff33cc; --white:#f0e8ff; --bg:#03000a; --red:#ff2244; }
+html { background:#000; overflow:hidden; }
 body {
   background:#000000;
   width:1920px; height:1080px;
   overflow:hidden; position:relative;
   font-family:'Press Start 2P',monospace; color:var(--white);
 }
-body::after { display:none; }
-#bgCanvas { position:absolute; inset:0; z-index:0; }
+#stage { position:absolute; inset:0; }
 
 /* corner brackets */
 .sc { position:absolute; width:52px; height:52px; border-style:solid; z-index:60; animation:cornercycle 3s linear infinite; }
@@ -38,316 +64,244 @@ body::after { display:none; }
   0%,100%{filter:drop-shadow(0 0 20px rgba(255,0,255,.9)) drop-shadow(0 0 50px rgba(0,255,255,.6))}
   50%    {filter:drop-shadow(0 0 50px rgba(255,255,0,1))  drop-shadow(0 0 100px rgba(0,255,255,.9))}
 }
-@keyframes linepulse  {0%,100%{opacity:.3}50%{opacity:1}}
 @keyframes selblink   {0%,49%{opacity:1}50%,100%{opacity:0}}
-@keyframes scandown   {0%{top:-80px}100%{top:110%}}
 @keyframes lflicker   {0%,95%,100%{opacity:1}96%{opacity:.85}97%{opacity:1}}
 @keyframes rflicker   {0%,93%,100%{opacity:1}94%{opacity:.8}95%{opacity:1}}
-@keyframes dotblink   {0%,49%{opacity:1}50%,100%{opacity:0}}
 @keyframes colonblink {0%,49%{opacity:1}50%,100%{opacity:.15}}
-@keyframes rainbowslide{0%{background-position:0 0}100%{background-position:0 300%}}
+@keyframes hueshift   {0%{filter:hue-rotate(0deg) saturate(2)} 100%{filter:hue-rotate(360deg) saturate(2)}}
+
+/* ── BACKDROP: the synthwave grid. Under the reel while promos play; it is
+   the whole stage for the final minute. ── */
+.sw-bg {
+  position:absolute; top:0; left:0; width:1920px; height:1080px; z-index:1; pointer-events:none;
+  background:
+    repeating-linear-gradient(90deg,  rgba(180,0,255,0.07) 0px, rgba(180,0,255,0.06) 1px, transparent 1px, transparent 40px),
+    repeating-linear-gradient(180deg, rgba(0,200,255,0.05) 0px, rgba(0,200,255,0.04) 1px, transparent 1px, transparent 40px),
+    transparent;
+  animation: hueshift 10s linear infinite;
+}
+#swCanvas { position:absolute; top:0; left:0; width:1920px; height:1080px; z-index:2; pointer-events:none; }
+
+/* ── THE REEL: two video slots and a still, cross-faded ── */
+#reel { position:absolute; inset:0; z-index:5; transition:opacity 1.2s ease, filter 1.2s ease; }
+.rv { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity .7s ease; }
+.rv.on { opacity:1; }
+@keyframes pushin { from{transform:scale(1)} to{transform:scale(1.08)} }
+img.rv.on { animation:pushin 12s ease-out forwards; }
+/* the left side darkens so the menu reads over any frame; the bottom for the bar */
+#shade { position:absolute; inset:0; z-index:6; pointer-events:none; transition:opacity .6s;
+  background:
+    radial-gradient(ellipse 760px 420px at 100% 100%, rgba(3,0,10,.9) 0%, rgba(3,0,10,.6) 50%, transparent 100%),
+    linear-gradient(90deg, rgba(3,0,10,.9) 0%, rgba(3,0,10,.7) 22%, rgba(3,0,10,.18) 40%, transparent 52%),
+    linear-gradient(0deg, rgba(3,0,10,.85) 0%, transparent 22%),
+    linear-gradient(180deg, rgba(3,0,10,.7) 0%, transparent 18%); }
+#crt { position:absolute; inset:0; z-index:58; pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0,rgba(0,0,0,.14) 1px,transparent 1px,transparent 4px); }
+
+/* the cut between two promos: a beat of horizontal tear, like a cartridge swap */
+#cut { position:absolute; inset:0; z-index:20; pointer-events:none; opacity:0;
+  background:
+    repeating-linear-gradient(0deg, rgba(204,102,255,.0) 0 22px, rgba(204,102,255,.35) 22px 26px, rgba(0,229,255,.25) 26px 29px, rgba(204,102,255,0) 29px 61px),
+    rgba(10,0,24,.55);
+  mix-blend-mode:screen; }
+#cut.go { animation:cut .55s steps(6) forwards; }
+@keyframes cut {
+  0%  {opacity:1; transform:translateX(-30px)}
+  33% {opacity:.9; transform:translateX(24px)}
+  66% {opacity:.6; transform:translateX(-12px)}
+  100%{opacity:0; transform:none}
+}
+
+/* ── STANDBY BREAKS (.sbf -- never .brk, which is the BODY's break state and
+   would hide the whole page): the real standby board, in kiosk mode, so the call to
+   action and the card are the same design here as everywhere else ── */
+.sbf { position:absolute; inset:0; width:1920px; height:1080px; border:0; z-index:15;
+  opacity:0; pointer-events:none; transition:opacity .6s ease; background:transparent; }
+.sbf.on { opacity:1; }
 
 /* TOP BAR */
-.top-bar {
-  position:absolute; top:36px; left:50px; right:50px; height:110px;
-  background:transparent;
-  border:none;
-  display:flex; align-items:center;
-  z-index:40;
-}
-
-
-
-
-/* LEFT BLOCK: VGA ESPORTS -- the org, the same on every night. The league
-   and the event are the top-RIGHT block; that is the only part of this row
-   the deck changes. */
-.tb-left {
-  display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:0;
-  padding:0 50px 0 60px;
-  flex-shrink:0;
-  transform: perspective(650px) rotateY(14deg);
-  transform-origin: left center;
-}
-.logo-ubae {
-  font-family:'Barlow Condensed',sans-serif;
-  font-size:82px; font-weight:900; letter-spacing:.12em;
+.top-bar { position:absolute; top:36px; left:50px; right:50px; height:110px;
+  display:flex; align-items:center; z-index:40; transition:opacity .6s; }
+/* LEFT: VGA ESPORTS -- the org, the same on every night. */
+.tb-left { display:flex; flex-direction:column; align-items:flex-start; justify-content:center;
+  padding:0 50px 0 60px; flex-shrink:0;
+  transform: perspective(650px) rotateY(14deg); transform-origin: left center; }
+.logo-ubae { font-family:'Barlow Condensed',sans-serif; font-size:82px; font-weight:900; letter-spacing:.12em;
   background:linear-gradient(180deg,#d8b4fe 0%,#a78bfa 15%,#818cf8 30%,#6366f1 45%,#8b5cf6 60%,#a855f7 75%,#c084fc 90%,#d8b4fe 100%);
-  background-size:100% 300%;
-  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
-  animation:textslide 4s linear infinite, logopulse 2.5s ease-in-out infinite;
-}
-.logo-s1 {
-  font-size:14px; letter-spacing:.45em;
-  align-self:flex-end; margin-bottom:6px;
+  background-size:100% 300%; -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  animation:textslide 4s linear infinite, logopulse 2.5s ease-in-out infinite; }
+.logo-s1 { font-size:14px; letter-spacing:.45em; align-self:flex-end; margin-bottom:6px;
   background:linear-gradient(90deg,#d8b4fe,#a78bfa,#818cf8,#6366f1,#8b5cf6,#a855f7,#c084fc,#d8b4fe);
-  background-size:300% 100%;
-  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
-  animation:textflow 3s linear infinite;
-}
-
-/* CENTRE BLOCK: live big clock */
-
-
-
-
-
-
-/* RIGHT BLOCK: event label */
-.tb-right {
-  display:flex; flex-direction:column; align-items:flex-end; justify-content:center;
-  padding:0 60px 0 50px;
-  flex-shrink:0; gap:4px;
-  transform: perspective(650px) rotateY(-14deg);
-  transform-origin: right center;
-}
-.tb-event-main {
-  font-family:'Barlow Condensed',sans-serif;
-  font-size:52px; font-weight:900; letter-spacing:.25em;
-  color:#fff; text-transform:uppercase;
-  text-shadow:0 0 24px rgba(204,102,255,.55);
-}
-.tb-event-sub {
-  font-size:15px; letter-spacing:.38em;
-  color:rgba(200,160,255,.6);
-}
+  background-size:300% 100%; -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  animation:textflow 3s linear infinite; }
+/* RIGHT: the event */
+.tb-right { display:flex; flex-direction:column; align-items:flex-end; justify-content:center;
+  padding:0 60px 0 50px; flex-shrink:0; gap:4px;
+  transform: perspective(650px) rotateY(-14deg); transform-origin: right center; }
+.tb-event-main { font-family:'Barlow Condensed',sans-serif; font-size:52px; font-weight:900; letter-spacing:.25em;
+  color:#fff; text-transform:uppercase; text-shadow:0 0 24px rgba(204,102,255,.55), 2px 2px 0 #000; }
+.tb-event-sub { font-size:15px; letter-spacing:.38em; color:rgba(200,160,255,.75); text-shadow:1px 1px 0 #000; }
 
 /* BOTTOM BAR */
-.bottom-bar {
-  position:absolute; bottom:0; left:0; right:0; height:46px;
-  background:rgba(3,0,10,.9);
-  border-top:2px solid rgba(155,77,255,.3);
+.bottom-bar { position:absolute; bottom:0; left:0; right:0; height:46px;
+  background:rgba(3,0,10,.9); border-top:2px solid rgba(155,77,255,.3);
   display:flex; align-items:center; justify-content:space-between;
-  padding:0 60px 0 90px; z-index:40;
-}
-.sponsor {
-  font-family:'Barlow Condensed',sans-serif;
-  font-size:32px; font-weight:900; letter-spacing:.28em;
+  padding:0 60px 0 90px; z-index:40; transition:opacity .6s; }
+.sponsor { font-family:'Barlow Condensed',sans-serif; font-size:32px; font-weight:900; letter-spacing:.28em;
   background:linear-gradient(180deg,#d8b4fe 0%,#a78bfa 15%,#818cf8 30%,#6366f1 45%,#8b5cf6 60%,#a855f7 75%,#c084fc 90%,#d8b4fe 100%);
-  background-size:100% 300%;
-  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
-  animation:textslide 5s linear infinite, logopulse 3s ease-in-out infinite;
-}
+  background-size:100% 300%; -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  animation:textslide 5s linear infinite, logopulse 3s ease-in-out infinite; }
 .sponsor-pre { font-size:8px; letter-spacing:.4em; color:rgba(204,102,255,.75); margin-right:10px; text-shadow:0 0 10px rgba(155,48,255,.5); }
-.b-links { font-family:'Share Tech Mono',monospace; font-size:11px; letter-spacing:.2em; color:rgba(155,77,255,.35); display:flex; gap:48px; }
+.b-links { font-family:'Share Tech Mono',monospace; font-size:11px; letter-spacing:.2em; color:rgba(155,77,255,.45); display:flex; gap:48px; }
 
-/* LEFT PANEL */
-.left-panel {
-  position:absolute;
-  left:0; top:190px; bottom:46px; width:860px;
-  display:flex; flex-direction:column; justify-content:center; align-items:flex-start;
-  padding:0 50px 0 70px; z-index:30; padding-bottom:60px;
-}
-.vs-row {
-  display:flex; flex-direction:row; align-items:center; justify-content:space-between;
-  gap:10px; margin-bottom:16px; width:100%;
-  transform: perspective(1200px) rotateY(2deg);
-  transform-origin: left center;
-}
-/* spacer slots for team names on each side */
-.vs-slot {
-  flex:1; min-width:180px;
-}
-.vs-slot.r { text-align:right; }
-.tabbr {
-  font-family:'Barlow Condensed',sans-serif;
-  font-size:64px; font-weight:900; font-style:italic;
-  letter-spacing:-.01em; line-height:.88; text-transform:uppercase;
-  white-space:nowrap;
-  background:linear-gradient(180deg,#e8c8ff 0%,#b565ff 44%,#8a2be2 100%);
-  -webkit-background-clip:text; background-clip:text;
-  -webkit-text-fill-color:transparent; color:transparent;
-  filter:drop-shadow(0 0 22px rgba(155,48,255,.6));
-}
-/* name + its TEAM A/B tag share one shrink-to-fit box so the tag hugs the name's edge */
-.name-wrap{ display:inline-block; }
-.vs-slot.r .name-wrap{ text-align:right; }
+/* ── THE MENU ── */
+.menu { position:absolute; left:110px; bottom:120px; width:600px; z-index:30;
+  transform: perspective(900px) rotateY(9deg); transform-origin:left center;
+  transition:opacity .5s ease, transform .6s cubic-bezier(.6,0,.4,1); }
+.menu-head { display:flex; align-items:center; gap:16px; margin-bottom:18px; }
+.mh-tag { font-size:12px; letter-spacing:.35em; color:var(--hi); text-shadow:0 0 12px rgba(204,102,255,.7), 1px 1px 0 #000; }
+.mh-line { flex:1; height:2px; background:linear-gradient(90deg, rgba(204,102,255,.7), transparent); }
+#menuItems { position:relative; }
+#menuHi { position:absolute; left:0; right:0; z-index:0; pointer-events:none;
+  background:linear-gradient(90deg, rgba(155,48,255,.42) 0%, rgba(155,48,255,.14) 60%, transparent 100%);
+  border-left:4px solid var(--hi); box-shadow:inset 0 0 26px rgba(155,48,255,.2), -6px 0 22px rgba(204,102,255,.45);
+  transition:top .22s steps(4), height .22s steps(4); }
+.mi { position:relative; z-index:1; display:flex; align-items:center; gap:16px; padding:10px 16px 12px 18px; }
+.mi-cur { font-size:14px; color:var(--hi); width:22px; opacity:0; text-shadow:0 0 12px var(--hi); }
+.mi.on .mi-cur { opacity:1; animation:arrowBounce .6s ease-in-out infinite; }
+@keyframes arrowBounce { 0%,100%{transform:translateX(0)} 50%{transform:translateX(5px)} }
+.mi-n { font-family:'Share Tech Mono',monospace; font-size:14px; color:rgba(204,102,255,.5); width:26px; }
+.mi-txt { flex:1; min-width:0; }
+.mi-label { font-family:'Barlow Condensed',sans-serif; font-size:36px; font-weight:900; letter-spacing:.14em;
+  line-height:1; text-transform:uppercase; color:rgba(240,224,255,.42); text-shadow:2px 2px 0 #000;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mi.on .mi-label { color:#fff; text-shadow:0 0 22px rgba(204,102,255,.8), 0 0 44px rgba(155,48,255,.45), 2px 2px 0 #000; }
+.mi-sub { font-family:'Share Tech Mono',monospace; font-size:14px; letter-spacing:.2em; margin-top:5px;
+  color:rgba(200,160,255,.38); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:1px 1px 0 #000; }
+.mi.on .mi-sub { color:rgba(230,200,255,.85); }
+.mi-bar { position:absolute; left:18px; right:16px; bottom:2px; height:3px; background:rgba(155,77,255,.18); opacity:0; }
+.mi.on .mi-bar { opacity:1; }
+.mi-bar i { display:block; height:100%; width:0; background:linear-gradient(90deg,var(--hi),var(--pink)); box-shadow:0 0 10px var(--hi); }
+.mi.start .mi-label { color:rgba(240,224,255,.62); }
+.mi.start .mi-sub { color:rgba(255,255,255,.55); }
+.mi.select .mi-label { animation:selflash .12s steps(1) 5; }
+@keyframes selflash { 0%{color:#fff} 50%{color:var(--pink)} }
+.press-start { margin-top:26px; margin-left:18px; font-size:13px; letter-spacing:.5em;
+  color:rgba(230,190,255,.85); animation:selblink 1.1s steps(1) infinite; text-shadow:0 0 12px rgba(204,102,255,.5), 1px 1px 0 #000; }
+
+/* ── MAIN EVENT + CLOCK, bottom right ── */
+.me { position:absolute; right:84px; bottom:96px; z-index:30; text-align:right;
+  transform: perspective(900px) rotateY(-9deg); transform-origin:right center;
+  transition:opacity .5s ease, transform .6s cubic-bezier(.6,0,.4,1); }
+.me-tag { font-size:11px; letter-spacing:.4em; color:var(--hi); text-shadow:0 0 10px rgba(204,102,255,.7), 1px 1px 0 #000; margin-bottom:12px; }
+.me-names { display:flex; align-items:baseline; justify-content:flex-end; gap:18px; }
+.tabbr { font-family:'Barlow Condensed',sans-serif; font-size:56px; font-weight:900; font-style:italic;
+  letter-spacing:-.01em; line-height:.95; text-transform:uppercase; white-space:nowrap;
+  background:linear-gradient(180deg,#ffffff 0%,#e8c8ff 30%,#b565ff 70%,#8a2be2 100%);
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent;
+  filter:drop-shadow(0 0 18px rgba(155,48,255,.7)) drop-shadow(2px 2px 0 #000); }
 .tabbr.l { animation:lflicker 5s steps(1) infinite; }
 .tabbr.r { animation:rflicker 5s steps(1) infinite 2.5s; }
-/* bottom-right match countdown clock */
-#cdTimer{ position:fixed; bottom:34px; right:46px; z-index:400;
-  font-family:'Barlow Condensed',sans-serif; font-weight:900; font-style:italic;
-  font-size:70px; letter-spacing:.03em; color:#e8c8ff;
-  text-shadow:0 0 26px rgba(155,48,255,.75); }
-.vs-mid { display:flex; flex-direction:column; align-items:center; gap:8px; flex-shrink:0; padding:0 40px; margin-bottom:10px; }
-@keyframes vsGlitch {
-    0%,92%,100% { transform:none; }
-    93%  { transform:translateX(-2px); text-shadow:-3px 0 #ff33cc, 3px 0 #ff33cc; }
-    94%  { transform:translateX(2px);  text-shadow: 3px 0 #ff33cc,-3px 0 #ff33cc; }
-    95%  { transform:none; }
-  }
-  .vs-word {
-    font-family:'Barlow Condensed',sans-serif;
-    font-size:36px; font-weight:900; font-style:italic; letter-spacing:.15em;
-    color:var(--hi);
-    text-shadow:0 0 20px var(--hi), 3px 0 0 var(--pink), -3px 0 0 rgba(0,229,255,.7), 0 0 40px rgba(0,200,255,.3);
-    animation:vsGlitch 7s steps(1) infinite;
-  }
-.vs-bo { font-size:11px; letter-spacing:.4em; color:rgba(204,102,255,.55); text-shadow:0 0 8px rgba(155,48,255,.3); }
-.teams-sub {
-  display:flex; justify-content:space-between; width:100%; margin-bottom:20px;
+.me-vs { font-family:'Barlow Condensed',sans-serif; font-size:30px; font-weight:900; font-style:italic; letter-spacing:.12em;
+  color:var(--hi); text-shadow:0 0 18px var(--hi), 3px 0 0 var(--pink), -3px 0 0 rgba(0,229,255,.7); }
+.me-clock { display:flex; align-items:baseline; justify-content:flex-end; gap:20px; margin-top:14px; }
+.me-in { font-size:13px; letter-spacing:.35em; color:rgba(230,200,255,.8); text-shadow:1px 1px 0 #000; }
+#cdTimer { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-style:italic;
+  font-size:96px; line-height:.9; letter-spacing:.03em; color:#f3e6ff;
+  text-shadow:0 0 26px rgba(155,48,255,.85), 3px 3px 0 #000; font-variant-numeric:tabular-nums; }
+
+/* during a standby break the board is the screen: our chrome steps aside and
+   the clock shrinks to a corner, because the card fills the whole frame */
+body.brk .menu, body.brk .top-bar, body.brk .bottom-bar, body.brk #shade { opacity:0; }
+body.brk .menu { transform: perspective(900px) rotateY(9deg) translateX(-80px); }
+body.brk .me { transform: perspective(900px) rotateY(-9deg) translateY(56px) scale(.62); transform-origin:right bottom; }
+body.brk .me-tag, body.brk .me-names { opacity:0; }
+
+/* ── FINAL MINUTE ── */
+#final { position:absolute; inset:0; z-index:35; pointer-events:none; opacity:0; transition:opacity .8s ease; }
+body.final #final { opacity:1; }
+body.final #reel { opacity:.22; filter:blur(7px) saturate(.6); }
+body.final .menu { opacity:0; transform: perspective(900px) rotateY(9deg) translateX(-160px); }
+body.final .me { opacity:0; transform: perspective(900px) rotateY(-9deg) translateX(160px); }
+body.final #shade { opacity:.6; }
+.fn-head { position:absolute; top:150px; left:0; right:0; text-align:center; }
+.fn-tag { font-size:16px; letter-spacing:.5em; color:var(--hi); text-shadow:0 0 14px rgba(204,102,255,.8), 2px 2px 0 #000; }
+.fn-names { display:flex; justify-content:center; align-items:baseline; gap:34px; margin-top:16px; }
+.fn-names .tabbr { font-size:92px; }
+.fn-names .me-vs { font-size:46px; }
+#ring { position:absolute; left:50%; top:585px; width:660px; height:660px; margin:-330px 0 0 -330px; }
+#ring circle { fill:none; }
+#ringTrack { stroke:rgba(155,77,255,.18); stroke-width:10; }
+#ringArc { stroke:url(#ringGrad); stroke-width:10; stroke-linecap:round; filter:drop-shadow(0 0 14px rgba(204,102,255,.9)); }
+#ringTicks { stroke:rgba(204,102,255,.35); stroke-width:2; stroke-dasharray:2 32.5; }
+.fn-num { position:absolute; left:0; right:0; top:585px; transform:translateY(-50%); text-align:center;
+  font-family:'Barlow Condensed',sans-serif; font-weight:900; font-style:italic; font-size:440px; line-height:.8;
+  letter-spacing:-.02em; font-variant-numeric:tabular-nums; padding-right:.05em;
+  background:linear-gradient(180deg,#ffffff 0%,#f0dcff 35%,#c084fc 70%,#7c3aed 100%);
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 40px rgba(155,48,255,.8)) drop-shadow(6px 6px 0 #000); }
+.fn-num.hit { animation:numhit .38s cubic-bezier(.2,1.4,.4,1); }
+@keyframes numhit { from{transform:translateY(-50%) scale(1.3); opacity:0; filter:blur(10px)} to{transform:translateY(-50%) scale(1); opacity:1} }
+.fn-foot { position:absolute; left:0; right:0; top:950px; text-align:center;
+  font-size:18px; letter-spacing:.55em; color:rgba(240,224,255,.85); text-shadow:0 0 14px rgba(204,102,255,.6), 2px 2px 0 #000; }
+
+/* the last ten: red, and every number lands */
+body.red .fn-num { background:linear-gradient(180deg,#ffffff 0%,#ffd6dc 30%,#ff4d6a 65%,#b0002a 100%);
+  -webkit-background-clip:text; background-clip:text;
+  filter:drop-shadow(0 0 50px rgba(255,34,68,.9)) drop-shadow(-8px 0 0 rgba(0,229,255,.55)) drop-shadow(8px 0 0 rgba(255,51,204,.6)); }
+body.red .fn-num.hit { animation:numslam .42s cubic-bezier(.15,1.6,.35,1); }
+@keyframes numslam { from{transform:translateY(-50%) scale(2.1); opacity:0} 60%{opacity:1} to{transform:translateY(-50%) scale(1)} }
+body.red #ringArc { stroke:var(--red); filter:drop-shadow(0 0 20px rgba(255,34,68,1)); }
+body.red .fn-tag { color:#ff6680; }
+body.red .sc { animation:none; border-color:var(--red); box-shadow:0 0 16px var(--red); }
+#flash { position:absolute; inset:0; z-index:70; pointer-events:none; background:#fff; opacity:0; }
+#flash.go { animation:flash .32s ease-out; }
+@keyframes flash { from{opacity:.55} to{opacity:0} }
+#wave { position:absolute; left:50%; top:585px; width:660px; height:660px; margin:-330px 0 0 -330px; z-index:36;
+  border-radius:50%; border:8px solid rgba(255,80,110,.9); opacity:0; pointer-events:none; }
+#wave.go { animation:wave .6s ease-out; }
+@keyframes wave { from{transform:scale(.7); opacity:.9} to{transform:scale(2.1); opacity:0} }
+#stage.shake { animation:shake .34s linear; }
+@keyframes shake {
+  0%{transform:translate(0,0)} 15%{transform:translate(-14px,6px)} 30%{transform:translate(12px,-8px)}
+  45%{transform:translate(-9px,-4px)} 60%{transform:translate(7px,5px)} 80%{transform:translate(-3px,2px)} 100%{transform:none}
 }
-.tsub { display:flex; flex-direction:column; gap:3px; }
-.tsub.r { align-items:flex-end; }
-.t-full { font-family:'Barlow Condensed',sans-serif; font-size:15px; font-weight:700; letter-spacing:.35em; color:rgba(240,224,255,.38); text-transform:uppercase; }
-.t-rec  { font-family:'Share Tech Mono',monospace; font-size:11px; letter-spacing:.25em; color:rgba(200,160,255,.25); }
 
-/* COUNTDOWN */
-.cd-box {
-  width:100%; background:rgba(3,0,10,.93);
-  border:2px solid rgba(155,77,255,.4);
-  box-shadow:0 0 36px rgba(155,48,255,.18),inset 0 0 20px rgba(60,0,100,.18);
-  position:relative; overflow:hidden;
-  /* HUD slant: slight perspective tilt toward centre */
-  transform: perspective(900px) rotateY(4deg);
-  transform-origin: left center;
-  
-  background-image: linear-gradient(
-    160deg,
-    rgba(255,255,255,.04) 0%,
-    transparent 40%,
-    rgba(155,48,255,.04) 100%
-  );
-}
-.cd-box::before {
-  content:''; position:absolute; left:0; right:0; top:0; height:1px;
-  background:linear-gradient(90deg,transparent,#9b4dff 20%,#ff0080 50%,#9b4dff 80%,transparent);
-  animation:linepulse 2s ease-in-out infinite; z-index:4;
-}
-.cd-scan {
-  position:absolute; left:0; right:0; height:35%;
-  background:linear-gradient(to bottom,transparent,rgba(155,77,255,.08),rgba(0,255,255,.04),transparent);
-  filter:blur(3px); animation:scandown 2.8s linear infinite;
-  pointer-events:none; z-index:1;
-}
-.cd-crt {
-  position:absolute; inset:0; pointer-events:none; z-index:2;
-  background:repeating-linear-gradient(0deg,rgba(0,0,0,.12) 0,rgba(0,0,0,.12) 1px,transparent 1px,transparent 4px);
-}
-.cd-inner { display:flex; align-items:stretch; position:relative; z-index:3; }
-.cd-side {
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  padding:12px 14px; border-right:1px solid rgba(155,77,255,.2); gap:6px; min-width:50px;
-}
-.cd-dot { width:6px; height:6px; border-radius:50%; background:var(--hi); box-shadow:0 0 8px var(--hi); animation:dotblink 1s steps(1) infinite; }
-.cd-sidetxt { font-size:6px; letter-spacing:.35em; color:rgba(204,102,255,.45); writing-mode:vertical-rl; transform:rotate(180deg); }
-.cd-digits { display:flex; align-items:center; justify-content:center; flex:1; padding:8px 0; }
-.cd-seg { display:flex; flex-direction:column; align-items:center; padding:0 12px; }
-.cd-num {
-  font-family:'Share Tech Mono',monospace;
-  font-size:76px; line-height:1; letter-spacing:-.02em; min-width:2ch; text-align:center;
-  color:#fff; text-shadow:0 0 26px var(--hi),2px 2px 0 #000;
-}
-.cd-num.urgent { color:#ff2244; text-shadow:0 0 26px #ff2244,2px 2px 0 #000; }
-.cd-unit { font-size:7px; letter-spacing:.38em; color:rgba(200,160,255,.35); margin-top:3px; }
-.cd-colon { font-family:'Share Tech Mono',monospace; font-size:60px; color:rgba(155,77,255,.5); align-self:center; padding:0 2px; animation:colonblink 1s steps(1) infinite; }
-.cd-foot { border-top:1px solid rgba(155,77,255,.15); padding:6px 18px; display:flex; align-items:center; justify-content:space-between; position:relative; z-index:3; }
-.cd-foot-label { font-size:7px; letter-spacing:.4em; color:rgba(200,160,255,.38); animation:linepulse 2.5s ease-in-out infinite; }
-.cd-foot-id { font-family:'Share Tech Mono',monospace; font-size:10px; letter-spacing:.2em; color:rgba(204,102,255,.45); }
-.press-start { margin-top:12px; font-size:10px; letter-spacing:.5em; color:rgba(204,102,255,.6); animation:selblink 1s steps(1) infinite; text-shadow:0 0 12px rgba(204,102,255,.35); align-self:center; }
-
-/* RIGHT PANEL: ad box */
-
-
-
-  /* ── SYNTHWAVE BG ── */
-  @keyframes hueshift { 0%{filter:hue-rotate(0deg) saturate(2)} 100%{filter:hue-rotate(360deg) saturate(2)} }
-  @keyframes scandown { 0%{top:-80px} 100%{top:110%} }
-  @keyframes rainbowslide { 0%{background-position:0 0} 100%{background-position:0 100%} }
-
-  /* flat CSS prismatic grid */
-  .sw-bg {
-    position:absolute; top:0; left:0; width:1920px; height:1080px; z-index:1; pointer-events:none;
-    background:
-      repeating-linear-gradient(90deg,  rgba(180,0,255,0.07) 0px, rgba(180,0,255,0.06) 1px, transparent 1px, transparent 40px),
-      repeating-linear-gradient(180deg, rgba(0,200,255,0.05) 0px, rgba(0,200,255,0.04) 1px, transparent 1px, transparent 40px),
-      transparent;
-    animation: hueshift 10s linear infinite;
-  }
-  #swCanvas { position:absolute; top:0; left:0; width:1920px; height:1080px; z-index:2; pointer-events:none; }
-
-  /* ── GAME MENU ── */
-  @keyframes cursorBlink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
-  @keyframes menuGlow {
-    0%,100%{text-shadow:0 0 10px var(--hi),1px 1px 0 #000}
-    50%    {text-shadow:0 0 24px var(--hi),0 0 40px rgba(204,102,255,.5),1px 1px 0 #000}
-  }
-  .game-menu {
-    display:flex; flex-direction:column; gap:0;
-    margin-top:52px;
-    width:70%;
-    transform: perspective(600px) rotateY(10deg);
-    transform-origin: right center;
-  }
-  .menu-item {
-    display:flex; align-items:center; gap:12px;
-    padding:7px 0;
-    border-bottom:1px solid rgba(155,48,255,.1);
-    position:relative;
-    cursor:default;
-    transition:none;
-    /* each row tilts slightly more than the last — stacked HUD depth */
-  }
-  .menu-item:last-child { border-bottom:none; }
-  @keyframes arrowBounce {
-    0%,100%{ transform:translateX(0);   }
-    50%    { transform:translateX(4px); }
-  }
-  .menu-cursor {
-    font-family:'Press Start 2P',monospace;
-    font-size:10px; color:var(--hi);
-    text-shadow:0 0 12px var(--hi), 0 0 24px rgba(155,48,255,.5);
-    width:22px; flex-shrink:0;
-    opacity:0;
-    letter-spacing:-.1em;
-  }
-  .menu-item.active .menu-cursor {
-    opacity:1;
-    animation:arrowBounce .6s ease-in-out infinite;
-  }
-  .menu-item.active {
-    background: linear-gradient(to right, rgba(155,48,255,.18) 0%, rgba(155,48,255,.06) 60%, transparent 100%);
-    border-left: 3px solid var(--hi);
-    padding-left: 10px;
-    box-shadow: inset 0 0 20px rgba(155,48,255,.08);
-  }
-  .menu-item.active .menu-cursor { opacity:1; }
-  .menu-item.active .menu-label  { animation:menuGlow 1.4s ease-in-out infinite; }
-  .menu-label {
-    font-family:'Barlow Condensed',sans-serif;
-    font-size:24px; font-weight:900; letter-spacing:.22em;
-    text-transform:uppercase; color:rgba(240,224,255,.28);
-    text-shadow:1px 1px 0 #000;
-  }
-
-  .menu-item.active .menu-label {
-    color:rgba(240,224,255,.92);
-    text-shadow:0 0 20px rgba(204,102,255,.7), 0 0 40px rgba(155,48,255,.4), 1px 1px 0 #000;
-  }
-  .menu-sub {
-    font-family:'Share Tech Mono',monospace;
-    font-size:9px; letter-spacing:.18em;
-    color:rgba(155,48,255,.45);
-    margin-left:auto; padding-right:8px;
-  }
-
-  .team-frame {
-    font-family:'Barlow Condensed',sans-serif;
-    font-size:13px; font-weight:700; letter-spacing:.5em;
-    text-transform:uppercase; color:rgba(200,160,255,.55);
-    border:1px solid rgba(155,48,255,.25);
-    text-shadow:0 0 8px rgba(155,48,255,.3);
-    padding:4px 12px;
-    display:inline-block;
-  }
-  .vs-slot.r { text-align:right; }
-  .vs-slot.r .team-frame { display:inline-block; }
+/* ── LIVE ── */
+#live { position:absolute; inset:0; z-index:45; pointer-events:none; opacity:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; text-align:center; }
+body.live #live { opacity:1; }
+body.live #final { opacity:0; }
+body.live #reel { opacity:.15; filter:blur(10px) saturate(.4); }
+.lv-pre { font-size:22px; letter-spacing:.6em; color:#fff; text-shadow:0 0 16px rgba(255,34,68,.8), 2px 2px 0 #000; }
+.lv-word { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-style:italic; font-size:380px; line-height:.85;
+  letter-spacing:.02em; margin:14px 0 10px; color:#fff;
+  text-shadow:0 0 60px rgba(255,34,68,.9), -10px 0 0 rgba(0,229,255,.6), 10px 0 0 rgba(255,51,204,.6), 8px 8px 0 #000;
+  animation:livepulse 1.6s ease-in-out infinite; }
+body.live .lv-word { animation:liveslam .6s cubic-bezier(.15,1.6,.35,1), livepulse 1.6s ease-in-out .6s infinite; }
+@keyframes liveslam { from{transform:scale(2.4); opacity:0} to{transform:scale(1); opacity:1} }
+@keyframes livepulse { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.25)} }
+.lv-dot { display:inline-block; width:22px; height:22px; border-radius:50%; background:var(--red); margin-right:18px;
+  box-shadow:0 0 18px var(--red); animation:selblink 1s steps(1) infinite; vertical-align:middle; }
+.lv-event { font-family:'Barlow Condensed',sans-serif; font-size:72px; font-weight:900; letter-spacing:.3em;
+  text-transform:uppercase; color:#fff; text-shadow:0 0 24px rgba(204,102,255,.7), 3px 3px 0 #000; }
 </style>
 </head>
 <body>
+<div id="stage">
 
 <div class="sw-bg"></div>
 <canvas id="swCanvas" width="1920" height="1080"></canvas>
+
+<div id="reel">
+  <video class="rv" id="rvA" playsinline preload="auto"></video>
+  <video class="rv" id="rvB" playsinline preload="auto"></video>
+  <img   class="rv" id="rvS" alt="">
+</div>
+<div id="shade"></div>
+<iframe class="sbf" id="brkA" title="standby" allow="autoplay"></iframe>
+<iframe class="sbf" id="brkB" title="standby" allow="autoplay"></iframe>
+<div id="cut"></div>
 
 <div class="sc sc-tl"></div><div class="sc sc-tr"></div>
 <div class="sc sc-bl"></div><div class="sc sc-br"></div>
@@ -360,18 +314,60 @@ body::after { display:none; }
   </div>
   <div style="flex:1"></div>
   <div class="tb-right">
-    <div class="tb-event-main" id="tbEventMain">SUMMER SPLIT</div>
-    <div class="tb-event-sub"  id="tbEventSub">ubaesports.com</div>
+    <div class="tb-event-main" id="tbEventMain">FIGHT NIGHT</div>
+    <div class="tb-event-sub"  id="tbEventSub">discord.gg/uba</div>
   </div>
+</div>
+
+<!-- MENU: one line per thing in the reel, the cursor on whatever is playing -->
+<div class="menu" id="menu">
+  <div class="menu-head"><span class="mh-tag">MAIN MENU</span><span class="mh-line"></span></div>
+  <div id="menuItems"><div id="menuHi"></div></div>
+  <div class="press-start">PRESS START</div>
+</div>
+
+<!-- MAIN EVENT + CLOCK -->
+<div class="me" id="mePanel">
+  <div class="me-tag" id="meTag">MAIN EVENT</div>
+  <div class="me-names">
+    <span class="tabbr l" id="cdBigL">TBA</span><span class="me-vs">VS</span><span class="tabbr r" id="cdBigR">TBA</span>
+  </div>
+  <div class="me-clock"><span class="me-in">STARTS IN</span><span id="cdTimer">--:--</span></div>
+</div>
+
+<!-- FINAL MINUTE -->
+<div id="final">
+  <div class="fn-head">
+    <div class="fn-tag" id="fnTag">MAIN EVENT</div>
+    <div class="fn-names">
+      <span class="tabbr l" id="fnL">TBA</span><span class="me-vs">VS</span><span class="tabbr r" id="fnR">TBA</span>
+    </div>
+  </div>
+  <svg id="ring" viewBox="0 0 660 660">
+    <defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff33cc"/><stop offset=".5" stop-color="#cc66ff"/><stop offset="1" stop-color="#6366f1"/>
+    </linearGradient></defs>
+    <circle id="ringTicks" cx="330" cy="330" r="312"/>
+    <circle id="ringTrack" cx="330" cy="330" r="290"/>
+    <circle id="ringArc"   cx="330" cy="330" r="290" transform="rotate(-90 330 330)"/>
+  </svg>
+  <div class="fn-num" id="fnNum">60</div>
+  <div class="fn-foot" id="fnFoot">FIGHT NIGHT · STARTING</div>
+</div>
+<div id="wave"></div>
+
+<!-- LIVE -->
+<div id="live">
+  <div class="lv-pre"><span class="lv-dot"></span>WE ARE</div>
+  <div class="lv-word">LIVE</div>
+  <div class="lv-event" id="lvEvent">FIGHT NIGHT</div>
 </div>
 
 <!-- BOTTOM -->
 <div class="bottom-bar">
   <div style="display:flex;align-items:baseline;gap:8px">
     <span class="sponsor-pre">POWERED BY</span>
-    <!-- Filled from sponsors.js, the same list the tale of the tape reads. It
-         was hardcoded to one partner, so a night on a different sponsor would
-         have had this screen and the tape naming two different companies. -->
+    <!-- Filled from sponsors.js, the same list the tale of the tape reads. -->
     <span class="sponsor" id="sponsorSite">SPONSOR</span>
   </div>
   <div class="b-links">
@@ -379,439 +375,376 @@ body::after { display:none; }
   </div>
 </div>
 
-<!-- LEFT -->
-<div class="left-panel">
-  <div class="vs-row">
-    <div class="vs-slot l">
-      <div class="name-wrap">
-        <div class="tabbr l" id="cdBigL">TEAM A</div>
-        <div class="team-frame">TEAM A</div>
-      </div>
-    </div>
-    <div class="vs-mid">
-      <div class="vs-word">VS</div>
-      <div class="vs-bo">BEST OF 5</div>
-    </div>
-    <div class="vs-slot r">
-      <div class="name-wrap">
-        <div class="tabbr r" id="cdBigR">TEAM B</div>
-        <div class="team-frame">TEAM B</div>
-      </div>
-    </div>
-  </div>
-  <div class="game-menu" id="gameMenu">
-    <div class="menu-item active" data-idx="0">
-      <div class="menu-cursor">»</div>
-      <div class="menu-label">PLAY</div>
-      <div class="menu-sub">MATCH START</div>
-    </div>
-    <div class="menu-item" data-idx="1">
-      <div class="menu-cursor">»</div>
-      <div class="menu-label">REPLAYS</div>
-      <div class="menu-sub">SEASON ARCHIVE</div>
-    </div>
-    <div class="menu-item" data-idx="2">
-      <div class="menu-cursor">»</div>
-      <div class="menu-label">SETTINGS</div>
-      <div class="menu-sub">CONFIG</div>
-    </div>
-    <div class="menu-item" data-idx="3">
-      <div class="menu-cursor">»</div>
-      <div class="menu-label">SAVE &amp; EXIT</div>
-      <div class="menu-sub">SEASON 1 DATA</div>
-    </div>
-  </div>
+<div id="crt"></div>
 </div>
+<div id="flash"></div>
 
 <script>
 // ── CONFIG ──
+const QS = new URLSearchParams(location.search)
 const CFG = {
-  target: new Date(2026,2,19,20,0,0),
-  tbEventMain: 'SUMMER SPLIT',
-  tbEventSub:  'ubaesports.com',
-};
-const el = id => document.getElementById(id);
-const pad = n => String(n).padStart(2,'0');
-
-// set static text
-if(el('tbEventMain')) el('tbEventMain').textContent = CFG.tbEventMain;
-if(el('tbEventSub'))  el('tbEventSub').textContent  = CFG.tbEventSub;
-
-// countdown — only touches elements that exist
-function tick(){
-  const diff = Math.max(0, CFG.target - Date.now());
-  const tot = Math.floor(diff/1000);
-  const hv = pad(Math.floor(tot/3600));
-  const mv = pad(Math.floor((tot%3600)/60));
-  const sv = pad(tot%60);
-  const t = el('cdTimer'); if(t) t.textContent = (parseInt(hv)>0? hv+':':'') + mv+':'+sv;
-  if(diff > 0) setTimeout(tick, 1000);
+  // No target until the deck sends one. The old default was a date in March,
+  // which meant every fresh load opened on 00:00 -- here that would be LIVE.
+  target: QS.get('t') ? new Date(Date.now() + parseFloat(QS.get('t')) * 60000) : null,
+  eventMain: 'FIGHT NIGHT',
+  league: (QS.get('league') || 'uba').toLowerCase(),
 }
-tick();
+const MUTE = QS.get('mute') === '1', SFX = QS.get('sfx') !== '0'
+const FINAL_SECS = 60, BREAK_SECS = 14, STILL_SECS = 9
+const el = id => document.getElementById(id)
+const pad = n => String(n).padStart(2,'0')
 
-// ── SYNTHWAVE GRID ──────────────────────────────────────
-(function(){
-  const cv = el('swCanvas');
-  if(!cv) return;
-  const cx = cv.getContext('2d');
-  const W = 1920, H = 1080;
-  const vp = {x: W/2, y: H*0.42};
-  let T = 0;
+// ── SOUND ── synthesised, so there is no file to forget to upload. OBS lets a
+// browser source make sound without a click; a normal browser tab does not,
+// and there every call here quietly does nothing.
+let AC = null
+function ac(){
+  if(!SFX) return null
+  try{
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)()
+    if(AC.state === 'suspended') AC.resume()
+    return AC.state === 'running' ? AC : null
+  }catch(e){ return null }
+}
+function tone(freq, to, dur, gain, type){
+  const a = ac(); if(!a) return
+  const t = a.currentTime, o = a.createOscillator(), g = a.createGain()
+  o.type = type || 'sine'
+  o.frequency.setValueAtTime(freq, t); o.frequency.exponentialRampToValueAtTime(to, t + dur)
+  g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur)
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + .05)
+}
+const sfxTick  = () => tone(1500, 1400, .05, .06, 'square')
+const sfxBoom  = () => { tone(120, 38, .55, .7); tone(900, 300, .06, .12, 'square') }
+const sfxLive  = () => { tone(150, 30, 1.6, .9); tone(70, 28, 1.8, .6, 'triangle'); tone(1200, 200, .25, .15, 'sawtooth') }
+const sfxSelect= () => { tone(660, 660, .07, .08, 'square'); setTimeout(() => tone(990, 990, .1, .08, 'square'), 80) }
 
-  // stationary neon flowers
-  function drawFlower(ctx, x, y, r, hue, alpha, phase){
-    if(alpha <= 0) return;
-    ctx.save();
+// ── THE REEL ─────────────────────────────────────────────────────────────
+// promos.json is the running order; every second promo is followed by a
+// standby break. A file that will not load is dropped for the rest of the
+// session rather than retried every lap.
+let promos = [], reel = [], at = -1, itemTimer = null, itemStart = 0, itemLen = 0, liveVid = null, gen = 0
+const vids = [el('rvA'), el('rvB')]
+const LEAGUE_BREAKS = {
+  uba:  [{ view:'card',   title:"TONIGHT'S CARD", sub:'THE FULL LINEUP' }, { view:'cta', title:'JOIN UBA', sub:'DISCORD.GG/UBA' }],
+  gfl:  [{ view:'card',   title:"TONIGHT'S CARD", sub:'THE FULL LINEUP' }, { view:'cta', title:'JOIN UBA', sub:'DISCORD.GG/UBA' }],
+  ubae: [{ view:'teamvs', title:'THE MATCHUP',    sub:'TEAM VS TEAM' },    { view:'cta', title:'JOIN UBA', sub:'DISCORD.GG/UBA' }],
+}
 
-    const petN = 5;
-    for(let p=0; p<petN; p++){
-      const angle = (p/petN)*Math.PI*2 + phase;
-      const px = x + Math.cos(angle)*r*0.8;
-      const py = y + Math.sin(angle)*r*0.8;
-      const ph = (hue + p*8) % 360;
-      const pr = r * 0.34;
+async function loadPromos(){
+  try{
+    const r = await fetch('assets/promos/promos.json', { cache:'no-store' })
+    if(r.ok) promos = (await r.json()).map(p =>
+      p.file  ? { kind:'video', src:'assets/promos/' + p.file, title:p.title || '', sub:p.sub || '', secs:p.secs || 0 } :
+      p.image ? { kind:'still', src:'assets/' + p.image,      title:p.title || '', sub:p.sub || '', secs:p.secs || STILL_SECS } : null
+    ).filter(Boolean)
+  }catch(e){}
+  // No promos is a still a screen: the posters the standby already shows.
+  if(!promos.length){
+    try{
+      const r = await fetch('assets/posters.json', { cache:'no-store' })
+      if(r.ok) promos = (await r.json()).map((f, i) =>
+        ({ kind:'still', src:'assets/' + f, title:'THE POSTER', sub:'NO. ' + pad(i + 1), secs:STILL_SECS }))
+    }catch(e){}
+  }
+}
 
-      // outer glow ring — large, very faint
-      ctx.beginPath(); ctx.arc(px, py, pr*2.2, 0, Math.PI*2);
-      ctx.fillStyle = `hsla(${ph},100%,75%,${alpha*0.12})`;
-      ctx.fill();
+function buildReel(){
+  const breaks = LEAGUE_BREAKS[CFG.league] || LEAGUE_BREAKS.uba
+  reel = []; let b = 0
+  promos.forEach((p, i) => {
+    reel.push(p)
+    if(i % 2 === 1) reel.push({ kind:'break', ...breaks[b++ % breaks.length] })
+  })
+  if(!reel.length || reel[reel.length - 1].kind !== 'break') reel.push({ kind:'break', ...breaks[b % breaks.length] })
+  // both boards are loaded up front so a break never opens on an empty frame
+  el('brkA').src = 'standby.html?kiosk=1&league=' + CFG.league + '&views=' + breaks[0].view
+  el('brkB').src = 'standby.html?kiosk=1&league=' + CFG.league + '&views=' + breaks[1].view
+  drawMenu()
+}
 
-      // mid glow
-      ctx.beginPath(); ctx.arc(px, py, pr*1.4, 0, Math.PI*2);
-      ctx.fillStyle = `hsla(${ph},100%,80%,${alpha*0.28})`;
-      ctx.fill();
+function drawMenu(){
+  const box = el('menuItems')
+  box.querySelectorAll('.mi').forEach(n => n.remove())
+  const row = (cls, n, label, sub) => {
+    const d = document.createElement('div'); d.className = 'mi ' + cls
+    d.innerHTML = `<div class="mi-cur">»</div><div class="mi-n">${n}</div>
+      <div class="mi-txt"><div class="mi-label"></div><div class="mi-sub"></div></div><div class="mi-bar"><i></i></div>`
+    d.querySelector('.mi-label').textContent = label
+    d.querySelector('.mi-sub').textContent = sub
+    box.appendChild(d); return d
+  }
+  row('start', '▶', 'START MATCH', '').id = 'miStart'
+  reel.forEach((r, i) => { r.node = row('', pad(i + 1), r.title, r.sub) })
+  clockText()
+}
 
-      // solid petal core
-      ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI*2);
-      ctx.fillStyle = `hsla(${ph},100%,82%,${alpha})`;
-      ctx.fill();
+function point(node){
+  document.querySelectorAll('.mi.on').forEach(n => n.classList.remove('on'))
+  if(!node) return
+  node.classList.add('on')
+  const hi = el('menuHi')
+  hi.style.top = node.offsetTop + 'px'; hi.style.height = node.offsetHeight + 'px'
+}
+
+function cut(){ const c = el('cut'); c.classList.remove('go'); void c.offsetWidth; c.classList.add('go') }
+
+function stopItem(){
+  clearTimeout(itemTimer); itemTimer = null; gen++
+  vids.forEach(v => { v.onended = v.onerror = v.onplaying = null })
+}
+
+function next(){
+  if(document.body.classList.contains('final') || document.body.classList.contains('live')) return
+  stopItem()
+  const live = reel.filter(r => !r.dead)
+  if(!live.length) return
+  do { at = (at + 1) % reel.length } while(reel[at].dead)
+  play(reel[at])
+}
+
+function play(item){
+  point(item.node); cut()
+  itemStart = performance.now()
+  if(item.kind === 'break'){
+    const breaks = LEAGUE_BREAKS[CFG.league] || LEAGUE_BREAKS.uba
+    const frame = item.view === breaks[0].view ? el('brkA') : el('brkB')
+    document.body.classList.add('brk')
+    el('brkA').classList.toggle('on', frame.id === 'brkA'); el('brkB').classList.toggle('on', frame.id === 'brkB')
+    itemLen = BREAK_SECS * 1000
+    itemTimer = setTimeout(next, itemLen)
+    return
+  }
+  document.body.classList.remove('brk')
+  el('brkA').classList.remove('on'); el('brkB').classList.remove('on')
+
+  if(item.kind === 'still'){
+    const s = el('rvS')
+    s.onerror = () => { item.dead = true; next() }
+    s.src = item.src
+    s.classList.remove('on'); void s.offsetWidth; s.classList.add('on')
+    vids.forEach(v => { v.classList.remove('on'); setTimeout(() => v.pause(), 700) })
+    liveVid = null
+    itemLen = item.secs * 1000
+    itemTimer = setTimeout(next, itemLen)
+    return
+  }
+
+  // a video goes into whichever slot is NOT on screen, and only fades up once
+  // it is actually playing -- so a cut never shows a black frame
+  const v = vids[0] === liveVid ? vids[1] : vids[0], old = liveVid
+  // Every callback below checks it still belongs to THIS play. A late failure
+  // from the promo before would otherwise skip the one now on screen.
+  const my = ++gen, mine = f => (...a) => { if(my === gen) f(...a) }
+  v.src = item.src; v.muted = MUTE; v.volume = 1; v.currentTime = 0
+  itemLen = 0
+  // Only a file that cannot be read is dropped for good. A play that is merely
+  // refused (a background tab) skips this lap and is tried again next lap.
+  v.onerror = mine(() => { item.dead = true; next() })
+  const skip = mine(next)
+  v.onended = skip
+  const go = v.play()
+  if(go && go.catch) go.catch(mine(() => {
+    // a browser tab refuses sound without a click; OBS does not. Muted beats nothing.
+    v.muted = true; v.play().catch(skip)
+  }))
+  itemTimer = setTimeout(mine(() => { if(v.paused || v.readyState < 2) next() }), 10000)
+  v.onplaying = mine(() => {
+    clearTimeout(itemTimer); itemTimer = null
+    if(item.secs) itemTimer = setTimeout(skip, item.secs * 1000)
+    v.classList.add('on'); el('rvS').classList.remove('on')
+    if(old && old !== v){ old.classList.remove('on'); setTimeout(() => { if(old !== liveVid) old.pause() }, 700) }
+    liveVid = v; v.onplaying = null
+  })
+}
+
+// the playing item's progress bar
+function progress(){
+  const item = reel[at]
+  if(item && item.node){
+    let f = 0
+    if(item.kind === 'video' && liveVid && liveVid.duration)
+      f = liveVid.currentTime / (item.secs ? Math.min(item.secs, liveVid.duration) : liveVid.duration)
+    else if(itemLen) f = (performance.now() - itemStart) / itemLen
+    item.node.querySelector('.mi-bar i').style.width = Math.min(100, f * 100) + '%'
+  }
+  ring()
+  requestAnimationFrame(progress)
+}
+
+// ── THE CLOCK ────────────────────────────────────────────────────────────
+let lastSec = null
+function remaining(){ return CFG.target ? CFG.target - Date.now() : null }
+function fmt(ms){
+  const tot = Math.ceil(ms / 1000)
+  const h = Math.floor(tot / 3600), m = Math.floor((tot % 3600) / 60), s = tot % 60
+  return (h > 0 ? h + ':' + pad(m) : pad(m)) + ':' + pad(s)
+}
+function clockText(){
+  const ms = remaining()
+  const txt = ms === null ? '--:--' : fmt(Math.max(0, ms))
+  el('cdTimer').textContent = txt
+  const st = el('miStart')
+  if(st) st.querySelector('.mi-sub').textContent = ms === null ? 'WAITING FOR THE BELL' : 'IN ' + txt
+}
+
+function ring(){
+  const ms = remaining(), arc = el('ringArc'), C = 2 * Math.PI * 290
+  if(ms === null) return
+  const f = Math.max(0, Math.min(1, ms / (FINAL_SECS * 1000)))
+  arc.style.strokeDasharray = C
+  arc.style.strokeDashoffset = C * (1 - f)
+}
+
+function hit(){
+  const n = el('fnNum'); n.classList.remove('hit'); void n.offsetWidth; n.classList.add('hit')
+}
+function slam(){
+  const s = el('stage'), f = el('flash'), w = el('wave')
+  ;[s, f, w].forEach(x => x.classList.remove(x === s ? 'shake' : 'go'))
+  void s.offsetWidth
+  s.classList.add('shake'); f.classList.add('go'); w.classList.add('go')
+}
+
+function enterFinal(){
+  const b = document.body
+  if(b.classList.contains('final')) return
+  stopItem()
+  // the menu SELECTS start match first -- the one beat that sells the menu
+  const st = el('miStart'); point(st); st.classList.add('select'); sfxSelect()
+  setTimeout(() => st.classList.remove('select'), 700)
+  setTimeout(() => {
+    b.classList.remove('brk'); el('brkA').classList.remove('on'); el('brkB').classList.remove('on')
+    b.classList.add('final')
+    // the promo underneath keeps rolling, blurred, but its sound goes
+    const v = liveVid
+    if(v){ const step = setInterval(() => { v.volume = Math.max(0, v.volume - .05); if(v.volume <= 0) clearInterval(step) }, 120) }
+  }, 650)
+}
+function leaveFinal(){
+  const b = document.body
+  if(!b.classList.contains('final') && !b.classList.contains('live')) return
+  b.classList.remove('final', 'red', 'live')
+  if(liveVid) liveVid.volume = 1
+  next()
+}
+
+function tick(){
+  clockText()
+  const ms = remaining()
+  if(ms === null || ms > FINAL_SECS * 1000){ lastSec = null; leaveFinal(); return }
+  const sec = Math.max(0, Math.ceil(ms / 1000))
+  if(sec === lastSec) return
+  lastSec = sec
+  const b = document.body
+  if(sec === 0){
+    if(!b.classList.contains('live')){
+      enterFinal(); b.classList.remove('red'); b.classList.add('live'); slam(); sfxLive()
+      if(liveVid) liveVid.volume = 0
     }
-
-    // centre glow
-    ctx.beginPath(); ctx.arc(x, y, r*0.35, 0, Math.PI*2);
-    ctx.fillStyle = `hsla(${(hue+180)%360},100%,70%,${alpha*0.35})`;
-    ctx.fill();
-
-    // centre dot
-    ctx.beginPath(); ctx.arc(x, y, r*0.18, 0, Math.PI*2);
-    ctx.fillStyle = `hsla(0,0%,100%,${alpha})`;
-    ctx.fill();
-
-    ctx.restore();
+    return
   }
+  b.classList.remove('live')
+  enterFinal()
+  el('fnNum').textContent = sec
+  b.classList.toggle('red', sec <= 10)
+  hit()
+  if(sec <= 10){ slam(); sfxBoom() } else sfxTick()
+}
+setInterval(tick, 100)
 
-  // flower positions — fixed, scattered in sky area
-  function newFlower(){
-    return {
-      x: (()=>{
-        const r = Math.random();
-        if(r < 0.40)       return 55 + Math.random()*340;    // left text halo (just around logo)
-        else if(r < 0.80)  return 1525 + Math.random()*340;  // right text halo
-        else               return 400 + Math.random()*1120;  // anywhere else
-      })(),
-      y: (()=>{ const r=Math.random(); if(r<0.5) return 155+Math.random()*100; else if(r<0.75) return 15+Math.random()*20; else return 270+Math.random()*100; })(),
-      r: 7   + Math.random()*14,
-      hue: 270 + Math.random()*90,
-      phase: Math.random()*Math.PI*2,
-      slowSpin: (Math.random()<0.5?1:-1)*(0.0002+Math.random()*0.0003),
-      // lifecycle: 0=rising in, 1=peak, 2=glitching, 3=fading out, 4=dead
-      state: 0,
-      life: 0,           // 0..1 within current state
-      riseSpeed:  0.0003 + Math.random()*0.0002,
-      peakDur:    120 + Math.floor(Math.random()*180),  // frames at peak
-      peakTimer:  0,
-      glitchDone: false,
-      glitchTimer:0,
-    };
-  }
-  const flowers = Array.from({length:9}, ()=>{ const f=newFlower(); f.life=Math.random()*0.4; return f; });
+// ── NAMES ── both corners share one size: whatever fits the longer name.
+function fitPair(L, R, MAX, MIN, maxW){
+  const sizeFor = e => { let fs = MAX; e.style.fontSize = fs + 'px'
+    while(e.scrollWidth > maxW && fs > MIN){ fs -= 2; e.style.fontSize = fs + 'px' } return fs }
+  const fs = Math.min(sizeFor(L), sizeFor(R))
+  L.style.fontSize = fs + 'px'; R.style.fontSize = fs + 'px'
+}
+function fitAll(){
+  fitPair(el('cdBigL'), el('cdBigR'), 56, 24, 330)
+  fitPair(el('fnL'), el('fnR'), 92, 40, 720)
+}
+function setNames(a, b){
+  if(a){ el('cdBigL').textContent = a; el('fnL').textContent = a }
+  if(b){ el('cdBigR').textContent = b; el('fnR').textContent = b }
+  fitAll()
+}
+function setEvent(name){
+  CFG.eventMain = name
+  el('tbEventMain').textContent = name
+  el('lvEvent').textContent = name
+  el('fnFoot').textContent = name + ' · STARTING'
+}
+function setLeague(lg){
+  lg = (lg || 'uba').toLowerCase()
+  if(!LEAGUE_BREAKS[lg]) lg = 'uba'
+  const tag = lg === 'ubae' ? 'THE MATCH · BEST OF 5' : 'MAIN EVENT'
+  el('meTag').textContent = tag; el('fnTag').textContent = tag
+  if(lg === CFG.league) return
+  CFG.league = lg
+  // a different league is a different pair of standby boards; before the reel
+  // exists there is nothing to rebuild, and the first build reads CFG.league
+  if(reel.length){ at = -1; buildReel(); next() }
+}
+// Measure in the font you draw in: the condensed face loads with display=swap,
+// and a fit against the fallback holds a size several steps too small.
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(fitAll)
 
-  function drawPetal(ctx, x, y, size, rot, h, s, l, alpha){
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(rot);
-    ctx.globalAlpha = alpha;
-    // petal shape: two bezier curves forming an elliptical leaf
-    const pw = size * 0.55;
-    const ph = size;
-    ctx.beginPath();
-    ctx.moveTo(0, -ph);
-    ctx.bezierCurveTo( pw, -ph*0.4,  pw,  ph*0.4,  0,  ph);
-    ctx.bezierCurveTo(-pw,  ph*0.4, -pw, -ph*0.4,  0, -ph);
-    ctx.closePath();
-    // gradient from bright centre to soft edge
-    const g = ctx.createRadialGradient(0,-ph*0.2,0, 0,0,ph);
-    g.addColorStop(0,   `hsl(${h},100%,92%)`);
-    g.addColorStop(0.5, `hsl(${h},100%,${l}%)`);
-    g.addColorStop(1,   `hsl(${h+20},100%,${l-8}%)`);
-    ctx.fillStyle = g;
-    ctx.fill();
-    // neon outline glow
-    ctx.shadowColor = `hsl(${h},100%,85%)`;
-    ctx.shadowBlur = 22;
-    ctx.strokeStyle = `hsla(${h},100%,95%,0.9)`;
-    ctx.lineWidth = 1.2;
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-    ctx.restore();
-    ctx.globalAlpha = 1;
-  }
-
-  function draw(){
-    cx.clearRect(0,0,W,H);
-
-    // dark transparent — body bg shows through
-    cx.fillStyle='rgba(3,0,10,0.0)';
-    cx.fillRect(0,0,W,H);
-
-    // full canvas gradient — purple haze top to bottom
-    const bgFull = cx.createLinearGradient(0,0,0,H);
-    bgFull.addColorStop(0,   'rgba(6,0,18,0.0)');
-    bgFull.addColorStop(0.3, 'rgba(10,0,28,0.25)');
-    bgFull.addColorStop(0.65,'rgba(16,0,40,0.55)');
-    bgFull.addColorStop(1,   'rgba(4,0,14,0.88)');
-    cx.fillStyle=bgFull; cx.fillRect(0,0,W,H);
-
-    // vertical lines — subtle, thin
-    for(let i=-28;i<=28;i++){
-      const hue = (T*1.2 + i*13 + 270) % 360;
-      const a = 0.13 + 0.10*Math.abs(Math.sin(T*0.02 + i*0.18));
-      cx.strokeStyle = `hsla(${hue},100%,65%,${a})`;
-      cx.lineWidth = 1;
-      cx.shadowBlur = 0;
-      cx.beginPath();
-      cx.moveTo(W/2 + i*78, H);
-      cx.lineTo(vp.x, vp.y);
-      cx.stroke();
-    }
-
-    // horizontal lines — subtle, perspective spaced
-    const rows = 18;
-    const scroll = (T*0.5) % 1;
-    for(let j=1; j<=rows; j++){
-      const t = Math.pow((j - 1 + scroll) / rows, 1.8);
-      if(t <= 0 || t > 1) continue;
-      const y = vp.y + (H - vp.y) * t;
-      const hue = (T*1.5 + j*20 + 290) % 360;
-      const a = 0.08 + t*0.20;
-      cx.strokeStyle = `hsla(${hue},100%,68%,${a})`;
-      cx.lineWidth = 0.5 + t*2;
-      cx.shadowBlur = 0;
-      cx.beginPath();
-      cx.moveTo(vp.x - t*W*0.92, y);
-      cx.lineTo(vp.x + t*W*0.92, y);
-      cx.stroke();
-    }
-
-    // ── HORIZON SEPARATION — fog band + seam + glow ──
-
-    // 1) fog band above horizon — dark purple haze rising into sky
-    const fogUp = cx.createLinearGradient(0, vp.y-180, 0, vp.y);
-    fogUp.addColorStop(0,   'transparent');
-    fogUp.addColorStop(0.5, 'rgba(20,0,45,0.06)');
-    fogUp.addColorStop(1,   'rgba(40,0,80,0.12)');
-    cx.fillStyle = fogUp;
-    cx.fillRect(0, vp.y-80, W, 80);
-
-    // 2) fog band below horizon — misty ground glow
-    const fogDown = cx.createLinearGradient(0, vp.y, 0, vp.y+120);
-    fogDown.addColorStop(0,   'rgba(80,0,160,0.08)');
-    fogDown.addColorStop(0.6, 'rgba(40,0,80,0.03)');
-    fogDown.addColorStop(1,   'transparent');
-    cx.fillStyle = fogDown;
-    cx.fillRect(0, vp.y, W, 60);
-
-    // 3) radial glow centred on horizon — wider and stronger
-    const hHue = (T*0.3+290)%360;
-    const hg = cx.createRadialGradient(W/2,vp.y,0, W/2,vp.y,700);
-    hg.addColorStop(0,   `hsla(${hHue},100%,72%,0.07)`);
-    hg.addColorStop(0.3, `hsla(${(hHue+30)%360},100%,60%,0.03)`);
-    hg.addColorStop(0.7, `hsla(${(hHue+60)%360},100%,50%,0.01)`);
-    hg.addColorStop(1,   'transparent');
-    cx.fillStyle = hg;
-    cx.fillRect(0, vp.y-300, W, 600);
-
-
-
-    // neon flowers — lifecycle: rise → peak+glitch → fade → respawn
-    flowers.forEach((f,fi)=>{
-      f.phase += f.slowSpin;
-      const lsdH = (f.hue + T*0.4) % 360;
-      let alpha = 0;
-      let drawX = f.x, drawY = f.y;
-
-      if(f.state === 0){
-        // ── RISING IN — slow ease
-        f.life += f.riseSpeed;
-        alpha = Math.pow(f.life, 2.5) * 0.5;  // ease-in curve
-        if(f.life >= 1){ f.state=1; f.peakTimer=0; f.life=1; }
-
-      } else if(f.state === 1){
-        // ── PEAK — full brightness, slow breathing
-        alpha = 0.42 + 0.08*Math.sin(T*0.06 + fi);
-        f.peakTimer++;
-        if(f.peakTimer >= f.peakDur){
-          f.state=2; f.glitchTimer=0;
-        }
-
-      } else if(f.state === 2){
-        // ── GLITCH — brief chroma shake (8 frames)
-        f.glitchTimer++;
-        alpha = 0.5;
-        const gf = f.glitchTimer;
-        if(gf < 3)       { drawX += (Math.random()-0.5)*6; drawY += (Math.random()-0.5)*3; }
-        else if(gf < 6)  { drawX -= 3; }
-        else if(gf < 8)  { drawX += 2; }
-        // draw second ghost offset for chroma feel
-        if(gf < 8){
-          drawFlower(cx, drawX+4, drawY, f.r, (lsdH+180)%360, alpha*0.25, f.phase);
-        }
-        if(f.glitchTimer >= 8){ f.state=3; f.life=1; }
-
-      } else if(f.state === 3){
-        // ── FADING OUT — flutter: tiny alpha oscillation as it vanishes
-        f.life -= f.riseSpeed * 0.9;  // slow fade
-        const flutter = 1 + 0.12*Math.sin(T*0.6 + fi*1.3);  // gentle tremor
-        alpha = Math.pow(Math.max(0,f.life), 1.8) * 0.45 * flutter;
-        if(f.life <= 0){
-          const nf = newFlower();
-          f.x=nf.x; f.y=nf.y; f.r=nf.r; f.hue=nf.hue;
-          f.phase=nf.phase; f.slowSpin=nf.slowSpin;
-          f.riseSpeed=nf.riseSpeed; f.peakDur=nf.peakDur;
-          f.peakTimer=0; f.glitchTimer=0; f.glitchDone=false;
-          f.state=0; f.life=0;
-          return;
-        }
-      }
-
-      if(alpha > 0.008)
-        drawFlower(cx, drawX, drawY, f.r, lsdH, alpha, f.phase);
-    });
-
-
-    // ── HOLOGRAPHIC SCANLINE ──
-    // Extremely slow drift — full pass takes ~5 minutes
-    // Modelled after TCG foil: thin prismatic diffraction band + sparkle
-    const holoT = (T * 0.0012) % 1;          // 0..1 over ~5 min
-    const activeWindow = 0.5;                  // 50% of cycle is active, 50% is dark pause
-
-    if(holoT < activeWindow){
-      const progress = holoT / activeWindow;
-      const sy = -80 + (H + 160) * progress;  // beam centre Y
-      const bh = 52;                           // wider band
-
-      // ── diffraction grating: micro rainbow stripes inside the band ──
-      // draw 7 spectral color slices across the band height
-      const spectrum = [
-        [0,   300], // magenta
-        [0.14,280], // violet
-        [0.28,240], // blue
-        [0.42,190], // cyan
-        [0.57,320], // pink instead of green
-        [0.71,50 ], // yellow
-        [0.85,15 ], // red-orange
-        [1,   330], // back to pink
-      ];
-      for(let si=0; si<spectrum.length-1; si++){
-        const [t0, h0] = spectrum[si];
-        const [t1, h1] = spectrum[si+1];
-        const sliceY = sy - bh/2 + t0*bh;
-        const sliceH = (t1-t0)*bh;
-        // hue shifts slightly as beam moves down — parallax feel
-        const hueShift = progress * 60;
-        const g = cx.createLinearGradient(0, sliceY, 0, sliceY+sliceH);
-        g.addColorStop(0, `hsla(${(h0+hueShift)%360},100%,80%,0.0)`);
-        g.addColorStop(0.5, `hsla(${(h0+hueShift+h1)/2%360},100%,90%,0.028)`);
-        g.addColorStop(1, `hsla(${(h1+hueShift)%360},100%,80%,0.0)`);
-        cx.fillStyle = g;
-        cx.fillRect(0, sliceY, W, sliceH + 1);
-      }
-
-      // ── soft outer glow wrapping the band ──
-      const glow = cx.createLinearGradient(0, sy-bh*2, 0, sy+bh*2);
-      const glowHue = (progress*120 + 270) % 360;
-      glow.addColorStop(0,   'transparent');
-      glow.addColorStop(0.3, `hsla(${glowHue},100%,85%,0.008)`);
-      glow.addColorStop(0.5, `hsla(${(glowHue+30)%360},100%,95%,0.018)`);
-      glow.addColorStop(0.7, `hsla(${glowHue},100%,85%,0.008)`);
-      glow.addColorStop(1,   'transparent');
-      cx.fillStyle = glow;
-      cx.fillRect(0, sy - bh*2, W, bh*4);
-
-      // ── sparkle points scattered along the scanline ──
-      const sparkCount = 12;
-      for(let sp=0; sp<sparkCount; sp++){
-        // deterministic position based on progress so they don't flicker randomly
-        const sx = ((sp * 173.13 + progress * 400) % W);
-        const sparkY = sy + Math.sin(sp * 2.4 + progress * 8) * (bh*0.4);
-        const sparkAlpha = 0.06 * Math.abs(Math.sin(sp * 1.7 + T * 0.08));
-        const sparkHue = (sp * 30 + progress * 180 + 260) % 360;
-        cx.beginPath();
-        cx.arc(sx, sparkY, 1.2, 0, Math.PI*2);
-        cx.fillStyle = `hsla(${sparkHue},100%,95%,${sparkAlpha})`;
-        cx.fill();
-      }
-    }
-
-    // second holographic scan — runs opposite direction, very long cycle (~8 min)
-    const holoT2 = 1 - ((T * 0.0006) % 1);  // reversed, slower
-    const active2 = holoT2 > 0.5;
-    if(active2){
-      const prog2 = (holoT2 - 0.5) / 0.5;
-      const sy2 = -80 + (H + 160) * prog2;
-      const bh2 = 38;
-      const hue2 = (T * 0.8 + 180) % 360;  // complementary hue
-      const g2 = cx.createLinearGradient(0,sy2,0,sy2+bh2);
-      g2.addColorStop(0,'transparent');
-      g2.addColorStop(0.5,`hsla(${hue2},100%,90%,0.022)`);
-      g2.addColorStop(1,'transparent');
-      cx.fillStyle=g2; cx.fillRect(0,sy2,W,bh2);
-    }
-
-    T += 0.5;
-    requestAnimationFrame(draw);
-  }
-  draw();
-})();
-
-// ── GAME MENU CURSOR ──
-(function(){
-  const items = Array.from(document.querySelectorAll('.menu-item'));
-  let cur = 0;
-  function activate(i){
-    items.forEach(el => el.classList.remove('active'));
-    items[i].classList.add('active');
-    cur = i;
-  }
-  function next(){
-    const roll = Math.random();
-    let ni = cur;
-    if(roll < 0.38)      ni = Math.min(items.length-1, cur + 1); // step down
-    else if(roll < 0.60) ni = Math.max(0, cur - 1);              // step up
-    else                 ni = cur;                                // stall
-
-    activate(ni);
-
-    // stall longer when on top 2 items (PLAY / REPLAYS)
-    const isTop = ni <= 1;
-    const baseDelays = isTop
-      ? [1200,1800,2400,3200,4000]   // longer dwells on PLAY/REPLAYS
-      : [400,600,800,1000,1400];     // quicker moves through lower items
-    const d = baseDelays[Math.floor(Math.random()*baseDelays.length)] + Math.random()*400;
-    setTimeout(next, d);
-  }
-  activate(0);
-  setTimeout(next, 1200);
-})();
+const startLeague = CFG.league; CFG.league = null; setLeague(startLeague)
+loadPromos().then(() => { buildReel(); progress(); next() })
 </script>
 
-<div id="cdTimer">00:00</div>
+<script>
+// ── SYNTHWAVE GRID ── the backdrop under the reel, and the whole stage for
+// the final minute. It speeds up for the last ten seconds.
+(function(){
+  const cv = document.getElementById('swCanvas'); if(!cv) return
+  const cx = cv.getContext('2d')
+  const W = 1920, H = 1080, vp = {x: W/2, y: H*0.42}
+  let T = 0
+  function draw(){
+    cx.clearRect(0,0,W,H)
+    const red = document.body.classList.contains('red')
+    const bgFull = cx.createLinearGradient(0,0,0,H)
+    bgFull.addColorStop(0,   'rgba(6,0,18,0.0)')
+    bgFull.addColorStop(0.3, 'rgba(10,0,28,0.25)')
+    bgFull.addColorStop(0.65,'rgba(16,0,40,0.55)')
+    bgFull.addColorStop(1,   'rgba(4,0,14,0.88)')
+    cx.fillStyle = bgFull; cx.fillRect(0,0,W,H)
+    for(let i=-28;i<=28;i++){
+      const hue = red ? 350 : (T*1.2 + i*13 + 270) % 360
+      const a = 0.13 + 0.10*Math.abs(Math.sin(T*0.02 + i*0.18))
+      cx.strokeStyle = `hsla(${hue},100%,65%,${a})`; cx.lineWidth = 1
+      cx.beginPath(); cx.moveTo(W/2 + i*78, H); cx.lineTo(vp.x, vp.y); cx.stroke()
+    }
+    const rows = 18, scroll = (T*0.5) % 1
+    for(let j=1; j<=rows; j++){
+      const t = Math.pow((j - 1 + scroll) / rows, 1.8)
+      if(t <= 0 || t > 1) continue
+      const y = vp.y + (H - vp.y) * t
+      const hue = red ? 345 : (T*1.5 + j*20 + 290) % 360
+      cx.strokeStyle = `hsla(${hue},100%,68%,${0.08 + t*0.20})`
+      cx.lineWidth = 0.5 + t*2
+      cx.beginPath(); cx.moveTo(vp.x - t*W*0.92, y); cx.lineTo(vp.x + t*W*0.92, y); cx.stroke()
+    }
+    const hHue = red ? 350 : (T*0.3+290)%360
+    const hg = cx.createRadialGradient(W/2,vp.y,0, W/2,vp.y,700)
+    hg.addColorStop(0,   `hsla(${hHue},100%,72%,${red ? 0.14 : 0.07})`)
+    hg.addColorStop(0.3, `hsla(${(hHue+30)%360},100%,60%,0.03)`)
+    hg.addColorStop(1,   'transparent')
+    cx.fillStyle = hg; cx.fillRect(0, vp.y-300, W, 600)
+    T += red ? 1.6 : 0.5
+    requestAnimationFrame(draw)
+  }
+  draw()
+})()
+</script>
 
-<!-- ── VGA STUDIO WIRE — deck listener (added 2026-07-24, visuals untouched) ── -->
+<!-- ── VGA STUDIO WIRE — deck listener ── -->
 <script src="sponsors.js"></script>
 <script>
-  // Set before the countdown's own logic runs: this screen is up longer than
-  // any other, so it is the last place a wrong sponsor should sit.
+  // Set before anything else: this screen is up longer than any other, so it
+  // is the last place a wrong sponsor should sit.
   document.getElementById('sponsorSite').textContent = sponsorSite(activeSponsor())
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -819,25 +752,11 @@ tick();
 (function(){
   const _sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
     'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
-  // BOTH team names get ONE shared size: whatever fits the LONGER name (so jUnC
-  // and Champions United are identical size, capped at a sensible max).
-  const fitPair=()=>{
-    const L=document.getElementById('cdBigL'), R=document.getElementById('cdBigR'); if(!L||!R) return
-    const MAX=60, MIN=20, maxW=260
-    const sizeFor=el=>{ el.style.whiteSpace='nowrap'; let fs=MAX; el.style.fontSize=fs+'px'
-      while(el.scrollWidth>maxW && fs>MIN){ fs-=2; el.style.fontSize=fs+'px' } return fs }
-    const fs=Math.min(sizeFor(L), sizeFor(R))
-    L.style.fontSize=fs+'px'; R.style.fontSize=fs+'px'
-  }
-  // Measure in the font you draw in. The display face loads over the network
-  // with `display=swap`, so a name set before it lands is measured against the
-  // FALLBACK — which is much wider than a condensed face — and the shrink loop
-  // takes it several steps too small. It then holds that size, because nothing
-  // re-runs the fit when the font finally arrives. Re-fit when it does.
-  if(document.fonts && document.fonts.ready) document.fonts.ready.then(fitPair)
+  // the deck's league mark: UBAE, UBA, GFL -- and a contender night (MCS, CCS,
+  // HPCS) is a GFL event with a tag, so it gets GFL's board
+  const leagueFrom = m => { m = String(m || '').toUpperCase()
+    return m === 'UBAE' ? 'ubae' : m === 'UBA' ? 'uba' : m ? 'gfl' : null }
   _sb.channel('vga-overlay').on('broadcast',{event:'cmd'},({payload:c})=>{
-    // The deck's sponsor choice. This screen is up longest before a show, so it
-    // must not need a reload to catch a switch made two minutes before doors.
     if(c.type==='sponsor'){
       if(pinSponsor(c.key))
         document.getElementById('sponsorSite').textContent = sponsorSite(activeSponsor())
@@ -845,14 +764,10 @@ tick();
     }
     if(c.type!=='countdown') return
     const d=c.d||{}
-    // team name goes in the BIG slot; the small chip stays TEAM A / TEAM B
-    if(d.a){ const e=document.getElementById('cdBigL'); if(e) e.textContent=d.a }
-    if(d.b){ const e=document.getElementById('cdBigR'); if(e) e.textContent=d.b }
-    if(d.a||d.b) fitPair()
-    // d.league is NOT read here. The push still carries it (the match overlay's
-    // header uses it), but this screen's top-left is the org and never changes.
-    if(d.eventMain && document.getElementById('tbEventMain')) document.getElementById('tbEventMain').textContent=d.eventMain
-    if(d.eventSub  && document.getElementById('tbEventSub'))  document.getElementById('tbEventSub').textContent=d.eventSub
+    if(d.a||d.b) setNames(d.a, d.b)
+    if(d.eventMain) setEvent(d.eventMain)
+    if(d.eventSub) document.getElementById('tbEventSub').textContent=d.eventSub
+    const lg = leagueFrom(d.league); if(lg) setLeague(lg)
     if(d.target){ CFG.target=new Date(d.target); tick() }
   }).subscribe()
 })()
