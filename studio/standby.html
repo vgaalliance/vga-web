@@ -1145,21 +1145,27 @@
   .bb-c.turned .in{transform:rotateX(180deg);}
   .bb-c .f{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;}
   .bb-c .f.back{transform:rotateX(180deg);}
-  .bb-t{position:relative;display:grid;grid-template-columns:110px 1fr;height:100%;background:var(--panel);overflow:hidden;border-left:5px solid var(--c);}
-  .bb-t .tl{width:110px;height:200px;object-fit:cover;object-position:50% 0;display:block;
-    background:linear-gradient(180deg,color-mix(in srgb,var(--c) 60%,#000),rgba(20,4,40,.95));}
-  .bb-t span.tl{display:flex;align-items:center;justify-content:center;font-weight:900;font-size:44px;color:rgba(255,255,255,.4);}
-  .bb-t .b{display:flex;flex-direction:column;justify-content:center;gap:6px;padding:0 18px;min-width:0;}
-  .bb-t .amt{font-weight:900;font-size:54px;line-height:.9;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;}
-  .bb-t .amt span{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--dim);margin-left:6px;}
-  .bb-t .on{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.16em;color:var(--dim);}
-  .bb-t .who{font-weight:900;font-size:34px;text-transform:uppercase;white-space:nowrap;overflow:hidden;line-height:1;}
-  .bb-t .vs{font-family:'Barlow',sans-serif;font-weight:500;font-size:17px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .bb-t .ago{position:absolute;right:12px;top:12px;font-family:'Press Start 2P',monospace;font-size:8px;color:var(--dim);}
-  .bb-t.big{border:2px solid #ffce00;border-left-width:5px;box-shadow:0 0 26px rgba(255,206,0,.25);}
-  .bb-t.big .amt{color:#ffce00;text-shadow:0 0 16px rgba(255,206,0,.45);}
-  .bb-t.big .tag{position:absolute;right:12px;bottom:12px;font-family:'Press Start 2P',monospace;font-size:8px;letter-spacing:.14em;color:#ffce00;}
-  .bb-t.empty{border-left-color:transparent;background:rgba(20,2,40,.35);}
+  /* THE CARD, two-tone: who bet on top (their name, big, on dark), the bet below
+     on a band in the corner's colour (pink = the left corner, blue = the right),
+     the fighter's cut-out standing across both. No box behind the fighter: the
+     photo is a cut-out and stands on the card. The biggest bet's band is gold. */
+  .bb-t{position:relative;height:100%;overflow:hidden;--s:var(--pink-rgb);}
+  .bb-t.r{--s:47,107,255;}
+  .bb-t .top{position:absolute;left:0;right:0;top:0;height:92px;background:#0f0222;padding:16px 20px 0;}
+  .bb-t .top .k{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.18em;color:var(--dim);}
+  .bb-t .top b{display:block;font-weight:900;font-size:44px;line-height:1;text-transform:uppercase;margin-top:8px;max-width:230px;white-space:nowrap;overflow:hidden;}
+  .bb-t .bot{position:absolute;left:0;right:0;bottom:0;top:92px;background:linear-gradient(100deg,rgb(var(--s)),rgba(var(--s),.55));padding:12px 20px 0;}
+  .bb-t .amt{font-weight:900;font-size:40px;line-height:1;color:#fff;font-variant-numeric:tabular-nums;text-shadow:0 2px 0 rgba(0,0,0,.25);white-space:nowrap;}
+  .bb-t .amt small{font-family:'Press Start 2P',monospace;font-size:10px;margin-left:6px;}
+  .bb-t .on{font-family:'Barlow',sans-serif;font-weight:700;font-size:20px;color:#fff;margin-top:4px;max-width:240px;white-space:nowrap;overflow:hidden;}
+  .bb-t .on span{opacity:.8;font-weight:600;}
+  .bb-t .ph{position:absolute;right:-4px;bottom:0;height:206px;width:160px;object-fit:contain;object-position:50% 100%;
+    filter:drop-shadow(0 8px 18px rgba(0,0,0,.65));pointer-events:none;}
+  .bb-t.big{box-shadow:0 0 0 2px #ffce00,0 0 30px rgba(255,206,0,.25);}
+  .bb-t.big .bot{background:linear-gradient(100deg,#ffce00,#c99a06);}
+  .bb-t.big .amt,.bb-t.big .on{color:#1a0f00;text-shadow:none;}
+  .bb-t.big .top .k{color:#ffce00;}
+  .bb-t.empty{background:rgba(20,2,40,.35);}
   .bb-foot{display:flex;align-items:center;gap:16px;font-family:'Press Start 2P',monospace;font-size:11px;letter-spacing:.18em;color:var(--dim);}
   .bb-foot .dots{display:flex;gap:6px;}.bb-foot .dots i{width:10px;height:10px;background:rgba(var(--hi-rgb),.25);display:block;}
   .bb-foot .dots i.on{background:var(--hi);box-shadow:0 0 8px rgba(var(--hi-rgb),.8);}
@@ -3584,7 +3590,7 @@ async function bbLoad(eventId, event){
   const { data, error } = await q.order('bout_number')
   if(error || !data) return false            // a failed read never draws an empty board
   const ids=data.map(r=>r.match_id)
-  const { data:fd, error:fe } = ids.length ? await sb.from('bet_feed_public').select('match_id,bout_number,side_a,side_b,pick,amount,placed_at')
+  const { data:fd, error:fe } = ids.length ? await sb.from('bet_feed_public').select('match_id,bout_number,side_a,side_b,pick,amount,placed_at,bettor')
     .in('match_id', ids).order('placed_at',{ascending:false}).limit(200) : { data:[] }
   BB.feed = fe ? (BB.feed||[]) : (fd||[])   // the feed failing keeps the last one; the board still draws
   let rows=data
@@ -3659,15 +3665,16 @@ const BB_PER=12, BB_PAGES=3, BB_FLIP=5000
 const bbAgo=t=>{ const m=Math.max(0,Math.round((Date.now()-new Date(t))/60000)); return m<1?'JUST NOW':m<60?m+'M AGO':Math.round(m/60)+'H AGO' }
 const bbSide=b=>{ const p=(BB.rows.find(r=>r.match_id===b.match_id))||{}, a=b.pick===b.side_a
   return { photo:a?p.photo_a:p.photo_b, opp:a?b.side_b:b.side_a, c:a?'rgb(var(--pink-rgb))':'#2f6bff' } }
-function bbFit(scope){ scope.querySelectorAll('.who, .amt').forEach(el=>{ el.style.fontSize=''
+function bbFit(scope){ scope.querySelectorAll('.who, .amt, .fit').forEach(el=>{ el.style.fontSize=''
   let px=parseInt(getComputedStyle(el).fontSize)||40; const min=Math.round(px*.5)
   while(el.scrollWidth>el.clientWidth+1 && px>min) el.style.fontSize=(--px)+'px' }) }
+// One bet, as the two-tone card. bet_feed_public.bettor is their fighter name,
+// else their Discord display name (public since 2026-10-24, Castle's call).
 const bbCard=b=>{ if(!b) return '<div class="bb-t empty"></div>'
-  const x=bbSide(b), big=b===BB.big
-  const tile=x.photo ? `<img class="tl" src="${cshEsc(x.photo)}" alt="" onerror="this.remove()">` : `<span class="tl">${(String(b.pick||'?').trim()[0]||'?').toUpperCase()}</span>`
-  return `<div class="bb-t${big?' big':''}" style="--c:${x.c}">${tile}<div class="b"><div class="amt">${bbVc(b.amount)}<span>VC</span></div>
-    <div class="on">ON</div><div class="who">${cshEsc(b.pick)}</div><div class="vs">vs ${cshEsc(x.opp)}</div></div>
-    <span class="ago">${bbAgo(b.placed_at)}</span>${big?'<span class="tag">BIGGEST BET</span>':''}</div>` }
+  const x=bbSide(b), big=b===BB.big, a=b.pick===b.side_a
+  return `<div class="bb-t${a?'':' r'}${big?' big':''}"><div class="top"><div class="k">${big?'BIGGEST BET':'BET BY'} · ${bbAgo(b.placed_at)}</div><b class="fit">${cshEsc(b.bettor||'—')}</b></div>
+    <div class="bot"><div class="amt">${bbVc(b.amount)}<small>VC</small></div><div class="on fit"><span>on</span> ${cshEsc(b.pick)} <span>vs ${cshEsc(x.opp)}</span></div></div>
+    ${x.photo?`<img class="ph" src="${cshEsc(x.photo)}" alt="" onerror="this.remove()">`:''}</div>` }
 function bbFeedDraw(){
   const feed=BB.feed||[]
   if(!feed.length){ $('bbFeed').innerHTML='<div class="bb-more">NO BETS YET TONIGHT</div>'; BB.pages=[]; return 0 }
