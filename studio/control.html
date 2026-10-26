@@ -1977,7 +1977,7 @@ function chatDraw(){
     return `<div class="row" style="gap:8px;margin-bottom:2px;flex-wrap:nowrap;line-height:1.1;${gone?'opacity:.35;text-decoration:line-through':''}">`
       +(gone?'<span style="width:58px;color:var(--gdim)">hidden</span>':`<button class="hide" style="padding:0 6px;font-size:14px;box-shadow:none" onclick="chatHide(${r.id})">✕</button>`)
       +`<span style="color:var(--g);white-space:nowrap">${esc(r.author)}:</span><span style="color:#dfe;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.content)}</span></div>` }).join('')
-    : '<span style="color:var(--gdim)">nothing from #general in the last 3 hours</span>'
+    : `<span style="color:var(--gdim)">nothing from ${(()=>{ try{ return EV==='gfl' ? 'the UBA LIVE stage chat' : '#general' }catch(e){ return '#general' } })()} in the last 3 hours</span>`
 }
 async function chatPoll(){
   // GFL nights read the UBA LIVE stage's chat; EV is declared further down
