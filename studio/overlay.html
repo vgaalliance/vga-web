@@ -8,6 +8,14 @@
   html,body{margin:0;height:100%;background:transparent;overflow:hidden;
     font-family:'Barlow',system-ui,Arial,sans-serif;color:#fff;}
   /* CTA-purple theme: the accent tab + glows are purple (was red); gold/green stay for amounts */
+  /* THE SLANT (Castle, 2026-10-26): every side card tilts toward the fight,
+     the way the CTA and the chat do -- left cards one way, right cards the
+     other, all at the same angle. Each card's own slide transform is written
+     AFTER var(--tilt), so it slides along its tilted plane. Centred and
+     full-screen pieces (the result splash, the coin toss) stay flat. */
+  :root{ --tiltL:perspective(1000px) rotateY(10deg); --tiltR:perspective(1000px) rotateY(-10deg); }
+  #flash,#keys,#nextev,#odds,#fighter,.venue-bug{ --tilt:var(--tiltL); transform-origin:left center; }
+  #rrtag,#panel,#mtimer{ --tilt:var(--tiltR); transform-origin:right center; }
   :root{ --red:#b565ff; --red2:#8a2be2; --gold:#ffce54; --green:#3fdd6a; --ink:#08080b; }
   .cond{font-family:'Barlow Condensed',sans-serif;}
 
@@ -72,7 +80,7 @@
 
   /* ── FLASH CARD (bet / message / fact / cta) ── */
   /* left-zone lower-third — sits above the UBAe fight clock, no overlap (2026-07-25) */
-  #flash{position:fixed;left:48px;bottom:190px;transform:translateY(160%);opacity:0;
+  #flash{position:fixed;left:48px;bottom:190px;transform:var(--tilt) translateY(160%);opacity:0;
     width:min(680px,44%);will-change:transform,opacity;}
   /* A bet fills the card -- stake, divider, payout. A message, a fact or a CTA
      has none of that, so a fixed 44% left the right half of the card visibly
@@ -82,10 +90,10 @@
     width:fit-content;max-width:min(680px,44%);}
   #flash.in{animation:fin .55s cubic-bezier(.16,1,.3,1) forwards;}
   #flash.out{animation:fout .58s cubic-bezier(.5,0,.75,.2) forwards;}
-  @keyframes fin{to{transform:translateY(0);opacity:1;}}
+  @keyframes fin{to{transform:var(--tilt) translateY(0);opacity:1;}}
   /* `from` is explicit: removing .in drops its forwards-fill, so without a
      stated start the card snaps to its hidden base and "animates" hidden→hidden. */
-  @keyframes fout{from{transform:translateY(0);opacity:1;}to{transform:translateY(160%);opacity:0;}}
+  @keyframes fout{from{transform:var(--tilt) translateY(0);opacity:1;}to{transform:var(--tilt) translateY(160%);opacity:0;}}
 
   /* Chamfered top-right instead of a 10px radius on all four. A soft rounded
      rectangle is app furniture; the cut corner is the shape the fight clock,
@@ -174,12 +182,12 @@
      once without either hiding the other. They are in different parts of
      the frame and they are saying different kinds of thing. */
   #flash[data-kind="msg"]{left:64px;bottom:auto;top:50%;width:352px;max-width:352px;
-    transform:translate(-118%,-50%);}
+    transform:var(--tilt) translate(-118%,-50%);}
   #flash[data-kind="msg"].in{animation:postin .5s cubic-bezier(.16,1,.3,1) forwards;}
   #flash[data-kind="msg"].out{animation:postout .42s cubic-bezier(.5,0,.75,.2) forwards;}
-  @keyframes postin {to{transform:translate(0,-50%);opacity:1;}}
-  @keyframes postout{from{transform:translate(0,-50%);opacity:1;}
-                       to{transform:translate(-118%,-50%);opacity:0;}}
+  @keyframes postin {to{transform:var(--tilt) translate(0,-50%);opacity:1;}}
+  @keyframes postout{from{transform:var(--tilt) translate(0,-50%);opacity:1;}
+                       to{transform:var(--tilt) translate(-118%,-50%);opacity:0;}}
 
   /* the kit's charcoal, not a violet gradient — same ground as the bar and
      the keys card, so all three read as one object seen three ways */
@@ -195,12 +203,16 @@
   /* the RINGSIDE REPORTER tag lives on the right at 60% height (648-780px
      down), in the middle of where the chat stack sits -- so while the tag is
      up the stack rides above it. body.rr-on is kept by layoutWatch(). */
-  #chat{transition:bottom .5s cubic-bezier(.16,1,.3,1);}
+  #chat{transition:bottom .5s cubic-bezier(.16,1,.3,1),transform .6s cubic-bezier(.16,1,.3,1),opacity .4s;}
   body.rr-on #chat{bottom:452px;}
+  /* the RANKINGS panel (top-right) can run 30 names down the right side, so
+     there is no room to move the chat around it: while it is up the chat
+     slides out, and slides back when it hides. Chat keeps updating meanwhile. */
+  body.panel-on #chat{opacity:0;transform:perspective(900px) rotateY(-13deg) translateX(115%);}
   /* the CTA takes the bottom-left slot up to ~366px; an odds bar shown at
      the same time rides above it rather than through it */
   #odds{transition:bottom .5s cubic-bezier(.16,1,.3,1),transform .5s,opacity .4s;}
-  body.cta-on #odds{bottom:calc(390px + var(--ll-lift)) !important;}
+  body.cta-on #odds{bottom:calc(374px + var(--ll-lift)) !important;}   /* between the CTA (top ~714) and a message post (bottom ~650) */
   #chat .head{display:flex;align-items:center;gap:16px;margin-bottom:4px;flex-direction:row-reverse;transition:opacity .4s;}
   #chat .head{transition:opacity .4s .25s;}
   #chat:not(.has) .head{opacity:0;transition-delay:.35s;}
@@ -347,7 +359,7 @@
      facts gets a short bar, which is the point. */
   #fighter{position:fixed;left:60px;bottom:70px;max-width:1440px;
     display:flex;align-items:stretch;gap:3px;height:112px;overflow:hidden;
-    transform:none;opacity:0;pointer-events:none;}
+    transform:var(--tilt);opacity:0;pointer-events:none;}
   /* Segments wipe in left to right rather than the whole box sliding: a box
      arriving reads as a graphic, a bar opening reads as information. */
   #fighter.in{opacity:1;}
@@ -372,6 +384,10 @@
   #fighter .mark{background:rgba(10,8,14,.96);padding:0 30px;min-width:190px;}
   #fighter .mark .a{font-family:'Barlow Condensed';font-weight:900;font-size:38px;
     letter-spacing:.02em;line-height:.9;color:#fff;}
+  /* ONE LINE PER BOX. The name is the only segment allowed two lines (a
+     two-word name stacks on purpose) and the white panel holds a sentence;
+     everything else is a single line, always. */
+  #fighter .mark .a,#fighter .mark .b{white-space:nowrap;}
   #fighter .mark .b{font:500 14px 'Barlow';letter-spacing:.26em;text-transform:uppercase;
     color:var(--red);margin-top:4px;}
 
@@ -379,7 +395,10 @@
      Windows at all: Chrome there draws the two letters, so the stream machine
      would show "US" while this looks perfect here. */
   #fighter .flag{padding:0 20px;}
-  #fighter .flag img{height:46px;display:block;box-shadow:0 2px 12px rgba(0,0,0,.6);}
+  /* A FIXED BOX. The image arrives after the bar has measured itself, and an
+     unsized image is 0px wide until then -- so the bar 'fitted' and then grew
+     by a flag's width, and the promo tail went off its own edge. */
+  #fighter .flag img{width:69px;height:46px;object-fit:cover;display:block;box-shadow:0 2px 12px rgba(0,0,0,.6);}
 
   /* the name — the one segment that sets its own size, and stacks to two
      lines when the fighter has two words to stack */
@@ -431,7 +450,7 @@
      coordinates as the dossier with no way to know the dossier existed. */
   /* Same charcoal, same light wide type, same 12px accent as the bar. It was
      a violet gradient card with a purple rim — a different object entirely. */
-  #keys{position:fixed;left:60px;bottom:190px;transform:translateX(-135%);opacity:0;
+  #keys{position:fixed;left:60px;bottom:190px;transform:var(--tilt) translateX(-135%);opacity:0;
     display:flex;min-width:520px;max-width:860px;overflow:hidden;
     background:var(--kit-bg);backdrop-filter:blur(3px);
     box-shadow:0 22px 55px rgba(0,0,0,.55);}
@@ -444,9 +463,9 @@
      stops the next rewrite from doing it again. */
   #keys.in{animation:keysin .55s cubic-bezier(.16,1,.3,1) forwards;}
   #keys.out{animation:keysout .58s cubic-bezier(.5,0,.75,.2) forwards;}
-  @keyframes keysin{to{transform:translateX(0);opacity:1;}}
-  @keyframes keysout{from{transform:translateX(0);opacity:1;}
-                       to{transform:translateX(-135%);opacity:0;}}
+  @keyframes keysin{to{transform:var(--tilt) translateX(0);opacity:1;}}
+  @keyframes keysout{from{transform:var(--tilt) translateX(0);opacity:1;}
+                       to{transform:var(--tilt) translateX(-135%);opacity:0;}}
   #keys .accent{width:12px;flex:0 0 12px;background:var(--red);}
   /* the accent is the category colour — the only part read from across a room */
   #keys[data-tone="keys"]  .accent{background:linear-gradient(180deg,#ffe27a,#c9a11e);}
@@ -497,13 +516,13 @@
      pool. The pill slides up like every other lower-third; the dots then
      bounce in left-to-right, and once settled they hold a slow wave that
      runs inward from both ends — balanced, barely-there, professional. */
-  #odds{position:fixed;left:48px;bottom:268px;transform:translateY(160%);opacity:0;
+  #odds{position:fixed;left:48px;bottom:268px;transform:var(--tilt) translateY(160%);opacity:0;
     display:inline-flex;align-items:center;gap:13px;width:max-content;max-width:44%;
     background:rgba(4,0,12,.93);border:1px solid rgba(155,77,255,.45);
     border-radius:999px;padding:10px 24px;
     box-shadow:0 10px 26px rgba(0,0,0,.5),0 0 22px rgba(155,48,255,.14);
     transition:transform .5s cubic-bezier(.16,1,.3,1),opacity .5s;}
-  #odds.show{transform:translateY(0);opacity:1;}
+  #odds.show{transform:var(--tilt) translateY(0);opacity:1;}
   #odds .oname{font-family:'Barlow Condensed';font-weight:900;font-size:25px;text-transform:uppercase;
     color:#fff;line-height:1;white-space:nowrap;}
   #odds .omult{font-family:'Barlow Condensed';font-weight:900;font-size:25px;line-height:1;}
@@ -522,13 +541,13 @@
   #odds .opool b{color:var(--gold);font-size:15px;}
 
   /* ── MATCH TIMER (top-right) ── */
-  #mtimer{position:fixed;top:26px;right:48px;opacity:0;transform:translateY(-24px);
+  #mtimer{position:fixed;top:26px;right:48px;opacity:0;transform:var(--tilt) translateY(-24px);
     transition:opacity .4s,transform .45s cubic-bezier(.16,1,.3,1);
     font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:62px;line-height:1;
     color:#fff;letter-spacing:.02em;padding:8px 26px 10px;border-radius:10px;
     background:linear-gradient(135deg,rgba(20,20,26,.97),rgba(8,8,11,.98));
     box-shadow:0 22px 55px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.05);}
-  #mtimer.on{opacity:1;transform:translateY(0);}
+  #mtimer.on{opacity:1;transform:var(--tilt) translateY(0);}
   #mtimer::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
     background:linear-gradient(90deg,var(--red),transparent 70%);}
   #mtimer.low{color:#ff5a5a;text-shadow:0 0 22px rgba(255,90,90,.5);}
@@ -603,13 +622,13 @@
      ② RINGSIDE REPORTER lands big as the headline, ③ it hands off — the
      headline collapses into a small (but still readable) kicker and the
      NAME takes the stage in holo purple. Lower-third height, right edge. */
-  #rrtag{position:fixed;right:0;top:60%;opacity:0;transform:translateX(110%);
+  #rrtag{position:fixed;right:0;top:60%;opacity:0;transform:var(--tilt) translateX(110%);
     min-width:340px;min-height:58px;
     transition:opacity .4s ease,transform .55s cubic-bezier(.16,1,.3,1);
     background:rgba(4,0,12,.95);border:2px solid rgba(155,48,255,.45);border-right:none;
     padding:14px 34px 16px 32px;
     box-shadow:0 16px 40px rgba(0,0,0,.55),0 0 22px rgba(155,48,255,.14);}
-  #rrtag.show{opacity:1;transform:translateX(0);}
+  #rrtag.show{opacity:1;transform:var(--tilt) translateX(0);}
   #rrtag::before{content:'';position:absolute;top:0;left:0;bottom:0;width:12px;
     background:var(--red);box-shadow:0 0 20px var(--red);}
   .rr-tl{position:absolute;top:0;left:12px;width:13px;height:13px;
@@ -647,13 +666,13 @@
      Same kit language as everything else: chamfered top-right, purple rail. */
   #nextev{position:fixed;left:48px;bottom:190px;width:520px;
     clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,0 100%);
-    transform:translateX(-130%);opacity:0;
+    transform:var(--tilt) translateX(-130%);opacity:0;
     transition:transform .6s cubic-bezier(.16,1,.3,1),opacity .4s ease;
     background:linear-gradient(135deg,rgba(20,20,26,.97),rgba(8,8,11,.98));
     box-shadow:0 22px 55px rgba(0,0,0,.6),0 0 0 1px rgba(168,85,247,.22);}
   #nextev::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
     background:linear-gradient(90deg,var(--red),transparent 70%);}
-  #nextev.show{transform:translateX(0);opacity:1;}
+  #nextev.show{transform:var(--tilt) translateX(0);opacity:1;}
   #nextev .nx-head{padding:16px 22px 12px;}
   #nextev .nx-kick{font:600 12px 'Barlow';letter-spacing:.24em;text-transform:uppercase;
     color:var(--red);opacity:.8;}
@@ -680,10 +699,10 @@
   /* ── PERSISTENT SCHEDULE PANEL ── */
   /* sits below the timer so the two can never collide top-right */
   #panel{position:fixed;top:132px;right:4%;width:330px;border-radius:12px;overflow:hidden;
-    transform:translateX(135%);transition:transform .5s cubic-bezier(.16,1,.3,1);
+    transform:var(--tilt) translateX(135%);transition:transform .5s cubic-bezier(.16,1,.3,1);
     background:linear-gradient(160deg,rgba(20,20,26,.97),rgba(8,8,11,.98));
     box-shadow:0 22px 55px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.05);}
-  #panel.show{transform:translateX(0);}
+  #panel.show{transform:var(--tilt) translateX(0);}
   .ph{position:relative;background:linear-gradient(90deg,var(--red2),var(--red));
     color:#fff;font-family:'Barlow Condensed';font-weight:700;font-size:22px;letter-spacing:.06em;
     padding:12px 18px;text-transform:uppercase;}
@@ -1221,6 +1240,7 @@ function handle(c){
       </div>`).join('')
     // stagger every row in document order, whatever the count came to
     ;[...el.querySelectorAll('.nx-row')].forEach((r,i)=>r.style.transitionDelay=(0.45+i*0.25)+'s')
+    slotShow(el)   // it takes the bottom-left slot like every other card there; the rest step aside
     el.classList.remove('show'); void el.offsetWidth; el.classList.add('show')
     nxTimer=setTimeout(()=>el.classList.remove('show'), (c.hold ?? 14)*1000)
     return
@@ -1309,8 +1329,11 @@ function handle(c){
       // the pill hugs its content, so the cap is absolute: no name gets more
       // than ~240px before it shrinks
       const room = 240
+      // the pill is tilted (THE SLANT), so the range's on-screen width is
+      // foreshortened; divide it back out by how much the element itself shrank
       const wide = () => { const r=document.createRange(); r.selectNodeContents(el)
-        return r.getBoundingClientRect().width }
+        const k = (el.getBoundingClientRect().width / (el.offsetWidth || 1)) || 1
+        return r.getBoundingClientRect().width / k }
       let size=25; el.style.fontSize=size+'px'
       while(size>13 && wide() > room){ size-=1; el.style.fontSize=size+'px' }
     })
@@ -1538,22 +1561,37 @@ function drawDossier(d){
 // back ~18% narrow. Same trap, different file.
 const BAR_CAP = 1440
 function fitBar(){
+  // THE RULES, in order, until the whole bar fits inside BAR_CAP:
+  //   1. drop stats, weakest first (country, division, KO wins, record, rank)
+  //   2. shrink the NAME, a step at a time, never under 30px (26 stacked)
+  //   3. drop the flag
+  //   4. narrow the white panel to 250px
+  //   5. drop the white panel
+  // The mark, the name and the promo tail are never dropped, so the bar can
+  // never end with discord.gg/uba cut off by its own edge -- which is what
+  // the old pass did once it ran out of stats to drop: a long one-word name
+  // or a long event name left it over the cap and overflow:hidden ate the tail.
   const el = $('fighter')
   if(!el || !el.children.length) return
   el.style.width = ''
   const GAP = 3
   const measure = () => [...el.children].reduce((t, c, i) =>
-    t + c.getBoundingClientRect().width + (i ? GAP : 0), 0)
-  for(let guard = 0; guard < 6; guard++){
-    if(measure() <= BAR_CAP) break
-    let victim = null
-    for(const cls of ['drop0','drop1','drop2','drop3','drop4']){
-      victim = el.querySelector('.' + cls)
-      if(victim) break
-    }
-    if(!victim) break
-    victim.remove()
+    t + c.offsetWidth + (i ? GAP : 0), 0)   // layout width: the bar is tilted, so its on-screen width is foreshortened
+  const fits = () => measure() <= BAR_CAP
+  for(const cls of ['drop0','drop1','drop2','drop3','drop4']){
+    if(fits()) break
+    const v = el.querySelector('.' + cls); if(v) v.remove()
   }
+  const nm = el.querySelector('.nm')
+  if(nm && !fits()){
+    const floor = nm.classList.contains('two') ? 26 : 30
+    let px = parseFloat(getComputedStyle(nm).fontSize) || 46
+    while(!fits() && px > floor){ px -= 2; nm.style.fontSize = px + 'px' }
+  }
+  if(!fits()){ const f = el.querySelector('.flag'); if(f) f.remove() }
+  const hi = el.querySelector('.hi')
+  if(hi && !fits()){ hi.style.width = hi.style.flexBasis = '250px' }
+  if(hi && !fits()) hi.remove()
   el.style.width = Math.ceil(Math.min(measure(), BAR_CAP)) + 'px'
   fitPanel()
 }
@@ -1611,6 +1649,10 @@ function slotShow(el){
     if(o.id === 'flash' && o.dataset.kind === 'msg') continue
     if(o.classList.contains('in')){ o.classList.remove('in'); o.classList.add('out') }
   }
+  // the next-event promo sits in the same corner but shows with .show, not
+  // .in, so it is handled here by name: anything taking the slot takes it down
+  const nx = $('nextev'); if(nx && nx !== el) nx.classList.remove('show')
+  if(el.id === 'nextev') return
   el.classList.remove('out'); void el.offsetWidth; el.classList.add('in')
 }
 
@@ -1880,18 +1922,18 @@ channel.subscribe(status=>{
     const eb=document.querySelector('.bug-eyebrow')
     if(d.eyebrow&&eb) eb.textContent=d.eyebrow
     if(d.text) document.getElementById('venueName').textContent=d.text
-    bug.style.transition='none'; bug.style.opacity='0'; bug.style.transform='translateY(10px)'
+    bug.style.transition='none'; bug.style.opacity='0'; bug.style.transform='var(--tilt) translateY(10px)'
     fill.style.transition='none'; fill.style.width='0'
     requestAnimationFrame(()=>{requestAnimationFrame(()=>{
       bug.style.transition=`opacity ${ENTER}ms cubic-bezier(.16,.8,.3,1), transform ${ENTER}ms cubic-bezier(.16,.8,.3,1)`
-      bug.style.opacity='1'; bug.style.transform='translateY(0)'
+      bug.style.opacity='1'; bug.style.transform='var(--tilt) translateY(0)'
       fill.style.transition=`width ${HOLD}ms linear`
       requestAnimationFrame(()=>{ fill.style.width='100%' })
       // persist:true leaves it up until it's explicitly hidden -- the venue
       // belongs on screen for a whole tale-of-the-tape segment, not 4.5s
       if(!d.persist) setTimeout(()=>{
         bug.style.transition=`opacity ${EXIT}ms cubic-bezier(.4,0,.6,1), transform ${EXIT}ms cubic-bezier(.4,0,.6,1)`
-        bug.style.opacity='0'; bug.style.transform='translateY(-10px)'
+        bug.style.opacity='0'; bug.style.transform='var(--tilt) translateY(-10px)'
       }, ENTER+HOLD)
     })})
   }
@@ -1981,6 +2023,7 @@ function layoutWatch(){
   const on=(id,cls)=>{ const e=$(id); return !!(e && e.classList.contains(cls)) }
   document.body.classList.toggle('rr-on', on('rrtag','show'))
   document.body.classList.toggle('cta-on', on('cta','in'))
+  document.body.classList.toggle('panel-on', on('panel','show'))
 }
 setInterval(layoutWatch, 300)
 
