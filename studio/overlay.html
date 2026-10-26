@@ -14,8 +14,14 @@
      AFTER var(--tilt), so it slides along its tilted plane. Centred and
      full-screen pieces (the result splash, the coin toss) stay flat. */
   :root{ --tiltL:perspective(1000px) rotateY(10deg); --tiltR:perspective(1000px) rotateY(-10deg); }
-  #flash,#keys,#nextev,#odds,#fighter,.venue-bug{ --tilt:var(--tiltL); transform-origin:left center; }
-  #rrtag,#panel,#mtimer{ --tilt:var(--tiltR); transform-origin:right center; }
+  #flash,#keys,#nextev,#odds,.venue-bug{ --tilt:var(--tiltL); transform-origin:left center; }
+  #panel,#mtimer{ --tilt:var(--tiltR); transform-origin:right center; }
+  /* the reporter tag sits flush on the right edge and turns about that edge,
+     so 10deg barely changes its shape: it gets a stronger turn to read as
+     slanted at all */
+  #rrtag{ --tilt:perspective(700px) rotateY(-22deg); transform-origin:right center; }
+  /* the UFC-style name bar stays FLAT (Castle, 2026-10-26): a wide bar of
+     names and numbers reads worse tilted, and the reference it copies is flat */
   :root{ --red:#b565ff; --red2:#8a2be2; --gold:#ffce54; --green:#3fdd6a; --ink:#08080b; }
   .cond{font-family:'Barlow Condensed',sans-serif;}
 
@@ -359,7 +365,7 @@
      facts gets a short bar, which is the point. */
   #fighter{position:fixed;left:60px;bottom:70px;max-width:1440px;
     display:flex;align-items:stretch;gap:3px;height:112px;overflow:hidden;
-    transform:var(--tilt);opacity:0;pointer-events:none;}
+    transform:none;opacity:0;pointer-events:none;}
   /* Segments wipe in left to right rather than the whole box sliding: a box
      arriving reads as a graphic, a bar opening reads as information. */
   #fighter.in{opacity:1;}
@@ -1576,7 +1582,7 @@ function fitBar(){
   el.style.width = ''
   const GAP = 3
   const measure = () => [...el.children].reduce((t, c, i) =>
-    t + c.offsetWidth + (i ? GAP : 0), 0)   // layout width: the bar is tilted, so its on-screen width is foreshortened
+    t + c.offsetWidth + (i ? GAP : 0), 0)   // layout width, never the on-screen one, which any transform changes
   const fits = () => measure() <= BAR_CAP
   for(const cls of ['drop0','drop1','drop2','drop3','drop4']){
     if(fits()) break
