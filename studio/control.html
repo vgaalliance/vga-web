@@ -474,6 +474,14 @@
       <button class="only-ubae" onclick="mnCountdown()">Update teams</button>
       <button class="only-ubae" onclick="loadStandings()">Final result / standings</button>
     </div>
+    <!-- RANKINGS AT STAKE lives here, not in ④ Match (Castle, 2026-10-26): it is
+         a full-screen scene of its own, for between fights, like the boards below. -->
+    <h5>Rankings at stake — who can jump who (its own OBS scene)</h5>
+    <div class="row" style="margin-bottom:10px">
+      <button onclick="send({type:'rankstakes',event:(window.UBA&&UBA.name)||null,on:true})">▶ Show ladder</button>
+      <button class="hide" onclick="send({type:'rankstakes',on:false})">■ Hide</button>
+      <span style="color:var(--gdim);font-size:15px">reads the card you loaded above</span>
+    </div>
     <h5>Standby views — one scene, toggle any</h5>
     <!-- GROUPED IN SHOW ORDER (Castle, 2026-10-24), not one row of twenty-odd:
          what is about tonight, then the league, then filler, then the two that
@@ -713,12 +721,6 @@
       <button class="hide" onclick="send({type:'fighter',on:false})">Hide</button>
     </div>
     <div class="row" id="fresults" style="margin-top:10px"></div>
-    <h5>Rankings at stake — who can jump who</h5>
-      <div class="row">
-        <button onclick="send({type:'rankstakes',event:(window.UBA&&UBA.name)||null,on:true})">▶ Show ladder</button>
-        <button class="hide" onclick="send({type:'rankstakes',on:false})">■ Hide</button>
-        <span style="color:var(--gdim);font-size:15px">reads the card you loaded above</span>
-      </div>
     <h5>Rankings + league table — pick the ladder first</h5>
     <div class="row">
       <span id="rankLeague" style="display:contents"></span>
@@ -752,7 +754,6 @@
       <button onclick="fireBug()">Fire bug</button>
       <button onclick="fireBug(true)">📍 Keep bug up</button>
       <button class="hide" onclick="send({type:'bug',d:{on:false}})">Hide bug</button>
-      <button class="lg-uba" onclick="fireResult()">🏅 Fire result</button>
     </div>
   </div></div>
 
