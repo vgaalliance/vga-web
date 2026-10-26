@@ -373,7 +373,10 @@
   #fighter.out{animation:barout .42s cubic-bezier(.5,0,.75,.2) forwards;}
   @keyframes segin{from{clip-path:inset(0 100% 0 0);opacity:0;}
                      to{clip-path:inset(0 0 0 0);opacity:1;}}
-  @keyframes barout{from{opacity:1;}to{opacity:0;}}
+  /* OUT is the entrance played backwards: the bar wipes away right to left
+     while it slides a little left, instead of only fading where it stood */
+  @keyframes barout{from{opacity:1;clip-path:inset(0 0 0 0);transform:none;}
+                     to{opacity:0;clip-path:inset(0 100% 0 0);transform:translateX(-60px);}}
 
   #fighter .seg{background:rgba(16,14,20,.93);display:flex;flex-direction:column;
     align-items:center;justify-content:center;padding:0 22px;flex:0 0 auto;
