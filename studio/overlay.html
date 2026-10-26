@@ -215,6 +215,10 @@
      there is no room to move the chat around it: while it is up the chat
      slides out, and slides back when it hides. Chat keeps updating meanwhile. */
   body.panel-on #chat{opacity:0;transform:perspective(900px) rotateY(-13deg) translateX(115%);}
+  /* the rankings ladder runs 120px to ~720px down the right side; the reporter
+     tag (60% down, flush right) drops below it while it is up, and comes back */
+  #rrtag{transition:opacity .4s ease,transform .55s cubic-bezier(.16,1,.3,1),top .5s cubic-bezier(.16,1,.3,1);}
+  body.panel-on #rrtag{top:760px;}
   /* the CTA takes the bottom-left slot up to ~366px; an odds bar shown at
      the same time rides above it rather than through it */
   #odds{transition:bottom .5s cubic-bezier(.16,1,.3,1),transform .5s,opacity .4s;}
@@ -710,32 +714,54 @@
 
   /* ── PERSISTENT SCHEDULE PANEL ── */
   /* sits below the timer so the two can never collide top-right */
-  #panel{position:fixed;top:132px;right:4%;width:330px;border-radius:12px;overflow:hidden;
-    transform:var(--tilt) translateX(135%);transition:transform .5s cubic-bezier(.16,1,.3,1);
-    background:linear-gradient(160deg,rgba(20,20,26,.97),rgba(8,8,11,.98));
-    box-shadow:0 22px 55px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.05);}
-  #panel.show{transform:var(--tilt) translateX(0);}
-  .ph{position:relative;background:linear-gradient(90deg,var(--red2),var(--red));
-    color:#fff;font-family:'Barlow Condensed';font-weight:700;font-size:22px;letter-spacing:.06em;
-    padding:12px 18px;text-transform:uppercase;}
-  .prow{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;
-    border-bottom:1px solid rgba(255,255,255,.06);}
-  .prow:nth-child(even){background:rgba(255,255,255,.02);}
-  /* Rows arrive one after another rather than as a block -- the panel slides in
-     over .5s and a fully-populated list appearing at once made the slide look
-     like a still image moving. Delay is set inline per row so it scales to
-     however many rows arrive. */
-  .prow{opacity:0;transform:translateX(14px);animation:prowIn .38s cubic-bezier(.16,1,.3,1) forwards;}
-  @keyframes prowIn{to{opacity:1;transform:none;}}
-  /* Changing division used to swap the rows instantly under a panel that was
-     already open -- one ranking became another with no moment between them.
-     The list clears first, then the new one arrives. */
-  #prows.swap{opacity:0;transform:translateX(-10px);
-    transition:opacity .2s ease,transform .2s ease;}
-  #prows{transition:opacity .26s ease,transform .26s ease;}
-  .ph{transition:background .3s ease;}
-  .prow span:first-child{font:600 16px 'Barlow';color:#fff;}
-  .prow span:last-child{font:600 14px 'Barlow';color:var(--gold);letter-spacing:.03em;}
+  /* ── RANKINGS PANEL · THE PRISM LADDER (Castle's pick, 2026-10-26) ──────
+     The chat stack's frosted glass built into a ladder, so chat and rankings
+     read as one family. Eight rows at a time: they land one by one, hold, then
+     each turns over in place to the next eight (9-15), so a 15-deep division
+     never becomes a tall column. Top-right, tilted toward the fight (THE
+     SLANT); the chat steps out while it is up (body.panel-on). The rows come
+     from the deck as "1. Name" with the champion first ([name, 'CHAMPION']);
+     UBAe standings ([team, record]) draw as plain rows with their value. */
+  #panel{position:fixed;top:120px;right:70px;width:520px;
+    transform:var(--tilt) translateX(135%);opacity:0;
+    transition:transform .6s cubic-bezier(.16,1,.3,1),opacity .4s;}
+  #panel.show{transform:var(--tilt) translateX(0);opacity:1;}
+  #panel .lp-head{display:flex;align-items:center;gap:14px;flex-direction:row-reverse;margin-bottom:10px;}
+  #panel .lp-tag{font:14px 'Press Start 2P',monospace;letter-spacing:.32em;color:#cc66ff;text-shadow:0 0 12px rgba(204,102,255,.7),1px 1px 0 #000;}
+  #panel .lp-line{flex:1;height:2px;background:linear-gradient(270deg,rgba(204,102,255,.7),transparent);}
+  #panel .lp-div{font:900 52px/.9 'Barlow Condensed',sans-serif;letter-spacing:.02em;text-transform:uppercase;text-align:right;color:#fff;margin-bottom:12px;
+    text-shadow:3px 0 0 #ff33cc,-3px 0 0 rgba(0,229,255,.8),0 0 30px rgba(155,48,255,.5);white-space:nowrap;}
+  #panel .lp-rows{display:flex;flex-direction:column;gap:5px;}
+  #panel .lp-slot{position:relative;height:46px;perspective:700px;}
+  #panel .lp-face{position:relative;height:46px;display:flex;align-items:center;gap:14px;padding:0 18px 0 12px;overflow:hidden;
+    backface-visibility:hidden;transform-origin:50% 50%;
+    background:linear-gradient(100deg,rgba(255,255,255,.11),rgba(155,48,255,.12) 60%,rgba(0,229,255,.06));
+    -webkit-backdrop-filter:blur(10px) saturate(1.4);backdrop-filter:blur(10px) saturate(1.4);border:1px solid rgba(255,255,255,.14);}
+  #panel .lp-face::before{content:"";position:absolute;right:0;top:0;bottom:0;width:3px;
+    background:linear-gradient(180deg,#00e5ff,#9b30ff,#ff33cc);box-shadow:0 0 14px rgba(204,102,255,.7);}
+  #panel .lp-face:empty{visibility:hidden;}
+  #panel .lp-face.back{position:absolute;inset:0;transform:rotateX(-90deg);opacity:0;}
+  #panel .lp-rk{width:44px;flex:0 0 44px;font:900 30px 'Barlow Condensed',sans-serif;text-align:center;color:#fff;text-shadow:2px 0 0 #ff33cc,-2px 0 0 rgba(0,229,255,.8);}
+  #panel .lp-nm{flex:1;min-width:0;font:700 26px 'Barlow',sans-serif;color:#f4ecff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #panel .lp-val{font:700 20px 'Barlow Condensed',sans-serif;letter-spacing:.06em;color:#ffce54;white-space:nowrap;}
+  #panel .lp-champ{height:58px;margin-bottom:6px;}
+  #panel .lp-champ .lp-face{height:58px;background:linear-gradient(100deg,rgba(255,206,84,.32),rgba(255,206,84,.08) 70%,rgba(255,255,255,.04));border-color:rgba(255,206,84,.55);}
+  #panel .lp-champ .lp-rk{font-size:24px;color:#ffce54;text-shadow:0 0 14px rgba(255,206,84,.7);}
+  #panel .lp-champ .lp-nm{font:900 34px 'Barlow Condensed',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#fff;}
+  #panel .lp-champ .lp-note{font:12px 'Press Start 2P',monospace;letter-spacing:.2em;color:#ffce54;}
+  #panel .lp-pg{text-align:right;margin-top:10px;font:11px 'Press Start 2P',monospace;letter-spacing:.25em;color:#a593c4;}
+  /* landing: one row after another, out of a blur, with a light sweep */
+  #panel .lp-in{animation:lpIn .55s cubic-bezier(.16,1,.3,1) backwards;}
+  @keyframes lpIn{0%{opacity:0;transform:translateX(120px) skewX(-12deg);filter:blur(8px) hue-rotate(90deg);}
+    60%{opacity:1;filter:blur(0);} 100%{opacity:1;transform:none;filter:none;}}
+  #panel .lp-hit::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.4) 50%,transparent 70%);animation:lpShine .7s .15s ease-out both;}
+  @keyframes lpShine{from{transform:translateX(-110%)}to{transform:translateX(110%)}}
+  /* the blinds: each slot turns over on its own axis, top to bottom */
+  #panel .lp-slot.flip .lp-face.front{animation:lpOut .42s cubic-bezier(.5,0,.75,.2) forwards;}
+  #panel .lp-slot.flip .lp-face.back{animation:lpFlipIn .42s cubic-bezier(.16,1,.3,1) .32s forwards;}
+  @keyframes lpOut{to{transform:rotateX(90deg);opacity:0;}}
+  @keyframes lpFlipIn{from{transform:rotateX(-90deg);opacity:0;}to{transform:none;opacity:1;}}
 
   /* ── COIN ── */
   #cointoss{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;
@@ -996,7 +1022,7 @@
     </div>
   </div>
 
-  <div id="panel"><div class="ph" id="phh">Schedule</div><div id="prows"></div></div>
+  <div id="panel"></div>
   <div id="cointoss">
     <div class="ct-eyebrow">Coin Toss</div>
     <div class="ct-coin" id="ctCoin">VGA</div>
@@ -1314,25 +1340,8 @@ function handle(c){
     else { sfx.blip() }
   }
   if(c.type==='panel'){
-    const draw=()=>{
-      $('phh').textContent=c.d.title||'Schedule'
-      // stagger: each row waits a little longer than the one above it
-      $('prows').innerHTML=(c.d.rows||[]).map((r,i)=>
-        `<div class="prow" style="animation-delay:${40+i*38}ms"><span>${r[0]}</span><span>${r[1]}</span></div>`).join('')
-      $('prows').classList.remove('swap')
-    }
-    if(c.d){
-      const alreadyUp = $('panel').classList.contains('show') && $('prows').children.length
-      if(alreadyUp){
-        // panel stays put, the CONTENT changes -- clear, then bring the new
-        // division in, so switching rankings reads as a change and not a jump
-        $('prows').classList.add('swap')
-        setTimeout(draw, 210)
-      } else draw()
-    }
-    $('panel').classList.toggle('show', c.on)
-    clearTimeout(panelTimer)
-    if(c.on) panelTimer=setTimeout(()=>$('panel').classList.remove('show'), AUTOHIDE)
+    if(c.on===false || !c.d){ lpHide(); return }
+    lpShow(c.d)
   }
   if(c.type==='fighter'){
     // The deck's Hide sends {on:false} with NO payload — reading .next off an
@@ -2095,6 +2104,68 @@ function layoutWatch(){
   document.body.classList.toggle('panel-on', on('panel','show'))
 }
 setInterval(layoutWatch, 300)
+
+// ── RANKINGS PANEL · THE PRISM LADDER ─────────────────────────────────────
+// Eight to a page. Up: header, champion, then the rows one by one; held; then
+// every slot turns over in place, top to bottom, to the next page; held; down.
+const LP={ T:[], PER:8, STAGGER:120, HOLD:6000, BLIND:95 }
+function lpClear(){ LP.T.forEach(clearTimeout); LP.T=[] }
+function lpHide(){ lpClear(); $('panel').classList.remove('show') }
+function lpFace(r, cls){
+  if(!r) return `<div class="lp-face ${cls}"></div>`
+  return `<div class="lp-face ${cls}"><span class="lp-rk">${esc(r.rk)}</span><span class="lp-nm">${esc(r.nm)}</span>`
+    + (r.val ? `<span class="lp-val">${esc(r.val)}</span>` : '') + `</div>`
+}
+function lpShow(d){
+  lpClear()
+  const T=(f,ms)=>LP.T.push(setTimeout(f,ms))
+  // "UBA · Middleweight" -> a tag and a title; anything else is the title alone
+  const t=String(d.title||'Rankings'), cut=t.indexOf(' · ')
+  const tag = cut>0 ? t.slice(0,cut).toUpperCase()+' RANKINGS' : ''
+  // the deck's buttons send short labels ("MW Rankings"); the ladder says the division
+  const WC_FULL={ LW:'Lightweight', MW:'Middleweight', LHW:'Light Heavyweight', HW:'Heavyweight' }
+  let div = cut>0 ? t.slice(cut+3) : t
+  div = div.replace(/\s+Rankings$/i,'')
+  div = WC_FULL[div.toUpperCase()] || div
+  const all=(d.rows||[]).map(r=>[String(r[0]||''), String(r[1]||'')])
+  const ch = all.length && all[0][1].toUpperCase()==='CHAMPION' ? all.shift() : null
+  const rows = all.map(([a,b])=>{ const m=a.match(/^(\d+)\.\s*(.+)$/)
+    return m ? { rk:m[1], nm:m[2], val:b } : { rk:'', nm:a, val:b } })
+  const pages=[]; for(let i=0;i<rows.length;i+=LP.PER) pages.push(rows.slice(i,i+LP.PER))
+  if(!pages.length) pages.push([])
+  const el=$('panel')
+  const pgLabel=i=>{ const p=pages[i]||[]; const a=p[0]&&p[0].rk, z=p[p.length-1]&&p[p.length-1].rk
+    return pages.length>1 && a && z ? `RANKS ${a}–${z}` : '' }
+  el.innerHTML = (tag ? `<div class="lp-head"><span class="lp-tag">${esc(tag)}</span><span class="lp-line"></span></div>` : '')
+    + `<div class="lp-div">${esc(div)}</div>`
+    + (ch ? `<div class="lp-slot lp-champ"><div class="lp-face front"><span class="lp-rk">👑</span><span class="lp-nm">${esc(ch[0].replace(/^👑\s*/,''))}</span><span class="lp-note">CHAMPION</span></div></div>` : '')
+    + `<div class="lp-rows">` + Array.from({length:Math.min(LP.PER, Math.max(...pages.map(p=>p.length)))},(_,i)=>`<div class="lp-slot">${lpFace(pages[0][i],'front')}</div>`).join('') + `</div>`
+    + `<div class="lp-pg">${pgLabel(0)}</div>`
+  // land it: head and champion first, then each row
+  const lead=[...el.querySelectorAll('.lp-head,.lp-div,.lp-champ')]
+  lead.forEach((e,i)=>{ e.classList.add('lp-in'); e.style.animationDelay=(i*90)+'ms' })
+  const slots=[...el.querySelectorAll('.lp-rows .lp-slot')]
+  const base=lead.length*90+400                      // after the panel's own slide
+  slots.forEach((s,i)=>{ const f=s.querySelector('.lp-face'); if(!f.childElementCount) return
+    f.classList.add('lp-in','lp-hit'); f.style.animationDelay=(base+i*LP.STAGGER)+'ms' })
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show')
+  const settled=base+slots.length*LP.STAGGER+600
+  // one turn to every later page, then down
+  let at=settled+LP.HOLD
+  for(let pg=1; pg<pages.length; pg++){
+    const rows=pages[pg]
+    T(()=>{
+      slots.forEach((s,i)=>T(()=>{
+        const old=s.querySelector('.lp-face.front'); old.classList.remove('lp-in','lp-hit'); old.style.animationDelay=''
+        s.insertAdjacentHTML('beforeend', lpFace(rows[i],'back')); s.classList.add('flip')
+        T(()=>{ old.remove(); const nf=s.querySelector('.lp-face.back'); if(nf){ nf.classList.remove('back'); nf.classList.add('front') } s.classList.remove('flip') }, 800)
+      }, i*LP.BLIND))
+      el.querySelector('.lp-pg').textContent=pgLabel(pg)
+    }, at)
+    at += slots.length*LP.BLIND + 800 + LP.HOLD
+  }
+  T(()=>el.classList.remove('show'), Math.max(at, AUTOHIDE))
+}
 
 // ── LIVE CHAT ───────────────────────────────────────────────────────────
 // Reads stream_chat_public every 4s while the deck has chat ON and keeps the
