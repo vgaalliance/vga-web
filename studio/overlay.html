@@ -202,22 +202,43 @@
   #odds{transition:bottom .5s cubic-bezier(.16,1,.3,1),transform .5s,opacity .4s;}
   body.cta-on #odds{bottom:calc(390px + var(--ll-lift)) !important;}
   #chat .head{display:flex;align-items:center;gap:16px;margin-bottom:4px;flex-direction:row-reverse;transition:opacity .4s;}
-  #chat:not(.has) .head{opacity:0;}
+  #chat .head{transition:opacity .4s .25s;}
+  #chat:not(.has) .head{opacity:0;transition-delay:.35s;}
+  #chat .line{transform-origin:right center;transition:transform .55s cubic-bezier(.16,1,.3,1) .1s;}
+  #chat:not(.has) .line{transform:scaleX(0);}
   #chat .tag{font:12px 'Press Start 2P',monospace;letter-spacing:.35em;color:#cc66ff;text-shadow:0 0 12px rgba(204,102,255,.7),1px 1px 0 #000;}
   #chat .line{flex:1;height:2px;background:linear-gradient(270deg,rgba(204,102,255,.7),transparent);}
   #chat .r{position:relative;display:flex;align-items:baseline;gap:12px;padding:7px 18px 8px;
     background:linear-gradient(100deg,rgba(255,255,255,.10),rgba(155,48,255,.10) 60%,rgba(0,229,255,.06));
     -webkit-backdrop-filter:blur(10px) saturate(1.4);backdrop-filter:blur(10px) saturate(1.4);
-    border:1px solid rgba(255,255,255,.14);animation:chrIn .5s cubic-bezier(.16,1,.3,1) backwards;transition:opacity .45s;}
-  #chat .r::before{content:"";position:absolute;right:-1px;top:-1px;bottom:-1px;width:3px;
+    border:1px solid rgba(255,255,255,.14);max-height:96px;overflow:hidden;
+    animation:chrIn .7s cubic-bezier(.16,1,.3,1) backwards;transition:opacity .45s;}
+  #chat .r::before{content:"";position:absolute;right:0;top:0;bottom:0;width:3px;
     background:linear-gradient(180deg,#00e5ff,#9b30ff,#ff33cc);box-shadow:0 0 14px rgba(204,102,255,.7);}
   #chat .r.new{border-color:rgba(255,255,255,.3);box-shadow:0 0 28px rgba(204,102,255,.35);}
-  #chat .r.old{opacity:.7;} #chat .r.older{opacity:.42;} #chat .r.gone{opacity:0;}
+  #chat .r.old{opacity:.7;} #chat .r.older{opacity:.42;}
+  /* IN: the row opens its own space, then slides in from the right out of a
+     blur with a light sweep across the glass. OUT: it slides away right into
+     a blur, then its space closes so the rows above settle down smoothly.
+     Every row leaves this way -- pushed out by a new one, hidden from the
+     deck, or the whole stack going OFF (staggered, the header last). */
+  #chat .r::after{content:"";position:absolute;inset:0;pointer-events:none;transform:translateX(-120%);
+    background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.32) 50%,transparent 70%);}
+  #chat .r.new::after{animation:chrShine .9s .3s ease-out;}
+  #chat .r.leave{animation:chrOut .6s cubic-bezier(.5,0,.75,.2) forwards;}
+  @keyframes chrShine{to{transform:translateX(120%);}}
+  @keyframes chrOut{
+    0%{max-height:96px;}
+    55%{opacity:0;transform:translateX(110px) skewX(-10deg);filter:blur(6px);max-height:96px;padding-top:7px;padding-bottom:8px;margin-top:0;}
+    100%{opacity:0;transform:translateX(110px) skewX(-10deg);filter:blur(6px);max-height:0;padding-top:0;padding-bottom:0;margin-top:-7px;border-width:0;}}
   #chat .nm{flex:0 0 auto;font:900 22px 'Barlow Condensed';letter-spacing:.08em;text-transform:uppercase;color:#fff;
     text-shadow:2px 0 0 #ff33cc,-2px 0 0 rgba(0,229,255,.8);}
   #chat .ms{font:600 22px/1.2 'Barlow';color:#f4ecff;min-width:0;
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-  @keyframes chrIn{from{opacity:0;transform:translateX(40px);filter:hue-rotate(90deg);}}
+  @keyframes chrIn{
+    0%{opacity:0;max-height:0;padding-top:0;padding-bottom:0;margin-top:-7px;border-width:0;transform:translateX(90px) skewX(-10deg);filter:blur(8px) hue-rotate(90deg);}
+    40%{opacity:0;max-height:96px;padding-top:7px;padding-bottom:8px;margin-top:0;border-width:1px;transform:translateX(90px) skewX(-10deg);filter:blur(8px) hue-rotate(90deg);}
+    100%{opacity:1;transform:none;filter:none;}}
   #post{display:none;flex-direction:column;position:relative;
     background:var(--kit-bg);backdrop-filter:blur(3px);
     box-shadow:0 24px 60px rgba(0,0,0,.6);}
@@ -1969,19 +1990,26 @@ setInterval(layoutWatch, 300)
 // shows the last five at once, so it reads as live even in a slow room. A new
 // message pushes the oldest out. Only the last 10 minutes count, so a room
 // that went quiet empties the corner instead of freezing old lines on screen.
-const CHT={ on:false, hidden:new Set(), rows:[], poll:null }
+const CHT={ on:false, hidden:new Set(), rows:[], poll:null, src:'general' }   // src: 'general' (#general) or 'stage' (GFL nights: the UBA LIVE stage chat)
 const CHT_MAX=5, CHT_FRESH=10*60*1000
 async function chtRead(){
-  const { data, error } = await sb.from('stream_chat_public').select('id,author,content,created_at').limit(40)
+  const { data, error } = await sb.from('stream_chat_public').select('id,author,content,created_at')
+    .eq('channel', CHT.src).order('id', { ascending:false }).limit(40)
   return error || !data ? null : data
 }
 const chtName=n=>String(n||'').replace(/\s*\(\d+-\d+(-\d+)?\)\s*$/,'')   // the record rides in the nickname; this is chat
-function chtDraw(freshId){
+function chtLeave(el, delay){
+  el.dataset.gone='1'
+  setTimeout(()=>{ el.classList.remove('new'); el.classList.add('leave'); setTimeout(()=>el.remove(), 650) }, delay)
+}
+function chtDraw(){
   const box=$('chat'), rows=CHT.rows.filter(r=>!CHT.hidden.has(Number(r.id)))
+  const keep=new Set(rows.map(r=>String(r.id)))
+  let k=0
+  box.querySelectorAll('.r:not([data-gone])').forEach(el=>{ if(!keep.has(el.dataset.id)) chtLeave(el, (k++)*80) })
   box.classList.toggle('has', rows.length>0)
-  box.querySelectorAll('.r').forEach(el=>{ if(!rows.some(r=>String(r.id)===el.dataset.id)) el.remove() })
   rows.forEach((r,i)=>{
-    let el=box.querySelector(`.r[data-id="${r.id}"]`)
+    let el=box.querySelector(`.r[data-id="${r.id}"]:not([data-gone])`)
     if(!el){ el=document.createElement('div'); el.className='r'; el.dataset.id=r.id
       el.innerHTML=`<span class="nm">${esc(chtName(r.author))}</span><span class="ms">${esc(r.content)}</span>`
       box.appendChild(el) }
@@ -1997,6 +2025,10 @@ async function chtTick(){
   chtDraw()
 }
 function chCmd(c){
+  // GFL nights read the UBA LIVE stage's chat, every other night #general. The
+  // league rides on every chat command (re-sent every 20s while ON).
+  if(c.league){ const src = c.league==='gfl' ? 'stage' : 'general'
+    if(src!==CHT.src){ CHT.src=src; CHT.rows=[]; chtDraw(); if(CHT.on) chtTick() } }
   if(Array.isArray(c.hidden)){ CHT.hidden=new Set(c.hidden.map(Number)); chtDraw() }   // Hide pulls it at once
   if(typeof c.on==='boolean' && c.on!==CHT.on){
     CHT.on=c.on; clearInterval(CHT.poll); CHT.rows=[]; chtDraw()

@@ -652,7 +652,7 @@
     </div>
 
     <div>
-      <h5>💬 Live chat — #general, right side, the newest 5</h5>
+      <h5>💬 Live chat — <span id="chatSrc" style="text-transform:none">#general</span>, right side, the newest 5</h5>
       <div class="row">
         <button id="chatOnBtn" onclick="chatSet(true)">💬 Chat ON</button>
         <button class="hide" id="chatOffBtn" onclick="chatSet(false)">■ Chat OFF</button>
@@ -1944,7 +1944,12 @@ function chatDraw(){
     : '<span style="color:var(--gdim)">nothing from #general in the last 3 hours</span>'
 }
 async function chatPoll(){
-  const { data, error } = await sb.from('stream_chat_public').select('id,author,content').limit(40)
+  // GFL nights read the UBA LIVE stage's chat; EV is declared further down
+  // this file, so the first poll at load must not touch it before it exists
+  const src = (()=>{ try{ return EV==='gfl' ? 'stage' : 'general' }catch(e){ return 'general' } })()
+  const lab = document.getElementById('chatSrc'); if(lab) lab.textContent = src==='stage' ? 'the UBA LIVE stage chat (GFL)' : '#general'
+  const { data, error } = await sb.from('stream_chat_public').select('id,author,content')
+    .eq('channel', src).order('id', { ascending:false }).limit(40)
   if(!error && data){ CHAT.rows=data; chatDraw() }
 }
 chatPoll(); setInterval(chatPoll, 5000)

@@ -1535,10 +1535,10 @@
          picture. Only joins the rotation while there is at least one from the
          last 7 days, and the deck can take it out. -->
     <div class="view" id="v-chat">
-      <div class="eyebrow">VGA · LIVE FROM #GENERAL</div>
+      <div class="eyebrow" id="chEye">VGA · LIVE FROM #GENERAL</div>
       <div class="title sm">The Chat</div>
       <div class="ch-wall" id="chWall"></div>
-      <div class="ch-foot">TYPE IN #GENERAL ON DISCORD · YOUR MESSAGE CAN LAND ON STREAM</div>
+      <div class="ch-foot" id="chFoot">TYPE IN #GENERAL ON DISCORD · YOUR MESSAGE CAN LAND ON STREAM</div>
     </div>
 
     <div class="view" id="v-callouts">
@@ -3931,7 +3931,8 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
   // The deck's chat state: which messages it has hidden. The wall itself goes
   // up only on its own button (view 'chat'); ON/OFF is the match overlay's.
   if(c.type==='chat'){ if(Array.isArray(c.hidden)) CH.hidden=new Set(c.hidden.map(Number))
-    if($('v-chat').classList.contains('on')) chDraw(); return }
+    const moved=c.league && chSrc(c.league)
+    if($('v-chat').classList.contains('on')){ if(moved) chStart(); else chDraw() } return }
   // The deck's Callouts ON/OFF: the screen's place in the auto rotation, nothing else.
   if(c.type==='callouts'){ CO_ON = c.on!==false; coLayout(); return }
   if(c.type==='loadbar'){
@@ -3968,6 +3969,7 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
       CSH.brand=c.series||null; CSH.mode=home
       if(c.armed!==undefined) CSH.armed=c.armed
       CSH.shownNext=undefined; cshUpdate(); show('cshome'); return }
+    if(c.view==='chat' && c.league) chSrc(c.league)
     show(c.view, c.league, c.exclude); return   // league + exclude only matter to 'auto' — the rotation, and which night Next event skips
   }
   // when the deck loads a match in the tracker, mirror it on the team-vs-team
@@ -4007,9 +4009,21 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
 // ── LIVE CHAT ───────────────────────────────────────────────────────────
 // #general, read while the wall is up (stream_chat_public, every 4s). The rows
 // were filtered by the bot before they were written; the deck can still hide one.
-const CH={ rows:[], hidden:new Set(), timer:null, seen:0 }
+const CH={ rows:[], hidden:new Set(), timer:null, seen:0, src:'general' }
+// GFL nights read the 〘🔴〙UBA LIVE stage's chat instead of #general; the
+// league rides on every deck command, and the wall's words say which room.
+function chSrc(league){
+  const src = league==='gfl' ? 'stage' : 'general'
+  if(src===CH.src) return false
+  CH.src=src; CH.rows=[]; CH.seen=0
+  const room = src==='stage' ? 'THE UBA LIVE STAGE' : '#GENERAL'
+  $('chEye').textContent='VGA · LIVE FROM '+room
+  $('chFoot').textContent=(src==='stage' ? 'TYPE IN THE UBA LIVE STAGE CHAT' : 'TYPE IN #GENERAL')+' ON DISCORD · YOUR MESSAGE CAN LAND ON STREAM'
+  return true
+}
 async function chLoad(){
-  const { data, error } = await sb.from('stream_chat_public').select('id,author,avatar_url,content').limit(40)
+  const { data, error } = await sb.from('stream_chat_public').select('id,author,avatar_url,content')
+    .eq('channel', CH.src).order('id', { ascending:false }).limit(40)
   if(error || !data) return false            // a failed read keeps what is up
   CH.rows=data; return true
 }
