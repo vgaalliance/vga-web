@@ -1548,7 +1548,7 @@ function drawDossier(d){
   let hi = null
   if(d.champion)      hi = `<b>${esc(String(d.weight||'').toUpperCase())} CHAMPION</b>`
   else if(fact)       hi = esc(fact)
-  else if(d.next)     hi = `Next: <b>${esc(d.next)}</b>`
+  else if(d.next)     hi = d.tonight ? `Tonight <b>${esc(d.next)}</b>` : `Next: <b>${esc(d.next)}</b>`
   else if(d.nickname) hi = `Known as <b>"${esc(d.nickname)}"</b>`
   else if(d.team)     hi = `Fights out of <b>${esc(d.team)}</b>`
   // A first-timer is the one case where having nothing IS the story.
@@ -1627,21 +1627,26 @@ function fitBar(){
 // same string is a different width in Barlow than in the fallback, so this runs
 // again once the face has loaded (see the fonts.ready hook below).
 function fitPanel(){
+  // ONE LINE FIRST (Castle, 2026-10-26). The panel used to grow its words as
+  // big as the box allowed, so a short line like "Next: vs Creaks" came out
+  // huge and broken over two lines. Now it is set on one line, as big as fits
+  // up to 30px; only if one line would have to go under 18px (a real sentence,
+  // a long fun fact) does it wrap, and then it fills the box as before.
   const box = document.querySelector('#fighter .hi')
   const t = box && box.querySelector('.t')
   if(!box || !t) return
   const availW = box.clientWidth - 44          // the .hi padding
   const availH = box.clientHeight - 16
-  let lo = 17, hi = 38, best = 17
-  // binary search rather than a decrementing loop: this runs on every dossier
-  // push, and a 21-step loop with a reflow each time is 21 forced layouts.
-  while(lo <= hi){
-    const mid = (lo + hi) >> 1
-    t.style.fontSize = mid + 'px'
-    if(t.scrollWidth <= availW && t.scrollHeight <= availH){ best = mid; lo = mid + 1 }
-    else hi = mid - 1
-  }
-  t.style.fontSize = best + 'px'
+  const search = (lo, hi, ok) => { let best = lo
+    while(lo <= hi){ const mid = (lo + hi) >> 1; t.style.fontSize = mid + 'px'
+      if(ok()){ best = mid; lo = mid + 1 } else hi = mid - 1 }
+    return best }
+  t.style.whiteSpace = 'nowrap'
+  const one = search(17, 30, () => t.scrollWidth <= availW)
+  t.style.fontSize = one + 'px'
+  if(one >= 18 && t.scrollWidth <= availW) return
+  t.style.whiteSpace = 'normal'
+  t.style.fontSize = search(17, 38, () => t.scrollWidth <= availW && t.scrollHeight <= availH) + 'px'
 }
 // The panel is measured, so it has to be measured against the REAL face —
 // against the fallback, Barlow comes back narrow and every panel sizes a step
