@@ -1010,6 +1010,24 @@ const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
 const $=id=>document.getElementById(id)
 let nxTimer=null
 const esc=t=>String(t??'').replace(/[<>&]/g,ch=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[ch]))
+// THE TOP CORNERS ON A FRESH LOAD. They are set by the deck's countdown push,
+// and until then they read the placeholder UBAE / SUMMER SPLIT -- so an OBS
+// refresh after the countdown had started put the wrong league and show on air
+// for the rest of the night. On load the overlay reads today's show itself; a
+// countdown push (EH_PUSHED) always wins over this.
+let EH_PUSHED=false
+;(async()=>{
+  try{
+    const since=new Date(Date.now()-8*3600e3).toISOString()
+    const { data } = await sb.from('events_public').select('name,type,event_date,status')
+      .gte('event_date',since).neq('status','cancelled').order('event_date').limit(1)
+    const e = data && data[0]
+    if(EH_PUSHED || !e) return
+    $('ehLeague').textContent = e.type==='ama' ? 'GFL' : 'UBA'
+    $('ehMain').textContent   = String(e.name||'').toUpperCase()
+    $('ehSub').textContent    = 'discord.gg/uba'
+  }catch(err){}
+})()
 // one timer per widget — a shared handle let a bet alert cancel the dossier's
 // auto-hide, stranding the dossier on screen for the rest of the broadcast
 let hideTimer=null, fighterTimer=null, panelTimer=null, oddsTimer=null, mtInt=null
@@ -1205,7 +1223,7 @@ function handle(c){
   // The countdown push carries the branding: d.league is the display acronym
   // (UBA/UBAE/GFL/AMA — distinct from the lowercase layout stamp above) and
   // d.eventMain is the card name. Same push, so both scenes stay in sync.
-  if(c.type==='countdown'){ const d=c.d||{}
+  if(c.type==='countdown'){ const d=c.d||{}; EH_PUSHED=true
     if(d.league)    $('ehLeague').textContent = d.league
     if(d.eventMain) $('ehMain').textContent   = d.eventMain
     if(d.eventSub)  $('ehSub').textContent    = d.eventSub

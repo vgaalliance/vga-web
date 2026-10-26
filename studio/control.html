@@ -702,7 +702,11 @@
       <span id="nextevHint" style="color:var(--gdim);font-size:16px"></span>
     </div>
     <p class="mgrp">FIGHTER INFO</p>
-    <h5>Fighter dossier — lower third</h5>
+    <h5>Fighter name bar — lower third</h5>
+    <!-- THE ARMED BOUT FIRST (Castle, 2026-10-26): the name bar is nearly always
+         one of the two fighters in the fight that is on, so they are one tap.
+         Search stays below for anybody else (a guest, an interview). -->
+    <div class="row" id="fArmed" style="margin-bottom:8px"><span style="color:var(--gdim);font-size:15px">arm a bout in the tracker and its two fighters appear here</span></div>
     <div class="row">
       <input id="fq" placeholder="QUERY FIGHTER NAME…" onkeydown="if(event.key==='Enter')searchFighter()">
       <button onclick="searchFighter()">Search</button>
@@ -1268,21 +1272,49 @@ window.searchFighter=async()=>{
   data.forEach(f=>{
     const b=document.createElement('button')
     b.innerHTML=`${f.display_name}<small>${f.wins}-${f.losses}-${f.draws}${f.rank?' · #'+f.rank:''}</small>`
-    b.onclick=async()=>{
-      let next=null
-      const { data:nm } = await sb.from('fighter_matches')
-        .select('opponent_name,event_name').eq('fighter_id',f.id).eq('status','scheduled')
-        .order('event_date').limit(1)
-      if(nm&&nm[0]) next=`vs ${nm[0].opponent_name} · ${nm[0].event_name}`
-      send({type:'fighter',d:{
-        name:f.display_name, nickname:f.nickname,
-        record:`${f.wins}-${f.losses}-${f.draws}`, ko:f.ko_wins,
-        rank:f.rank, weight:cap(f.rank_weight_class||f.weight_class),
-        country:f.country, champion:f.is_champion, next }})
-    }
+    b.onclick=()=>dossierSend(f)
     box.appendChild(b)
   })
 }
+const DOSS_COLS='id,display_name,nickname,wins:headline_wins,losses:headline_losses,draws:headline_draws,ko_wins:headline_ko_wins,rank,rank_weight_class,weight_class,country,is_champion'
+async function dossierSend(f){
+  let next=null
+  const { data:nm } = await sb.from('fighter_matches')
+    .select('opponent_name,event_name').eq('fighter_id',f.id).eq('status','scheduled')
+    .order('event_date').limit(1)
+  if(nm&&nm[0]) next=`vs ${nm[0].opponent_name} · ${nm[0].event_name}`
+  send({type:'fighter',d:{
+    name:f.display_name, nickname:f.nickname,
+    record:`${f.wins}-${f.losses}-${f.draws}`, ko:f.ko_wins,
+    rank:f.rank, weight:cap(f.rank_weight_class||f.weight_class),
+    country:f.country, champion:f.is_champion, next,
+    event: window.UBA && UBA.name ? UBA.name.toUpperCase() : undefined }})   // the bar's league box says tonight's show
+}
+// the armed bout's two fighters, one tap each. Redrawn whenever the armed bout
+// changes; the lookup is by the exact name on the card, and a name that finds
+// no card says so on the button rather than sending an empty bar.
+let fArmedKey=null
+async function fArmedDraw(){
+  const box=document.getElementById('fArmed'); if(!box || !window.UBA) return
+  const b=UBA.armed!=null ? UBA.bouts[UBA.armed] : null
+  const key=b ? (b.a+'|'+b.b) : ''
+  if(key===fArmedKey) return
+  fArmedKey=key
+  if(!b){ box.innerHTML='<span style="color:var(--gdim);font-size:15px">arm a bout in the tracker and its two fighters appear here</span>'; return }
+  box.innerHTML=''
+  for(const name of [b.a,b.b]){
+    const btn=document.createElement('button'); btn.textContent='▶ '+name; box.appendChild(btn)
+    // the lookup starts now and a tap waits for it, so a press in the first
+    // split second is not silently lost
+    const look=sb.from('fighter_cards').select(DOSS_COLS).eq('display_name',name).limit(1)
+      .then(({ data })=>(data&&data[0])||null, ()=>null)
+    btn.onclick=async()=>{ const f=await look; if(f) dossierSend(f) }
+    look.then(f=>{ if(!f && fArmedKey===key){ btn.innerHTML=`${name}<small>no fighter card found</small>`; btn.disabled=true } })
+  }
+  const hide=document.createElement('button'); hide.className='hide'; hide.textContent='Hide'
+  hide.onclick=()=>send({type:'fighter',on:false}); box.appendChild(hide)
+}
+setInterval(fArmedDraw, 700)
 
 const evFilter=()=>document.getElementById('evFilter').value
 
