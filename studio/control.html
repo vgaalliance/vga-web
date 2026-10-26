@@ -1264,8 +1264,7 @@ window.fireVO = () => {
 window.searchFighter=async()=>{
   const q=document.getElementById('fq').value.trim(); if(!q) return
   const { data } = await sb.from('fighter_cards')
-    .select('id,display_name,nickname,wins:headline_wins,losses:headline_losses,draws:headline_draws,ko_wins:headline_ko_wins,rank,rank_weight_class,weight_class,country,is_champion')
-    .ilike('display_name','%'+q+'%').limit(6)
+    .select(DOSS_COLS).ilike('display_name','%'+q+'%').limit(6)
   const box=document.getElementById('fresults')
   if(!data||!data.length){ box.textContent='NO RECORD FOUND'; return }
   box.innerHTML=''
@@ -1276,7 +1275,7 @@ window.searchFighter=async()=>{
     box.appendChild(b)
   })
 }
-const DOSS_COLS='id,display_name,nickname,wins:headline_wins,losses:headline_losses,draws:headline_draws,ko_wins:headline_ko_wins,rank,rank_weight_class,weight_class,country,is_champion'
+const DOSS_COLS='id,display_name,nickname,wins:headline_wins,losses:headline_losses,draws:headline_draws,ko_wins:headline_ko_wins,rank,rank_weight_class,weight_class,country,is_champion,height,reach,stance'
 async function dossierSend(f){
   let next=null
   const { data:nm } = await sb.from('fighter_matches')
@@ -1291,6 +1290,7 @@ async function dossierSend(f){
     record:`${f.wins}-${f.losses}-${f.draws}`, ko:f.ko_wins,
     rank:f.rank, weight:cap(f.rank_weight_class||f.weight_class),
     country:f.country, champion:f.is_champion, next, tonight,
+    height:f.height, reach:f.reach, stance:f.stance,
     event: window.UBA && UBA.name ? UBA.name.toUpperCase() : undefined }})   // the bar's league box says tonight's show
 }
 // the armed bout's two fighters, one tap each. Redrawn whenever the armed bout

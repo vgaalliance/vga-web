@@ -379,14 +379,16 @@
                      to{opacity:0;clip-path:inset(0 100% 0 0);transform:translateX(-60px);}}
 
   #fighter .seg{background:rgba(16,14,20,.93);display:flex;flex-direction:column;
-    align-items:center;justify-content:center;padding:0 22px;flex:0 0 auto;
+    align-items:center;justify-content:center;padding:0 16px;flex:0 0 auto;
     backdrop-filter:blur(3px);}
   /* value over label — the label is the small word UNDER the fact, which is
      what makes a bare place name or a number read as an answer. */
-  #fighter .v{font-family:'Barlow Condensed';font-weight:500;font-size:33px;
+  /* COMPACT STATS (2026-10-26): 28px over a 13px label, so three or four fit
+     beside the name the way the UFC bar carries them, instead of one */
+  #fighter .v{font-family:'Barlow Condensed';font-weight:500;font-size:28px;
     letter-spacing:.06em;text-transform:uppercase;color:#f3f1fa;line-height:1.05;
     white-space:nowrap;}
-  #fighter .l{font:500 15px 'Barlow';letter-spacing:.24em;text-transform:uppercase;
+  #fighter .l{font:500 13px 'Barlow';letter-spacing:.22em;text-transform:uppercase;
     color:#8d8798;margin-top:5px;white-space:nowrap;}
 
   /* the mark — league aware, the one segment that is never empty */
@@ -416,6 +418,7 @@
     letter-spacing:.13em;text-transform:uppercase;color:#fff;line-height:.98;
     white-space:nowrap;}
   #fighter .nm.two{font-size:36px;letter-spacing:.11em;}
+  #fighter .nick{font:600 16px 'Barlow';letter-spacing:.2em;color:var(--red);margin-top:6px;white-space:nowrap;}
 
   /* THE WHITE PANEL. Exactly one, and it carries the single most interesting
      thing known about this fighter. Inverted because on a bar of identical
@@ -430,7 +433,7 @@
      of the bar and the stats were single words squeezed either side of it. The
      30px it gives back is one more stat segment. */
   #fighter .hi{background:var(--kit-panel);padding:0 22px;align-items:flex-start;
-    justify-content:center;width:330px;flex:0 0 330px;}
+    justify-content:center;width:330px;flex:0 0 auto;}   /* fitPanel narrows it to its words */
   /* THE SIZE IS SET IN JS, not here — see fitPanel().
      A fixed 21px in a fixed 330x112 box meant "MAKING THEIR DEBUT" floated in
      white space at the same size as a sentence twice its length. The panel is
@@ -1520,18 +1523,30 @@ function drawDossier(d){
   const nm = String(d.name||'—').toUpperCase()
   const parts = nm.split(/\s+/)
   const stacked = parts.length >= 2 && nm.length > 11
+  // the nickname rides under a one-line name, UFC style; a stacked name has
+  // used that line already
+  const nick = (!stacked && d.nickname && norm2(d.nickname) !== norm2(d.name)) ? String(d.nickname) : ''
   out.push(`<div class="seg nameseg"><div class="nm${stacked?' two':''}">`
     + (stacked ? esc(parts[0]) + '<br>' + esc(parts.slice(1).join(' ')) : esc(nm))
-    + `</div></div>`)
+    + `</div>` + (nick ? `<div class="nick">"${esc(nick.toUpperCase())}"</div>` : '') + `</div>`)
 
   // STAT SEGMENTS, WEAKEST LAST. Everything here is optional and everything
   // here is droppable — the order is what gets sacrificed first when the bar
   // runs past its cap. Rank and record are why the plate exists; the country
   // is already a flag two segments to the left, so it is the first to go.
-  out.push(seg((+d.rank > 0) ? ('#' + (+d.rank)) : null, 'Ranked', 'drop4'))
-  out.push(seg(d.record || null,                          'Record', 'drop3'))
-  out.push(seg((+d.ko > 0) ? d.ko : null,                 'KO wins','drop2'))
-  out.push(seg(d.weight || null,                          'Division','drop1'))
+  // THE TALE OF THE TAPE FILLS A THIN BAR (2026-10-26). A debut fighter has a
+  // 0-0-0 and nothing else, which left a bare bar; every card has a division
+  // and a height, and most a stance and a reach, so those ride along too. Age
+  // is deliberately never shown -- some fighters are minors. The drop number
+  // is the order they are shed when the bar runs out of room (drop0 first).
+  const inch = v => { const n = +v; return n > 0 ? `${Math.floor(n/12)}'${n%12}"` : null }
+  out.push(seg((+d.rank > 0) ? ('#' + (+d.rank)) : null, 'Ranked', 'drop7'))
+  out.push(seg(d.record || null,                          'Record', 'drop6'))
+  out.push(seg((+d.ko > 0) ? d.ko : null,                 'KO wins','drop5'))
+  out.push(seg(d.weight || null,                          'Division','drop4'))
+  out.push(seg(inch(d.height),                            'Height', 'drop3'))
+  out.push(seg(d.stance ? String(d.stance).toUpperCase() : null, 'Stance', 'drop2'))
+  out.push(seg((+d.reach > 0) ? (+d.reach) + '"' : null,  'Reach',  'drop1'))
   out.push(seg(d.country || null,                         'From',   'drop0'))
 
   // THE WHITE PANEL — exactly one, and it takes the most interesting true
@@ -1549,7 +1564,7 @@ function drawDossier(d){
   if(d.champion)      hi = `<b>${esc(String(d.weight||'').toUpperCase())} CHAMPION</b>`
   else if(fact)       hi = esc(fact)
   else if(d.next)     hi = d.tonight ? `Tonight <b>${esc(d.next)}</b>` : `Next: <b>${esc(d.next)}</b>`
-  else if(d.nickname) hi = `Known as <b>"${esc(d.nickname)}"</b>`
+  else if(d.nickname && stacked) hi = `Known as <b>"${esc(d.nickname)}"</b>`
   else if(d.team)     hi = `Fights out of <b>${esc(d.team)}</b>`
   // A first-timer is the one case where having nothing IS the story.
   else if(d.record && /^0\s*-\s*0/.test(String(d.record))) hi = `<b>MAKING THEIR DEBUT</b>`
@@ -1605,9 +1620,13 @@ function fitBar(){
   const measure = () => [...el.children].reduce((t, c, i) =>
     t + c.offsetWidth + (i ? GAP : 0), 0)   // layout width, never the on-screen one, which any transform changes
   const fits = () => measure() <= BAR_CAP
-  for(const cls of ['drop0','drop1','drop2','drop3','drop4']){
+  fitPanel()   // the panel's width is settled first: it hugs its words
+  // a dropped stat leaves a placeholder in its place, so it can come back
+  const shed = []
+  for(const cls of ['drop0','drop1','drop2','drop3','drop4','drop5','drop6','drop7']){
     if(fits()) break
-    const v = el.querySelector('.' + cls); if(v) v.remove()
+    const v = el.querySelector('.' + cls); if(!v) continue
+    const ph = document.createComment(cls); v.replaceWith(ph); shed.push({ v, ph })
   }
   const nm = el.querySelector('.nm')
   if(nm && !fits()){
@@ -1617,8 +1636,15 @@ function fitBar(){
   }
   if(!fits()){ const f = el.querySelector('.flag'); if(f) f.remove() }
   const hi = el.querySelector('.hi')
-  if(hi && !fits()){ hi.style.width = hi.style.flexBasis = '250px' }
+  if(hi && !fits() && hi.offsetWidth > 250){ hi.dataset.max = '250'; fitPanel() }
   if(hi && !fits()) hi.remove()
+  // GIVE BACK WHAT FITS. Shedding in strict order can throw out a wide stat
+  // (LIGHT HEAVYWEIGHT) and leave room a narrow one (6'0") was dropped for.
+  // So try every shed stat again, most important first, and keep each that fits.
+  for(const { v, ph } of shed.reverse()){
+    ph.replaceWith(v)
+    if(!fits()) v.replaceWith(ph)
+  }
   el.style.width = Math.ceil(Math.min(measure(), BAR_CAP)) + 'px'
   fitPanel()
 }
@@ -1635,16 +1661,27 @@ function fitPanel(){
   const box = document.querySelector('#fighter .hi')
   const t = box && box.querySelector('.t')
   if(!box || !t) return
-  const availW = box.clientWidth - 44          // the .hi padding
+  const max = +(box.dataset.max || 330)
+  box.style.width = max + 'px'                  // measure against the widest it may be
+  const availW = max - 44                       // the .hi padding
   const availH = box.clientHeight - 16
   const search = (lo, hi, ok) => { let best = lo
     while(lo <= hi){ const mid = (lo + hi) >> 1; t.style.fontSize = mid + 'px'
       if(ok()){ best = mid; lo = mid + 1 } else hi = mid - 1 }
     return best }
-  t.style.whiteSpace = 'nowrap'
+  // measured at its own width (max-content): a block's scrollWidth is never
+  // less than the box, so measuring the block made every panel "need" all 330px
+  t.style.whiteSpace = 'nowrap'; t.style.width = 'max-content'
   const one = search(17, 30, () => t.scrollWidth <= availW)
   t.style.fontSize = one + 'px'
-  if(one >= 18 && t.scrollWidth <= availW) return
+  if(one >= 18 && t.scrollWidth <= availW){
+    // one line: the box hugs it (never under 200, so it still reads as a panel)
+    box.style.width = Math.max(200, Math.ceil(t.scrollWidth) + 44) + 'px'
+    t.style.width = ''
+    return
+  }
+  t.style.width = ''
+  box.style.width = max + 'px'
   t.style.whiteSpace = 'normal'
   t.style.fontSize = search(17, 38, () => t.scrollWidth <= availW && t.scrollHeight <= availH) + 'px'
 }
