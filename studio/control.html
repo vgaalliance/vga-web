@@ -2348,9 +2348,10 @@ function frDraw(){
     const state= linked ? `✓ ${frEsc(frBoutName(frBout(r.bout_id)))}${r.link==='auto'?' <span style="opacity:.6">(auto)</span>':''}`
                : r.link==='rejected' ? '<span style="opacity:.6">✗ not a card bout</span>'
                : '<span style="opacity:.6">not linked</span>'
+    const play= r.has_recap ? `<button title="Play it on standby without linking it: nothing is recorded or counted" onclick="frPlay(${i})">▶ Play</button>` : '<span style="opacity:.6">no recap yet</span>'
     const acts= linked
-      ? `${r.has_recap?`<button onclick="frShow(${i})">🎬 Show</button>`:'<span style="opacity:.6">no recap</span>'} <button onclick="frSet(${i},null)">Not this one</button>`
-      : `<select id="frPick${i}"><option value="">Link to…</option>${opts}</select> <button onclick="frSet(${i},document.getElementById('frPick${i}').value||null,true)">Link</button>`
+      ? `${r.has_recap?`<button onclick="frShow(${i})">🎬 Show</button>`:play} <button onclick="frSet(${i},null)">Not this one</button>`
+      : `${play} <select id="frPick${i}"><option value="">Link to…</option>${opts}</select> <button onclick="frSet(${i},document.getElementById('frPick${i}').value||null,true)">Link</button>`
     return `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.08)">${who} <span>→ ${state}</span> <span style="margin-left:auto">${acts}</span></div>`
   }).join('')
 }
@@ -2370,6 +2371,9 @@ window.frSet=async(i, bout, needBout)=>{
 window.frShow=i=>{ const r=FR.rows[i]; if(!r||!r.bout_id) return
   send({ type:'standby', view:'recap', on:true, bout:r.bout_id })
   deckLog('🎬 recap: '+frBoutName(frBout(r.bout_id))+' (comes up once it has loaded)') }
+window.frPlay=i=>{ const r=FR.rows[i]; if(!r) return
+  send({ type:'standby', view:'recap', on:true, bout:'fight:'+r.match_id })
+  deckLog('▶ recap: '+r.red+' vs '+r.blue+' (not linked, nothing counted)') }
 window.frDemo=()=>{ send({ type:'standby', view:'recap', on:true, bout:'demo' }); deckLog('🧪 recap test: the demo fight (Kodiak vs Wisp) on standby') }
 // 🎬 Recap: the armed bout if it has a linked fight, else the newest linked one tonight
 window.frRecap=async()=>{

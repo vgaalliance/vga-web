@@ -718,12 +718,12 @@ html.bc .bc-credit { display: block; }
   var q = new URLSearchParams(location.search);
   if (q.get('broadcast') === '1') document.documentElement.classList.add('bc');
   if (q.get('demo') === '1') return;
-  var bout = q.get('bout');
-  if (bout) {
-    window.__recapWait = fetch('https://emzlivoykbhhjcugupit.supabase.co/rest/v1/rpc/fight_recap', {
+  var bout = q.get('bout'), fight = q.get('fight');   // ?fight=<match_id>: any recorded fight, played without linking it
+  if (bout || fight) {
+    window.__recapWait = fetch('https://emzlivoykbhhjcugupit.supabase.co/rest/v1/rpc/' + (bout ? 'fight_recap' : 'fight_recap_by_match'), {
       method: 'POST', cache: 'no-store',
       headers: { 'Content-Type': 'application/json', apikey: 'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF' },
-      body: JSON.stringify({ p_bout: bout })
+      body: JSON.stringify(bout ? { p_bout: bout } : { p_match_id: fight })
     }).then(function (r) { return r.ok ? r.json() : null; })
       .then(function (j) { if (j && typeof j === 'object') window.RECAP = j; })
       .catch(function () {});
@@ -3105,7 +3105,7 @@ requestAnimationFrame(frame);
     s.textContent = document.getElementById('recapMain').textContent;
     document.body.appendChild(s);
     // standby (the parent frame) waits for this before it shows the screen
-    try { var q = new URLSearchParams(location.search); parent.postMessage({ recap: window.RECAP || q.get('demo') === '1' ? 'ready' : 'none', bout: q.get('demo') === '1' ? 'demo' : q.get('bout') }, '*'); } catch (e) {}
+    try { var q = new URLSearchParams(location.search); parent.postMessage({ recap: window.RECAP || q.get('demo') === '1' ? 'ready' : 'none', bout: q.get('demo') === '1' ? 'demo' : q.get('bout') || 'fight:' + q.get('fight') }, '*'); } catch (e) {}
   };
   if (window.__recapWait) window.__recapWait.then(run); else run();
 })();

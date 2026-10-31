@@ -4036,7 +4036,9 @@ function rcLoad(bout, sound){
     window.addEventListener('message', on)
     if(!v.classList.contains('on')) v.classList.add('rc-pre')
     // 'demo' = the made-up Kodiak vs Wisp fight, for testing the screen with no fight recorded
-    f.src='recap.html?broadcast=1&mode=highlights&'+(bout==='demo' ? 'demo=1' : 'bout='+encodeURIComponent(bout))+(sound?'&sound=1&mix=broadcast':'')
+    // 'fight:<match_id>' = any fight the stream PC recorded, played without linking it
+    const src = bout==='demo' ? 'demo=1' : bout.startsWith('fight:') ? 'fight='+encodeURIComponent(bout.slice(6)) : 'bout='+encodeURIComponent(bout)
+    f.src='recap.html?broadcast=1&mode=highlights&'+src+(sound?'&sound=1&mix=broadcast':'')
   })
 }
 
