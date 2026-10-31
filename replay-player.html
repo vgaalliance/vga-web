@@ -364,7 +364,8 @@ if (qs.has("direct")) $("#direct").checked = true;
 
 let ice = null, iceAt = 0;
 async function getIce(){
-  if (!ice || Date.now() - iceAt > 60*60*1000){ ice = await replayLink.ice(); iceAt = Date.now(); }
+  // a failed ask is never kept: the bot restarting for a minute must not leave the relay off for an hour
+  if (!ice || !ice.relay || Date.now() - iceAt > 60*60*1000){ ice = await replayLink.ice(); iceAt = Date.now(); }
   say("#relayMsg", ice.relay ? "Relay on. The analyst can't see this PC's IP." : "Relay off: the bot isn't handing out relay passes.", ice.relay ? "good" : "bad");
   return ice;
 }
@@ -442,6 +443,7 @@ for (const u of (qs.get("clip") || "").split(",").filter(Boolean)){
 publishClips();
 restoreDir();
 getIce();
+setInterval(() => { if (ice && !ice.relay) getIce(); }, 30000);   // relay off: ask again every 30 s until it is on
 replayLink.signal(room, onSig, send => send({ type: "player" })).then(f => { sig = f; })
   .catch(e => say("#analystMsg", "Couldn't reach Supabase to meet the analyst: " + e.message, "bad"));
 </script>
