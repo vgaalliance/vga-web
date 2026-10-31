@@ -3145,8 +3145,11 @@ requestAnimationFrame(frame);
     var s = document.createElement('script');
     s.textContent = document.getElementById('recapMain').textContent;
     document.body.appendChild(s);
-    // standby (the parent frame) waits for this before it shows the screen
-    try { var q = new URLSearchParams(location.search); parent.postMessage({ recap: window.RECAP || q.get('demo') === '1' ? 'ready' : 'none', bout: q.get('demo') === '1' ? 'demo' : q.get('bout') || 'fight:' + q.get('fight') }, '*'); } catch (e) {}
+    // standby (the parent frame) waits for this before it shows the screen, so it
+    // goes out after the 3D has drawn a couple of frames, never on an empty canvas
+    var said = false, say = function () { if (said) return; said = true; try { var q = new URLSearchParams(location.search); parent.postMessage({ recap: window.RECAP || q.get('demo') === '1' ? 'ready' : 'none', bout: q.get('demo') === '1' ? 'demo' : q.get('bout') || 'fight:' + q.get('fight') }, '*'); } catch (e) {} };
+    requestAnimationFrame(function () { requestAnimationFrame(function () { requestAnimationFrame(say); }); });
+    setTimeout(say, 900);
   };
   if (window.__recapWait) window.__recapWait.then(run); else run();
 })();

@@ -1034,21 +1034,15 @@
      ?broadcast=1). A frame, because the recap is its own 4 MB page. It loads
      hidden and the screen only comes up once it says 'ready', so a bout with no
      linked fight never puts an empty screen on air. */
-  #v-recap{max-width:none;width:1740px;height:940px;position:relative;}
+  /* The recap never moves and never leaves the layout: it sits in one fixed place
+     (the same 1740×940 the other screens use) and only fades. Moving it, or taking
+     it out with display:none, resizes its 3D canvas, and a resized canvas draws one
+     blank frame — the blink. In: a fade with a slight zoom settling. Out: the reverse. */
+  #v-recap{display:block !important;position:fixed;left:50%;top:50%;width:1740px;height:940px;margin:-470px 0 0 -870px;max-width:none;
+    opacity:0;visibility:hidden;transform:scale(1.03);pointer-events:none;animation:none !important;
+    transition:opacity .55s ease, transform .9s cubic-bezier(.16,1,.3,1), visibility 0s linear .55s;}
+  #v-recap.on{opacity:1;visibility:visible;transform:none;transition:opacity .7s ease, transform 1.1s cubic-bezier(.16,1,.3,1), visibility 0s;}
   #v-recap iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;}
-  /* loading: laid out at full size (a display:none frame would build its 3D at 0×0) but unseen */
-  #v-recap.rc-pre{display:block;position:absolute;visibility:hidden;animation:none;}
-  /* in: opens from the middle out, with a purple seam; out: closes back to it */
-  #v-recap{animation:none;}
-  #v-recap.on iframe{animation:rcIn .95s cubic-bezier(.16,1,.3,1) both;}
-  #v-recap.out iframe{animation:rcOut .55s cubic-bezier(.5,0,.75,0) both;}
-  #v-recap::after{content:"";position:absolute;top:0;bottom:0;left:50%;width:4px;margin-left:-2px;background:#9b4dff;
-    box-shadow:0 0 24px 6px rgba(155,77,255,.7);opacity:0;pointer-events:none;}
-  #v-recap.on::after{animation:rcSeam .95s ease-out both;}
-  #v-recap.out::after{animation:rcSeam .55s ease-in reverse both;}
-  @keyframes rcIn{from{clip-path:inset(0 50% 0 50%);filter:brightness(1.8)}to{clip-path:inset(0 0 0 0);filter:none}}
-  @keyframes rcOut{from{clip-path:inset(0 0 0 0)}to{clip-path:inset(0 50% 0 50%);filter:brightness(1.8)}}
-  @keyframes rcSeam{0%{opacity:0;transform:scaleY(0)}25%{opacity:1;transform:scaleY(1)}100%{opacity:0;transform:scaleY(1)}}
   .gw-eye{font-family:'Press Start 2P',monospace;font-size:14px;letter-spacing:.28em;color:var(--hi);}
   .gw-title{font-weight:900;font-size:110px;line-height:.86;text-transform:uppercase;margin-top:10px;text-shadow:0 0 34px rgba(var(--pur-rgb),.7);}
   .gw-when{position:absolute;right:0;top:12px;text-align:right;font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.2em;color:var(--dim);line-height:2.2;}
@@ -3244,7 +3238,10 @@ function renderTvs(mt){
 const VOUT_MS=600      // must match .view.out's animation length
 function hideView(el){
   if(!el.classList.contains('on')) return
-  if(el.id === 'v-recap'){ rcTeleScene(false); setTimeout(()=>{ if(!el.classList.contains('on')) $('rcFrame').src='about:blank' }, 1500) }   // a hidden WebGL page still costs the GPU
+  if(el.id === 'v-recap'){   // fades in place (see #v-recap): no pinning, no out class
+    el.classList.remove('on'); syncPromo(); rcTeleScene(false)
+    setTimeout(()=>{ if(!el.classList.contains('on')) $('rcFrame').src='about:blank' }, 1500)   // a hidden WebGL page still costs the GPU
+    return }
   const r=el.getBoundingClientRect(), p=el.parentElement.getBoundingClientRect()
   el.style.position='absolute'
   el.style.top=(r.top-p.top)+'px'
@@ -4045,12 +4042,10 @@ function rcLoad(bout, sound, replay){
   return new Promise(res=>{
     const f=$('rcFrame')
     let done=false
-    const v=$('v-recap')
-    const end=ok=>{ if(done) return; done=true; window.removeEventListener('message', on); clearTimeout(t); v.classList.remove('rc-pre'); res(ok) }
+    const end=ok=>{ if(done) return; done=true; window.removeEventListener('message', on); clearTimeout(t); res(ok) }
     const on=e=>{ const d=e.data||{}; if(e.source===f.contentWindow && d.recap) end(d.recap==='ready' && d.bout===bout) }
     const t=setTimeout(()=>end(false), 20000)
     window.addEventListener('message', on)
-    if(!v.classList.contains('on')) v.classList.add('rc-pre')
     // 'demo' = the made-up Kodiak vs Wisp fight, for testing the screen with no fight recorded
     // 'fight:<match_id>' = any fight the stream PC recorded, played without linking it
     const src = bout==='demo' ? 'demo=1' : bout.startsWith('fight:') ? 'fight='+encodeURIComponent(bout.slice(6)) : 'bout='+encodeURIComponent(bout)

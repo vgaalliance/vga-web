@@ -504,8 +504,7 @@
            player (the telestrator). OBS: switch to the Recap + replay scene -->
       <button id="recapTeleBtn" style="display:none" onclick="frRecap(true)">🎬 Recap + telestrator</button>
       <!-- mid-recap: the telestrator window opens / closes (fighters slide, OBS scene follows), the replay keeps going -->
-      <button id="teleInBtn" style="display:none" onclick="frTele(true)">📺 Telestrator in</button>
-      <button id="teleOutBtn" style="display:none" onclick="frTele(false)">📺 Telestrator out</button>
+      <button id="teleBtn" style="display:none" onclick="frTele()">📺 Telestrator: OFF</button>
       <!-- every open bet on the night: the loaded card's, or the first night with markets -->
       <button onclick="betBoard()">💰 Betting board</button>
       <!-- Shows nothing until studio/assets/poster.png or card-3d.mp4 exists,
@@ -2322,7 +2321,7 @@ const csHomeBtnUI=()=>{ const hb=document.getElementById('csHomeBtn'); if(!hb) r
   const gw=document.getElementById('gymWarBtn'); if(gw) gw.style.display = h==='uba' ? '' : 'none'
   const rb=document.getElementById('recapBtn'); if(rb) rb.style.display = UBA.id && UBA.id!=='csdemo' ? '' : 'none'
   const rt=document.getElementById('recapTeleBtn'); if(rt) rt.style.display = UBA.id && UBA.id!=='csdemo' ? '' : 'none'
-  ;['teleInBtn','teleOutBtn'].forEach(id=>{ const b=document.getElementById(id); if(b) b.style.display = UBA.id && UBA.id!=='csdemo' ? '' : 'none' })
+  const tb=document.getElementById('teleBtn'); if(tb) tb.style.display = UBA.id && UBA.id!=='csdemo' ? '' : 'none'
   if(window.frLoad) frLoad() }
 // The betting board: the loaded card's markets, or with no card loaded the first night with any.
 window.betBoard=()=> send({ type:'standby', view:'bets', on:true,
@@ -2379,13 +2378,19 @@ window.frSet=async(i, bout, needBout)=>{
   frLoad()
 }
 window.frShow=(i, tele)=>{ const r=FR.rows[i]; if(!r||!r.bout_id) return
+  FR.tele=!!tele; frTeleUI()
   send({ type:'standby', view:'recap', on:true, bout:r.bout_id, replay:!!tele })
   deckLog('🎬 recap: '+frBoutName(frBout(r.bout_id))+' (comes up once it has loaded)') }
 window.frPlay=(i, tele)=>{ const r=FR.rows[i]; if(!r) return
+  FR.tele=!!tele; frTeleUI()
   send({ type:'standby', view:'recap', on:true, bout:'fight:'+r.match_id, replay:!!tele })
   deckLog('▶ recap: '+r.red+' vs '+r.blue+' (not linked, nothing counted)') }
-window.frTele=on=>{ send({ type:'recaptele', on:!!on }); deckLog(on ? '📺 telestrator in (only while a recap is up)' : '📺 telestrator out') }
-window.frDemo=tele=>{ send({ type:'standby', view:'recap', on:true, bout:'demo', replay:!!tele }); deckLog('🧪 recap test: the demo fight (Kodiak vs Wisp) on standby') }
+// 📺 one toggle: the telestrator window in or out of the recap that is up (live, the replay keeps going)
+const frTeleUI=()=>{ const b=document.getElementById('teleBtn'); if(!b) return
+  b.textContent='📺 Telestrator: '+(FR.tele?'ON':'OFF'); b.classList.toggle('active', !!FR.tele) }
+window.frTele=on=>{ FR.tele = on===undefined ? !FR.tele : !!on; frTeleUI()
+  send({ type:'recaptele', on:FR.tele }); deckLog(FR.tele ? '📺 telestrator in (while a recap is up)' : '📺 telestrator out') }
+window.frDemo=tele=>{ FR.tele=!!tele; frTeleUI(); send({ type:'standby', view:'recap', on:true, bout:'demo', replay:!!tele }); deckLog('🧪 recap test: the demo fight (Kodiak vs Wisp) on standby') }
 // 🎬 Recap: the armed bout if it has a linked fight, else the newest linked one tonight
 window.frRecap=async(tele)=>{
   await frLoad()
