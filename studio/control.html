@@ -517,7 +517,8 @@
          linked fight counts (recap, stats). Link one by hand, or say not this one. -->
     <div id="frBox" style="display:none;margin:6px 0 12px">
       <p class="lbl" style="margin:0 0 6px">STATS FROM THE GAME <small id="frNote" style="opacity:.7"></small>
-        <button style="margin-left:10px;padding:2px 8px;font-size:11px" title="Puts the made-up demo fight on standby: for testing the screen, never during a show" onclick="frDemo()">🧪 Test with the demo fight</button></p>
+        <button style="margin-left:10px;padding:2px 8px;font-size:11px" title="Puts the made-up demo fight on standby: for testing the screen, never during a show" onclick="frDemo()">🧪 Test with the demo fight</button>
+        <label style="margin-left:10px;font-size:12px;cursor:pointer" title="The fighters move to the edges and a framed REPLAY window opens in the middle, for the replay player (OBS: the Recap + replay scene)"><input type="checkbox" id="frReplay" onchange="frReplaySave()"> 🎞 Replay window</label></p>
       <div id="frList" style="font-size:13px;line-height:1.5"></div>
     </div>
     <p class="lbl sbgrp">LEAGUE</p>
@@ -2327,6 +2328,9 @@ window.gymWar=()=>{
 // fight_results_for_event(): what the stream PC sent around this show. The deck
 // shows each with the bout it is linked to; 🎬 shows a linked one on standby.
 const FR={ rows:[], timer:null }
+const frRp=()=>{ const c=document.getElementById('frReplay'); return !!(c && c.checked) }
+window.frReplaySave=()=>{ try{ localStorage.setItem('vga.recap.replay', frRp()?'1':'0') }catch{} }
+setTimeout(()=>{ try{ const c=document.getElementById('frReplay'); if(c) c.checked = localStorage.getItem('vga.recap.replay')==='1' }catch{} }, 0)
 const frEsc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))
 const frBout=id=>UBA.bouts.find(b=>b.id===id)
 const frBoutName=b=>b ? (b.bout_number!=null?'Bout '+b.bout_number+' · ':'')+b.a+' vs '+b.b : 'another bout'
@@ -2369,12 +2373,12 @@ window.frSet=async(i, bout, needBout)=>{
   frLoad()
 }
 window.frShow=i=>{ const r=FR.rows[i]; if(!r||!r.bout_id) return
-  send({ type:'standby', view:'recap', on:true, bout:r.bout_id })
+  send({ type:'standby', view:'recap', on:true, bout:r.bout_id, replay:frRp() })
   deckLog('🎬 recap: '+frBoutName(frBout(r.bout_id))+' (comes up once it has loaded)') }
 window.frPlay=i=>{ const r=FR.rows[i]; if(!r) return
-  send({ type:'standby', view:'recap', on:true, bout:'fight:'+r.match_id })
+  send({ type:'standby', view:'recap', on:true, bout:'fight:'+r.match_id, replay:frRp() })
   deckLog('▶ recap: '+r.red+' vs '+r.blue+' (not linked, nothing counted)') }
-window.frDemo=()=>{ send({ type:'standby', view:'recap', on:true, bout:'demo' }); deckLog('🧪 recap test: the demo fight (Kodiak vs Wisp) on standby') }
+window.frDemo=()=>{ send({ type:'standby', view:'recap', on:true, bout:'demo', replay:frRp() }); deckLog('🧪 recap test: the demo fight (Kodiak vs Wisp) on standby') }
 // 🎬 Recap: the armed bout if it has a linked fight, else the newest linked one tonight
 window.frRecap=async()=>{
   await frLoad()

@@ -3971,7 +3971,7 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
       show('bets'); return }
     if(c.view==='recap'){
       if(!c.bout) return
-      if(!(await rcLoad(c.bout, c.sound))) return   // nothing linked to that bout = stay on what is up
+      if(!(await rcLoad(c.bout, c.sound, c.replay))) return   // nothing linked to that bout = stay on what is up
       show('recap'); return }
     if(c.view==='gymwar'){
       if(!c.eventId) return
@@ -4025,7 +4025,7 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
 // ── FIGHT RECAP ─────────────────────────────────────────────────────────
 // Load the bout's recap into the frame and wait for it to say it has a fight
 // ('ready') or not ('none'). Every press reloads it, so it replays from the top.
-function rcLoad(bout, sound){
+function rcLoad(bout, sound, replay){
   return new Promise(res=>{
     const f=$('rcFrame')
     let done=false
@@ -4038,7 +4038,8 @@ function rcLoad(bout, sound){
     // 'demo' = the made-up Kodiak vs Wisp fight, for testing the screen with no fight recorded
     // 'fight:<match_id>' = any fight the stream PC recorded, played without linking it
     const src = bout==='demo' ? 'demo=1' : bout.startsWith('fight:') ? 'fight='+encodeURIComponent(bout.slice(6)) : 'bout='+encodeURIComponent(bout)
-    f.src='recap.html?broadcast=1&mode=highlights&'+src+(sound?'&sound=1&mix=broadcast':'')
+    // replay: fighters wider apart and a framed REPLAY window in the middle, for the replay player's Window Capture in OBS
+    f.src='recap.html?broadcast=1&mode=highlights&'+src+(sound?'&sound=1&mix=broadcast':'')+(replay?'&replay=1':'')
   })
 }
 
