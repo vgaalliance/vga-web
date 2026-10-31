@@ -3638,7 +3638,7 @@ async function bbLoad(eventId, event){
   const { data, error } = await q.order('bout_number')
   if(error || !data) return false            // a failed read never draws an empty board
   const ids=data.map(r=>r.match_id)
-  const { data:fd, error:fe } = ids.length ? await sb.from('bet_feed_public').select('match_id,bout_number,side_a,side_b,pick,amount,placed_at,bettor')
+  const { data:fd, error:fe } = ids.length ? await sb.from('bet_feed_public').select('match_id,bout_number,side_a,side_b,pick,amount,placed_at')
     .in('match_id', ids).order('placed_at',{ascending:false}).limit(200) : { data:[] }
   BB.feed = fe ? (BB.feed||[]) : (fd||[])   // the feed failing keeps the last one; the board still draws
   let rows=data
@@ -3718,12 +3718,12 @@ const bbSide=b=>{ const p=(BB.rows.find(r=>r.match_id===b.match_id))||{}, a=b.pi
 function bbFit(scope){ scope.querySelectorAll('.who, .amt, .fit').forEach(el=>{ el.style.fontSize=''
   let px=parseInt(getComputedStyle(el).fontSize)||40; const min=Math.round(px*.5)
   while(el.scrollWidth>el.clientWidth+1 && px>min) el.style.fontSize=(--px)+'px' }) }
-// One bet, as the two-tone card. bet_feed_public.bettor is their fighter name,
-// else their Discord display name (public since 2026-10-24, Castle's call).
+// One bet, as the two-tone card. Anonymous (2026-10-30, Castle's call): the top
+// is the fighter backed, never who bet — bet_feed_public carries no bettor.
 const bbCard=b=>{ if(!b) return '<div class="bb-t empty"></div>'
   const x=bbSide(b), big=b===BB.big, a=b.pick===b.side_a
-  return `<div class="bb-t${a?'':' r'}${big?' big':''}"><div class="top"><div class="k">${big?'BIGGEST BET':'BET BY'} · ${bbAgo(b.placed_at)}</div><b class="fit">${cshEsc(b.bettor||'—')}</b></div>
-    <div class="bot"><div class="amt">${bbVc(b.amount)}<small>VC</small></div><div class="on fit"><span>on</span> ${cshEsc(b.pick)} <span>vs ${cshEsc(x.opp)}</span></div></div>
+  return `<div class="bb-t${a?'':' r'}${big?' big':''}"><div class="top"><div class="k">${big?'BIGGEST BET':'A BET ON'} · ${bbAgo(b.placed_at)}</div><b class="fit">${cshEsc(b.pick)}</b></div>
+    <div class="bot"><div class="amt">${bbVc(b.amount)}<small>VC</small></div><div class="on fit"><span>vs ${cshEsc(x.opp)}</span></div></div>
     ${x.photo?`<img class="ph" src="${cshEsc(x.photo)}" alt="" onerror="this.remove()">`:''}</div>` }
 function bbFeedDraw(){
   const feed=BB.feed||[]
