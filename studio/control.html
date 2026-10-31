@@ -499,7 +499,13 @@
       <!-- only with a UBA card loaded: the card's gym-vs-gym fights, then the month's gym race -->
       <button id="gymWarBtn" style="display:none" onclick="gymWar()">🏋 Gym war</button>
       <!-- only with a card loaded: the 3D recap of a bout the stream PC recorded (the newest linked one, or pick below) -->
-      <button id="recapBtn" style="display:none" onclick="frRecap()">🎬 Recap</button>
+      <button id="recapBtn" style="display:none" onclick="frRecap(false)">🎬 Recap</button>
+      <!-- the same recap with the fighters at the edges and a framed window in the middle for the replay
+           player (the telestrator). OBS: switch to the Recap + replay scene -->
+      <button id="recapTeleBtn" style="display:none" onclick="frRecap(true)">🎬 Recap + telestrator</button>
+      <!-- mid-recap: the telestrator window opens / closes (fighters slide, OBS scene follows), the replay keeps going -->
+      <button id="teleInBtn" style="display:none" onclick="frTele(true)">📺 Telestrator in</button>
+      <button id="teleOutBtn" style="display:none" onclick="frTele(false)">📺 Telestrator out</button>
       <!-- every open bet on the night: the loaded card's, or the first night with markets -->
       <button onclick="betBoard()">💰 Betting board</button>
       <!-- Shows nothing until studio/assets/poster.png or card-3d.mp4 exists,
@@ -517,8 +523,8 @@
          linked fight counts (recap, stats). Link one by hand, or say not this one. -->
     <div id="frBox" style="display:none;margin:6px 0 12px">
       <p class="lbl" style="margin:0 0 6px">STATS FROM THE GAME <small id="frNote" style="opacity:.7"></small>
-        <button style="margin-left:10px;padding:2px 8px;font-size:11px" title="Puts the made-up demo fight on standby: for testing the screen, never during a show" onclick="frDemo()">🧪 Test with the demo fight</button>
-        <label style="margin-left:10px;font-size:12px;cursor:pointer" title="The fighters move to the edges and a framed REPLAY window opens in the middle, for the replay player (OBS: the Recap + replay scene)"><input type="checkbox" id="frReplay" onchange="frReplaySave()"> 🎞 Replay window</label></p>
+        <button style="margin-left:10px;padding:2px 8px;font-size:11px" title="Puts the made-up demo fight on standby: for testing the screen, never during a show" onclick="frDemo(false)">🧪 Test with the demo fight</button>
+        <button style="padding:2px 8px;font-size:11px" title="The demo fight with the telestrator window: for lining up the replay capture in OBS" onclick="frDemo(true)">🧪 + telestrator</button></p>
       <div id="frList" style="font-size:13px;line-height:1.5"></div>
     </div>
     <p class="lbl sbgrp">LEAGUE</p>
@@ -2315,6 +2321,8 @@ const csHomeBtnUI=()=>{ const hb=document.getElementById('csHomeBtn'); if(!hb) r
   hb.textContent = h==='cs' ? '🧊 Contender home' : h==='gfl' ? '🥊 GFL home · Path to Pros' : '🏠 UBA home · rankings at stake'
   const gw=document.getElementById('gymWarBtn'); if(gw) gw.style.display = h==='uba' ? '' : 'none'
   const rb=document.getElementById('recapBtn'); if(rb) rb.style.display = UBA.id && UBA.id!=='csdemo' ? '' : 'none'
+  const rt=document.getElementById('recapTeleBtn'); if(rt) rt.style.display = UBA.id && UBA.id!=='csdemo' ? '' : 'none'
+  ;['teleInBtn','teleOutBtn'].forEach(id=>{ const b=document.getElementById(id); if(b) b.style.display = UBA.id && UBA.id!=='csdemo' ? '' : 'none' })
   if(window.frLoad) frLoad() }
 // The betting board: the loaded card's markets, or with no card loaded the first night with any.
 window.betBoard=()=> send({ type:'standby', view:'bets', on:true,
@@ -2328,9 +2336,7 @@ window.gymWar=()=>{
 // fight_results_for_event(): what the stream PC sent around this show. The deck
 // shows each with the bout it is linked to; 🎬 shows a linked one on standby.
 const FR={ rows:[], timer:null }
-const frRp=()=>{ const c=document.getElementById('frReplay'); return !!(c && c.checked) }
-window.frReplaySave=()=>{ try{ localStorage.setItem('vga.recap.replay', frRp()?'1':'0') }catch{} }
-setTimeout(()=>{ try{ const c=document.getElementById('frReplay'); if(c) c.checked = localStorage.getItem('vga.recap.replay')==='1' }catch{} }, 0)
+
 const frEsc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))
 const frBout=id=>UBA.bouts.find(b=>b.id===id)
 const frBoutName=b=>b ? (b.bout_number!=null?'Bout '+b.bout_number+' · ':'')+b.a+' vs '+b.b : 'another bout'
@@ -2352,9 +2358,9 @@ function frDraw(){
     const state= linked ? `✓ ${frEsc(frBoutName(frBout(r.bout_id)))}${r.link==='auto'?' <span style="opacity:.6">(auto)</span>':''}`
                : r.link==='rejected' ? '<span style="opacity:.6">✗ not a card bout</span>'
                : '<span style="opacity:.6">not linked</span>'
-    const play= r.has_recap ? `<button title="Play it on standby without linking it: nothing is recorded or counted" onclick="frPlay(${i})">▶ Play</button>` : '<span style="opacity:.6">no recap yet</span>'
+    const play= r.has_recap ? `<button title="Play it on standby without linking it: nothing is recorded or counted" onclick="frPlay(${i},false)">▶ Play</button> <button title="The same, with the telestrator window in the middle (OBS: Recap + replay)" onclick="frPlay(${i},true)">▶ + telestrator</button>` : '<span style="opacity:.6">no recap yet</span>'
     const acts= linked
-      ? `${r.has_recap?`<button onclick="frShow(${i})">🎬 Show</button>`:play} <button onclick="frSet(${i},null)">Not this one</button>`
+      ? `${r.has_recap?`<button onclick="frShow(${i},false)">🎬 Show</button> <button onclick="frShow(${i},true)">🎬 + telestrator</button>`:play} <button onclick="frSet(${i},null)">Not this one</button>`
       : `${play} <select id="frPick${i}"><option value="">Link to…</option>${opts}</select> <button onclick="frSet(${i},document.getElementById('frPick${i}').value||null,true)">Link</button>`
     return `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.08)">${who} <span>→ ${state}</span> <span style="margin-left:auto">${acts}</span></div>`
   }).join('')
@@ -2372,21 +2378,22 @@ window.frSet=async(i, bout, needBout)=>{
   deckLog(bout ? '🔗 '+r.red+' vs '+r.blue+' → '+frBoutName(frBout(bout)) : '✗ '+r.red+' vs '+r.blue+' is not a card bout')
   frLoad()
 }
-window.frShow=i=>{ const r=FR.rows[i]; if(!r||!r.bout_id) return
-  send({ type:'standby', view:'recap', on:true, bout:r.bout_id, replay:frRp() })
+window.frShow=(i, tele)=>{ const r=FR.rows[i]; if(!r||!r.bout_id) return
+  send({ type:'standby', view:'recap', on:true, bout:r.bout_id, replay:!!tele })
   deckLog('🎬 recap: '+frBoutName(frBout(r.bout_id))+' (comes up once it has loaded)') }
-window.frPlay=i=>{ const r=FR.rows[i]; if(!r) return
-  send({ type:'standby', view:'recap', on:true, bout:'fight:'+r.match_id, replay:frRp() })
+window.frPlay=(i, tele)=>{ const r=FR.rows[i]; if(!r) return
+  send({ type:'standby', view:'recap', on:true, bout:'fight:'+r.match_id, replay:!!tele })
   deckLog('▶ recap: '+r.red+' vs '+r.blue+' (not linked, nothing counted)') }
-window.frDemo=()=>{ send({ type:'standby', view:'recap', on:true, bout:'demo', replay:frRp() }); deckLog('🧪 recap test: the demo fight (Kodiak vs Wisp) on standby') }
+window.frTele=on=>{ send({ type:'recaptele', on:!!on }); deckLog(on ? '📺 telestrator in (only while a recap is up)' : '📺 telestrator out') }
+window.frDemo=tele=>{ send({ type:'standby', view:'recap', on:true, bout:'demo', replay:!!tele }); deckLog('🧪 recap test: the demo fight (Kodiak vs Wisp) on standby') }
 // 🎬 Recap: the armed bout if it has a linked fight, else the newest linked one tonight
-window.frRecap=async()=>{
+window.frRecap=async(tele)=>{
   await frLoad()
   const ok=FR.rows.filter(r=>r.bout_id && (r.link==='auto'||r.link==='deck') && r.has_recap)
   const armed=UBA.armed!=null ? (UBA.bouts[UBA.armed]||{}).id : null
   const pick=ok.find(r=>r.bout_id===armed) || ok[0]
   if(!pick){ deckLog('⚠ no recap yet: no fight from the stream PC is linked to a bout on this card'); return }
-  frShow(FR.rows.indexOf(pick))
+  frShow(FR.rows.indexOf(pick), tele)
 }
 window.csHome=()=>{
   const home=homeOf()

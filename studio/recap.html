@@ -615,9 +615,11 @@ html.bc .bc-credit { display: block; }
 /* ?replay=1: a framed window in the middle for the replay player (OBS lays its
    Window Capture exactly inside the frame; the frame is drawn OUTSIDE that area
    so the capture can sit above or below this page). 16:9, centred near the top, so the round and clock stay readable under it. */
-html.rp .rp-box { display: block; position: fixed; left: 50%; top: 6%; width: 40%; aspect-ratio: 16 / 9; transform: translateX(-50%);
+html.bc .rp-box { display: block; position: fixed; left: 50%; top: 6%; width: 40%; aspect-ratio: 16 / 9; transform: translateX(-50%) scale(.86);
+  opacity: 0; transition: opacity .45s ease, transform .7s cubic-bezier(.16,1,.3,1);
   z-index: 40; pointer-events: none; outline: 3px solid #9b4dff; outline-offset: 4px; box-shadow: 0 0 0 7px rgba(10,4,20,.55), 0 0 60px 10px rgba(155,77,255,.35); }
-html.rp .rp-box b { position: absolute; left: -7px; top: -36px; font: 800 20px/1 system-ui, sans-serif; letter-spacing: .14em; color: #fff;
+html.rp-on .rp-box { opacity: 1; transform: translateX(-50%) scale(1); }
+html.bc .rp-box b { position: absolute; left: -7px; top: -36px; font: 800 20px/1 system-ui, sans-serif; letter-spacing: .14em; color: #fff;
   background: #6a1fc2; padding: 6px 12px 5px; }
 .bc-credit { display: none; position: fixed; right: 14px; bottom: 10px; z-index: 50; font: 11px/1.3 system-ui, sans-serif; color: rgba(244,239,252,.55); pointer-events: none; }
 </style>
@@ -1208,7 +1210,7 @@ function makeFighter(id, x, base, sign) {
   scene.add(fl);
   var imps = eight(function () { return { p: [0, 0, 0], n: [0, 0, 1], s: 0, t0: -1e9, a: IMPACT_KIND.hit.a, b: IMPACT_KIND.hit.b, c: null }; });
   FGT[id] = { id: id, x: x, base: base, sign: sign, rig: rig, mesh: mesh, heat: heatA, flush: flushA, ha: ha, fa: fa, U: U, FU: FU,
-    imps: imps, impHead: 0, flushes: [], flashCol: null, flashT0: -1e9, flashLife: 1, flashGain: 0, focusAmt: 0, yaw: base, xr: null };
+    fl: fl, imps: imps, impHead: 0, flushes: [], flashCol: null, flashT0: -1e9, flashLife: 1, flashGain: 0, focusAmt: 0, yaw: base, xr: null };
 }
 makeFighter('kodiak', -FIGHTER_X, FACE_OFF, 1);   // red corner, screen left, turned toward the middle
 makeFighter('wisp', FIGHTER_X, -FACE_OFF, -1);    // blue corner, screen right, mirrored
@@ -3107,6 +3109,34 @@ else { state.t = 0; startReplay(); }
 dataDirty = true;
 setTimeout(hideHint, 9000);
 requestAnimationFrame(frame);
+/* ================= the telestrator window, live (2026-10-31) =================
+   standby posts {rp:true|false}: the fighters slide apart (or back) and the framed
+   REPLAY window opens (or closes) without restarting the replay. */
+(function () {
+  var NEAR = 0.74, WIDE = 1.42, from = FIGHTER_X, to = FIGHTER_X, t0 = 0, DUR = 900;
+  function apply(x) {
+    FIGHTER_X = x; PRESETS.both.hw = x + 0.52;
+    FIDS.forEach(function (id) {
+      var F = FGT[id], nx = id === 'kodiak' ? -x : x;
+      F.x = nx; if (!(kz.F === F && kz.amt > 0)) F.rig.position.x = nx; if (F.fl) F.fl.position.x = nx;
+    });
+    if (state.cam === 'both') { var p = PRESETS.both; goal.dist = fitDist(p.hh, p.hw); goal.ty = p.c[1] + padShift(goal.dist); }
+    LANES.kodiak.snap = LANES.wisp.snap = true;
+  }
+  function step() {
+    var k = Math.min(1, (performance.now() - t0) / DUR), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+    apply(from + (to - from) * e);
+    if (k < 1) requestAnimationFrame(step);
+  }
+  window.__rpSet = function (on) {
+    var root = document.documentElement;
+    if (!root.classList.contains('bc')) return;
+    root.classList.toggle('rp-on', !!on);
+    from = FIGHTER_X; to = on ? WIDE : NEAR; t0 = performance.now(); requestAnimationFrame(step);
+  };
+  window.addEventListener('message', function (e) { if (e.source === parent && e.data && typeof e.data.rp === 'boolean') window.__rpSet(e.data.rp); });
+  if (document.documentElement.classList.contains('rp')) setTimeout(function () { document.documentElement.classList.add('rp-on'); }, 350);
+})();
 })();
 </script>
 <script>

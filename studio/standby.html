@@ -1038,6 +1038,17 @@
   #v-recap iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;}
   /* loading: laid out at full size (a display:none frame would build its 3D at 0×0) but unseen */
   #v-recap.rc-pre{display:block;position:absolute;visibility:hidden;animation:none;}
+  /* in: opens from the middle out, with a purple seam; out: closes back to it */
+  #v-recap{animation:none;}
+  #v-recap.on iframe{animation:rcIn .95s cubic-bezier(.16,1,.3,1) both;}
+  #v-recap.out iframe{animation:rcOut .55s cubic-bezier(.5,0,.75,0) both;}
+  #v-recap::after{content:"";position:absolute;top:0;bottom:0;left:50%;width:4px;margin-left:-2px;background:#9b4dff;
+    box-shadow:0 0 24px 6px rgba(155,77,255,.7);opacity:0;pointer-events:none;}
+  #v-recap.on::after{animation:rcSeam .95s ease-out both;}
+  #v-recap.out::after{animation:rcSeam .55s ease-in reverse both;}
+  @keyframes rcIn{from{clip-path:inset(0 50% 0 50%);filter:brightness(1.8)}to{clip-path:inset(0 0 0 0);filter:none}}
+  @keyframes rcOut{from{clip-path:inset(0 0 0 0)}to{clip-path:inset(0 50% 0 50%);filter:brightness(1.8)}}
+  @keyframes rcSeam{0%{opacity:0;transform:scaleY(0)}25%{opacity:1;transform:scaleY(1)}100%{opacity:0;transform:scaleY(1)}}
   .gw-eye{font-family:'Press Start 2P',monospace;font-size:14px;letter-spacing:.28em;color:var(--hi);}
   .gw-title{font-weight:900;font-size:110px;line-height:.86;text-transform:uppercase;margin-top:10px;text-shadow:0 0 34px rgba(var(--pur-rgb),.7);}
   .gw-when{position:absolute;right:0;top:12px;text-align:right;font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.2em;color:var(--dim);line-height:2.2;}
@@ -3233,7 +3244,7 @@ function renderTvs(mt){
 const VOUT_MS=600      // must match .view.out's animation length
 function hideView(el){
   if(!el.classList.contains('on')) return
-  if(el.id === 'v-recap') setTimeout(()=>{ if(!el.classList.contains('on')) $('rcFrame').src='about:blank' }, 1500)   // a hidden WebGL page still costs the GPU
+  if(el.id === 'v-recap'){ rcTeleScene(false); setTimeout(()=>{ if(!el.classList.contains('on')) $('rcFrame').src='about:blank' }, 1500) }   // a hidden WebGL page still costs the GPU
   const r=el.getBoundingClientRect(), p=el.parentElement.getBoundingClientRect()
   el.style.position='absolute'
   el.style.top=(r.top-p.top)+'px'
@@ -3947,6 +3958,11 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
     if($('v-chat').classList.contains('on')){ if(moved) chStart(); else chDraw() } return }
   // The deck's Callouts ON/OFF: the screen's place in the auto rotation, nothing else.
   if(c.type==='callouts'){ CO_ON = c.on!==false; coLayout(); return }
+  // the telestrator window opening or closing mid-recap (the replay keeps playing)
+  if(c.type==='recaptele'){
+    if(!$('v-recap').classList.contains('on')) return
+    try{ $('rcFrame').contentWindow.postMessage({ rp: !!c.on }, '*') }catch(e){}
+    rcTeleScene(!!c.on); return }
   if(c.type==='loadbar'){
     if(c.show===false){ barShow(false); return }
     if(c.show===true && !c.d){ barShow(true); return }
@@ -3972,7 +3988,7 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
     if(c.view==='recap'){
       if(!c.bout) return
       if(!(await rcLoad(c.bout, c.sound, c.replay))) return   // nothing linked to that bout = stay on what is up
-      show('recap'); return }
+      show('recap'); rcTeleScene(!!c.replay); return }
     if(c.view==='gymwar'){
       if(!c.eventId) return
       if((c.eventId!==GW.eventId || !GW.ready) && !(await gwLoad(c.eventId, c.event))) return   // no read = stay on what is up
@@ -4041,6 +4057,23 @@ function rcLoad(bout, sound, replay){
     // replay: fighters wider apart and a framed REPLAY window in the middle, for the replay player's Window Capture in OBS
     f.src='recap.html?broadcast=1&mode=highlights&'+src+(sound?'&sound=1&mix=broadcast':'')+(replay?'&replay=1':'')
   })
+}
+
+// The replay player's picture is a Window Capture in its own OBS scene
+// ("Recap + replay": this standby source + the capture). Inside OBS, with the
+// source's Page permissions at "Advanced access to OBS", standby switches to that
+// scene when the telestrator window opens and back when it closes, so the picture
+// comes and goes with the frame. Anywhere else (a browser, no permission) it does
+// nothing and the operator switches scenes by hand. ?teleScene= names the scene.
+const RC={ scene: new URLSearchParams(location.search).get('teleScene') || 'Recap + replay', back:null }
+function rcTeleScene(on){
+  const o=window.obsstudio
+  if(!o || !o.setCurrentScene || !o.getCurrentScene) return
+  try{
+    o.getCurrentScene(cur=>{ const now=cur && cur.name
+      if(on){ if(now!==RC.scene){ RC.back=now; o.setCurrentScene(RC.scene) } }
+      else if(now===RC.scene && RC.back){ o.setCurrentScene(RC.back); RC.back=null } })
+  }catch(e){}
 }
 
 // ── LIVE CHAT ───────────────────────────────────────────────────────────
