@@ -336,7 +336,7 @@
     // crypto.subtle needs a secure context; over plain http it is undefined and
     // the form would fail silently, which on a show night is the worst outcome.
     if(!window.crypto||!crypto.subtle){ document.getElementById('doorMsg').textContent='needs https'; return }
-    if(await sha(u+':'+p)===HASH) open()
+    if(await sha(u+':'+p)===HASH){ try{ sessionStorage.setItem('vga.deck.cred', u+':'+p) }catch{} ; open() }
     else { document.getElementById('doorMsg').textContent='wrong user or password'
       document.getElementById('doorPass').value='' }
   })
@@ -498,6 +498,8 @@
       <button id="csHomeBtn" style="display:none" onclick="csHome()">🧊 Contender home</button>
       <!-- only with a UBA card loaded: the card's gym-vs-gym fights, then the month's gym race -->
       <button id="gymWarBtn" style="display:none" onclick="gymWar()">🏋 Gym war</button>
+      <!-- only with a card loaded: the 3D recap of a bout the stream PC recorded (the newest linked one, or pick below) -->
+      <button id="recapBtn" style="display:none" onclick="frRecap()">🎬 Recap</button>
       <!-- every open bet on the night: the loaded card's, or the first night with markets -->
       <button onclick="betBoard()">💰 Betting board</button>
       <!-- Shows nothing until studio/assets/poster.png or card-3d.mp4 exists,
@@ -509,6 +511,13 @@
       <button onclick="standby('prize')">🎁 Prize</button>
       <button class="lg-ubae" onclick="standby('teamvs')">Team vs team</button>
       <button class="lg-ubae" onclick="standby('vsrosters')">Rosters VS</button>
+    </div>
+    <!-- STATS FROM THE GAME: every fight the stream PC sent around tonight's show.
+         A fight links itself to its bout by the two TOTF2 usernames; only a
+         linked fight counts (recap, stats). Link one by hand, or say not this one. -->
+    <div id="frBox" style="display:none;margin:6px 0 12px">
+      <p class="lbl" style="margin:0 0 6px">STATS FROM THE GAME <small id="frNote" style="opacity:.7"></small></p>
+      <div id="frList" style="font-size:13px;line-height:1.5"></div>
     </div>
     <p class="lbl sbgrp">LEAGUE</p>
     <div class="row">
@@ -2302,7 +2311,9 @@ const csHomeBtnUI=()=>{ const hb=document.getElementById('csHomeBtn'); if(!hb) r
   const h=homeOf()
   hb.style.display = h ? '' : 'none'
   hb.textContent = h==='cs' ? '🧊 Contender home' : h==='gfl' ? '🥊 GFL home · Path to Pros' : '🏠 UBA home · rankings at stake'
-  const gw=document.getElementById('gymWarBtn'); if(gw) gw.style.display = h==='uba' ? '' : 'none' }
+  const gw=document.getElementById('gymWarBtn'); if(gw) gw.style.display = h==='uba' ? '' : 'none'
+  const rb=document.getElementById('recapBtn'); if(rb) rb.style.display = UBA.id && UBA.id!=='csdemo' ? '' : 'none'
+  if(window.frLoad) frLoad() }
 // The betting board: the loaded card's markets, or with no card loaded the first night with any.
 window.betBoard=()=> send({ type:'standby', view:'bets', on:true,
   eventId: UBA.id && UBA.id!=='csdemo' ? UBA.id : null, event: UBA.id && UBA.id!=='csdemo' ? UBA.name : null })
@@ -2310,6 +2321,62 @@ window.betBoard=()=> send({ type:'standby', view:'bets', on:true,
 window.gymWar=()=>{
   if(homeOf()!=='uba'){ deckLog('⚠ load a UBA card above first'); return }
   send({ type:'standby', view:'gymwar', on:true, event:UBA.name, eventId:UBA.id })
+}
+// ── STATS FROM THE GAME (2026-10-31) ─────────────────────────────────────
+// fight_results_for_event(): what the stream PC sent around this show. The deck
+// shows each with the bout it is linked to; 🎬 shows a linked one on standby.
+const FR={ rows:[], timer:null }
+const frEsc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))
+const frBout=id=>UBA.bouts.find(b=>b.id===id)
+const frBoutName=b=>b ? (b.bout_number!=null?'Bout '+b.bout_number+' · ':'')+b.a+' vs '+b.b : 'another bout'
+window.frLoad=async()=>{
+  const box=document.getElementById('frBox')
+  if(!UBA.id || UBA.id==='csdemo'){ box.style.display='none'; clearInterval(FR.timer); FR.timer=null; return }
+  const { data, error } = await sb.rpc('fight_results_for_event', { p_event: UBA.id })
+  if(error){ document.getElementById('frNote').textContent='· could not read ('+error.message+')'; return }
+  FR.rows=data||[]; box.style.display=''; frDraw()
+  if(!FR.timer) FR.timer=setInterval(frLoad, 30000)   // a fight lands about a minute after it ends
+}
+function frDraw(){
+  const list=document.getElementById('frList')
+  document.getElementById('frNote').textContent = FR.rows.length ? '· '+FR.rows.length+' from the stream PC' : '· none yet: a fight shows here about a minute after it ends'
+  const opts=UBA.bouts.map(b=>`<option value="${b.id}">${frEsc(frBoutName(b))}</option>`).join('')
+  list.innerHTML=FR.rows.map((r,i)=>{
+    const who=`<b>${frEsc(r.red)}</b> vs <b>${frEsc(r.blue)}</b> <span style="opacity:.7">${frEsc(r.method||'')}${r.winner?' · '+frEsc(r.winner):''}</span>`
+    const linked=r.bout_id && (r.link==='auto'||r.link==='deck')
+    const state= linked ? `✓ ${frEsc(frBoutName(frBout(r.bout_id)))}${r.link==='auto'?' <span style="opacity:.6">(auto)</span>':''}`
+               : r.link==='rejected' ? '<span style="opacity:.6">✗ not a card bout</span>'
+               : '<span style="opacity:.6">not linked</span>'
+    const acts= linked
+      ? `${r.has_recap?`<button onclick="frShow(${i})">🎬 Show</button>`:'<span style="opacity:.6">no recap</span>'} <button onclick="frSet(${i},null)">Not this one</button>`
+      : `<select id="frPick${i}"><option value="">Link to…</option>${opts}</select> <button onclick="frSet(${i},document.getElementById('frPick${i}').value||null,true)">Link</button>`
+    return `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.08)">${who} <span>→ ${state}</span> <span style="margin-left:auto">${acts}</span></div>`
+  }).join('')
+}
+const frCred=()=>{ let c=null; try{ c=sessionStorage.getItem('vga.deck.cred') }catch{}
+  if(!c){ c=prompt('Deck user:password (to change a link)'); if(c) try{ sessionStorage.setItem('vga.deck.cred', c) }catch{} }
+  return c }
+window.frSet=async(i, bout, needBout)=>{
+  const r=FR.rows[i]; if(!r) return
+  if(needBout && !bout){ deckLog('⚠ pick the bout first'); return }
+  const cred=frCred(); if(!cred) return
+  const { data, error } = await sb.rpc('fight_link_set', { p_door: cred, p_match_id: r.match_id, p_bout: bout })
+  if(error){ if(/password/.test(error.message)) try{ sessionStorage.removeItem('vga.deck.cred') }catch{}
+    deckLog('⚠ link: '+error.message); return }
+  deckLog(bout ? '🔗 '+r.red+' vs '+r.blue+' → '+frBoutName(frBout(bout)) : '✗ '+r.red+' vs '+r.blue+' is not a card bout')
+  frLoad()
+}
+window.frShow=i=>{ const r=FR.rows[i]; if(!r||!r.bout_id) return
+  send({ type:'standby', view:'recap', on:true, bout:r.bout_id })
+  deckLog('🎬 recap: '+frBoutName(frBout(r.bout_id))+' (comes up once it has loaded)') }
+// 🎬 Recap: the armed bout if it has a linked fight, else the newest linked one tonight
+window.frRecap=async()=>{
+  await frLoad()
+  const ok=FR.rows.filter(r=>r.bout_id && (r.link==='auto'||r.link==='deck') && r.has_recap)
+  const armed=UBA.armed!=null ? (UBA.bouts[UBA.armed]||{}).id : null
+  const pick=ok.find(r=>r.bout_id===armed) || ok[0]
+  if(!pick){ deckLog('⚠ no recap yet: no fight from the stream PC is linked to a bout on this card'); return }
+  frShow(FR.rows.indexOf(pick))
 }
 window.csHome=()=>{
   const home=homeOf()

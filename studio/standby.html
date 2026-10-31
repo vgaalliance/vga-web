@@ -1029,6 +1029,15 @@
      in a block of its colour (no invented logos); a fighter is a cut-out on that
      colour. Laid out on the 1740 stage like the home screen. Every class is gw-. */
   #v-gymwar{max-width:none;height:940px;position:relative;font-family:'Barlow Condensed',sans-serif;}
+  /* ── FIGHT RECAP (2026-10-31): the 3D recap of a bout the stream PC recorded
+     and the database linked to it, played in highlights (studio/recap.html
+     ?broadcast=1). A frame, because the recap is its own 4 MB page. It loads
+     hidden and the screen only comes up once it says 'ready', so a bout with no
+     linked fight never puts an empty screen on air. */
+  #v-recap{max-width:none;width:1740px;height:940px;position:relative;}
+  #v-recap iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;}
+  /* loading: laid out at full size (a display:none frame would build its 3D at 0×0) but unseen */
+  #v-recap.rc-pre{display:block;position:absolute;visibility:hidden;animation:none;}
   .gw-eye{font-family:'Press Start 2P',monospace;font-size:14px;letter-spacing:.28em;color:var(--hi);}
   .gw-title{font-weight:900;font-size:110px;line-height:.86;text-transform:uppercase;margin-top:10px;text-shadow:0 0 34px rgba(var(--pur-rgb),.7);}
   .gw-when{position:absolute;right:0;top:12px;text-align:right;font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.2em;color:var(--dim);line-height:2.2;}
@@ -1519,6 +1528,8 @@
       <div id="bbBody"></div>
       <div class="bb-feed" id="bbFeed"></div>
     </div>
+    <!-- FIGHT RECAP — the 3D recap of one bout, loaded by rcLoad() -->
+    <div class="view" id="v-recap"><iframe id="rcFrame" title="Fight recap" allowtransparency="true" src="about:blank"></iframe></div>
     <!-- GYM WAR — a UBA card's gym-vs-gym fights, then the month's gym race. gwDraw() fills it -->
     <div class="view" id="v-gymwar">
       <div class="gw-eye" id="gwEye">VGA · UBA</div>
@@ -3222,6 +3233,7 @@ function renderTvs(mt){
 const VOUT_MS=600      // must match .view.out's animation length
 function hideView(el){
   if(!el.classList.contains('on')) return
+  if(el.id === 'v-recap') setTimeout(()=>{ if(!el.classList.contains('on')) $('rcFrame').src='about:blank' }, 1500)   // a hidden WebGL page still costs the GPU
   const r=el.getBoundingClientRect(), p=el.parentElement.getBoundingClientRect()
   el.style.position='absolute'
   el.style.top=(r.top-p.top)+'px'
@@ -3957,6 +3969,10 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
     if(c.view==='bets'){
       if(!(await bbLoad(c.eventId||null, c.event||null))) return   // no read = stay on what is up
       show('bets'); return }
+    if(c.view==='recap'){
+      if(!c.bout) return
+      if(!(await rcLoad(c.bout, c.sound))) return   // nothing linked to that bout = stay on what is up
+      show('recap'); return }
     if(c.view==='gymwar'){
       if(!c.eventId) return
       if((c.eventId!==GW.eventId || !GW.ready) && !(await gwLoad(c.eventId, c.event))) return   // no read = stay on what is up
@@ -4005,6 +4021,23 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
   if(s==='SUBSCRIBED' && !document.body.classList.contains('kiosk'))
     LINK.send({ type:'broadcast', event:'cmd', payload:{ type:'cardhello' } })
 })
+
+// ── FIGHT RECAP ─────────────────────────────────────────────────────────
+// Load the bout's recap into the frame and wait for it to say it has a fight
+// ('ready') or not ('none'). Every press reloads it, so it replays from the top.
+function rcLoad(bout, sound){
+  return new Promise(res=>{
+    const f=$('rcFrame')
+    let done=false
+    const v=$('v-recap')
+    const end=ok=>{ if(done) return; done=true; window.removeEventListener('message', on); clearTimeout(t); v.classList.remove('rc-pre'); res(ok) }
+    const on=e=>{ const d=e.data||{}; if(e.source===f.contentWindow && d.recap) end(d.recap==='ready' && d.bout===bout) }
+    const t=setTimeout(()=>end(false), 20000)
+    window.addEventListener('message', on)
+    if(!v.classList.contains('on')) v.classList.add('rc-pre')
+    f.src='recap.html?broadcast=1&mode=highlights&bout='+encodeURIComponent(bout)+(sound?'&sound=1&mix=broadcast':'')
+  })
+}
 
 // ── LIVE CHAT ───────────────────────────────────────────────────────────
 // #general, read while the wall is up (stream_chat_public, every 4s). The rows
