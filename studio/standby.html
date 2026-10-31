@@ -4035,7 +4035,8 @@ function rcLoad(bout, sound){
     const t=setTimeout(()=>end(false), 20000)
     window.addEventListener('message', on)
     if(!v.classList.contains('on')) v.classList.add('rc-pre')
-    f.src='recap.html?broadcast=1&mode=highlights&bout='+encodeURIComponent(bout)+(sound?'&sound=1&mix=broadcast':'')
+    // 'demo' = the made-up Kodiak vs Wisp fight, for testing the screen with no fight recorded
+    f.src='recap.html?broadcast=1&mode=highlights&'+(bout==='demo' ? 'demo=1' : 'bout='+encodeURIComponent(bout))+(sound?'&sound=1&mix=broadcast':'')
   })
 }
 

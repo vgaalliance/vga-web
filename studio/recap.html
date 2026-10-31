@@ -3105,7 +3105,7 @@ requestAnimationFrame(frame);
     s.textContent = document.getElementById('recapMain').textContent;
     document.body.appendChild(s);
     // standby (the parent frame) waits for this before it shows the screen
-    try { parent.postMessage({ recap: window.RECAP ? 'ready' : 'none', bout: new URLSearchParams(location.search).get('bout') }, '*'); } catch (e) {}
+    try { var q = new URLSearchParams(location.search); parent.postMessage({ recap: window.RECAP || q.get('demo') === '1' ? 'ready' : 'none', bout: q.get('demo') === '1' ? 'demo' : q.get('bout') }, '*'); } catch (e) {}
   };
   if (window.__recapWait) window.__recapWait.then(run); else run();
 })();
