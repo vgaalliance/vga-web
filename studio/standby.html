@@ -3958,8 +3958,13 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
   // the telestrator window opening or closing mid-recap (the replay keeps playing)
   if(c.type==='recaptele'){
     if(!$('v-recap').classList.contains('on')) return
-    try{ $('rcFrame').contentWindow.postMessage({ rp: !!c.on }, '*') }catch(e){}
-    rcTeleScene(!!c.on); return }
+    const tell=()=>{ try{ $('rcFrame').contentWindow.postMessage({ rp: !!c.on }, '*') }catch(e){} }
+    // ON: open the frame first, then fade the replay picture in inside it.
+    // OFF: fade the picture out first, then close the frame. The other order cuts
+    // the picture while the frame is still open — the blink.
+    if(c.on){ tell(); setTimeout(()=>{ if($('v-recap').classList.contains('on')) rcTeleScene(true) }, 650) }
+    else { rcTeleScene(false); setTimeout(tell, 380) }
+    return }
   if(c.type==='loadbar'){
     if(c.show===false){ barShow(false); return }
     if(c.show===true && !c.d){ barShow(true); return }
@@ -3985,7 +3990,7 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
     if(c.view==='recap'){
       if(!c.bout) return
       if(!(await rcLoad(c.bout, c.sound, c.replay))) return   // nothing linked to that bout = stay on what is up
-      show('recap'); rcTeleScene(!!c.replay); return }
+      show('recap'); if(c.replay) setTimeout(()=>{ if($('v-recap').classList.contains('on')) rcTeleScene(true) }, 900); else rcTeleScene(false); return }
     if(c.view==='gymwar'){
       if(!c.eventId) return
       if((c.eventId!==GW.eventId || !GW.ready) && !(await gwLoad(c.eventId, c.event))) return   // no read = stay on what is up
@@ -4061,13 +4066,24 @@ function rcLoad(bout, sound, replay){
 // comes and goes with the frame. Anywhere else (a browser, no permission) it does
 // nothing and the operator switches scenes by hand. ?teleScene= names the scene.
 const RC={ scene: new URLSearchParams(location.search).get('teleScene') || 'Recap + replay', back:null }
+// The switch always uses OBS's Fade transition (300 ms here), whatever the
+// scene transition is set to, so the picture fades rather than cuts; the
+// operator's own transition is put back right after.
 function rcTeleScene(on){
   const o=window.obsstudio
   if(!o || !o.setCurrentScene || !o.getCurrentScene) return
+  const go=name=>{
+    if(!o.getTransitions || !o.setCurrentTransition || !o.getCurrentTransition){ o.setCurrentScene(name); return }
+    o.getCurrentTransition(t=>{ const was=t && t.name
+      o.getTransitions(list=>{ const fade=(list||[]).find(n=>/fade/i.test(n))
+        if(fade && fade!==was) o.setCurrentTransition(fade)
+        o.setCurrentScene(name)
+        if(fade && was && fade!==was) setTimeout(()=>{ try{ o.setCurrentTransition(was) }catch(e){} }, 900) }) })
+  }
   try{
     o.getCurrentScene(cur=>{ const now=cur && cur.name
-      if(on){ if(now!==RC.scene){ RC.back=now; o.setCurrentScene(RC.scene) } }
-      else if(now===RC.scene && RC.back){ o.setCurrentScene(RC.back); RC.back=null } })
+      if(on){ if(now!==RC.scene){ RC.back=now; go(RC.scene) } }
+      else if(now===RC.scene && RC.back){ go(RC.back); RC.back=null } })
   }catch(e){}
 }
 
