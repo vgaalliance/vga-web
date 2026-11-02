@@ -2348,7 +2348,8 @@ async function frEvents(){
     .gte('event_date',new Date(Date.now()-10*864e5).toISOString())
     .lte('event_date',new Date(Date.now()+864e5).toISOString())
     .order('event_date',{ascending:false}).limit(8)
-  FR.evs=data||[]
+  if(data) FR.evs=data   // a failed read keeps the list that is up
+  FR.evsAt=Date.now()
 }
 function frEvDraw(){
   const box=document.getElementById('frEvs')
@@ -2357,7 +2358,7 @@ function frEvDraw(){
 window.frPickEv=i=>{ const e=FR.evs[i]; if(!e) return; FR.ev={ id:e.id, name:e.name }; frLoad() }
 window.frLoad=async(useCard)=>{
   if(useCard) FR.ev=null
-  if(!FR.evs.length) await frEvents()
+  if(!FR.evs.length || Date.now()-(FR.evsAt||0)>10*60e3) await frEvents()   // re-read every 10 min: a deck stays open for days
   const card = UBA.id && UBA.id!=='csdemo' ? { id:UBA.id, name:UBA.name } : null
   const ev = FR.ev || card || FR.evs[0]
   if(!ev){ document.getElementById('frNote').textContent='· no shows in the last 10 days'; return }
