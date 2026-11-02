@@ -52,5 +52,17 @@
     return send;
   }
 
-  window.replayLink = { ice, signal };
+  // Pairing with standby, nothing to paste (audit F125). The player tells the
+  // bot its room; standby asks, and the bot answers only a caller on the SAME
+  // internet connection — the room is also the analyst link, so it is never
+  // handed to anybody else.
+  async function pairSay(room){
+    try { await fetch(BOT + "/replay/pair?room=" + encodeURIComponent(room), { method: "POST", cache: "no-store" }); } catch {}
+  }
+  async function pairAsk(){
+    try { const r = await fetch(BOT + "/replay/pair", { cache: "no-store" }); return r.ok ? (await r.json()).room || null : null; }
+    catch { return null; }
+  }
+
+  window.replayLink = { ice, signal, pairSay, pairAsk };
 })();

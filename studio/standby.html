@@ -1591,7 +1591,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="playoff-core.js"></script>
 <script src="ladder-core.js"></script>
-<script src="../replay-link.js?v=3"></script>
+<script src="../replay-link.js?v=4"></script>
 <script>
 const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
   'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
@@ -4095,8 +4095,8 @@ function rcTeleScene(on){
 }
 
 // The replay, live inside the recap's REPLAY frame. This page watches the replay
-// player directly (its room: ?replayRoom=<code>, or the one it remembers from the
-// last time it connected): the player sends
+// player directly (its room comes from the bot, which pairs the two by internet
+// connection; ?replayRoom=<code> and the last room it used also work): the player sends
 // its picture with the drawings already on it, standby hands that stream to the
 // recap's frame, and the frame opening and closing IS the replay coming and going.
 // No Window Capture, no scene switch — the switch was the blink. The connection
@@ -4140,8 +4140,16 @@ function rpStart(room){
 if(window.replayLink){
   let saved=null; try{ saved=localStorage.getItem('vga-standby-replay-room') }catch(e){}
   rpStart(new URLSearchParams(location.search).get('replayRoom') || saved)
-  // No public "who is the player?" channel: the room code is also the analyst
-  // link, so it is never handed out to whoever asks (audit, 2026-11-02).
+  // With no room, or a room that has not answered for 30 s (the player made a new
+  // link, or was never paired), ask the bot: it hands the player's room only to a
+  // page on the same internet connection (audit F125). Never a public channel.
+  RPF.ok=Date.now()
+  const ask=async()=>{ const r=await replayLink.pairAsk(); if(r && r!==RPF.room){ RPF.ok=Date.now(); rpStart(r) } }
+  if(!RPF.room) ask()
+  setInterval(()=>{
+    if(RPF.pc && RPF.pc.connectionState==='connected'){ RPF.ok=Date.now(); return }
+    if(!RPF.room || Date.now()-RPF.ok>30000){ RPF.ok=Date.now(); ask() }
+  }, 5000)
   // keep knocking until the player answers (it may open after standby, or restart)
   setInterval(()=>{
     if(!RPF.room) return
