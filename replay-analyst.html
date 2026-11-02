@@ -67,6 +67,8 @@
   .crow .add{padding:2px 8px;min-height:26px;font-size:12px;color:var(--hot);border-color:#5a4a14;background:transparent}
   .crow .add.in{color:var(--dim);border-color:var(--line)}
   #empty{padding:20px 14px;color:var(--dim);font-size:13px}
+  /* Phones: the clips as a strip of snapshots, swiped left to right (newest first). */
+  #strip{display:none}
 
   #stage{display:grid;grid-template-columns:64px minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;min-height:0;min-width:0}
   #rail{background:var(--panel);display:flex;flex-direction:column;gap:5px;padding:8px 7px;overflow:auto}
@@ -135,6 +137,23 @@
     #clips{max-height:50vh;border-bottom:1px solid var(--line)}
     #clips .sh{padding:8px 12px}
     #clips .keys{display:none}
+    #clips{max-height:none}
+    #list{display:none}
+    #strip{display:flex;gap:10px;overflow-x:auto;padding:10px 12px 12px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+    #strip::-webkit-scrollbar{display:none}
+    .card{flex:0 0 46%;scroll-snap-align:start;display:flex;flex-direction:column;gap:6px}
+    .card .pick{display:block;padding:0;border:2px solid var(--line);border-radius:8px;overflow:hidden;background:#000;text-align:left;white-space:normal}
+    .card.on .pick{border-color:var(--hot);box-shadow:0 0 14px rgba(255,210,63,.35)}
+    .card.past{opacity:.55}
+    .card .shot{display:block;position:relative;aspect-ratio:16/9;background:#0b0d10 center/cover no-repeat}
+    .card .shot .new{position:absolute;left:6px;top:6px;font-size:10px;font-weight:700;color:#111;background:var(--hot);border-radius:3px;padding:1px 5px}
+    .card .shot .q{position:absolute;right:6px;top:6px;font-size:10px;font-weight:700;color:#fff;background:rgba(0,0,0,.6);border-radius:3px;padding:1px 5px}
+    .card .lbl{display:block;padding:6px 8px;background:var(--panel2)}
+    .card .lbl b{display:block;font-size:15px}
+    .card .lbl small{color:var(--dim);font-size:12px}
+    .card .add{min-height:40px;font-size:13px;color:var(--hot);border-color:#5a4a14;background:transparent}
+    .card .add.in{color:var(--dim);border-color:var(--line)}
+    #strip .none{color:var(--dim);font-size:13px;padding:8px 2px}
     #current{padding:8px 12px}
     #current .now{font-size:18px}
     #list{min-height:90px}
@@ -169,6 +188,7 @@
       <button id="nextRound">Next round</button>
       <button id="newShow">Reset to match 1 · start of a new show</button>
     </div>
+    <div id="strip"></div>
     <div id="list"><div id="empty">No clips yet. They show up here as soon as the streaming PC saves a replay.</div></div>
     <div class="keys">
       <kbd>Space</kbd> play / pause · <kbd>←</kbd><kbd>→</kbd> frame (<kbd>Shift</kbd> 1s)<br>
@@ -246,7 +266,7 @@ const wake = () => $("#wake").classList.toggle("show", !!video.srcObject && vide
 ["play", "playing", "pause", "loadedmetadata"].forEach(ev => video.addEventListener(ev, wake));
 $("#wake").onclick = () => video.play().then(wake).catch(wake);
 const st = { tool: "pen", color: "#ffd23f", width: 5, strokes: [], drawing: null,
-             clips: [], status: null, vol: 0.10, muted: true,
+             clips: [], thumbs: {}, status: null, vol: 0.10, muted: true,
              queue: [], qi: -1 };          // qi = the queued clip on air now, -1 before the first
 
 // ---------- talking to the player ----------
@@ -256,6 +276,7 @@ function nothing(text){ $("#nothing").textContent = text || ""; $("#nothing").st
 
 function onCtl(m){
   if (m.type === "clips"){ st.clips = m.list; numberClips(); renderList(); renderQueue(); }
+  if (m.type === "thumb"){ st.thumbs[m.name] = m.src; paintThumbs(); }
   if (m.type === "strokes"){ st.strokes = m.list; redraw(); }
   if (m.type === "status"){ st.status = m; showStatus(); }
 }
@@ -317,15 +338,46 @@ function renderList(){
   list.appendChild(frag);
   if (!st.clips.length){ const d = document.createElement("div"); d.id = "empty";
     d.textContent = "No clips yet. They show up here as soon as the streaming PC saves a replay."; list.appendChild(d); }
+  renderStrip(M, cur, queued);
+}
+// The phone's filmstrip: the same clips, the match on now first, newest first,
+// each a snapshot the player sent. Rebuilt with the list, keeping where you'd swiped to.
+function renderStrip(M, cur, queued){
+  const strip = $("#strip"), x = strip.scrollLeft;
+  const clips = st.clips.slice().sort((a, b) => (b.m === M) - (a.m === M) || b.time - a.time);
+  strip.innerHTML = "";
+  if (!clips.length){ strip.innerHTML = '<div class="none">No clips yet. They show up here as soon as the streaming PC saves a replay.</div>'; return; }
+  for (const c of clips){
+    const card = document.createElement("div");
+    card.className = "card" + (c.m !== M ? " past" : "") + (c.name === cur ? " on" : "");
+    card.innerHTML = '<button class="pick"><span class="shot"></span><span class="lbl"><b></b><small></small></span></button><button class="add"></button>';
+    const pick = card.firstChild, addB = card.lastChild, shot = pick.firstChild;
+    pick.dataset.name = addB.dataset.name = shot.dataset.name = c.name;
+    if (st.thumbs[c.name]) shot.style.backgroundImage = `url("${st.thumbs[c.name]}")`;
+    if (Date.now() - c.time < 90000) shot.insertAdjacentHTML("beforeend", '<em class="new">NEW</em>');
+    if (c.name === cur) shot.insertAdjacentHTML("beforeend", '<em class="q">ON</em>');
+    pick.querySelector("b").textContent = `Clip ${c.no}`;
+    pick.querySelector("small").textContent = `M${c.m} · R${c.r} · ${ago(c.time)}`;
+    const isIn = queued.has(c.name);
+    addB.textContent = isIn ? "✓ queued" : "+ Queue"; addB.classList.toggle("in", isIn);
+    strip.appendChild(card);
+  }
+  strip.scrollLeft = x;
+}
+function paintThumbs(){
+  for (const el of document.querySelectorAll("#strip .shot"))
+    if (st.thumbs[el.dataset.name] && !el.style.backgroundImage) el.style.backgroundImage = `url("${st.thumbs[el.dataset.name]}")`;
 }
 setInterval(renderList, 20000);       // keep "2 min ago" honest
-$("#list").addEventListener("click", e => {
+function onClipClick(e){
   const add = e.target.closest(".add");
   if (add){ queueAdd(add.dataset.name); return; }
   const b = e.target.closest(".pick"); if (!b) return;
   clearDrawings(false);
   send({ type: "load", name: b.dataset.name });
-});
+}
+$("#list").addEventListener("click", onClipClick);
+$("#strip").addEventListener("click", onClipClick);
 
 // ---------- the queue ----------
 // Kept in this browser per room, so a reload mid-show keeps the running order.
@@ -418,7 +470,7 @@ function showStatus(){
   } else band.style.display = "none";
   const cur = document.querySelector(".crow.on .pick");
   if ((cur && cur.dataset.name) !== s.name || $("#mNo").textContent != s.match || $("#rNo").textContent != s.round) renderList();
-  nothing(s.name ? "" : "Pick a clip on the left, or press ▶ Play next");
+  nothing(s.name ? "" : "Pick a clip, or press ▶ Play next");
 }
 const T = () => (st.status && st.status.t) || 0;
 $("#play").onclick  = () => send({ type: st.status && !st.status.paused ? "pause" : "play" });

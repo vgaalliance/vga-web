@@ -221,7 +221,51 @@ function publishClips(){
   st.clips = list;
   const key = JSON.stringify(list);
   if (key !== lastClips){ lastClips = key; send({ type: "clips", list }); }
+  makeThumbs();
 }
+
+// ---------- a snapshot of each clip, for the analyst's filmstrip ----------
+// The analyst has no copy of the clips, so this page grabs one frame from each
+// (40% of the way in, where the action usually is), shrinks it to a small JPEG
+// and sends it over the same channel, one message per clip. Made once per clip,
+// one at a time, in a video element nobody sees.
+const thumbs = new Map();            // name -> data url
+const thumbVid = document.createElement("video"); thumbVid.muted = true; thumbVid.playsInline = true; thumbVid.preload = "auto";
+const thumbCan = document.createElement("canvas"); thumbCan.width = 256; thumbCan.height = 144;
+let thumbing = false;
+async function clipUrl(name){
+  if (st.tests.has(name)) return URL.createObjectURL(await (await fetch(st.tests.get(name))).blob());
+  const rec = st.files.get(name); if (!rec) throw new Error("gone");
+  return URL.createObjectURL(await rec.h.getFile());
+}
+function grab(url){
+  return new Promise((ok, no) => {
+    const t = setTimeout(() => no(new Error("timeout")), 8000);
+    thumbVid.onloadedmetadata = () => { thumbVid.currentTime = Math.max(0, (thumbVid.duration || 0) * 0.4); };
+    thumbVid.onseeked = () => {
+      clearTimeout(t);
+      const c = thumbCan.getContext("2d"), vw = thumbVid.videoWidth, vh = thumbVid.videoHeight;
+      c.fillStyle = "#000"; c.fillRect(0, 0, 256, 144);
+      if (vw){ const k = Math.min(256/vw, 144/vh); c.drawImage(thumbVid, (256-vw*k)/2, (144-vh*k)/2, vw*k, vh*k); }
+      ok(thumbCan.toDataURL("image/jpeg", 0.62));
+    };
+    thumbVid.onerror = () => { clearTimeout(t); no(new Error("unplayable")); };
+    thumbVid.src = url;
+  });
+}
+async function makeThumbs(){
+  if (thumbing) return; thumbing = true;
+  try {
+    for (const c of st.clips){
+      if (thumbs.has(c.name)) continue;
+      let url = null;
+      try { url = await clipUrl(c.name); thumbs.set(c.name, await grab(url)); send({ type: "thumb", name: c.name, src: thumbs.get(c.name) }); }
+      catch { thumbs.set(c.name, ""); }          // no picture for this one; never retried
+      finally { if (url) URL.revokeObjectURL(url); thumbVid.removeAttribute("src"); }
+    }
+  } finally { thumbing = false; }
+}
+function sendThumbs(){ for (const c of st.clips){ const t = thumbs.get(c.name); if (t) send({ type: "thumb", name: c.name, src: t }); } }
 
 // ---------- playing a clip ----------
 async function loadClip(name, opts = {}){
@@ -438,7 +482,7 @@ async function connectAnalyst(fromAid){
   pc = new RTCPeerConnection({ iceServers: cfg.iceServers, iceTransportPolicy: cfg.relay ? "relay" : "all" });
   const sender = pc.addTrack(feedTrack, feedStream);
   dc = pc.createDataChannel("ctl", { ordered: true });
-  dc.onopen = () => { lastClips = ""; publishClips(); send({ type: "strokes", list: st.strokes }); sendStatus(); };
+  dc.onopen = () => { lastClips = ""; publishClips(); sendThumbs(); send({ type: "strokes", list: st.strokes }); sendStatus(); };
   dc.onmessage = e => { try { onCtl(JSON.parse(e.data)); } catch (err) { console.error(err); } };
   pc.onicecandidate = e => { if (e.candidate && sid === my) sig({ type: "ice", sid: my, to: aid, c: e.candidate.toJSON() }); };
   pc.onconnectionstatechange = () => {
