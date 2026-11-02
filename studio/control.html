@@ -1800,7 +1800,7 @@ window.mnTape=async()=>{
       document.getElementById('mnBoutB').value=bn }
   }
   if(!an||!bn){ warn('⚠ tale of the tape: arm a bout first, or type both names'); return false }
-  const COLS='display_name,slug,profile_photo_url,wins:headline_wins,losses:headline_losses,draws:headline_draws,rank,height,reach,age,country,weight_class,stance,team,region,kos:headline_ko_wins'
+  const COLS='display_name,slug,profile_photo_url,wins:headline_wins,losses:headline_losses,draws:headline_draws,rank,height,reach,age,country,weight_class,stance,team,region,kos:headline_ko_wins,level,am_wins,am_losses,am_draws'
   const one=async n=>{
     // Exact first -- ilike with no wildcards is a case-insensitive equality.
     const {data:exact}=await sb.from('fighter_cards_roster').select(COLS).ilike('display_name',n).limit(2)
@@ -1830,7 +1830,12 @@ window.mnTape=async()=>{
     return Math.floor(n/12)+"'"+(n%12)+'"' }
   const inches=v=>{ const n=parseInt(v,10); return Number.isFinite(n)&&n>0 ? n+'"' : null }
   const DASH='\u2014'
-  const F=x=>({ name:x.display_name, record:`${x.wins}-${x.losses}-${x.draws}`,
+  // A pro who came up from GFL also carries the GFL record, as its own field:
+  // `record` stays the pro record alone, the three numbers the intro splits.
+  // Never added together (ama-plan A10); an amateur gets no second line.
+  const gflOf=x=> x.level==='pro' && (+x.am_wins||0)+(+x.am_losses||0)+(+x.am_draws||0)>0
+    ? `${+x.am_wins||0}-${+x.am_losses||0}-${+x.am_draws||0}` : null
+  const F=x=>({ name:x.display_name, record:`${x.wins}-${x.losses}-${x.draws}`, gfl:gflOf(x),
     rank:x.rank?('#'+x.rank):DASH, age:x.age??DASH,
     height:inchesToFt(x.height)??DASH, reach:inches(x.reach)??DASH,
     // The WEIGHT row carries the DIVISION. No numeric weight exists in the data
