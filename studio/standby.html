@@ -4094,9 +4094,9 @@ function rcTeleScene(on){
   }catch(e){}
 }
 
-// The replay, live inside the recap's REPLAY frame. This page finds the replay
-// player by itself (it asks on the lobby channel, the player answers with its
-// room; ?replayRoom=<code> still works) and watches it directly: the player sends
+// The replay, live inside the recap's REPLAY frame. This page watches the replay
+// player directly (its room: ?replayRoom=<code>, or the one it remembers from the
+// last time it connected): the player sends
 // its picture with the drawings already on it, standby hands that stream to the
 // recap's frame, and the frame opening and closing IS the replay coming and going.
 // No Window Capture, no scene switch — the switch was the blink. The connection
@@ -4140,9 +4140,8 @@ function rpStart(room){
 if(window.replayLink){
   let saved=null; try{ saved=localStorage.getItem('vga-standby-replay-room') }catch(e){}
   rpStart(new URLSearchParams(location.search).get('replayRoom') || saved)
-  // a player that opens (or makes a new link) later says its room here
-  replayLink.signal('lobby', m=>{ if(m.type==='room') rpStart(m.room) }, send=>send({ type:'who' }))
-    .catch(e=>console.warn('replay lobby:', e.message||e))
+  // No public "who is the player?" channel: the room code is also the analyst
+  // link, so it is never handed out to whoever asks (audit, 2026-11-02).
   // keep knocking until the player answers (it may open after standby, or restart)
   setInterval(()=>{
     if(!RPF.room) return
