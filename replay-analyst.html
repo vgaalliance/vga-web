@@ -168,8 +168,20 @@
     #transport button{min-height:44px}
     #scrubWrap{flex-basis:100%;order:-1;min-height:32px}
     #transport .gap{display:none}
-    #queue{max-height:none}
+    /* The queue sits right under the clips on a phone (pick → queue → play), as
+       one swipeable row, so tapping + Add to queue visibly lands somewhere. */
+    #clips{order:1} #queue{order:2} #stage{order:3}
+    #queue{max-height:none;border-bottom:1px solid var(--line)}
+    #queue .sh{padding:8px 12px}
+    #queue.bump .sh{animation:qbump .7s ease}
+    @keyframes qbump{0%{background:rgba(255,210,63,.35)}100%{background:transparent}}
+    .qctl{padding:8px 12px}
     .qctl button{min-height:48px}
+    #qlist{display:flex;gap:8px;overflow-x:auto;padding:0 12px 10px;scrollbar-width:none}
+    #qlist::-webkit-scrollbar{display:none}
+    .qrow{flex:0 0 auto;max-width:72%}
+    #queue .qhint,#qClear{display:none}
+    .card .shot .qn{position:absolute;right:6px;bottom:6px;font-size:11px;font-weight:700;color:#111;background:var(--hot);border-radius:3px;padding:1px 6px}
   }
   /* iPhones won't start the picture by themselves; the drawing layer covers the
      phone's own play button, so this one sits above it. Never shows on a desktop. */
@@ -358,8 +370,9 @@ function renderStrip(M, cur, queued){
     if (c.name === cur) shot.insertAdjacentHTML("beforeend", '<em class="q">ON</em>');
     pick.querySelector("b").textContent = `Clip ${c.no}`;
     pick.querySelector("small").textContent = `M${c.m} · R${c.r} · ${ago(c.time)}`;
-    const isIn = queued.has(c.name);
-    addB.textContent = isIn ? "✓ queued" : "+ Queue"; addB.classList.toggle("in", isIn);
+    const qn = st.queue.findIndex(q => q.name === c.name) + 1;
+    addB.textContent = qn ? `✓ ${qn}${qn === 1 ? "st" : qn === 2 ? "nd" : qn === 3 ? "rd" : "th"} in queue` : "+ Add to queue"; addB.classList.toggle("in", !!qn);
+    if (qn) shot.insertAdjacentHTML("beforeend", `<em class="qn">QUEUE ${qn}</em>`);
     strip.appendChild(card);
   }
   strip.scrollLeft = x;
@@ -390,6 +403,8 @@ function queueAdd(name){
   if (st.queue.some(q => q.name === name)) return;
   st.queue.push({ name, rate: 0.5 });            // replays default to half speed
   saveQ(); renderQueue(); renderList();
+  const qb = $("#queue"); qb.classList.remove("bump"); void qb.offsetWidth; qb.classList.add("bump");   // the queue flashes: it went there
+  const ql = $("#qlist"); ql.scrollLeft = ql.scrollWidth;
 }
 function playQueued(i){
   const q = st.queue[i]; if (!q) return;
@@ -432,7 +447,7 @@ function renderQueue(){
     row.querySelector(".x").onclick = () => { st.queue.splice(i, 1); if (st.qi >= i) st.qi--; saveQ(); renderQueue(); renderList(); };
     el.appendChild(row);
   });
-  if (!st.queue.length) el.innerHTML = '<div class="qhint" style="padding:6px 2px">Nothing queued yet.</div>';
+  if (!st.queue.length) el.innerHTML = '<div class="qhint" style="padding:6px 2px">Nothing queued yet. Add a clip to line it up, then <b>▶ Play next</b> between rounds.</div>';
   $("#qNext").disabled = !st.queue.slice(st.qi + 1).some(q => clipOf(q.name));
   $("#qPrev").disabled = !st.queue.slice(0, Math.max(0, st.qi)).some(q => clipOf(q.name));
   $("#qClear").disabled = !st.queue.length;
