@@ -520,10 +520,11 @@
     <!-- STATS FROM THE GAME: every fight the stream PC sent around tonight's show.
          A fight links itself to its bout by the two TOTF2 usernames; only a
          linked fight counts (recap, stats). Link one by hand, or say not this one. -->
-    <div id="frBox" style="display:none;margin:6px 0 12px">
+    <div id="frBox" style="margin:6px 0 12px">
       <p class="lbl" style="margin:0 0 6px">STATS FROM THE GAME <small id="frNote" style="opacity:.7"></small>
         <button style="margin-left:10px;padding:2px 8px;font-size:11px" title="Puts the made-up demo fight on standby: for testing the screen, never during a show" onclick="frDemo(false)">🧪 Test with the demo fight</button>
         <button style="padding:2px 8px;font-size:11px" title="The demo fight with the telestrator window: for lining up the replay capture in OBS" onclick="frDemo(true)">🧪 + telestrator</button></p>
+      <div id="frEvs" style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 6px"></div>
       <div id="frList" style="font-size:13px;line-height:1.5"></div>
     </div>
     <p class="lbl sbgrp">LEAGUE</p>
@@ -2237,27 +2238,18 @@ const SEG_SHORT={main_card:'MAIN',undercard:'UNDER',prelim:'PRELIM'}
 
 window.loadUbaEvents=async()=>{
   const box=document.getElementById('ubaEvents')
-  // Shows that finished in the last 4 days are listed too, after the upcoming
-  // ones: their recaps and stats from the game are still worth putting on air
-  // (a recap of Saturday's fights on Monday's show), and a deck that drops a
-  // card the moment it is marked completed hides all of that.
-  const [{ data: up }, { data: pools }, { data: done }] = await Promise.all([
+  const [{ data: evs }, { data: pools }] = await Promise.all([
     sb.from('events_public').select('id,name,event_date').eq('status','scheduled')
       .gte('event_date',new Date(Date.now()-6*3600e3).toISOString()).order('event_date').limit(6),
     sb.from('bet_pools_public').select('event_name'),
-    sb.from('events_public').select('id,name,event_date').eq('status','completed')
-      .gte('event_date',new Date(Date.now()-4*864e5).toISOString()).order('event_date',{ascending:false}).limit(4),
   ])
-  const evs=[...(up||[]), ...(done||[])]
-  const finished=new Set((done||[]).map(e=>e.name))
-  const byName={} ;evs.forEach(e=>byName[e.name]=e)
-  const names=[...new Set([...(up||[]).map(e=>e.name), ...(pools||[]).map(p=>p.event_name), ...(done||[]).map(e=>e.name)])]
+  const byName={} ;(evs||[]).forEach(e=>byName[e.name]=e)
+  const names=[...new Set([...(evs||[]).map(e=>e.name), ...(pools||[]).map(p=>p.event_name)])]
   if(!names.length){ box.textContent='NO UPCOMING EVENTS'; return }
   box.innerHTML=''
   names.forEach(n=>{
     const b=document.createElement('button')
     b.textContent=n
-    if(finished.has(n)){ const sm=document.createElement('small'); sm.textContent='finished · recaps'; sm.style.opacity='.65'; b.appendChild(sm) }
     b.onclick=()=>{
       const sel=document.getElementById('evFilter')
       if(![...sel.options].some(o=>o.value===n)){ const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o) }
@@ -2343,23 +2335,49 @@ window.gymWar=()=>{
 // ── STATS FROM THE GAME (2026-10-31) ─────────────────────────────────────
 // fight_results_for_event(): what the stream PC sent around this show. The deck
 // shows each with the bout it is linked to; 🎬 shows a linked one on standby.
-const FR={ rows:[], timer:null }
+// Its own row of show buttons (the last 10 days): pick any show to play its
+// recaps, finished ones included, without touching the card loaded above.
+// Nothing picked = the loaded card, or else the newest show.
+const FR={ rows:[], timer:null, ev:null, cur:null, evs:[], bouts:[] }
 
 const frEsc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))
-const frBout=id=>UBA.bouts.find(b=>b.id===id)
+const frBout=id=>FR.bouts.find(b=>b.id===id) || UBA.bouts.find(b=>b.id===id)
 const frBoutName=b=>b ? (b.bout_number!=null?'Bout '+b.bout_number+' · ':'')+b.a+' vs '+b.b : 'another bout'
-window.frLoad=async()=>{
-  const box=document.getElementById('frBox')
-  if(!UBA.id || UBA.id==='csdemo'){ box.style.display='none'; clearInterval(FR.timer); FR.timer=null; return }
-  const { data, error } = await sb.rpc('fight_results_for_event', { p_event: UBA.id })
-  if(error){ document.getElementById('frNote').textContent='· could not read ('+error.message+')'; return }
-  FR.rows=data||[]; box.style.display=''; frDraw()
-  if(!FR.timer) FR.timer=setInterval(frLoad, 30000)   // a fight lands about a minute after it ends
+async function frEvents(){
+  const { data } = await sb.from('events_public').select('id,name,event_date')
+    .gte('event_date',new Date(Date.now()-10*864e5).toISOString())
+    .lte('event_date',new Date(Date.now()+864e5).toISOString())
+    .order('event_date',{ascending:false}).limit(8)
+  FR.evs=data||[]
 }
+function frEvDraw(){
+  const box=document.getElementById('frEvs')
+  box.innerHTML=FR.evs.map((e,i)=>`<button style="padding:3px 10px;font-size:12px" class="${FR.cur&&FR.cur.id===e.id?'active':''}" onclick="frPickEv(${i})">${frEsc(e.name)}</button>`).join('')
+}
+window.frPickEv=i=>{ const e=FR.evs[i]; if(!e) return; FR.ev={ id:e.id, name:e.name }; frLoad() }
+window.frLoad=async(useCard)=>{
+  if(useCard) FR.ev=null
+  if(!FR.evs.length) await frEvents()
+  const card = UBA.id && UBA.id!=='csdemo' ? { id:UBA.id, name:UBA.name } : null
+  const ev = FR.ev || card || FR.evs[0]
+  if(!ev){ document.getElementById('frNote').textContent='· no shows in the last 10 days'; return }
+  FR.cur=ev; frEvDraw()
+  if(card && ev.id===card.id) FR.bouts=UBA.bouts
+  else {
+    const { data:bs } = await sb.from('event_matches').select('match_id,bout_number,fighter_a_name,fighter_b_name').eq('event_id',ev.id).order('bout_number')
+    FR.bouts=(bs||[]).map(r=>({ id:r.match_id, bout_number:r.bout_number, a:r.fighter_a_name||'TBA', b:r.fighter_b_name||'TBA' }))
+  }
+  const { data, error } = await sb.rpc('fight_results_for_event', { p_event: ev.id })
+  if(error){ document.getElementById('frNote').textContent='· could not read ('+error.message+')'; return }
+  if(FR.cur!==ev) return   // another show was picked while this one read
+  FR.rows=data||[]; frDraw()
+  if(!FR.timer) FR.timer=setInterval(()=>frLoad(), 30000)   // a fight lands about a minute after it ends
+}
+setTimeout(()=>frLoad(), 0)
 function frDraw(){
   const list=document.getElementById('frList')
   document.getElementById('frNote').textContent = FR.rows.length ? '· '+FR.rows.length+' from the stream PC' : '· none yet: a fight shows here about a minute after it ends'
-  const opts=UBA.bouts.map(b=>`<option value="${b.id}">${frEsc(frBoutName(b))}</option>`).join('')
+  const opts=FR.bouts.map(b=>`<option value="${b.id}">${frEsc(frBoutName(b))}</option>`).join('')
   list.innerHTML=FR.rows.map((r,i)=>{
     const who=`<b>${frEsc(r.red)}</b> vs <b>${frEsc(r.blue)}</b> <span style="opacity:.7">${frEsc(r.method||'')}${r.winner?' · '+frEsc(r.winner):''}</span>`
     const linked=r.bout_id && (r.link==='auto'||r.link==='deck')
@@ -2402,7 +2420,7 @@ window.frTele=on=>{ FR.tele = on===undefined ? !FR.tele : !!on; frTeleUI()
 window.frDemo=tele=>{ FR.tele=!!tele; frTeleUI(); send({ type:'standby', view:'recap', on:true, bout:'demo', replay:!!tele }); deckLog('🧪 recap test: the demo fight (Kodiak vs Wisp) on standby') }
 // 🎬 Recap: the armed bout if it has a linked fight, else the newest linked one tonight
 window.frRecap=async(tele)=>{
-  await frLoad()
+  await frLoad(true)   // the top button is the loaded card's recap
   const ok=FR.rows.filter(r=>r.bout_id && (r.link==='auto'||r.link==='deck') && r.has_recap)
   const armed=UBA.armed!=null ? (UBA.bouts[UBA.armed]||{}).id : null
   const pick=ok.find(r=>r.bout_id===armed) || ok[0]
