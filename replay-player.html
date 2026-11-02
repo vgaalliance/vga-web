@@ -88,12 +88,7 @@
 
   <div class="step">
     <b>4 · Standby (the replay inside the 3D recap)</b>
-    <div class="row">
-      <input type="text" id="standbyBit" readonly>
-      <button id="copyStandby">Copy</button>
-    </div>
-    <div class="msg dimt" style="font-size:12px">Add this to the end of the standby source's URL, once. A new analyst link changes it.</div>
-    <div class="msg dimt" id="screenMsg">Standby isn't watching.</div>
+    <div class="msg dimt" id="screenMsg">Standby finds this player by itself. Waiting for it…</div>
   </div>
 
   <div class="foot">Keep this window open and don't minimise it: a minimised window stops drawing and goes black in OBS. Behind other windows is fine.</div>
@@ -448,8 +443,7 @@ function newCode(){ return Array.from(crypto.getRandomValues(new Uint8Array(6)),
 let room = qs.get("room");
 if (!room){ try { room = localStorage.getItem(ROOM_KEY); } catch {} }
 if (!room){ room = newCode(); try { localStorage.setItem(ROOM_KEY, room); } catch {} }
-function showLink(){ $("#link").value = new URL("replay-analyst.html?room=" + room, location.href).href; $("#standbyBit").value = "&replayRoom=" + room; }
-$("#copyStandby").onclick = () => { navigator.clipboard.writeText($("#standbyBit").value).then(() => { $("#copyStandby").textContent = "Copied"; setTimeout(() => $("#copyStandby").textContent = "Copy", 1500); }); };
+function showLink(){ $("#link").value = new URL("replay-analyst.html?room=" + room, location.href).href; }
 showLink();
 $("#copy").onclick = () => { navigator.clipboard.writeText($("#link").value).then(() => { $("#copy").textContent = "Copied"; setTimeout(() => $("#copy").textContent = "Copy", 1500); }); };
 $("#newRoom").onclick = () => {
@@ -553,6 +547,11 @@ publishClips();
 restoreDir();
 getIce();
 setInterval(() => { if (ice && !ice.relay) getIce(); }, 30000);   // relay off: ask again every 30 s until it is on
+// Standby finds this player by itself: it asks on the lobby channel and this
+// page answers with its room (and says it unasked on opening, and after a new link).
+replayLink.signal("lobby", m => { if (m.type === "who") lobby && lobby({ type: "room", room }); }, send => { lobby = send; send({ type: "room", room }); })
+  .catch(() => {});
+let lobby = null;
 replayLink.signal(room, onSig, send => send({ type: "player" })).then(f => { sig = f; })
   .catch(e => say("#analystMsg", "Couldn't reach Supabase to meet the analyst: " + e.message, "bad"));
 </script>

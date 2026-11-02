@@ -4094,13 +4094,14 @@ function rcTeleScene(on){
   }catch(e){}
 }
 
-// The replay, live inside the recap's REPLAY frame. With ?replayRoom=<code> (the
-// replay player's step 4) this page watches the player directly: the player sends
+// The replay, live inside the recap's REPLAY frame. This page finds the replay
+// player by itself (it asks on the lobby channel, the player answers with its
+// room; ?replayRoom=<code> still works) and watches it directly: the player sends
 // its picture with the drawings already on it, standby hands that stream to the
 // recap's frame, and the frame opening and closing IS the replay coming and going.
 // No Window Capture, no scene switch — the switch was the blink. The connection
 // stays up the whole show, so the picture is already there when the frame opens.
-const RPF={ room:new URLSearchParams(location.search).get('replayRoom'), vid:Math.random().toString(36).slice(2),
+const RPF={ room:null, vid:Math.random().toString(36).slice(2),
   pc:null, sid:null, pending:[], stream:null, sig:null, ice:null }
 function rpAttach(){
   if(!RPF.stream) return
@@ -4129,11 +4130,22 @@ async function rpSig(m){
     if(RPF.pc && m.sid===RPF.sid && RPF.pc.remoteDescription) RPF.pc.addIceCandidate(m.c).catch(()=>{})
     else RPF.pending.push(m) }
 }
-if(RPF.room && window.replayLink){
-  replayLink.signal(RPF.room, rpSig, send=>send({ type:'s-hello', vid:RPF.vid })).then(f=>{ RPF.sig=f })
+function rpStart(room){
+  if(!room || room===RPF.room) return
+  RPF.room=room; try{ localStorage.setItem('vga-standby-replay-room', room) }catch(e){}
+  rpClose(); RPF.sig=null
+  replayLink.signal(room, rpSig, send=>send({ type:'s-hello', vid:RPF.vid })).then(f=>{ if(RPF.room===room) RPF.sig=f })
     .catch(e=>console.warn('replay link:', e.message||e))
+}
+if(window.replayLink){
+  let saved=null; try{ saved=localStorage.getItem('vga-standby-replay-room') }catch(e){}
+  rpStart(new URLSearchParams(location.search).get('replayRoom') || saved)
+  // a player that opens (or makes a new link) later says its room here
+  replayLink.signal('lobby', m=>{ if(m.type==='room') rpStart(m.room) }, send=>send({ type:'who' }))
+    .catch(e=>console.warn('replay lobby:', e.message||e))
   // keep knocking until the player answers (it may open after standby, or restart)
   setInterval(()=>{
+    if(!RPF.room) return
     const s=RPF.pc && RPF.pc.connectionState
     if(s==='connected' || ((s==='connecting' || s==='new') && Date.now()-RPF.at<15000)) return
     rpClose(); RPF.sig && RPF.sig({ type:'s-hello', vid:RPF.vid })
