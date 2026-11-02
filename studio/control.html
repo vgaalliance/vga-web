@@ -2237,18 +2237,27 @@ const SEG_SHORT={main_card:'MAIN',undercard:'UNDER',prelim:'PRELIM'}
 
 window.loadUbaEvents=async()=>{
   const box=document.getElementById('ubaEvents')
-  const [{ data: evs }, { data: pools }] = await Promise.all([
+  // Shows that finished in the last 4 days are listed too, after the upcoming
+  // ones: their recaps and stats from the game are still worth putting on air
+  // (a recap of Saturday's fights on Monday's show), and a deck that drops a
+  // card the moment it is marked completed hides all of that.
+  const [{ data: up }, { data: pools }, { data: done }] = await Promise.all([
     sb.from('events_public').select('id,name,event_date').eq('status','scheduled')
       .gte('event_date',new Date(Date.now()-6*3600e3).toISOString()).order('event_date').limit(6),
     sb.from('bet_pools_public').select('event_name'),
+    sb.from('events_public').select('id,name,event_date').eq('status','completed')
+      .gte('event_date',new Date(Date.now()-4*864e5).toISOString()).order('event_date',{ascending:false}).limit(4),
   ])
-  const byName={} ;(evs||[]).forEach(e=>byName[e.name]=e)
-  const names=[...new Set([...(evs||[]).map(e=>e.name), ...(pools||[]).map(p=>p.event_name)])]
+  const evs=[...(up||[]), ...(done||[])]
+  const finished=new Set((done||[]).map(e=>e.name))
+  const byName={} ;evs.forEach(e=>byName[e.name]=e)
+  const names=[...new Set([...(up||[]).map(e=>e.name), ...(pools||[]).map(p=>p.event_name), ...(done||[]).map(e=>e.name)])]
   if(!names.length){ box.textContent='NO UPCOMING EVENTS'; return }
   box.innerHTML=''
   names.forEach(n=>{
     const b=document.createElement('button')
     b.textContent=n
+    if(finished.has(n)){ const sm=document.createElement('small'); sm.textContent='finished · recaps'; sm.style.opacity='.65'; b.appendChild(sm) }
     b.onclick=()=>{
       const sel=document.getElementById('evFilter')
       if(![...sel.options].some(o=>o.value===n)){ const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o) }
