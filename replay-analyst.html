@@ -127,6 +127,36 @@
     #transport{grid-column:1;grid-row:3}
     #box{width:100%}
   }
+  /* Phones: clips on top to tap, the picture under them, the tools and transport
+     big enough for a thumb. No keyboard on a phone, so no key list. */
+  @media (max-width:700px){
+    html,body{overflow-x:hidden}
+    #app{grid-template-columns:minmax(0,1fr)}
+    #clips{max-height:50vh;border-bottom:1px solid var(--line)}
+    #clips .sh{padding:8px 12px}
+    #clips .keys{display:none}
+    #current{padding:8px 12px}
+    #current .now{font-size:18px}
+    #list{min-height:90px}
+    .crow .pick,.crow .add{min-height:40px}
+    #rail{gap:6px;padding:8px;justify-content:center}
+    #rail button{min-width:54px;min-height:48px}
+    #rail hr{display:none}
+    #rail .sw{width:36px;height:36px;min-width:36px;min-height:36px}
+    #rail .sz{display:flex;gap:4px}
+    #rail .sz button{min-width:40px;min-height:48px}
+    #transport{gap:6px;padding:10px}
+    #transport button{min-height:44px}
+    #scrubWrap{flex-basis:100%;order:-1;min-height:32px}
+    #transport .gap{display:none}
+    #queue{max-height:none}
+    .qctl button{min-height:48px}
+  }
+  /* iPhones won't start the picture by themselves; the drawing layer covers the
+     phone's own play button, so this one sits above it. Never shows on a desktop. */
+  #wake{position:absolute;inset:0;margin:auto;width:max-content;height:max-content;z-index:2;display:none;padding:14px 22px;font-size:16px}
+  #wake.show{display:block}
+  #box:has(#wake.show) #nothing{display:none !important}
 </style>
 </head>
 <body>
@@ -171,6 +201,7 @@
         <video id="video" playsinline autoplay muted></video>
         <canvas id="ink"></canvas>
         <div id="nothing">Connecting to the replay player…</div>
+        <button id="wake" class="big go">▶ Tap to show the picture</button>
       </div>
     </div>
 
@@ -211,6 +242,9 @@
 const $ = s => document.querySelector(s);
 const room = new URLSearchParams(location.search).get("room");
 const video = $("#video"), ink = $("#ink"), ctx = ink.getContext("2d");
+const wake = () => $("#wake").classList.toggle("show", !!video.srcObject && video.paused);
+["play", "playing", "pause", "loadedmetadata"].forEach(ev => video.addEventListener(ev, wake));
+$("#wake").onclick = () => video.play().then(wake).catch(wake);
 const st = { tool: "pen", color: "#ffd23f", width: 5, strokes: [], drawing: null,
              clips: [], status: null, vol: 0.10, muted: true,
              queue: [], qi: -1 };          // qi = the queued clip on air now, -1 before the first
