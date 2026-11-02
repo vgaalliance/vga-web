@@ -1591,6 +1591,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="playoff-core.js"></script>
 <script src="ladder-core.js"></script>
+<script src="../replay-link.js?v=3"></script>
 <script>
 const sb = supabase.createClient('https://emzlivoykbhhjcugupit.supabase.co',
   'sb_publishable_pqhH974E1q9YsFnrVH1UJQ_X3V-rRLF')
@@ -3240,7 +3241,8 @@ function hideView(el){
   if(!el.classList.contains('on')) return
   if(el.id === 'v-recap'){   // fades in place (see #v-recap): no pinning, no out class
     el.classList.remove('on'); syncPromo(); rcTeleScene(false)
-    setTimeout(()=>{ if(!el.classList.contains('on')) $('rcFrame').src='about:blank' }, 1500)   // a hidden WebGL page still costs the GPU
+    clearTimeout(el._blankT)
+    el._blankT=setTimeout(()=>{ if(!el.classList.contains('on')) $('rcFrame').src='about:blank' }, 1500)   // a hidden WebGL page still costs the GPU
     return }
   const r=el.getBoundingClientRect(), p=el.parentElement.getBoundingClientRect()
   el.style.position='absolute'
@@ -3963,6 +3965,7 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
     // OFF: fade the picture out first, then close the frame. The other order cuts
     // the picture while the frame is still open — the blink.
     if(c.on){ tell(); setTimeout(()=>{ if($('v-recap').classList.contains('on')) rcTeleScene(true) }, 650) }
+    else if(RPF.room) tell()
     else { rcTeleScene(false); setTimeout(tell, 380) }
     return }
   if(c.type==='loadbar'){
@@ -3989,6 +3992,8 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
       show('bets'); return }
     if(c.view==='recap'){
       if(!c.bout) return
+      // already up: fade it out before reloading, or the reload blanks it on air
+      if($('v-recap').classList.contains('on')){ hideView($('v-recap')); await new Promise(r=>setTimeout(r,600)) }
       if(!(await rcLoad(c.bout, c.sound, c.replay))) return   // nothing linked to that bout = stay on what is up
       show('recap'); if(c.replay) setTimeout(()=>{ if($('v-recap').classList.contains('on')) rcTeleScene(true) }, 900); else rcTeleScene(false); return }
     if(c.view==='gymwar'){
@@ -4044,11 +4049,12 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
 // Load the bout's recap into the frame and wait for it to say it has a fight
 // ('ready') or not ('none'). Every press reloads it, so it replays from the top.
 function rcLoad(bout, sound, replay){
+  clearTimeout($('v-recap')._blankT)   // a recap just taken off must not blank this one while it loads
   return new Promise(res=>{
     const f=$('rcFrame')
     let done=false
     const end=ok=>{ if(done) return; done=true; window.removeEventListener('message', on); clearTimeout(t); res(ok) }
-    const on=e=>{ const d=e.data||{}; if(e.source===f.contentWindow && d.recap) end(d.recap==='ready' && d.bout===bout) }
+    const on=e=>{ const d=e.data||{}; if(e.source===f.contentWindow && d.recap){ rpAttach(); end(d.recap==='ready' && d.bout===bout) } }
     const t=setTimeout(()=>end(false), 20000)
     window.addEventListener('message', on)
     // 'demo' = the made-up Kodiak vs Wisp fight, for testing the screen with no fight recorded
@@ -4070,6 +4076,7 @@ const RC={ scene: new URLSearchParams(location.search).get('teleScene') || 'Reca
 // scene transition is set to, so the picture fades rather than cuts; the
 // operator's own transition is put back right after.
 function rcTeleScene(on){
+  if(RPF.room) return          // the replay is inside the recap itself: no second scene
   const o=window.obsstudio
   if(!o || !o.setCurrentScene || !o.getCurrentScene) return
   const go=name=>{
@@ -4085,6 +4092,52 @@ function rcTeleScene(on){
       if(on){ if(now!==RC.scene){ RC.back=now; go(RC.scene) } }
       else if(now===RC.scene && RC.back){ go(RC.back); RC.back=null } })
   }catch(e){}
+}
+
+// The replay, live inside the recap's REPLAY frame. With ?replayRoom=<code> (the
+// replay player's step 4) this page watches the player directly: the player sends
+// its picture with the drawings already on it, standby hands that stream to the
+// recap's frame, and the frame opening and closing IS the replay coming and going.
+// No Window Capture, no scene switch — the switch was the blink. The connection
+// stays up the whole show, so the picture is already there when the frame opens.
+const RPF={ room:new URLSearchParams(location.search).get('replayRoom'), vid:Math.random().toString(36).slice(2),
+  pc:null, sid:null, pending:[], stream:null, sig:null, ice:null }
+function rpAttach(){
+  if(!RPF.stream) return
+  try{ const v=$('rcFrame').contentDocument && $('rcFrame').contentDocument.getElementById('rpVid')
+    if(!v) return
+    if(v.srcObject!==RPF.stream){ v.srcObject=RPF.stream; v.play().catch(()=>{}) }
+    v.parentElement.classList.add('live') }catch(e){}
+}
+function rpClose(){ try{ RPF.pc && RPF.pc.close() }catch(e){} RPF.pc=null; RPF.sid=null; RPF.pending=[] }
+async function rpSig(m){
+  if(m.type==='player'){ RPF.sig && RPF.sig({ type:'s-hello', vid:RPF.vid }); return }
+  if(m.to!==RPF.vid) return
+  if(m.type==='s-offer'){
+    rpClose(); RPF.sid=m.sid; RPF.at=Date.now(); const my=m.sid
+    if(!RPF.ice) RPF.ice=await replayLink.ice()
+    const pc=RPF.pc=new RTCPeerConnection({ iceServers:RPF.ice.iceServers })
+    pc.ontrack=e=>{ RPF.stream=e.streams[0] || new MediaStream([e.track]); rpAttach() }
+    pc.onicecandidate=e=>{ if(e.candidate && RPF.sid===my) RPF.sig({ type:'s-ice', sid:my, c:e.candidate.toJSON() }) }
+    await pc.setRemoteDescription(m.sdp)
+    for(const c of RPF.pending.filter(p=>p.sid===my)) pc.addIceCandidate(c.c).catch(()=>{})
+    RPF.pending=[]
+    await pc.setLocalDescription(await pc.createAnswer())
+    RPF.sig({ type:'s-answer', sid:my, sdp:pc.localDescription.toJSON() })
+    return }
+  if(m.type==='s-ice'){
+    if(RPF.pc && m.sid===RPF.sid && RPF.pc.remoteDescription) RPF.pc.addIceCandidate(m.c).catch(()=>{})
+    else RPF.pending.push(m) }
+}
+if(RPF.room && window.replayLink){
+  replayLink.signal(RPF.room, rpSig, send=>send({ type:'s-hello', vid:RPF.vid })).then(f=>{ RPF.sig=f })
+    .catch(e=>console.warn('replay link:', e.message||e))
+  // keep knocking until the player answers (it may open after standby, or restart)
+  setInterval(()=>{
+    const s=RPF.pc && RPF.pc.connectionState
+    if(s==='connected' || ((s==='connecting' || s==='new') && Date.now()-RPF.at<15000)) return
+    rpClose(); RPF.sig && RPF.sig({ type:'s-hello', vid:RPF.vid })
+  }, 4000)
 }
 
 // ── LIVE CHAT ───────────────────────────────────────────────────────────
