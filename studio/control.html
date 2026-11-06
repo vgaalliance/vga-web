@@ -906,6 +906,9 @@ window.send=cmd=>{ if(cmd && cmd.league==null) cmd.league = EV
   // over the box. try/catch because CSN is declared further down this file and
   // a send during load would otherwise meet it before it exists.
   try{ if(cmd && CSN.brand && cmd.series==null){ cmd.series = CSN.brand; cmd.seriesNo = CSN.number } }catch(e){}
+  // ...and while an Underground card is loaded, `ug`: standby and the fight
+  // clock wear acid green. Same try/catch reason as above (UGN is further down).
+  try{ if(cmd && UGN.on && cmd.ug==null){ cmd.ug = true; cmd.ugNo = UGN.number } }catch(e){}
   // A standby board put up by this deck (the fight card, a win scored in the
   // runner, any view) takes the screen back from the verdict screen: standby
   // hides it. The Verdicts stage has to know, or its button stays lit over a
@@ -2306,6 +2309,23 @@ window.ubaReload=async()=>{
    v and rev live in sessionStorage keyed by the event, so a deck refresh at the
    end of a show forgets nothing. */
 const CSN={ brand:null, number:null, v:{}, rev:{}, sel:null, scr:null, air:null, eventId:null, landing:null, landT:null }
+// UNDERGROUND (2026-11-06): a GFL-type card with a tag (underground_nights), like
+// a contender night. All the deck does with it is stamp `ug` on every command so
+// the screens turn green, and tag an off-record bout on the card wall.
+const UGN={ on:false, number:null, eventId:null }
+async function ugCheck(ev){
+  // Same reload rule as csCheck: reloading the same card keeps the answer until
+  // a new one is back, so no command goes out unstamped mid-show.
+  const same = UGN.eventId === ev.id && UGN.on
+  UGN.eventId = ev.id
+  const { data, error } = await sb.from('underground_nights_public').select('number').eq('event_id',ev.id).maybeSingle()
+  if(error){ deckLog('could not check Underground for '+ev.name+' — '+error.message+(same?' · keeping it as it was':'')); if(!same){ UGN.on=false; UGN.number=null } return }
+  const was = UGN.on
+  UGN.on = !!data; UGN.number = data ? data.number : null
+  // Tell the screens now, not on the next button: an empty standby command
+  // carries the stamp (or its absence) and changes nothing else.
+  if(UGN.on !== was){ deckLog(UGN.on ? '🟢 Underground '+UGN.number+': screens go green' : 'not an Underground card'); send({ type:'skin' }) }
+}
 const csKey=()=>'vga-cs-'+UBA.id
 const csSave=()=>{ try{ sessionStorage.setItem(csKey(), JSON.stringify({ v:CSN.v, rev:CSN.rev })) }catch(e){} }
 const csLoad=()=>{ CSN.v={}; CSN.rev={}
@@ -2698,7 +2718,7 @@ window.addEventListener('hashchange',()=>{ if(location.hash==='#csdemo') csDemo(
 
 window.ubaLoadCard=async(ev)=>{
   const { data } = await sb.from('event_matches')
-    .select('match_id,bout_number,card_segment,weight_class,is_title_fight,title_name,status,method,fighter_a_name,fighter_b_name,winner_corner')
+    .select('match_id,bout_number,card_segment,weight_class,is_title_fight,title_name,status,method,fighter_a_name,fighter_b_name,winner_corner,off_record')
     .eq('event_id',ev.id).order('bout_number')
   UBA.id=ev.id; UBA.name=ev.name; UBA.date=ev.event_date||null; UBA.armed=null
   // Results already in the DB pre-mark themselves — a mid-show deck reload
@@ -2709,6 +2729,7 @@ window.ubaLoadCard=async(ev)=>{
     wc:cap(r.weight_class||''),
     title:r.is_title_fight?(r.title_name||'TITLE FIGHT'):null,
     method:r.method||null,
+    off:!!r.off_record,   // Underground: shown with an OFF RECORD tag, never counted
     winner: /^(a|fighter_a)$/i.test(r.winner_corner||'')?'a'
           : /^(b|fighter_b)$/i.test(r.winner_corner||'')?'b':null }))
   winsApply()   // the taps outrank the database: it only learns the results at the close
@@ -2716,6 +2737,7 @@ window.ubaLoadCard=async(ev)=>{
   ubaDraw()
   if(STG==='fancam' && window.fcOpen) fcOpen()   // the fan list belongs to the card
   await csCheck(ev)   // a contender night grows its verdict section
+  await ugCheck(ev)   // an Underground night turns every screen green
   mnCountdown()   // picking the event is when the main event becomes known
 }
 
@@ -2861,7 +2883,7 @@ window.ubaPush=()=>{
       match_id:b.id||null, bout_number:b.bout_number, card_segment:b.seg,
       fighter_a_name:b.a, fighter_b_name:b.b,
       weight_class:b.wc, is_title_fight:!!b.title, title_name:b.title,
-      method:b.method, winner_corner:b.winner }))
+      method:b.method, winner_corner:b.winner, off_record:!!b.off }))
   }})
 }
 

@@ -1889,8 +1889,10 @@ async function kLoad(nameA,nameB){
   if(!a||!b){ console.warn('[keys] no match for',nameA,'/',nameB); K_key=''; return }
 
   const [{data:ma},{data:mb},{data:pools},{data:st},notesR] = await Promise.all([
-    sb.from('fighter_matches').select('*').eq('fighter_id',a.id).eq('status','completed'),
-    sb.from('fighter_matches').select('*').eq('fighter_id',b.id).eq('status','completed'),
+    // .eq('off_record',false): an Underground off-record fight is never a stat
+    // (streaks, finishes, common opponents) -- it counted for nobody.
+    sb.from('fighter_matches').select('*').eq('fighter_id',a.id).eq('status','completed').eq('off_record',false),
+    sb.from('fighter_matches').select('*').eq('fighter_id',b.id).eq('status','completed').eq('off_record',false),
     sb.from('bet_pools_public').select('*'),
     sb.from('team_standings').select('*'),
     // the typed content — gated on card_published in the view, so a locked card

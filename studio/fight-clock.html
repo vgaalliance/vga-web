@@ -116,6 +116,15 @@ body.gfl{
   --c-lit-solid:#ffb066; --c-name:#fdeee4; --c-panel-solid:#0e0502; --c-rail:#5e3a2f;
   --c-emblem-fill:rgb(16,4,1);
 }
+/* UNDERGROUND — acid green ("green for now", Castle 2026-11-06). The deck
+   stamps `ug` while an Underground card is loaded. Colour only: it wears no
+   body.gfl, so none of GFL's fire effects come with it. */
+body.ug{
+  --c-key:124,255,91; --c-lit:190,255,170; --c-deep:63,214,42;
+  --c-panel:3,12,5; --c-ink:205,255,190;
+  --c-lit-solid:#b8ff9e; --c-name:#effff0; --c-panel-solid:#040e06; --c-rail:#2f5e2a;
+  --c-emblem-fill:rgb(3,14,5);
+}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:relative;}
 
@@ -782,13 +791,18 @@ body{width:1920px;height:1080px;overflow:hidden;background:transparent;position:
     // as a hot amber at the top of its cycle.
     gfl: { name:'GFL', sub:'Glory League', org:'Glory Fighting League',
            art:{ hue:4,   band:0,   bandSpan:26,  stroke:8,   wheel:18 } },
+    // Underground: a GFL-type night under its own name, in acid green.
+    ug:  { name:'UNDERGROUND', sub:'Fight Night', org:'VGA Underground',
+           art:{ hue:105, band:95,  bandSpan:30,  stroke:110, wheel:16 } },
   }
   window.VGA_setLeague = function setLeague(lg){
-    const key = String(lg||'').toLowerCase() === 'gfl' ? 'gfl' : 'uba'
+    const l = String(lg||'').toLowerCase()
+    const key = l === 'gfl' ? 'gfl' : l === 'ug' ? 'ug' : 'uba'
     if(document.body.dataset.league === key) return    // no needless repaint
     document.body.dataset.league = key
     const c = LEAGUE_COPY[key]
     document.body.classList.toggle('gfl', key === 'gfl')
+    document.body.classList.toggle('ug', key === 'ug')
     window.VGA_ART = c.art
     const set = (id, v) => { const e = document.getElementById(id); if(e) e.textContent = v }
     set('brandName', c.name); set('brandSub', c.sub); set('eventStripText', c.org)
@@ -1211,7 +1225,8 @@ function flipSwap(el, text){
     // a GFL show back to violet.
     // guarded: a missing skinner must never take the whole handler down with it,
     // which is exactly what an unguarded cross-IIFE call did on 2026-08-17.
-    if(c.league && window.VGA_setLeague) window.VGA_setLeague(c.league)
+    // An Underground card rides the GFL deck mode with a `ug` stamp: green skin.
+    if(c.league && window.VGA_setLeague) window.VGA_setLeague(c.ug ? 'ug' : c.league)
     if(c.type==='clock'){
       document.querySelector('.hud-root').classList.toggle('off', c.show===false); return
     }

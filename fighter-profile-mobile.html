@@ -288,13 +288,15 @@ async function load() {
     const f = cards[0];
 
     const matches = await sb('fighter_matches',
-      `fighter_id=eq.${f.id}&order=event_date.desc.nullslast,created_at.desc&select=status,method,finish_round,won,opponent_name,event_name,vod_link,is_title_fight&limit=20`);
+      `fighter_id=eq.${f.id}&order=event_date.desc.nullslast,created_at.desc&select=status,method,finish_round,won,opponent_name,event_name,vod_link,is_title_fight,off_record&limit=20`);
 
     const completed = matches.filter(m => m.status === 'completed');
     const upcoming  = matches.find(m => m.status === 'scheduled');
+    // Underground: an off-record fight is listed with its tag (see the row) and
+    // never counted, so the belt count reads only the on-record ones.
     const recent    = completed.slice(0, 5);
     const lastVod   = completed.find(m => m.vod_link)?.vod_link ?? null;
-    const beltCount = completed.filter(m => m.is_title_fight && m.won === true).length;
+    const beltCount = completed.filter(m => !m.off_record && m.is_title_fight && m.won === true).length;
 
     // Card collection — fail-soft: no cards, no section.
     let stashPrints = [], stashSets = [];
@@ -422,7 +424,8 @@ function render(f, recent, upcoming, lastVod, beltCount, stashPrints, stashSets)
       const isDraw  = (m.method || '').toLowerCase() === 'draw';
       const resClass = isDraw ? 'd' : (m.won ? 'w' : 'l');
       const resLetter = isDraw ? 'D' : (m.won ? 'W' : 'L');
-      const titleTag = m.is_title_fight ? `<span class="fight-title-tag">TITLE</span>` : '';
+      const titleTag = (m.is_title_fight ? `<span class="fight-title-tag">TITLE</span>` : '')
+        + (m.off_record ? ` <span class="fight-title-tag" style="background:#06140a;color:#7CFF5B;border:1px solid #2f6b2a">OFF RECORD</span>` : '');
       return `
         <div class="fight-row">
           <div class="fight-res ${resClass}">${resLetter}</div>

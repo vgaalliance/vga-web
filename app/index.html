@@ -9717,10 +9717,13 @@ async function loadCareer(slug){
     if(rk){ rk.textContent = 'Unranked'; rk.classList.add('word'); }
   }
 
-  var hist = await q("fighter_matches?select=won,method,event_name,event_date,vod_link,status"
+  var hist = await q("fighter_matches?select=won,method,event_name,event_date,vod_link,status,off_record"
     + "&fighter_id=eq." + encodeURIComponent(f.id) + "&order=event_date.desc&limit=40");
   if(!hist) return;
-  var done = hist.filter(function(m){ return m.status === 'completed'; });
+  /* An Underground off-record fight never counts, so it is not in the last
+     result or the form ticks either -- its video still is (loadMyMedia). */
+  var all0 = hist.filter(function(m){ return m.status === 'completed'; });
+  var done = all0.filter(function(m){ return !m.off_record; });
 
   var last = document.getElementById('yc-last');
   if(last){
@@ -9739,7 +9742,7 @@ async function loadCareer(slug){
         return '<i class="' + (m.won === true ? 'w' : m.won === false ? 'l' : 'd') + '"></i>';
       }).join('') + '</div><span>Last ' + lastN.length + (lastN.length === 1 ? ' fight' : ' fights') + '</span>';
   }
-  loadMyMedia(done);
+  loadMyMedia(all0);
 }
 
 /* ── THE FIGHTER PAGE ────────────────────────────────────────────────────
@@ -9880,7 +9883,7 @@ async function loadFighterPage(slug){
     pEl.innerHTML = failHTML("Couldn't load that fighter.", 'mepro'); return;
   }
   var all = await q("fighter_matches?select=won,method,opponent_name,opponent_slug,event_name,"
-    + "event_date,status,is_title_fight,vod_link,weight_class&fighter_id=eq." + f.id
+    + "event_date,status,is_title_fight,vod_link,weight_class,off_record&fighter_id=eq." + f.id
     + "&order=event_date.desc.nullslast&limit=40");
   if(!root.isConnected) return;
   all = all || [];
@@ -9988,7 +9991,9 @@ function fpFightRow(b, i, right){
     + (o ? ' data-slug="' + esc(o.slug) + '" href="./f/' + encodeURIComponent(o.slug) + '.html"' : '') + '>'
     + chip + fpFace(o)
     + '<span class="fx-x"><b>' + esc(b.opponent_name || 'Unknown') + (b.is_title_fight ? '<i class="fx-belt" title="Title fight"></i>' : '') + '</b>'
-    + '<s>' + esc(b.event_name || '') + (b.event_date ? ' · ' + fpDay(b.event_date) : '') + '</s></span>'
+    + '<s>' + esc(b.event_name || '') + (b.event_date ? ' · ' + fpDay(b.event_date) : '')
+    /* Underground: listed, never counted */
+    + (b.off_record ? ' · <em style="color:#7CFF5B;font-style:normal;font-weight:700;letter-spacing:.04em">OFF RECORD</em>' : '') + '</s></span>'
     + '<span class="fx-m">' + (right != null ? right : (fin && b.method ? esc(fpCap(b.method)) : '')) + '</span></' + tag + '>';
 }
 var MPOPP = function(s){ return (MP && MP.opp && MP.opp[s]) || (FP_OPP && FP_OPP[s]) || null; };
@@ -10007,10 +10012,15 @@ function fpProfileHTML(f, done, soon, ctx){
 
   /* the record, with the tape under it */
   var W = Number(f.headline_wins || 0), L = Number(f.headline_losses || 0), D = Number(f.headline_draws || 0);
-  var won = done.filter(function(b){ return b.won; }).length;
+  /* the won / lost sentence counts what the record counts: an Underground
+     off-record fight is listed below and left out of it */
+  var rec = done.filter(function(b){ return !b.off_record; }), offN = done.length - rec.length;
+  var won = rec.filter(function(b){ return b.won; }).length;
   var sub = !done.length ? 'No fights on file yet'
-    : done.length + (done.length === 1 ? ' fight' : ' fights') + ' on file · '
-      + (won === done.length ? (done.length === 1 ? 'won it' : 'all ' + won + ' won') : won + ' won, ' + (done.length - won) + ' lost');
+    : !rec.length ? offN + (offN === 1 ? ' fight' : ' fights') + ' off record'
+    : rec.length + (rec.length === 1 ? ' fight' : ' fights') + ' on file · '
+      + (won === rec.length ? (rec.length === 1 ? 'won it' : 'all ' + won + ' won') : won + ' won, ' + (rec.length - won) + ' lost')
+      + (offN ? ' · ' + offN + ' off record' : '');
   html += fpCard(fpBanner('Record', esc(sub), W + '-' + L + (D ? '-' + D : ''), D ? 'W-L-D' : 'W-L'),
     fpKV([['Height', inches(f.height)], ['Reach', f.reach ? Math.round(f.reach) + '<em>″</em>' : null],
           ['Stance', f.stance ? esc(fpCap(f.stance)) : null]]));

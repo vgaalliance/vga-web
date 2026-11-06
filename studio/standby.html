@@ -28,6 +28,17 @@
     --panel:rgba(54,13,4,.84); --line:rgba(255,106,31,.30); --dim:rgba(255,205,175,.60);
     --pur-rgb:255,106,31; --hi-rgb:255,176,102; --pink-rgb:255,60,0; --deep-rgb:78,14,2; --deep2-rgb:110,22,4;
     --pur2:#ff8a4a; --pur3:#ff5a1a; --pur4:#b8360a; }
+  /* ACID — an Underground night ("green for now", Castle 2026-11-06). The deck
+     stamps `ug` on every command while an Underground card is loaded, and that
+     sets data-series="ug". Brighter than any GFL green so the two never read
+     as one league. Colour only, like the two skins above. */
+  :root[data-series="ug"]{ --pur:#3FD62A; --hi:#B8FF9E; --pink:#7CFF5B; --bg:#040E06;
+    --panel:rgba(6,26,10,.86); --line:rgba(124,255,91,.30); --dim:rgba(190,255,170,.60);
+    --pur-rgb:63,214,42; --hi-rgb:184,255,158; --pink-rgb:124,255,91; --deep-rgb:8,46,12; --deep2-rgb:14,72,18;
+    --pur2:#9BFF7E; --pur3:#3FD62A; --pur4:#1F8A14; }
+  /* An off-record bout on the card wall (Underground): shown, never counted. */
+  .cbout .offrec{grid-column:1/-1;justify-self:center;font-family:'Press Start 2P',monospace;font-size:11px;
+    letter-spacing:.08em;color:#7CFF5B;border:2px solid rgba(124,255,91,.6);padding:4px 10px;margin-top:2px;}
   /* UBA STAYS PURPLE. A screen about UBA (its rankings, champions, P4P, fighter
      of the month, next 3, or a card / next event that is a UBA show) keeps the
      UBA colours on a GFL or contender night: the night's skin is for the
@@ -2594,10 +2605,12 @@ function renderCta(count){
 }
 // Which league an event belongs to, read off its name (the deck's leagueOf rule):
 // a contender night is a GFL event with a tag, so it reads GFL too.
-const lgOfName=n=> /^(GFL|MCS|CCS|HPCS)\b/i.test(n||'') ? 'GFL' : 'UBA'
+// An Underground night is a GFL event with a tag too, but it says its own name.
+const lgOfName=n=> /^UNDERGROUND\b/i.test(n||'') ? 'UNDERGROUND' : /^(GFL|MCS|CCS|HPCS)\b/i.test(n||'') ? 'GFL' : 'UBA'
 // The words that follow the NIGHT (poster, card wall, CTA): set with the colours.
 function lgWords(){
-  const L=document.documentElement.dataset.series==='gfl' ? 'GFL' : 'UBA'
+  const S=document.documentElement.dataset.series
+  const L=S==='gfl' ? 'GFL' : S==='ug' ? 'UNDERGROUND' : 'UBA'
   document.querySelectorAll('[data-lg]').forEach(el=>{ el.textContent=el.dataset.lg.replace('{L}', L) })
   renderCta(ctaCount)
 }
@@ -2714,6 +2727,7 @@ function renderCard(ev, bouts, filter, scored){
       <span class="vs${m?' fin':''}${ko?' ko':''}">${m||'VS'}</span>
       <span class="fb${cls('b')}">${b.fighter_b_name}</span>
       ${b.weight_class?`<div class="cwc">${String(b.weight_class).replace(/_/g,' ').toUpperCase()}</div>`:''}
+      ${b.off_record?'<div class="offrec">OFF RECORD</div>':''}
     </div>`
   }
   // Group only when the card actually HAS tiers. A UBAe card is one flat list
@@ -3913,7 +3927,8 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
   // card puts it back. Read off the league stamp every command carries.
   // A plain GFL card (league gfl, no series) dresses it in Ember, the GFL clock's fire.
   if(c.league){ const was=document.documentElement.dataset.series
-    document.documentElement.dataset.series = c.series ? 'cs' : c.league==='gfl' ? 'gfl' : ''
+    // An Underground card (stamp `ug`) dresses it in acid green.
+    document.documentElement.dataset.series = c.series ? 'cs' : c.ug ? 'ug' : c.league==='gfl' ? 'gfl' : ''
     if(document.documentElement.dataset.series!==was) lgWords() }
   // A scored fight. Never a reason to change what this screen shows.
   if(c.type==='cardwin' || c.type==='cardwins'){ winTaken(c); return }

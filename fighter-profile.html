@@ -474,7 +474,9 @@ function fightRowHTML(m, showEvent) {
   const oppLink = m.opponent_slug
     ? `<a href="?fighter=${encodeURIComponent(m.opponent_slug)}">${esc(m.opponent_name)}</a>`
     : esc(m.opponent_name);
-  const titleBadge = m.is_title_fight ? `<span class="fight-title-badge">TITLE</span>` : '';
+  const titleBadge = (m.is_title_fight ? `<span class="fight-title-badge">TITLE</span>` : '')
+    // Underground: shown, never counted
+    + (m.off_record ? `<span class="fight-title-badge" style="background:#06140a;color:#7CFF5B;border:1px solid #2f6b2a">OFF RECORD</span>` : '');
   const eventCol = showEvent ? `<span class="fight-event">${esc(m.event_name) || ''}</span>` : '';
   return `<div class="fight-row">
     <div class="fight-result ${res}">${res.toUpperCase()}</div>
@@ -551,8 +553,11 @@ async function load() {
     if (!cards.length) { document.getElementById('root').innerHTML = '<div class="loading">fighter not found</div>'; return; }
     const f = cards[0];
 
-    const matches = await sb('fighter_matches', `fighter_id=eq.${f.id}&order=event_date.desc.nullslast,created_at.desc&select=status,method,won,opponent_name,opponent_slug,event_name,event_date,is_title_fight`);
+    const matches = await sb('fighter_matches', `fighter_id=eq.${f.id}&order=event_date.desc.nullslast,created_at.desc&select=status,method,won,opponent_name,opponent_slug,event_name,event_date,is_title_fight,off_record`);
     const completed = matches.filter(m => m.status === 'completed');
+    // Underground: an off-record fight is LISTED (with its tag) and counted
+    // nowhere, so the streak and the belt count read only the rest.
+    const onRecord = completed.filter(m => !m.off_record);
     const scheduled = matches.filter(m => m.status === 'scheduled');
     const recent = completed.slice(0, 3);
     const upcoming = scheduled[0];
@@ -563,7 +568,7 @@ async function load() {
     const koRate = totalFights > 0 ? Math.round((koWins / totalFights) * 100) + '%' : '—';
 
     let winStreak = 0;
-    for (const m of completed) { if (m.won) winStreak++; else break; }
+    for (const m of onRecord) { if (m.won) winStreak++; else break; }
 
     // Prize money is NOT read here. `prize_payouts` is the one real-$ table
     // and anon has no grant on it by design, so the old query answered 401
@@ -571,8 +576,8 @@ async function load() {
     // profile load -- the console's only error on this page, for a number
     // that could never be anything but $0.
 
-    const titleFights = completed.filter(m => m.is_title_fight).length;
-    const belts = completed.filter(m => m.is_title_fight && m.won).length;
+    const titleFights = onRecord.filter(m => m.is_title_fight).length;
+    const belts = onRecord.filter(m => m.is_title_fight && m.won).length;
 
     // Stash: card collection + owned items. Fail-soft like the streak — a
     // fighter with none simply keeps the placeholder look.
