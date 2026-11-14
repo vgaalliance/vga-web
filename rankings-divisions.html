@@ -211,7 +211,12 @@ async function loadDiv(div, listEl) {
     const rows = [];
     const used = new Set();
 
-    const champ = cardArr.find(c => c.is_champion && c.level === 'pro');
+    // The champion is whoever holds this division's PRO belt -- never
+    // is_champion, which is also true for GFL and BMF holders.
+    const belt = await fetch(`${SB}/rest/v1/titles_public?select=holder_slug,holder_name,weight_class&kind=eq.weight_class&level=eq.pro&is_interim=eq.false&holder_slug=not.is.null&weight_class=eq.${div.key}`, { headers: H })
+      .then(r => r.json()).catch(() => []);
+    const beltSlug = Array.isArray(belt) && belt[0] ? belt[0].holder_slug : null;
+    const champ = beltSlug ? cardArr.find(c => c.slug === beltSlug) : null;
     if (champ) { rows.push({ f: champ, disp: 'C', champ: true }); used.add(champ.slug); }
 
     rankArr.forEach(r => {

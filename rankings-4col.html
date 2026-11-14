@@ -251,11 +251,14 @@
       fetch(`${SB}/rest/v1/fighter_cards?select=slug,display_name,weight_class,wins:headline_wins,losses:headline_losses,draws:headline_draws,level,is_champion`, { headers: H }).then(r => r.json())
     ]);
 
+    // Champions from the pro division belts, never is_champion (GFL + BMF set it too).
+    const belts = await fetch(`${SB}/rest/v1/titles_public?select=holder_slug,holder_name,weight_class&kind=eq.weight_class&level=eq.pro&is_interim=eq.false&holder_slug=not.is.null`, { headers: H }).then(r => r.json()).catch(() => []);
+    const beltKey = new Set((Array.isArray(belts) ? belts : []).map(b => b.holder_slug + '|' + b.weight_class));
     const recBySlug = {};
     const champByWC = {};
     (Array.isArray(cards) ? cards : []).forEach(c => {
       recBySlug[c.slug] = c;
-      if (c.is_champion && c.level === 'pro') champByWC[c.weight_class] = c;
+      if (beltKey.has(c.slug + '|' + c.weight_class)) champByWC[c.weight_class] = c;
     });
 
     // Group rankings by weight class

@@ -244,12 +244,15 @@ const WC_DISPLAY = { heavyweight:'Heavyweight', light_heavyweight:'Lt. Heavyweig
 const WC_ORDER = ['heavyweight','light_heavyweight','middleweight','lightweight'];
 
 let all=[], filtered=[], wc='all', sort='rank', q='', page=0;
+// 'slug|weight_class' of every open PRO division belt. Never is_champion: GFL
+// and BMF holders carry it too. Filled by loadChamps().
+let BELTS = new Set();
 const dir = { rank:1, wins:-1 };
 
 function toTitle(s){ return s ? s.replace(/\w\S*/g, t=>t[0].toUpperCase()+t.substr(1).toLowerCase()) : ''; }
 
 function tierClass(f) {
-  if (f.is_champion && f.level === 'pro') return 'is-champ';
+  if (BELTS.has(f.slug + '|' + f.weight_class)) return 'is-champ';
   if (f.level === 'amateur') return 'is-ama';
   if (!f.rank) return 'is-nr';
   if (f.rank <= 3) return '';
@@ -258,7 +261,7 @@ function tierClass(f) {
 }
 
 function rlbl(f) {
-  if (f.is_champion && f.level === 'pro') return 'C';
+  if (BELTS.has(f.slug + '|' + f.weight_class)) return 'C';
   return f.rank ? '#' + f.rank : '–';
 }
 
@@ -332,15 +335,16 @@ fetch(`${SB_U}/rest/v1/fighter_cards?select=slug,display_name,weight_class,level
 // UBA champions
 async function loadChamps() {
   try {
-    // Champions = is_champion flag (belt holders), NOT division rank #1.
-    const r = await fetch(`${SB_U}/rest/v1/fighter_cards?is_champion=eq.true&level=eq.pro&select=weight_class,display_name`, { headers: HU });
+    // Champions = the open pro division belts, NOT division rank #1 and not is_champion.
+    const r = await fetch(`${SB_U}/rest/v1/titles_public?select=holder_slug,holder_name,weight_class&kind=eq.weight_class&level=eq.pro&is_interim=eq.false&holder_slug=not.is.null`, { headers: HU });
     const d = await r.json();
+    if (Array.isArray(d)) { BELTS = new Set(d.map(b => b.holder_slug + '|' + b.weight_class)); if (all.length) render(); }
     const el = document.getElementById('champs-list');
     if (!Array.isArray(d) || !d.length) { el.innerHTML = '<div class="tr-empty">No champions yet</div>'; return; }
     el.innerHTML = d.sort((a, b) => WC_ORDER.indexOf(a.weight_class) - WC_ORDER.indexOf(b.weight_class))
       .map(f => `<div class="ch-row">
         <span class="ch-lbl">${WC_LBL[f.weight_class] || '?'}</span>
-        <span class="ch-name">${f.display_name ? f.display_name.toUpperCase() : '—'}</span>
+        <span class="ch-name">${f.holder_name ? f.holder_name.toUpperCase() : '—'}</span>
       </div>`).join('');
   } catch(e) { document.getElementById('champs-list').innerHTML = '<div class="tr-empty">Error</div>'; }
 }

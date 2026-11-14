@@ -416,14 +416,19 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
 
 /* ── champions + P4P ── */
 (async()=>{
-  const champs=await get('fighter_cards?select=display_name,slug,weight_class,wins,losses&is_champion=eq.true&level=eq.pro&order=weight_class.asc');
+  /* Champions come from the BELT table, never fighters.is_champion: that flag is also
+     true for GFL belt holders and for the BMF holder, so it named Gervonta Davis (GFL)
+     and Adonnis (BMF) as UBA division champions. */
+  const belts=await get('titles_public?select=holder_slug,holder_name,weight_class&kind=eq.weight_class&level=eq.pro&is_interim=eq.false&holder_slug=not.is.null');
+  const champs=belts.length?(await get('fighter_cards?select=display_name,slug,weight_class,wins,losses&order=weight_class.asc&slug=in.('+belts.map(b=>b.holder_slug).join(',')+')'))
+    .filter(c=>belts.some(b=>b.holder_slug===c.slug&&b.weight_class===c.weight_class)):[];
   el('champs').innerHTML=champs.length?champs.map(c=>
     `<a class="row" href="${FIGHTER}${encodeURIComponent(c.slug)}" target="_parent">
       <span class="i">★</span><span class="n champ">${esc(c.display_name)}</span>
       <span class="cbelt">${({lightweight:'LW',middleweight:'MW',light_heavyweight:'LHW',heavyweight:'HW'})[c.weight_class]||''}</span></a>`).join('')
     :'<div class="none">NO CHAMPIONS SET</div>';
 
-  const p4p=await get('rankings_public?select=rank,display_name,slug&league=eq.uba&weight_class=is.null&order=rank.asc&limit=5');
+  const p4p=await get('rankings_public?select=rank,display_name:fighter_name,slug:fighter_slug&level=eq.pro&scope=eq.overall&order=rank.asc&limit=5');
   const list=p4p.length?p4p:await get('fighter_cards?select=display_name,slug,rank&rank=not.is.null&order=rank.asc&limit=5');
   el('p4p').innerHTML=list.length?list.map((r,i)=>
     `<a class="row" href="${FIGHTER}${encodeURIComponent(r.slug)}" target="_parent">

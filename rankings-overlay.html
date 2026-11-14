@@ -431,15 +431,18 @@
     const saved = localStorage.getItem(MODE_KEY);
     if (saved) currentMode = saved;
 
-    const [ranks, cards] = await Promise.all([
+    // Champions from the pro division belts, never is_champion (GFL + BMF set it too).
+    const [ranks, cards, belts] = await Promise.all([
       sb('rankings_public?select=scope,weight_class,rank,fighter_name,fighter_slug,level'),
-      sb('fighter_cards?select=slug,display_name,weight_class,wins:headline_wins,losses:headline_losses,draws:headline_draws,level,is_champion')
+      sb('fighter_cards?select=slug,display_name,weight_class,wins:headline_wins,losses:headline_losses,draws:headline_draws,level,is_champion'),
+      sb('titles_public?select=holder_slug,holder_name,weight_class&kind=eq.weight_class&level=eq.pro&is_interim=eq.false&holder_slug=not.is.null')
     ]);
+    const beltKey = new Set((Array.isArray(belts) ? belts : []).map(b => b.holder_slug + '|' + b.weight_class));
 
     allRanks = Array.isArray(ranks) ? ranks : [];
     (Array.isArray(cards) ? cards : []).forEach(c => {
       recBySlug[c.slug] = c;
-      if (c.is_champion && c.level === 'pro') {
+      if (beltKey.has(c.slug + '|' + c.weight_class)) {
         champSlugs.add(c.slug);
         champions.push({ fighter_name: c.display_name, fighter_slug: c.slug, weight_class: c.weight_class, rank: 'C', isChamp: true });
       }
