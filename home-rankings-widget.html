@@ -147,7 +147,7 @@ async function load() {
     // Division champions = is_champion flag on the fighter (belt holders sit
     // above the rankings). P4P line = the overall #1 ranked pro.
     const [champRes, p4pRes] = await Promise.all([
-      fetch(`${SB}/rest/v1/fighter_cards?is_champion=eq.true&select=display_name,weight_class`, { headers: H }),
+      fetch(`${SB}/rest/v1/fighter_cards?is_champion=eq.true&level=eq.pro&select=display_name,weight_class`, { headers: H }),
       fetch(`${SB}/rest/v1/rankings_public?rank=eq.1&level=eq.pro&scope=eq.overall&select=fighter_name`, { headers: H }),
     ]);
     const champs = await champRes.json();

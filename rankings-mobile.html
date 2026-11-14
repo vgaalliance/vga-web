@@ -249,7 +249,7 @@ const dir = { rank:1, wins:-1 };
 function toTitle(s){ return s ? s.replace(/\w\S*/g, t=>t[0].toUpperCase()+t.substr(1).toLowerCase()) : ''; }
 
 function tierClass(f) {
-  if (f.is_champion) return 'is-champ';
+  if (f.is_champion && f.level === 'pro') return 'is-champ';
   if (f.level === 'amateur') return 'is-ama';
   if (!f.rank) return 'is-nr';
   if (f.rank <= 3) return '';
@@ -258,7 +258,7 @@ function tierClass(f) {
 }
 
 function rlbl(f) {
-  if (f.is_champion) return 'C';
+  if (f.is_champion && f.level === 'pro') return 'C';
   return f.rank ? '#' + f.rank : '–';
 }
 
@@ -333,7 +333,7 @@ fetch(`${SB_U}/rest/v1/fighter_cards?select=slug,display_name,weight_class,level
 async function loadChamps() {
   try {
     // Champions = is_champion flag (belt holders), NOT division rank #1.
-    const r = await fetch(`${SB_U}/rest/v1/fighter_cards?is_champion=eq.true&select=weight_class,display_name`, { headers: HU });
+    const r = await fetch(`${SB_U}/rest/v1/fighter_cards?is_champion=eq.true&level=eq.pro&select=weight_class,display_name`, { headers: HU });
     const d = await r.json();
     const el = document.getElementById('champs-list');
     if (!Array.isArray(d) || !d.length) { el.innerHTML = '<div class="tr-empty">No champions yet</div>'; return; }

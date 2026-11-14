@@ -416,7 +416,7 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
 
 /* ── champions + P4P ── */
 (async()=>{
-  const champs=await get('fighter_cards?select=display_name,slug,weight_class,wins,losses&is_champion=eq.true&order=weight_class.asc');
+  const champs=await get('fighter_cards?select=display_name,slug,weight_class,wins,losses&is_champion=eq.true&level=eq.pro&order=weight_class.asc');
   el('champs').innerHTML=champs.length?champs.map(c=>
     `<a class="row" href="${FIGHTER}${encodeURIComponent(c.slug)}" target="_parent">
       <span class="i">★</span><span class="n champ">${esc(c.display_name)}</span>

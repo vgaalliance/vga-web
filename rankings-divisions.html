@@ -211,7 +211,7 @@ async function loadDiv(div, listEl) {
     const rows = [];
     const used = new Set();
 
-    const champ = cardArr.find(c => c.is_champion);
+    const champ = cardArr.find(c => c.is_champion && c.level === 'pro');
     if (champ) { rows.push({ f: champ, disp: 'C', champ: true }); used.add(champ.slug); }
 
     rankArr.forEach(r => {
