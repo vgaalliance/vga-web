@@ -114,6 +114,85 @@
     color:#fff;text-shadow:0 0 34px rgba(var(--pur-rgb),.7);margin-bottom:26px;}
   .title.sm{font-size:58px;}
 
+
+  /* ── ANNOUNCEMENT — a tease for next week, plus the award show. Three looks,
+     picked from the deck (announce1/2/3): an ALERT (breaking-news bar + ticker),
+     a CLASSIFIED file (redacted lines), and a pair of TICKETS. Same words in all
+     three; only the shape changes. Never in the rotation: a tease is a moment. */
+  #v-announce{max-width:1640px;}
+  #v-announce .an{display:none;}
+  #v-announce.d1 .an1, #v-announce.d2 .an2, #v-announce.d3 .an3{display:block;}
+  .an-gold{color:#ffd76a;text-shadow:0 0 30px rgba(255,190,60,.55);}
+
+  /* 1 — ALERT */
+  .an1 .alert{display:flex;align-items:center;gap:22px;margin:0 auto 30px;width:max-content;
+    padding:12px 28px;border:3px solid var(--pink);border-radius:6px;
+    background:rgba(var(--pink-rgb),.14);box-shadow:0 0 40px rgba(var(--pink-rgb),.45);
+    font-family:'Press Start 2P',monospace;font-size:18px;letter-spacing:.3em;color:#fff;}
+  .an1 .alert i{width:18px;height:18px;border-radius:50%;background:var(--pink);
+    box-shadow:0 0 18px var(--pink);animation:anBlink 1s steps(2) infinite;}
+  @keyframes anBlink{50%{opacity:.15}}
+  .an1 .big{text-align:center;font-weight:900;text-transform:uppercase;line-height:.84;
+    font-size:190px;color:#fff;letter-spacing:.01em;
+    text-shadow:0 0 50px rgba(var(--pur-rgb),.9),6px 6px 0 rgba(var(--deep-rgb),1);}
+  .an1 .big span{display:block;color:var(--hi);}
+  .an1 .when{display:flex;justify-content:center;align-items:center;gap:26px;margin-top:34px;
+    font-weight:900;font-size:56px;text-transform:uppercase;color:#fff;}
+  .an1 .when b{padding:4px 22px;background:#fff;color:#1a0030;border-radius:6px;}
+  .an1 .tune{text-align:center;margin-top:14px;font-family:'Press Start 2P',monospace;font-size:16px;
+    letter-spacing:.32em;color:var(--hi);}
+  .an1 .ticker{margin-top:54px;overflow:hidden;border-top:2px solid rgba(255,215,106,.6);
+    border-bottom:2px solid rgba(255,215,106,.6);background:rgba(255,190,60,.08);}
+  .an1 .ticker div{display:flex;gap:80px;white-space:nowrap;width:max-content;padding:14px 0;
+    animation:anTick 22s linear infinite;font-weight:900;font-size:40px;text-transform:uppercase;}
+  .an1 .ticker div span::before{content:'★';margin-right:26px;color:#ffd76a;}
+  @keyframes anTick{to{transform:translateX(-50%)}}
+
+  /* 2 — CLASSIFIED */
+  .an2 .file{position:relative;margin:0 auto;width:1180px;padding:56px 70px 50px;
+    background:linear-gradient(160deg,rgba(var(--deep2-rgb),.55),rgba(var(--deep-rgb),.75));
+    border:2px solid rgba(var(--hi-rgb),.55);border-radius:14px;
+    box-shadow:0 0 60px rgba(var(--pur-rgb),.4),inset 0 0 80px rgba(0,0,0,.4);}
+  .an2 .stamp{position:absolute;top:34px;right:46px;transform:rotate(9deg);padding:8px 20px;
+    border:5px solid var(--pink);color:var(--pink);font-weight:900;font-size:40px;letter-spacing:.08em;
+    text-transform:uppercase;opacity:.9;border-radius:6px;}
+  .an2 .lbl{font-family:'Press Start 2P',monospace;font-size:14px;letter-spacing:.3em;color:var(--hi);}
+  .an2 .big{margin:16px 0 26px;font-weight:900;font-size:128px;line-height:.86;text-transform:uppercase;color:#fff;
+    text-shadow:0 0 40px rgba(var(--pur-rgb),.8);}
+  .an2 .redact{display:flex;flex-direction:column;gap:16px;margin-bottom:34px;}
+  .an2 .redact div{display:flex;gap:14px;align-items:center;font-weight:700;font-size:34px;color:#e9dcff;text-transform:uppercase;}
+  .an2 .redact s{display:inline-block;height:34px;background:#000;border-radius:3px;text-decoration:none;
+    box-shadow:0 0 0 1px rgba(var(--hi-rgb),.25);}
+  .an2 .row{display:flex;justify-content:space-between;align-items:flex-end;gap:30px;
+    border-top:2px dashed rgba(var(--hi-rgb),.4);padding-top:26px;}
+  .an2 .when{font-weight:900;font-size:64px;text-transform:uppercase;color:#fff;line-height:.9;}
+  .an2 .when small{display:block;font-size:30px;color:var(--hi);margin-top:8px;}
+  .an2 .aw{text-align:right;font-weight:900;text-transform:uppercase;font-size:40px;line-height:1;}
+  .an2 .aw small{display:block;font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.24em;
+    color:#ffd76a;margin-bottom:10px;}
+
+  /* 3 — TICKETS */
+  .an3 .pair{margin-top:26px;display:grid;grid-template-columns:1.25fr 1fr;gap:44px;align-items:stretch;}
+  .an3 .tk{position:relative;display:flex;border-radius:18px;overflow:hidden;min-height:520px;}
+  .an3 .tk .main{flex:1;padding:44px 48px;display:flex;flex-direction:column;justify-content:space-between;}
+  .an3 .tk .stub{width:150px;border-left:4px dashed rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;}
+  .an3 .tk .stub b{transform:rotate(-90deg);white-space:nowrap;font-weight:900;font-size:44px;text-transform:uppercase;letter-spacing:.06em;}
+  .an3 .tk::before,.an3 .tk::after{content:'';position:absolute;right:131px;width:38px;height:38px;border-radius:50%;background:var(--bg);}
+  .an3 .tk::before{top:-19px} .an3 .tk::after{bottom:-19px}
+  .an3 .t1{background:linear-gradient(135deg,var(--pur),var(--pink));box-shadow:0 0 70px rgba(var(--pink-rgb),.45);}
+  .an3 .t1 .stub{background:rgba(0,0,0,.18);color:#fff;}
+  .an3 .t2{background:linear-gradient(135deg,#ffe48a,#d79a1e);color:#2a1600;box-shadow:0 0 70px rgba(255,190,60,.4);}
+  .an3 .t2 .stub{background:rgba(0,0,0,.08);color:#2a1600;}
+  .an3 .k{font-family:'Press Start 2P',monospace;font-size:14px;letter-spacing:.28em;}
+  .an3 .t1 .k{color:#ffe1ff;}
+  .an3 .h{font-weight:900;text-transform:uppercase;line-height:.84;}
+  .an3 .t1 .h{font-size:100px;color:#fff;text-shadow:5px 5px 0 rgba(60,0,110,.6);}
+  .an3 .t2 .h{font-size:104px;}
+  .an3 .d{font-weight:900;text-transform:uppercase;font-size:50px;line-height:1;}
+  .an3 .d small{display:block;font-weight:700;font-size:28px;opacity:.85;margin-top:8px;letter-spacing:.04em;}
+  .an3 .t2 svg{width:120px;height:120px;}
+  .an3 .t2 .top{display:flex;justify-content:space-between;align-items:flex-start;}
+
   /* CALLOUTS — the picture the bot drew, one at a time. The box is a fixed
      height so a tall picture after a short one does not shove the dots about,
      and the picture fits inside it rather than being cropped: the words on it
@@ -1460,6 +1539,59 @@
           <div class="prize-sub" id="prizeSub">FOR META QUEST 3</div>
           <div class="prize-pitch" id="prizePitch"></div>
           <div class="prize-awards" id="prizeAwards"></div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ANNOUNCEMENT — a tease for next Saturday + the award show. Three looks,
+         one scene; the deck's three buttons pick which (announce1 / 2 / 3). -->
+    <div class="view d1" id="v-announce">
+      <div class="eyebrow" style="text-align:center">VGA · UBA</div>
+      <div class="an an1">
+        <div class="alert"><i></i>INCOMING<i></i></div>
+        <div class="big">Huge<span>Announcement</span></div>
+        <div class="when">Next Saturday <b>Nov 21</b></div>
+        <div class="tune">TUNE IN · YOU DON'T WANT TO MISS THIS</div>
+        <div class="ticker"><div>
+          <span>UBA Award Show</span><span class="an-gold">December</span><span>Date TBA</span><span>Huge announcement · Sat Nov 21</span>
+          <span>UBA Award Show</span><span class="an-gold">December</span><span>Date TBA</span><span>Huge announcement · Sat Nov 21</span>
+        </div></div>
+      </div>
+      <div class="an an2">
+        <div class="file">
+          <div class="stamp">Classified</div>
+          <div class="lbl">FILE 11·21 · EYES ONLY</div>
+          <div class="big">Huge<br>Announcement</div>
+          <div class="redact">
+            <div>Something big is <s style="width:300px"></s></div>
+            <div><s style="width:180px"></s> is changing for <s style="width:260px"></s></div>
+            <div>Revealed live. <s style="width:420px"></s></div>
+          </div>
+          <div class="row">
+            <div class="when">Next Saturday<small>Nov 21 · Tune in</small></div>
+            <div class="aw"><small>ALSO COMING</small><span class="an-gold">UBA Award Show</span><br>December · Date TBA</div>
+          </div>
+        </div>
+      </div>
+      <div class="an an3">
+        <div class="pair">
+          <div class="tk t1">
+            <div class="main">
+              <div class="k">ADMIT ALL · TUNE IN</div>
+              <div class="h">Huge<br>Announcement</div>
+              <div class="d">Next Saturday<small>Nov 21 · Live on stream</small></div>
+            </div>
+            <div class="stub"><b>Sat · Nov 21</b></div>
+          </div>
+          <div class="tk t2">
+            <div class="main">
+              <div class="top"><div class="k">ALSO COMING</div><svg viewBox="0 0 64 64" fill="#2a1600"><path d="M18 6h28v6h10v8c0 8-6 14-14 15-2 5-5 8-8 9v7h9v7H21v-7h9v-7c-3-1-6-4-8-9C14 34 8 28 8 20v-8h10zM14 18v2c0 4 3 8 6 9-1-3-2-7-2-11zm36 0h-4c0 4-1 8-2 11 3-1 6-5 6-9z"/></svg></div>
+              <div class="h">UBA<br>Award<br>Show</div>
+              <div class="d">December<small>Date TBA</small></div>
+            </div>
+            <div class="stub"><b>Dec · TBA</b></div>
+          </div>
         </div>
       </div>
     </div>
@@ -3289,6 +3421,8 @@ function showView(el){
   syncPromo()
 }
 
+// Which of the three announcement looks is up (1 alert · 2 classified · 3 tickets)
+function annSet(n){ const v=$('v-announce'); if(!v) return; v.classList.remove('d1','d2','d3'); v.classList.add('d'+n) }
 let autoRun=0   // bumped by every show(): an auto-cycle still waiting on its first read must not start over a newer press
 function show(view, league, exclude){
   // Pressing the poster button before either file exists would put a heading
@@ -4023,6 +4157,7 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
       CSH.brand=c.series||null; CSH.mode=home
       if(c.armed!==undefined) CSH.armed=c.armed
       CSH.shownNext=undefined; cshUpdate(); show('cshome'); return }
+    if(/^announce[123]$/.test(c.view||'')){ annSet(c.view.slice(-1)); show('announce'); return }
     if(c.view==='chat' && c.league) chSrc(c.league)
     show(c.view, c.league, c.exclude); return   // league + exclude only matter to 'auto' — the rotation, and which night Next event skips
   }
