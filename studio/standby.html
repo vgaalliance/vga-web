@@ -115,63 +115,12 @@
   .title.sm{font-size:58px;}
 
 
-  /* ── ANNOUNCEMENT — a tease for next week, plus the award show. Three looks,
-     picked from the deck (announce1/2/3): an ALERT (breaking-news bar + ticker),
-     a CLASSIFIED file (redacted lines), and a pair of TICKETS. Same words in all
-     three; only the shape changes. Never in the rotation: a tease is a moment. */
+  /* ── ANNOUNCEMENT — a tease for next week, plus the award show, as a pair of
+     TICKETS (picked over an alert and a classified file, 2026-11-14). Never in
+     the rotation: a tease is a moment, pressed from the deck. */
   #v-announce{max-width:1640px;}
-  #v-announce .an{display:none;}
-  #v-announce.d1 .an1, #v-announce.d2 .an2, #v-announce.d3 .an3{display:block;}
-  .an-gold{color:#ffd76a;text-shadow:0 0 30px rgba(255,190,60,.55);}
 
-  /* 1 — ALERT */
-  .an1 .alert{display:flex;align-items:center;gap:22px;margin:0 auto 30px;width:max-content;
-    padding:12px 28px;border:3px solid var(--pink);border-radius:6px;
-    background:rgba(var(--pink-rgb),.14);box-shadow:0 0 40px rgba(var(--pink-rgb),.45);
-    font-family:'Press Start 2P',monospace;font-size:18px;letter-spacing:.3em;color:#fff;}
-  .an1 .alert i{width:18px;height:18px;border-radius:50%;background:var(--pink);
-    box-shadow:0 0 18px var(--pink);animation:anBlink 1s steps(2) infinite;}
-  @keyframes anBlink{50%{opacity:.15}}
-  .an1 .big{text-align:center;font-weight:900;text-transform:uppercase;line-height:.84;
-    font-size:190px;color:#fff;letter-spacing:.01em;
-    text-shadow:0 0 50px rgba(var(--pur-rgb),.9),6px 6px 0 rgba(var(--deep-rgb),1);}
-  .an1 .big span{display:block;color:var(--hi);}
-  .an1 .when{display:flex;justify-content:center;align-items:center;gap:26px;margin-top:34px;
-    font-weight:900;font-size:56px;text-transform:uppercase;color:#fff;}
-  .an1 .when b{padding:4px 22px;background:#fff;color:#1a0030;border-radius:6px;}
-  .an1 .tune{text-align:center;margin-top:14px;font-family:'Press Start 2P',monospace;font-size:16px;
-    letter-spacing:.32em;color:var(--hi);}
-  .an1 .ticker{margin-top:54px;overflow:hidden;border-top:2px solid rgba(255,215,106,.6);
-    border-bottom:2px solid rgba(255,215,106,.6);background:rgba(255,190,60,.08);}
-  .an1 .ticker div{display:flex;gap:80px;white-space:nowrap;width:max-content;padding:14px 0;
-    animation:anTick 22s linear infinite;font-weight:900;font-size:40px;text-transform:uppercase;}
-  .an1 .ticker div span::before{content:'★';margin-right:26px;color:#ffd76a;}
-  @keyframes anTick{to{transform:translateX(-50%)}}
-
-  /* 2 — CLASSIFIED */
-  .an2 .file{position:relative;margin:0 auto;width:1180px;padding:56px 70px 50px;
-    background:linear-gradient(160deg,rgba(var(--deep2-rgb),.55),rgba(var(--deep-rgb),.75));
-    border:2px solid rgba(var(--hi-rgb),.55);border-radius:14px;
-    box-shadow:0 0 60px rgba(var(--pur-rgb),.4),inset 0 0 80px rgba(0,0,0,.4);}
-  .an2 .stamp{position:absolute;top:34px;right:46px;transform:rotate(9deg);padding:8px 20px;
-    border:5px solid var(--pink);color:var(--pink);font-weight:900;font-size:40px;letter-spacing:.08em;
-    text-transform:uppercase;opacity:.9;border-radius:6px;}
-  .an2 .lbl{font-family:'Press Start 2P',monospace;font-size:14px;letter-spacing:.3em;color:var(--hi);}
-  .an2 .big{margin:16px 0 26px;font-weight:900;font-size:128px;line-height:.86;text-transform:uppercase;color:#fff;
-    text-shadow:0 0 40px rgba(var(--pur-rgb),.8);}
-  .an2 .redact{display:flex;flex-direction:column;gap:16px;margin-bottom:34px;}
-  .an2 .redact div{display:flex;gap:14px;align-items:center;font-weight:700;font-size:34px;color:#e9dcff;text-transform:uppercase;}
-  .an2 .redact s{display:inline-block;height:34px;background:#000;border-radius:3px;text-decoration:none;
-    box-shadow:0 0 0 1px rgba(var(--hi-rgb),.25);}
-  .an2 .row{display:flex;justify-content:space-between;align-items:flex-end;gap:30px;
-    border-top:2px dashed rgba(var(--hi-rgb),.4);padding-top:26px;}
-  .an2 .when{font-weight:900;font-size:64px;text-transform:uppercase;color:#fff;line-height:.9;}
-  .an2 .when small{display:block;font-size:30px;color:var(--hi);margin-top:8px;}
-  .an2 .aw{text-align:right;font-weight:900;text-transform:uppercase;font-size:40px;line-height:1;}
-  .an2 .aw small{display:block;font-family:'Press Start 2P',monospace;font-size:12px;letter-spacing:.24em;
-    color:#ffd76a;margin-bottom:10px;}
-
-  /* 3 — TICKETS */
+  /* TICKETS */
   .an3 .pair{margin-top:26px;display:grid;grid-template-columns:1.25fr 1fr;gap:44px;align-items:stretch;}
   .an3 .tk{position:relative;display:flex;border-radius:18px;overflow:hidden;min-height:520px;}
   .an3 .tk .main{flex:1;padding:44px 48px;display:flex;flex-direction:column;justify-content:space-between;}
@@ -1544,37 +1493,10 @@
     </div>
 
 
-    <!-- ANNOUNCEMENT — a tease for next Saturday + the award show. Three looks,
-         one scene; the deck's three buttons pick which (announce1 / 2 / 3). -->
-    <div class="view d1" id="v-announce">
+    <!-- ANNOUNCEMENT — a tease for next Saturday + the award show, as two tickets. -->
+    <div class="view" id="v-announce">
       <div class="eyebrow" style="text-align:center">VGA · UBA</div>
-      <div class="an an1">
-        <div class="alert"><i></i>INCOMING<i></i></div>
-        <div class="big">Huge<span>Announcement</span></div>
-        <div class="when">Next Saturday <b>Nov 21</b></div>
-        <div class="tune">TUNE IN · YOU DON'T WANT TO MISS THIS</div>
-        <div class="ticker"><div>
-          <span>UBA Award Show</span><span class="an-gold">December</span><span>Date TBA</span><span>Huge announcement · Sat Nov 21</span>
-          <span>UBA Award Show</span><span class="an-gold">December</span><span>Date TBA</span><span>Huge announcement · Sat Nov 21</span>
-        </div></div>
-      </div>
-      <div class="an an2">
-        <div class="file">
-          <div class="stamp">Classified</div>
-          <div class="lbl">FILE 11·21 · EYES ONLY</div>
-          <div class="big">Huge<br>Announcement</div>
-          <div class="redact">
-            <div>Something big is <s style="width:300px"></s></div>
-            <div><s style="width:180px"></s> is changing for <s style="width:260px"></s></div>
-            <div>Revealed live. <s style="width:420px"></s></div>
-          </div>
-          <div class="row">
-            <div class="when">Next Saturday<small>Nov 21 · Tune in</small></div>
-            <div class="aw"><small>ALSO COMING</small><span class="an-gold">UBA Award Show</span><br>December · Date TBA</div>
-          </div>
-        </div>
-      </div>
-      <div class="an an3">
+      <div class="an3">
         <div class="pair">
           <div class="tk t1">
             <div class="main">
@@ -3421,8 +3343,6 @@ function showView(el){
   syncPromo()
 }
 
-// Which of the three announcement looks is up (1 alert · 2 classified · 3 tickets)
-function annSet(n){ const v=$('v-announce'); if(!v) return; v.classList.remove('d1','d2','d3'); v.classList.add('d'+n) }
 let autoRun=0   // bumped by every show(): an auto-cycle still waiting on its first read must not start over a newer press
 function show(view, league, exclude){
   // Pressing the poster button before either file exists would put a heading
@@ -4157,7 +4077,6 @@ LINK.on('broadcast',{event:'cmd'},async ({payload:c})=>{
       CSH.brand=c.series||null; CSH.mode=home
       if(c.armed!==undefined) CSH.armed=c.armed
       CSH.shownNext=undefined; cshUpdate(); show('cshome'); return }
-    if(/^announce[123]$/.test(c.view||'')){ annSet(c.view.slice(-1)); show('announce'); return }
     if(c.view==='chat' && c.league) chSrc(c.league)
     show(c.view, c.league, c.exclude); return   // league + exclude only matter to 'auto' — the rotation, and which night Next event skips
   }
