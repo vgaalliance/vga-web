@@ -2432,12 +2432,14 @@ function setCycle(){
 }
 
 // ── CALLOUTS ─────────────────────────────────────────────────────────────
-// The newest ten from the last 7 days, one picture every 12s, and only while
-// the screen is up. A picture is swapped in only once it has loaded, so the
+// The newest ten from the last 7 days, one picture every 6s (Castle, 2026-11-16:
+// short, never one sitting there), and only while the screen is up. Pressing
+// the deck's Callouts button while the screen is already up skips to the next
+// one (coNext). A picture is swapped in only once it has loaded, so the
 // screen never shows an empty frame between two. Each visit picks up where
 // the last one left off, so a 15s turn in the rotation is not always the
 // same callout.
-const CO_HOLD = 12000
+const CO_HOLD = 6000
 let CO = [], CO_ON = true, coAt = 0, coTimer = null, coLive = false, coSince = 0
 const coImgs = new Map()   // url -> Image, loaded ahead
 function coPreload(url){
@@ -2506,15 +2508,24 @@ function coCycle(){
   if(coLive) return
   coLive = true
   coPaint(coAt % Math.max(1, CO.length))
-  const tick = async () => {
-    if(!coLive) return
-    if(CO.length > 1){
-      // the next one that actually loads; a broken picture is skipped, not shown
-      for(let k = 1; k <= CO.length; k++){ if(await coPaint((coAt + k) % CO.length)) break }
-    }
-    if(coLive) coTimer = setTimeout(tick, CO_HOLD)
-  }
-  coTimer = setTimeout(tick, CO_HOLD)
+  coTimer = setTimeout(coTick, CO_HOLD)
+}
+// the next one that actually loads; a broken picture is skipped, not shown
+async function coStep(){
+  if(CO.length < 2) return
+  for(let k = 1; k <= CO.length; k++){ if(await coPaint((coAt + k) % CO.length)) break }
+}
+async function coTick(){
+  if(!coLive) return
+  await coStep()
+  if(coLive) coTimer = setTimeout(coTick, CO_HOLD)
+}
+// The deck's button pressed while callouts are already up: the next one now,
+// and its own full 6s, never the rest of the last one's.
+async function coNext(){
+  clearTimeout(coTimer); coTimer = null
+  await coStep()
+  if(coLive) coTimer = setTimeout(coTick, CO_HOLD)
 }
 
 // ── THE CARD WALL ────────────────────────────────────────────────────────
@@ -3355,6 +3366,8 @@ function show(view, league, exclude){
   // files are missing; a blank screen is all the room would see.
   if(view==='prize' && !promoHas.prize) return
   if(view==='callouts' && !CO.length) return
+  // already showing callouts: a second press is "next one", never a re-fade of the screen
+  if(view==='callouts' && $('v-callouts').classList.contains('on')){ coNext(); return }
   clearInterval(cycle); cycle=null
   const run=++autoRun
   hideAll()

@@ -142,15 +142,17 @@ body.brk #blur, body.final #blur, body.live #blur { display:none; }
   opacity:0; transition:opacity .6s ease; }
 body.brk #sbw { opacity:1; }
 
-/* ── CALLOUTS: the same picture the bot posts in Discord, three at a time on
-   the right zone's tilt; every few seconds the three slide out and the next
-   three slide in, staggered. One design for a callout, wherever it shows. ── */
+/* ── CALLOUTS: the same picture the bot posts in Discord, ONE at a time on
+   the right zone's tilt (2026-11-16: the cards became social posts, some of
+   them phone-tall, and three stacked in 243px strips made each one tiny);
+   every few seconds it slides out and the next slides in. ── */
 #cob { position:absolute; left:var(--zl); right:var(--zr); top:186px; height:800px; z-index:15; pointer-events:none;
   transform: perspective(1500px) rotateY(-8deg); transform-origin:right center; opacity:0; transition:opacity .5s ease; }
 body.co #cob { opacity:1; }
 body.co #sbw { opacity:0; }
 .co-page { position:absolute; left:0; right:0; top:0; display:flex; flex-direction:column; align-items:center; gap:18px; }
-.co-card { width:780px; height:243px; object-fit:contain; border-radius:16px;
+.co-page { height:800px; justify-content:center; }
+.co-card { display:block; max-width:100%; max-height:800px; width:auto; height:auto; border-radius:16px;
   box-shadow:0 12px 40px rgba(0,0,0,.55), 0 0 30px rgba(155,48,255,.25); }
 .co-card.in  { animation:coIn .55s cubic-bezier(.2,1.2,.4,1) both; }
 .co-card.out { animation:coOut .4s ease-in both; }
@@ -527,7 +529,8 @@ let promoNode = null, breakItems = []
 // two promos between every board; 'co' is CALLOUTS, skipped while there are none
 const SLOTS = ['promo', 'promo', 0, 'promo', 'promo', 'co', 'promo', 'promo', 1]
 let callouts = [], coAt = 0, coNode = null, coTimer = null
-const CO_ITEM = { kind:'callouts' }, CO_PER = 3, CO_SECS = 7, CO_PAGES = 3
+// one callout at a time, 5s each, at most 4 a turn: short, never one sitting there
+const CO_ITEM = { kind:'callouts' }, CO_PER = 1, CO_SECS = 5, CO_PAGES = 4
 const vids = [el('rvA'), el('rvB')]
 const LEAGUE_BREAKS = {
   uba:  [{ view:'card',   title:"TONIGHT'S CARD", sub:'THE FULL LINEUP' }, { view:'cta', title:'JOIN UBA', sub:'DISCORD.GG/UBA' }],
@@ -644,7 +647,7 @@ function coCount(){
   coNode.style.display = callouts.length ? '' : 'none'
   coNode.querySelector('.mi-sub').textContent = callouts.length + ' ON THE BOARD'
 }
-// one page: the next three, old ones out first
+// one page: the next CO_PER (one), the old one out first
 function coPage(){
   const box = el('cob'), n = callouts.length
   if(!n) return
@@ -666,6 +669,7 @@ function coPage(){
   box.appendChild(pg)
   const last = from + pick.length
   coNode.querySelector('.mi-sub').textContent = n <= CO_PER ? n + ' ON THE BOARD'
+    : CO_PER === 1 ? (from + 1) + ' OF ' + n
     : (from + 1) + '–' + (last > n ? last - n : last) + ' OF ' + n
 }
 
