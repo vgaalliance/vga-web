@@ -3231,6 +3231,50 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
 .slabw.unowned .slab{box-shadow:0 6px 14px rgba(0,0,0,.4)}
 .slabw.unowned .fx{display:none}
 
+/* ── A CARD ABOUT A NIGHT (economy plan D57, Fight Night Tour) ─────────
+   cards_public carries kind / caption / event_name / photo_b_url. A plain
+   fighter card from an older set has kind 'fighter' and no event, so none of
+   this draws on it and it looks exactly as it always has. */
+.slab .night{position:absolute;left:5px;top:5px;z-index:6;max-width:calc(100% - 10px);
+  font:700 5.5px/1 'Space Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#fff;
+  background:rgba(6,4,14,.72);border:1px solid var(--c);border-radius:2px;padding:2px 4px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slabw.big .slab .night{font-size:8px;padding:3px 6px;left:8px;top:8px}
+.slab .cfoot .cap{font:500 8px/1.2 'Barlow',sans-serif;color:#D9D3EE;margin-top:2px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.slabw.big .slab .cfoot .cap{font-size:11px}
+/* VS: both corners split on a slant. The clip points are worked out so the two
+   halves (each 62% wide) meet on one line: 58% across at the top, 42% at the
+   bottom, which is also the 6.5deg the seam is turned. Change one, change all. */
+.slab .vs-a,.slab .vs-b{position:absolute;top:0;bottom:0;width:62%;overflow:hidden}
+.slab .vs-a{left:0;clip-path:polygon(0 0,93.5% 0,67.7% 100%,0 100%)}
+.slab .vs-b{right:0;clip-path:polygon(32.3% 0,100% 0,100% 100%,6.5% 100%);background:linear-gradient(165deg,#0B0818,var(--c2))}
+.slab .vs-a img,.slab .vs-b img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center}
+.slab .seam{position:absolute;left:50%;top:-6%;height:112%;width:2px;z-index:3;background:var(--c);
+  transform:translateX(-50%) rotate(6.5deg);box-shadow:0 0 10px var(--glow)}
+.slab .vsb{position:absolute;left:50%;top:38%;z-index:5;transform:translate(-50%,-50%);
+  width:22cqw;height:22cqw;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:#12101C;border:2px solid var(--c);box-shadow:0 0 16px var(--glow);
+  font:400 11cqw/1 'Bebas Neue',sans-serif;color:#fff;letter-spacing:.02em}
+.slab .bell{position:absolute;right:5px;top:5px;z-index:6;font:700 5px/1 'Space Mono',monospace;letter-spacing:.1em;
+  text-transform:uppercase;color:#12101C;background:var(--c);border-radius:2px;padding:2px 4px}
+.slabw.big .slab .bell{font-size:7.5px;padding:3px 6px;right:8px;top:8px}
+/* DETHRONED: the photo goes grey and takes a red stamp. */
+.slab .dethroned{position:absolute;inset:0}
+.slab .dethroned img{filter:grayscale(1) contrast(1.1) brightness(.82)}
+.slab .dstamp{position:absolute;left:9%;right:9%;top:30%;z-index:5;transform:rotate(-11deg);
+  text-align:center;font:400 14cqw/1.05 'Bebas Neue',sans-serif;letter-spacing:.08em;color:#FF4D5E;
+  border:2px solid #FF4D5E;border-radius:3px;padding:1cqw 0 0;background:rgba(30,0,8,.35)}
+/* POSTER: the night set in type; events.poster_url replaces it when there is one. */
+.slab .poster{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3cqw;text-align:center;padding:8cqw;
+  background:repeating-linear-gradient(135deg,rgba(255,255,255,.045) 0 6px,transparent 6px 12px),
+             radial-gradient(80% 60% at 50% 35%,var(--c2),#0B0818)}
+.slab .poster small{font:700 5.5cqw/1 'Space Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--c)}
+.slab .poster b{font:400 21cqw/.88 'Bebas Neue',sans-serif;letter-spacing:.02em;color:#fff;text-wrap:balance}
+.slab .poster span{font:600 7cqw/1 'Barlow Condensed',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#D9D3EE;
+  border-top:1px solid rgba(255,255,255,.25);padding-top:3cqw}
+
 /* A SEALED PACK, DRAWN. There is no pack art in the database, so the wrapper
    is CSS: a foil sheen across it, a tear strip near the top, the set's colour
    and the card count. The point of a pack is that it is closed — a row of
@@ -13876,6 +13920,13 @@ function setMatcher(set){
   }
   if(n.indexOf('beyond the headset') > -1)
     return function(x){ return x.indexOf('beyond the headset') > -1; };
+  /* Every chapter says "fight night tour" -- the First Edition trap again --
+     so the chapter number has to match too. */
+  if(n.indexOf('fight night tour') > -1){
+    var ch = (n.match(/chapter\s*(\d+)/) || [])[1] || '';
+    return function(x){ return x.indexOf('fight night tour') > -1
+      && ((x.match(/chapter\s*(\d+)/) || [])[1] || '') === ch; };
+  }
   if(n.indexOf('gfl') > -1)
     return function(x){ return x.indexOf('gfl') > -1; };
   if(n.indexOf('throwback') > -1)
@@ -13888,6 +13939,29 @@ function setMatcher(set){
 /* One slab. `have` is the my_cards row when you own it, undefined when you do
    not — an unowned card keeps its name and its rarity colour and loses
    everything that would be a lie: no grade, no serial, no print number. */
+/* THE ART WELL, BY KIND (D57). Only drawn for a card you hold: an unowned
+   card keeps the plain name panel, as every card always has. A 'fighter' card
+   with no night is the photo and nothing else -- every older set. */
+function kindArt(card){
+  var k = card.kind || 'fighter';
+  function pic(u){ return u ? '<img src="'+esc(u)+'" alt="" loading="lazy" onerror="this.remove()">' : ''; }
+  if(k === 'poster'){
+    return pic(card.photo_url) || ('<div class="poster"><small>Fight Night Tour</small><b>'+esc(card.name || '')
+      + '</b><span>'+esc(card.caption || '')+'</span></div>');
+  }
+  var night = card.event_name ? '<div class="night">'+esc(card.event_name)+'</div>' : '';
+  if(k === 'vs'){
+    var parts = String(card.name || '').split(/\s+vs\s+/i);
+    return '<div class="vs-a">'+(pic(card.photo_url) || '<div class="noart">'+esc(parts[0] || '')+'</div>')+'</div>'
+      + '<div class="vs-b">'+(pic(card.photo_b_url) || '<div class="noart">'+esc(card.fighter_b_name || parts[1] || '')+'</div>')+'</div>'
+      + '<span class="seam"></span><div class="vsb">VS</div>' + night
+      + (card.max_prints != null && card.prints_made >= card.max_prints ? '' : '<div class="bell">Until the bell</div>');
+  }
+  var art = pic(card.photo_url) || '<div class="noart">'+esc(card.name || 'Card')+'</div>';
+  if(k === 'dethroned') return '<div class="dethroned">'+art+'</div><div class="dstamp">Dethroned</div>' + night;
+  return art + night;
+}
+
 function slabHTML(card, have, big){
   var r = card.rarity || 'common';
   var qty = have ? Number(have.qty||0) : 0;
@@ -13902,9 +13976,7 @@ function slabHTML(card, have, big){
     fan = '<span class="gh g2"></span>' + (qty > 2 ? '<span class="gh g3"></span>' : '');
   }
 
-  var art = have && card.photo_url
-    ? '<img src="'+esc(card.photo_url)+'" alt="" loading="lazy" onerror="this.remove()">'
-    : '<div class="noart">'+esc(card.name || 'Card')+'</div>';
+  var art = have ? kindArt(card) : '<div class="noart">'+esc(card.name || 'Card')+'</div>';
 
   /* A signature belongs to a PRINT, and this slab is a whole CARD — so it can
      only ever say "one of yours is signed", never "this card is signed". The
@@ -13936,7 +14008,9 @@ function slabHTML(card, have, big){
       + '</div>'
       + '<div class="well"><div class="inner">' + art
         + '<span class="scrim"></span><span class="fx"></span>' + ink
-        + '<div class="cfoot"><div class="n">'+esc(card.name || 'Card')+'</div>'
+        + '<div class="cfoot">' + (card.kind === 'poster' ? ''
+            : '<div class="n">'+esc(card.name || 'Card')+'</div>'
+              + (have && card.caption ? '<div class="cap">'+esc(card.caption)+'</div>' : ''))
         + '<div class="p">' + (have && have.passed ? 'Not minted' : have
             ? (print != null ? '#'+print+(total ? ' / '+total : '') : 'Owned')
             : (Number(card.prints_made || 0) > 0 ? card.prints_made + ' in circulation'
