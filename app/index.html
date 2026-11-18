@@ -13914,19 +13914,15 @@ function shelfBuy(set, missing){
    "Beyond the Headset" had no rule at all, so its shelf offered nothing. */
 function setMatcher(set){
   var n = String(set.name || '').toLowerCase();
+  /* By NUMBER, not by "set 2": a yes/no test for "set 2" put Set 3's packs on
+     the First Edition shelf. No number at all is Set 1. */
   if(n.indexOf('first edition') > -1){
-    var two = n.indexOf('set 2') > -1;
-    return function(x){ return x.indexOf('first edition') > -1 && (x.indexOf('set 2') > -1) === two; };
+    var num = function(t){ return (t.match(/set\s*(\d+)/) || [])[1] || '1'; };
+    var mine = num(n);
+    return function(x){ return x.indexOf('first edition') > -1 && num(x) === mine; };
   }
   if(n.indexOf('beyond the headset') > -1)
     return function(x){ return x.indexOf('beyond the headset') > -1; };
-  /* Every volume says "in the books" -- the First Edition trap again --
-     so the volume number has to match too. */
-  if(n.indexOf('in the books') > -1){
-    var vol = (n.match(/vol\.?\s*(\d+)/) || [])[1] || '';
-    return function(x){ return x.indexOf('in the books') > -1
-      && ((x.match(/vol\.?\s*(\d+)/) || [])[1] || '') === vol; };
-  }
   if(n.indexOf('gfl') > -1)
     return function(x){ return x.indexOf('gfl') > -1; };
   if(n.indexOf('throwback') > -1)
