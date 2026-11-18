@@ -3231,7 +3231,7 @@ button.fx-ban:focus-visible{outline:2px solid #F5C842;outline-offset:-2px}
 .slabw.unowned .slab{box-shadow:0 6px 14px rgba(0,0,0,.4)}
 .slabw.unowned .fx{display:none}
 
-/* ── A CARD ABOUT A NIGHT (economy plan D57, Fight Night Tour) ─────────
+/* ── A CARD ABOUT A NIGHT (economy plan D57, In the Books) ─────────
    cards_public carries kind / caption / event_name / photo_b_url. A plain
    fighter card from an older set has kind 'fighter' and no event, so none of
    this draws on it and it looks exactly as it always has. */
@@ -13920,12 +13920,12 @@ function setMatcher(set){
   }
   if(n.indexOf('beyond the headset') > -1)
     return function(x){ return x.indexOf('beyond the headset') > -1; };
-  /* Every chapter says "fight night tour" -- the First Edition trap again --
-     so the chapter number has to match too. */
-  if(n.indexOf('fight night tour') > -1){
-    var ch = (n.match(/chapter\s*(\d+)/) || [])[1] || '';
-    return function(x){ return x.indexOf('fight night tour') > -1
-      && ((x.match(/chapter\s*(\d+)/) || [])[1] || '') === ch; };
+  /* Every volume says "in the books" -- the First Edition trap again --
+     so the volume number has to match too. */
+  if(n.indexOf('in the books') > -1){
+    var vol = (n.match(/vol\.?\s*(\d+)/) || [])[1] || '';
+    return function(x){ return x.indexOf('in the books') > -1
+      && ((x.match(/vol\.?\s*(\d+)/) || [])[1] || '') === vol; };
   }
   if(n.indexOf('gfl') > -1)
     return function(x){ return x.indexOf('gfl') > -1; };
@@ -13946,7 +13946,7 @@ function kindArt(card){
   var k = card.kind || 'fighter';
   function pic(u){ return u ? '<img src="'+esc(u)+'" alt="" loading="lazy" onerror="this.remove()">' : ''; }
   if(k === 'poster'){
-    return pic(card.photo_url) || ('<div class="poster"><small>Fight Night Tour</small><b>'+esc(card.name || '')
+    return pic(card.photo_url) || ('<div class="poster"><small>In the Books</small><b>'+esc(card.name || '')
       + '</b><span>'+esc(card.caption || '')+'</span></div>');
   }
   var night = card.event_name ? '<div class="night">'+esc(card.event_name)+'</div>' : '';
