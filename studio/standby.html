@@ -189,11 +189,19 @@
     font-weight:900;font-size:64px;line-height:1.05;text-transform:uppercase;color:var(--hi);}
   .ch-foot{margin-top:18px;font-family:'Press Start 2P',monospace;font-size:14px;letter-spacing:.3em;color:var(--dim);}
   @keyframes chIn{from{opacity:0;transform:translateY(-26px);}}
-  .co-box{height:790px;display:flex;align-items:center;justify-content:center;}
-  .co-box img{display:block;max-width:1500px;max-height:790px;width:auto;height:auto;border-radius:22px;
-    box-shadow:0 0 0 2px rgba(var(--pur-rgb),.45),0 0 60px rgba(var(--pur-rgb),.45),0 0 140px rgba(var(--deep2-rgb),.55);
-    transition:opacity .35s ease;}
-  .co-box img.fade{opacity:0;}
+  /* three at a time (2026-11-21): equal columns, each picture fitted inside its
+     own, so a tall phone-shaped post and a wide one sit side by side without
+     either being cropped -- the words on them are the whole point. */
+  #v-callouts{max-width:1800px;}
+  .co-box{height:700px;display:grid;grid-template-columns:repeat(3,1fr);gap:36px;align-items:center;}
+  .co-box.n1{grid-template-columns:minmax(0,1100px);justify-content:center;}
+  .co-box.n2{grid-template-columns:repeat(2,minmax(0,820px));justify-content:center;}
+  .co-slot{height:700px;min-width:0;display:flex;align-items:center;justify-content:center;}
+  .co-slot img{display:block;max-width:100%;max-height:700px;width:auto;height:auto;border-radius:18px;
+    box-shadow:0 0 0 2px rgba(var(--pur-rgb),.45),0 0 50px rgba(var(--pur-rgb),.45),0 0 120px rgba(var(--deep2-rgb),.55);
+    animation:coIn .45s cubic-bezier(.16,1,.3,1) backwards;}
+  .co-slot:nth-child(2) img{animation-delay:.07s} .co-slot:nth-child(3) img{animation-delay:.14s}
+  @keyframes coIn{from{opacity:0;transform:translateY(34px) scale(.94);}}
   .co-dots{display:flex;justify-content:center;gap:14px;margin-top:22px;height:14px;}
   .co-dots i{width:12px;height:12px;border-radius:50%;background:rgba(var(--pur-rgb),.35);transition:all .35s;}
   .co-dots i.on{background:var(--hi);box-shadow:0 0 10px rgba(var(--hi-rgb),.9),0 0 22px rgba(var(--pur-rgb),.8);transform:scale(1.25);}
@@ -1098,7 +1106,7 @@
      (the same 1740×940 the other screens use) and only fades. Moving it, or taking
      it out with display:none, resizes its 3D canvas, and a resized canvas draws one
      blank frame — the blink. In: a fade with a slight zoom settling. Out: the reverse. */
-  #v-recap{display:block !important;position:fixed;left:50%;top:50%;width:1740px;height:940px;margin:-470px 0 0 -870px;max-width:none;
+  #v-recap{display:block !important;position:fixed;left:50%;top:50%;width:1700px;height:940px;margin:-470px 0 0 -870px;max-width:none;
     opacity:0;visibility:hidden;transform:scale(1.03);pointer-events:none;animation:none !important;
     transition:opacity .55s ease, transform .9s cubic-bezier(.16,1,.3,1), visibility 0s linear .55s;}
   #v-recap.on{opacity:1;visibility:visible;transform:none;transition:opacity .7s ease, transform 1.1s cubic-bezier(.16,1,.3,1), visibility 0s;}
@@ -1653,7 +1661,7 @@
     <div class="view" id="v-callouts">
       <div class="eyebrow">CALLOUTS</div>
       <div class="title sm">Fighting Words</div>
-      <div class="co-box"><img id="coImg" alt=""></div>
+      <div class="co-box" id="coBox"></div>
       <div class="co-dots" id="coDots"></div>
     </div>
 
@@ -2460,37 +2468,50 @@ function setCycle(){
 }
 
 // ── CALLOUTS ─────────────────────────────────────────────────────────────
-// The newest ten from the last 7 days, one picture every 6s (Castle, 2026-11-16:
-// short, never one sitting there), and only while the screen is up. Pressing
-// the deck's Callouts button while the screen is already up skips to the next
-// one (coNext). A picture is swapped in only once it has loaded, so the
-// screen never shows an empty frame between two. Each visit picks up where
-// the last one left off, so a 15s turn in the rotation is not always the
-// same callout.
-const CO_HOLD = 6000
+// The newest twelve from the last 7 days, THREE at a time (Castle, 2026-11-21;
+// was one every 6s), a new three every 9s, and only while the screen is up.
+// Pressing the deck's Callouts button while the screen is already up shows the
+// next three AT ONCE (coNext): every picture is loaded ahead when the list is
+// read, so a press swaps the page with no wait and no fade-out first. A picture
+// that failed to load is left out rather than shown as a broken frame. Each
+// visit picks up where the last one left off, so a 15s turn in the rotation is
+// not always the same three.
+const CO_HOLD = 9000, CO_PER = 3
 let CO = [], CO_ON = true, coAt = 0, coTimer = null, coLive = false, coSince = 0
 const coImgs = new Map()   // url -> Image, loaded ahead
+const coBad = new Set()    // urls that failed to load
 function coPreload(url){
   if(!url) return Promise.resolve(false)
   let im = coImgs.get(url)
-  if(!im){ im = new Image(); im.decoding = 'async'; im.src = url; coImgs.set(url, im) }
+  if(!im){ im = new Image(); im.decoding = 'async'; im.src = url; coImgs.set(url, im)
+    im.addEventListener('error', () => coBad.add(url), {once:true}) }
   if(im.complete) return Promise.resolve(im.naturalWidth > 0)
   return new Promise(r => { im.addEventListener('load', () => r(true), {once:true}); im.addEventListener('error', () => r(false), {once:true}) })
+}
+const coOk = () => CO.filter(c => !coBad.has(c.image_url))
+const coPages = () => Math.max(1, Math.ceil(coOk().length / CO_PER))
+// page p = the next three in order; the last page is topped up from the start
+// so it is never one lonely picture (with more than three there are no repeats)
+function coPage(p){
+  const ok = coOk(), n = ok.length
+  if(n <= CO_PER) return ok
+  return [0, 1, 2].map(k => ok[(p * CO_PER + k) % n])
 }
 async function loadCallouts(){
   try{
     const since = new Date(Date.now() - 7*24*3600e3).toISOString()
     const { data, error } = await sb.from('callouts_public')
       .select('id,buyer_name,target_name,message,image_url,posted_at')
-      .gte('posted_at', since).order('posted_at', { ascending:false }).limit(10)
+      .gte('posted_at', since).order('posted_at', { ascending:false }).limit(12)
     // a failed read keeps what is on screen; only a real answer changes it
     if(error || !Array.isArray(data)) return
     const next = data.filter(c => c && c.image_url)
     const same = next.map(c => c.id).join() === CO.map(c => c.id).join()
     if(same) return
-    const was = CO[coAt] && CO[coAt].id
+    const was = (coPage(coAt)[0] || {}).id
     CO = next
-    coAt = Math.max(0, CO.findIndex(c => c.id === was))
+    const i = coOk().findIndex(c => c.id === was)
+    coAt = i < 0 ? 0 : Math.floor(i / CO_PER)
     CO.forEach(c => coPreload(c.image_url))
     coDots()
     coLayout()
@@ -2509,50 +2530,48 @@ function coLayout(){
 }
 function coDots(){
   const d = $('coDots'); if(!d) return
-  d.innerHTML = CO.length > 1 ? CO.map((_, i) => `<i class="${i === coAt ? 'on' : ''}"></i>`).join('') : ''
+  const n = coPages()
+  d.innerHTML = n > 1 ? Array.from({length:n}, (_, i) => `<i class="${i === coAt ? 'on' : ''}"></i>`).join('') : ''
 }
-async function coPaint(i){
-  const c = CO[i]; if(!c) return false
-  if(!(await coPreload(c.image_url))) return false
-  const img = $('coImg')
-  if(img.getAttribute('src') !== c.image_url){
-    if(img.getAttribute('src')){ img.classList.add('fade'); await new Promise(r => setTimeout(r, 350)) }
-    img.src = c.image_url
-    img.alt = (c.buyer_name || '') + ' calls out ' + (c.target_name || '')
-    img.classList.remove('fade')
-  }
-  coAt = i; coSince = Date.now(); coDots()
+const coEsc = t => String(t == null ? '' : t).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[ch])
+// Draw page p now. Never waits on the network: the pictures were loaded ahead,
+// and one that is still on its way simply pops in when it lands.
+function coPaint(p){
+  const items = coPage(p); if(!items.length) return false
+  const box = $('coBox')
+  box.className = 'co-box n' + items.length
+  box.innerHTML = items.map(c => `<div class="co-slot"><img src="${coEsc(c.image_url)}" alt="${coEsc((c.buyer_name || '') + ' calls out ' + (c.target_name || ''))}" onerror="this.parentNode.remove()"></div>`).join('')
+  coAt = p; coSince = Date.now(); coDots()
   return true
 }
 function coCycle(){
   const live = $('v-callouts').classList.contains('on')
   if(!live){
     clearTimeout(coTimer); coTimer = null
-    // leaving: the next visit starts on the next one, unless this one was barely up
-    if(coLive && CO.length && Date.now() - coSince > CO_HOLD/2) coAt = (coAt + 1) % CO.length
+    // leaving: the next visit starts on the next three, unless these were barely up
+    if(coLive && CO.length && Date.now() - coSince > CO_HOLD/2) coAt = (coAt + 1) % coPages()
     coLive = false
     return
   }
   if(coLive) return
   coLive = true
-  coPaint(coAt % Math.max(1, CO.length))
+  coPaint(coAt % coPages())
   coTimer = setTimeout(coTick, CO_HOLD)
 }
-// the next one that actually loads; a broken picture is skipped, not shown
-async function coStep(){
-  if(CO.length < 2) return
-  for(let k = 1; k <= CO.length; k++){ if(await coPaint((coAt + k) % CO.length)) break }
+function coStep(){
+  if(coPages() < 2) return
+  coPaint((coAt + 1) % coPages())
 }
-async function coTick(){
+function coTick(){
   if(!coLive) return
-  await coStep()
+  coStep()
   if(coLive) coTimer = setTimeout(coTick, CO_HOLD)
 }
-// The deck's button pressed while callouts are already up: the next one now,
-// and its own full 6s, never the rest of the last one's.
-async function coNext(){
+// The deck's button pressed while callouts are already up: the next three NOW,
+// with their own full 9s, never the rest of the last page's.
+function coNext(){
   clearTimeout(coTimer); coTimer = null
-  await coStep()
+  coStep()
   if(coLive) coTimer = setTimeout(coTick, CO_HOLD)
 }
 
