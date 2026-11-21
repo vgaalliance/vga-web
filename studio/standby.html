@@ -115,32 +115,53 @@
   .title.sm{font-size:58px;}
 
 
-  /* ── ANNOUNCEMENT — a tease for next week, plus the award show, as a pair of
-     TICKETS (picked over an alert and a classified file, 2026-11-14). Never in
-     the rotation: a tease is a moment, pressed from the deck. */
-  #v-announce{max-width:1640px;}
-
-  /* TICKETS */
-  .an3 .pair{margin-top:26px;display:grid;grid-template-columns:1.25fr 1fr;gap:44px;align-items:stretch;}
-  .an3 .tk{position:relative;display:flex;border-radius:18px;overflow:hidden;min-height:520px;}
-  .an3 .tk .main{flex:1;padding:44px 48px;display:flex;flex-direction:column;justify-content:space-between;}
-  .an3 .tk .stub{width:150px;border-left:4px dashed rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;}
-  .an3 .tk .stub b{transform:rotate(-90deg);white-space:nowrap;font-weight:900;font-size:44px;text-transform:uppercase;letter-spacing:.06em;}
-  .an3 .tk::before,.an3 .tk::after{content:'';position:absolute;right:131px;width:38px;height:38px;border-radius:50%;background:var(--bg);}
-  .an3 .tk::before{top:-19px} .an3 .tk::after{bottom:-19px}
-  .an3 .t1{background:linear-gradient(135deg,var(--pur),var(--pink));box-shadow:0 0 70px rgba(var(--pink-rgb),.45);}
-  .an3 .t1 .stub{background:rgba(0,0,0,.18);color:#fff;}
-  .an3 .t2{background:linear-gradient(135deg,#ffe48a,#d79a1e);color:#2a1600;box-shadow:0 0 70px rgba(255,190,60,.4);}
-  .an3 .t2 .stub{background:rgba(0,0,0,.08);color:#2a1600;}
-  .an3 .k{font-family:'Press Start 2P',monospace;font-size:14px;letter-spacing:.28em;}
-  .an3 .t1 .k{color:#ffe1ff;}
-  .an3 .h{font-weight:900;text-transform:uppercase;line-height:.84;}
-  .an3 .t1 .h{font-size:100px;color:#fff;text-shadow:5px 5px 0 rgba(60,0,110,.6);}
-  .an3 .t2 .h{font-size:104px;}
-  .an3 .d{font-weight:900;text-transform:uppercase;font-size:50px;line-height:1;}
-  .an3 .d small{display:block;font-weight:700;font-size:28px;opacity:.85;margin-top:8px;letter-spacing:.04em;}
-  .an3 .t2 svg{width:120px;height:120px;}
-  .an3 .t2 .top{display:flex;justify-content:space-between;align-items:flex-start;}
+  /* ── ANNOUNCEMENT — three TICKETS dealt face down, one turned over per press
+     (2026-11-21: UBA 17, the award show, Winter Cup 2). Never in the rotation: a
+     tease is a moment, pressed from the deck. The first press puts the three
+     "?" up; each press after that turns the next one over, left to right, and
+     a press once all three are up does nothing. Any other board resets it, so
+     the next Announcement press deals them face down again. */
+  #v-announce{max-width:1720px;}
+  #v-announce .title{margin:10px 0 0;text-align:center;}
+  .an3 .row{margin-top:40px;display:grid;grid-template-columns:repeat(3,1fr);gap:40px;}
+  .an3 .tk{position:relative;min-height:560px;perspective:2200px;}
+  .an3 .flip{position:absolute;inset:0;transform-style:preserve-3d;
+    transition:transform 1.1s cubic-bezier(.3,1.35,.5,1);}
+  .an3 .tk.up .flip{transform:rotateY(180deg);}
+  .an3 .face{position:absolute;inset:0;display:flex;border-radius:18px;overflow:hidden;
+    backface-visibility:hidden;-webkit-backface-visibility:hidden;}
+  .an3 .front{transform:rotateY(180deg);}
+  .an3 .main{flex:1;min-width:0;padding:38px 34px;display:flex;flex-direction:column;justify-content:space-between;}
+  .an3 .stub{width:104px;flex:0 0 104px;border-left:4px dashed rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;}
+  .an3 .stub b{transform:rotate(-90deg);white-space:nowrap;font-weight:900;font-size:38px;text-transform:uppercase;letter-spacing:.06em;}
+  .an3 .face::before,.an3 .face::after{content:'';position:absolute;right:87px;width:34px;height:34px;border-radius:50%;background:var(--bg);z-index:2;}
+  .an3 .face::before{top:-17px} .an3 .face::after{bottom:-17px}
+  /* the back: every ticket the same, so nothing gives away which is which */
+  .an3 .back{background:linear-gradient(150deg,#5a2aa8,#2c0f66 70%);color:#fff;
+    box-shadow:inset 0 0 0 3px rgba(var(--pur-rgb),.9),0 0 60px rgba(var(--pur-rgb),.5);}
+  .an3 .back .stub{background:rgba(0,0,0,.22);border-left-color:rgba(255,255,255,.28);color:var(--hi);}
+  .an3 .back .q{flex:1;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:330px;line-height:1;
+    color:#fff;text-shadow:0 0 40px var(--pink),0 0 90px rgba(var(--pink-rgb),.7);animation:anQ 2.4s ease-in-out infinite;}
+  .an3 .tk:nth-child(2) .q{animation-delay:.8s} .an3 .tk:nth-child(3) .q{animation-delay:1.6s}
+  @keyframes anQ{50%{transform:scale(1.06);text-shadow:0 0 60px var(--pink),0 0 130px rgba(var(--pink-rgb),.9);}}
+  .an3 .back .k{color:#e6ccff;text-align:center;}
+  /* the fronts: one colour each */
+  .an3 .t1 .front{background:linear-gradient(135deg,var(--pur),var(--pink));color:#fff;box-shadow:0 0 70px rgba(var(--pink-rgb),.45);}
+  .an3 .t1 .front .stub{background:rgba(0,0,0,.18);color:#fff;}
+  .an3 .t2 .front{background:linear-gradient(135deg,#ffe48a,#d79a1e);color:#2a1600;box-shadow:0 0 70px rgba(255,190,60,.4);}
+  .an3 .t2 .front .stub{background:rgba(0,0,0,.08);color:#2a1600;}
+  .an3 .t3 .front{background:linear-gradient(135deg,#bff0ff,#3fa6e0);color:#04223a;box-shadow:0 0 70px rgba(90,200,255,.45);}
+  .an3 .t3 .front .stub{background:rgba(0,0,0,.08);color:#04223a;}
+  .an3 .tk.up .front{animation:anHit 1.1s ease-out .45s backwards;}
+  @keyframes anHit{0%{filter:brightness(2.4)}100%{filter:brightness(1)}}
+  .an3 .k{font-family:'Press Start 2P',monospace;font-size:14px;letter-spacing:.26em;}
+  .an3 .t1 .front .k{color:#ffe1ff;}
+  .an3 .h{font-weight:900;text-transform:uppercase;line-height:.84;font-size:104px;}
+  .an3 .t1 .h{text-shadow:5px 5px 0 rgba(60,0,110,.6);}
+  .an3 .d{font-weight:900;text-transform:uppercase;font-size:46px;line-height:1;}
+  .an3 .d small{display:block;font-weight:700;font-size:26px;opacity:.85;margin-top:8px;letter-spacing:.04em;}
+  .an3 .top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+  .an3 .top svg{width:96px;height:96px;flex:0 0 96px;}
 
   /* CALLOUTS — the picture the bot drew, one at a time. The box is a fixed
      height so a tall picture after a short one does not shove the dots about,
@@ -1493,29 +1514,36 @@
     </div>
 
 
-    <!-- ANNOUNCEMENT — a tease for next Saturday + the award show, as two tickets. -->
+    <!-- ANNOUNCEMENT — three tickets dealt face down; each press turns the next one. -->
     <div class="view" id="v-announce">
       <div class="eyebrow" style="text-align:center">VGA · UBA</div>
-      <div class="an3">
-        <div class="pair">
-          <div class="tk t1">
-            <div class="main">
-              <div class="k">ADMIT ALL · TUNE IN</div>
-              <div class="h">Huge<br>Announcement</div>
-              <div class="d">Next Saturday<small>Nov 21 · Live on stream</small></div>
-            </div>
-            <div class="stub"><b>Sat · Nov 21</b></div>
-          </div>
-          <div class="tk t2">
-            <div class="main">
-              <div class="top"><div class="k">ALSO COMING</div><svg viewBox="0 0 64 64" fill="#2a1600"><path d="M18 6h28v6h10v8c0 8-6 14-14 15-2 5-5 8-8 9v7h9v7H21v-7h9v-7c-3-1-6-4-8-9C14 34 8 28 8 20v-8h10zM14 18v2c0 4 3 8 6 9-1-3-2-7-2-11zm36 0h-4c0 4-1 8-2 11 3-1 6-5 6-9z"/></svg></div>
-              <div class="h">UBA<br>Award<br>Show</div>
-              <div class="d">December<small>Date TBA</small></div>
-            </div>
-            <div class="stub"><b>Dec · TBA</b></div>
-          </div>
-        </div>
-      </div>
+      <div class="title">Huge Announcement</div>
+      <div class="an3"><div class="row">
+        <div class="tk t1"><div class="flip">
+          <div class="face back"><div class="main"><div class="k">ADMIT ONE · ???</div><div class="q">?</div></div><div class="stub"><b>???</b></div></div>
+          <div class="face front"><div class="main">
+            <div class="k">NEXT CARD · TUNE IN</div>
+            <div class="h">UBA<br>17</div>
+            <div class="d">Saturday<small>Dec 12 · Live on stream</small></div>
+          </div><div class="stub"><b>Sat · Dec 12</b></div></div>
+        </div></div>
+        <div class="tk t2"><div class="flip">
+          <div class="face back"><div class="main"><div class="k">ADMIT ONE · ???</div><div class="q">?</div></div><div class="stub"><b>???</b></div></div>
+          <div class="face front"><div class="main">
+            <div class="top"><div class="k">ALSO COMING</div><svg viewBox="0 0 64 64" fill="#2a1600"><path d="M18 6h28v6h10v8c0 8-6 14-14 15-2 5-5 8-8 9v7h9v7H21v-7h9v-7c-3-1-6-4-8-9C14 34 8 28 8 20v-8h10zM14 18v2c0 4 3 8 6 9-1-3-2-7-2-11zm36 0h-4c0 4-1 8-2 11 3-1 6-5 6-9z"/></svg></div>
+            <div class="h">UBA<br>Award<br>Show</div>
+            <div class="d">Saturday<small>Dec 19</small></div>
+          </div><div class="stub"><b>Sat · Dec 19</b></div></div>
+        </div></div>
+        <div class="tk t3"><div class="flip">
+          <div class="face back"><div class="main"><div class="k">ADMIT ONE · ???</div><div class="q">?</div></div><div class="stub"><b>???</b></div></div>
+          <div class="face front"><div class="main">
+            <div class="top"><div class="k">THE TOURNAMENT</div><svg viewBox="0 0 64 64" fill="none" stroke="#04223a" stroke-width="5" stroke-linecap="round"><path d="M32 4v56M8 18l48 28M8 46l48-28M24 8l8 8 8-8M24 56l8-8 8 8M6 28l11 4-4 11M58 36l-11-4 4-11M6 36l11-4-4-11M58 28l-11 4 4 11"/></svg></div>
+            <div class="h">Winter<br>Cup 2</div>
+            <div class="d">Dec 31 – Jan 9<small>New Year's week</small></div>
+          </div><div class="stub"><b>Dec 31 – Jan 9</b></div></div>
+        </div></div>
+      </div></div>
     </div>
 
     <!-- POSTER + CARD — a scene of its own, picked like any other. -->
@@ -3368,6 +3396,10 @@ function show(view, league, exclude){
   if(view==='callouts' && !CO.length) return
   // already showing callouts: a second press is "next one", never a re-fade of the screen
   if(view==='callouts' && $('v-callouts').classList.contains('on')){ coNext(); return }
+  // already showing the announcement: a press turns over the next ticket, left
+  // to right; once all three are up a press does nothing (never a re-deal on air)
+  if(view==='announce' && $('v-announce').classList.contains('on')){
+    const next=document.querySelector('#v-announce .tk:not(.up)'); if(next) next.classList.add('up'); return }
   clearInterval(cycle); cycle=null
   const run=++autoRun
   hideAll()
@@ -3393,6 +3425,7 @@ function show(view, league, exclude){
       if(list[i%list.length]==='nextev') fillNext() }
     fillNext().then(()=>{ if(run!==autoRun) return; step(); cycle=setInterval(step,15000) })
     return }
+  if(view==='announce') document.querySelectorAll('#v-announce .tk').forEach(t=>t.classList.remove('up'))   // dealt face down
   showView($('v-'+view))
 }
 
